@@ -60,11 +60,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 throw new InvalidOperationException($"Interface '{interfaceType.FullName}' defines properties. Entity proxy interfaces with properties are not supported.");
             }
-
-            if (interfaceType.GetMethods(BindingFlags.Instance | BindingFlags.Public).Length == 0)
-            {
-                throw new InvalidOperationException($"Interface '{interfaceType.FullName}' has no methods defined.");
-            }
         }
 
         private static void BuildConstructor(TypeBuilder typeBuilder)
@@ -88,7 +83,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private static void BuildMethods(TypeBuilder typeBuilder, Type interfaceType)
         {
-            var methods = interfaceType.GetMethods(BindingFlags.Instance | BindingFlags.Public);
+            var methods = interfaceType.GetMethods(BindingFlags.Instance | BindingFlags.Public).ToList();
+
+            // Interfaces can inherit from other interfaces, getting those methods too
+            var interfaces = interfaceType.GetInterfaces();
+            if (interfaces.Length > 0)
+            {
+                foreach (var inter in interfaces)
+                {
+                    methods.AddRange(inter.GetMethods(BindingFlags.Instance | BindingFlags.Public));
+                }
+            }
+
+            if (methods.Count == 0)
+            {
+                throw new InvalidOperationException($"Interface '{interfaceType.FullName}' has no methods defined.");
+            }
 
             var entityProxyMethods = typeof(EntityProxy).GetMethods(BindingFlags.NonPublic | BindingFlags.Instance);
 

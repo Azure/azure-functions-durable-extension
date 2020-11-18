@@ -27,6 +27,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public bool TraceInputsAndOutputs { get; set; }
 
         /// <summary>
+        /// Gets or sets if Azure linux telemetry should include verbose logs.
+        /// </summary>
+        /// <remarks>
+        /// The default behaviour is false, which disables verbose logs. When set
+        /// to true, performance may be affected due to the amount of verbose logs.
+        /// We recommend setting this to true primarily for debugging purposes.
+        /// <value>
+        /// <c>true</c> to enable verbose telemetry; <c>false</c> otherwise.
+        /// </value>
+        /// </remarks>
+        public bool AllowVerboseLinuxTelemetry { get; set; } = false;
+
+        /// <summary>
         /// Gets or sets if logs for replay events need to be recorded.
         /// </summary>
         /// <remarks>

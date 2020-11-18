@@ -57,7 +57,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         private void AnalyzeDispatchAndFindMethodDeclarations(SyntaxNodeAnalysisContext context)
         {
             if (context.Node is MemberAccessExpressionSyntax expression &&
-                SyntaxNodeUtils.IsInsideFunction(expression))
+                SyntaxNodeUtils.IsInsideFunction(context.SemanticModel, expression))
             {
                 var name = expression.Name;
                 if (name.ToString().StartsWith("DispatchAsync"))
@@ -67,9 +67,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                         methodDeclarations.Add(methodDeclaration);
                     }
 
-                    if (SyntaxNodeUtils.TryGetTypeArgumentNode(expression, out SyntaxNode identifierNode))
+                    if (SyntaxNodeUtils.TryGetTypeArgumentIdentifier(expression, out SyntaxNode identifierNode))
                     {
-                        if (SyntaxNodeUtils.TryGetFunctionNameAndNode(expression, out SyntaxNode attributeArgument, out string functionName))
+                        if (SyntaxNodeUtils.TryGetFunctionName(context.SemanticModel, expression, out string functionName))
                         {
                             var identifierName = identifierNode.ToString();
                             if (!string.Equals(identifierName, functionName))

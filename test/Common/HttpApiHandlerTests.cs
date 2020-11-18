@@ -12,6 +12,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Moq;
 using Newtonsoft.Json;
@@ -1177,7 +1178,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     new OptionsWrapper<DurableTaskOptions>(options),
                     new LoggerFactory(),
                     TestHelpers.GetTestNameResolver(),
-                    new AzureStorageDurabilityProviderFactory(new OptionsWrapper<DurableTaskOptions>(options), new TestConnectionStringResolver()),
+                    new AzureStorageDurabilityProviderFactory(
+                        new OptionsWrapper<DurableTaskOptions>(options),
+                        new TestConnectionStringResolver(),
+                        TestHelpers.GetTestNameResolver(),
+                        NullLoggerFactory.Instance),
                     new TestHostShutdownNotificationService(),
                     new DurableHttpMessageHandlerFactory())
             {

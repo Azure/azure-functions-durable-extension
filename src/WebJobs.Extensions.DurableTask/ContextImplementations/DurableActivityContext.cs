@@ -19,14 +19,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private readonly string instanceId;
 
-        private readonly MessagePayloadDataConverter dataConverter;
+        private readonly MessagePayloadDataConverter messageDataConverter;
 
         private JToken parsedJsonInput;
         private string serializedOutput;
 
         internal DurableActivityContext(DurableTaskExtension config, string instanceId, string serializedInput)
         {
-            this.dataConverter = config.DataConverter;
+            this.messageDataConverter = config.MessageDataConverter;
             this.instanceId = instanceId;
             this.serializedInput = serializedInput;
         }
@@ -55,13 +55,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             if (this.serializedInput != null && this.parsedJsonInput == null)
             {
-                JArray array = JArray.Parse(this.serializedInput);
-                if (array?.Count != 1)
+                var objectArray = this.messageDataConverter.Deserialize<object[]>(this.serializedInput);
+
+                if (objectArray?.Length != 1)
                 {
-                    throw new ArgumentException("The serialized input is expected to be a JSON array with one element.");
+                    throw new ArgumentException("The serialized input is expected to be an object array with one element.");
                 }
 
-                this.parsedJsonInput = array[0];
+                this.parsedJsonInput = MessagePayloadDataConverter.ConvertToJToken(this.messageDataConverter.Serialize(objectArray[0]));
             }
 
             return this.parsedJsonInput;
@@ -106,7 +107,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return serializedValue;
             }
 
-            return this.dataConverter.MessageConverter.Deserialize(serializedValue, destinationType);
+            return this.messageDataConverter.Deserialize(serializedValue, destinationType);
         }
 
         internal string GetSerializedOutput()
@@ -139,7 +140,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
                 else
                 {
-                    this.serializedOutput = this.dataConverter.MessageConverter.Serialize(output);
+                    this.serializedOutput = this.messageDataConverter.Serialize(output);
                 }
             }
             else

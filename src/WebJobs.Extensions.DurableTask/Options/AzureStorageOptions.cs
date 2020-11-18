@@ -121,6 +121,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public TimeSpan MaxQueuePollingInterval { get; set; } = TimeSpan.FromSeconds(30);
 
         /// <summary>
+        /// Determines whether or not to use the old partition management strategy, or the new
+        /// strategy that is more resilient to split brain problems, at the potential expense
+        /// of scale out performance.
+        /// </summary>
+        /// <value>A boolean indicating whether we use the legacy partition strategy. Defaults to false.</value>
+        public bool UseLegacyPartitionManagement { get; set; } = false;
+
+        /// <summary>
         /// Throws an exception if the provided hub name violates any naming conventions for the storage provider.
         /// </summary>
         public void ValidateHubName(string hubName)

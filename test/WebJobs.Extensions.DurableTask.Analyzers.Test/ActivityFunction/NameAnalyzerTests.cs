@@ -13,10 +13,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Activity
     public class NameAnalyzerTests : CodeFixVerifier
     {
         private static readonly string DiagnosticId = NameAnalyzer.DiagnosticId;
-        private static readonly DiagnosticSeverity Severity = NameAnalyzer.Severity;
+        private static readonly DiagnosticSeverity Severity = DiagnosticSeverity.Warning;
 
         [TestMethod]
-        public void Name_NonIssueCalls()
+        public void Name_NoDiagnosticTestCases()
         {
             var test = @"
 using System;
@@ -34,72 +34,106 @@ namespace VSSample
 {
     public static class HelloSequence
     {
-        // Should not flag code on non function
-        public static async Task<List<string>> NonFunctionInvalidNames(
+        // For test cases below
+        public const string TestFunctionUsesConstant = ""TestFunctionNameWithConstant"";
+        public const string TestFunctionNameWithClass = ""TestFunctionNameWithClass"";
+        public const string TestFunctionInDependencies = ""TestFunctionInDependencies"";
+
+        // Testing that no diagnostics are produced when method does not have the FunctionName attribute present
+        public static async Task<string> NonFunctionInvalidNames(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
-            {
-                var outputs = new List<string>();
-
-                outputs.Add(await context.CallActivityAsync<string>(""NotAFunction"", ""Tokyo""));
-                outputs.Add(await context.CallActivityAsync<string>(""DefinitelyNotAFunction"", new Object()));
+        {
+            // Non existing function names
+            await context.CallActivityAsync<string>(""NotAFunction"", ""Tokyo"");
+            await context.CallActivityAsync<string>(""DefinitelyNotAFunction"", new Object());
             
-                return outputs;
-            }
+            return ""Hello World"";
+        }
 
-        [FunctionName(""E1_HelloSequence"")]
-        public static async Task<List<string>> CorrectNames(
+        [FunctionName(""NameAnalyzerTestCases"")]
+        public static async Task<string> Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
-            {
-                var outputs = new List<string>();
+        {
+            // Matching names (strings)
 
-                // Matching names
-                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello"", ""Tokyo""));
-                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_DirectInput"", ""London""));
-                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_Object"", new Object()));
-                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_Object_DirectInput"", new Object()));
-                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_Tuple"", (""Seattle"", 4)));
-                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_Tuple_OnContext"", (""Seattle"", 4)));
-            
-                return outputs;
-            }
+            await context.CallActivityAsync<string>(""Test_MatchingStrings"", ""Prairie View"");
 
-        [FunctionName(""E1_SayHello"")]
-        public static string SayHello([ActivityTrigger] IDurableActivityContext context)
+            // Invocation and function using nameof()
+
+            await context.CallActivityAsync<string>(nameof(TestFunctionUsesNameOfClassName), ""Minneapolis"");
+
+            // Invocation uses string, function uses nameof()
+
+            await context.CallActivityAsync<string>(""TestFunctionUsesNameOfMethodName"", ""Brunswick"");
+
+            // Invocation uses string, function uses constant
+
+            await context.CallActivityAsync<string>(""TestFunctionNameWithConstant"", ""Minneapolis"");
+
+            // Invocation uses string, function uses constant prefaced with class name
+
+            await context.CallActivityAsync<string>(""TestFunctionNameWithClass"", ""Ann Arbor"");
+
+            // Invocation uses constant, function uses constant
+
+            await context.CallActivityAsync<string>(TestFunctionUsesConstant, ""Fort Worth"");
+
+            // Invocation uses constant prefaced with class name, function uses nameof()
+
+            await context.CallActivityAsync<string>(HelloSequence.TestFunctionNameWithClass, ""Louisville"");
+
+            // Invocation uses constant, function not found in source code, covers <FunctionsInDependencies>true</FunctionsInDependencies>
+
+            await context.CallActivityAsync<string>(TestFunctionInDependencies, ""Minneapolis"");
+
+            return ""Hello World!"";
+        }
+
+        // Matching names (strings)
+
+        [FunctionName(""Test_MatchingStrings"")]
+        public static string TestMatchingStrings([ActivityTrigger] IDurableActivityContext context)
+        {
+            string name = context.GetInput<string>();
+            return $""Hello {name}!"";
+        }
+        
+        // Invocation uses string and nameof(), function uses nameof()
+
+        [FunctionName(nameof(TestFunctionUsesNameOfMethodName))]
+        public static string TestFunctionUsesNameOfMethodName([ActivityTrigger] IDurableActivityContext context)
         {
             string name = context.GetInput<string>();
             return $""Hello {name}!"";
         }
 
-        [FunctionName(""E1_SayHello_DirectInput"")]
-        public static string SayHelloDirectInput([ActivityTrigger] string name)
+        // Invocation uses string, function uses constant
+
+        [FunctionName(TestFunctionUsesConstant)]
+        public static string TestFunctionWithConstant([ActivityTrigger] IDurableActivityContext context)
         {
+            string name = context.GetInput<string>();
             return $""Hello {name}!"";
         }
 
-        [FunctionName(""E1_SayHello_Object"")]
-        public static string SayHello([ActivityTrigger] IDurableActivityContext context)
-        {
-            string name = context.GetInput<Object>();
-            return $""Hello Ben!"";
-        }
+        // Invocation uses string, function uses constant prefaced with class name
 
-        [FunctionName(""E1_SayHello_Object_DirectInput"")]
-        public static string SayHelloDirectInput([ActivityTrigger] Object name)
+        [FunctionName(HelloSequence.TestFunctionNameWithClass)]
+        public static string TestFunctionNameClass([ActivityTrigger] IDurableActivityContext context)
         {
-            return $""Hello Ben!"";
-        }
-
-        [FunctionName(""E1_SayHello_Tuple"")]
-        public static string SayHelloTuple([ActivityTrigger] Tuple<string, int> tupleTest)
-        {
-            string name = tupleTest;
+            string name = context.GetInput<string>();
             return $""Hello {name}!"";
         }
+    }
 
-        [FunctionName(""E1_SayHello_Tuple_OnContext"")]
-        public static string SayHelloTupleOnContext([ActivityTrigger] IDurableActivityContext context)
+    // Invocation uses nameof() and constant with class name prefix and function using nameof()
+
+    public class TestFunctionUsesNameOfClassName
+    {
+        [FunctionName(nameof(TestFunctionUsesNameOfClassName))]
+        public string Run([ActivityTrigger] IDurableActivityContext context)
         {
-            string name = context.GetInput<(string, int)>();
+            string name = context.GetInput<string>();
             return $""Hello {name}!"";
         }
     }
@@ -108,7 +142,7 @@ namespace VSSample
         }
         
         [TestMethod]
-        public void Name_InvalidFunctionName_Close()
+        public void Name_InvalidName_CloseRule()
         {
             var test = @"
 using System;
@@ -126,15 +160,13 @@ namespace VSSample
 {
     public static class HelloSequence
     {
-        [FunctionName(""E1_HelloSequence"")]
-        public static async Task<List<string>> Run(
+        [FunctionName(""NameAnalyzerTestCases"")]
+        public static async Task<string> Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
-                var outputs = new List<string>();
-
-                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHey"", 4));
+                await context.CallActivityAsync<string>(""E1_SayHey"", 4);
             
-                return outputs;
+                return ""Hello World!"";
             }
 
         [FunctionName(""E1_SayHello"")]
@@ -151,14 +183,14 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 23, 69)
+                            new DiagnosticResultLocation("Test0.cs", 21, 57)
                      }
             };
             VerifyCSharpDiagnostic(test, expectedDiagnostics);
         }
 
         [TestMethod]
-        public void Name_InvalidFunctionName_Missing()
+        public void Name_InvalidName_MissingRule()
         {
             var test = @"
 using System;
@@ -176,13 +208,56 @@ namespace VSSample
 {
     public static class HelloSequence
     {
-        [FunctionName(""E1_HelloSequence"")]
+        [FunctionName(""NameAnalyzerTestCases"")]
+        public static async Task<string> Run(
+            [OrchestrationTrigger] IDurableOrchestrationContext context)
+            {
+                await context.CallActivityAsync<string>(""E1_SayHello"", ""AppService"");
+            
+                return ""Hello World!"";
+            }
+    }
+}";
+            var expectedDiagnostics = new DiagnosticResult
+            {
+                Id = DiagnosticId,
+                Message = string.Format(Resources.ActivityNameAnalyzerMissingMessageFormat, "E1_SayHello"),
+                Severity = Severity,
+                Locations =
+                 new[] {
+                            new DiagnosticResultLocation("Test0.cs", 21, 57)
+                     }
+            };
+            VerifyCSharpDiagnostic(test, expectedDiagnostics);
+        }
+
+        [TestMethod]
+        public void Name_InvalidName_MissingRule_UsingConstant()
+        {
+            var test = @"
+using System;
+using System.Collections.Generic;
+using System.Net;
+using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
+using Microsoft.WindowsAzure.Storage.Blob;
+using Microsoft.WindowsAzure.Storage.Queue;
+using Microsoft.WindowsAzure.Storage.Table;
+
+namespace VSSample
+{
+    public static class HelloSequence
+    {
+        public const string FunctionName = ""E1_HelloSequence"";
+        [FunctionName(FunctionName)]
         public static async Task<List<string>> Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
                 var outputs = new List<string>();
 
-                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello"", ""Ben""));
+                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello"", ""AppService""));
             
                 return outputs;
             }
@@ -195,13 +270,11 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 23, 69)
+                            new DiagnosticResultLocation("Test0.cs", 24, 69)
                      }
             };
             VerifyCSharpDiagnostic(test, expectedDiagnostics);
         }
-
-
 
         protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()
         {

@@ -12,7 +12,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
     public class IOTypesAnalyzerTests : CodeFixVerifier
     {
         private static readonly string DiagnosticId = IOTypesAnalyzer.DiagnosticId;
-        private static readonly DiagnosticSeverity Severity = IOTypesAnalyzer.Severity;
+        private static readonly DiagnosticSeverity Severity = DiagnosticSeverity.Warning;
 
         private const string allTests = @"
             public void allCalls(HttpClient httpClient, SqlConnection sqlConnection, CloudBlobClient cloudBlobClient, CloudQueueClient cloudQueueClient, 
@@ -40,7 +40,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
     }";
 
         [TestMethod]
-        public void IOTypes_NonIssueCalls()
+        public void IOTypes_NoDiagnosticTestCases()
         {
             var test = @"
     using System;
@@ -57,14 +57,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
         public static class NonIssueExample
         {
             
-            [FunctionName(""E1_HelloSequence"")]
+            [FunctionName(""IOTypesAnalyzerTestCases"")]
             " + allTests;
 
             VerifyCSharpDiagnostic(test);
         }
 
         [TestMethod]
-        public void HttpClientInOrchestrator_Class()
+        public void HttpClient_DiagnosticOnClass()
         {
             var test = @"
     using System;
@@ -76,8 +76,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
     {
         public static class HelloSequence
         {
-            [FunctionName(""E1_HelloSequence"")]
-            public static async Task<List<string>> Run(
+            [FunctionName(""IOTypesAnalyzerTestCases"")]
+            public static async Task Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
                 HttpClient httpClient = new HttpClient();
@@ -99,7 +99,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
         }
 
         [TestMethod]
-        public void HttpClientInOrchestrator_Varaible()
+        public void HttpClient_DiagnosticOnVaraible()
         {
             var test = @"
     using System;
@@ -111,8 +111,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
     {
         public static class HelloSequence
         {
-            [FunctionName(""E1_HelloSequence"")]
-            public static async Task<List<string>> Run(
+            [FunctionName(""IOTypesAnalyzerTestCases"")]
+            public static async Task Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context, HttpClient httpClient)
             {
                 httpClient.GetType();
@@ -146,7 +146,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
         }
 
         [TestMethod]
-        public void SqlConectionInOrchestrator_Class()
+        public void SqlConection_DiagnosticOnClass()
         {
             var test = @"
     using System;
@@ -158,8 +158,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
     {
         public static class HelloSequence
         {
-            [FunctionName(""E1_HelloSequence"")]
-            public static async Task<List<string>> Run(
+            [FunctionName(""IOTypesAnalyzerTestCases"")]
+            public static async Task Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
                 SqlConnection sqlConnection;
@@ -181,7 +181,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
         }
 
         [TestMethod]
-        public void SqlConnectionInOrchestrator_Varaible()
+        public void SqlConnection_DiagnosticOnVaraible()
         {
             var test = @"
     using System;
@@ -193,8 +193,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
     {
         public static class HelloSequence
         {
-            [FunctionName(""E1_HelloSequence"")]
-            public static async Task<List<string>> Run(
+            [FunctionName(""IOTypesAnalyzerTestCases"")]
+            public static async Task Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context, SqlConnection sqlConnection)
             {
                 sqlConnection.GetType();
@@ -228,7 +228,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
         }
 
         [TestMethod]
-        public void CloudBlobClientInOrchestrator_Class()
+        public void CloudBlobClient_DiagnosticOnClass()
         {
             var test = @"
     using System;
@@ -240,8 +240,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
     {
         public static class HelloSequence
         {
-            [FunctionName(""E1_HelloSequence"")]
-            public static async Task<List<string>> Run(
+            [FunctionName(""IOTypesAnalyzerTestCases"")]
+            public static async Task Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
                 CloudBlobClient cloudBlobClient;
@@ -263,7 +263,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
         }
 
         [TestMethod]
-        public void CloudBlobClientInOrchestrator_Varaible()
+        public void CloudBlobClient_DiagnosticOnVaraible()
         {
             var test = @"
     using System;
@@ -275,8 +275,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
     {
         public static class HelloSequence
         {
-            [FunctionName(""E1_HelloSequence"")]
-            public static async Task<List<string>> Run(
+            [FunctionName(""IOTypesAnalyzerTestCases"")]
+            public static async Task Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context, CloudBlobClient cloudBlobClient)
             {
                 cloudBlobClient.GetType();
@@ -310,7 +310,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
         }
 
         [TestMethod]
-        public void CloudQueueClientInOrchestrator_Class()
+        public void CloudQueueClient_DiagnosticOnClass()
         {
             var test = @"
     using System;
@@ -322,8 +322,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
     {
         public static class HelloSequence
         {
-            [FunctionName(""E1_HelloSequence"")]
-            public static async Task<List<string>> Run(
+            [FunctionName(""IOTypesAnalyzerTestCases"")]
+            public static async Task Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
                 CloudQueueClient cloudQueueClient;
@@ -345,7 +345,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
         }
 
         [TestMethod]
-        public void CloudQueueClientInOrchestrator_Varaible()
+        public void CloudQueueClient_DiagnosticOnVaraible()
         {
             var test = @"
     using System;
@@ -357,8 +357,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
     {
         public static class HelloSequence
         {
-            [FunctionName(""E1_HelloSequence"")]
-            public static async Task<List<string>> Run(
+            [FunctionName(""IOTypesAnalyzerTestCases"")]
+            public static async Task Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context, CloudQueueClient cloudQueueClient)
             {
                 cloudQueueClient.GetType();
@@ -392,7 +392,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
         }
 
         [TestMethod]
-        public void CloudTableClientInOrchestrator_Class()
+        public void CloudTableClient_DiagnosticOnClass()
         {
             var test = @"
     using System;
@@ -404,8 +404,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
     {
         public static class HelloSequence
         {
-            [FunctionName(""E1_HelloSequence"")]
-            public static async Task<List<string>> Run(
+            [FunctionName(""IOTypesAnalyzerTestCases"")]
+            public static async Task Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
                 CloudTableClient cloudTableClient;
@@ -427,7 +427,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
         }
 
         [TestMethod]
-        public void CloudTableClientInOrchestrator_Varaible()
+        public void CloudTableClient_DiagnosticOnVaraible()
         {
             var test = @"
     using System;
@@ -439,8 +439,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
     {
         public static class HelloSequence
         {
-            [FunctionName(""E1_HelloSequence"")]
-            public static async Task<List<string>> Run(
+            [FunctionName(""IOTypesAnalyzerTestCases"")]
+            public static async Task Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context, CloudTableClient cloudTableClient)
             {
                 cloudTableClient.GetType();
@@ -474,7 +474,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
         }
 
         [TestMethod]
-        public void DocumentClientInOrchestrator_Class()
+        public void DocumentClient_DiagnosticOnClass()
         {
             var test = @"
     using System;
@@ -486,8 +486,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
     {
         public static class HelloSequence
         {
-            [FunctionName(""E1_HelloSequence"")]
-            public static async Task<List<string>> Run(
+            [FunctionName(""IOTypesAnalyzerTestCases"")]
+            public static async Task Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
                 DocumentClient documentClient;
@@ -509,7 +509,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
         }
 
         [TestMethod]
-        public void DocumentClienttInOrchestrator_Varaible()
+        public void DocumentClient_DiagnosticOnVaraible()
         {
             var test = @"
     using System;
@@ -521,8 +521,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
     {
         public static class HelloSequence
         {
-            [FunctionName(""E1_HelloSequence"")]
-            public static async Task<List<string>> Run(
+            [FunctionName(""IOTypesAnalyzerTestCases"")]
+            public static async Task Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context, DocumentClient documentClient)
             {
                 documentClient.Dispose();
@@ -556,7 +556,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
         }
 
         [TestMethod]
-        public void WebRequestInOrchestrator_Class()
+        public void WebRequest_DiagnosticOnClass()
         {
             var test = @"
     using System;
@@ -568,8 +568,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
     {
         public static class HelloSequence
         {
-            [FunctionName(""E1_HelloSequence"")]
-            public static async Task<List<string>> Run(
+            [FunctionName(""IOTypesAnalyzerTestCases"")]
+            public static async Task Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
                 WebRequest webRequest;
@@ -591,7 +591,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
         }
 
         [TestMethod]
-        public void WebRequesttInOrchestrator_Varaible()
+        public void WebRequest_DiagnosticOnVaraible()
         {
             var test = @"
     using System;
@@ -603,8 +603,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
     {
         public static class HelloSequence
         {
-            [FunctionName(""E1_HelloSequence"")]
-            public static async Task<List<string>> Run(
+            [FunctionName(""IOTypesAnalyzerTestCases"")]
+            public static async Task Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context, WebRequest webRequest)
             {
                 webRequest.GetType();
@@ -638,7 +638,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
         }
 
         [TestMethod]
-        public void IOTypes_InMethod_OrchestratorCall_All()
+        public void IOTypes_NonDeterministicMethod_AllIOTypesCases()
         {
             var test = @"
 using System;
@@ -652,13 +652,11 @@ namespace VSSample
 {
     public static class HelloSequence
     {
-        [FunctionName(""E1_HelloSequence"")]
-        public static async Task<List<string>> Run(
+        [FunctionName(""IOTypesAnalyzerTestCases"")]
+        public static async Task Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
                 DirectCall();
-            
-                return ""Hello"";
             }
 
         public static string DirectCall()
@@ -685,7 +683,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 25, 34)
+                            new DiagnosticResultLocation("Test0.cs", 23, 34)
                         }
             };
 
@@ -696,7 +694,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 25, 57)
+                            new DiagnosticResultLocation("Test0.cs", 23, 57)
                         }
             };
 
@@ -707,7 +705,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 25, 86)
+                            new DiagnosticResultLocation("Test0.cs", 23, 86)
                         }
             };
 
@@ -718,7 +716,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 25, 119)
+                            new DiagnosticResultLocation("Test0.cs", 23, 119)
                         }
             };
 
@@ -729,7 +727,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 26, 17)
+                            new DiagnosticResultLocation("Test0.cs", 24, 17)
                         }
             };
 
@@ -740,7 +738,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 26, 52)
+                            new DiagnosticResultLocation("Test0.cs", 24, 52)
                         }
             };
 
@@ -751,7 +749,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 26, 83)
+                            new DiagnosticResultLocation("Test0.cs", 24, 83)
                         }
             };
 
@@ -762,7 +760,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 30, 17)
+                            new DiagnosticResultLocation("Test0.cs", 28, 17)
                         }
             };
 
@@ -773,7 +771,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 31, 17)
+                            new DiagnosticResultLocation("Test0.cs", 29, 17)
                         }
             };
 
@@ -784,7 +782,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 32, 17)
+                            new DiagnosticResultLocation("Test0.cs", 30, 17)
                         }
             };
 
@@ -795,7 +793,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 33, 17)
+                            new DiagnosticResultLocation("Test0.cs", 31, 17)
                         }
             };
 
@@ -806,7 +804,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 34, 17)
+                            new DiagnosticResultLocation("Test0.cs", 32, 17)
                         }
             };
 
@@ -817,7 +815,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 35, 17)
+                            new DiagnosticResultLocation("Test0.cs", 33, 17)
                         }
             };
 
@@ -828,7 +826,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 36, 17)
+                            new DiagnosticResultLocation("Test0.cs", 34, 17)
                         }
             };
 
@@ -839,7 +837,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 38, 17)
+                            new DiagnosticResultLocation("Test0.cs", 36, 17)
                         }
             };
 
@@ -850,7 +848,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 39, 17)
+                            new DiagnosticResultLocation("Test0.cs", 37, 17)
                         }
             };
 
@@ -861,7 +859,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 40, 17)
+                            new DiagnosticResultLocation("Test0.cs", 38, 17)
                         }
             };
 
@@ -872,7 +870,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 41, 17)
+                            new DiagnosticResultLocation("Test0.cs", 39, 17)
                         }
             };
 
@@ -883,7 +881,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 42, 17)
+                            new DiagnosticResultLocation("Test0.cs", 40, 17)
                         }
             };
 
@@ -894,7 +892,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 43, 17)
+                            new DiagnosticResultLocation("Test0.cs", 41, 17)
                         }
             };
 
@@ -905,7 +903,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 44, 17)
+                            new DiagnosticResultLocation("Test0.cs", 42, 17)
                         }
             };
 

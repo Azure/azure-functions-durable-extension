@@ -6,6 +6,8 @@ using System.Net.Http;
 using System.Threading;
 #if !FUNCTIONS_V1
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
@@ -47,8 +49,43 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #if !FUNCTIONS_V1
             serviceCollection.AddSingleton<ITelemetryActivator, TelemetryActivator>();
 #endif
+            serviceCollection.TryAddSingleton<IDurableClientFactory, DurableClientFactory>();
 
             return builder;
+        }
+
+        /// <summary>
+        /// Adds the Durable Task extension to the provided <see cref="IServiceCollection"/>.
+        /// </summary>
+        /// <param name="serviceCollection">The <see cref="IServiceCollection"/> to configure.</param>
+        /// <returns>Returns the provided <see cref="IServiceCollection"/>.</returns>
+        public static IServiceCollection AddDurableTask(this IServiceCollection serviceCollection)
+        {
+            if (serviceCollection == null)
+            {
+                throw new ArgumentNullException(nameof(serviceCollection));
+            }
+
+            serviceCollection.TryAddSingleton<INameResolver, DefaultNameResolver>();
+            serviceCollection.TryAddSingleton<IConnectionStringResolver, StandardConnectionStringProvider>();
+            serviceCollection.TryAddSingleton<IDurabilityProviderFactory, AzureStorageDurabilityProviderFactory>();
+            serviceCollection.TryAddSingleton<IDurableClientFactory, DurableClientFactory>();
+            serviceCollection.TryAddSingleton<IMessageSerializerSettingsFactory, MessageSerializerSettingsFactory>();
+
+            return serviceCollection;
+        }
+
+        /// <summary>
+        /// Adds the Durable Task extension to the provided <see cref="IServiceCollection"/>.
+        /// </summary>
+        /// <param name="serviceCollection">The <see cref="IServiceCollection"/> to configure.</param>
+        /// <param name="optionsBuilder">Populate default configurations of <see cref="DurableClientOptions"/> to create Durable Clients.</param>
+        /// <returns>Returns the provided <see cref="IServiceCollection"/>.</returns>
+        public static IServiceCollection AddDurableTask(this IServiceCollection serviceCollection, Action<DurableClientOptions> optionsBuilder)
+        {
+            AddDurableTask(serviceCollection);
+            serviceCollection.Configure<DurableClientOptions>(optionsBuilder.Invoke);
+            return serviceCollection;
         }
 
         /// <summary>
@@ -120,24 +157,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             IExtensionRegistry extensions = hostConfig.GetService<IExtensionRegistry>();
             extensions.RegisterExtension<IExtensionConfigProvider>(listenerConfig);
-        }
-#endif
-
-#if !FUNCTIONS_V1
-        private class HostLifecycleService : IApplicationLifetimeWrapper
-        {
-            private readonly IApplicationLifetime appLifetime;
-
-            public HostLifecycleService(IApplicationLifetime appLifetime)
-            {
-                this.appLifetime = appLifetime ?? throw new ArgumentNullException(nameof(appLifetime));
-            }
-
-            public CancellationToken OnStarted => this.appLifetime.ApplicationStarted;
-
-            public CancellationToken OnStopping => this.appLifetime.ApplicationStopping;
-
-            public CancellationToken OnStopped => this.appLifetime.ApplicationStopped;
         }
 #endif
     }

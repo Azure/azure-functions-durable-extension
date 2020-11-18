@@ -2,11 +2,11 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
-using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using DurableTask.Core.Common;
 using DurableTask.Core.Exceptions;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener;
 using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.Host.Executors;
 
@@ -19,15 +19,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     {
         private readonly DurableTaskExtension config;
         private readonly ITriggeredFunctionExecutor executor;
+        private readonly IApplicationLifetimeWrapper hostServiceLifetime;
         private readonly string activityName;
+
+        /// <summary>
+        /// The DTFx-generated, auto-incrementing ID that uniquely identifies this activity function execution.
+        /// </summary>
+        private int taskEventId = -1;
 
         public TaskActivityShim(
             DurableTaskExtension config,
             ITriggeredFunctionExecutor executor,
+            IApplicationLifetimeWrapper hostServiceLifetime,
             string activityName)
         {
             this.config = config ?? throw new ArgumentNullException(nameof(config));
             this.executor = executor ?? throw new ArgumentNullException(nameof(executor));
+            this.hostServiceLifetime = hostServiceLifetime ?? throw new ArgumentNullException(nameof(hostServiceLifetime));
 
             if (string.IsNullOrEmpty(activityName))
             {
@@ -52,66 +60,80 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 instanceId,
                 this.config.GetIntputOutputTrace(rawInput),
                 functionType: FunctionType.Activity,
-                isReplay: false);
+                isReplay: false,
+                taskEventId: this.taskEventId);
 
-            FunctionResult result;
-            try
+            WrappedFunctionResult result = await FunctionExecutionHelper.ExecuteActivityFunction(
+                this.executor,
+                triggerInput,
+                this.hostServiceLifetime.OnStopping);
+
+            switch (result.ExecutionStatus)
             {
-                result = await this.executor.TryExecuteAsync(triggerInput, CancellationToken.None);
-            }
-            catch (Exception e)
-            {
-                this.config.TraceHelper.FunctionAborted(
-                    this.config.Options.HubName,
-                    this.activityName,
-                    instanceId,
-                    $"An internal error occurred while attempting to execute this function. The execution will be aborted and retried. Details: {e}",
-                    functionType: FunctionType.Activity);
+                case WrappedFunctionResult.FunctionResultStatus.Success:
+                    string serializedOutput = inputContext.GetSerializedOutput();
+                    this.config.TraceHelper.FunctionCompleted(
+                        this.config.Options.HubName,
+                        this.activityName,
+                        instanceId,
+                        this.config.GetIntputOutputTrace(serializedOutput),
+                        continuedAsNew: false,
+                        functionType: FunctionType.Activity,
+                        isReplay: false,
+                        taskEventId: this.taskEventId);
 
-                // This will abort the execution and cause the message to go back onto the queue for re-processing
-                throw new SessionAbortedException(
-                    $"An internal error occurred while attempting to execute '{this.activityName}'.", e);
-            }
+                    return serializedOutput;
+                case WrappedFunctionResult.FunctionResultStatus.FunctionsRuntimeError:
+                    this.config.TraceHelper.FunctionAborted(
+                        this.config.Options.HubName,
+                        this.activityName,
+                        instanceId,
+                        $"An internal error occurred while attempting to execute this function. The execution will be aborted and retried. Details: {result.Exception}",
+                        functionType: FunctionType.Activity);
 
-            if (!result.Succeeded)
-            {
-                // Flow the original activity function exception to the orchestration
-                // without the outer FunctionInvocationException.
-                Exception exceptionToReport = StripFunctionInvocationException(result.Exception);
+                    // This will abort the execution and cause the message to go back onto the queue for re-processing
+                    throw new SessionAbortedException(
+                        $"An internal error occurred while attempting to execute '{this.activityName}'.", result.Exception);
+                case WrappedFunctionResult.FunctionResultStatus.UserCodeError:
+                    // Flow the original activity function exception to the orchestration
+                    // without the outer FunctionInvocationException.
+                    Exception exceptionToReport = StripFunctionInvocationException(result.Exception);
 
-                this.config.TraceHelper.FunctionFailed(
-                    this.config.Options.HubName,
-                    this.activityName,
-                    instanceId,
-                    exceptionToReport?.ToString() ?? string.Empty,
-                    functionType: FunctionType.Activity,
-                    isReplay: false);
+                    if (OutOfProcExceptionHelpers.TryGetExceptionWithFriendlyMessage(
+                        exceptionToReport,
+                        out Exception friendlyMessageException))
+                    {
+                        exceptionToReport = friendlyMessageException;
+                    }
 
-                if (exceptionToReport != null)
-                {
+                    this.config.TraceHelper.FunctionFailed(
+                        this.config.Options.HubName,
+                        this.activityName,
+                        instanceId,
+                        exceptionToReport?.ToString() ?? string.Empty,
+                        functionType: FunctionType.Activity,
+                        isReplay: false,
+                        taskEventId: this.taskEventId);
+
                     throw new TaskFailureException(
-                        $"Activity function '{this.activityName}' failed: {exceptionToReport.Message}",
-                        Utils.SerializeCause(exceptionToReport, this.config.DataConverter.ErrorConverter));
-                }
+                            $"Activity function '{this.activityName}' failed: {exceptionToReport.Message}",
+                            Utils.SerializeCause(exceptionToReport, this.config.ErrorDataConverter));
+                default:
+                    throw new InvalidOperationException($"{nameof(TaskActivityShim.RunAsync)} does not handle the function execution status {result.ExecutionStatus}.");
             }
-
-            string serializedOutput = inputContext.GetSerializedOutput();
-            this.config.TraceHelper.FunctionCompleted(
-                this.config.Options.HubName,
-                this.activityName,
-                instanceId,
-                this.config.GetIntputOutputTrace(serializedOutput),
-                continuedAsNew: false,
-                functionType: FunctionType.Activity,
-                isReplay: false);
-
-            return serializedOutput;
         }
 
         public override string Run(TaskContext context, string input)
         {
             // This won't get called as long as we've implemented RunAsync.
             throw new NotImplementedException();
+        }
+
+        internal void SetTaskEventId(int taskEventId)
+        {
+            // We don't have the DTFx task event ID at TaskActivityShim-creation time
+            // so we have to set it here, before DTFx calls the RunAsync method.
+            this.taskEventId = taskEventId;
         }
 
         private static Exception StripFunctionInvocationException(Exception e)

@@ -4,6 +4,7 @@
 using System;
 using System.Diagnostics;
 using Microsoft.Azure.WebJobs.Description;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
@@ -13,8 +14,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     [AttributeUsage(AttributeTargets.Parameter)]
     [DebuggerDisplay("TaskHub={TaskHub}, ConnectionName={ConnectionName}")]
     [Binding]
-    public sealed class DurableClientAttribute : Attribute, IEquatable<DurableClientAttribute>
+    public class DurableClientAttribute : Attribute, IEquatable<DurableClientAttribute>
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DurableClientAttribute"/> class.
+        /// </summary>
+        public DurableClientAttribute() { }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DurableClientAttribute"/> class.
+        /// </summary>
+        /// <param name="durableClientOptions">Options to configure the IDurableClient created.</param>
+        public DurableClientAttribute(DurableClientOptions durableClientOptions)
+        {
+            this.TaskHub = durableClientOptions.TaskHub;
+            this.ConnectionName = durableClientOptions.ConnectionName;
+            this.ExternalClient = durableClientOptions.IsExternalClient;
+        }
+
         /// <summary>
         /// Optional. Gets or sets the name of the task hub in which the orchestration data lives.
         /// </summary>
@@ -38,6 +55,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// If no value exists there, then the default behavior is to use the standard `AzureWebJobsStorage` connection string for all storage usage.
         /// </remarks>
         public string ConnectionName { get; set; }
+
+        /// <summary>
+        ///     Indicate if the client is External from the azure function where orchestrator functions are hosted.
+        /// </summary>
+        public bool ExternalClient { get; set; }
 
         /// <summary>
         /// Returns a hash code for this attribute.

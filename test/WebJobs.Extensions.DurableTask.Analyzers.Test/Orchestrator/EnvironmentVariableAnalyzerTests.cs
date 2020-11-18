@@ -12,7 +12,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
     public class EnvironmentVariableAnalyzerTests : CodeFixVerifier
     {
         private static readonly string DiagnosticId = EnvironmentVariableAnalyzer.DiagnosticId;
-        private static readonly DiagnosticSeverity Severity = EnvironmentVariableAnalyzer.Severity;
+        private static readonly DiagnosticSeverity Severity = DiagnosticSeverity.Warning;
 
         private const string allTests = @"
         public void environmentAllCalls()
@@ -28,36 +28,39 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
 }";
 
         [TestMethod]
-        public void EnvironmentVariables_NonIssueCalls()
+        public void Environment_NoDiagnosticTestCases()
         {
             var test = @"
     using System;
+    using System.Threading.Tasks;
+    using Microsoft.Azure.WebJobs;
+    using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
     namespace VSSample
     {
-        public static class EnvironmentExample
+        public static class HelloSequence
         {
-            [FunctionName(""E1_HelloSequence"")]
+            [FunctionName(""EnvironmentVariableAnalyzerTestCases"")]
             " + allTests;
 
             VerifyCSharpDiagnostic(test);
         }
 
         [TestMethod]
-        public void GetEnvironmentVariable_InOrchestrator()
+        public void Environment_GetEnvironmentVariable()
         {
             var test = @"
     using System;
-    using System.Collections.Generic;
     using System.Threading.Tasks;
     using Microsoft.Azure.WebJobs;
+    using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
     namespace VSSample
     {
         public static class HelloSequence
         {
-            [FunctionName(""E1_HelloSequence"")]
-            public static async Task<List<string>> Run(
+            [FunctionName(""EnvironmentVariableAnalyzerTestCases"")]
+            public static async Task Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
                 Environment.GetEnvironmentVariable(""test"");
@@ -79,20 +82,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
         }
 
         [TestMethod]
-        public void GetEnvironmentVariable_InOrchestrator_Namespace()
+        public void Environment_GetEnvironmentVariable_WithNamespace()
         {
             var test = @"
     using System;
-    using System.Collections.Generic;
     using System.Threading.Tasks;
     using Microsoft.Azure.WebJobs;
+    using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
     namespace VSSample
     {
         public static class HelloSequence
         {
-            [FunctionName(""E1_HelloSequence"")]
-            public static async Task<List<string>> Run(
+            [FunctionName(""EnvironmentVariableAnalyzerTestCases"")]
+            public static async Task Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
                 System.Environment.GetEnvironmentVariable(""test"");
@@ -114,20 +117,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
         }
 
         [TestMethod]
-        public void GetEnvironmentVariables_InOrchestrator()
+        public void Environment_GetEnvironmentVariables()
         {
             var test = @"
     using System;
-    using System.Collections.Generic;
     using System.Threading.Tasks;
     using Microsoft.Azure.WebJobs;
+    using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
     namespace VSSample
     {
         public static class HelloSequence
         {
-            [FunctionName(""E1_HelloSequence"")]
-            public static async Task<List<string>> Run(
+            [FunctionName(""EnvironmentVariableAnalyzerTestCases"")]
+            public static async Task Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
                 Environment.GetEnvironmentVariables();
@@ -149,20 +152,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
         }
 
         [TestMethod]
-        public void GetEnvironmentVariables_InOrchestrator_Namespace()
+        public void Environment_GetEnvironmentVariables_WithNamespace()
         {
             var test = @"
     using System;
-    using System.Collections.Generic;
     using System.Threading.Tasks;
     using Microsoft.Azure.WebJobs;
+    using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
     namespace VSSample
     {
         public static class HelloSequence
         {
-            [FunctionName(""E1_HelloSequence"")]
-            public static async Task<List<string>> Run(
+            [FunctionName(""EnvironmentVariableAnalyzerTestCases"")]
+            public static async Task Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
                 System.Environment.GetEnvironmentVariables();
@@ -184,20 +187,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
         }
 
         [TestMethod]
-        public void ExpandEnvironmentVariables_InOrchestrator()
+        public void Enviornment_ExpandEnvironmentVariables()
         {
             var test = @"
     using System;
-    using System.Collections.Generic;
     using System.Threading.Tasks;
     using Microsoft.Azure.WebJobs;
+    using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
     namespace VSSample
     {
         public static class HelloSequence
         {
-            [FunctionName(""E1_HelloSequence"")]
-            public static async Task<List<string>> Run(
+            [FunctionName(""EnvironmentVariableAnalyzerTestCases"")]
+            public static async Task Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
                 Environment.ExpandEnvironmentVariables(""test"");
@@ -219,20 +222,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
         }
 
         [TestMethod]
-        public void ExpandEnvironmentVariables_InOrchestrator_Namespace()
+        public void Environment_ExpandEnvironmentVariables_WithNamespace()
         {
             var test = @"
     using System;
-    using System.Collections.Generic;
     using System.Threading.Tasks;
     using Microsoft.Azure.WebJobs;
+    using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
     namespace VSSample
     {
         public static class HelloSequence
         {
-            [FunctionName(""E1_HelloSequence"")]
-            public static async Task<List<string>> Run(
+            [FunctionName(""EnvironmentVariableAnalyzerTestCases"")]
+            public static async Task Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
                 System.Environment.ExpandEnvironmentVariables(""test"");
@@ -254,27 +257,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
         }
 
         [TestMethod]
-        public void GetEnvironmentVariables_InMethod_OrchestratorCall_All()
+        public void Enviornment_NonDeterministicMethod_AllEnvironmentCases()
         {
             var test = @"
-using System;
-using System.Collections.Generic;
-using System.Net;
-using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask;
+    using System;
+    using System.Threading.Tasks;
+    using Microsoft.Azure.WebJobs;
+    using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
-namespace VSSample
-{
-    public static class HelloSequence
+    namespace VSSample
     {
-        [FunctionName(""E1_HelloSequence"")]
-        public static async Task<List<string>> Run(
+        public static class HelloSequence
+        {
+            [FunctionName(""EnvironmentVariableAnalyzerTestCases"")]
+            public static async Task Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
                 DirectCall();
-            
-                return ""Hello"";
             }
 
         public static string DirectCall()
@@ -290,7 +289,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 17, 17)
+                            new DiagnosticResultLocation("Test0.cs", 15, 17)
                         }
             };
 
@@ -301,7 +300,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 27, 13)
+                            new DiagnosticResultLocation("Test0.cs", 23, 13)
                         }
             };
 
@@ -312,7 +311,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 28, 13)
+                            new DiagnosticResultLocation("Test0.cs", 24, 13)
                         }
             };
 
@@ -323,7 +322,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 29, 13)
+                            new DiagnosticResultLocation("Test0.cs", 25, 13)
                         }
             };
 
@@ -334,7 +333,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 30, 13)
+                            new DiagnosticResultLocation("Test0.cs", 26, 13)
                         }
             };
 
@@ -345,7 +344,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 31, 13)
+                            new DiagnosticResultLocation("Test0.cs", 27, 13)
                         }
             };
 
@@ -356,7 +355,7 @@ namespace VSSample
                 Severity = Severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 32, 13)
+                            new DiagnosticResultLocation("Test0.cs", 28, 13)
                         }
             };
 

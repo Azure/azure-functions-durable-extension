@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using Newtonsoft.Json;
@@ -20,23 +21,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     {
         private readonly DurableEntityContext context;
 
-        private readonly MessagePayloadDataConverter dataConverter;
+        private readonly MessagePayloadDataConverter messageDataConverter;
+
+        private readonly MessagePayloadDataConverter errorDataConverter;
 
         private readonly TaskCompletionSource<object> doneProcessingMessages
             = new TaskCompletionSource<object>();
 
         // a batch always consists of a (possibly empty) sequence of operations
-        // followed by zero or one lock request
+        // followed by zero or one lock request, and possibly some operations to reschedule
         private readonly List<RequestMessage> operationBatch = new List<RequestMessage>();
         private RequestMessage lockRequest = null;
+        private List<RequestMessage> toBeRescheduled;
 
-        public TaskEntityShim(DurableTaskExtension config, string schedulerId)
+        public TaskEntityShim(DurableTaskExtension config, DurabilityProvider durabilityProvider, string schedulerId)
             : base(config)
         {
-            this.dataConverter = config.DataConverter;
+            this.messageDataConverter = config.MessageDataConverter;
+            this.errorDataConverter = config.ErrorDataConverter;
             this.SchedulerId = schedulerId;
             this.EntityId = EntityId.GetEntityIdFromSchedulerId(schedulerId);
-            this.context = new DurableEntityContext(config, this.EntityId, this);
+            this.context = new DurableEntityContext(config, durabilityProvider, this.EntityId, this);
         }
 
         public override DurableCommonContext Context => this.context;
@@ -49,6 +54,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal List<RequestMessage> OperationBatch => this.operationBatch;
 
+        public bool RollbackFailedOperations => this.context.Config.Options.RollbackEntityOperationsOnExceptions;
+
         public void AddOperationToBatch(RequestMessage operationMessage)
         {
             this.operationBatch.Add(operationMessage);
@@ -57,6 +64,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public void AddLockRequestToBatch(RequestMessage lockRequest)
         {
             this.lockRequest = lockRequest;
+        }
+
+        public void AddMessageToBeRescheduled(RequestMessage requestMessage)
+        {
+            if (this.toBeRescheduled == null)
+            {
+                this.toBeRescheduled = new List<RequestMessage>();
+            }
+
+            this.toBeRescheduled.Add(requestMessage);
         }
 
         public override RegisteredFunctionInfo GetFunctionInfo()
@@ -90,7 +107,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             else
             {
-                return this.dataConverter.MessageConverter.Serialize(new EntityStatus()
+                return this.messageDataConverter.Serialize(new EntityStatus()
                 {
                     EntityExists = this.context.State.EntityExists,
                     QueueSize = this.context.State.Queue?.Count ?? 0,
@@ -122,7 +139,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 try
                 {
                     // a previous incarnation of this instance called continueAsNew
-                    this.context.State = this.dataConverter.Deserialize<SchedulerState>(serializedInput);
+                    this.context.State = this.messageDataConverter.Deserialize<SchedulerState>(serializedInput);
                 }
                 catch (Exception e)
                 {
@@ -142,11 +159,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public override async Task<string> Execute(OrchestrationContext innerContext, string serializedInput)
         {
-            if (this.operationBatch.Count == 0 && this.lockRequest == null)
+#if !FUNCTIONS_V1
+            // Adding "Tags" to activity allows using App Insights to query current state of entities
+            var activity = Activity.Current;
+            OrchestrationRuntimeStatus status = OrchestrationRuntimeStatus.Running;
+
+            DurableTaskExtension.TagActivityWithOrchestrationStatus(status, this.context.InstanceId, true);
+#endif
+
+            if (this.operationBatch.Count == 0
+                && this.lockRequest == null
+                && (this.toBeRescheduled == null || this.toBeRescheduled.Count == 0))
             {
                 // we are idle after a ContinueAsNew - the batch is empty.
                 // Wait for more messages to get here (via extended sessions)
                 await this.doneProcessingMessages.Task;
+            }
+
+            if (!this.messageDataConverter.IsDefault)
+            {
+                innerContext.MessageDataConverter = this.messageDataConverter;
+            }
+
+            if (!this.errorDataConverter.IsDefault)
+            {
+                innerContext.ErrorDataConverter = this.errorDataConverter;
             }
 
             this.Config.TraceHelper.FunctionStarting(
@@ -167,8 +204,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // (in which case we will abort the batch instead of committing it)
             if (this.context.InternalError == null)
             {
-                // try to serialize the updated entity state
-                bool writeBackSuccessful = this.context.TryWriteback(out var serializationErrorMessage);
+                bool writeBackSuccessful = true;
+                ResponseMessage serializationErrorMessage = null;
+
+                if (this.RollbackFailedOperations)
+                {
+                    // the state has already been written back, since it is
+                    // done right after each operation.
+                }
+                else
+                {
+                    // we are writing back the state here, after executing
+                    // the entire batch of operations.
+                    writeBackSuccessful = this.context.TryWriteback(out serializationErrorMessage);
+                }
+
+                // Reschedule all signals that were received before their time
+                this.context.RescheduleMessages(innerContext, this.toBeRescheduled);
 
                 // Send all buffered outgoing messages
                 this.context.SendOutbox(innerContext, writeBackSuccessful, serializationErrorMessage);
@@ -209,8 +261,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             if (this.GetFunctionInfo().IsOutOfProc)
             {
-                // process all operations in the batch using a single function call
-                await this.ExecuteOutOfProcBatch();
+                if (this.operationBatch.Count > 0)
+                {
+                    // process all operations in the batch using a single function call
+                    await this.ExecuteOutOfProcBatch();
+                }
             }
             else
             {
@@ -267,6 +322,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // set the async-local static context that is visible to the application code
             Entity.SetContext(this.context);
 
+            bool operationFailed = false;
+            var initialOutboxPosition = this.context.OutboxPosition;
+
             var stopwatch = new System.Diagnostics.Stopwatch();
             stopwatch.Start();
 
@@ -298,8 +356,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.context.CurrentOperationResponse.SetExceptionResult(
                     e,
                     this.context.CurrentOperation.Operation,
-                    this.EntityId,
-                    this.dataConverter);
+                    this.errorDataConverter);
+
+                operationFailed = true;
+            }
+
+            if (this.RollbackFailedOperations)
+            {
+                // we write back the entity state after each successful operation
+                if (!operationFailed)
+                {
+                    if (!this.context.TryWriteback(out var errorResponseMessage))
+                    {
+                        // state serialization failed; create error response and roll back.
+                        this.context.CurrentOperationResponse = errorResponseMessage;
+                        operationFailed = true;
+                    }
+                }
+
+                if (operationFailed)
+                {
+                    // discard changes and don't send any signals
+                    this.context.Rollback(initialOutboxPosition);
+                }
             }
 
             // clear the async-local static context that is visible to the application code
@@ -310,7 +389,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.context.CurrentOperation = null;
             this.context.CurrentOperationResponse = null;
 
-            if (!response.IsException)
+            if (!operationFailed)
             {
                 this.Config.TraceHelper.OperationCompleted(
                         this.context.HubName,
@@ -341,8 +420,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (!request.IsSignal)
             {
                 var target = new OrchestrationInstance() { InstanceId = request.ParentInstanceId, ExecutionId = request.ParentExecutionId };
-                var jresponse = JToken.FromObject(response, this.dataConverter.MessageSerializer);
-                this.context.SendResponseMessage(target, request.Id, jresponse, !response.IsException);
+                var jresponse = JToken.FromObject(response, this.messageDataConverter.JsonSerializer);
+                this.context.SendResponseMessage(target, request.Id, jresponse, response.IsException);
             }
         }
 

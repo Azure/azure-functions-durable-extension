@@ -12,10 +12,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Activity
     public class ArgumentAnalyzerTests : CodeFixVerifier
     {
         private static readonly string DiagnosticId = ArgumentAnalyzer.DiagnosticId;
-        private static readonly DiagnosticSeverity Severity = ArgumentAnalyzer.Severity;
+        private static readonly DiagnosticSeverity Severity = DiagnosticSeverity.Warning;
 
         [TestMethod]
-        public void Argument_NonIssueCalls()
+        public void Argument_NoDiagnosticTestCases()
         {
             var test = @"
 using System;
@@ -33,115 +33,201 @@ namespace VSSample
 {
     public static class HelloSequence
     {
-        // Should not flag code on non function
-        public static async Task<List<string>> NotInsideFunctionWrongInput(
+        // Testing that no diagnostics are produced when method does not have the FunctionName attribute present
+        public static async Task<string> NotInsideFunctionWrongInput(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
-                var outputs = new List<string>();
-
-                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello"", 100));
-                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_DirectInput"", 100));
-                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_Object"", 100));
-                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_Object_DirectInput"", 100));
-                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_Tuple"", 100));
-                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_Tuple_OnContext"", 100));
+                // Incorrect inputs on some test functions used below
+                await context.CallActivityAsync<string>(""Test_String_DirectInput"", 100);
+                await context.CallActivityAsync<string>(""Test_String_OnContext"", 100);
+                await context.CallActivityAsync<string>(""Test_Object_DirectInput"", 100);
+                await context.CallActivityAsync<string>(""Test_Object_OnContext"", 100);
             
-                return outputs;
+                return ""Hello World!"";
             }
 
-        [FunctionName(""E1_HelloSequence"")]
-        public static async Task<List<string>> CorrectInput(
+        [FunctionName(""ArgumentAnalyzerTestCases"")]
+        public static async Task<string> Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
-                var outputs = new List<string>();
+                // For a test case below
+                var (jobId, batchNumber) = context.GetInput<(string, int)>();
 
                 // Testing different matching input types
-                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello"", ""Tokyo""));
-                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_DirectInput"", ""London""));
-                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_Object"", new Object()));
-                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_Object_DirectInput"", new Object()));
-                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_Tuple"", (""Seattle"", 4)));
-                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_Tuple_OnContext"", (""Seattle"", 4)));
+                // SyntaxKind.PredefinedType (string), SyntaxKind.IdentifierName (Object), and SyntaxKind.ArrayType (string[])
 
-                // ArrayType and NamedType (IEnumerable types) match
-                string[] arrayType = new string[] { ""Seattle"", ""Tokyo"" };
-                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_ArrayToNamed"", arrayType));
+                await context.CallActivityAsync<string>(""Test_String_DirectInput"", ""London"");
+                await context.CallActivityAsync<string>(""Test_String_OnContext"", ""Tokyo"");
+                await context.CallActivityAsync<string>(""Test_Object_DirectInput"", new Object());
+                await context.CallActivityAsync<string>(""Test_Object_OnContext"", new Object());
+                await context.CallActivityAsync<string>(""Test_StringArray_DirectInput"", new string[] { ""Minneapolis"" });
+                await context.CallActivityAsync<string>(""Test_StringArray_OnContext"", new string[] { ""Minneapolis"" });
+
+                // SyntaxKind.GenericType (Tuple and ValueTuple) and SyntaxKind.TupleType (ValueTuple alt format ex (string, int))
+
+                Tuple<string, int> tuple = new Tuple<string, int>(""Seattle"", 4);
+                await context.CallActivityAsync<string>(""Test_Tuple_DirectInput"", tuple);
+                await context.CallActivityAsync<string>(""Test_Tuple_OnContext"", tuple);
+                await context.CallActivityAsync<string>(""Test_ValueTuple_DirectInput"", (""Seattle"", 4));
+                await context.CallActivityAsync<string>(""Test_ValueTuple_OnContext"", (""Seattle"", 4));
+                await context.CallActivityAsync<string>(""Test_ValueTuple_VariableNames"", (jobId, batchNumber));
+
+                // Testing JsonArray compatible types (IEnumerable Typles)
+                // IArrayTypeSymbol (array) to INamedTypeSymbol (IList)
+
+                await context.CallActivityAsync<string>(""Test_IListInput_DirectInput"", new string[] { ""Seattle"" });
+                await context.CallActivityAsync<string>(""Test_IListInput_OnContext"", new string[] { ""Seattle"" });
                 
-                // NamedType and NamedType (IEnumerable types) match
-                List<string> namedType = new List<string>();
-                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_NamedToNamed"", namedType));
-                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_NamedToNamed_Direct"", namedType));
+                // INamedTypeSymbol (List) and INamedTypeSymbol (Ilist)
 
-                // null input when function input not used
-                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello_NotUsed"", null));
+                List<string> namedType = new List<string>();
+                await context.CallActivityAsync<string>(""Test_IListInput_DirectInput"", namedType);
+                await context.CallActivityAsync<string>(""Test_IListInput_OnContext"", namedType);
+
+                // Testing argument is valid when input is subclass (Object -> ValueType -> Char)
+
+                await context.CallActivityAsync<string>(""Test_ValueType_DirectInput"", new Char());
+                await context.CallActivityAsync<string>(""Test_Object_DirectInput"", new Char());
+
+                // Testing null input when function input not used
+
+                await context.CallActivityAsync<string>(""Test_UnusedInputFromContext"", null);
+
+                // Testing null input used with non value type
+
+                await context.CallActivityAsync(""Test_ValidNull"", null);
             
-                return outputs;
+                return ""Hello World!"";
+
+                // Nightmare Test; testing nested Tuples, JSON compatible types, indirect subclass, getting input on a context
+
+                await context.CallActivityAsync<string>(""Test_NightmareTest"", new List<Tuple<(int, IEnumerable<string>), Decimal>>());
             }
 
-        [FunctionName(""E1_SayHello"")]
-        public static string SayHello([ActivityTrigger] IDurableActivityContext context)
+        // Functions Testing different matching input types
+        // SyntaxKind.PredefinedType (string), SyntaxKind.IdentifierName (Object), and SyntaxKind.ArrayType (string[])
+
+        [FunctionName(""Test_String_DirectInput"")]
+        public static string TestStringDirectInput([ActivityTrigger] string name)
+        {
+            return $""Hello {name}!"";
+        }
+
+        [FunctionName(""Test_String_OnContext"")]
+        public static string TestStringOnContext([ActivityTrigger] IDurableActivityContext context)
         {
             string name = context.GetInput<string>();
             return $""Hello {name}!"";
         }
 
-        [FunctionName(""E1_SayHello_DirectInput"")]
-        public static string SayHelloDirectInput([ActivityTrigger] string name)
+        [FunctionName(""Test_Object_DirectInput"")]
+        public static string TestObjectDirectInput([ActivityTrigger] Object name)
         {
-            return $""Hello {name}!"";
+            return $""Hello World!"";
         }
 
-        [FunctionName(""E1_SayHello_Object"")]
-        public static string SayHello([ActivityTrigger] IDurableActivityContext context)
+        [FunctionName(""Test_Object_OnContext"")]
+        public static string TestObjectOnContext([ActivityTrigger] IDurableActivityContext context)
         {
             string name = context.GetInput<Object>();
             return $""Hello World!"";
         }
 
-        [FunctionName(""E1_SayHello_Object_DirectInput"")]
-        public static string SayHelloDirectInput([ActivityTrigger] Object name)
+        [FunctionName(""Test_StringArray_DirectInput"")]
+        public static string TestStringArrayDirectInput([ActivityTrigger] string[] names)
         {
             return $""Hello World!"";
         }
 
-        [FunctionName(""E1_SayHello_Tuple"")]
-        public static string SayHelloTuple([ActivityTrigger] Tuple<string, int> tupleTest)
+        [FunctionName(""Test_StringArray_OnContext"")]
+        public static string TestStringArrayOnContext([ActivityTrigger] IDurableActivityContext context)
+        {
+            string name = context.GetInput<string[]>();
+            return $""Hello World!"";
+        }
+
+        // SyntaxKind.GenericType (Tuple and ValueTuple) and SyntaxKind.TupleType (ValueTuple alt format ex (string, int))
+
+        [FunctionName(""Test_Tuple_DirectInput"")]
+        public static string TestTupleDirectInput([ActivityTrigger] Tuple<string, int> tupleTest)
         {
             string name = tupleTest;
             return $""Hello {name}!"";
         }
 
-        [FunctionName(""E1_SayHello_Tuple_OnContext"")]
-        public static string SayHelloTupleOnContext([ActivityTrigger] IDurableActivityContext context)
+        [FunctionName(""Test_Tuple_OnContext"")]
+        public static string TestTupleOnContext([ActivityTrigger] IDurableActivityContext context)
+        {
+            string name = context.GetInput<Tuple<string, int>>();
+            return $""Hello {name}!"";
+        }
+
+        [FunctionName(""Test_ValueTuple_DirectInput"")]
+        public static string TestValueTupleDirectInput([ActivityTrigger] ValueTuple<string, int> tupleTest)
+        {
+            string name = tupleTest;
+            return $""Hello {name}!"";
+        }
+
+        [FunctionName(""Test_ValueTuple_OnContext"")]
+        public static string TestValueTupleOnContext([ActivityTrigger] IDurableActivityContext context)
         {
             string name = context.GetInput<(string, int)>();
             return $""Hello {name}!"";
         }
 
-        [FunctionName(""E1_SayHello_ArrayToNamed"")]
-        public static string SayHelloTuple([ActivityTrigger] IDurableActivityContext context)
+        [FunctionName(""Test_ValueTuple_VariableNames"")]
+        public static string TestValueTupleVariableNames([ActivityTrigger] IDurableActivityContext context)
+        {
+            string name = context.GetInput<(string, int)>();
+            return $""Hello {name}!"";
+        }
+
+        // Testing JsonArray compatible types (IEnumerable Typles)
+
+        [FunctionName(""Test_IListInput_DirectInput"")]
+        public static string TestIListInputDirectInput([ActivityTrigger] IList<string> namedType)
+        {
+            return $""Hello {name}!"";
+        
+
+        [FunctionName(""Test_IListInput_OnContext"")]
+        public static string TestIListInputContext([ActivityTrigger] IDurableActivityContext context)
         {
             string name = context.GetInput<IList<string>>();
             return $""Hello {name}!"";
         }
 
-        [FunctionName(""E1_SayHello_NamedToNamed"")]
-        public static string SayHelloTupleOnContext([ActivityTrigger] IDurableActivityContext context)
+        // Testing argument is valid when input is subclass (Object -> ValueType -> Char)
+         [FunctionName(""Test_ValueType_DirectInput"")]
+        public static string TestValueTypeDirectInput([ActivityTrigger] ValueType input)
         {
-            string name = context.GetInput<IList<string>>();
+            return $""Hello World!"";
+        }
+
+        // Testing null input when function input not used
+
+        [FunctionName(""Test_UnusedInputFromContext"")]
+        public static string TestUnusedInputFromContext([ActivityTrigger] IDurableActivityContext context)
+        {
             return $""Hello {name}!"";
         }
 
-        [FunctionName(""E1_SayHello_NamedToNamed_Direct"")]
-        public static string SayHelloTupleOnContext([ActivityTrigger] IList<string> namedType)
+        // Testing null input used with non value type
+
+        [FunctionName(""Test_ValidNull"")]
+        public static string TestUnusedInputFromContext([ActivityTrigger] int? name)
         {
             return $""Hello {name}!"";
         }
 
-        [FunctionName(""E1_SayHello_NotUsed"")]
-        public static string SayHelloTupleOnContext([ActivityTrigger] IDurableActivityContext context)
+        // Nightmare Test; testing nested Tuples, JSON compatible types, indirect subclass, getting input on a context
+
+        [FunctionName(""Test_NightmareTest"")]
+        public static string TestNightmareTest([ActivityTrigger] IDurableActivityContext context)
         {
-            return $""Hello {name}!"";
+            string name = context.GetInput<Tuple<(int, List<string>), Object>[]>();
+            return $""Hello World!"";
         }
     }
 }";
@@ -149,7 +235,7 @@ namespace VSSample
         }
 
         [TestMethod]
-        public void Argument_Mismatch_IntAndString_OffContext()
+        public void Argument_GivenInt_TakesString_OffContext()
         {
             var test = @"
 using System;
@@ -167,19 +253,17 @@ namespace VSSample
 {
     public static class HelloSequence
     {
-        [FunctionName(""E1_HelloSequence"")]
-        public static async Task<List<string>> Run(
+        [FunctionName(""ArgumentAnalyzerTestCases"")]
+        public static async Task<string> Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
-                var outputs = new List<string>();
-
-                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello"", 4));
+                await context.CallActivityAsync<string>(""Function_Takes_String"", 4);
             
-                return outputs;
+                return ""Hello World!"";
             }
 
-        [FunctionName(""E1_SayHello"")]
-        public static string SayHello([ActivityTrigger] IDurableActivityContext context)
+        [FunctionName(""Function_Takes_String"")]
+        public static string FunctionTakesString([ActivityTrigger] IDurableActivityContext context)
         {
             string name = context.GetInput<string>();
             return $""Hello {name}!"";
@@ -189,18 +273,18 @@ namespace VSSample
             var expectedDiagnostics = new DiagnosticResult
             {
                 Id = DiagnosticId,
-                Message = string.Format(Resources.ActivityArgumentAnalyzerMessageFormat, "E1_SayHello", "string", "int"),
+                Message = string.Format(Resources.ActivityArgumentAnalyzerMessageFormat, "Function_Takes_String", "string", "int"),
                 Severity = Severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 23, 84)
+                            new DiagnosticResultLocation("Test0.cs", 21, 82)
                      }
             };
             VerifyCSharpDiagnostic(test, expectedDiagnostics);
         }
 
         [TestMethod]
-        public void Argument_Mismatch_IntAndString()
+        public void Argument_GivenInt_TakesString_DirectInput()
         {
             var test = @"
 using System;
@@ -218,19 +302,17 @@ namespace VSSample
 {
     public static class HelloSequence
     {
-        [FunctionName(""E1_HelloSequence"")]
-        public static async Task<List<string>> Run(
+        [FunctionName(""ArgumentAnalyzerTestCases"")]
+        public static async Task<string> Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
-                var outputs = new List<string>();
-
-                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello"", 4));
+                await context.CallActivityAsync<string>(""Function_Takes_String"", 4);
             
-                return outputs;
+                return ""Hello World!"";
             }
 
-        [FunctionName(""E1_SayHello"")]
-        public static string SayHello([ActivityTrigger] string name)
+        [FunctionName(""Function_Takes_String"")]
+        public static string FunctionTakesString([ActivityTrigger] string name)
         {
             return $""Hello {name}!"";
         }
@@ -239,18 +321,18 @@ namespace VSSample
             var expectedDiagnostics = new DiagnosticResult
             {
                 Id = DiagnosticId,
-                Message = string.Format(Resources.ActivityArgumentAnalyzerMessageFormat, "E1_SayHello", "string", "int"),
+                Message = string.Format(Resources.ActivityArgumentAnalyzerMessageFormat, "Function_Takes_String", "string", "int"),
                 Severity = Severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 23, 84)
+                            new DiagnosticResultLocation("Test0.cs", 21, 82)
                      }
             };
             VerifyCSharpDiagnostic(test, expectedDiagnostics);
         }
 
         [TestMethod]
-        public void Argument_Mismatch_StringArrayAndString_IEnumerableTypes()
+        public void Argument_GivenArray_TakesString_DirectInput()
         {
             var test = @"
 using System;
@@ -268,20 +350,18 @@ namespace VSSample
 {
     public static class HelloSequence
     {
-        [FunctionName(""E1_HelloSequence"")]
-        public static async Task<List<string>> Run(
+        [FunctionName(""ArgumentAnalyzerTestCases"")]
+        public static async Task<string> Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
-                var outputs = new List<string>();
-
                 string[] arrayType = new string[] { ""Seattle"", ""Tokyo"" };
-                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello"", arrayType));
+                await context.CallActivityAsync<string>(""Function_Takes_String"", arrayType);
             
-                return outputs;
+                return ""Hello World!"";
             }
 
-        [FunctionName(""E1_SayHello"")]
-        public static string SayHello([ActivityTrigger] string name)
+        [FunctionName(""Function_Takes_String"")]
+        public static string FunctionTakesString([ActivityTrigger] string name)
         {
             return $""Hello {name}!"";
         }
@@ -290,18 +370,18 @@ namespace VSSample
             var expectedDiagnostics = new DiagnosticResult
             {
                 Id = DiagnosticId,
-                Message = string.Format(Resources.ActivityArgumentAnalyzerMessageFormat, "E1_SayHello", "string", "System.String[]"),
+                Message = string.Format(Resources.ActivityArgumentAnalyzerMessageFormat, "Function_Takes_String", "string", "string[]"),
                 Severity = Severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 24, 84)
+                            new DiagnosticResultLocation("Test0.cs", 22, 82)
                      }
             };
             VerifyCSharpDiagnostic(test, expectedDiagnostics);
         }
 
         [TestMethod]
-        public void Argument_InputNotUsed_NonNullInput()
+        public void Argument_InputNotUsedOnContext_NonNullInput()
         {
             var test = @"
 using System;
@@ -319,19 +399,17 @@ namespace VSSample
 {
     public static class HelloSequence
     {
-        [FunctionName(""E1_HelloSequence"")]
-        public static async Task<List<string>> Run(
+        [FunctionName(""ArgumentAnalyzerTestCases"")]
+        public static async Task<string> Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
-                var outputs = new List<string>();
-
-                outputs.Add(await context.CallActivityAsync<string>(""E1_SayHello"", ""World""));
+                await context.CallActivityAsync<string>(""Unused_Input"", ""World""));
             
-                return outputs;
+                return ""Hello World!"";
             }
 
-        [FunctionName(""E1_SayHello"")]
-        public static string SayHello([ActivityTrigger] IDurableActivityContext context)
+        [FunctionName(""Unused_Input"")]
+        public static string UnusedInput([ActivityTrigger] IDurableActivityContext context)
         {
             return $""Hello {name}!"";
         }
@@ -340,11 +418,59 @@ namespace VSSample
             var expectedDiagnostics = new DiagnosticResult
             {
                 Id = DiagnosticId,
-                Message = string.Format(Resources.ActivityArgumentAnalyzerMessageFormatNotUsed, "E1_SayHello"),
+                Message = string.Format(Resources.ActivityArgumentAnalyzerMessageFormatNotUsed, "Unused_Input"),
                 Severity = Severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 23, 84)
+                            new DiagnosticResultLocation("Test0.cs", 21, 73)
+                     }
+            };
+            VerifyCSharpDiagnostic(test, expectedDiagnostics);
+        }
+
+        [TestMethod]
+        public void Argument_InputNullWithValueType()
+        {
+            var test = @"
+using System;
+using System.Collections.Generic;
+using System.Net;
+using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
+using Microsoft.WindowsAzure.Storage.Blob;
+using Microsoft.WindowsAzure.Storage.Queue;
+using Microsoft.WindowsAzure.Storage.Table;
+
+namespace VSSample
+{
+    public static class HelloSequence
+    {
+        [FunctionName(""ArgumentAnalyzerTestCases"")]
+        public static async Task<string> Run(
+            [OrchestrationTrigger] IDurableOrchestrationContext context)
+            {
+                await context.CallActivityAsync<string>(""InvalidNullInput"", null));
+            
+                return ""Hello World!"";
+            }
+
+        [FunctionName(""InvalidNullInput"")]
+        public static string InvalidNullInput([ActivityTrigger] int input)
+        {
+            return $""Hello World!"";
+        }
+    }
+}";
+            var expectedDiagnostics = new DiagnosticResult
+            {
+                Id = DiagnosticId,
+                Message = string.Format(Resources.ActivityArgumentAnalyzerMessageFormatInvalidNull, "InvalidNullInput", "int"),
+                Severity = Severity,
+                Locations =
+                 new[] {
+                            new DiagnosticResultLocation("Test0.cs", 21, 77)
                      }
             };
             VerifyCSharpDiagnostic(test, expectedDiagnostics);

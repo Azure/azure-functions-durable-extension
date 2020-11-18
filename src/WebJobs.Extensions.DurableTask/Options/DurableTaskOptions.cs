@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
+using DurableTask.AzureStorage.Partitioning;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
@@ -16,6 +17,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// </summary>
     public class DurableTaskOptions
     {
+        internal const string DefaultHubName = "TestHubName";
         private string originalHubName;
         private string resolvedHubName;
         private string defaultHubName;
@@ -23,7 +25,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <summary>
         /// Settings used for Durable HTTP functionality.
         /// </summary>
-        public HttpOptions HttpSettings { get; set; }
+        public HttpOptions HttpSettings { get; set; } = new HttpOptions();
 
         /// <summary>
         /// Gets or sets default task hub name to be used by all <see cref="IDurableClient"/>, <see cref="IDurableEntityClient"/>, <see cref="IDurableOrchestrationClient"/>,
@@ -42,7 +44,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     // "WEBSITE_SITE_NAME" is an environment variable used in Azure functions infrastructure. When running locally, this can be
                     // specified in local.settings.json file to avoid being defaulted to "TestHubName"
-                    this.resolvedHubName = Environment.GetEnvironmentVariable("WEBSITE_SITE_NAME") ?? "TestHubName";
+                    this.resolvedHubName = Environment.GetEnvironmentVariable("WEBSITE_SITE_NAME") ?? DefaultHubName;
                     this.defaultHubName = this.resolvedHubName;
                 }
 
@@ -182,6 +184,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </summary>
         public bool UseGracefulShutdown { get; set; } = false;
 
+        /// <summary>
+        /// Controls whether an uncaught exception inside an entity operation should roll back the effects of the operation.
+        /// </summary>
+        /// <remarks>
+        /// The rollback undoes all internal effects of an operation
+        /// (sent signals, and state creation, deletion, or modification).
+        /// However, it does not roll back external effects (such as I/O that was performed).
+        /// This setting can affect serialization overhead: if true, the entity state is serialized
+        /// after each individual operation. If false, the entity state is serialized
+        /// only after an entire batch of operations completes.
+        /// </remarks>
+        public bool RollbackEntityOperationsOnExceptions { get; set; } = true;
+
+        /// <summary>
+        /// If true, takes a lease on the task hub container, allowing for only one app to process messages in a task hub at a time.
+        /// </summary>
+        public bool UseAppLease { get; set; } = true;
+
+        /// <summary>
+        /// If UseAppLease is true, gets or sets the AppLeaaseOptions used for acquiring the lease to start the application.
+        /// </summary>
+        public AppLeaseOptions AppLeaseOptions { get; set; } = AppLeaseOptions.DefaultOptions;
+
         // Used for mocking the lifecycle notification helper.
         internal HttpMessageHandler NotificationHandler { get; set; }
 
@@ -234,7 +259,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             traceHelper.TraceConfiguration(this.HubName, configurationJson.ToString(Formatting.None));
         }
 
-        internal void Validate()
+        internal void Validate(INameResolver environmentVariableResolver, EndToEndTraceHelper traceHelper)
         {
             if (string.IsNullOrEmpty(this.HubName))
             {
@@ -245,6 +270,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 throw new InvalidOperationException($"Task Hub name must be specified in host.json when using slots. Specified name must not equal the default HubName ({this.defaultHubName})." +
                     "See documentation on Task Hubs for information on how to set this: https://docs.microsoft.com/azure/azure-functions/durable/durable-functions-task-hubs");
+            }
+
+            string runtimeLanguage = environmentVariableResolver.Resolve("FUNCTIONS_WORKER_RUNTIME");
+            if (this.ExtendedSessionsEnabled &&
+                runtimeLanguage != null && // If we don't know from the environment variable, don't assume customer isn't .NET
+                !string.Equals(runtimeLanguage, "dotnet", StringComparison.OrdinalIgnoreCase))
+            {
+                traceHelper.ExtensionWarningEvent(
+                    hubName: this.HubName,
+                    functionName: string.Empty,
+                    instanceId: string.Empty,
+                    message: "Durable Functions does not work with extendedSessions = true for non-.NET languages. This value is being set to false instead. See https://docs.microsoft.com/en-us/azure/azure-functions/durable/durable-functions-perf-and-scale#extended-sessions for more details.");
+                this.ExtendedSessionsEnabled = false;
             }
 
             this.Notifications.Validate();

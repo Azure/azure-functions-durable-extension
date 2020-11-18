@@ -12,23 +12,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.EntityIn
     public class ParameterAnalyzerTests : CodeFixVerifier
     {
         private static readonly string DiagnosticId = ParameterAnalyzer.DiagnosticId;
-        private static readonly DiagnosticSeverity Severity = ParameterAnalyzer.Severity;
+        private static readonly DiagnosticSeverity Severity = DiagnosticSeverity.Warning;
 
         [TestMethod]
-        public void ParameterAnalyzer_NonIssue()
+        public void ParameterAnalyzer_NoDiagnosticTestCases()
         {
             var test = @"
-    using System;
-    using System.Collections.Generic;
     using System.Threading.Tasks;
+    using System.Collections.Generic;
     using Microsoft.Azure.WebJobs;
+    using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
     namespace VSSample
     {
         public static class HelloSequence
         {
-            [FunctionName(""E1_HelloSequence"")]
-            public static async Task<List<string>> Run(
+            [FunctionName(""ParameterAnalyzerTestCases"")]
+            public static async Task Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
                 context.SignalEntityAsync<IEntityExample>();
@@ -46,21 +46,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.EntityIn
             VerifyCSharpDiagnostic(test);
         }
 
+        // Entity interface must have no more than 1 parameter.
         [TestMethod]
         public void ParameterAnalyzer_MoreThanOne()
         {
             var test = @"
-    using System;
-    using System.Collections.Generic;
     using System.Threading.Tasks;
+    using System.Collections.Generic;
     using Microsoft.Azure.WebJobs;
+    using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
     namespace VSSample
     {
         public static class HelloSequence
         {
-            [FunctionName(""E1_HelloSequence"")]
-            public static async Task<List<string>> Run(
+            [FunctionName(""ParameterAnalyzerTestCases"")]
+            public static async Task Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
                 context.SignalEntityAsync<IEntityExample>();
@@ -69,13 +70,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.EntityIn
 
         public interface IEntityExample
         {
-            public static void methodTestOneParameter(string test, int number);
+            public static void methodTestTwoParameters(string test, int number);
         }
     }";
             var expectedDiagnostics = new DiagnosticResult
             {
                 Id = DiagnosticId,
-                Message = string.Format(Resources.EntityInterfaceParameterAnalyzerMessageFormat, "public static void methodTestOneParameter(string test, int number);"),
+                Message = string.Format(Resources.EntityInterfaceParameterAnalyzerMessageFormat, "public static void methodTestTwoParameters(string test, int number);"),
                 Severity = Severity,
                 Locations =
                     new[] {

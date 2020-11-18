@@ -44,6 +44,44 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         Task SignalEntityAsync(EntityId entityId, DateTime scheduledTimeUtc, string operationName, object operationInput = null, string taskHubName = null, string connectionName = null);
 
         /// <summary>
+        /// Signals an entity to perform an operation.
+        /// </summary>
+        /// <typeparam name="TEntityInterface">Entity interface.</typeparam>
+        /// <param name="entityKey">The target entity key.</param>
+        /// <param name="operation">A delegate that performs the desired operation on the entity.</param>
+        /// <returns>A task that completes when the message has been reliably enqueued.</returns>
+        Task SignalEntityAsync<TEntityInterface>(string entityKey, Action<TEntityInterface> operation);
+
+        /// <summary>
+        /// Signals an entity to perform an operation, at a specified time.
+        /// </summary>
+        /// <typeparam name="TEntityInterface">Entity interface.</typeparam>
+        /// <param name="entityKey">The target entity key.</param>
+        /// <param name="scheduledTimeUtc">The time at which to start the operation.</param>
+        /// <param name="operation">A delegate that performs the desired operation on the entity.</param>
+        /// <returns>A task that completes when the message has been reliably enqueued.</returns>
+        Task SignalEntityAsync<TEntityInterface>(string entityKey, DateTime scheduledTimeUtc, Action<TEntityInterface> operation);
+
+        /// <summary>
+        /// Signals an entity to perform an operation.
+        /// </summary>
+        /// <typeparam name="TEntityInterface">Entity interface.</typeparam>
+        /// <param name="entityId">The target entity.</param>
+        /// <param name="operation">A delegate that performs the desired operation on the entity.</param>
+        /// <returns>A task that completes when the message has been reliably enqueued.</returns>
+        Task SignalEntityAsync<TEntityInterface>(EntityId entityId, Action<TEntityInterface> operation);
+
+        /// <summary>
+        /// Signals an entity to perform an operation, at a specified time.
+        /// </summary>
+        /// <typeparam name="TEntityInterface">Entity interface.</typeparam>
+        /// <param name="entityId">The target entity.</param>
+        /// <param name="scheduledTimeUtc">The time at which to start the operation.</param>
+        /// <param name="operation">A delegate that performs the desired operation on the entity.</param>
+        /// <returns>A task that completes when the message has been reliably enqueued.</returns>
+        Task SignalEntityAsync<TEntityInterface>(EntityId entityId, DateTime scheduledTimeUtc, Action<TEntityInterface> operation);
+
+        /// <summary>
         /// Tries to read the current state of an entity. Returns default(<typeparamref name="T"/>) if the entity does not
         /// exist, or if the JSON-serialized state of the entity is larger than 16KB.
         /// </summary>
@@ -61,5 +99,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="cancellationToken">Cancellation token that can be used to cancel the query operation.</param>
         /// <returns>Returns a page of entity instances and a continuation token for fetching the next page.</returns>
         Task<EntityQueryResult> ListEntitiesAsync(EntityQuery query, CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Removes empty entities from storage and releases orphaned locks.
+        /// </summary>
+        /// <remarks>An entity is considered empty, and is removed, if it has no state, is not locked, and has
+        /// been idle for more than <see cref="DurableTaskOptions.EntityMessageReorderWindowInMinutes"/> minutes.
+        /// Locks are considered orphaned, and are released, if the orchestration that holds them is not in state <see cref="OrchestrationRuntimeStatus.Running"/>. This
+        /// should not happen under normal circumstances, but can occur if the orchestration instance holding the lock
+        /// exhibits replay nondeterminism failures, or if it is explicitly purged.</remarks>
+        /// <param name="removeEmptyEntities">Whether to remove empty entities.</param>
+        /// <param name="releaseOrphanedLocks">Whether to release orphaned locks.</param>
+        /// <param name="cancellationToken">Cancellation token that can be used to cancel the operation.</param>
+        /// <returns>A task that completes when the operation is finished.</returns>
+        Task<CleanEntityStorageResult> CleanEntityStorageAsync(bool removeEmptyEntities, bool releaseOrphanedLocks, CancellationToken cancellationToken);
     }
 }

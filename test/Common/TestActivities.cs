@@ -5,12 +5,19 @@ using System;
 using System.IO;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
+using static Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests.DurableTaskEndToEndTests;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
     internal static class TestActivities
     {
         public const char BigValueChar = '*';
+
+        public static ComplexType ComplexTypeActivity([ActivityTrigger] IDurableActivityContext ctx)
+        {
+            var input = ctx.GetInput<ComplexType>();
+            return input;
+        }
 
         public static string Hello([ActivityTrigger] IDurableActivityContext ctx)
         {

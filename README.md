@@ -1,6 +1,7 @@
 # Durable Functions
 
 [![Build status](https://ci.appveyor.com/api/projects/status/rsoa2rrjxmd9h8i1?svg=true)](https://ci.appveyor.com/project/appsvc/azure-functions-durable-extension)
+[![Build Status](https://durabletaskframework.visualstudio.com/Durable%20Task%20Framework%20CI/_apis/build/status/Azure.azure-functions-durable-extension?branchName=dev)](https://durabletaskframework.visualstudio.com/Durable%20Task%20Framework%20CI/_build/latest?definitionId=15&branchName=dev)
 
 Durable Functions is an extension that helps developers build reliable, stateful apps on the [Azure Functions](https://functions.azure.com) platform.
 
@@ -16,6 +17,16 @@ Durable Functions can run anywhere that Azure Functions can run, including in th
 
 For a more detailed overview, including examples of what you can do with Durable Functions, see our [What is Durable Functions?](https://docs.microsoft.com/azure/azure-functions/durable/durable-functions-overview) article.
 
+## NuGet Packages
+
+Durable Functions updates are published as NuGet packages.
+
+Package Name | NuGet
+---|---
+Microsoft.Azure.WebJobs.Extensions.DurableTask | [![NuGet](https://img.shields.io/nuget/v/Microsoft.Azure.WebJobs.Extensions.DurableTask.svg)](https://www.nuget.org/packages/Microsoft.Azure.WebJobs.Extensions.DurableTask)
+Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers (C# only) | [![NuGet](https://img.shields.io/nuget/v/Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.svg)](https://www.nuget.org/packages/Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers)
+
+
 ## Language support
 
 Durable Functions supports a subset of languages supported by Azure Functions:
@@ -24,18 +35,18 @@ Durable Functions supports a subset of languages supported by Azure Functions:
 |------------|------------------|-|
 | C#         | Generally available - [get started](https://docs.microsoft.com/azure/azure-functions/durable/durable-functions-create-first-csharp) | [Azure/azure-functions-durable-extension](https://github.com/Azure/azure-functions-durable-extension) |
 | JavaScript | Generally available - [get started](https://docs.microsoft.com/azure/azure-functions/durable/quickstart-js-vscode) | [Azure/azure-functions-durable-js](https://github.com/Azure/azure-functions-durable-js) |
-| Python     | In development - [give feedback](https://github.com/Azure/azure-functions-python-worker/issues/227#issuecomment-542308187) | |
-| PowerShell | In planning - [give feedback](https://github.com/Azure/azure-functions-powershell-worker/issues/77#issuecomment-528997103) | |
+| Python     | Public preview - [get started](https://docs.microsoft.com/azure/azure-functions/durable/quickstart-python-vscode) | [Azure/azure-functions-durable-python](https://github.com/Azure/azure-functions-durable-python) |
+| PowerShell | Public preview - [get started](https://docs.microsoft.com/en-us/azure/azure-functions/durable/quickstart-powershell-vscode) | [Azure/azure-functions-powershell-worker](https://github.com/Azure/azure-functions-powershell-worker) |
 | Java       | Under consideration - [give feedback](https://github.com/Azure/azure-functions-java-worker/issues/213) | |
 
 Each language has its own language-specific SDK and programming model. Regardless of which language you use, the extension in this repo must be installed to enable the Durable Functions triggers.
 
 ## Installation
 
-The Durable Functions extension currently ships as the [Microsoft.Azure.WebJobs.Extensions.DurableTask](https://www.nuget.org/packages/Microsoft.Azure.WebJobs.Extensions.DurableTask) NuGet package. It can be referenced directly in a Visual Studio project or can be installed using the [Azure Functions Core Tools](https://docs.microsoft.com/azure/azure-functions/functions-run-local) command-line:
+The Durable Functions NuGet package can be referenced directly in a Visual Studio project or can be installed using the [Azure Functions Core Tools](https://docs.microsoft.com/azure/azure-functions/functions-run-local) command-line:
 
 ```bash
-func extensions install -p Microsoft.Azure.WebJobs.Extensions.DurableTask -v 2.1.0
+func extensions install -p Microsoft.Azure.WebJobs.Extensions.DurableTask -v 2.3.0
 ```
 
 Durable Functions is also available in supported [extension bundles](https://docs.microsoft.com/azure/azure-functions/functions-bindings-register#extension-bundles). Note that extension bundles are only supported for non-.NET languages.

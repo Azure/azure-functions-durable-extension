@@ -40,7 +40,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var loggerFactory = new LoggerFactory();
             loggerFactory.AddProvider(loggerProvider);
 
-            IDurabilityProviderFactory orchestrationServiceFactory = new AzureStorageDurabilityProviderFactory(options, connectionResolver);
+            IDurabilityProviderFactory orchestrationServiceFactory = new AzureStorageDurabilityProviderFactory(
+                options,
+                connectionResolver,
+                nameResolver,
+                loggerFactory);
 
             var extension = new DurableTaskExtension(
                 options,

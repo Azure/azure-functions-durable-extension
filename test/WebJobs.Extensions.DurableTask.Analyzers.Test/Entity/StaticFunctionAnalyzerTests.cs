@@ -13,9 +13,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Entity
     public class StaticFunctionAnalyzerTests : CodeFixVerifier
     {
         private static readonly string DiagnosticId = StaticFunctionAnalyzer.DiagnosticId;
-        private static readonly DiagnosticSeverity Severity = StaticFunctionAnalyzer.Severity;
+        private static readonly DiagnosticSeverity Severity = DiagnosticSeverity.Warning;
 
         private const string ExpectedFix = @"
+using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
  public class MyEmptyEntity : IMyEmptyEntity
@@ -25,15 +26,16 @@ using Microsoft.Azure.WebJobs.Extensions.DurableTask;
     }";
 
         [TestMethod]
-        public void StaticFunction_NonIssue()
+        public void StaticFunction_NoDiagnosticTestCases()
         {
             VerifyCSharpDiagnostic(ExpectedFix);
         }
 
         [TestMethod]
-        public void StaticFunction_NonStatic()
+        public void StaticFunction_NotStatic()
         {
             var test = @"
+using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
  public class MyEmptyEntity : IMyEmptyEntity
@@ -49,7 +51,7 @@ using Microsoft.Azure.WebJobs.Extensions.DurableTask;
                 Severity = Severity,
                 Locations =
                  new[] {
-                            new DiagnosticResultLocation("Test0.cs", 7, 21)
+                            new DiagnosticResultLocation("Test0.cs", 8, 21)
                      }
             };
 

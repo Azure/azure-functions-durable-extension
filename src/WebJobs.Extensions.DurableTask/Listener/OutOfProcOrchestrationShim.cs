@@ -5,16 +5,18 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using DurableTask.Core.Exceptions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
+using static Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskOrchestrationShim;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     /// <summary>
     /// Not intended for public consumption.
     /// </summary>
-    public class OutOfProcOrchestrationShim
+    internal class OutOfProcOrchestrationShim
     {
         private readonly IDurableOrchestrationContext context;
 
@@ -38,11 +40,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             WaitForExternalEvent = 6,
             CallEntity = 7,
             CallHttp = 8,
+            SignalEntity = 9,
+            ScheduledSignalEntity = 10,
         }
 
-        internal async Task HandleOutOfProcExecutionAsync(JObject executionJson)
+        // Handles replaying the Durable Task APIs that the out-of-proc function scheduled
+        // with user code.
+        public async Task HandleDurableTaskReplay(OrchestrationInvocationResult executionJson)
         {
-            bool moreWorkToDo = await this.ExecuteAsync(executionJson);
+            bool moreWorkToDo = await this.ScheduleDurableTaskEvents(executionJson);
             if (moreWorkToDo)
             {
                 // We must delay indefinitely to prevent the orchestration instance from completing.
@@ -52,14 +58,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        /// <summary>
-        /// Not intended for public consumption.
-        /// </summary>
-        /// <param name="executionJson">The result of the out-of-proc execution.</param>
-        /// <returns><c>true</c> if there are more executions to process; <c>false</c> otherwise.</returns>
-        public async Task<bool> ExecuteAsync(JObject executionJson)
+        internal async Task<bool> ScheduleDurableTaskEvents(OrchestrationInvocationResult result)
         {
-            var execution = JsonConvert.DeserializeObject<OutOfProcOrchestratorState>(executionJson.ToString());
+            var jObj = result.ReturnValue as JObject;
+            if (jObj == null && result.ReturnValue is string jsonText)
+            {
+                try
+                {
+                    jObj = JObject.Parse(jsonText);
+                }
+                catch
+                {
+                    throw new ArgumentException("Out of proc orchestrators must return a valid JSON schema");
+                }
+            }
+
+            if (jObj == null)
+            {
+                throw new ArgumentException("The data returned by the out-of-process function execution was not valid json.");
+            }
+
+            var execution = JsonConvert.DeserializeObject<OutOfProcOrchestratorState>(jObj.ToString());
             if (execution.CustomStatus != null)
             {
                 this.context.SetCustomStatus(execution.CustomStatus);
@@ -69,8 +88,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             if (!string.IsNullOrEmpty(execution.Error))
             {
-                throw new FunctionFailedException(
-                    $"Orchestrator function '{this.context.Name}' failed: {execution.Error}");
+                string exceptionDetails = $"Message: {execution.Error}, StackTrace: {result.Exception.StackTrace}";
+                throw new OrchestrationFailureException(
+                        $"Orchestrator function '{this.context.Name}' failed: {execution.Error}",
+                        exceptionDetails);
             }
 
             if (execution.IsDone)
@@ -94,6 +115,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             foreach (AsyncAction[] actionSet in actions)
             {
                 var tasks = new List<Task>(actions.Length);
+                DurableOrchestrationContext ctx = this.context as DurableOrchestrationContext;
 
                 // An actionSet represents all actions that were scheduled within that execution.
                 foreach (AsyncAction action in actionSet)
@@ -106,7 +128,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         case AsyncActionType.CreateTimer:
                             using (var cts = new CancellationTokenSource())
                             {
+                                if (ctx != null)
+                                {
+                                    ctx.ThrowIfInvalidTimerLengthForStorageProvider(action.FireAt);
+                                }
+
                                 tasks.Add(this.context.CreateTimer(action.FireAt, cts.Token));
+
                                 if (action.IsCanceled)
                                 {
                                     cts.Cancel();
@@ -124,9 +152,28 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             tasks.Add(this.context.CallSubOrchestratorWithRetryAsync(action.FunctionName, action.RetryOptions, action.InstanceId, action.Input));
                             break;
                         case AsyncActionType.CallEntity:
-                            var entityId = EntityId.GetEntityIdFromSchedulerId(action.InstanceId);
-                            tasks.Add(this.context.CallEntityAsync(entityId, action.EntityOperation, action.Input));
-                            break;
+                            {
+                                var entityId = EntityId.GetEntityIdFromSchedulerId(action.InstanceId);
+                                tasks.Add(this.context.CallEntityAsync(entityId, action.EntityOperation, action.Input));
+                                break;
+                            }
+
+                        case AsyncActionType.SignalEntity:
+                            {
+                                // We do not add a task because this is 'fire and forget'
+                                var entityId = EntityId.GetEntityIdFromSchedulerId(action.InstanceId);
+                                this.context.SignalEntity(entityId, action.EntityOperation, action.Input);
+                                break;
+                            }
+
+                        case AsyncActionType.ScheduledSignalEntity:
+                            {
+                                // We do not add a task because this is 'fire and forget'
+                                var entityId = EntityId.GetEntityIdFromSchedulerId(action.InstanceId);
+                                this.context.SignalEntity(entityId, action.FireAt, action.EntityOperation, action.Input);
+                                break;
+                            }
+
                         case AsyncActionType.ContinueAsNew:
                             this.context.ContinueAsNew(action.Input);
                             break;

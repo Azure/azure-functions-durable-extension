@@ -45,35 +45,42 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         private void RegisterAnalyzers(CompilationAnalysisContext context)
         {
-            NameAnalyzer.ReportProblems(context, availableFunctions, calledFunctions);
+            NameAnalyzer.ReportProblems(context, semanticModel, availableFunctions, calledFunctions);
             ArgumentAnalyzer.ReportProblems(context, semanticModel, availableFunctions, calledFunctions);
             FunctionReturnTypeAnalyzer.ReportProblems(context, semanticModel, availableFunctions, calledFunctions);
         }
 
         public void FindActivityCall(SyntaxNodeAnalysisContext context)
         {
+            SetSemanticModel(context);
+
+            var semanticModel = context.SemanticModel;
             if (context.Node is InvocationExpressionSyntax invocationExpression
-                && SyntaxNodeUtils.IsInsideFunction(invocationExpression)
+                && SyntaxNodeUtils.IsInsideFunction(semanticModel, invocationExpression)
                 && IsActivityInvocation(invocationExpression))
             {
-                SetSemanticModel(context);
-
-                if (!TryGetFunctionNameFromActivityInvocation(invocationExpression, out SyntaxNode functionNameNode))
+                if (!TryGetFunctionNameFromActivityInvocation(invocationExpression, out SyntaxNode functionNameNode, out string functionName))
                 {
                     //Do not store ActivityFunctionCall if there is no function name
                     return;
                 }
 
-                SyntaxNodeUtils.TryGetTypeArgumentNode((MemberAccessExpressionSyntax)invocationExpression.Expression, out SyntaxNode returnTypeNode);
+                SyntaxNodeUtils.TryGetTypeArgumentIdentifier((MemberAccessExpressionSyntax)invocationExpression.Expression, out SyntaxNode returnTypeNode);
+
+                SyntaxNodeUtils.TryGetITypeSymbol(semanticModel, returnTypeNode, out ITypeSymbol returnType);
 
                 TryGetInputNodeFromCallActivityInvocation(invocationExpression, out SyntaxNode inputNode);
 
+                SyntaxNodeUtils.TryGetITypeSymbol(semanticModel, inputNode, out ITypeSymbol inputType);
+
                 calledFunctions.Add(new ActivityFunctionCall
                 {
-                    Name = functionNameNode.ToString().Trim('"'),
+                    FunctionName = functionName,
                     NameNode = functionNameNode,
-                    ParameterNode = inputNode,
+                    InputNode = inputNode,
+                    InputType = inputType,
                     ReturnTypeNode = returnTypeNode,
+                    ReturnType = returnType,
                     InvocationExpression = invocationExpression
                 });
             }
@@ -92,7 +99,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             if (invocationExpression != null && invocationExpression.Expression is MemberAccessExpressionSyntax memberAccessExpression)
             {
                 var name = memberAccessExpression.Name;
-                if (name.ToString().StartsWith("CallActivityAsync") || name.ToString().StartsWith("CallActivityWithRetryAsync"))
+                if (name != null
+                    && (name.ToString().StartsWith("CallActivityAsync")
+                        || name.ToString().StartsWith("CallActivityWithRetryAsync")))
                 {
                     return true;
                 }
@@ -101,22 +110,38 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             return false;
         }
 
-        private bool TryGetFunctionNameFromActivityInvocation(InvocationExpressionSyntax invocationExpression, out SyntaxNode functionNameNode)
+        private bool TryGetFunctionNameFromActivityInvocation(InvocationExpressionSyntax invocationExpression, out SyntaxNode functionNameNode, out string functionName)
         {
-            functionNameNode = invocationExpression.ArgumentList.Arguments.FirstOrDefault();
-            return functionNameNode != null;
+            var functionArgument = invocationExpression.ArgumentList.Arguments.FirstOrDefault();
+            if (functionArgument != null)
+            {
+                functionNameNode = functionArgument.ChildNodes().FirstOrDefault();
+                if (functionNameNode != null)
+                {
+                    SyntaxNodeUtils.TryParseFunctionName(semanticModel, functionNameNode, out functionName);
+                    return functionName != null;
+                }
+            }
+
+            functionNameNode = null;
+            functionName = null;
+            return false;
         }
 
         private bool TryGetInputNodeFromCallActivityInvocation(InvocationExpressionSyntax invocationExpression, out SyntaxNode inputNode)
         {
-            var arguments = invocationExpression.ArgumentList.Arguments;
-            if (arguments != null && arguments.Count > 1)
+            var argumentList = invocationExpression.ArgumentList;
+            if (argumentList != null)
             {
-                var lastArgumentNode = arguments.Last();
+                var arguments = argumentList.Arguments;
+                if (arguments != null && arguments.Count > 1)
+                {
+                    var lastArgumentNode = arguments.Last();
 
-                //An Argument node will always have a child node
-                inputNode = lastArgumentNode.ChildNodes().First();
-                return true;
+                    //An Argument node will always have a child node
+                    inputNode = lastArgumentNode.ChildNodes().First();
+                    return true;
+                }
             }
 
             inputNode = null;
@@ -125,10 +150,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         public void FindActivityFunction(SyntaxNodeAnalysisContext context)
         {
-            var attribute = context.Node as AttributeSyntax;
-            if (SyntaxNodeUtils.IsActivityTriggerAttribute(attribute))
+            var semanticModel = context.SemanticModel;
+            if (context.Node is AttributeSyntax attribute
+                && SyntaxNodeUtils.IsActivityTriggerAttribute(attribute))
             {
-                if (!SyntaxNodeUtils.TryGetFunctionNameAndNode(attribute, out SyntaxNode attributeArgument, out string functionName))
+                if (!SyntaxNodeUtils.TryGetFunctionName(semanticModel, attribute, out string functionName))
                 {
                     //Do not store ActivityFunctionDefinition if there is no function name
                     return;
@@ -140,15 +166,77 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     return;
                 }
 
+                SyntaxNodeUtils.TryGetITypeSymbol(semanticModel, returnTypeNode, out ITypeSymbol returnType);
+
                 SyntaxNodeUtils.TryGetParameterNodeNextToAttribute(context, attribute, out SyntaxNode parameterNode);
+
+                TryGetDefinitionInputType(semanticModel, parameterNode, out ITypeSymbol inputType);
 
                 availableFunctions.Add(new ActivityFunctionDefinition
                 {
                     FunctionName = functionName,
                     ParameterNode = parameterNode,
-                    ReturnTypeNode = returnTypeNode
+                    InputType = inputType,
+                    ReturnTypeNode = returnTypeNode,
+                    ReturnType = returnType
                 });
             }
+        }
+
+        private static bool TryGetDefinitionInputType(SemanticModel semanticModel, SyntaxNode parameterNode, out ITypeSymbol definitionInputType)
+        {
+            if (SyntaxNodeUtils.TryGetITypeSymbol(semanticModel, parameterNode, out definitionInputType))
+            {
+                if (SyntaxNodeUtils.IsDurableActivityContext(definitionInputType))
+                {
+                    return TryGetInputTypeFromContext(semanticModel, parameterNode, out definitionInputType);
+                }
+
+                return true;
+            }
+
+            definitionInputType = null;
+            return false;
+        }
+
+        private static bool TryGetInputTypeFromContext(SemanticModel semanticModel, SyntaxNode node, out ITypeSymbol definitionInputType)
+        {
+            if (TryGetDurableActivityContextExpression(semanticModel, node, out SyntaxNode durableContextExpression))
+            {
+                if (SyntaxNodeUtils.TryGetTypeArgumentIdentifier((MemberAccessExpressionSyntax)durableContextExpression, out SyntaxNode typeArgument))
+                {
+                    return SyntaxNodeUtils.TryGetITypeSymbol(semanticModel, typeArgument, out definitionInputType);
+                }
+            }
+
+            definitionInputType = null;
+            return false;
+        }
+
+        private static bool TryGetDurableActivityContextExpression(SemanticModel semanticModel, SyntaxNode node, out SyntaxNode durableContextExpression)
+        {
+            if (SyntaxNodeUtils.TryGetMethodDeclaration(node, out SyntaxNode methodDeclaration))
+            {
+                var memberAccessExpressionList = methodDeclaration.DescendantNodes().Where(x => x.IsKind(SyntaxKind.SimpleMemberAccessExpression));
+                foreach (var memberAccessExpression in memberAccessExpressionList)
+                {
+                    var identifierName = memberAccessExpression.ChildNodes().FirstOrDefault(x => x.IsKind(SyntaxKind.IdentifierName));
+                    if (identifierName != null)
+                    {
+                        if (SyntaxNodeUtils.TryGetITypeSymbol(semanticModel, identifierName, out ITypeSymbol typeSymbol))
+                        {
+                            if (SyntaxNodeUtils.IsDurableActivityContext(typeSymbol))
+                            {
+                                durableContextExpression = memberAccessExpression;
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+
+            durableContextExpression = null;
+            return false;
         }
     }
 }

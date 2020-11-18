@@ -103,7 +103,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                 return true;
             }
 
-            invocationExpression = expression.ChildNodes().Where(x => x.IsKind(SyntaxKind.InvocationExpression)).FirstOrDefault();
+            invocationExpression = expression.ChildNodes().FirstOrDefault(x => x.IsKind(SyntaxKind.InvocationExpression));
             return invocationExpression != null;
         }
 
@@ -155,8 +155,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     foreach (SyntaxNode identifier in identifiers)
                     {
                         if (string.Equals(identifier.ToString(), typeWithoutNamespace) ||
-                            TryGetTypeName(semanticModel, identifier, out string typeName) &&
-                            string.Equals(typeName, typeToCompare))
+                            SyntaxNodeUtils.TryGetITypeSymbol(semanticModel, identifier, out ITypeSymbol type) &&
+                            string.Equals(type.ToString(), typeToCompare))
                         {
                             parameter = node.First().ToString();
                             return true;
@@ -193,25 +193,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             }
             
             nodes = argument.ChildNodes().Where(x => x.IsKind(kind));
-            
-            if (nodes.FirstOrDefault() != null)
+            if (nodes.Any())
             {
                 return true;
             }
 
-            return false;
-        }
-
-        private static bool TryGetTypeName(SemanticModel semanticModel, SyntaxNode identifier, out string typeName)
-        {
-            var typeInfo = semanticModel.GetTypeInfo(identifier);
-            if (typeInfo.Type != null)
-            {
-                typeName = typeInfo.Type.ToString();
-                return true;
-            }
-
-            typeName = null;
             return false;
         }
         
@@ -227,10 +213,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             {
                 foreach (SyntaxNode argument in argumentEnumerable)
                 {
-                    var numericLiteralNodeEnumerable = argument.ChildNodes().Where(x => x.IsKind(SyntaxKind.NumericLiteralExpression));
-                    if (numericLiteralNodeEnumerable.Any())
+                    var numericLiteralNodeEnumerable = argument.ChildNodes().FirstOrDefault(x => x.IsKind(SyntaxKind.NumericLiteralExpression));
+                    if (numericLiteralNodeEnumerable != null)
                     {
-                        milliseconds = numericLiteralNodeEnumerable.First().ToString();
+                        milliseconds = numericLiteralNodeEnumerable.ToString();
                         return true;
                     }
                 }
@@ -242,10 +228,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         private bool TryGetArgumentEnumerable(SyntaxNode expression, out IEnumerable<SyntaxNode> arguments)
         {
-            var argumentListEnumerable = expression.ChildNodes().Where(x => x.IsKind(SyntaxKind.ArgumentList));
-            if (argumentListEnumerable.Any())
+            var argumentListEnumerable = expression.ChildNodes().FirstOrDefault(x => x.IsKind(SyntaxKind.ArgumentList));
+            if (argumentListEnumerable != null)
             {
-                var argumentEnumerable = argumentListEnumerable.First().ChildNodes().Where(x => x.IsKind(SyntaxKind.Argument));
+                var argumentEnumerable = argumentListEnumerable.ChildNodes().Where(x => x.IsKind(SyntaxKind.Argument));
                 if (argumentEnumerable.Any())
                 {
                     arguments = argumentEnumerable;

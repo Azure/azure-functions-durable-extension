@@ -93,7 +93,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
                 else
                 {
-                    this.Input = dataConverter.MessageConverter.Serialize(obj);
+                    this.Input = dataConverter.Serialize(obj);
                 }
             }
             catch (Exception e)
@@ -106,7 +106,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             try
             {
-                return dataConverter.MessageConverter.Deserialize<T>(this.Input);
+                return dataConverter.Deserialize<T>(this.Input);
             }
             catch (Exception e)
             {
@@ -118,11 +118,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             try
             {
-                return dataConverter.MessageConverter.Deserialize(this.Input, inputType);
+                return dataConverter.Deserialize(this.Input, inputType);
             }
             catch (Exception e)
             {
                 throw new EntitySchedulerException($"Failed to deserialize input for operation '{this.Operation}': {e.Message}", e);
+            }
+        }
+
+        public DateTime GetAdjustedDeliveryTime(DurabilityProvider durabilityProvider)
+        {
+            if (this.ScheduledTime.HasValue)
+            {
+                var now = DateTime.UtcNow;
+                if ((this.ScheduledTime.Value - now) <= durabilityProvider.MaximumDelayTime)
+                {
+                    return this.ScheduledTime.Value;
+                }
+                else
+                {
+                    return now + durabilityProvider.LongRunningTimerIntervalLength;
+                }
+            }
+            else
+            {
+                throw new InvalidOperationException("this is not a delayed message");
             }
         }
 

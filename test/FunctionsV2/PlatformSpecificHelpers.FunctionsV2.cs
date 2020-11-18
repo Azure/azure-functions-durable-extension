@@ -26,6 +26,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public static ITestHost CreateJobHost(
             IOptions<DurableTaskOptions> options,
             string storageProvider,
+            Type durabilityProviderFactoryType,
             ILoggerProvider loggerProvider,
             INameResolver nameResolver,
             IDurableHttpMessageHandlerFactory durableHttpMessageHandler,
@@ -42,7 +43,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 .ConfigureWebJobs(
                     webJobsBuilder =>
                     {
-                        webJobsBuilder.AddDurableTask(options, storageProvider);
+                        webJobsBuilder.AddDurableTask(options, storageProvider, durabilityProviderFactoryType);
                         webJobsBuilder.AddAzureStorage();
                     })
                 .ConfigureServices(
@@ -81,8 +82,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return new FunctionsV2HostWrapper(host);
         }
 
-        private static IWebJobsBuilder AddDurableTask(this IWebJobsBuilder builder, IOptions<DurableTaskOptions> options, string storageProvider)
+        private static IWebJobsBuilder AddDurableTask(this IWebJobsBuilder builder, IOptions<DurableTaskOptions> options, string storageProvider, Type durabilityProviderFactoryType = null)
         {
+            if (durabilityProviderFactoryType != null)
+            {
+                builder.Services.AddSingleton(typeof(IDurabilityProviderFactory), typeof(AzureStorageShortenedTimerDurabilityProviderFactory));
+                builder.AddDurableTask(options);
+                return builder;
+            }
+
             switch (storageProvider)
             {
                 case TestHelpers.RedisProviderType:

@@ -14,12 +14,14 @@ using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.AzureStorage;
 using DurableTask.Core;
+using DurableTask.Core.Exceptions;
 using DurableTask.Core.History;
 using DurableTask.Core.Middleware;
 using Microsoft.Azure.WebJobs.Description;
 #if !FUNCTIONS_V1
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
 #endif
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener;
 using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.Host.Config;
 using Microsoft.Azure.WebJobs.Host.Executors;
@@ -44,7 +46,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         INameVersionObjectManager<TaskOrchestration>,
         INameVersionObjectManager<TaskActivity>
     {
-        private static readonly string LoggerCategoryName = LogCategories.CreateTriggerCategory("DurableTask");
+        internal static readonly string LoggerCategoryName = LogCategories.CreateTriggerCategory("DurableTask");
 
         // Creating client objects is expensive, so we cache them when the attributes match.
         // Note that DurableClientAttribute defines a custom equality comparer.
@@ -67,12 +69,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #pragma warning restore CS0169
 #endif
         private readonly bool isOptionsConfigured;
+        private readonly IApplicationLifetimeWrapper hostLifetimeService = HostLifecycleService.NoOp;
+
         private IDurabilityProviderFactory durabilityProviderFactory;
         private INameResolver nameResolver;
+        private ILoggerFactory loggerFactory;
         private DurabilityProvider defaultDurabilityProvider;
         private TaskHubWorker taskHubWorker;
         private bool isTaskHubWorkerStarted;
         private HttpClient durableHttpClient;
+        private EventSourceListener eventSourceListener;
 
 #if FUNCTIONS_V1
         private IConnectionStringResolver connectionStringResolver;
@@ -124,12 +130,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // Options will be null in Functions v1 runtime - populated later.
             this.Options = options?.Value ?? new DurableTaskOptions();
             this.nameResolver = nameResolver ?? throw new ArgumentNullException(nameof(nameResolver));
+            this.loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
             this.ResolveAppSettingOptions();
-
-            if (loggerFactory == null)
-            {
-                throw new ArgumentNullException(nameof(loggerFactory));
-            }
 
             ILogger logger = loggerFactory.CreateLogger(LoggerCategoryName);
 
@@ -147,24 +149,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             DurableHttpClientFactory durableHttpClientFactory = new DurableHttpClientFactory();
             this.durableHttpClient = durableHttpClientFactory.GetClient(durableHttpMessageHandlerFactory);
 
-            if (messageSerializerSettingsFactory == null)
-            {
-                messageSerializerSettingsFactory = new MessageSerializerSettingsFactory();
-            }
-
-            if (errorSerializerSettingsFactory == null)
-            {
-                errorSerializerSettingsFactory = new ErrorSerializerSettingsFactory();
-            }
-
-            this.DataConverter = new MessagePayloadDataConverter(messageSerializerSettingsFactory, errorSerializerSettingsFactory);
+            this.MessageDataConverter = CreateMessageDataConverter(messageSerializerSettingsFactory);
+            this.ErrorDataConverter = this.CreateErrorDataConverter(errorSerializerSettingsFactory);
 
             this.HttpApiHandler = new HttpApiHandler(this, logger);
+
+            this.hostLifetimeService = hostLifetimeService;
 
 #if !FUNCTIONS_V1
             // The RPC server is started when the extension is initialized.
             // The RPC server is stopped when the host has finished shutting down.
-            hostLifetimeService.OnStopped.Register(this.StopLocalRcpServer);
+            this.hostLifetimeService.OnStopped.Register(this.StopLocalRcpServer);
             this.telemetryActivator = telemetryActivator;
             this.telemetryActivator?.Initialize();
 #endif
@@ -208,7 +203,35 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal EndToEndTraceHelper TraceHelper { get; private set; }
 
-        internal MessagePayloadDataConverter DataConverter { get; private set; }
+        internal MessagePayloadDataConverter MessageDataConverter { get; private set; }
+
+        internal MessagePayloadDataConverter ErrorDataConverter { get; private set; }
+
+        internal static MessagePayloadDataConverter CreateMessageDataConverter(IMessageSerializerSettingsFactory messageSerializerSettingsFactory)
+        {
+            bool isDefault;
+            if (messageSerializerSettingsFactory == null)
+            {
+                messageSerializerSettingsFactory = new MessageSerializerSettingsFactory();
+            }
+
+            isDefault = messageSerializerSettingsFactory is MessageSerializerSettingsFactory;
+
+            return new MessagePayloadDataConverter(messageSerializerSettingsFactory.CreateJsonSerializerSettings(), isDefault);
+        }
+
+        private MessagePayloadDataConverter CreateErrorDataConverter(IErrorSerializerSettingsFactory errorSerializerSettingsFactory)
+        {
+            bool isDefault;
+            if (errorSerializerSettingsFactory == null)
+            {
+                errorSerializerSettingsFactory = new ErrorSerializerSettingsFactory();
+            }
+
+            isDefault = errorSerializerSettingsFactory is ErrorSerializerSettingsFactory;
+
+            return new MessagePayloadDataConverter(errorSerializerSettingsFactory.CreateJsonSerializerSettings(), isDefault);
+        }
 
         /// <summary>
         /// Internal initialization call from the WebJobs host.
@@ -216,6 +239,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="context">Extension context provided by WebJobs.</param>
         void IExtensionConfigProvider.Initialize(ExtensionConfigContext context)
         {
+#if !FUNCTIONS_V1
+            // .NET461 is not supported in linux, so this is conditionally compiled
+            // We initialize linux logging early on in case any initialization steps below were to trigger a log event.
+            this.InitializeLinuxLogging();
+#endif
+
             ConfigureLoaderHooks();
 
             // Functions V1 has it's configuration initialized at startup time (now).
@@ -226,7 +255,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             // Throw if any of the configured options are invalid
-            this.Options.Validate();
+            this.Options.Validate(this.nameResolver, this.TraceHelper);
 
             // For 202 support
             if (this.Options.NotificationUrl == null)
@@ -251,6 +280,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             rule.BindToInput<IDurableEntityClient>(this.GetClient);
             rule.BindToInput<IDurableClient>(this.GetClient);
 
+            // We add a binding rule to support the now deprecated `orchestrationClient` binding
+            // A cleaner solution would be to have the prior rule have an OR-style selector between
+            // DurableClientAttribute and OrchestrationClientAttribute, but it's unclear if that's
+            // possible (for now).
+#pragma warning disable CS0618 // Type or member is obsolete
+            var backwardsCompRule = context.AddBindingRule<OrchestrationClientAttribute>()
+#pragma warning restore CS0618 // Type or member is obsolete
+                .AddConverter<string, StartOrchestrationArgs>(bindings.StringToStartOrchestrationArgs)
+                .AddConverter<JObject, StartOrchestrationArgs>(bindings.JObjectToStartOrchestrationArgs)
+                .AddConverter<IDurableClient, string>(bindings.DurableOrchestrationClientToString);
+
+            backwardsCompRule.BindToCollector<StartOrchestrationArgs>(bindings.CreateAsyncCollector);
+            backwardsCompRule.BindToInput<IDurableOrchestrationClient>(this.GetClient);
+            backwardsCompRule.BindToInput<IDurableEntityClient>(this.GetClient);
+            backwardsCompRule.BindToInput<IDurableClient>(this.GetClient);
+
             string storageConnectionString = null;
             var providerFactory = this.durabilityProviderFactory as AzureStorageDurabilityProviderFactory;
             if (providerFactory != null)
@@ -267,7 +312,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             context.AddBindingRule<EntityTriggerAttribute>()
                 .BindToTrigger(new EntityTriggerAttributeBindingProvider(this, context, storageConnectionString, this.TraceHelper));
 
-            this.taskHubWorker = new TaskHubWorker(this.defaultDurabilityProvider, this, this);
+            this.taskHubWorker = new TaskHubWorker(this.defaultDurabilityProvider, this, this, this.loggerFactory);
+
+            // Add middleware to the DTFx dispatcher so that we can inject our own logic
+            // into and customize the orchestration execution pipeline.
+            this.taskHubWorker.AddActivityDispatcherMiddleware(this.ActivityMiddleware);
             this.taskHubWorker.AddOrchestrationDispatcherMiddleware(this.EntityMiddleware);
             this.taskHubWorker.AddOrchestrationDispatcherMiddleware(this.OrchestrationMiddleware);
 
@@ -278,10 +327,59 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #endif
         }
 
+        /// <summary>
+        /// Initializes the logging service for App Service if it detects that we are running in
+        /// the linux platform.
+        /// </summary>
+        private void InitializeLinuxLogging()
+        {
+            // Read enviroment variables to determine host platform
+            string containerName = this.nameResolver.Resolve("CONTAINER_NAME");
+            string azureWebsiteInstanceId = this.nameResolver.Resolve("WEBSITE_INSTANCE_ID");
+            string functionsLogsMountPath = this.nameResolver.Resolve("FUNCTIONS_LOGS_MOUNT_PATH");
+
+            // Determine host platform
+            bool inAppService = !string.IsNullOrEmpty(azureWebsiteInstanceId);
+            bool inLinuxDedicated = inAppService && !string.IsNullOrEmpty(functionsLogsMountPath);
+            bool inLinuxConsumption = !inAppService && !string.IsNullOrEmpty(containerName);
+
+            // Reading other enviroment variables for intializing the logger
+            string tenant = this.nameResolver.Resolve("WEBSITE_STAMP_DEPLOYMENT_ID");
+            string stampName = this.nameResolver.Resolve("WEBSITE_HOME_STAMPNAME");
+
+            // If running in linux, initialize the EventSource listener with the appropiate logger.
+            LinuxAppServiceLogger linuxLogger = null;
+            if (inLinuxDedicated)
+            {
+                linuxLogger = new LinuxAppServiceLogger(writeToConsole: false, containerName, tenant, stampName);
+            }
+            else if (inLinuxConsumption)
+            {
+                linuxLogger = new LinuxAppServiceLogger(writeToConsole: true, containerName, tenant, stampName);
+            }
+
+            if (linuxLogger != null)
+            {
+                // The logging service for linux works by capturing EventSource messages,
+                // which our linux platform does not recognize, and logging them via a
+                // different strategy such as writing to console or to a file.
+
+                // Since our logging payload can be quite large, linux telemetry by default
+                // disables verbose-level telemetry to avoid a performance hit.
+                bool enableVerbose = this.Options.Tracing.AllowVerboseLinuxTelemetry;
+                this.eventSourceListener = new EventSourceListener(linuxLogger, enableVerbose);
+            }
+        }
+
         /// <inheritdoc />
         public void Dispose()
         {
+            // Not flushing the linux logger may lead to lost logs
+            // 40 seconds timeout because we write normally every 30 seconds, so we're just
+            // adding an extra 10 seconds to flush.
+            LinuxAppServiceLogger.Logger?.Stop(TimeSpan.FromSeconds(40));
             this.HttpApiHandler?.Dispose();
+            this.eventSourceListener?.Dispose();
         }
 
 #if !FUNCTIONS_V1
@@ -332,13 +430,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #if FUNCTIONS_V1
             context.ApplyConfig(this.Options, "DurableTask");
             this.nameResolver = context.Config.NameResolver;
+            this.loggerFactory = context.Config.LoggerFactory;
             this.ResolveAppSettingOptions();
-            ILogger logger = context.Config.LoggerFactory.CreateLogger(LoggerCategoryName);
+            ILogger logger = this.loggerFactory.CreateLogger(LoggerCategoryName);
             this.TraceHelper = new EndToEndTraceHelper(logger, this.Options.Tracing.TraceReplayEvents);
             this.connectionStringResolver = new WebJobsConnectionStringProvider();
-            this.durabilityProviderFactory = new AzureStorageDurabilityProviderFactory(new OptionsWrapper<DurableTaskOptions>(this.Options), this.connectionStringResolver);
+            this.durabilityProviderFactory = new AzureStorageDurabilityProviderFactory(
+                new OptionsWrapper<DurableTaskOptions>(this.Options),
+                this.connectionStringResolver,
+                this.nameResolver,
+                this.loggerFactory);
             this.defaultDurabilityProvider = this.durabilityProviderFactory.GetDurabilityProvider();
             this.LifeCycleNotificationHelper = this.CreateLifeCycleNotificationHelper();
+            var messageSerializerSettingsFactory = new MessageSerializerSettingsFactory();
+            var errorSerializerSettingsFactory = new ErrorSerializerSettingsFactory();
+            this.MessageDataConverter = new MessagePayloadDataConverter(messageSerializerSettingsFactory.CreateJsonSerializerSettings(), true);
+            this.ErrorDataConverter = new MessagePayloadDataConverter(errorSerializerSettingsFactory.CreateJsonSerializerSettings(), true);
             this.HttpApiHandler = new HttpApiHandler(this, logger);
 #endif
         }
@@ -391,7 +498,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             if (name.StartsWith("@"))
             {
-                return new TaskEntityShim(this, name);
+                return new TaskEntityShim(this, this.defaultDurabilityProvider, name);
             }
             else
             {
@@ -435,9 +542,33 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new InvalidOperationException(message);
             }
 
-            return new TaskActivityShim(this, info.Executor, name);
+            return new TaskActivityShim(this, info.Executor, this.hostLifetimeService, name);
         }
 
+        /// <summary>
+        /// This DTFx activity middleware allows us to add context to the activity function shim
+        /// before it actually starts running.
+        /// </summary>
+        /// <param name="dispatchContext">A property bag containing useful DTFx context.</param>
+        /// <param name="next">The handler for running the next middleware in the pipeline.</param>
+        private Task ActivityMiddleware(DispatchMiddlewareContext dispatchContext, Func<Task> next)
+        {
+            if (dispatchContext.GetProperty<TaskActivity>() is TaskActivityShim shim)
+            {
+                TaskScheduledEvent @event = dispatchContext.GetProperty<TaskScheduledEvent>();
+                shim.SetTaskEventId(@event?.EventId ?? -1);
+            }
+
+            // Move to the next stage of the DTFx pipeline to trigger the activity shim.
+            return next();
+        }
+
+        /// <summary>
+        /// This DTFx orchestration middleware allows us to initialize Durable Functions-specific context
+        /// and make the execution happen in a way that plays nice with the Azure Functions execution pipeline.
+        /// </summary>
+        /// <param name="dispatchContext">A property bag containing useful DTFx context.</param>
+        /// <param name="next">The handler for running the next middleware in the pipeline.</param>
         private async Task OrchestrationMiddleware(DispatchMiddlewareContext dispatchContext, Func<Task> next)
         {
             TaskOrchestrationShim shim = dispatchContext.GetProperty<TaskOrchestration>() as TaskOrchestrationShim;
@@ -476,7 +607,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             // 1. Start the functions invocation pipeline (billing, logging, bindings, and timeout tracking).
-            FunctionResult result = await info.Executor.TryExecuteAsync(
+            WrappedFunctionResult result = await FunctionExecutionHelper.ExecuteFunctionInOrchestrationMiddleware(
+                info.Executor,
                 new TriggeredFunctionData
                 {
                     TriggerValue = context,
@@ -484,6 +616,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #pragma warning disable CS0618 // Approved for use by this extension
                     InvokeHandler = async userCodeInvoker =>
                     {
+                        context.ExecutorCalledBack = true;
+
                         // 2. Configure the shim with the inner invoker to execute the user code.
                         shim.SetFunctionInvocationCallback(userCodeInvoker);
 
@@ -498,9 +632,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     },
 #pragma warning restore CS0618
                 },
-                CancellationToken.None);
+                context,
+                this.hostLifetimeService.OnStopping);
 
-            if (!context.IsCompleted)
+            if (result.ExecutionStatus == WrappedFunctionResult.FunctionResultStatus.FunctionsRuntimeError)
+            {
+                this.TraceHelper.FunctionAborted(
+                    this.Options.HubName,
+                    context.FunctionName,
+                    context.InstanceId,
+                    $"An internal error occurred while attempting to execute this function. The execution will be aborted and retried. Details: {result.Exception}",
+                    functionType: FunctionType.Orchestrator);
+
+                // This will abort the execution and cause the message to go back onto the queue for re-processing
+                throw new SessionAbortedException(
+                    $"An internal error occurred while attempting to execute '{context.FunctionName}'.", result.Exception);
+            }
+
+            if (!context.IsCompleted && !context.IsLongRunningTimer)
             {
                 this.TraceHelper.FunctionAwaited(
                     context.HubName,
@@ -521,6 +670,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             await context.RunDeferredTasks();
         }
 
+        /// <summary>
+        /// This DTFx orchestration middleware (for entities) allows us to add context and set state
+        /// to the entity shim orchestration before it starts executing the actual entity logic.
+        /// </summary>
+        /// <param name="dispatchContext">A property bag containing useful DTFx context.</param>
+        /// <param name="next">The handler for running the next middleware in the pipeline.</param>
         private async Task EntityMiddleware(DispatchMiddlewareContext dispatchContext, Func<Task> next)
         {
             var entityShim = dispatchContext.GetProperty<TaskOrchestration>() as TaskEntityShim;
@@ -565,14 +720,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             if (EntityMessageEventNames.IsRequestMessage(eventRaisedEvent.Name))
                             {
                                 // we are receiving an operation request or a lock request
-                                var requestMessage = this.DataConverter.Deserialize<RequestMessage>(eventRaisedEvent.Input);
+                                var requestMessage = this.MessageDataConverter.Deserialize<RequestMessage>(eventRaisedEvent.Input);
 
                                 IEnumerable<RequestMessage> deliverNow;
 
                                 if (requestMessage.ScheduledTime.HasValue)
                                 {
-                                    // messages with a scheduled time are always delivered immediately
-                                    deliverNow = new RequestMessage[] { requestMessage };
+                                    if ((requestMessage.ScheduledTime.Value - DateTime.UtcNow) > TimeSpan.FromMilliseconds(100))
+                                    {
+                                        // message was delivered too early. This can happen if the durability provider imposes
+                                        // a limit on the delay. We handle this by rescheduling the message instead of processing it.
+                                        deliverNow = Array.Empty<RequestMessage>();
+                                        entityShim.AddMessageToBeRescheduled(requestMessage);
+                                    }
+                                    else
+                                    {
+                                        // the message is scheduled to be delivered immediately.
+                                        // There are no FIFO guarantees for scheduled messages, so we skip the message sorter.
+                                        deliverNow = new RequestMessage[] { requestMessage };
+                                    }
                                 }
                                 else
                                 {
@@ -597,7 +763,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             else
                             {
                                 // we are receiving a lock release
-                                var message = this.DataConverter.Deserialize<ReleaseMessage>(eventRaisedEvent.Input);
+                                var message = this.MessageDataConverter.Deserialize<ReleaseMessage>(eventRaisedEvent.Input);
 
                                 if (entityContext.State.LockedBy == message.ParentInstanceId)
                                 {
@@ -638,14 +804,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             // 3. Start the functions invocation pipeline (billing, logging, bindings, and timeout tracking).
-            FunctionResult result = await entityShim.GetFunctionInfo().Executor.TryExecuteAsync(
+            WrappedFunctionResult result = await FunctionExecutionHelper.ExecuteFunctionInOrchestrationMiddleware(
+                entityShim.GetFunctionInfo().Executor,
                 new TriggeredFunctionData
                 {
                     TriggerValue = entityShim.Context,
-
 #pragma warning disable CS0618 // Approved for use by this extension
                     InvokeHandler = async userCodeInvoker =>
                     {
+                        entityContext.ExecutorCalledBack = true;
+
                         entityShim.SetFunctionInvocationCallback(userCodeInvoker);
 
                         // 3. Run all the operations in the batch
@@ -671,7 +839,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     },
 #pragma warning restore CS0618
                 },
-                CancellationToken.None);
+                entityContext,
+                this.hostLifetimeService.OnStopping);
+
+            if (result.ExecutionStatus == WrappedFunctionResult.FunctionResultStatus.FunctionsRuntimeError)
+            {
+                this.TraceHelper.FunctionAborted(
+                    this.Options.HubName,
+                    entityContext.FunctionName,
+                    entityContext.InstanceId,
+                    $"An internal error occurred while attempting to execute this function. The execution will be aborted and retried. Details: {result.Exception}",
+                    functionType: FunctionType.Orchestrator);
+
+                // This will abort the execution and cause the message to go back onto the queue for re-processing
+                throw new SessionAbortedException(
+                    $"An internal error occurred while attempting to execute '{entityContext.FunctionName}'.", result.Exception);
+            }
 
             await entityContext.RunDeferredTasks();
 
@@ -969,11 +1152,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             using (await this.taskHubLock.AcquireAsync())
             {
+                bool HasActiveListeners(RegisteredFunctionInfo info)
+                    => info?.HasActiveListener ?? false; // info can be null if function is disabled via attribute
+
                 // Wait to shut down the task hub worker until all function listeners have been shut down.
                 if (this.isTaskHubWorkerStarted &&
-                    !this.knownOrchestrators.Values.Any(info => info.HasActiveListener) &&
-                    !this.knownActivities.Values.Any(info => info.HasActiveListener) &&
-                    !this.knownEntities.Values.Any(info => info.HasActiveListener))
+                    !this.knownOrchestrators.Values.Any(HasActiveListeners) &&
+                    !this.knownActivities.Values.Any(HasActiveListeners) &&
+                    !this.knownEntities.Values.Any(HasActiveListeners))
                 {
                     bool isGracefulStop = this.Options.UseGracefulShutdown;
 
@@ -1052,5 +1238,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             return payload;
         }
+
+#if !FUNCTIONS_V1
+        /// <summary>
+        /// Tags the current Activity with metadata: DurableFunctionsType, DurableFunctionsInstanceId, DurableFunctionsRuntimeStatus.
+        /// This metadata will show up in Application Insights, if enabled.
+        /// </summary>
+        internal static void TagActivityWithOrchestrationStatus(OrchestrationRuntimeStatus status, string instanceId, bool isEntity = false)
+        {
+            // Adding "Tags" to activity allows using Application Insights to query current state of orchestrations
+            Activity activity = Activity.Current;
+            string functionsType = isEntity ? "Entity" : "Orchestrator";
+
+            // The activity may be null when running unit tests, but should be non-null otherwise
+            if (activity != null)
+            {
+                string statusStr = Enum.GetName(status.GetType(), status);
+                activity.AddTag("DurableFunctionsType", functionsType);
+                activity.AddTag("DurableFunctionsInstanceId", instanceId);
+                activity.AddTag("DurableFunctionsRuntimeStatus", statusStr);
+            }
+        }
+#endif
     }
 }

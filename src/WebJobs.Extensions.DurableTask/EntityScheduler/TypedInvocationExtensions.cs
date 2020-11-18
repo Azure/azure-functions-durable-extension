@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 
@@ -101,11 +102,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             var type = typeof(T);
 
             var interfaces = type.GetInterfaces();
-            if (interfaces.Length > 1)
-            {
-                throw new InvalidOperationException("Only a single interface can be implemented on an entity");
-            }
-
             const BindingFlags bindingFlags = BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
 
             var method = type.GetMethod(context.OperationName, bindingFlags);
@@ -114,8 +110,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return method;
             }
 
-            var entityInterface = interfaces[0];
-            return entityInterface.GetMethod(context.OperationName, bindingFlags);
+            return interfaces.Select(i => i.GetMethod(context.OperationName, bindingFlags)).FirstOrDefault(m => m != null);
         }
     }
 }
