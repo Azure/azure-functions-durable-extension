@@ -91,10 +91,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             HttpRequestMessage request,
             string instanceId,
             DurableClientAttribute attribute,
-            bool returnInternalServerErrorOnFailure = false,
-            bool restartWithNewInstanceId = true)
+            bool returnInternalServerErrorOnFailure = false)
         {
-            HttpManagementPayload httpManagementPayload = this.GetClientResponseLinks(request, instanceId, attribute?.TaskHub, attribute?.ConnectionName, returnInternalServerErrorOnFailure, restartWithNewInstanceId);
+            HttpManagementPayload httpManagementPayload = this.GetClientResponseLinks(request, instanceId, attribute?.TaskHub, attribute?.ConnectionName, returnInternalServerErrorOnFailure);
             return this.CreateCheckStatusResponseMessage(
                 request,
                 httpManagementPayload.Id,
@@ -156,8 +155,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 instanceId,
                 taskHub,
                 connectionName,
-                returnInternalServerErrorOnFailure,
-                restartWithNewInstanceId);
+                returnInternalServerErrorOnFailure);
             return httpManagementPayload;
         }
 
@@ -1006,8 +1004,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
              string instanceId,
              string taskHubName,
              string connectionName,
-             bool returnInternalServerErrorOnFailure = false,
-             bool restartWithNewInstanceId = true)
+             bool returnInternalServerErrorOnFailure = false)
         {
             this.ThrowIfWebhooksNotConfigured();
 
@@ -1044,11 +1041,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (returnInternalServerErrorOnFailure)
             {
                 httpManagementPayload.StatusQueryGetUri += "&returnInternalServerErrorOnFailure=true";
-            }
-
-            if (!restartWithNewInstanceId)
-            {
-                httpManagementPayload.RestartUri += "&restartWithNewInstanceId=false";
             }
 
             return httpManagementPayload;

@@ -196,7 +196,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 $"{TestConstants.NotificationUrlBase}/instances/7b59154ae666471993659902ed0ba742?taskHub=SampleHubVS&connection=TestConnection&code=mykey",
                 httpManagementPayload.PurgeHistoryDeleteUri);
             Assert.Equal(
-                $"{TestConstants.NotificationUrlBase}/instances/7b59154ae666471993659902ed0ba742/restart?taskHub=SampleHubVS&connection=TestConnection&code=mykey&restartWithNewInstanceId=false",
+                $"{TestConstants.NotificationUrlBase}/instances/7b59154ae666471993659902ed0ba742/restart?taskHub=SampleHubVS&connection=TestConnection&code=mykey",
                 httpManagementPayload.RestartUri);
         }
 
@@ -763,7 +763,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 .Returns(Task.FromResult(restartedInstanceId));
 
             clientMock
-                .Setup(x => x.CreateCheckStatusResponse(It.IsAny<HttpRequestMessage>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<bool>()))
+                .Setup(x => x.CreateCheckStatusResponse(It.IsAny<HttpRequestMessage>(), It.IsAny<string>(), It.IsAny<bool>()))
                 .Returns(testResponse);
 
             var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);
@@ -914,7 +914,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 .Returns(Task.FromResult(testInstanceId));
 
             clientMock
-                .Setup(x => x.CreateCheckStatusResponse(It.IsAny<HttpRequestMessage>(), It.IsAny<string>(), false, true))
+                .Setup(x => x.CreateCheckStatusResponse(It.IsAny<HttpRequestMessage>(), It.IsAny<string>(), false))
                 .Returns(testResponse);
 
             var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);
@@ -1018,7 +1018,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 .Returns(Task.FromResult(testInstanceId));
 
             clientMock
-                .Setup(x => x.CreateCheckStatusResponse(It.IsAny<HttpRequestMessage>(), It.IsAny<string>(), false, true))
+                .Setup(x => x.CreateCheckStatusResponse(It.IsAny<HttpRequestMessage>(), It.IsAny<string>(), false))
                 .Throws(new JsonReaderException());
 
             var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);

@@ -72,16 +72,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         string IDurableEntityClient.TaskHubName => this.TaskHubName;
 
         /// <inheritdoc />
-        HttpResponseMessage IDurableOrchestrationClient.CreateCheckStatusResponse(HttpRequestMessage request, string instanceId, bool returnInternalServerErrorOnFailure, bool restartWithNewInstanceId)
+        HttpResponseMessage IDurableOrchestrationClient.CreateCheckStatusResponse(HttpRequestMessage request, string instanceId, bool returnInternalServerErrorOnFailure)
         {
-            return this.CreateCheckStatusResponse(request, instanceId, this.attribute, returnInternalServerErrorOnFailure, restartWithNewInstanceId);
+            return this.CreateCheckStatusResponse(request, instanceId, this.attribute, returnInternalServerErrorOnFailure);
         }
 
         /// <inheritdoc />
-        IActionResult IDurableOrchestrationClient.CreateCheckStatusResponse(HttpRequest request, string instanceId, bool returnInternalServerErrorOnFailure, bool restartWithNewInstanceId)
+        IActionResult IDurableOrchestrationClient.CreateCheckStatusResponse(HttpRequest request, string instanceId, bool returnInternalServerErrorOnFailure)
         {
             HttpRequestMessage requestMessage = ConvertHttpRequestMessage(request);
-            HttpResponseMessage responseMessage = ((IDurableOrchestrationClient)this).CreateCheckStatusResponse(requestMessage, instanceId, returnInternalServerErrorOnFailure, restartWithNewInstanceId);
+            HttpResponseMessage responseMessage = ((IDurableOrchestrationClient)this).CreateCheckStatusResponse(requestMessage, instanceId, returnInternalServerErrorOnFailure);
             return ConvertHttpResponseMessage(responseMessage);
         }
 
@@ -791,10 +791,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             HttpRequestMessage request,
             string instanceId,
             DurableClientAttribute attribute,
-            bool returnInternalServerErrorOnFailure = false,
-            bool restartWithNewInstanceId = true)
+            bool returnInternalServerErrorOnFailure = false)
         {
-            return this.httpApiHandler.CreateCheckStatusResponse(request, instanceId, attribute, returnInternalServerErrorOnFailure, restartWithNewInstanceId);
+            return this.httpApiHandler.CreateCheckStatusResponse(request, instanceId, attribute, returnInternalServerErrorOnFailure);
         }
 
         private static void TrackNameAndScheduledTime(JObject historyItem, EventType eventType, int index, Dictionary<string, EventIndexDateMapping> eventMapper)
