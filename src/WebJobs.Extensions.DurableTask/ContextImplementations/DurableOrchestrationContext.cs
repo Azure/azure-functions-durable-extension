@@ -243,21 +243,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         async Task<DurableHttpResponse> IDurableOrchestrationContext.CallHttpAsync(DurableHttpRequest req)
         {
-            // calculate timeout expiration if DurableHttpRequest.Timeout is set
-            if (req.Timeout != null)
-            {
-                req.TimeoutExpirationDateTime = this.InnerContext.CurrentUtcDateTime + req.Timeout.Value;
-            }
-
-            DurableHttpResponse durableHttpResponse;
-            try
-            {
-                durableHttpResponse = await this.ScheduleDurableHttpActivityAsync(req);
-            }
-            catch (TimeoutException)
-            {
-                throw;
-            }
+            DurableHttpResponse durableHttpResponse = await this.ScheduleDurableHttpActivityAsync(req);
 
             HttpStatusCode currStatusCode = durableHttpResponse.StatusCode;
 
@@ -280,18 +266,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
 
                 this.IncrementActionsOrThrowException();
-
-                if (req.Timeout == null)
-                {
-                    await this.InnerContext.CreateTimer(fireAt, CancellationToken.None);
-                }
-                else
-                {
-                    TimeSpan timeLeft = req.TimeoutExpirationDateTime - this.InnerContext.CurrentUtcDateTime;
-                    CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
-                    cancellationTokenSource.CancelAfter(timeLeft);
-                    await this.InnerContext.CreateTimer(fireAt, cancellationTokenSource.Token);
-                }
+                await this.InnerContext.CreateTimer(fireAt, CancellationToken.None);
 
                 DurableHttpRequest durableAsyncHttpRequest = this.CreateLocationPollRequest(
                     req,
@@ -324,7 +299,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 method: HttpMethod.Get,
                 uri: new Uri(locationUri),
                 headers: durableHttpRequest.Headers,
-                tokenSource: durableHttpRequest.TokenSource);
+                tokenSource: durableHttpRequest.TokenSource,
+                timeout: durableHttpRequest.Timeout);
 
             // Do not copy over the x-functions-key header, as in many cases, the
             // functions key used for the initial request will be a Function-level key

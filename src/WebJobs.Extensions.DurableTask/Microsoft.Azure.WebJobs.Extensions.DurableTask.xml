@@ -1917,12 +1917,6 @@
             asynchronous polling.
             </summary>
         </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableHttpRequest.TimeoutExpirationDateTime">
-            <summary>
-            The timeout expiration DateTime used to calculate when
-            the timeout will expire.
-            </summary>
-        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableHttpResponse">
             <summary>
             Response received from the HTTP request made by the Durable Function.

@@ -39,42 +39,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             DurableHttpRequest durableHttpRequest = ReconstructDurableHttpRequest(rawInput);
             HttpRequestMessage requestMessage = await this.ReconstructHttpRequestMessage(durableHttpRequest);
 
-            CancellationTokenSource cts = new CancellationTokenSource();
-            if (durableHttpRequest.Timeout != null)
+            using (CancellationTokenSource cts = new CancellationTokenSource())
             {
                 try
                 {
-                    TimeSpan timeout = durableHttpRequest.TimeoutExpirationDateTime - DateTime.UtcNow;
-                    this.httpClient.Timeout = timeout;
-                    cts.CancelAfter(timeout);
-                }
-                catch (Exception)
-                {
-                    TimeSpan timeout = durableHttpRequest.Timeout.Value;
-                    this.httpClient.Timeout = timeout;
-                    cts.CancelAfter(timeout);
-                }
-            }
+                    HttpResponseMessage response;
+                    if (durableHttpRequest.Timeout == null)
+                    {
+                        response = await this.httpClient.SendAsync(requestMessage);
+                    }
+                    else
+                    {
+                        cts.CancelAfter(durableHttpRequest.Timeout.Value);
+                        response = await this.httpClient.SendAsync(requestMessage, cts.Token);
+                    }
 
-            try
-            {
-                HttpResponseMessage response;
-                if (durableHttpRequest.Timeout == null)
-                {
-                    response = await this.httpClient.SendAsync(requestMessage);
-                }
-                else
-                {
-                    response = await this.httpClient.SendAsync(requestMessage, cts.Token);
-                }
+                    DurableHttpResponse durableHttpResponse = await DurableHttpResponse.CreateDurableHttpResponseWithHttpResponseMessage(response);
 
-                DurableHttpResponse durableHttpResponse = await DurableHttpResponse.CreateDurableHttpResponseWithHttpResponseMessage(response);
-
-                return JsonConvert.SerializeObject(durableHttpResponse);
-            }
-            catch (OperationCanceledException ex) // when (cts.Token.IsCancellationRequested)
-            {
-                throw new TimeoutException(ex.Message + $"Reached user specified timeout: {durableHttpRequest.Timeout.Value}.");
+                    return JsonConvert.SerializeObject(durableHttpResponse);
+                }
+                catch (OperationCanceledException ex) // when (cts.Token.IsCancellationRequested)
+                {
+                    throw new TimeoutException(ex.Message + $"Reached user specified timeout: {durableHttpRequest.Timeout.Value}.");
+                }
             }
         }
 

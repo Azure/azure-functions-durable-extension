@@ -92,13 +92,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         [JsonProperty("timeout")]
         public TimeSpan? Timeout { get; }
 
-        /// <summary>
-        /// The timeout expiration DateTime used to calculate when
-        /// the timeout will expire.
-        /// </summary>
-        [JsonProperty("timeoutExpiration")]
-        internal DateTime TimeoutExpirationDateTime { get; set; }
-
         private class HttpMethodConverter : JsonConverter
         {
             public override bool CanConvert(Type objectType)
