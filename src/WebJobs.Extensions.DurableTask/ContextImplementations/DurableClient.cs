@@ -30,6 +30,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private const int MaxInstanceIdLength = 256;
 
         private static readonly JValue NullJValue = JValue.CreateNull();
+        private static readonly OrchestrationRuntimeStatus[] RunningStatus
+            = new OrchestrationRuntimeStatus[] { OrchestrationRuntimeStatus.Running };
 
         private readonly TaskHubClient client;
         private readonly string hubName;
@@ -39,23 +41,35 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly DurableTaskExtension config;
         private readonly DurableClientAttribute attribute; // for rehydrating a Client after a webhook
         private readonly MessagePayloadDataConverter messageDataConverter;
+        private readonly DurableTaskOptions durableTaskOptions;
+
+        internal DurableClient(
+            DurabilityProvider serviceClient,
+            HttpApiHandler httpHandler,
+            DurableClientAttribute attribute,
+            MessagePayloadDataConverter messageDataConverter,
+            EndToEndTraceHelper traceHelper,
+            DurableTaskOptions durableTaskOptions)
+        {
+            this.messageDataConverter = messageDataConverter;
+
+            this.client = new TaskHubClient(serviceClient, this.messageDataConverter);
+            this.durabilityProvider = serviceClient;
+            this.traceHelper = traceHelper;
+            this.httpApiHandler = httpHandler;
+            this.durableTaskOptions = durableTaskOptions;
+            this.hubName = attribute.TaskHub ?? this.durableTaskOptions.HubName;
+            this.attribute = attribute;
+        }
 
         internal DurableClient(
             DurabilityProvider serviceClient,
             DurableTaskExtension config,
             HttpApiHandler httpHandler,
             DurableClientAttribute attribute)
+            : this(serviceClient, httpHandler, attribute, config.MessageDataConverter, config.TraceHelper, config.Options)
         {
-            this.config = config ?? throw new ArgumentNullException(nameof(config));
-
-            this.messageDataConverter = config.MessageDataConverter;
-
-            this.client = new TaskHubClient(serviceClient, this.messageDataConverter);
-            this.durabilityProvider = serviceClient;
-            this.traceHelper = config.TraceHelper;
-            this.httpApiHandler = httpHandler;
-            this.hubName = attribute.TaskHub ?? config.Options.HubName;
-            this.attribute = attribute;
+            this.config = config;
         }
 
         public string TaskHubName => this.hubName;
@@ -112,7 +126,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <inheritdoc />
         async Task<string> IDurableOrchestrationClient.StartNewAsync<T>(string orchestratorFunctionName, string instanceId, T input)
         {
-            if (this.ClientReferencesCurrentApp(this))
+            if (!this.attribute.ExternalClient && this.ClientReferencesCurrentApp(this))
             {
                 this.config.ThrowIfFunctionDoesNotExist(orchestratorFunctionName, FunctionType.Orchestrator);
             }
@@ -153,7 +167,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private OrchestrationStatus[] GetStatusesNotToOverride()
         {
-            var overridableStates = this.config.Options.OverridableExistingInstanceStates;
+            var overridableStates = this.durableTaskOptions.OverridableExistingInstanceStates;
             if (overridableStates == OverridableStates.NonRunningStates)
             {
                 return new OrchestrationStatus[]
@@ -300,7 +314,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             var jrequest = JToken.FromObject(request, this.messageDataConverter.JsonSerializer);
-            var eventName = scheduledTimeUtc.HasValue ? EntityMessageEventNames.ScheduledRequestMessageEventName(scheduledTimeUtc.Value) : EntityMessageEventNames.RequestMessageEventName;
+            var eventName = scheduledTimeUtc.HasValue
+                ? EntityMessageEventNames.ScheduledRequestMessageEventName(request.GetAdjustedDeliveryTime(this.durabilityProvider))
+                : EntityMessageEventNames.RequestMessageEventName;
             await durableClient.client.RaiseEventAsync(instance, eventName, jrequest);
 
             this.traceHelper.FunctionScheduled(
@@ -319,7 +335,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private bool TaskHubMatchesCurrentApp(DurableClient client)
         {
-            var taskHubName = this.config.Options.HubName;
+            var taskHubName = this.durableTaskOptions.HubName;
             return client.TaskHubName.Equals(taskHubName);
         }
 
@@ -497,6 +513,76 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             var result = await ((IDurableClient)this).ListInstancesAsync(condition, cancellationToken);
             var entityResult = new EntityQueryResult(result);
             return entityResult;
+        }
+
+        /// <inheritdoc />
+        async Task<CleanEntityStorageResult> IDurableEntityClient.CleanEntityStorageAsync(bool removeEmptyEntities, bool releaseOrphanedLocks, CancellationToken cancellationToken)
+        {
+            DateTime now = DateTime.UtcNow;
+            CleanEntityStorageResult finalResult = default;
+
+            var condition = new OrchestrationStatusQueryCondition()
+            {
+                InstanceIdPrefix = "@",
+                ShowInput = false,
+            };
+
+            // list all entities (without fetching the input) and for each one that requires action,
+            // perform that action. Waits for all actions to finish after each page.
+            do
+            {
+                var page = await this.DurabilityProvider.GetOrchestrationStateWithPagination(condition, cancellationToken);
+
+                List<Task> tasks = new List<Task>();
+                foreach (var state in page.DurableOrchestrationState)
+                {
+                    EntityStatus status = this.messageDataConverter.Deserialize<EntityStatus>(state.CustomStatus.ToString());
+                    if (releaseOrphanedLocks && status.LockedBy != null)
+                    {
+                         tasks.Add(CheckForOrphanedLockAndFixIt(state, status.LockedBy));
+                    }
+
+                    if (removeEmptyEntities && !status.EntityExists && status.LockedBy == null && status.QueueSize == 0
+                        && now - state.LastUpdatedTime > TimeSpan.FromMinutes(this.config.Options.EntityMessageReorderWindowInMinutes))
+                    {
+                        tasks.Add(DeleteIdleOrchestrationEntity(state));
+                    }
+                }
+
+                async Task DeleteIdleOrchestrationEntity(DurableOrchestrationStatus status)
+                {
+                    await this.DurabilityProvider.PurgeInstanceHistoryByInstanceId(status.InstanceId);
+                    Interlocked.Increment(ref finalResult.NumberOfEmptyEntitiesRemoved);
+                }
+
+                async Task CheckForOrphanedLockAndFixIt(DurableOrchestrationStatus status, string lockOwner)
+                {
+                    var findRunningOwner = new OrchestrationStatusQueryCondition()
+                    {
+                        InstanceIdPrefix = lockOwner,
+                        ShowInput = false,
+                        RuntimeStatus = RunningStatus,
+                    };
+                    var result = await this.DurabilityProvider.GetOrchestrationStateWithPagination(findRunningOwner, cancellationToken);
+                    if (!result.DurableOrchestrationState.Any(state => state.InstanceId == lockOwner))
+                    {
+                        // the owner is not a running orchestration. Send a lock release.
+                        var message = new ReleaseMessage()
+                        {
+                            ParentInstanceId = lockOwner,
+                            LockRequestId = "fix-orphaned-lock", // we don't know the original id but it does not matter
+                        };
+                        await this.RaiseEventInternalAsync(this.client, this.TaskHubName, status.InstanceId, EntityMessageEventNames.ReleaseMessageEventName, message);
+                        Interlocked.Increment(ref finalResult.NumberOfOrphanedLocksRemoved);
+                    }
+                }
+
+                await Task.WhenAll(tasks);
+                condition.ContinuationToken = page.ContinuationToken;
+            }
+            while (condition.ContinuationToken != null);
+
+            return finalResult;
         }
 
         private async Task<OrchestrationState> GetOrchestrationInstanceStateAsync(string instanceId)

@@ -383,26 +383,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return result;
         }
 
-        internal Task OutOfProcCreateTimer(DurableOrchestrationContext ctx, DateTime fireAt, CancellationToken cancelToken)
-        {
-            if (!this.ValidOutOfProcTimer(fireAt, out string errorMessage))
-            {
-                throw new ArgumentException(errorMessage, nameof(fireAt));
-            }
-
-            return ((IDurableOrchestrationContext)ctx).CreateTimer(fireAt, cancelToken);
-        }
-
-        private bool ValidOutOfProcTimer(DateTime fireAt, out string errorMessage)
+        // We now have built in long-timer support for C#, but in some scenarios, such as out-of-proc,
+        // we may still need to enforce this limitations until the solution works there as well.
+        internal void ThrowIfInvalidTimerLengthForStorageProvider(DateTime fireAt)
         {
             this.ThrowIfInvalidAccess();
 
-            if (!this.durabilityProvider.ValidateDelayTime(fireAt.Subtract(this.InnerContext.CurrentUtcDateTime), out errorMessage))
+            if (!this.durabilityProvider.ValidateDelayTime(fireAt.Subtract(this.InnerContext.CurrentUtcDateTime), out string errorMessage))
             {
-                return false;
+                throw new ArgumentException(errorMessage, nameof(fireAt));
             }
-
-            return true;
         }
 
         /// <inheritdoc />
@@ -943,11 +933,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private Task<T> WaitForExternalEvent<T>(string name, TimeSpan timeout, Action<TaskCompletionSource<T>> timeoutAction, CancellationToken cancelToken)
         {
-            if (!this.durabilityProvider.ValidateDelayTime(timeout, out string errorMessage))
-            {
-                throw new ArgumentException(errorMessage, nameof(timeout));
-            }
-
             var tcs = new TaskCompletionSource<T>();
             var cts = CancellationTokenSource.CreateLinkedTokenSource(cancelToken);
 
@@ -1123,7 +1108,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 if (requestMessage.ScheduledTime.HasValue)
                 {
-                    eventName = EntityMessageEventNames.ScheduledRequestMessageEventName(requestMessage.ScheduledTime.Value);
+                    DateTime adjustedDeliveryTime = requestMessage.GetAdjustedDeliveryTime(this.durabilityProvider);
+                    eventName = EntityMessageEventNames.ScheduledRequestMessageEventName(adjustedDeliveryTime);
                 }
                 else
                 {
