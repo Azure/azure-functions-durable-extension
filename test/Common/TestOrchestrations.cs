@@ -498,15 +498,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             TestDurableHttpRequest testRequest = ctx.GetInput<TestDurableHttpRequest>();
             DurableHttpRequest durableHttpRequest = ConvertTestRequestToDurableHttpRequest(testRequest);
-            try
-            {
-                DurableHttpResponse response = await ctx.CallHttpAsync(durableHttpRequest);
-                return response;
-            }
-            catch (Exception)
-            {
-                throw;
-            }
+            DurableHttpResponse response = await ctx.CallHttpAsync(durableHttpRequest);
+            return response;
         }
 
         public static DurableHttpRequest ConvertTestRequestToDurableHttpRequest(TestDurableHttpRequest testRequest)

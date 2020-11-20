@@ -313,19 +313,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         /// <summary>
         /// End-to-end test which checks if the CallHttpAsync Orchestrator returns an OK (200) status code
-        /// when a DurableHttpRequest timeout value is set.
+        /// when a DurableHttpRequest timeout value is set and the request completes within the timeout.
         /// </summary>
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
-        public async Task DurableHttpAsync_Synchronous_Timeout(string storageProvider)
+        public async Task DurableHttpAsync_Synchronous_TimeoutNotReached(string storageProvider)
         {
             HttpResponseMessage testHttpResponseMessage = CreateTestHttpResponseMessage(HttpStatusCode.OK);
-            HttpMessageHandler httpMessageHandler = MockSynchronousHttpMessageHandlerWithTimeout(testHttpResponseMessage, TimeSpan.FromMilliseconds(10000));
+            HttpMessageHandler httpMessageHandler = MockSynchronousHttpMessageHandlerWithTimeout(testHttpResponseMessage, TimeSpan.FromMilliseconds(2000));
 
             using (ITestHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.DurableHttpAsync_Synchronous_Timeout),
+                nameof(this.DurableHttpAsync_Synchronous_TimeoutNotReached),
                 enableExtendedSessions: false,
                 storageProviderType: storageProvider,
                 durableHttpMessageHandler: new DurableHttpMessageHandlerFactory(httpMessageHandler)))
@@ -361,7 +361,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public async Task DurableHttpAsync_Synchronous_TimeoutException(string storageProvider)
         {
             HttpResponseMessage testHttpResponseMessage = CreateTestHttpResponseMessage(HttpStatusCode.OK);
-            HttpMessageHandler httpMessageHandler = MockSynchronousHttpMessageHandlerWithTimeoutException();
+            HttpMessageHandler httpMessageHandler = MockSynchronousHttpMessageHandlerWithTimeoutException(TimeSpan.FromMilliseconds(10000));
 
             using (ITestHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
@@ -384,7 +384,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(400));
 
                 var output = status?.Output;
-                Assert.Contains("System.TimeoutException: The operation was canceled.Reached user specified timeout", output.ToString());
+                Assert.Contains("Orchestrator function 'CallHttpAsyncOrchestrator' failed: The operation was canceled. Reached user specified timeout: 00:00:05", output.ToString());
                 Assert.Equal(OrchestrationRuntimeStatus.Failed, status?.RuntimeStatus);
 
                 await host.StopAsync();
@@ -1519,10 +1519,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return handlerMock.Object;
         }
 
-        private static HttpMessageHandler MockSynchronousHttpMessageHandlerWithTimeoutException()
+        private static HttpMessageHandler MockSynchronousHttpMessageHandlerWithTimeoutException(TimeSpan timeoutTimespan)
         {
             HttpResponseMessage httpResponseMessage = CreateTestHttpResponseMessage(HttpStatusCode.OK);
-            CancellationTokenSource cts = new CancellationTokenSource();
 
             httpResponseMessage.Content = new ExceptionThrowingContent(new OperationCanceledException());
 
@@ -1530,7 +1529,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             handlerMock
                .Protected()
                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
-               .ReturnsAsync(httpResponseMessage);
+               .Returns(async () =>
+               {
+                   await Task.Delay(timeoutTimespan);
+                   return httpResponseMessage;
+               });
 
             return handlerMock.Object;
         }
