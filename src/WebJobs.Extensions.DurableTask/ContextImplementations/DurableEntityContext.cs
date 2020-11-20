@@ -68,6 +68,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         EntityId IDurableEntityContext.EntityId => this.self;
 
+        int IDurableEntityContext.BatchPosition => this.shim.BatchPosition;
+
+        int IDurableEntityContext.BatchSize => this.shim.OperationBatch.Count;
+
         internal List<RequestMessage> OperationBatch => this.shim.OperationBatch;
 
         internal ExceptionDispatchInfo InternalError { get; set; }

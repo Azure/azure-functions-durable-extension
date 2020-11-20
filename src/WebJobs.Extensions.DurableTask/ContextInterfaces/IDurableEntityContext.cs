@@ -48,6 +48,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         bool HasState { get; }
 
         /// <summary>
+        /// The size of the current batch of operations.
+        /// </summary>
+        int BatchSize { get; }
+
+        /// <summary>
+        /// The position of the currently executing operation within the current batch of operations.
+        /// </summary>
+        int BatchPosition { get; }
+
+        /// <summary>
         /// Gets the current state of this entity, for reading and/or updating.
         /// If this entity has no state yet, creates it.
         /// </summary>
