@@ -179,7 +179,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             orchestrationServiceClientMock.Setup(x => x.GetOrchestrationStateAsync(It.IsAny<string>(), It.IsAny<bool>()))
                 .ReturnsAsync(GetInstanceState(OrchestrationStatus.Running));
 
-            var durableOrchestrationClient = this.GetDurableClient(orchestrationServiceClientMock.Object); 
+            var durableOrchestrationClient = this.GetDurableClient(orchestrationServiceClientMock.Object);
             await durableOrchestrationClient.TerminateAsync("valid_instance_id", "any reason");
             orchestrationServiceClientMock.Verify(x => x.ForceTerminateTaskOrchestrationAsync("valid_instance_id", "any reason"), Times.Once());
         }
