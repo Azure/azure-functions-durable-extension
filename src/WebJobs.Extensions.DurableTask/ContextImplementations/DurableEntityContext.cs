@@ -539,7 +539,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     {
                         if (!operationMessage.EventContent.ScheduledTime.HasValue)
                         {
-                            this.State.MessageSorter.LabelOutgoingMessage(operationMessage.EventContent, operationMessage.Target.InstanceId, DateTime.UtcNow, this.EntityMessageReorderWindow);
+                            this.State.MessageSorter.LabelOutgoingMessage(operationMessage.EventContent, operationMessage.Target.InstanceId, DateTime.UtcNow, this.Config.MessageReorderWindow);
                         }
 
                         this.Config.TraceHelper.SendingEntityMessage(
