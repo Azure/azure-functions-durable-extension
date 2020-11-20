@@ -653,7 +653,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             if (this.httpApiHandler == null)
             {
-                throw new InvalidOperationException("CreateHttpManagementPayload not supported.");
+                throw new InvalidOperationException("IDurableClient.CreateHttpManagementPayload is not supported for IDurableClient instances created outside of a Durable Functions application.");
             }
 
             return this.httpApiHandler.CreateHttpManagementPayload(instanceId, taskHubName, connectionName);
@@ -814,7 +814,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             if (this.httpApiHandler == null)
             {
-                throw new InvalidOperationException("CreateCheckStatusResponse not supported.");
+                throw new InvalidOperationException("IDurableClient.CreateCheckStatusResponse is not supported for IDurableClient instances created outside of a Durable Functions application.");
             }
 
             return this.httpApiHandler.CreateCheckStatusResponse(request, instanceId, attribute, returnInternalServerErrorOnFailure);
