@@ -18,7 +18,6 @@ namespace FunctionAppCorrelation
 {
     /// <summary>
     /// This example is testing for Entity works on the new correlation implementation.
-    /// Distributed Tracing for Entity will be next release.
     /// </summary>
     public class EntityOrchestration
     {

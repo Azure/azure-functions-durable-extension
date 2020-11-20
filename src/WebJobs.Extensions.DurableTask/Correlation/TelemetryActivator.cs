@@ -12,7 +12,7 @@ using Microsoft.Extensions.Options;
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
 {
     /// <summary>
-    /// TelemetryActivator activates Distributed Tracing. This class only works for netstandard2.0.
+    /// TelemetryActivator initializes Distributed Tracing. This class only works for netstandard2.0.
     /// </summary>
     public class TelemetryActivator : ITelemetryActivator
     {
@@ -20,7 +20,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
         private IOptions<DurableTaskOptions> options;
 
         /// <summary>
-        /// Constructor for activating Distributed Tracing.
+        /// Constructor for initializing Distributed Tracing.
         /// </summary>
         /// <param name="options">DurableTask options.</param>
         public TelemetryActivator(IOptions<DurableTaskOptions> options)
