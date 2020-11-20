@@ -520,7 +520,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private async Task<HttpResponseMessage> HandleGetStatusRequestAsync(
             HttpRequestMessage request,
             string instanceId,
-            bool returnInternalServerErrorOnFailure = false)
+            bool? returnInternalServerErrorOnFailure = null)
         {
             IDurableOrchestrationClient client = this.GetClient(request);
             var queryNameValuePairs = request.GetQueryNameValuePairs();
@@ -540,9 +540,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 showInput = true;
             }
 
-            if (returnInternalServerErrorOnFailure == false)
+            if (returnInternalServerErrorOnFailure == null)
             {
-                if (!TryGetBooleanQueryParameterValue(queryNameValuePairs, ReturnInternalServerErrorOnFailure, out returnInternalServerErrorOnFailure))
+                if (TryGetBooleanQueryParameterValue(queryNameValuePairs, ReturnInternalServerErrorOnFailure, out bool returnInternalServerErrorParameter))
+                {
+                    returnInternalServerErrorOnFailure = returnInternalServerErrorParameter;
+                }
+                else
                 {
                     returnInternalServerErrorOnFailure = false;
                 }
@@ -569,7 +573,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 // The orchestration has failed - return 500 w/out Location header
                 case OrchestrationRuntimeStatus.Failed:
-                    statusCode = returnInternalServerErrorOnFailure ? HttpStatusCode.InternalServerError : HttpStatusCode.OK;
+                    statusCode = (bool)returnInternalServerErrorOnFailure ? HttpStatusCode.InternalServerError : HttpStatusCode.OK;
                     location = null;
                     break;
 
