@@ -10,6 +10,8 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
+using DurableTask.Core.Common;
+using DurableTask.Core.Exceptions;
 using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json;
 
@@ -60,7 +62,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
                 catch (OperationCanceledException ex) // when (cts.Token.IsCancellationRequested)
                 {
-                    throw new TimeoutException(ex.Message + $"Reached user specified timeout: {durableHttpRequest.Timeout.Value}.");
+                    TimeoutException e = new TimeoutException(ex.Message + $" Reached user specified timeout: {durableHttpRequest.Timeout.Value}.");
+
+                    string details = Utils.SerializeCause(e, this.config.ErrorDataConverter);
+                    throw new TaskFailureException(e.Message, e, details);
                 }
             }
         }

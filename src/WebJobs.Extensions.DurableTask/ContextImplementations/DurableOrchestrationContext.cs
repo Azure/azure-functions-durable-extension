@@ -694,6 +694,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             catch (TaskFailedException e)
             {
+                // Check to see if CallHttpAsync() threw a TimeoutException
+                // In this case, we want to throw a TimeoutException instead of a FunctionFailedException
+                if (functionName.Equals(HttpOptions.HttpTaskActivityReservedName) && e.InnerException is TimeoutException)
+                {
+                    throw e.InnerException;
+                }
+
                 exception = e;
                 string message = string.Format(
                     "The {0} function '{1}' failed: \"{2}\". See the function execution logs for additional details.",
