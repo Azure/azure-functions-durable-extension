@@ -22,12 +22,12 @@ using Microsoft.Extensions.Logging;
 
 namespace FunctionAppCorrelation
 {
-    public class CorrelationIntegration
+    public class SimpleCorrelationDemo
     {
         private readonly TelemetryClient telemetryClient;
         private readonly HttpClient httpClient;
 
-        public CorrelationIntegration(TelemetryConfiguration telemetryConfiguration, HttpClient client)
+        public SimpleCorrelationDemo(TelemetryConfiguration telemetryConfiguration, HttpClient client)
         {
             this.telemetryClient = new TelemetryClient(telemetryConfiguration);
             this.httpClient = client;
