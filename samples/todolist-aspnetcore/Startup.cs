@@ -22,8 +22,11 @@ namespace TodoApi
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddControllers();
+            // AddDurableTask() registers IDurableClientFactory as a service so the application
+            // can consume it and and call the Durable Client APIs
             services.AddDurableTask();
+
+            services.AddControllers();
 
             // Register the Swagger generator, defining 1 or more Swagger documents
             services.AddSwaggerGen(c =>

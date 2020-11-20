@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,9 +20,9 @@ namespace TodoApi.Controllers
     public class TodoController : Controller
     {
         private readonly TodoContext _context;
-        private readonly IDurableClientFactory _clientFactory;
+        private readonly IDurableClient _client;
 
-        public TodoController(TodoContext context, IDurableClientFactory clientFactory)
+        public TodoController(TodoContext context, IDurableClientFactory clientFactory, IConfiguration configuration)
         {
             _context = context;
 
@@ -30,7 +32,11 @@ namespace TodoApi.Controllers
                 _context.SaveChanges();
             }
 
-            _clientFactory = clientFactory;
+            _client = clientFactory.CreateClient(new DurableClientOptions
+            {
+                ConnectionName = "Storage",
+                TaskHub = configuration["TaskHub"]
+            });
         }
 
         // GET: api/Todo
@@ -95,13 +101,7 @@ namespace TodoApi.Controllers
             _context.TodoItems.Add(todoItem);
             await _context.SaveChangesAsync();
 
-            var client = _clientFactory.CreateClient(new DurableClientOptions
-            {
-                ConnectionName = "Storage",
-                TaskHub = "<TaskHubName>"
-            });
-
-            string instanceId = await client.StartNewAsync<string>("SetReminder", todoItem.Name);
+            string instanceId = await _client.StartNewAsync<string>("SetReminder", todoItem.Name);
 
             return CreatedAtAction("GetTodoItem", new { id = todoItem.Id }, todoItem);
         }

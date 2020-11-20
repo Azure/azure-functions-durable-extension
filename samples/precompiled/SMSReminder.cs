@@ -1,19 +1,26 @@
 using System;
-using System.Collections.Generic;
-using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
-using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.Host;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Twilio;
 using Twilio.Rest.Api.V2010.Account;
 using Twilio.Types;
 
-namespace FunctionApp14
+/* This sample is meant to be used with the To Do List sample at
+ * https://github.com/Azure/azure-functions-durable-extension/tree/dev/samples/todolist-aspnetcore
+ * 
+ * To run this sample, you'll need to define the following app settings:
+ *
+ *   - TwilioAccountSid: your Twilio account's SID
+ *   - TwilioAuthToken: your Twilio account's auth token
+ *   - TwilioPhoneNumber: an SMS-capable Twilio number
+ *   - TwilioPhoneNumberTo: an SMS-capable phone number to send the text to
+ *
+ * Twilio: https://www.twilio.com
+ */
+
+namespace VSSample
 {
     public static class SMSReminder
     {
