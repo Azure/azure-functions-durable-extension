@@ -145,7 +145,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
       ""tenantid"": ""tenant_id""
     }
   },
-  ""AsynchronousPatternEnabled"": true
+  ""AsynchronousPatternEnabled"": true,
+  ""Timeout"": null
 }";
 
             Dictionary<string, string> headers = new Dictionary<string, string>();
@@ -183,7 +184,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
       ""tenantid"": ""tenant_id""
     }
    },
-  ""asynchronousPatternEnabled"": true
+  ""asynchronousPatternEnabled"": true,
+  ""timeout"": null
 }";
             ManagedIdentityTokenSource managedIdentityTokenSource = new ManagedIdentityTokenSource("dummy url", options);
             TestDurableHttpRequest testDurableHttpRequest = new TestDurableHttpRequest(
@@ -213,7 +215,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     ""kind"": ""AzureManagedIdentity"",
     ""resource"": ""dummy url""
   },
-  ""asynchronousPatternEnabled"": true
+  ""asynchronousPatternEnabled"": true,
+  ""timeout"": null
 }";
 
             Dictionary<string, string> headers = new Dictionary<string, string>();
