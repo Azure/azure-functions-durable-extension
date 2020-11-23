@@ -10,7 +10,7 @@ jobs:
       buildConfiguration: 'Debug'
 
     steps:
-    - task: NuGetToolInstaller@0
+    - task: NuGetToolInstaller@1
 
     - task: DotNetCoreCLI@2
       inputs:
@@ -51,7 +51,7 @@ jobs:
       buildConfiguration: 'Debug'
 
     steps:
-    - task: NuGetToolInstaller@0
+    - task: NuGetToolInstaller@1
 
     - task: DotNetCoreCLI@2
       inputs:
@@ -89,7 +89,7 @@ jobs:
       buildConfiguration: 'Debug'
 
     steps:
-    - task: NuGetToolInstaller@0
+    - task: NuGetToolInstaller@1
 
     - task: DotNetCoreCLI@2
       inputs:
@@ -132,7 +132,7 @@ jobs:
       buildConfiguration: 'Debug'
 
     steps:
-    - task: NuGetToolInstaller@0
+    - task: NuGetToolInstaller@1
 
     - task: DotNetCoreCLI@2
       inputs:

@@ -189,6 +189,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal MessagePayloadDataConverter ErrorDataConverter { get; private set; }
 
+        internal TimeSpan MessageReorderWindow
+            => this.defaultDurabilityProvider.GuaranteesOrderedDelivery ? TimeSpan.Zero : TimeSpan.FromMinutes(this.Options.EntityMessageReorderWindowInMinutes);
+
         internal static MessagePayloadDataConverter CreateMessageDataConverter(IMessageSerializerSettingsFactory messageSerializerSettingsFactory)
         {
             bool isDefault;
@@ -213,6 +216,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             isDefault = errorSerializerSettingsFactory is ErrorSerializerSettingsFactory;
 
             return new MessagePayloadDataConverter(errorSerializerSettingsFactory.CreateJsonSerializerSettings(), isDefault);
+        }
+
+        internal string GetBackendInfo()
+        {
+            return this.defaultDurabilityProvider.GetBackendInfo();
         }
 
         /// <summary>
@@ -725,7 +733,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                                 else
                                 {
                                     // run this through the message sorter to help with reordering and duplicate filtering
-                                    deliverNow = entityContext.State.MessageSorter.ReceiveInOrder(requestMessage, entityContext.EntityMessageReorderWindow);
+                                    deliverNow = entityContext.State.MessageSorter.ReceiveInOrder(requestMessage, this.MessageReorderWindow);
                                 }
 
                                 foreach (var message in deliverNow)
@@ -1134,11 +1142,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             using (await this.taskHubLock.AcquireAsync())
             {
+                bool HasActiveListeners(RegisteredFunctionInfo info)
+                    => info?.HasActiveListener ?? false; // info can be null if function is disabled via attribute
+
                 // Wait to shut down the task hub worker until all function listeners have been shut down.
                 if (this.isTaskHubWorkerStarted &&
-                    !this.knownOrchestrators.Values.Any(info => info.HasActiveListener) &&
-                    !this.knownActivities.Values.Any(info => info.HasActiveListener) &&
-                    !this.knownEntities.Values.Any(info => info.HasActiveListener))
+                    !this.knownOrchestrators.Values.Any(HasActiveListeners) &&
+                    !this.knownActivities.Values.Any(HasActiveListeners) &&
+                    !this.knownEntities.Values.Any(HasActiveListeners))
                 {
                     bool isGracefulStop = this.Options.UseGracefulShutdown;
 

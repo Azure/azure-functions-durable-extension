@@ -68,6 +68,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         EntityId IDurableEntityContext.EntityId => this.self;
 
+        int IDurableEntityContext.BatchPosition => this.shim.BatchPosition;
+
+        int IDurableEntityContext.BatchSize => this.shim.OperationBatch.Count;
+
         internal List<RequestMessage> OperationBatch => this.shim.OperationBatch;
 
         internal ExceptionDispatchInfo InternalError { get; set; }
@@ -539,7 +543,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     {
                         if (!operationMessage.EventContent.ScheduledTime.HasValue)
                         {
-                            this.State.MessageSorter.LabelOutgoingMessage(operationMessage.EventContent, operationMessage.Target.InstanceId, DateTime.UtcNow, this.EntityMessageReorderWindow);
+                            this.State.MessageSorter.LabelOutgoingMessage(operationMessage.EventContent, operationMessage.Target.InstanceId, DateTime.UtcNow, this.Config.MessageReorderWindow);
                         }
 
                         this.Config.TraceHelper.SendingEntityMessage(

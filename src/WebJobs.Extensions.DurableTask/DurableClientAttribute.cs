@@ -24,7 +24,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <summary>
         /// Initializes a new instance of the <see cref="DurableClientAttribute"/> class.
         /// </summary>
-        /// <param name="durableClientOptions">durable client options</param>
+        /// <param name="durableClientOptions">Options to configure the IDurableClient created.</param>
         public DurableClientAttribute(DurableClientOptions durableClientOptions)
         {
             this.TaskHub = durableClientOptions.TaskHub;

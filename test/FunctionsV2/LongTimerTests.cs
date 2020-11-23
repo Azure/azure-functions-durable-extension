@@ -11,12 +11,12 @@ using Xunit.Abstractions;
 
 namespace WebJobs.Extensions.DurableTask.Tests.V2
 {
-    public class TimerTests
+    public class LongTimerTests
     {
         private readonly ITestOutputHelper output;
         private readonly TestLoggerProvider loggerProvider;
 
-        public TimerTests(ITestOutputHelper output)
+        public LongTimerTests(ITestOutputHelper output)
         {
             this.output = output;
             this.loggerProvider = new TestLoggerProvider(output);
@@ -54,7 +54,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         {
             using (ITestHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.LongRunningTimer),
+                nameof(this.TimerLengthLessThanMaxTime),
                 extendedSessions,
                 storageProviderType: "azure_storage",
                 durabilityProviderFactoryType: typeof(AzureStorageShortenedTimerDurabilityProviderFactory)))
@@ -78,7 +78,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         {
             using (var host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.LongRunningTimer),
+                nameof(this.EntitySignalWithLongDelay),
                 extendedSessions,
                 storageProviderType: "azure_storage",
                 durabilityProviderFactoryType: typeof(AzureStorageShortenedTimerDurabilityProviderFactory)))
@@ -100,6 +100,30 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
                     curstate => curstate.Count == 1 ? null : "expect message");
 
                 Assert.Equal("fire", string.Join(", ", state));
+                await host.StopAsync();
+            }
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task WaitForExternalEventAboveMaximumTimerLength()
+        {
+            using (ITestHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.WaitForExternalEventAboveMaximumTimerLength),
+                enableExtendedSessions: false,
+                storageProviderType: "azure_storage",
+                durabilityProviderFactoryType: typeof(AzureStorageShortenedTimerDurabilityProviderFactory)))
+            {
+                await host.StartAsync();
+
+                var fireAt = TimeSpan.FromSeconds(90);
+                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.ApprovalWithTimeout), (fireAt, "throw"), this.output);
+                var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromMinutes(2));
+
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal("TimeoutException", status?.Output);
+
                 await host.StopAsync();
             }
         }
