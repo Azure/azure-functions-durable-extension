@@ -2162,14 +2162,14 @@
             <param name="builder">The <see cref="T:Microsoft.Azure.WebJobs.IWebJobsBuilder"/> to configure.</param>
             <returns>Returns the provided <see cref="T:Microsoft.Azure.WebJobs.IWebJobsBuilder"/>.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskJobHostConfigurationExtensions.AddDurableTask(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskJobHostConfigurationExtensions.AddDurableClientFactory(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
             <summary>
             Adds the Durable Task extension to the provided <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/>.
             </summary>
             <param name="serviceCollection">The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> to configure.</param>
             <returns>Returns the provided <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/>.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskJobHostConfigurationExtensions.AddDurableTask(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.DurableClientOptions})">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskJobHostConfigurationExtensions.AddDurableClientFactory(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.DurableClientOptions})">
             <summary>
             Adds the Durable Task extension to the provided <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/>.
             </summary>
