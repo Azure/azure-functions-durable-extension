@@ -11,7 +11,9 @@ using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.WindowsAzure.Storage;
-using Newtonsoft.Json.Linq;
+using Microsoft.WindowsAzure.Storage.Blob;
+using Microsoft.WindowsAzure.Storage.Queue;
+using Microsoft.WindowsAzure.Storage.Table;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -27,6 +29,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public const string LogCategory = "Host.Triggers.DurableTask";
         public const string EmptyStorageProviderType = "empty";
 
+        // The regex pattern that parses our Linux Dedicated logs
+        public static readonly string RegexPattern = "(?<Account>[^,]*),(?<ActiveActivities>[^,]*),(?<ActiveOrchestrators>[^,]*),(?<Age>[^,]*),(?<AppName>[^,]*),(?<ContinuedAsNew>[^,]*),(?<CreatedTimeFrom>[^,]*),(?<CreatedTimeTo>[^,]*),(?<DequeueCount>[^,]*),\"(?<Details>[^\"]*)\",(?<Duration>[^,]*),(?<ETag>[^,]*),(?<Episode>[^,]*),(?<EventCount>[^,]*),(?<EventName>[^,]*),(?<EventType>[^,]*),(?<Exception>[^,]*),\"(?<ExceptionMessage>[^\"]*)\",(?<ExecutionId>[^,]*),(?<ExtensionVersion>[^,]*),(?<FromWorkerName>[^,]*),(?<FunctionName>[^,]*),(?<FunctionState>[^,]*),(?<FunctionType>[^,]*),(?<Input>[^,]*),(?<InstanceId>[^,]*),(?<IsCheckpointComplete>[^,]*),(?<IsExtendedSession>[^,]*),(?<IsReplay>[^,]*),(?<LastCheckpointTime>[^,]*),(?<LatencyMs>[^,]*),(?<MessageId>[^,]*),(?<MessagesRead>[^,]*),(?<MessagesSent>[^,]*),(?<MessagesUpdated>[^,]*),(?<NewEventCount>[^,]*),(?<NewEvents>[^,]*),(?<NextVisibleTime>[^,]*),(?<OperationId>[^,]*),(?<OperationName>[^,]*),(?<Output>[^,]*),(?<PartitionId>[^,]*),(?<PendingOrchestratorMessages>[^,]*),(?<PendingOrchestrators>[^,]*),(?<Reason>[^,]*),(?<RelatedActivityId>[^,]*),(?<RequestCount>[^,]*),(?<RequestId>[^,]*),(?<RequestingExecutionId>[^,]*),(?<RequestingInstance>[^,]*),(?<RequestingInstanceId>[^,]*),(?<Result>[^,]*),(?<RuntimeStatus>[^,]*),(?<SequenceNumber>[^,]*),(?<SizeInBytes>[^,]*),(?<SlotName>[^,]*),(?<StatusCode>[^,]*),(?<StorageRequests>[^,]*),(?<Success>[^,]*),(?<TableEntitiesRead>[^,]*),(?<TableEntitiesWritten>[^,]*),(?<TargetExecutionId>[^,]*),(?<TargetInstanceId>[^,]*),(?<TaskEventId>[^,]*),(?<TaskHub>[^,]*),(?<Token>[^,]*),(?<TotalEventCount>[^,]*),(?<Version>[^,]*),(?<VisibilityTimeoutSeconds>[^,]*),(?<WorkerName>[^,]*)";
+
         public static ITestHost GetJobHost(
             ILoggerProvider loggerProvider,
             string testName,
@@ -38,6 +43,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             TimeSpan? eventGridRetryInterval = null,
             int[] eventGridRetryHttpStatus = null,
             bool traceReplayEvents = true,
+            bool allowVerboseLinuxTelemetry = false,
             Uri notificationUrl = null,
             HttpMessageHandler eventGridNotificationHandler = null,
             TimeSpan? maxQueuePollingInterval = null,
@@ -52,7 +58,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             bool? localRpcEndpointEnabled = false,
             DurableTaskOptions options = null,
             bool rollbackEntityOperationsOnExceptions = true,
-            int entityMessageReorderWindowInMinutes = 30)
+            int entityMessageReorderWindowInMinutes = 30,
+            string exactTaskHubName = null)
         {
             switch (storageProviderType)
             {
@@ -71,11 +78,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 options = new DurableTaskOptions();
             }
 
-            options.HubName = GetTaskHubNameFromTestName(testName, enableExtendedSessions);
+            // Some tests require knowing the task hub that the provider uses. Because of that, they will instantiate the exact
+            // task hub name and require the usage of that task hub. Otherwise, generate a partially random task hub from the
+            // test name and properties of the test.
+            options.HubName = exactTaskHubName ?? GetTaskHubNameFromTestName(testName, enableExtendedSessions);
             options.Tracing = new TraceOptions()
             {
                 TraceInputsAndOutputs = true,
                 TraceReplayEvents = traceReplayEvents,
+                AllowVerboseLinuxTelemetry = allowVerboseLinuxTelemetry,
             };
             options.Notifications = new NotificationOptions()
             {
@@ -191,9 +202,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
+        // Create a valid task hub from the test name, and add a random suffix to avoid conflicts
         public static string GetTaskHubNameFromTestName(string testName, bool enableExtendedSessions)
         {
-            return testName.Replace("_", "") + (enableExtendedSessions ? "EX" : "") + PlatformSpecificHelpers.VersionSuffix;
+            string strippedTestName = testName.Replace("_", "");
+            string truncatedTestName = strippedTestName.Substring(0, Math.Min(35, strippedTestName.Length));
+            string testPropertiesSuffix = (enableExtendedSessions ? "EX" : "") + PlatformSpecificHelpers.VersionSuffix;
+            string randomSuffix = Guid.NewGuid().ToString().Substring(0, 4);
+            return truncatedTestName + testPropertiesSuffix + randomSuffix;
         }
 
         public static ITypeLocator GetTypeLocator()

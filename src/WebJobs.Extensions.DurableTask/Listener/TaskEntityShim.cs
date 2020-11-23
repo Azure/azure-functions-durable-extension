@@ -29,18 +29,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             = new TaskCompletionSource<object>();
 
         // a batch always consists of a (possibly empty) sequence of operations
-        // followed by zero or one lock request
+        // followed by zero or one lock request, and possibly some operations to reschedule
         private readonly List<RequestMessage> operationBatch = new List<RequestMessage>();
         private RequestMessage lockRequest = null;
+        private List<RequestMessage> toBeRescheduled;
 
-        public TaskEntityShim(DurableTaskExtension config, string schedulerId)
+        public TaskEntityShim(DurableTaskExtension config, DurabilityProvider durabilityProvider, string schedulerId)
             : base(config)
         {
             this.messageDataConverter = config.MessageDataConverter;
             this.errorDataConverter = config.ErrorDataConverter;
             this.SchedulerId = schedulerId;
             this.EntityId = EntityId.GetEntityIdFromSchedulerId(schedulerId);
-            this.context = new DurableEntityContext(config, this.EntityId, this);
+            this.context = new DurableEntityContext(config, durabilityProvider, this.EntityId, this);
         }
 
         public override DurableCommonContext Context => this.context;
@@ -53,6 +54,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal List<RequestMessage> OperationBatch => this.operationBatch;
 
+        internal int BatchPosition { get; private set; }
+
         public bool RollbackFailedOperations => this.context.Config.Options.RollbackEntityOperationsOnExceptions;
 
         public void AddOperationToBatch(RequestMessage operationMessage)
@@ -63,6 +66,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public void AddLockRequestToBatch(RequestMessage lockRequest)
         {
             this.lockRequest = lockRequest;
+        }
+
+        public void AddMessageToBeRescheduled(RequestMessage requestMessage)
+        {
+            if (this.toBeRescheduled == null)
+            {
+                this.toBeRescheduled = new List<RequestMessage>();
+            }
+
+            this.toBeRescheduled.Add(requestMessage);
         }
 
         public override RegisteredFunctionInfo GetFunctionInfo()
@@ -156,7 +169,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             DurableTaskExtension.TagActivityWithOrchestrationStatus(status, this.context.InstanceId, true);
 #endif
 
-            if (this.operationBatch.Count == 0 && this.lockRequest == null)
+            if (this.operationBatch.Count == 0
+                && this.lockRequest == null
+                && (this.toBeRescheduled == null || this.toBeRescheduled.Count == 0))
             {
                 // we are idle after a ContinueAsNew - the batch is empty.
                 // Wait for more messages to get here (via extended sessions)
@@ -206,6 +221,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     writeBackSuccessful = this.context.TryWriteback(out serializationErrorMessage);
                 }
 
+                // Reschedule all signals that were received before their time
+                this.context.RescheduleMessages(innerContext, this.toBeRescheduled);
+
                 // Send all buffered outgoing messages
                 this.context.SendOutbox(innerContext, writeBackSuccessful, serializationErrorMessage);
 
@@ -245,14 +263,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             if (this.GetFunctionInfo().IsOutOfProc)
             {
-                // process all operations in the batch using a single function call
-                await this.ExecuteOutOfProcBatch();
+                if (this.operationBatch.Count > 0)
+                {
+                    // process all operations in the batch using a single function call
+                    await this.ExecuteOutOfProcBatch();
+                }
             }
             else
             {
                 // call the function once per operation in the batch
-                foreach (var request in this.operationBatch)
+                for (this.BatchPosition = 0; this.BatchPosition < this.operationBatch.Count; this.BatchPosition++)
                 {
+                    var request = this.operationBatch[this.BatchPosition];
                     await this.ProcessOperationRequestAsync(request);
                 }
             }

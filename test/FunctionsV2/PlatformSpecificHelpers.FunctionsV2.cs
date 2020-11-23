@@ -63,7 +63,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     })
                 .Build();
 
-            return new FunctionsV2HostWrapper(host);
+            return new FunctionsV2HostWrapper(host, options, nameResolver);
         }
 
         private static IWebJobsBuilder AddDurableTask(this IWebJobsBuilder builder, IOptions<DurableTaskOptions> options, string storageProvider, Type durabilityProviderFactoryType = null)
@@ -110,11 +110,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             private readonly IHost innerHost;
             private readonly JobHost innerWebJobsHost;
+            private readonly DurableTaskOptions options;
+            private readonly INameResolver nameResolver;
 
-            public FunctionsV2HostWrapper(IHost innerHost)
+            public FunctionsV2HostWrapper(
+                IHost innerHost,
+                IOptions<DurableTaskOptions> options,
+                INameResolver nameResolver)
             {
                 this.innerHost = innerHost ?? throw new ArgumentNullException(nameof(innerHost));
                 this.innerWebJobsHost = (JobHost)this.innerHost.Services.GetService<IJobHost>();
+                this.options = options.Value;
+                this.nameResolver = nameResolver;
             }
 
             public Task CallAsync(string methodName, IDictionary<string, object> args)
@@ -123,7 +130,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             public Task CallAsync(MethodInfo method, IDictionary<string, object> args)
                 => this.innerWebJobsHost.CallAsync(method, args);
 
-            public void Dispose() => this.innerHost.Dispose();
+            public void Dispose()
+            {
+                this.innerHost.Dispose();
+            }
 
             public Task StartAsync() => this.innerHost.StartAsync();
 

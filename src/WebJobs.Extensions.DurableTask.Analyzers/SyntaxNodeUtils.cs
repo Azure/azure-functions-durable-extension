@@ -27,28 +27,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             return (DurableVersion)version;
         }
 
-        public static SemanticModel GetSyntaxTreeSemanticModel(SemanticModel model, SyntaxNode node)
+        public static bool TryGetSemanticModelForSyntaxTree(SemanticModel model, SyntaxNode node, out SemanticModel newModel)
         {
-            if (model == null || node == null)
+            if (model?.SyntaxTree == null || node?.SyntaxTree == null)
             {
-                return null;
+                newModel = null;
+                return false;
             }
 
-            return model.SyntaxTree == node.SyntaxTree
+            newModel = model.SyntaxTree == node.SyntaxTree
                 ? model
                 : model.Compilation.GetSemanticModel(node.SyntaxTree);
+            return newModel != null;
         }
 
         public static bool TryGetITypeSymbol(SemanticModel semanticModel, SyntaxNode node, out ITypeSymbol typeSymbol)
         {
-            if (node != null)
+            if (node != null && TryGetSemanticModelForSyntaxTree(semanticModel, node, out SemanticModel newModel))
             {
-                semanticModel = GetSyntaxTreeSemanticModel(semanticModel, node);
-                if (semanticModel != null)
-                {
-                    typeSymbol = semanticModel.GetTypeInfo(node).Type;
-                    return typeSymbol != null;
-                }
+                typeSymbol = newModel.GetTypeInfo(node).Type;
+                return typeSymbol != null;
             }
 
             typeSymbol = null;
@@ -57,14 +55,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         public static bool TryGetISymbol(SemanticModel semanticModel, SyntaxNode node, out ISymbol symbol)
         {
-            if (node != null)
+            if (node != null && TryGetSemanticModelForSyntaxTree(semanticModel, node, out SemanticModel newModel))
             {
-                semanticModel = GetSyntaxTreeSemanticModel(semanticModel, node);
-                if (semanticModel != null)
-                {
-                    symbol = semanticModel.GetSymbolInfo(node).Symbol;
-                    return symbol != null;
-                }
+                symbol = newModel.GetSymbolInfo(node).Symbol;
+                return symbol != null;
             }
 
             symbol = null;
@@ -81,7 +75,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         {
             if (TryGetMethodDeclaration(node, out SyntaxNode methodDeclaration))
             {
-                var parameterList = methodDeclaration.ChildNodes().Where(x => x.IsKind(SyntaxKind.ParameterList)).First();
+                var parameterList = methodDeclaration.ChildNodes().First(x => x.IsKind(SyntaxKind.ParameterList));
 
                 foreach (SyntaxNode parameter in parameterList.ChildNodes())
                 {
@@ -113,7 +107,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         private static bool TryGetChildTypeNode(SyntaxNode node, out SyntaxNode childTypeNode)
         {
-            childTypeNode = node.ChildNodes().Where(x => x.IsKind(SyntaxKind.IdentifierName) || x.IsKind(SyntaxKind.PredefinedType) || x.IsKind(SyntaxKind.GenericName) || x.IsKind(SyntaxKind.ArrayType) || x.IsKind(SyntaxKind.TupleType)).FirstOrDefault();
+            childTypeNode = node.ChildNodes().FirstOrDefault(
+                x => x.IsKind(SyntaxKind.IdentifierName)
+                || x.IsKind(SyntaxKind.PredefinedType)
+                || x.IsKind(SyntaxKind.GenericName)
+                || x.IsKind(SyntaxKind.ArrayType)
+                || x.IsKind(SyntaxKind.TupleType)
+                || x.IsKind(SyntaxKind.NullableType));
+
             return childTypeNode != null;
         }
 
@@ -218,13 +219,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                 return true;
             }
 
-            var newSemanticModel = GetSyntaxTreeSemanticModel(semanticModel, node);
-            if (newSemanticModel != null)
-            {
-                if (TryGetFunctionNameInConstant(newSemanticModel, node, out functionName))
-                {
-                    return true;
-                }
+            if (TryGetFunctionNameInConstant(semanticModel, node, out functionName))
+            { 
+                return true;
             }
             
             functionName = null;
@@ -235,11 +232,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         {
             if (node != null && (node.IsKind(SyntaxKind.IdentifierName) || node.IsKind(SyntaxKind.SimpleMemberAccessExpression)))
             {
-                var constValue = semanticModel.GetConstantValue(node);
-                if (constValue.HasValue && constValue.Value is string constString)
+                if (TryGetSemanticModelForSyntaxTree(semanticModel, node, out SemanticModel newModel))
                 {
-                    functionName = constString;
-                    return true;
+                    var constValue = newModel.GetConstantValue(node);
+                    if (constValue.HasValue && constValue.Value is string constString)
+                    {
+                        functionName = constString;
+                        return true;
+                    }
                 }
             }
 
@@ -251,13 +251,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         {
             if (node != null && node.IsKind(SyntaxKind.InvocationExpression))
             {
-                var argumentList = node.ChildNodes().Where(x => x.IsKind(SyntaxKind.ArgumentList)).FirstOrDefault();
+                var argumentList = node.ChildNodes().FirstOrDefault(x => x.IsKind(SyntaxKind.ArgumentList));
                 if (argumentList != null)
                 {
-                    var argument = argumentList.ChildNodes().Where(x => x.IsKind(SyntaxKind.Argument)).FirstOrDefault();
+                    var argument = argumentList.ChildNodes().FirstOrDefault(x => x.IsKind(SyntaxKind.Argument));
                     if (argument != null)
                     {
-                        var identifierName = argument.ChildNodes().Where(x => x.IsKind(SyntaxKind.IdentifierName)).FirstOrDefault();
+                        var identifierName = argument.ChildNodes().FirstOrDefault(x => x.IsKind(SyntaxKind.IdentifierName));
                         if (identifierName != null)
                         {
                             functionName = identifierName.ToString();
@@ -281,7 +281,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         {
             if (node != null && node.IsKind(SyntaxKind.StringLiteralExpression))
             {
-                var stringLiteralToken = node.ChildTokens().Where(x => x.IsKind(SyntaxKind.StringLiteralToken)).FirstOrDefault();
+                var stringLiteralToken = node.ChildTokens().FirstOrDefault(x => x.IsKind(SyntaxKind.StringLiteralToken));
                 if (stringLiteralToken != null)
                 {
                     functionName = stringLiteralToken.ValueText;
@@ -320,7 +320,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         internal static bool TryGetTypeArgumentIdentifier(MemberAccessExpressionSyntax expression, out SyntaxNode identifierNode)
         {
-            var genericName = expression.ChildNodes().Where(x => x.IsKind(SyntaxKind.GenericName)).FirstOrDefault();
+            var genericName = expression.ChildNodes().FirstOrDefault(x => x.IsKind(SyntaxKind.GenericName));
             if (genericName != null)
             {
                 return TryGetTypeArgumentIdentifier((GenericNameSyntax)genericName, out identifierNode);

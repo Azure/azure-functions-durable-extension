@@ -4,10 +4,13 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.Tracing;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
@@ -154,7 +157,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 this.loggerProvider,
                 nameof(this.HelloWorld_OrchestrationClientTaskHub),
                 enableExtendedSessions: false,
-                storageProviderType: storageProviderType))
+                storageProviderType: storageProviderType,
+                exactTaskHubName: taskHubName))
             {
                 await clientHost.StartAsync();
                 await orchestrationHost.StartAsync();
@@ -218,6 +222,472 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StopAsync();
             }
         }
+
+#if !FUNCTIONS_V1
+        /// <summary>
+        /// By simulating the appropiate enviorment variables for Linux Consumption,
+        /// this test checks that we are writing our JSON logs to the console. It does not
+        /// verify the contents of the JSON logs themselves (expensive) but instead checks that,
+        /// at least, we are writing messages beginning with the expected linux-dedicated prefix.
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task WritesToConsole()
+        {
+            var prefix = "MS_DURABLE_FUNCTION_EVENTS_LOGS";
+            string orchestratorName = nameof(TestOrchestrations.SayHelloInline);
+
+            // To capture console output in a StringWritter
+            using (StringWriter sw = new StringWriter())
+            {
+                // Set console to write to StringWritter
+                Console.SetOut(sw);
+
+                // Simulate enviroment variables indicating linux consumption
+                var nameResolver = new SimpleNameResolver(new Dictionary<string, string>()
+                {
+                    { "CONTAINER_NAME", "val1" },
+                    { "WEBSITE_STAMP_DEPLOYMENT_ID", "val3" },
+                    { "WEBSITE_HOME_STAMPNAME", "val4" },
+                });
+
+                // Run trivial orchestrator
+                using (var host = TestHelpers.GetJobHost(
+                    this.loggerProvider,
+                    nameResolver: nameResolver,
+                    testName: "CanWriteToConsole",
+                    enableExtendedSessions: false,
+                    storageProviderType: "azure_storage"))
+                {
+                    await host.StartAsync();
+                    var client = await host.StartOrchestratorAsync(orchestratorName, input: "World", this.output);
+                    var status = await client.WaitForCompletionAsync(this.output);
+                    await host.StopAsync();
+                }
+
+                string consoleOutput = sw.ToString();
+
+                // Ensure the console included prefixed logs
+                Assert.Contains(prefix, consoleOutput);
+
+                // Validate that the JSON has some minimal expected fields
+                string[] lines = consoleOutput.Split('\n');
+                var jsonStr = "";
+                foreach (string line in lines)
+                {
+                    if (line.StartsWith(prefix))
+                    {
+                        jsonStr = line.Replace(prefix, "");
+                        JObject json = JObject.Parse(jsonStr);
+
+                        List<string> keys = json.Properties().Select(p => p.Name).ToList();
+                        Assert.Contains("EventStampName", keys);
+                        Assert.Contains("EventPrimaryStampName", keys);
+                        Assert.Contains("ProviderName", keys);
+                        Assert.Contains("TaskName", keys);
+                        Assert.Contains("EventId", keys);
+                        Assert.Contains("EventTimestamp", keys);
+                        Assert.Contains("Tenant", keys);
+                        Assert.Contains("Pid", keys);
+                        Assert.Contains("Tid", keys);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// By simulating the appropiate enviorment variables for Linux Dedicated,
+        /// this test checks that we are writing our JSON logs to a file. It does not
+        /// verify the contents of the JSON logs themselves (expensive) but instead checks that,
+        /// at least, the log file we are writing to now exists in the file system.
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task WritesToFile()
+        {
+            // Set a different logging path, since the CI is Windows-based instead of linux.
+            LinuxAppServiceLogger.LoggingPath = Path.Combine(Directory.GetCurrentDirectory(), "logfile_WritesToFile.log");
+            File.Delete(LinuxAppServiceLogger.LoggingPath); // To ensure the test generates the path
+            string orchestratorName = nameof(TestOrchestrations.SayHelloInline);
+
+            // Simulate linux dedicated via enviroment variables
+            var nameResolver = new SimpleNameResolver(new Dictionary<string, string>()
+            {
+                { "WEBSITE_INSTANCE_ID", "val1" },
+                { "FUNCTIONS_LOGS_MOUNT_PATH", "val2" },
+            });
+
+            // Run trivial orchestrator
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameResolver: nameResolver,
+                testName: "CanWriteToFile",
+                enableExtendedSessions: false,
+                storageProviderType: "azure_storage"))
+            {
+                await host.StartAsync();
+                var client = await host.StartOrchestratorAsync(orchestratorName, input: "World", this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
+                await host.StopAsync();
+                await Task.Delay(TimeSpan.FromSeconds(10)); // giving the logger enough time to flush
+            }
+
+            // Ensure the logging file was at least generated
+            Assert.True(File.Exists(LinuxAppServiceLogger.LoggingPath));
+        }
+
+        /// <summary>
+        /// By simulating the appropiate enviorment variables for Linux Consumption,
+        /// this test checks that we are filtering verbose logs from DurableTask.Core by default in Linux.
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task FiltersVerboseLogsByDefault()
+        {
+            var prefix = "MS_DURABLE_FUNCTION_EVENTS_LOGS";
+            string orchestratorName = nameof(TestOrchestrations.SayHelloInline);
+
+            // To capture console output in a StringWritter
+            using (StringWriter sw = new StringWriter())
+            {
+                // Set console to write to StringWritter
+                Console.SetOut(sw);
+
+                // Simulate enviroment variables indicating linux consumption
+                var nameResolver = new SimpleNameResolver(new Dictionary<string, string>()
+                {
+                    { "CONTAINER_NAME", "val1" },
+                    { "WEBSITE_STAMP_DEPLOYMENT_ID", "val3" },
+                    { "WEBSITE_HOME_STAMPNAME", "val4" },
+                });
+
+                // Run trivial orchestrator
+                using (var host = TestHelpers.GetJobHost(
+                    this.loggerProvider,
+                    nameResolver: nameResolver,
+                    testName: "FiltersVerboseLogsByDefault",
+                    enableExtendedSessions: false,
+                    storageProviderType: "azure_storage"))
+                {
+                    await host.StartAsync();
+                    var client = await host.StartOrchestratorAsync(orchestratorName, input: "World", this.output);
+                    var status = await client.WaitForCompletionAsync(this.output);
+                    await host.StopAsync();
+                }
+
+                string consoleOutput = sw.ToString();
+
+                // Ensure the console included prefixed logs
+                Assert.Contains(prefix, consoleOutput);
+
+                // Validate that the JSON has some minimal expected fields
+                string[] lines = consoleOutput.Split('\n');
+                var jsonStr = "";
+                foreach (string line in lines)
+                {
+                    if (line.StartsWith(prefix))
+                    {
+                        jsonStr = line.Replace(prefix, "");
+                        JObject json = JObject.Parse(jsonStr);
+
+                        List<string> keys = json.Properties().Select(p => p.Name).ToList();
+                        Assert.Contains("EventStampName", keys);
+                        Assert.Contains("EventPrimaryStampName", keys);
+                        Assert.Contains("ProviderName", keys);
+                        Assert.Contains("TaskName", keys);
+                        Assert.Contains("EventId", keys);
+                        Assert.Contains("EventTimestamp", keys);
+                        Assert.Contains("Tenant", keys);
+                        Assert.Contains("Pid", keys);
+                        Assert.Contains("Tid", keys);
+
+                        // Ensuring no DurableTask-Core Verbose logs are found
+                        if ((int)json["Level"] == (int)EventLevel.Verbose)
+                        {
+                            Assert.False(json["ProviderName"].Equals("DurableTask-Core"));
+                        }
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// By simulating the appropiate enviorment variables for Linux Consumption,
+        /// this test checks that we can enable verbose logs from DurableTask.Core in Linux.
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task CanEnableVerboseLogsInLinux()
+        {
+            var prefix = "MS_DURABLE_FUNCTION_EVENTS_LOGS";
+            string orchestratorName = nameof(TestOrchestrations.SayHelloInline);
+
+            // To capture console output in a StringWritter
+            using (StringWriter sw = new StringWriter())
+            {
+                // Set console to write to StringWritter
+                Console.SetOut(sw);
+
+                // Simulate enviroment variables indicating linux consumption
+                var nameResolver = new SimpleNameResolver(new Dictionary<string, string>()
+                {
+                    { "CONTAINER_NAME", "val1" },
+                    { "WEBSITE_STAMP_DEPLOYMENT_ID", "val3" },
+                    { "WEBSITE_HOME_STAMPNAME", "val4" },
+                });
+
+                // Run trivial orchestrator
+                using (var host = TestHelpers.GetJobHost(
+                    this.loggerProvider,
+                    nameResolver: nameResolver,
+                    testName: "CanEnableVerboseLogsInLinux",
+                    enableExtendedSessions: false,
+                    allowVerboseLinuxTelemetry: true, // enabling verbose telemetry
+                    storageProviderType: "azure_storage"))
+                {
+                    await host.StartAsync();
+                    var client = await host.StartOrchestratorAsync(orchestratorName, input: "World", this.output);
+                    var status = await client.WaitForCompletionAsync(this.output);
+                    await host.StopAsync();
+                }
+
+                string consoleOutput = sw.ToString();
+
+                // Ensure the console included prefixed logs
+                Assert.Contains(prefix, consoleOutput);
+
+                // Validate that the JSON has some minimal expected fields
+                string[] lines = consoleOutput.Split('\n');
+                var jsonStr = "";
+                var foundVerboseLog = false;
+                foreach (string line in lines)
+                {
+                    if (line.StartsWith(prefix))
+                    {
+                        jsonStr = line.Replace(prefix, "");
+                        JObject json = JObject.Parse(jsonStr);
+
+                        List<string> keys = json.Properties().Select(p => p.Name).ToList();
+                        Assert.Contains("EventStampName", keys);
+                        Assert.Contains("EventPrimaryStampName", keys);
+                        Assert.Contains("ProviderName", keys);
+                        Assert.Contains("TaskName", keys);
+                        Assert.Contains("EventId", keys);
+                        Assert.Contains("EventTimestamp", keys);
+                        Assert.Contains("Tenant", keys);
+                        Assert.Contains("Pid", keys);
+                        Assert.Contains("Tid", keys);
+
+                        // Ensuring DurableTask-Core Verbose logs are found
+                        if (((int)json["Level"] == (int)EventLevel.Verbose)
+                            && string.Equals((string)json["ProviderName"], "DurableTask-Core"))
+                        {
+                            foundVerboseLog = true;
+                        }
+                    }
+                }
+
+                Assert.True(foundVerboseLog);
+            }
+        }
+
+        /// <summary>
+        /// By simulating the appropiate enviorment variables for Linux Dedicated,
+        /// this test checks our logs have their newlines escaped, which otherwise
+        /// could cause problems in our logging pipeline.
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task RemovesNewlinesFromExceptions()
+        {
+            // Set a different logging path, since the CI is Windows-based instead of linux.
+            LinuxAppServiceLogger.LoggingPath = Path.Combine(Directory.GetCurrentDirectory(), "logfile_RemovesNewlinesFromExceptions.log");
+            File.Delete(LinuxAppServiceLogger.LoggingPath); // To ensure the test generates the path
+            string orchestratorName = nameof(TestOrchestrations.ThrowOrchestrator);
+
+            // Simulate linux dedicated via enviroment variables
+            var nameResolver = new SimpleNameResolver(new Dictionary<string, string>()
+            {
+                { "WEBSITE_INSTANCE_ID", "val1" },
+                { "FUNCTIONS_LOGS_MOUNT_PATH", "val2" },
+            });
+
+            // Run trivial orchestrator
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameResolver: nameResolver,
+                testName: "RemovesNewlinesFromExceptions",
+                enableExtendedSessions: false,
+                storageProviderType: "azure_storage"))
+            {
+                await host.StartAsync();
+
+                // This orchestrator should error out on null inputs
+                var client = await host.StartOrchestratorAsync(orchestratorName, input: null, this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
+                await host.StopAsync();
+                await Task.Delay(TimeSpan.FromSeconds(10)); // giving the logger enough time to flush
+            }
+
+            // Ensure the logging file was at least generated
+            Assert.True(File.Exists(LinuxAppServiceLogger.LoggingPath));
+
+            // string[] lines = File.ReadAllLines(LinuxAppServiceLogger.LoggingPath);
+
+            /* TODO: The snippet below would be the test once JSON logging is enabled. Currently disabled.
+            // Ensure newlines are removed by checking the number of lines is equal to the number of "TimeStamp" columns,
+            // which corresponds to the number of JSONs logged
+
+            int countTimeStampCols = Regex.Matches(string.Join("", lines), "\"TimeStamp\":").Count;
+            Assert.Equal(lineCount, countTimeStampCols);
+            */
+
+            // If every line can be parsed, we know newlines were removed
+            /* foreach (string line in lines)
+            {
+                System.Text.RegularExpressions.Match match = Regex.Match(line, TestHelpers.RegexPattern);
+                Assert.True(match.Success);
+            }*/
+            using (var fs = new FileStream(LinuxAppServiceLogger.LoggingPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            {
+                using (var sr = new StreamReader(fs, Encoding.Default))
+                {
+                    string line;
+                    while ((line = sr.ReadLine()) != null)
+                    {
+                        System.Text.RegularExpressions.Match match = Regex.Match(line, TestHelpers.RegexPattern);
+                        Assert.True(match.Success);
+                    }
+                }
+            }
+        }
+
+        /* TODO: The snippet below would be the test once JSON logging is enabled. Currently disabled.
+
+        /// <summary>
+        /// By simulating the appropiate enviorment variables for Linux Dedicated,
+        /// this test checks our JSON logs satisfy a minimal set of requirements:
+        /// (1) Is JSON parseable
+        /// (2) Contains minimal expected fields: EventId, TimeStamp,
+        ///     Tenant, SourceMoniker, Pid, Tid, etc.
+        /// (3) Ensure some Enums are printed correctly.
+        /// (4) That we have logs from a variety of EventSource providers.
+        /// (5) Ensure ActivityId and RelatedActivityId are eventually present.
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task OutputsValidJSONLogs()
+        {
+            // Set a different logging path, since the CI is Windows-based instead of linux.
+            LinuxAppServiceLogger.LoggingPath = Path.Combine(Directory.GetCurrentDirectory(), "logfile.log");
+            File.Delete(LinuxAppServiceLogger.LoggingPath); // To ensure the test generates the path
+            string orchestratorName = nameof(TestOrchestrations.ThrowOrchestrator);
+
+            // Simulate linux dedicated via enviroment variables
+            var nameResolver = new SimpleNameResolver(new Dictionary<string, string>()
+            {
+                { "WEBSITE_INSTANCE_ID", "val1" },
+                { "FUNCTIONS_LOGS_MOUNT_PATH", "val2" },
+                { "WEBSITE_STAMP_DEPLOYMENT_ID", "val3" },
+                { "WEBSITE_HOME_STAMPNAME", "val4" },
+            });
+
+            // Run trivial orchestrator
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameResolver: nameResolver,
+                testName: "OutputsValidJSONLogs",
+                enableExtendedSessions: false,
+                storageProviderType: "azure_storage"))
+            {
+                await host.StartAsync();
+
+                // This orchestrator should error out on null inputs
+                var client = await host.StartOrchestratorAsync(orchestratorName, input: null, this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
+                await host.StopAsync();
+            }
+
+            // Ensure the logging file was at least generated
+            Assert.True(File.Exists(LinuxAppServiceLogger.LoggingPath));
+
+            // Ensure newlines are removed by checking the number of lines is equal to the number of "TimeStamp" columns,
+            // which corresponds to the number of JSONs logged
+            string[] lines = File.ReadAllLines(LinuxAppServiceLogger.LoggingPath);
+
+            bool foundAzureStorageLog = false;
+            bool foundEtwEventSourceLog = false;
+            bool foundDurableTaskCoreLog = false;
+
+            bool foundActivityId = false;
+            bool foundRelatedActivityId = false;
+
+            // Validating JSON outputs
+            foreach (string line in lines)
+            {
+                // (1) Ensure it can be parsed to JSON
+                JObject json = JObject.Parse(line);
+
+                // (2) Contains minimal expected fields
+                List<string> keys = json.Properties().Select(p => p.Name).ToList();
+                Assert.Contains("EventStampName", keys);
+                Assert.Contains("EventPrimaryStampName", keys);
+                Assert.Contains("ProviderName", keys);
+                Assert.Contains("TaskName", keys);
+                Assert.Contains("EventId", keys);
+                Assert.Contains("TimeStamp", keys);
+                Assert.Contains("Tenant", keys);
+                Assert.Contains("Pid", keys);
+                Assert.Contains("Tid", keys);
+
+                // recording EventSource providers seen
+                int eventId = (int)json.GetValue("EventId");
+                if (eventId == 202)
+                {
+                    foundEtwEventSourceLog = true;
+                }
+                else if (eventId == 10)
+                {
+                    foundDurableTaskCoreLog = true;
+                }
+                else if (eventId == 120)
+                {
+                    foundAzureStorageLog = true;
+                }
+
+                // recording if ActivityId and RelatedActivityId are seen
+                // we expect to see them, at some point, in a trivial orchestrator
+                if (keys.Contains("ActivityId"))
+                {
+                    foundActivityId = true;
+                }
+
+                if (keys.Contains("RelatedActivityId"))
+                {
+                    foundRelatedActivityId = true;
+                }
+
+                // (3) Ensure some Enums are printed correctly: as strings
+                string eventType = (string)json.GetValue("EventType");
+                if (!string.IsNullOrEmpty(eventType))
+                {
+                    Assert.True(!eventType.All(char.IsDigit));
+                }
+            }
+
+            // (4) That we have logs from a variety of EventSource providers.
+            Assert.True(foundAzureStorageLog);
+            Assert.True(foundEtwEventSourceLog);
+            Assert.True(foundDurableTaskCoreLog);
+
+            // (5) Ensure ActivityId and RelatedActivityId are present in logs
+            Assert.True(foundActivityId);
+            Assert.True(foundRelatedActivityId);
+
+            // To ensure other tests generate the path
+            File.Delete(LinuxAppServiceLogger.LoggingPath);
+        }*/
+#endif
 
         /// <summary>
         /// End-to-end test which runs a simple orchestrator function that calls a single activity function.
@@ -1080,34 +1550,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var status = await client.WaitForCompletionAsync(this.output);
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal(expectedResponse, status?.Output);
-
-                await host.StopAsync();
-            }
-        }
-
-        /// <summary>
-        /// End-to-end test which validates correct exceptions for invalid timeout values.
-        /// </summary>
-        [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task WaitForExternalEventWithTooLargeTimeout()
-        {
-            var orchestratorFunctionNames = new[] { nameof(TestOrchestrations.ApprovalWithTimeout) };
-            var extendedSessions = false;
-            using (ITestHost host = TestHelpers.GetJobHost(
-                this.loggerProvider,
-                nameof(this.WaitForExternalEventWithTooLargeTimeout),
-                extendedSessions))
-            {
-                await host.StartAsync();
-
-                var timeout = TimeSpan.FromDays(7);
-                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], (timeout, "throw"), this.output);
-                await client.WaitForStartupAsync(this.output);
-
-                var status = await client.WaitForCompletionAsync(this.output);
-                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
-                Assert.Equal("ArgumentException", status?.Output.ToString());
 
                 await host.StopAsync();
             }
@@ -2341,10 +2783,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 nameof(TestActivities.GetAndReturnHttpManagementPayload),
             };
 
+            string testName = nameof(this.Activity_Gets_HttpManagementPayload);
+            string taskHub = TestHelpers.GetTaskHubNameFromTestName(testName, extendedSessions);
             using (var host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.Activity_Gets_HttpManagementPayload),
+                testName,
                 extendedSessions,
+                exactTaskHubName: taskHub,
                 notificationUrl: new Uri(TestConstants.NotificationUrl),
                 storageProviderType: storageProvider))
             {
@@ -2355,7 +2800,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 HttpManagementPayload httpManagementPayload = status.Output.ToObject<HttpManagementPayload>();
-                ValidateHttpManagementPayload(httpManagementPayload, extendedSessions, "ActivityGetsHttpManagementPayload");
+                ValidateHttpManagementPayload(httpManagementPayload, extendedSessions, taskHub);
 
                 await host.StopAsync();
             }
@@ -2374,12 +2819,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 nameof(TestOrchestrations.SayHelloInline),
             };
 
+            string testName = nameof(this.OrchestrationClient_Gets_HttpManagementPayload);
+            string taskHub = TestHelpers.GetTaskHubNameFromTestName(testName, extendedSessions);
             using (var host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.OrchestrationClient_Gets_HttpManagementPayload),
+                testName,
                 extendedSessions,
                 notificationUrl: new Uri(TestConstants.NotificationUrl),
-                storageProviderType: storageProvider))
+                storageProviderType: storageProvider,
+                exactTaskHubName: taskHub))
             {
                 await host.StartAsync();
 
@@ -2387,7 +2835,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var status = await client.WaitForCompletionAsync(this.output);
 
                 HttpManagementPayload httpManagementPayload = client.InnerClient.CreateHttpManagementPayload(status.InstanceId);
-                ValidateHttpManagementPayload(httpManagementPayload, extendedSessions, "OrchestrationClientGetsHttpManagementPayload");
+                ValidateHttpManagementPayload(httpManagementPayload, extendedSessions, taskHub);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal("World", status?.Input);
@@ -2552,6 +3000,68 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal("start", status?.Input);
                 Assert.Equal("ok", status?.Output);
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
+        /// End-to-end test which validates batching of entity signals.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task DurableEntity_BatchedSignals(bool extendedSessions)
+        {
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.DurableEntity_BatchedSignals),
+                extendedSessions))
+            {
+                await host.StartAsync();
+
+                int numIterations = 100;
+                var entityId = new EntityId(nameof(TestEntities.BatchEntity), Guid.NewGuid().ToString());
+                var client = await host.GetEntityClientAsync(entityId, this.output);
+
+                // send a number of signals immediately after each other
+                List<Task> tasks = new List<Task>();
+                for (int i = 0; i < numIterations; i++)
+                {
+                    tasks.Add(client.SignalEntity(this.output, i.ToString()));
+                }
+
+                await Task.WhenAll(tasks);
+
+                var result = await client.WaitForEntityState<List<(int, int)>>(
+                    this.output,
+                    timeout: Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(20),
+                    list => list.Count == numIterations ? null : $"waiting for {numIterations - list.Count} signals");
+
+                // validate the batching positions and sizes
+                int? cursize = null;
+                int curpos = 0;
+                int numBatches = 0;
+                foreach (var (position, size) in result)
+                {
+                    if (cursize == null)
+                    {
+                        cursize = size;
+                        curpos = 0;
+                        numBatches++;
+                    }
+
+                    Assert.Equal(curpos, position);
+
+                    if (++curpos == cursize)
+                    {
+                        cursize = null;
+                    }
+                }
+
+                // there should always be some batching going on
+                Assert.True(numBatches < numIterations);
 
                 await host.StopAsync();
             }
@@ -2946,9 +3456,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var entityId = new EntityId(nameof(TestEntities.SchedulerEntity), Guid.NewGuid().ToString("N"));
                 TestEntityClient client = await host.GetEntityClientAsync(entityId, this.output);
 
+                // Wait 8 seconds to account for time to grab ownership lease.
+                await Task.Delay(8000);
+
                 var now = DateTime.UtcNow;
 
-                await client.SignalEntity(this.output, now + TimeSpan.FromSeconds(5), "delayed", null);
+                await client.SignalEntity(this.output, now + TimeSpan.FromSeconds(4), "delayed", null);
                 await client.SignalEntity(this.output, "immediate", null);
 
                 var timeout = Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(10);
@@ -2980,7 +3493,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 TestEntityClient client = await host.GetEntityClientAsync(entityId, this.output);
                 await client.SignalEntity(this.output, "Start", null);
 
-                var timeout = Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(10);
+                var timeout = Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(15);
                 var state = await client.WaitForEntityState<TestEntityClasses.SelfSchedulingEntity>(this.output, timeout, curstate => curstate.Value.Length == 4 ? null : "expect 4 letters");
 
                 Assert.Equal("ABCD", state.Value);
@@ -3296,32 +3809,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 string output = status.Output.ToString();
                 Assert.Contains("MaxRetryInterval", output);
-            }
-        }
-
-        [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task AzureStorage_EventTimeoutLimitHit_ThrowsException()
-        {
-            string orchestrationFunctionName = nameof(TestOrchestrations.SimpleEventWithTimeoutSucceeds);
-
-            using (var host = TestHelpers.GetJobHost(
-                this.loggerProvider,
-                nameof(this.AzureStorage_EventTimeoutLimitHit_ThrowsException),
-                false))
-            {
-                await host.StartAsync();
-
-                var timeout = TimeSpan.FromDays(7);
-
-                var client = await host.StartOrchestratorAsync(orchestrationFunctionName, timeout, this.output);
-
-                var status = await client.WaitForCompletionAsync(this.output);
-
-                Assert.Equal(OrchestrationRuntimeStatus.Failed, status.RuntimeStatus);
-
-                string output = status.Output.ToString();
-                Assert.Contains("timeout", output);
             }
         }
 
@@ -4113,7 +4600,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             using (ITestHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.DurableEntity_CleanEntityStorage),
+                nameof(this.DurableEntity_CleanEntityStorage_Many),
                 enableExtendedSessions: false, // we use a failing replay to create the orphaned lock
                 entityMessageReorderWindowInMinutes: 0, // need to set this to zero so deleted entities can be removed immediately
                 storageProviderType: storageProvider))
@@ -4356,7 +4843,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     using (var host = TestHelpers.GetJobHost(
                         this.loggerProvider,
                         taskHubName,
-                        false))
+                        false,
+                        exactTaskHubName: taskHubName + PlatformSpecificHelpers.VersionSuffix))
                     {
                         await host.StartAsync();
                         await host.StopAsync();
@@ -4530,23 +5018,97 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 { taskHubSettingName, taskHubName },
             });
 
-            ArgumentException exception =
+            taskHubName += PlatformSpecificHelpers.VersionSuffix;
+            ArgumentException argumentException =
                 await Assert.ThrowsAsync<ArgumentException>(async () =>
                 {
-                    using (var host = TestHelpers.GetJobHostWithOptions(
-                            this.loggerProvider,
-                            durableTaskOptions,
-                            nameResolver: nameResolver))
+                    using (var host = TestHelpers.GetJobHost(
+                        this.loggerProvider,
+                        nameof(this.TaskHubName_Throws_ArgumentException),
+                        false,
+                        exactTaskHubName: taskHubName))
                     {
                         await host.StartAsync();
                         await host.StopAsync();
                     }
                 });
 
-            Assert.NotNull(exception);
+            Assert.NotNull(argumentException);
             Assert.Equal(
                 $"Task hub name '{taskHubName}' should contain only alphanumeric characters, start with a letter, and have length between 3 and 45.",
-                exception.Message);
+                argumentException.Message);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task ExtendedSessions_OutOfProc_SetToFalse()
+        {
+            DurableTaskOptions durableTaskOptions = new DurableTaskOptions();
+            durableTaskOptions.HubName = "ExtendedSessionsTestNode";
+            durableTaskOptions.ExtendedSessionsEnabled = true;
+
+            var nameResolver = new SimpleNameResolver(new Dictionary<string, string>()
+            {
+                { "FUNCTIONS_WORKER_RUNTIME", "node" },
+            });
+
+            using (var host = TestHelpers.GetJobHostWithOptions(
+                this.loggerProvider,
+                durableTaskOptions,
+                nameResolver: nameResolver))
+            {
+                await host.StartAsync();
+                await host.StopAsync();
+            }
+
+            Assert.False(durableTaskOptions.ExtendedSessionsEnabled);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task ExtendedSessions_CSharp_RemainsTrue()
+        {
+            DurableTaskOptions durableTaskOptions = new DurableTaskOptions();
+            durableTaskOptions.HubName = "ExtendedSessionsTestCSharp";
+            durableTaskOptions.ExtendedSessionsEnabled = true;
+
+            var nameResolver = new SimpleNameResolver(new Dictionary<string, string>()
+            {
+                { "FUNCTIONS_WORKER_RUNTIME", "dotnet" },
+            });
+
+            using (var host = TestHelpers.GetJobHostWithOptions(
+                this.loggerProvider,
+                durableTaskOptions,
+                nameResolver: nameResolver))
+            {
+                await host.StartAsync();
+                await host.StopAsync();
+            }
+
+            Assert.True(durableTaskOptions.ExtendedSessionsEnabled);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task ExtendedSessions_UnknownLanguage_RemainsTrue()
+        {
+            DurableTaskOptions durableTaskOptions = new DurableTaskOptions();
+            durableTaskOptions.HubName = "ExtendedSessionsUnknownLanguage";
+            durableTaskOptions.ExtendedSessionsEnabled = true;
+
+            var nameResolver = new SimpleNameResolver();
+
+            using (var host = TestHelpers.GetJobHostWithOptions(
+                this.loggerProvider,
+                durableTaskOptions,
+                nameResolver: nameResolver))
+            {
+                await host.StartAsync();
+                await host.StopAsync();
+            }
+
+            Assert.True(durableTaskOptions.ExtendedSessionsEnabled);
         }
 
         [Fact]
@@ -4825,16 +5387,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.True(await blob.ExistsAsync(), $"Blob named {blob.Uri} is expected to exist.");
         }
 
-        private static void ValidateHttpManagementPayload(HttpManagementPayload httpManagementPayload, bool extendedSessions, string defaultTaskHubName)
+        private static void ValidateHttpManagementPayload(HttpManagementPayload httpManagementPayload, bool extendedSessions, string taskHubName)
         {
             Assert.NotNull(httpManagementPayload);
             Assert.NotEmpty(httpManagementPayload.Id);
             string instanceId = httpManagementPayload.Id;
             string notificationUrl = TestConstants.NotificationUrlBase;
-            string taskHubName = extendedSessions
-                ? $"{defaultTaskHubName}EX"
-                : defaultTaskHubName;
-            taskHubName += PlatformSpecificHelpers.VersionSuffix;
 
             Assert.Equal(
                 $"{notificationUrl}/instances/{instanceId}?taskHub={taskHubName}&connection=AzureWebJobsStorage&code=mykey",

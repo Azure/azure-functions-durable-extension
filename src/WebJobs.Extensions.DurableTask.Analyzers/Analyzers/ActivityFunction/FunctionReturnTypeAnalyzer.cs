@@ -28,36 +28,33 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         {
             foreach (var invocation in functionInvocations)
             {
-                var definition = functionDefinitions.Where(x => x.FunctionName == invocation.FunctionName).FirstOrDefault();
+                var definition = functionDefinitions.FirstOrDefault(x => x.FunctionName == invocation.FunctionName);
                 if (definition != null && invocation.ReturnTypeNode != null)
                 {
-                    if (TryGetInvocationReturnType(semanticModel, invocation, out ITypeSymbol invocationReturnType)
-                        && TryGetDefinitionReturnType(semanticModel, definition, out ITypeSymbol definitionReturnType))
+                    if (!IsValidReturnTypeForDefinition(invocation, definition))
                     {
-                        if (!IsValidReturnTypeForDefinition(invocationReturnType, definitionReturnType))
-                        {
-                            var diagnostic = Diagnostic.Create(Rule, invocation.InvocationExpression.GetLocation(), invocation.FunctionName, definitionReturnType.ToString(), invocationReturnType.ToString());
+                        var diagnostic = Diagnostic.Create(Rule, invocation.InvocationExpression.GetLocation(), invocation.FunctionName, definition.ReturnType, invocation.ReturnType);
 
-                            context.ReportDiagnostic(diagnostic);
-                        }
+                        context.ReportDiagnostic(diagnostic);
                     }
                 }
             }
         }
 
-        private static bool IsValidReturnTypeForDefinition(ITypeSymbol invocationReturnType, ITypeSymbol definitionReturnType)
+        private static bool IsValidReturnTypeForDefinition(ActivityFunctionCall invocation, ActivityFunctionDefinition definition)
         {
+            var definitionReturnType = definition.ReturnType;
             if (TryGetTaskTypeArgument(definitionReturnType, out ITypeSymbol taskTypeArgument))
             {
                 definitionReturnType = taskTypeArgument;
             }
 
-            return SyntaxNodeUtils.IsMatchingDerivedOrCompatibleType(definitionReturnType, invocationReturnType);
+            return SyntaxNodeUtils.IsMatchingDerivedOrCompatibleType(definitionReturnType, invocation.ReturnType);
         }
 
         private static bool TryGetTaskTypeArgument(ITypeSymbol returnType, out ITypeSymbol taskTypeArgument)
         {
-            if (returnType.Name.Equals("Task") && returnType is INamedTypeSymbol namedType)
+            if (returnType is INamedTypeSymbol namedType && returnType.Name.Equals("Task"))
             {
                 taskTypeArgument = namedType.TypeArguments.FirstOrDefault();
                 return taskTypeArgument != null;
@@ -65,20 +62,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
             taskTypeArgument = null;
             return false;
-        }
-
-        private static bool TryGetInvocationReturnType(SemanticModel semanticModel, ActivityFunctionCall activityInvocation, out ITypeSymbol invocationReturnType)
-        {
-            var invocationReturnNode = activityInvocation.ReturnTypeNode;
-
-            return SyntaxNodeUtils.TryGetITypeSymbol(semanticModel, invocationReturnNode, out invocationReturnType);
-        }
-
-        private static bool TryGetDefinitionReturnType(SemanticModel semanticModel, ActivityFunctionDefinition functionDefinition, out ITypeSymbol definitionReturnType)
-        {
-            var definitionReturnNode = functionDefinition.ReturnTypeNode;
-
-            return SyntaxNodeUtils.TryGetITypeSymbol(semanticModel, definitionReturnNode, out definitionReturnType);
         }
     }
 }

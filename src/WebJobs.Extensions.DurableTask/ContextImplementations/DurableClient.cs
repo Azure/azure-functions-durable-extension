@@ -41,23 +41,35 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly DurableTaskExtension config;
         private readonly DurableClientAttribute attribute; // for rehydrating a Client after a webhook
         private readonly MessagePayloadDataConverter messageDataConverter;
+        private readonly DurableTaskOptions durableTaskOptions;
+
+        internal DurableClient(
+            DurabilityProvider serviceClient,
+            HttpApiHandler httpHandler,
+            DurableClientAttribute attribute,
+            MessagePayloadDataConverter messageDataConverter,
+            EndToEndTraceHelper traceHelper,
+            DurableTaskOptions durableTaskOptions)
+        {
+            this.messageDataConverter = messageDataConverter;
+
+            this.client = new TaskHubClient(serviceClient, this.messageDataConverter);
+            this.durabilityProvider = serviceClient;
+            this.traceHelper = traceHelper;
+            this.httpApiHandler = httpHandler;
+            this.durableTaskOptions = durableTaskOptions;
+            this.hubName = attribute.TaskHub ?? this.durableTaskOptions.HubName;
+            this.attribute = attribute;
+        }
 
         internal DurableClient(
             DurabilityProvider serviceClient,
             DurableTaskExtension config,
             HttpApiHandler httpHandler,
             DurableClientAttribute attribute)
+            : this(serviceClient, httpHandler, attribute, config.MessageDataConverter, config.TraceHelper, config.Options)
         {
-            this.config = config ?? throw new ArgumentNullException(nameof(config));
-
-            this.messageDataConverter = config.MessageDataConverter;
-
-            this.client = new TaskHubClient(serviceClient, this.messageDataConverter);
-            this.durabilityProvider = serviceClient;
-            this.traceHelper = config.TraceHelper;
-            this.httpApiHandler = httpHandler;
-            this.hubName = attribute.TaskHub ?? config.Options.HubName;
-            this.attribute = attribute;
+            this.config = config;
         }
 
         public string TaskHubName => this.hubName;
@@ -70,6 +82,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         string IDurableClient.TaskHubName => this.TaskHubName;
 
         string IDurableEntityClient.TaskHubName => this.TaskHubName;
+
+        /// <inheritdoc/>
+        public override string ToString()
+        {
+            return $"DurableClient[backend={this.config.GetBackendInfo()}]";
+        }
 
         /// <inheritdoc />
         HttpResponseMessage IDurableOrchestrationClient.CreateCheckStatusResponse(HttpRequestMessage request, string instanceId, bool returnInternalServerErrorOnFailure)
@@ -113,7 +131,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <inheritdoc />
         async Task<string> IDurableOrchestrationClient.StartNewAsync<T>(string orchestratorFunctionName, string instanceId, T input)
         {
-            if (this.ClientReferencesCurrentApp(this))
+            if (!this.attribute.ExternalClient && this.ClientReferencesCurrentApp(this))
             {
                 this.config.ThrowIfFunctionDoesNotExist(orchestratorFunctionName, FunctionType.Orchestrator);
             }
@@ -154,7 +172,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private OrchestrationStatus[] GetStatusesNotToOverride()
         {
-            var overridableStates = this.config.Options.OverridableExistingInstanceStates;
+            var overridableStates = this.durableTaskOptions.OverridableExistingInstanceStates;
             if (overridableStates == OverridableStates.NonRunningStates)
             {
                 return new OrchestrationStatus[]
@@ -301,7 +319,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             var jrequest = JToken.FromObject(request, this.messageDataConverter.JsonSerializer);
-            var eventName = scheduledTimeUtc.HasValue ? EntityMessageEventNames.ScheduledRequestMessageEventName(scheduledTimeUtc.Value) : EntityMessageEventNames.RequestMessageEventName;
+            var eventName = scheduledTimeUtc.HasValue
+                ? EntityMessageEventNames.ScheduledRequestMessageEventName(request.GetAdjustedDeliveryTime(this.durabilityProvider))
+                : EntityMessageEventNames.RequestMessageEventName;
             await durableClient.client.RaiseEventAsync(instance, eventName, jrequest);
 
             this.traceHelper.FunctionScheduled(
@@ -320,7 +340,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private bool TaskHubMatchesCurrentApp(DurableClient client)
         {
-            var taskHubName = this.config.Options.HubName;
+            var taskHubName = this.durableTaskOptions.HubName;
             return client.TaskHubName.Equals(taskHubName);
         }
 
@@ -527,10 +547,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                          tasks.Add(CheckForOrphanedLockAndFixIt(state, status.LockedBy));
                     }
 
-                    if (removeEmptyEntities && !status.EntityExists && status.LockedBy == null && status.QueueSize == 0
-                        && now - state.LastUpdatedTime > TimeSpan.FromMinutes(this.config.Options.EntityMessageReorderWindowInMinutes))
+                    if (removeEmptyEntities)
                     {
-                        tasks.Add(DeleteIdleOrchestrationEntity(state));
+                        bool isEmptyEntity = !status.EntityExists && status.LockedBy == null && status.QueueSize == 0;
+                        bool safeToRemoveWithoutBreakingMessageSorterLogic = now - state.LastUpdatedTime > this.config.MessageReorderWindow;
+                        if (isEmptyEntity && safeToRemoveWithoutBreakingMessageSorterLogic)
+                        {
+                            tasks.Add(DeleteIdleOrchestrationEntity(state));
+                        }
                     }
                 }
 
