@@ -322,7 +322,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             return request.CreateResponse(HttpStatusCode.NotFound);
                         }
                     }
-                    else
+                    else if (request.Method == HttpMethod.Post)
                     {
                         if (string.Equals(operation, TerminateOperation, StringComparison.OrdinalIgnoreCase))
                         {
@@ -336,10 +336,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         {
                             return await this.HandleRestartInstanceRequestAsync(request, instanceId);
                         }
-                        else
-                        {
-                            return request.CreateResponse(HttpStatusCode.NotFound);
-                        }
+                    }
+                    else
+                    {
+                        return request.CreateResponse(HttpStatusCode.NotFound);
                     }
                 }
 
