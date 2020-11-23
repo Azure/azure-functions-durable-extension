@@ -24,7 +24,7 @@ namespace TodoApi
         {
             // AddDurableTask() registers IDurableClientFactory as a service so the application
             // can consume it and and call the Durable Client APIs
-            services.AddDurableTask();
+            services.AddDurableClientFactory();
 
             services.AddControllers();
 
