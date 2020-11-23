@@ -60,8 +60,6 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="1.0.2" />
     <PackageReference Include="Microsoft.AspNetCore.Routing" Version="1.0.3" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.WebApiCompatShim" Version="1.0.3" />
-    <PackageReference Include="Microsoft.Azure.DurableTask.Core" Version="2.5.0" />
-    <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" Version="1.8.2" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
@@ -71,8 +69,6 @@
 
     <PackageReference Include="Microsoft.AspNetCore.Server.Kestrel" Version="2.2.0" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="2.2.0" />
-    <PackageReference Include="Microsoft.Azure.DurableTask.Core" Version="2.5.0" />
-    <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" Version="1.8.2" />
     <PackageReference Include="Microsoft.ApplicationInsights" Version="2.12.2" />
     <PackageReference Include="Microsoft.ApplicationInsights.DependencyCollector" Version="2.12.2" />
     <PackageReference Include="Mono.Posix.NETStandard" Version="1.0.0" />
@@ -90,7 +86,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Azure.Services.AppAuthentication" Version="1.0.3" />
-    <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" Version="1.8.1" />
+    <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" Version="1.8.2" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers" Version="0.3.2" />
     <PackageReference Include="Azure.Identity" Version="1.1.1" />
   </ItemGroup>
