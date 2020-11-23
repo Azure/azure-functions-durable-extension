@@ -5,8 +5,8 @@
     <AssemblyName>Microsoft.Azure.WebJobs.Extensions.DurableTask</AssemblyName>
     <RootNamespace>Microsoft.Azure.WebJobs.Extensions.DurableTask</RootNamespace>
     <MajorVersion>2</MajorVersion>
-    <MinorVersion>5</MinorVersion>
-    <PatchVersion>9</PatchVersion>
+    <MinorVersion>3</MinorVersion>
+    <PatchVersion>1</PatchVersion>
     <Version>$(MajorVersion).$(MinorVersion).$(PatchVersion)</Version>
     <FileVersion>$(MajorVersion).$(MinorVersion).$(PatchVersion)</FileVersion>
     <AssemblyVersion>$(MajorVersion).0.0.0</AssemblyVersion>
@@ -43,6 +43,7 @@
   
   <PropertyGroup Condition="'$(TargetFramework)' != 'netstandard2.0'">
     <DefineConstants>FUNCTIONS_V1</DefineConstants>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
   </PropertyGroup>
 
   <ItemGroup>
@@ -57,8 +58,8 @@
     some dependencies that have binding redirects in Functions V1.-->
     <PackageReference Include="Microsoft.Extensions.Options" Version="1.0.2" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="1.0.2" />
-    <PackageReference Include="Microsoft.AspNetCore.Routing" Version="1.0.5" /> <!-- used to be 1.0.3 -->
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.WebApiCompatShim" Version="1.0.5" /> <!-- used to be 1.0.3 -->
+    <PackageReference Include="Microsoft.AspNetCore.Routing" Version="1.0.3" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.WebApiCompatShim" Version="1.0.3" />
     <PackageReference Include="Microsoft.Azure.DurableTask.Core" Version="2.5.0" />
     <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" Version="1.8.2" />
   </ItemGroup>

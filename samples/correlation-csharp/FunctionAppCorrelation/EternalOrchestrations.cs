@@ -45,6 +45,7 @@ namespace FunctionAppCorrelation
         public void CleanUpNotification(
             [ActivityTrigger] string message)
         {
+            // You can use TrackTrace to send a custom correlated trace message to Application Insights
             this.telemetryClient.TrackTrace(message);
         }
 
