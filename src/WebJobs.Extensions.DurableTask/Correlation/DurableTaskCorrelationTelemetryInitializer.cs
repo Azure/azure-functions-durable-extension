@@ -225,8 +225,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
 
         internal void SuppressTelemetry(ITelemetry telemetry)
         {
-            // TODO For suppressing Dependency, I make the Id as suppressed. This stragey increase the number of telemetery.
-            // However, new implementation already supressed. Once it fully tested the logic, remove the suppression logic on this class.
+            // TODO For suppressing Dependency, I make the Id as suppressed. This strategy increases the number of telemetery.
+            // However, new implementation is already supressed. Once we've fully tested this logic, remove the suppression logic on this class.
             telemetry.Context.Operation.Id = "suppressed";
             telemetry.Context.Operation.ParentId = "suppressed";
 #pragma warning disable 618
