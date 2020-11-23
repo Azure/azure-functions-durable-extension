@@ -146,7 +146,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 #if !FUNCTIONS_V1
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task DurableClient_DI_StartNewAsync_ReturnsInstanceId()
+        public async Task DurableClient_ExternalApp_StartNewAsync_ReturnsInstanceId()
         {
             var orchestrationServiceClientMock = new Mock<IOrchestrationServiceClient>();
             orchestrationServiceClientMock.Setup(x => x.GetOrchestrationStateAsync(It.IsAny<string>(), It.IsAny<bool>()))
@@ -160,7 +160,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async void DurableClient_DI_GetStatusAsync_ReturnsStatus()
+        public async void DurableClient_ExternalApp_GetStatusAsync_ReturnsStatus()
         {
             var orchestrationServiceClientMock = new Mock<IOrchestrationServiceClient>();
             orchestrationServiceClientMock.Setup(x => x.GetOrchestrationStateAsync(It.IsAny<string>(), It.IsAny<bool>()))
@@ -173,7 +173,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async void DurableClient_DI_TerminateAsync_TerminateEventPlaced()
+        public async void DurableClient_ExternalApp_TerminateAsync_TerminateEventPlaced()
         {
             var orchestrationServiceClientMock = new Mock<IOrchestrationServiceClient>();
             orchestrationServiceClientMock.Setup(x => x.GetOrchestrationStateAsync(It.IsAny<string>(), It.IsAny<bool>()))
@@ -186,7 +186,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public void DurableClient_DI_CreateCheckStatusResponse_ThrowsException()
+        public void DurableClient_ExternalApp_CreateCheckStatusResponse_ThrowsException()
         {
             var instanceId = Guid.NewGuid().ToString();
 
@@ -200,7 +200,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public void DurableClient_DI_CreateHttpManagementPayload_ThrowsException()
+        public void DurableClient_ExternalApp_CreateHttpManagementPayload_ThrowsException()
         {
             var instanceId = Guid.NewGuid().ToString();
 
