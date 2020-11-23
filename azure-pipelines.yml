@@ -79,6 +79,7 @@ jobs:
         rerunMaxAttempts: 2
       env:
         AzureWebJobsStorage: $(AzureWebJobsStorage)
+        APPINSIGHTS_INSTRUMENTATIONKEY: $(APPINSIGHTS_INSTRUMENTATIONKEY) 
 
   - job: DurableAnalyzerTests
     pool: 
@@ -117,6 +118,7 @@ jobs:
         rerunMaxAttempts: 2
       env:
         AzureWebJobsStorage: $(AzureWebJobsStorage)
+        APPINSIGHTS_INSTRUMENTATIONKEY: $(APPINSIGHTS_INSTRUMENTATIONKEY) 
     
   - job: PublishPipelineArtifact
     dependsOn:
