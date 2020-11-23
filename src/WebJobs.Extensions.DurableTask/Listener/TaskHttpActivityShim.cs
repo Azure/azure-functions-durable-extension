@@ -39,28 +39,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public async override Task<string> RunAsync(TaskContext context, string rawInput)
         {
             DurableHttpRequest durableHttpRequest = ReconstructDurableHttpRequest(rawInput);
-            HttpRequestMessage requestMessage = await this.ReconstructHttpRequestMessage(durableHttpRequest);
+            HttpRequestMessage requestMessage = await this.ConvertToHttpRequestMessage(durableHttpRequest);
 
-            using (CancellationTokenSource cts = new CancellationTokenSource())
+            HttpResponseMessage response;
+            if (durableHttpRequest.Timeout == null)
+            {
+                response = await this.httpClient.SendAsync(requestMessage);
+            }
+            else
             {
                 try
                 {
-                    HttpResponseMessage response;
-                    if (durableHttpRequest.Timeout == null)
-                    {
-                        response = await this.httpClient.SendAsync(requestMessage);
-                    }
-                    else
+                    using (CancellationTokenSource cts = new CancellationTokenSource())
                     {
                         cts.CancelAfter(durableHttpRequest.Timeout.Value);
                         response = await this.httpClient.SendAsync(requestMessage, cts.Token);
                     }
-
-                    DurableHttpResponse durableHttpResponse = await DurableHttpResponse.CreateDurableHttpResponseWithHttpResponseMessage(response);
-
-                    return JsonConvert.SerializeObject(durableHttpResponse);
                 }
-                catch (OperationCanceledException ex) // when (cts.Token.IsCancellationRequested)
+                catch (OperationCanceledException ex)
                 {
                     TimeoutException e = new TimeoutException(ex.Message + $" Reached user specified timeout: {durableHttpRequest.Timeout.Value}.");
 
@@ -68,6 +64,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     throw new TaskFailureException(e.Message, e, details);
                 }
             }
+
+            DurableHttpResponse durableHttpResponse = await DurableHttpResponse.CreateDurableHttpResponseWithHttpResponseMessage(response);
+
+            return JsonConvert.SerializeObject(durableHttpResponse);
         }
 
         private static DurableHttpRequest ReconstructDurableHttpRequest(string serializedRequest)
@@ -79,7 +79,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return durableHttpRequest;
         }
 
-        private async Task<HttpRequestMessage> ReconstructHttpRequestMessage(DurableHttpRequest durableHttpRequest)
+        private async Task<HttpRequestMessage> ConvertToHttpRequestMessage(DurableHttpRequest durableHttpRequest)
         {
             string contentType = "";
             HttpRequestMessage requestMessage = new HttpRequestMessage(durableHttpRequest.Method, durableHttpRequest.Uri);
