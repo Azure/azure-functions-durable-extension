@@ -76,19 +76,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations
 
             DurableClientAttribute attribute = new DurableClientAttribute(durableClientOptions);
 
-            HttpApiHandler httpApiHandler = this.cachedHttpListeners.GetOrAdd(
-                attribute,
-                attr =>
-                {
-                    return new HttpApiHandler(null, null, this.durableTaskOptions, this.logger);
-                });
-
             DurableClient client = this.cachedClients.GetOrAdd(
                 attribute,
                 attr =>
                 {
                     DurabilityProvider innerClient = this.durabilityProviderFactory.GetDurabilityProvider(attribute);
-                    return new DurableClient(innerClient, httpApiHandler, attribute, this.MessageDataConverter, this.TraceHelper, this.durableTaskOptions);
+                    return new DurableClient(innerClient, null, attribute, this.MessageDataConverter, this.TraceHelper, this.durableTaskOptions);
                 });
 
             return client;

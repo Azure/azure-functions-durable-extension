@@ -59,7 +59,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </summary>
         /// <param name="serviceCollection">The <see cref="IServiceCollection"/> to configure.</param>
         /// <returns>Returns the provided <see cref="IServiceCollection"/>.</returns>
-        public static IServiceCollection AddDurableTask(this IServiceCollection serviceCollection)
+        public static IServiceCollection AddDurableClientFactory(this IServiceCollection serviceCollection)
         {
             if (serviceCollection == null)
             {
@@ -81,9 +81,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="serviceCollection">The <see cref="IServiceCollection"/> to configure.</param>
         /// <param name="optionsBuilder">Populate default configurations of <see cref="DurableClientOptions"/> to create Durable Clients.</param>
         /// <returns>Returns the provided <see cref="IServiceCollection"/>.</returns>
-        public static IServiceCollection AddDurableTask(this IServiceCollection serviceCollection, Action<DurableClientOptions> optionsBuilder)
+        public static IServiceCollection AddDurableClientFactory(this IServiceCollection serviceCollection, Action<DurableClientOptions> optionsBuilder)
         {
-            AddDurableTask(serviceCollection);
+            AddDurableClientFactory(serviceCollection);
             serviceCollection.Configure<DurableClientOptions>(optionsBuilder.Invoke);
             return serviceCollection;
         }
