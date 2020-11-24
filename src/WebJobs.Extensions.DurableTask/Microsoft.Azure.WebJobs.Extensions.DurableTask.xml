@@ -3941,7 +3941,7 @@
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.TraceOptions.DistributedTracingEnabled">
             <summary>
             Gets or sets a flag indicating whether to enable distributed tracing.
-            The default value is true.
+            The default value is false.
             </summary>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.TraceOptions.DistributedTracingProtocol">

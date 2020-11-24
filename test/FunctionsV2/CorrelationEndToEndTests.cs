@@ -123,19 +123,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 string protocol)
         {
             ConcurrentQueue<ITelemetry> sendItems = new ConcurrentQueue<ITelemetry>();
+            TraceOptions traceOptions = new TraceOptions()
+            {
+                DistributedTracingEnabled = true,
+                DistributedTracingProtocol = protocol,
+            };
+            DurableTaskOptions options = new DurableTaskOptions();
+            options.Tracing = traceOptions;
             var sendAction = new Action<ITelemetry>(
                 delegate(ITelemetry telemetry) { sendItems.Enqueue(telemetry); });
             using (var host = TestHelpers.GetJobHost(
                 this.loggerProvider,
                 testName,
                 extendedSessions,
-                options: new DurableTaskOptions()
-                {
-                    Tracing = new TraceOptions()
-                    {
-                        DistributedTracingProtocol = protocol,
-                    },
-                },
+                options: options,
                 onSend: sendAction))
             {
                 await host.StartAsync();

@@ -53,9 +53,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #if !FUNCTIONS_V1
         /// <summary>
         /// Gets or sets a flag indicating whether to enable distributed tracing.
-        /// The default value is true.
+        /// The default value is false.
         /// </summary>
-        public bool DistributedTracingEnabled { get; set; } = true;
+        public bool DistributedTracingEnabled { get; set; } = false;
 
         /// <summary>
         /// Gets or sets a protocol for distributed Tracing.

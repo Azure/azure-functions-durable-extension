@@ -87,12 +87,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             // task hub name and require the usage of that task hub. Otherwise, generate a partially random task hub from the
             // test name and properties of the test.
             options.HubName = exactTaskHubName ?? GetTaskHubNameFromTestName(testName, enableExtendedSessions);
-            options.Tracing = new TraceOptions()
-            {
-                TraceInputsAndOutputs = true,
-                TraceReplayEvents = traceReplayEvents,
-                AllowVerboseLinuxTelemetry = allowVerboseLinuxTelemetry,
-            };
+
+            options.Tracing.TraceInputsAndOutputs = true;
+            options.Tracing.TraceReplayEvents = traceReplayEvents;
+            options.Tracing.AllowVerboseLinuxTelemetry = allowVerboseLinuxTelemetry;
+
             options.Notifications = new NotificationOptions()
             {
                 EventGrid = new EventGridNotificationOptions()
