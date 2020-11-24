@@ -699,9 +699,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             timeSpanValue = null;
             string value = queryStringNameValueCollection[queryParameterName];
-            if (value != null)
+            if (double.TryParse(value, out double doubleValue))
             {
-                timeSpanValue = TimeSpan.FromSeconds(double.Parse(value));
+                timeSpanValue = TimeSpan.FromSeconds(doubleValue);
             }
 
             return timeSpanValue != null;
@@ -799,8 +799,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     newInstanceId = await client.RestartAsync(instanceId);
                 }
 
-                if (TryGetTimeSpanQueryParameterValue(queryNameValuePairs, TimeoutParameter, out TimeSpan? timeout)
-                    && TryGetTimeSpanQueryParameterValue(queryNameValuePairs, PollingInterval, out TimeSpan? pollingInterval))
+                TryGetTimeSpanQueryParameterValue(queryNameValuePairs, TimeoutParameter, out TimeSpan? timeout);
+                TryGetTimeSpanQueryParameterValue(queryNameValuePairs, PollingInterval, out TimeSpan? pollingInterval);
+
+                // for durability providers that support poll-free waiting, we override the specified polling interval
+                if (client is DurableClient durableClient && durableClient.DurabilityProvider.SupportsPollFreeWait)
+                {
+                    pollingInterval = timeout;
+                }
+
+                if (timeout.HasValue && pollingInterval.HasValue)
                 {
                     return await client.WaitForCompletionOrCreateCheckStatusResponseAsync(request, newInstanceId, timeout, pollingInterval);
                 }
