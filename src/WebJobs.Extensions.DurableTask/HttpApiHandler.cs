@@ -540,15 +540,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 showInput = true;
             }
 
-            if (returnInternalServerErrorOnFailure == null)
+            bool finalReturnInternalServerErrorOnFailure;
+            if (returnInternalServerErrorOnFailure.HasValue)
             {
-                if (TryGetBooleanQueryParameterValue(queryNameValuePairs, ReturnInternalServerErrorOnFailure, out bool returnInternalServerErrorParameter))
+                finalReturnInternalServerErrorOnFailure = returnInternalServerErrorOnFailure.Value;
+            }
+            else
+            {
+                if (!TryGetBooleanQueryParameterValue(queryNameValuePairs, ReturnInternalServerErrorOnFailure, out finalReturnInternalServerErrorOnFailure))
                 {
-                    returnInternalServerErrorOnFailure = returnInternalServerErrorParameter;
-                }
-                else
-                {
-                    returnInternalServerErrorOnFailure = false;
+                    finalReturnInternalServerErrorOnFailure = false;
                 }
             }
 
@@ -573,7 +574,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 // The orchestration has failed - return 500 w/out Location header
                 case OrchestrationRuntimeStatus.Failed:
-                    statusCode = (bool)returnInternalServerErrorOnFailure ? HttpStatusCode.InternalServerError : HttpStatusCode.OK;
+                    statusCode = finalReturnInternalServerErrorOnFailure ? HttpStatusCode.InternalServerError : HttpStatusCode.OK;
                     location = null;
                     break;
 
