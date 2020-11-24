@@ -10,16 +10,21 @@ using Newtonsoft.Json;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
+using Microsoft.Extensions.Configuration;
 
 namespace DurableClientSampleFunctionApp
 {
     public class HelloSequence
     {
-        private readonly IDurableClientFactory _clientFactory;
+        private readonly IDurableClient _client;
 
-        public HelloSequence(IDurableClientFactory clientFactory)
+        public HelloSequence(IDurableClientFactory clientFactory, IConfiguration configuration)
         {
-            _clientFactory = clientFactory;
+            _client = clientFactory.CreateClient(new DurableClientOptions
+            {
+                ConnectionName = "Storage",
+                TaskHub = configuration["TaskHub"]
+            });
         }
 
         [FunctionName("CallHelloSequence")]
@@ -29,22 +34,16 @@ namespace DurableClientSampleFunctionApp
         {
             log.LogInformation("C# HTTP trigger function processed a request.");
 
-            var client = _clientFactory.CreateClient(new DurableClientOptions
-            {
-                ConnectionName = "Storage",
-                TaskHub = "<TaskHubName>"
-            });
+            string instanceId = await _client.StartNewAsync("E1_HelloSequence");
 
-            string instanceId = await client.StartNewAsync("E1_HelloSequence");
-
-            DurableOrchestrationStatus status = await client.GetStatusAsync(instanceId);
+            DurableOrchestrationStatus status = await _client.GetStatusAsync(instanceId);
 
             while (status.RuntimeStatus == OrchestrationRuntimeStatus.Pending ||
                     status.RuntimeStatus == OrchestrationRuntimeStatus.Running ||
                     status.RuntimeStatus == OrchestrationRuntimeStatus.ContinuedAsNew)
             {
                 await Task.Delay(10000);
-                status = await client.GetStatusAsync(instanceId);
+                status = await _client.GetStatusAsync(instanceId);
             }
 
             return new ObjectResult(status);

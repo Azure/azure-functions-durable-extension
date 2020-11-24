@@ -9,7 +9,9 @@ namespace DurableClientSampleFunctionApp
     {
         public override void Configure(IFunctionsHostBuilder builder)
         {
-            builder.Services.AddDurableTask();
+            // AddDurableClientFactory() registers IDurableClientFactory as a service so the application
+            // can consume it and and call the Durable Client APIs
+            builder.Services.AddDurableClientFactory();
         }
     }
 }
