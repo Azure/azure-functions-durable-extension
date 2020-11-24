@@ -142,7 +142,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             if (timeout == null)
             {
-                timeout = Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(30);
+                timeout = Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(60);
             }
 
             Stopwatch sw = Stopwatch.StartNew();
