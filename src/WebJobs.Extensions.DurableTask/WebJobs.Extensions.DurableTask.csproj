@@ -85,7 +85,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Azure.Services.AppAuthentication" Version="1.0.3" />
-    <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" Version="1.8.2" />
+    <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" Version="1.8.3" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers" Version="0.3.2" />
     <PackageReference Include="Azure.Identity" Version="1.1.1" />
   </ItemGroup>

@@ -40,6 +40,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </summary>
         public string Serialize(object value, int maxSizeInKB)
         {
+            if (value == null)
+            {
+                return null;
+            }
+
             string serializedJson;
 
             JToken json = value as JToken;

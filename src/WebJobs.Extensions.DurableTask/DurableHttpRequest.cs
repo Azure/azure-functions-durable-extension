@@ -26,13 +26,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="content">Content added to the body of the HTTP request.</param>
         /// <param name="tokenSource">AAD authentication attached to the HTTP request.</param>
         /// <param name="asynchronousPatternEnabled">Specifies whether the DurableHttpRequest should handle the asynchronous pattern.</param>
+        /// <param name="timeout">TimeSpan used for HTTP request timeout.</param>
         public DurableHttpRequest(
             HttpMethod method,
             Uri uri,
             IDictionary<string, StringValues> headers = null,
             string content = null,
             ITokenSource tokenSource = null,
-            bool asynchronousPatternEnabled = true)
+            bool asynchronousPatternEnabled = true,
+            TimeSpan? timeout = null)
         {
             this.Method = method;
             this.Uri = uri;
@@ -40,6 +42,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.Content = content;
             this.TokenSource = tokenSource;
             this.AsynchronousPatternEnabled = asynchronousPatternEnabled;
+            this.Timeout = timeout;
         }
 
         /// <summary>
@@ -81,6 +84,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </summary>
         [JsonProperty("asynchronousPatternEnabled")]
         public bool AsynchronousPatternEnabled { get; }
+
+        /// <summary>
+        /// The total timeout for the original HTTP request and any
+        /// asynchronous polling.
+        /// </summary>
+        [JsonProperty("timeout")]
+        public TimeSpan? Timeout { get; }
 
         private class HttpMethodConverter : JsonConverter
         {
