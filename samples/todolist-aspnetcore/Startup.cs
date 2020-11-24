@@ -22,7 +22,7 @@ namespace TodoApi
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            // AddDurableTask() registers IDurableClientFactory as a service so the application
+            // AddDurableClientFactory() registers IDurableClientFactory as a service so the application
             // can consume it and and call the Durable Client APIs
             services.AddDurableClientFactory();
 
