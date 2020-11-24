@@ -68,7 +68,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 }.ToList(), actual.Select(x => (x.GetType(), x.Name)).ToList());
         }
 
-        
+        /*
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(false, "W3CTraceContext")]
@@ -115,6 +115,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     (typeof(RequestTelemetry), $"{TraceConstants.Activity} BuiltIn::HttpActivity"),  // HttpActivity Started
                 }.ToList(), actual.Select(x => (x.GetType(), x.Name)).ToList());
         }
+        */
 
         internal async Task<Tuple<List<OperationTelemetry>, List<ExceptionTelemetry>>>
             ExecuteOrchestrationWithExceptionAsync(
