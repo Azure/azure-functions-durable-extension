@@ -4,7 +4,7 @@ This project contains an Azure Function App that calls a Durable Function throug
 
 ## Local setup
 
-Create a local.settings.json file and add two properties: a `Storage` property and a `TaskHub` property. Add the storage account connection string that you are using for the Durable Function. Having the same storage account allows the two function apps to communicate.
+In the local.settings.json file, add values for "Storage" and "TaskHub". Add the storage account connection string and task hub name that you are using for the Durable Function. This Function App and the Durable Function communicate through the storage account and task hub.
 
 ```json
 {
