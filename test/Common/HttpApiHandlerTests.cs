@@ -862,7 +862,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 .Returns(Task.FromResult(restartedInstanceId));
 
             clientMock
-                .Setup(x => x.WaitForCompletionOrCreateCheckStatusResponseAsync(It.IsAny<HttpRequestMessage>(), It.IsAny<string>(), It.IsAny<TimeSpan>(), It.IsAny<TimeSpan>()))
+                .Setup(x => x.WaitForCompletionOrCreateCheckStatusResponseAsync(It.IsAny<HttpRequestMessage>(), It.IsAny<string>(), It.IsAny<TimeSpan>(), It.IsAny<TimeSpan>(), It.IsAny<bool>()))
                 .Returns(Task.FromResult(testResponse));
 
             var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);
