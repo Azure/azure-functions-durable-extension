@@ -187,6 +187,46 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task WaitForCompletionOrCreateCheckStatusResponseAsync_Returns_Custom_HttpManagementPayload_After_Timeout()
+        {
+            var httpApiHandler = new HttpApiHandler(GetTestExtension(), null);
+            var stopWatch = Stopwatch.StartNew();
+            var httpResponseMessage = await httpApiHandler.WaitForCompletionOrCreateCheckStatusResponseAsync(
+                new HttpRequestMessage
+                {
+                    RequestUri = new Uri(TestConstants.RequestUri),
+                },
+                TestConstants.RandomInstanceId,
+                new DurableClientAttribute
+                {
+                    TaskHub = TestConstants.TaskHub,
+                    ConnectionName = TestConstants.ConnectionName,
+                },
+                TimeSpan.FromSeconds(100),
+                TimeSpan.FromSeconds(10),
+                true);
+            stopWatch.Stop();
+            Assert.Equal(HttpStatusCode.Accepted, httpResponseMessage.StatusCode);
+            var content = await httpResponseMessage.Content.ReadAsStringAsync();
+            var status = JsonConvert.DeserializeObject<JObject>(content);
+            Assert.Equal(status["id"], TestConstants.RandomInstanceId);
+            Assert.Equal(
+                $"{TestConstants.NotificationUrlBase}/instances/9b59154ae666471993659902ed0ba749?taskHub=SampleHubVS&connection=Storage&code=mykey&returnInternalServerErrorOnFailure=true",
+                (string)status["statusQueryGetUri"]);
+            Assert.Equal(
+                $"{TestConstants.NotificationUrlBase}/instances/9b59154ae666471993659902ed0ba749/raiseEvent/{{eventName}}?taskHub=SampleHubVS&connection=Storage&code=mykey",
+                (string)status["sendEventPostUri"]);
+            Assert.Equal(
+                $"{TestConstants.NotificationUrlBase}/instances/9b59154ae666471993659902ed0ba749/terminate?reason={{text}}&taskHub=SampleHubVS&connection=Storage&code=mykey",
+                (string)status["terminatePostUri"]);
+            Assert.Equal(
+                $"{TestConstants.NotificationUrlBase}/instances/9b59154ae666471993659902ed0ba749?taskHub=SampleHubVS&connection=Storage&code=mykey",
+                (string)status["purgeHistoryDeleteUri"]);
+            Assert.True(stopWatch.Elapsed > TimeSpan.FromSeconds(30));
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task WaitForCompletionOrCreateCheckStatusResponseAsync_Returns_HTTP_202_Response_After_Timeout()
         {
             var httpApiHandler = new HttpApiHandler(GetTestExtension(), null);
@@ -808,7 +848,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 .Returns(Task.FromResult(testInstanceId));
 
             clientMock
-                .Setup(x => x.WaitForCompletionOrCreateCheckStatusResponseAsync(It.IsAny<HttpRequestMessage>(), It.IsAny<string>(), It.IsAny<TimeSpan>(), It.IsAny<TimeSpan>()))
+                .Setup(x => x.WaitForCompletionOrCreateCheckStatusResponseAsync(It.IsAny<HttpRequestMessage>(), It.IsAny<string>(), It.IsAny<TimeSpan>(), It.IsAny<TimeSpan>(), It.IsAny<bool>()))
                 .Returns(Task.FromResult(testResponse));
 
             var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);

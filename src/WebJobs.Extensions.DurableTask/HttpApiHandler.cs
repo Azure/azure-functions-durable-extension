@@ -170,14 +170,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string instanceId,
             DurableClientAttribute attribute,
             TimeSpan timeout,
-            TimeSpan retryInterval)
+            TimeSpan retryInterval,
+            bool returnInternalServerErrorOnFailure = false)
         {
             if (retryInterval > timeout)
             {
                 throw new ArgumentException($"Total timeout {timeout.TotalSeconds} should be bigger than retry timeout {retryInterval.TotalSeconds}");
             }
 
-            HttpManagementPayload httpManagementPayload = this.GetClientResponseLinks(request, instanceId, attribute?.TaskHub, attribute?.ConnectionName);
+            HttpManagementPayload httpManagementPayload = this.GetClientResponseLinks(request, instanceId, attribute?.TaskHub, attribute?.ConnectionName, returnInternalServerErrorOnFailure);
 
             IDurableOrchestrationClient client = this.GetClient(request);
             Stopwatch stopwatch = Stopwatch.StartNew();
@@ -220,7 +221,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         status.RuntimeStatus == OrchestrationRuntimeStatus.Failed ||
                         status.RuntimeStatus == OrchestrationRuntimeStatus.Terminated)
                     {
-                        return await this.HandleGetStatusRequestAsync(request, instanceId);
+                        return await this.HandleGetStatusRequestAsync(request, instanceId, returnInternalServerErrorOnFailure);
                     }
                 }
 
@@ -543,7 +544,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private async Task<HttpResponseMessage> HandleGetStatusRequestAsync(
             HttpRequestMessage request,
-            string instanceId)
+            string instanceId,
+            bool? returnInternalServerErrorOnFailure = null)
         {
             IDurableOrchestrationClient client = this.GetClient(request);
             var queryNameValuePairs = request.GetQueryNameValuePairs();
@@ -563,9 +565,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 showInput = true;
             }
 
-            if (!TryGetBooleanQueryParameterValue(queryNameValuePairs, ReturnInternalServerErrorOnFailure, out bool returnInternalServerErrorOnFailure))
+            bool finalReturnInternalServerErrorOnFailure;
+            if (returnInternalServerErrorOnFailure.HasValue)
             {
-                returnInternalServerErrorOnFailure = false;
+                finalReturnInternalServerErrorOnFailure = returnInternalServerErrorOnFailure.Value;
+            }
+            else
+            {
+                if (!TryGetBooleanQueryParameterValue(queryNameValuePairs, ReturnInternalServerErrorOnFailure, out finalReturnInternalServerErrorOnFailure))
+                {
+                    finalReturnInternalServerErrorOnFailure = false;
+                }
             }
 
             var status = await client.GetStatusAsync(instanceId, showHistory, showHistoryOutput, showInput);
@@ -589,7 +599,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 // The orchestration has failed - return 500 w/out Location header
                 case OrchestrationRuntimeStatus.Failed:
-                    statusCode = returnInternalServerErrorOnFailure ? HttpStatusCode.InternalServerError : HttpStatusCode.OK;
+                    statusCode = finalReturnInternalServerErrorOnFailure ? HttpStatusCode.InternalServerError : HttpStatusCode.OK;
                     location = null;
                     break;
 
