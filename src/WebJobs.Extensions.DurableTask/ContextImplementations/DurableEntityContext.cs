@@ -424,6 +424,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             if (method == null)
             {
+                // We support a default delete operation even if the interface does not explicitly have a Delete method.
                 if (string.Equals("delete", context.OperationName, StringComparison.InvariantCultureIgnoreCase))
                 {
                     Entity.Current.DeleteState();
