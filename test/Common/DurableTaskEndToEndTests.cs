@@ -2675,7 +2675,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await client.WaitForCustomStatusAsync(TimeSpan.FromSeconds(10), this.output, statusValue);
 
                 // Test clearing an existing custom status
-                await client.RaiseEventAsync("UpdateStatus", "", this.output);
+                await client.RaiseEventAsync("UpdateStatus", null, this.output);
                 await client.WaitForCustomStatusAsync(TimeSpan.FromSeconds(30), this.output, JValue.CreateNull());
 
                 // Test setting the custom status to a complex object.

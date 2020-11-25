@@ -17,7 +17,7 @@ using Newtonsoft.Json.Linq;
 namespace FunctionAppCorrelation
 {
     /// <summary>
-    /// This example is testing for Entity works on the new correlation implementation.
+    /// This example is for testing that Durable Entities work with the new correlation implementation.
     /// </summary>
     public class EntityOrchestration
     {

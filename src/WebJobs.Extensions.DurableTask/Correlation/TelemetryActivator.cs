@@ -45,7 +45,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
                 this.SetUpTelemetryClient();
                 this.SetUpTelemetryCallbacks();
             }
-
         }
 
         private void SetUpDistributedTracing()
