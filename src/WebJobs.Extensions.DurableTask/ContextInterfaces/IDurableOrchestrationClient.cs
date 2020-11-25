@@ -288,5 +288,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="cancellationToken">Cancellation token that can be used to cancel the status query operation.</param>
         /// <returns>Returns each page of orchestration status for all instances and continuation token of next page.</returns>
         Task<OrchestrationStatusQueryResult> ListInstancesAsync(OrchestrationStatusQueryCondition condition, CancellationToken cancellationToken);
+
+        /// <summary>
+        ///  Restarts an existing orchestrator with the original input.
+        /// </summary>
+        /// <param name="instanceId">InstanceId of a previously run orchestrator to restart.</param>
+        /// <param name="restartWithNewInstanceId">Optional parameter that configures if restarting an orchestration will use a new instanceId or if it will
+        /// reuse the old instanceId. Defauls to <c>true</c>.</param>
+        /// <returns>A task that completes when the orchestration is started. The task contains the instance id of the started
+        /// orchestratation instance.</returns>
+        Task<string> RestartAsync(string instanceId, bool restartWithNewInstanceId = true);
     }
 }

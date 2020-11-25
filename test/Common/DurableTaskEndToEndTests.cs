@@ -4277,7 +4277,79 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
-        [Theory(Skip = "Azure Storage fails due to container deletion")]
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task RestartOrchestator_IsSuccess(bool restartWithNewInstanceId)
+        {
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.SayHelloInline),
+            };
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.HelloWorldOrchestration_Inline),
+                false))
+            {
+                await host.StartAsync();
+
+                var instanceId = Guid.NewGuid().ToString();
+
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], "RestartAsyncTest", this.output, instanceId: instanceId);
+                await client.WaitForCompletionAsync(this.output);
+
+                var newInstanceId = await client.InnerClient.RestartAsync(instanceId, restartWithNewInstanceId: restartWithNewInstanceId);
+                var status = await client.WaitForCompletionAsync(this.output);
+
+                if (restartWithNewInstanceId)
+                {
+                    Assert.NotEqual(instanceId, newInstanceId);
+                }
+                else
+                {
+                    Assert.Equal(instanceId, newInstanceId);
+                }
+
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal("RestartAsyncTest", status?.Input);
+
+                await host.StopAsync();
+            }
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task RestartOrchestrator_ThrowsException()
+        {
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.SayHelloInline),
+            };
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.HelloWorldOrchestration_Inline),
+                false))
+            {
+                await host.StartAsync();
+
+                var nonExistentId = Guid.NewGuid().ToString();
+
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], "World", this.output);
+
+                ArgumentException exception =
+                    await Assert.ThrowsAsync<ArgumentException>(async () =>
+                    {
+                        await client.InnerClient.RestartAsync(nonExistentId);
+                    });
+
+                Assert.Equal(
+                    $"An orchestrastion with the instanceId {nonExistentId} was not found.",
+                    exception.Message);
+            }
+        }
+
+        [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [MemberData(nameof(TestDataGenerator.GetBooleanAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task GetStatus_WithCondition(bool extendedSessions, string storageProvider)
@@ -5331,6 +5403,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(
                 $"{notificationUrl}/instances/{instanceId}/terminate?reason={{text}}&taskHub={taskHubName}&connection=AzureWebJobsStorage&code=mykey",
                 httpManagementPayload.TerminatePostUri);
+            Assert.Equal(
+                $"{notificationUrl}/instances/{instanceId}/restart?taskHub={taskHubName}&connection=AzureWebJobsStorage&code=mykey",
+                httpManagementPayload.RestartUri);
         }
 
         [DataContract]

@@ -911,6 +911,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return ((IDurableOrchestrationClient)this).StartNewAsync<T>(orchestratorFunctionName, string.Empty, input);
         }
 
+        async Task<string> IDurableOrchestrationClient.RestartAsync(string instanceId, bool restartWithNewInstanceId)
+        {
+            DurableOrchestrationStatus status = await ((IDurableOrchestrationClient)this).GetStatusAsync(instanceId, showHistory: false, showHistoryOutput: false, showInput: true);
+
+            if (status == null)
+            {
+                throw new ArgumentException($"An orchestrastion with the instanceId {instanceId} was not found.");
+            }
+
+            return restartWithNewInstanceId ? await ((IDurableOrchestrationClient)this).StartNewAsync(orchestratorFunctionName: status.Name, status.Input)
+                : await ((IDurableOrchestrationClient)this).StartNewAsync(orchestratorFunctionName: status.Name, instanceId: status.InstanceId, status.Input);
+        }
+
         /// <inheritdoc/>
         Task IDurableEntityClient.SignalEntityAsync<TEntityInterface>(string entityKey, Action<TEntityInterface> operation)
         {
