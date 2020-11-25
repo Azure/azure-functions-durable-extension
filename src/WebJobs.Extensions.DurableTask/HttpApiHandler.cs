@@ -115,7 +115,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 httpManagementPayload.SendEventPostUri,
                 httpManagementPayload.TerminatePostUri,
                 httpManagementPayload.PurgeHistoryDeleteUri,
-                httpManagementPayload.RestartUri);
+                httpManagementPayload.RestartPostUri);
         }
 
         // /orchestrators/{functionName}/{instanceId?}
@@ -248,7 +248,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         httpManagementPayload.SendEventPostUri,
                         httpManagementPayload.TerminatePostUri,
                         httpManagementPayload.PurgeHistoryDeleteUri,
-                        httpManagementPayload.RestartUri);
+                        httpManagementPayload.RestartPostUri);
                 }
             }
         }
@@ -1092,7 +1092,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 TerminatePostUri = instancePrefix + "/" + TerminateOperation + "?reason={text}&" + querySuffix,
                 RewindPostUri = instancePrefix + "/" + RewindOperation + "?reason={text}&" + querySuffix,
                 PurgeHistoryDeleteUri = instancePrefix + "?" + querySuffix,
-                RestartUri = instancePrefix + "/" + RestartOperation + "?" + querySuffix,
+                RestartPostUri = instancePrefix + "/" + RestartOperation + "?" + querySuffix,
             };
 
             if (returnInternalServerErrorOnFailure)
@@ -1110,7 +1110,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string sendEventPostUri,
             string terminatePostUri,
             string purgeHistoryDeleteUri,
-            string restartUri)
+            string restartPostUri)
         {
             HttpResponseMessage response = request.CreateResponse(
                 HttpStatusCode.Accepted,
@@ -1121,7 +1121,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     sendEventPostUri,
                     terminatePostUri,
                     purgeHistoryDeleteUri,
-                    restartUri,
+                    restartPostUri,
                 });
 
             // Implement the async HTTP 202 pattern.

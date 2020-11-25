@@ -70,7 +70,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <value>
         /// The HTTP URL for restarting an orchestration instance.
         /// </value>
-        [JsonProperty("restartUri")]
-        public string RestartUri { get; internal set; }
+        [JsonProperty("restartPostUri")]
+        public string RestartPostUri { get; internal set; }
     }
 }
