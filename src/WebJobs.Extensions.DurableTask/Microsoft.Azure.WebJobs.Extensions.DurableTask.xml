@@ -3079,7 +3079,7 @@
             The HTTP URL for purging instance history by instance ID.
             </value>
         </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload.RestartUri">
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload.RestartPostUri">
             <summary>
             Gets the HTTP POST instance restart endpoint.
             </summary>

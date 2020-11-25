@@ -97,7 +97,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 (string)status["purgeHistoryDeleteUri"]);
             Assert.Equal(
                 $"{TestConstants.NotificationUrlBase}/instances/7b59154ae666471993659902ed0ba742/restart?taskHub=SampleHubVS&connection=Storage&code=mykey",
-                (string)status["restartUri"]);
+                (string)status["restartPostUri"]);
         }
 
         [Fact]
@@ -122,7 +122,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 httpManagementPayload.PurgeHistoryDeleteUri);
             Assert.Equal(
                $"{TestConstants.NotificationUrlBase}/instances/7b59154ae666471993659902ed0ba742/restart?taskHub=DurableFunctionsHub&connection=Storage&code=mykey",
-               httpManagementPayload.RestartUri);
+               httpManagementPayload.RestartPostUri);
         }
 
         [Fact]
@@ -147,7 +147,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 httpManagementPayload.PurgeHistoryDeleteUri);
             Assert.Equal(
                 $"{TestConstants.NotificationUrlBase}/instances/7b59154ae666471993659902ed0ba742/restart?taskHub=SampleHubVS&connection=Storage&code=mykey",
-                httpManagementPayload.RestartUri);
+                httpManagementPayload.RestartPostUri);
         }
 
         [Fact]
@@ -172,7 +172,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 httpManagementPayload.PurgeHistoryDeleteUri);
             Assert.Equal(
                 $"{TestConstants.NotificationUrlBase}/instances/7b59154ae666471993659902ed0ba742/restart?taskHub=DurableFunctionsHub&connection=TestConnection&code=mykey",
-                httpManagementPayload.RestartUri);
+                httpManagementPayload.RestartPostUri);
         }
 
         [Fact]
@@ -197,7 +197,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 httpManagementPayload.PurgeHistoryDeleteUri);
             Assert.Equal(
                 $"{TestConstants.NotificationUrlBase}/instances/7b59154ae666471993659902ed0ba742/restart?taskHub=SampleHubVS&connection=TestConnection&code=mykey",
-                httpManagementPayload.RestartUri);
+                httpManagementPayload.RestartPostUri);
         }
 
         [Fact]
@@ -278,7 +278,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 (string)status["purgeHistoryDeleteUri"]);
             Assert.Equal(
                 $"{TestConstants.NotificationUrlBase}/instances/9b59154ae666471993659902ed0ba749/restart?taskHub=SampleHubVS&connection=Storage&code=mykey",
-                (string)status["restartUri"]);
+                (string)status["restartPostUri"]);
             Assert.True(stopWatch.Elapsed > TimeSpan.FromSeconds(30));
         }
 
