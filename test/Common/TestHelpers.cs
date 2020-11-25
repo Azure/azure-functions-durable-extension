@@ -7,6 +7,10 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using DurableTask.AzureStorage;
+using Microsoft.ApplicationInsights.Channel;
+#if !FUNCTIONS_V1
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
+#endif
 using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -57,6 +61,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             IMessageSerializerSettingsFactory serializerSettings = null,
             bool? localRpcEndpointEnabled = false,
             DurableTaskOptions options = null,
+            Action<ITelemetry> onSend = null,
             bool rollbackEntityOperationsOnExceptions = true,
             int entityMessageReorderWindowInMinutes = 30,
             string exactTaskHubName = null)
@@ -82,12 +87,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             // task hub name and require the usage of that task hub. Otherwise, generate a partially random task hub from the
             // test name and properties of the test.
             options.HubName = exactTaskHubName ?? GetTaskHubNameFromTestName(testName, enableExtendedSessions);
-            options.Tracing = new TraceOptions()
-            {
-                TraceInputsAndOutputs = true,
-                TraceReplayEvents = traceReplayEvents,
-                AllowVerboseLinuxTelemetry = allowVerboseLinuxTelemetry,
-            };
+
+            options.Tracing.TraceInputsAndOutputs = true;
+            options.Tracing.TraceReplayEvents = traceReplayEvents;
+            options.Tracing.AllowVerboseLinuxTelemetry = allowVerboseLinuxTelemetry;
+
             options.Notifications = new NotificationOptions()
             {
                 EventGrid = new EventGridNotificationOptions()
@@ -149,6 +153,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 durableHttpMessageHandler,
                 lifeCycleNotificationHelper,
                 serializerSettings,
+                onSend,
                 durabilityProviderFactoryType);
         }
 
@@ -160,6 +165,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             IDurableHttpMessageHandlerFactory durableHttpMessageHandler = null,
             ILifeCycleNotificationHelper lifeCycleNotificationHelper = null,
             IMessageSerializerSettingsFactory serializerSettings = null,
+            Action<ITelemetry> onSend = null,
             Type durabilityProviderFactoryType = null)
         {
             if (serializerSettings == null)
@@ -175,16 +181,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
 
             return PlatformSpecificHelpers.CreateJobHost(
-                optionsWrapper,
-                storageProviderType,
+                options: optionsWrapper,
+                storageProvider: storageProviderType,
 #if !FUNCTIONS_V1
-                durabilityProviderFactoryType,
+                durabilityProviderFactoryType: durabilityProviderFactoryType,
 #endif
-                loggerProvider,
-                testNameResolver,
-                durableHttpMessageHandler,
-                lifeCycleNotificationHelper,
-                serializerSettings);
+                loggerProvider: loggerProvider,
+                nameResolver: testNameResolver,
+                durableHttpMessageHandler: durableHttpMessageHandler,
+                lifeCycleNotificationHelper: lifeCycleNotificationHelper,
+                serializerSettingsFactory: serializerSettings,
+                onSend: onSend);
         }
 
         public static DurableTaskOptions GetDurableTaskOptionsForStorageProvider(string storageProvider)

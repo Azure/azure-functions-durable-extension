@@ -1564,6 +1564,208 @@
             Now obsolete: use <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient"/> instead.
             </summary>
         </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.DurableTaskCorrelationTelemetryInitializer">
+            <summary>
+            Telemetry Initializer that sets correlation ids for W3C.
+            This source is based on W3COperationCorrelationTelemetryInitializer.cs
+            1. Modified with CorrelationTraceContext.Current
+            2. Avoid to be overriden when it is RequestTelemetry
+            Original Source is here https://github.com/microsoft/ApplicationInsights-dotnet-server/blob/2.8.0/Src/Common/W3C/W3COperationCorrelationTelemetryInitializer.cs.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.DurableTaskCorrelationTelemetryInitializer.TraceIdTag">
+            These internal property is copied from W3CConstants
+            <summary>Trace-Id tag name.</summary>
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.DurableTaskCorrelationTelemetryInitializer.SpanIdTag">
+            <summary>Span-Id tag name.</summary>
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.DurableTaskCorrelationTelemetryInitializer.ParentSpanIdTag">
+            <summary>Parent span-Id tag name.</summary>
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.DurableTaskCorrelationTelemetryInitializer.VersionTag">
+            <summary>Version tag name.</summary>
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.DurableTaskCorrelationTelemetryInitializer.SampledTag">
+            <summary>Sampled tag name.</summary>
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.DurableTaskCorrelationTelemetryInitializer.TracestateTag">
+            <summary>Tracestate tag name.</summary>
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.DurableTaskCorrelationTelemetryInitializer.DefaultVersion">
+            <summary>Default version value.</summary>
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.DurableTaskCorrelationTelemetryInitializer.TraceFlagRecordedAndNotRequested">
+            <summary>
+            Default sampled flag value: may be recorded, not requested.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.DurableTaskCorrelationTelemetryInitializer.TraceFlagRecordedAndRequested">
+            <summary>Recorded and requested sampled flag value.</summary>
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.DurableTaskCorrelationTelemetryInitializer.RequestedTraceFlag">
+            <summary>Requested trace flag.</summary>
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.DurableTaskCorrelationTelemetryInitializer.LegacyRootIdProperty">
+            <summary>Legacy root Id tag name.</summary>
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.DurableTaskCorrelationTelemetryInitializer.LegacyRequestIdProperty">
+            <summary>Legacy root Id tag name.</summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.DurableTaskCorrelationTelemetryInitializer.#ctor">
+            <summary>
+            Constructor.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.DurableTaskCorrelationTelemetryInitializer.ExcludeComponentCorrelationHttpHeadersOnDomains">
+            <summary>
+            Set of suppress telemetry tracking if you add Host name on this.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.DurableTaskCorrelationTelemetryInitializer.Initialize(Microsoft.ApplicationInsights.Channel.ITelemetry)">
+            <summary>
+            Initializes telemetry item.
+            </summary>
+            <param name="telemetry">Telemetry item.</param>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.ITelemetryActivator">
+            <summary>
+            ITelemetryActivator is an interface.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.ITelemetryActivator.Initialize">
+            <summary>
+            Initialize is initialize the telemetry client.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.NoOpTelemetryChannel">
+            <summary>
+            A stub of <see cref="T:Microsoft.ApplicationInsights.Channel.ITelemetryChannel"/>.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.NoOpTelemetryChannel.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.NoOpTelemetryChannel"/> class.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.NoOpTelemetryChannel.DeveloperMode">
+            <summary>
+            Gets or sets a value indicating whether this channel is in developer mode.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.NoOpTelemetryChannel.EndpointAddress">
+            <summary>
+            Gets or sets a value indicating the channel's URI. To this URI the telemetry is expected to be sent.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.NoOpTelemetryChannel.ThrowError">
+            <summary>
+            Gets or sets a value indicating whether to throw an error.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.NoOpTelemetryChannel.OnSend">
+            <summary>
+            Gets or sets the callback invoked by the <see cref="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.NoOpTelemetryChannel.Send(Microsoft.ApplicationInsights.Channel.ITelemetry)"/> method.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.NoOpTelemetryChannel.OnFlush">
+            <summary>
+            Gets or sets the callback invoked by the <see cref="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.NoOpTelemetryChannel.Flush"/> method.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.NoOpTelemetryChannel.OnDispose">
+            <summary>
+            Gets or sets the callback invoked by the <see cref="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.NoOpTelemetryChannel.Dispose"/> method.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.NoOpTelemetryChannel.Send(Microsoft.ApplicationInsights.Channel.ITelemetry)">
+            <summary>
+            Implements the <see cref="M:Microsoft.ApplicationInsights.Channel.ITelemetryChannel.Send(Microsoft.ApplicationInsights.Channel.ITelemetry)"/> method by invoking the <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.NoOpTelemetryChannel.OnSend"/> callback.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.NoOpTelemetryChannel.Dispose">
+            <summary>
+            Implements the <see cref="M:System.IDisposable.Dispose"/> method.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.NoOpTelemetryChannel.Flush">
+            <summary>
+            Implements  the <see cref="M:Microsoft.ApplicationInsights.Channel.ITelemetryChannel.Flush" /> method.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.TelemetryActivator">
+            <summary>
+            TelemetryActivator initializes Distributed Tracing. This class only works for netstandard2.0.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.TelemetryActivator.#ctor(Microsoft.Extensions.Options.IOptions{Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions})">
+            <summary>
+            Constructor for initializing Distributed Tracing.
+            </summary>
+            <param name="options">DurableTask options.</param>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.TelemetryActivator.OnSend">
+            <summary>
+            OnSend is an action that enable to hook of sending telemetry.
+            You can use this property for testing.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.TelemetryActivator.Initialize">
+            <summary>
+            Initialize is initialize the telemetry client.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.TraceContextBaseExtensions">
+            <summary>
+            TraceContextBase extension methods.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.TraceContextBaseExtensions.CreateRequestTelemetry(DurableTask.Core.TraceContextBase)">
+            <summary>
+            Create RequestTelemetry from the TraceContext.
+            </summary>
+            <param name="context">TraceContext.</param>
+            <returns>RequestTelemetry.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.TraceContextBaseExtensions.CreateDependencyTelemetry(DurableTask.Core.TraceContextBase)">
+            <summary>
+            Create DependencyTelemetry from the Activity.
+            </summary>
+            <param name="context">TraceContext.</param>
+            <returns>DependencyTelemetry.</returns>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.TraceParent">
+            <summary>
+            Represents a traceParent that is defined W3C TraceContext.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.TraceParent.Version">
+            <summary>
+            Gets or sets the Version of the traceParent.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.TraceParent.TraceId">
+            <summary>
+            Gets or sets the TraceId of the traceParent.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.TraceParent.SpanId">
+            <summary>
+            Gets or sets the SpanId of the traceParent.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.TraceParent.TraceFlags">
+            <summary>
+            Gets or sets the TraceFlags of the traceParent.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.TraceParent.FromString(System.String)">
+            <summary>
+            Convert a traceParent string to TraceParent object.
+            </summary>
+            <param name="traceparent">string representations of traceParent.</param>
+            <returns>TraceParent object.</returns>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DeterministicAttribute">
             <summary>
             Attribute used with the Durable Functions Analyzer to label a method as Deterministic. This allows the method to be called in an Orchestration function without causing a compiler warning.
@@ -2093,7 +2295,7 @@
             Configuration for the Durable Functions extension.
             </summary>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.#ctor(Microsoft.Extensions.Options.IOptions{Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions},Microsoft.Extensions.Logging.ILoggerFactory,Microsoft.Azure.WebJobs.INameResolver,Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurabilityProviderFactory,Microsoft.Azure.WebJobs.Extensions.DurableTask.IApplicationLifetimeWrapper,Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableHttpMessageHandlerFactory,Microsoft.Azure.WebJobs.Extensions.DurableTask.ILifeCycleNotificationHelper,Microsoft.Azure.WebJobs.Extensions.DurableTask.IMessageSerializerSettingsFactory,Microsoft.Azure.WebJobs.Extensions.DurableTask.IErrorSerializerSettingsFactory)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.#ctor(Microsoft.Extensions.Options.IOptions{Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions},Microsoft.Extensions.Logging.ILoggerFactory,Microsoft.Azure.WebJobs.INameResolver,Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurabilityProviderFactory,Microsoft.Azure.WebJobs.Extensions.DurableTask.IApplicationLifetimeWrapper,Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableHttpMessageHandlerFactory,Microsoft.Azure.WebJobs.Extensions.DurableTask.ILifeCycleNotificationHelper,Microsoft.Azure.WebJobs.Extensions.DurableTask.IMessageSerializerSettingsFactory,Microsoft.Azure.WebJobs.Extensions.DurableTask.IErrorSerializerSettingsFactory,Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.ITelemetryActivator)">
             <summary>
             Initializes a new instance of the <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension"/>.
             </summary>
@@ -2106,6 +2308,7 @@
             <param name="lifeCycleNotificationHelper">The lifecycle notification helper used for custom orchestration tracking.</param>
             <param name="messageSerializerSettingsFactory">The factory used to create <see cref="T:Newtonsoft.Json.JsonSerializerSettings"/> for message settings.</param>
             <param name="errorSerializerSettingsFactory">The factory used to create <see cref="T:Newtonsoft.Json.JsonSerializerSettings"/> for error settings.</param>
+            <param name="telemetryActivator">The activator of DistributedTracing. .netstandard2.0 only.</param>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.Microsoft#Azure#WebJobs#Host#Config#IExtensionConfigProvider#Initialize(Microsoft.Azure.WebJobs.Host.Config.ExtensionConfigContext)">
             <summary>
@@ -3758,6 +3961,19 @@
             <value>
             Boolean value specifying if the replay events should be logged.
             </value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.TraceOptions.DistributedTracingEnabled">
+            <summary>
+            Gets or sets a flag indicating whether to enable distributed tracing.
+            The default value is false.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.TraceOptions.DistributedTracingProtocol">
+            <summary>
+            Gets or sets a protocol for distributed Tracing.
+            Possible values are "HttpCorrelationProtocol" and "W3CTraceContext".
+            The default value is "HttpCorrelationProtocol".
+            </summary>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.OrchestrationClientAttribute">
             <summary>

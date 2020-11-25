@@ -18,6 +18,9 @@ using DurableTask.Core.Exceptions;
 using DurableTask.Core.History;
 using DurableTask.Core.Middleware;
 using Microsoft.Azure.WebJobs.Description;
+#if !FUNCTIONS_V1
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
+#endif
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener;
 using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.Host.Config;
@@ -60,7 +63,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             new ConcurrentDictionary<FunctionName, RegisteredFunctionInfo>();
 
         private readonly AsyncLock taskHubLock = new AsyncLock();
-
+#if !FUNCTIONS_V1
+#pragma warning disable CS0169
+        private readonly ITelemetryActivator telemetryActivator;
+#pragma warning restore CS0169
+#endif
         private readonly bool isOptionsConfigured;
         private readonly IApplicationLifetimeWrapper hostLifetimeService = HostLifecycleService.NoOp;
 
@@ -87,7 +94,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.isOptionsConfigured = false;
         }
 #endif
-
+#pragma warning disable CS1572
         /// <summary>
         /// Initializes a new instance of the <see cref="DurableTaskExtension"/>.
         /// </summary>
@@ -100,6 +107,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="lifeCycleNotificationHelper">The lifecycle notification helper used for custom orchestration tracking.</param>
         /// <param name="messageSerializerSettingsFactory">The factory used to create <see cref="JsonSerializerSettings"/> for message settings.</param>
         /// <param name="errorSerializerSettingsFactory">The factory used to create <see cref="JsonSerializerSettings"/> for error settings.</param>
+        /// <param name="telemetryActivator">The activator of DistributedTracing. .netstandard2.0 only.</param>
+#pragma warning restore CS1572
         public DurableTaskExtension(
             IOptions<DurableTaskOptions> options,
             ILoggerFactory loggerFactory,
@@ -109,7 +118,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             IDurableHttpMessageHandlerFactory durableHttpMessageHandlerFactory = null,
             ILifeCycleNotificationHelper lifeCycleNotificationHelper = null,
             IMessageSerializerSettingsFactory messageSerializerSettingsFactory = null,
+#if !FUNCTIONS_V1
+            IErrorSerializerSettingsFactory errorSerializerSettingsFactory = null,
+#pragma warning disable SA1113, SA1001, SA1115
+            ITelemetryActivator telemetryActivator = null)
+#pragma warning restore SA1113, SA1001, SA1115
+#else
             IErrorSerializerSettingsFactory errorSerializerSettingsFactory = null)
+#endif
         {
             // Options will be null in Functions v1 runtime - populated later.
             this.Options = options?.Value ?? new DurableTaskOptions();
@@ -144,6 +160,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // The RPC server is started when the extension is initialized.
             // The RPC server is stopped when the host has finished shutting down.
             this.hostLifetimeService.OnStopped.Register(this.StopLocalRcpServer);
+            this.telemetryActivator = telemetryActivator;
+            this.telemetryActivator?.Initialize();
 #endif
         }
 

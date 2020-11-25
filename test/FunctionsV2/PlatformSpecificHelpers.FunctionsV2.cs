@@ -5,6 +5,8 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Threading.Tasks;
+using Microsoft.ApplicationInsights.Channel;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -29,7 +31,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             INameResolver nameResolver,
             IDurableHttpMessageHandlerFactory durableHttpMessageHandler,
             ILifeCycleNotificationHelper lifeCycleNotificationHelper,
-            IMessageSerializerSettingsFactory serializerSettingsFactory)
+            IMessageSerializerSettingsFactory serializerSettingsFactory,
+            Action<ITelemetry> onSend)
         {
             IHost host = new HostBuilder()
                 .ConfigureLogging(
@@ -59,6 +62,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                         if (serializerSettingsFactory != null)
                         {
                             serviceCollection.AddSingleton(serializerSettingsFactory);
+                        }
+
+                        if (onSend != null)
+                        {
+                            serviceCollection.AddSingleton<ITelemetryActivator>(serviceProvider =>
+                            {
+                                var durableTaskOptions = serviceProvider.GetService<IOptions<DurableTaskOptions>>();
+                                var telemetryActivator = new TelemetryActivator(durableTaskOptions)
+                                {
+                                    OnSend = onSend,
+                                };
+                                return telemetryActivator;
+                            });
                         }
                     })
                 .Build();
