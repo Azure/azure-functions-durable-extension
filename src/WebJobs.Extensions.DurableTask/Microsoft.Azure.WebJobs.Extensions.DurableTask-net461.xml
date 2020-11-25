@@ -705,6 +705,25 @@
             </exception>
             <returns>The instance id of the new orchestration.</returns>
         </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableEntityContext.DispatchAsync``1(System.Object[])">
+            <summary>
+            Dynamically dispatches the incoming entity operation using reflection.
+            </summary>
+            <typeparam name="T">The class to use for entity instances.</typeparam>
+            <returns>A task that completes when the dispatched operation has finished.</returns>
+            <exception cref="T:System.Reflection.AmbiguousMatchException">If there is more than one method with the given operation name.</exception>
+            <exception cref="T:System.MissingMethodException">If there is no method with the given operation name.</exception>
+            <exception cref="T:System.InvalidOperationException">If the method has more than one argument.</exception>
+            <remarks>
+            If the entity's state is null, an object of type <typeparamref name="T"/> is created first. Then, reflection
+            is used to try to find a matching method. This match is based on the method name
+            (which is the operation name) and the argument list (which is the operation content, deserialized into
+            an object array).
+            </remarks>
+            <param name="constructorParameters">Parameters to feed to the entity constructor. Should be primarily used for
+            output bindings. Parameters must match the order in the constructor after ignoring parameters populated on
+            constructor via dependency injection.</param>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient">
             <summary>
             Provides functionality available to durable orchestration clients.
@@ -2616,31 +2635,6 @@
             <summary>
             The metadata used for reordering and deduplication of messages sent to entities.
             </summary>
-        </member>
-        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.TypedInvocationExtensions">
-            <summary>
-            Extends the durable entity context to support reflection-based invocation of entity operations.
-            </summary>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.TypedInvocationExtensions.DispatchAsync``1(Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableEntityContext,System.Object[])">
-            <summary>
-            Dynamically dispatches the incoming entity operation using reflection.
-            </summary>
-            <typeparam name="T">The class to use for entity instances.</typeparam>
-            <returns>A task that completes when the dispatched operation has finished.</returns>
-            <exception cref="T:System.Reflection.AmbiguousMatchException">If there is more than one method with the given operation name.</exception>
-            <exception cref="T:System.MissingMethodException">If there is no method with the given operation name.</exception>
-            <exception cref="T:System.InvalidOperationException">If the method has more than one argument.</exception>
-            <remarks>
-            If the entity's state is null, an object of type <typeparamref name="T"/> is created first. Then, reflection
-            is used to try to find a matching method. This match is based on the method name
-            (which is the operation name) and the argument list (which is the operation content, deserialized into
-            an object array).
-            </remarks>
-            <param name="context">Context object to use to dispatch entity operations.</param>
-            <param name="constructorParameters">Parameters to feed to the entity constructor. Should be primarily used for
-            output bindings. Parameters must match the order in the constructor after ignoring parameters populated on
-            constructor via dependency injection.</param>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.EtwEventSource">
             <summary>
