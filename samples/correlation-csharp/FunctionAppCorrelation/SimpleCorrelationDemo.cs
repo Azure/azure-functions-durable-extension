@@ -37,11 +37,15 @@ namespace FunctionAppCorrelation
         public async Task<List<string>> Orchestration_W3C(
            [OrchestrationTrigger] IDurableOrchestrationContext context)
         {
-            var correlationContext = CorrelationTraceContext.Current as W3CTraceContext;
+            if (!CorrelationTraceContext.Current is W3CTraceContext correlationContext)
+            {
+                throw new InvalidOperationException($"This sample expects a correlation trace context of {nameof(W3CTraceContext)}, but the context isof type {CorrelationTraceContext.Current.GetType()}");
+            }
+
             var trace = new TraceTelemetry(
-                $"Activity Id: {correlationContext?.TraceParent} ParentSpanId: {correlationContext?.ParentSpanId}");
-            trace.Context.Operation.Id = correlationContext?.TelemetryContextOperationId;
-            trace.Context.Operation.ParentId = correlationContext?.TelemetryContextOperationParentId;
+                $"Activity Id: {correlationContext.TraceParent} ParentSpanId: {correlationContext.ParentSpanId}");
+            trace.Context.Operation.Id = correlationContext.TelemetryContextOperationId;
+            trace.Context.Operation.ParentId = correlationContext.TelemetryContextOperationParentId;
             this.telemetryClient.Track(trace);
 
             var outputs = new List<string>
