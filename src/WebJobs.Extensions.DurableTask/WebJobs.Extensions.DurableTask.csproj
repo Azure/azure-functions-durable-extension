@@ -5,8 +5,8 @@
     <AssemblyName>Microsoft.Azure.WebJobs.Extensions.DurableTask</AssemblyName>
     <RootNamespace>Microsoft.Azure.WebJobs.Extensions.DurableTask</RootNamespace>
     <MajorVersion>2</MajorVersion>
-    <MinorVersion>3</MinorVersion>
-    <PatchVersion>1</PatchVersion>
+    <MinorVersion>4</MinorVersion>
+    <PatchVersion>0</PatchVersion>
     <Version>$(MajorVersion).$(MinorVersion).$(PatchVersion)</Version>
     <FileVersion>$(MajorVersion).$(MinorVersion).$(PatchVersion)</FileVersion>
     <AssemblyVersion>$(MajorVersion).0.0.0</AssemblyVersion>
@@ -43,7 +43,13 @@
   
   <PropertyGroup Condition="'$(TargetFramework)' != 'netstandard2.0'">
     <DefineConstants>FUNCTIONS_V1</DefineConstants>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!--Don't include Correlation classes in Function V1.-->
+    <Compile Include="**/*.cs" Exclude="Correlation/*.cs;**/obj/**/*.cs" Condition="'$(TargetFramework)' != 'netstandard2.0'" />
+  </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' != 'netstandard2.0'">
     <PackageReference Include="Microsoft.Azure.WebJobs" Version="2.3.0" />
@@ -62,6 +68,8 @@
     <PackageReference Include="Microsoft.AspNetCore.Routing" Version="2.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Server.Kestrel" Version="2.2.0" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="2.2.0" />
+    <PackageReference Include="Microsoft.ApplicationInsights" Version="2.12.2" />
+    <PackageReference Include="Microsoft.ApplicationInsights.DependencyCollector" Version="2.12.2" />
     <PackageReference Include="Mono.Posix.NETStandard" Version="1.0.0" />
   </ItemGroup>
 
@@ -76,7 +84,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" Version="1.8.1" />
+    <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" Version="1.8.3" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers" Version="0.3.2" />
     <PackageReference Include="Azure.Identity" Version="1.1.1" />
   </ItemGroup>

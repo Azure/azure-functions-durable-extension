@@ -78,12 +78,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="instanceId">The unique ID of the instance to check.</param>
         /// <param name="timeout">Total allowed timeout for output from the durable function. The default value is 10 seconds.</param>
         /// <param name="retryInterval">The timeout between checks for output from the durable function. The default value is 1 second.</param>
+        /// <param name="returnInternalServerErrorOnFailure">Optional parameter that configures the http response code returned. Defaults to <c>false</c>.
+        /// If <c>true</c>, the returned http response code will be a 500 when the orchestrator is in a failed state, when <c>false</c> it will
+        /// return 200.</param>
         /// <returns>An HTTP response which may include a 202 and location header or a 200 with the durable function output in the response body.</returns>
         Task<HttpResponseMessage> WaitForCompletionOrCreateCheckStatusResponseAsync(
             HttpRequestMessage request,
             string instanceId,
             TimeSpan? timeout = null,
-            TimeSpan? retryInterval = null);
+            TimeSpan? retryInterval = null,
+            bool returnInternalServerErrorOnFailure = false);
 
         /// <summary>
         /// Creates an HTTP response which either contains a payload of management URLs for a non-completed instance
@@ -99,12 +103,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="instanceId">The unique ID of the instance to check.</param>
         /// <param name="timeout">Total allowed timeout for output from the durable function. The default value is 10 seconds.</param>
         /// <param name="retryInterval">The timeout between checks for output from the durable function. The default value is 1 second.</param>
+        /// <param name="returnInternalServerErrorOnFailure">Optional parameter that configures the http response code returned. Defaults to <c>false</c>.
+        /// If <c>true</c>, the returned http response code will be a 500 when the orchestrator is in a failed state, when <c>false</c> it will
+        /// return 200.</param>
         /// <returns>An HTTP response which may include a 202 and location header or a 200 with the durable function output in the response body.</returns>
         Task<IActionResult> WaitForCompletionOrCreateCheckStatusResponseAsync(
             HttpRequest request,
             string instanceId,
             TimeSpan? timeout = null,
-            TimeSpan? retryInterval = null);
+            TimeSpan? retryInterval = null,
+            bool returnInternalServerErrorOnFailure = false);
 
         /// <summary>
         /// Starts a new execution of the specified orchestrator function.
@@ -280,5 +288,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="cancellationToken">Cancellation token that can be used to cancel the status query operation.</param>
         /// <returns>Returns each page of orchestration status for all instances and continuation token of next page.</returns>
         Task<OrchestrationStatusQueryResult> ListInstancesAsync(OrchestrationStatusQueryCondition condition, CancellationToken cancellationToken);
+
+        /// <summary>
+        ///  Restarts an existing orchestrator with the original input.
+        /// </summary>
+        /// <param name="instanceId">InstanceId of a previously run orchestrator to restart.</param>
+        /// <param name="restartWithNewInstanceId">Optional parameter that configures if restarting an orchestration will use a new instanceId or if it will
+        /// reuse the old instanceId. Defauls to <c>true</c>.</param>
+        /// <returns>A task that completes when the orchestration is started. The task contains the instance id of the started
+        /// orchestratation instance.</returns>
+        Task<string> RestartAsync(string instanceId, bool restartWithNewInstanceId = true);
     }
 }

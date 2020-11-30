@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Threading.Tasks;
+using Microsoft.ApplicationInsights.Channel;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -27,8 +28,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             INameResolver nameResolver,
             IDurableHttpMessageHandlerFactory durableHttpMessageHandler,
             ILifeCycleNotificationHelper lifeCycleNotificationHelper,
-            IMessageSerializerSettingsFactory serializerSettings,
-            IApplicationLifetimeWrapper shutdownNotificationService = null)
+            IMessageSerializerSettingsFactory serializerSettingsFactory,
+            IApplicationLifetimeWrapper shutdownNotificationService = null,
+            Action<ITelemetry> onSend = null)
         {
             var config = new JobHostConfiguration { HostId = "durable-task-host" };
             config.TypeLocator = TestHelpers.GetTypeLocator();
@@ -52,7 +54,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 shutdownNotificationService ?? new TestHostShutdownNotificationService(),
                 durableHttpMessageHandler,
                 lifeCycleNotificationHelper,
-                serializerSettings);
+                serializerSettingsFactory);
             config.UseDurableTask(extension);
 
             // Mock INameResolver for not setting EnvironmentVariables.
@@ -69,16 +71,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             config.LoggerFactory = loggerFactory;
 
             var host = new JobHost(config);
-            return new FunctionsV1HostWrapper(host);
+            return new FunctionsV1HostWrapper(host, options, connectionResolver);
         }
 
         private class FunctionsV1HostWrapper : ITestHost
         {
             private readonly JobHost innerHost;
+            private readonly DurableTaskOptions options;
+            private readonly IConnectionStringResolver connectionResolver;
 
-            public FunctionsV1HostWrapper(JobHost innerHost)
+            public FunctionsV1HostWrapper(
+                JobHost innerHost,
+                IOptions<DurableTaskOptions> options,
+                IConnectionStringResolver connectionResolver)
             {
                 this.innerHost = innerHost ?? throw new ArgumentNullException(nameof(innerHost));
+                this.options = options.Value;
+                this.connectionResolver = connectionResolver;
             }
 
             public Task CallAsync(string methodName, IDictionary<string, object> args)
@@ -87,7 +96,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             public Task CallAsync(MethodInfo method, IDictionary<string, object> args)
                 => this.innerHost.CallAsync(method, args);
 
-            public void Dispose() => this.innerHost.Dispose();
+            public void Dispose()
+            {
+                this.innerHost.Dispose();
+            }
 
             public Task StartAsync() => this.innerHost.StartAsync();
 

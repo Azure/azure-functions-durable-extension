@@ -22,16 +22,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     {
         private const int DefaultPort = 17071;
 
-        private readonly DurableTaskExtension extension;
         private readonly IWebHost localWebHost;
         private readonly Func<HttpRequestMessage, Task<HttpResponseMessage>> handler;
+        private readonly EndToEndTraceHelper traceHelper;
+        private readonly DurableTaskOptions durableTaskOptions;
 
         public LocalHttpListener(
-            DurableTaskExtension extension,
+            EndToEndTraceHelper traceHelper,
+            DurableTaskOptions durableTaskOptions,
             Func<HttpRequestMessage, Task<HttpResponseMessage>> handler)
         {
-            this.extension = extension ?? throw new ArgumentNullException(nameof(extension));
+            this.traceHelper = traceHelper ?? throw new ArgumentNullException(nameof(traceHelper));
             this.handler = handler ?? throw new ArgumentNullException(nameof(handler));
+            this.durableTaskOptions = durableTaskOptions ?? throw new ArgumentNullException(nameof(durableTaskOptions));
+
 #if !FUNCTIONS_V1
             this.InternalRpcUri = new Uri($"http://127.0.0.1:{this.GetAvailablePort()}/durabletask/");
             var listenUri = new Uri(this.InternalRpcUri.GetLeftPart(UriPartial.Authority));
@@ -114,8 +118,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             catch (Exception e)
             {
-                this.extension.TraceHelper.ExtensionWarningEvent(
-                    this.extension.Options.HubName,
+                this.traceHelper.ExtensionWarningEvent(
+                    this.durableTaskOptions.HubName,
                     functionName: string.Empty,
                     instanceId: string.Empty,
                     message: $"Unhandled exception in HTTP API handler: {e}");

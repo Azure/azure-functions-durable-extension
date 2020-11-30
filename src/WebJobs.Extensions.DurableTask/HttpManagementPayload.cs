@@ -63,5 +63,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </value>
         [JsonProperty("purgeHistoryDeleteUri")]
         public string PurgeHistoryDeleteUri { get; internal set; }
+
+        /// <summary>
+        /// Gets the HTTP POST instance restart endpoint.
+        /// </summary>
+        /// <value>
+        /// The HTTP URL for restarting an orchestration instance.
+        /// </value>
+        [JsonProperty("restartPostUri")]
+        public string RestartPostUri { get; internal set; }
     }
 }

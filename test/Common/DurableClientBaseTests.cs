@@ -11,12 +11,14 @@ using FluentAssertions;
 #if !FUNCTIONS_V1
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 #endif
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
 using Moq;
+using Newtonsoft.Json;
 using Xunit;
 using static Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests.HttpApiHandlerTests;
 
@@ -142,6 +144,91 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
 #if !FUNCTIONS_V1
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task DurableClient_ExternalApp_StartNewAsync_ReturnsInstanceId()
+        {
+            var orchestrationServiceClientMock = new Mock<IOrchestrationServiceClient>();
+            orchestrationServiceClientMock.Setup(x => x.GetOrchestrationStateAsync(It.IsAny<string>(), It.IsAny<bool>()))
+                .ReturnsAsync(GetInstanceState(OrchestrationStatus.Running));
+
+            var durableOrchestrationClient = this.GetDurableClient(orchestrationServiceClientMock.Object);
+
+            var response = await durableOrchestrationClient.StartNewAsync("orchestrationName", "testInstanceId");
+            Assert.Equal("testInstanceId", response);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async void DurableClient_ExternalApp_GetStatusAsync_ReturnsStatus()
+        {
+            var orchestrationServiceClientMock = new Mock<IOrchestrationServiceClient>();
+            orchestrationServiceClientMock.Setup(x => x.GetOrchestrationStateAsync(It.IsAny<string>(), It.IsAny<bool>()))
+                .ReturnsAsync(GetInstanceState(OrchestrationStatus.Running));
+
+            var durableOrchestrationClient = this.GetDurableClient(orchestrationServiceClientMock.Object);
+            var status = await durableOrchestrationClient.GetStatusAsync("testInstanceId");
+            Assert.Equal(OrchestrationRuntimeStatus.Running, status.RuntimeStatus);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async void DurableClient_ExternalApp_TerminateAsync_TerminateEventPlaced()
+        {
+            var orchestrationServiceClientMock = new Mock<IOrchestrationServiceClient>();
+            orchestrationServiceClientMock.Setup(x => x.GetOrchestrationStateAsync(It.IsAny<string>(), It.IsAny<bool>()))
+                .ReturnsAsync(GetInstanceState(OrchestrationStatus.Running));
+
+            var durableOrchestrationClient = this.GetDurableClient(orchestrationServiceClientMock.Object);
+            await durableOrchestrationClient.TerminateAsync("valid_instance_id", "any reason");
+            orchestrationServiceClientMock.Verify(x => x.ForceTerminateTaskOrchestrationAsync("valid_instance_id", "any reason"), Times.Once());
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void DurableClient_ExternalApp_CreateCheckStatusResponse_ThrowsException()
+        {
+            var instanceId = Guid.NewGuid().ToString();
+
+            var orchestrationServiceClientMock = new Mock<IOrchestrationServiceClient>();
+            orchestrationServiceClientMock.Setup(x => x.GetOrchestrationStateAsync(It.IsAny<string>(), It.IsAny<bool>()))
+                .ReturnsAsync(GetInstanceState(OrchestrationStatus.Running));
+
+            var durableOrchestrationClient = this.GetDurableClient(orchestrationServiceClientMock.Object);
+            Assert.ThrowsAny<InvalidOperationException>(() => durableOrchestrationClient.CreateCheckStatusResponse(new HttpRequestMessage(), "testInstanceId"));
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void DurableClient_ExternalApp_CreateHttpManagementPayload_ThrowsException()
+        {
+            var instanceId = Guid.NewGuid().ToString();
+
+            var orchestrationServiceClientMock = new Mock<IOrchestrationServiceClient>();
+            orchestrationServiceClientMock.Setup(x => x.GetOrchestrationStateAsync(It.IsAny<string>(), It.IsAny<bool>()))
+                .ReturnsAsync(GetInstanceState(OrchestrationStatus.Running));
+
+            var durableOrchestrationClient = this.GetDurableClient(orchestrationServiceClientMock.Object);
+            Assert.ThrowsAny<InvalidOperationException>(() => durableOrchestrationClient.CreateHttpManagementPayload("testInstanceId"));
+        }
+
+        private IDurableOrchestrationClient GetDurableClient(IOrchestrationServiceClient orchestrationServiceClientMockObject)
+        {
+            var storageProvider = new DurabilityProvider("test", new Mock<IOrchestrationService>().Object, orchestrationServiceClientMockObject, "test");
+            DurableClientOptions durableClientOptions = new DurableClientOptions
+            {
+                ConnectionName = "Storage",
+                TaskHub = "TestTaskHub",
+            };
+            DurableTaskOptions durableTaskOptions = new DurableTaskOptions();
+            DurableClientAttribute attribute = new DurableClientAttribute(durableClientOptions);
+            MessagePayloadDataConverter messagePayloadDataConverter = new MessagePayloadDataConverter(new JsonSerializerSettings(), true);
+            var traceHelper = new EndToEndTraceHelper(new NullLogger<EndToEndTraceHelper>(), durableTaskOptions.Tracing.TraceReplayEvents);
+
+            var durableOrchestrationClient = (IDurableOrchestrationClient)new DurableClient(storageProvider, null, attribute, messagePayloadDataConverter, traceHelper, durableTaskOptions);
+            return durableOrchestrationClient;
+        }
+
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task HttpRequest_HttpRequestMessage_ClientMethods_Identical()

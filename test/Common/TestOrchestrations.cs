@@ -529,7 +529,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 headers: testHeaders,
                 content: testRequest.Content,
                 tokenSource: testRequest.TokenSource,
-                asynchronousPatternEnabled: testRequest.AsynchronousPatternEnabled);
+                asynchronousPatternEnabled: testRequest.AsynchronousPatternEnabled,
+                timeout: testRequest.Timeout);
 
             return durableHttpRequest;
         }

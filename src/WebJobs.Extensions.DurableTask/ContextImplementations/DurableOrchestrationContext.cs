@@ -299,7 +299,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 method: HttpMethod.Get,
                 uri: new Uri(locationUri),
                 headers: durableHttpRequest.Headers,
-                tokenSource: durableHttpRequest.TokenSource);
+                tokenSource: durableHttpRequest.TokenSource,
+                timeout: durableHttpRequest.Timeout);
 
             // Do not copy over the x-functions-key header, as in many cases, the
             // functions key used for the initial request will be a Function-level key
@@ -383,26 +384,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return result;
         }
 
-        internal Task OutOfProcCreateTimer(DurableOrchestrationContext ctx, DateTime fireAt, CancellationToken cancelToken)
-        {
-            if (!this.ValidOutOfProcTimer(fireAt, out string errorMessage))
-            {
-                throw new ArgumentException(errorMessage, nameof(fireAt));
-            }
-
-            return ((IDurableOrchestrationContext)ctx).CreateTimer(fireAt, cancelToken);
-        }
-
-        private bool ValidOutOfProcTimer(DateTime fireAt, out string errorMessage)
+        // We now have built in long-timer support for C#, but in some scenarios, such as out-of-proc,
+        // we may still need to enforce this limitations until the solution works there as well.
+        internal void ThrowIfInvalidTimerLengthForStorageProvider(DateTime fireAt)
         {
             this.ThrowIfInvalidAccess();
 
-            if (!this.durabilityProvider.ValidateDelayTime(fireAt.Subtract(this.InnerContext.CurrentUtcDateTime), out errorMessage))
+            if (!this.durabilityProvider.ValidateDelayTime(fireAt.Subtract(this.InnerContext.CurrentUtcDateTime), out string errorMessage))
             {
-                return false;
+                throw new ArgumentException(errorMessage, nameof(fireAt));
             }
-
-            return true;
         }
 
         /// <inheritdoc />
@@ -490,6 +481,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <inheritdoc/>
         string IDurableOrchestrationContext.StartNewOrchestration(string functionName, object input, string instanceId)
         {
+            // correlation
+#if NETSTANDARD2_0
+            var context = CorrelationTraceContext.Current;
+#endif
             this.ThrowIfInvalidAccess();
             var actualInstanceId = string.IsNullOrEmpty(instanceId) ? this.NewGuid().ToString() : instanceId;
             var alreadyCompletedTask = this.CallDurableTaskFunctionAsync<string>(functionName, FunctionType.Orchestrator, true, actualInstanceId, null, null, input, null);
@@ -693,6 +688,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             catch (TaskFailedException e)
             {
+                // Check to see if CallHttpAsync() threw a TimeoutException
+                // In this case, we want to throw a TimeoutException instead of a FunctionFailedException
+                if (functionName.Equals(HttpOptions.HttpTaskActivityReservedName) && e.InnerException is TimeoutException)
+                {
+                    throw e.InnerException;
+                }
+
                 exception = e;
                 string message = string.Format(
                     "The {0} function '{1}' failed: \"{2}\". See the function execution logs for additional details.",
@@ -943,11 +945,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private Task<T> WaitForExternalEvent<T>(string name, TimeSpan timeout, Action<TaskCompletionSource<T>> timeoutAction, CancellationToken cancelToken)
         {
-            if (!this.durabilityProvider.ValidateDelayTime(timeout, out string errorMessage))
-            {
-                throw new ArgumentException(errorMessage, nameof(timeout));
-            }
-
             var tcs = new TaskCompletionSource<T>();
             var cts = CancellationTokenSource.CreateLinkedTokenSource(cancelToken);
 
@@ -1132,7 +1129,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         requestMessage,
                         target.InstanceId,
                         this.InnerContext.CurrentUtcDateTime,
-                        TimeSpan.FromMinutes(this.Config.Options.EntityMessageReorderWindowInMinutes));
+                        this.Config.MessageReorderWindow);
 
                     eventName = EntityMessageEventNames.RequestMessageEventName;
                 }

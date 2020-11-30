@@ -1,0 +1,17 @@
+{
+  "extensions": {
+    "durableTask": {
+      "tracing": {
+        "DistributedTracingProtocol": "W3CTraceContext"
+      }
+    }
+  },
+  "logging": {
+    "applicationInsights": {
+      "httpAutoCollectionOptions": {
+        "enableW3CDistributedTracing": true
+      } 
+    }
+  },
+  "version": "2.0"
+}

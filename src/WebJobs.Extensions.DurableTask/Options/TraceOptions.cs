@@ -50,6 +50,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </value>
         public bool TraceReplayEvents { get; set; }
 
+#if !FUNCTIONS_V1
+        /// <summary>
+        /// Gets or sets a flag indicating whether to enable distributed tracing.
+        /// The default value is false.
+        /// </summary>
+        public bool DistributedTracingEnabled { get; set; } = false;
+
+        /// <summary>
+        /// Gets or sets a protocol for distributed Tracing.
+        /// Possible values are "HttpCorrelationProtocol" and "W3CTraceContext".
+        /// The default value is "HttpCorrelationProtocol".
+        /// </summary>
+        public string DistributedTracingProtocol { get; set; } = "HttpCorrelationProtocol";
+
+#endif
         internal void AddToDebugString(StringBuilder builder)
         {
             builder.Append(nameof(this.TraceReplayEvents)).Append(": ").Append(this.TraceReplayEvents).Append(", ");

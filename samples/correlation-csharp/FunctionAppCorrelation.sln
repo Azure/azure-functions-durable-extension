@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29509.3
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FunctionAppCorrelation", "FunctionAppCorrelation\FunctionAppCorrelation.csproj", "{F9428663-9742-4746-A434-D073CCD5395C}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F9428663-9742-4746-A434-D073CCD5395C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F9428663-9742-4746-A434-D073CCD5395C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F9428663-9742-4746-A434-D073CCD5395C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F9428663-9742-4746-A434-D073CCD5395C}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {6D2AE1B1-FA1A-4E46-B75D-B9B01E570B50}
+	EndGlobalSection
+EndGlobal

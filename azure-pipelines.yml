@@ -10,7 +10,7 @@ jobs:
       buildConfiguration: 'Debug'
 
     steps:
-    - task: NuGetToolInstaller@0
+    - task: NuGetToolInstaller@1
 
     - task: DotNetCoreCLI@2
       inputs:
@@ -37,6 +37,7 @@ jobs:
         rerunMaxAttempts: 2
       env:
         AzureWebJobsStorage: $(AzureWebJobsStorage)
+        APPINSIGHTS_INSTRUMENTATIONKEY: $(APPINSIGHTS_INSTRUMENTATIONKEY) 
 
   - job: FunctionsV2Tests
     pool: 
@@ -51,7 +52,7 @@ jobs:
       buildConfiguration: 'Debug'
 
     steps:
-    - task: NuGetToolInstaller@0
+    - task: NuGetToolInstaller@1
 
     - task: DotNetCoreCLI@2
       inputs:
@@ -78,6 +79,7 @@ jobs:
         rerunMaxAttempts: 2
       env:
         AzureWebJobsStorage: $(AzureWebJobsStorage)
+        APPINSIGHTS_INSTRUMENTATIONKEY: $(APPINSIGHTS_INSTRUMENTATIONKEY) 
 
   - job: DurableAnalyzerTests
     pool: 
@@ -89,7 +91,7 @@ jobs:
       buildConfiguration: 'Debug'
 
     steps:
-    - task: NuGetToolInstaller@0
+    - task: NuGetToolInstaller@1
 
     - task: DotNetCoreCLI@2
       inputs:
@@ -116,6 +118,7 @@ jobs:
         rerunMaxAttempts: 2
       env:
         AzureWebJobsStorage: $(AzureWebJobsStorage)
+        APPINSIGHTS_INSTRUMENTATIONKEY: $(APPINSIGHTS_INSTRUMENTATIONKEY) 
     
   - job: PublishPipelineArtifact
     dependsOn:
@@ -132,7 +135,7 @@ jobs:
       buildConfiguration: 'Debug'
 
     steps:
-    - task: NuGetToolInstaller@0
+    - task: NuGetToolInstaller@1
 
     - task: DotNetCoreCLI@2
       inputs:

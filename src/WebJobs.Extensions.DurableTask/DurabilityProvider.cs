@@ -58,6 +58,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public virtual bool SupportsEntities => false;
 
         /// <summary>
+        /// Specifies whether the backend's WaitForOrchestration is implemented without polling.
+        /// </summary>
+        public virtual bool SupportsPollFreeWait => false;
+
+        /// <summary>
+        /// Specifies whether this backend delivers messages in order.
+        /// </summary>
+        public virtual bool GuaranteesOrderedDelivery => false;
+
+        /// <summary>
         /// JSON representation of configuration to emit in telemetry.
         /// </summary>
         public virtual JObject ConfigurationJson => EmptyConfig;
@@ -86,6 +96,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         /// <inheritdoc/>
         public int MaxConcurrentTaskActivityWorkItems => this.GetOrchestrationService().MaxConcurrentTaskActivityWorkItems;
+
+        internal string GetBackendInfo()
+        {
+            return this.GetOrchestrationService().ToString();
+        }
 
         private IOrchestrationService GetOrchestrationService()
         {
@@ -278,7 +293,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <returns>Returns a task which completes when the state has been fetched.</returns>
         public virtual Task<IList<OrchestrationState>> GetOrchestrationStateWithInputsAsync(string instanceId, bool showInput = true)
         {
-            throw this.GetNotImplementedException(nameof(this.GetOrchestrationStateAsync));
+            throw this.GetNotImplementedException(nameof(this.GetOrchestrationStateWithInputsAsync));
         }
 
         /// <summary>

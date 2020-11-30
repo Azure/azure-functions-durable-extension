@@ -5,6 +5,8 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Threading.Tasks;
+using Microsoft.ApplicationInsights.Channel;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -29,7 +31,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             INameResolver nameResolver,
             IDurableHttpMessageHandlerFactory durableHttpMessageHandler,
             ILifeCycleNotificationHelper lifeCycleNotificationHelper,
-            IMessageSerializerSettingsFactory serializerSettingsFactory)
+            IMessageSerializerSettingsFactory serializerSettingsFactory,
+            Action<ITelemetry> onSend)
         {
             IHost host = new HostBuilder()
                 .ConfigureLogging(
@@ -60,10 +63,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                         {
                             serviceCollection.AddSingleton(serializerSettingsFactory);
                         }
+
+                        if (onSend != null)
+                        {
+                            serviceCollection.AddSingleton<ITelemetryActivator>(serviceProvider =>
+                            {
+                                var durableTaskOptions = serviceProvider.GetService<IOptions<DurableTaskOptions>>();
+                                var telemetryActivator = new TelemetryActivator(durableTaskOptions)
+                                {
+                                    OnSend = onSend,
+                                };
+                                return telemetryActivator;
+                            });
+                        }
                     })
                 .Build();
 
-            return new FunctionsV2HostWrapper(host);
+            return new FunctionsV2HostWrapper(host, options, nameResolver);
         }
 
         private static IWebJobsBuilder AddDurableTask(this IWebJobsBuilder builder, IOptions<DurableTaskOptions> options, string storageProvider, Type durabilityProviderFactoryType = null)
@@ -110,11 +126,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             private readonly IHost innerHost;
             private readonly JobHost innerWebJobsHost;
+            private readonly DurableTaskOptions options;
+            private readonly INameResolver nameResolver;
 
-            public FunctionsV2HostWrapper(IHost innerHost)
+            public FunctionsV2HostWrapper(
+                IHost innerHost,
+                IOptions<DurableTaskOptions> options,
+                INameResolver nameResolver)
             {
                 this.innerHost = innerHost ?? throw new ArgumentNullException(nameof(innerHost));
                 this.innerWebJobsHost = (JobHost)this.innerHost.Services.GetService<IJobHost>();
+                this.options = options.Value;
+                this.nameResolver = nameResolver;
             }
 
             public Task CallAsync(string methodName, IDictionary<string, object> args)
@@ -123,7 +146,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             public Task CallAsync(MethodInfo method, IDictionary<string, object> args)
                 => this.innerWebJobsHost.CallAsync(method, args);
 
-            public void Dispose() => this.innerHost.Dispose();
+            public void Dispose()
+            {
+                this.innerHost.Dispose();
+            }
 
             public Task StartAsync() => this.innerHost.StartAsync();
 
