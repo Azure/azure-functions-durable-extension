@@ -6,7 +6,7 @@
 
 #### tracing
 
-| property | Default | Description |
+| Property | Default | Description |
 | -------- | ------- | ----------- |
 | distributedTracingEnabled  | `false` | When set to `true`, enables the Distributed Tracing feature. |
 | distributedTracingProtocol  | HttpCorrelationProtocol | Sets the protocol used by the Distributed Tracing feature. Possible values are `HttpCorrelationProtocol` and `W3CTraceContext` |
