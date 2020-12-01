@@ -7,7 +7,7 @@
     <None Include="..\README.md" Link="README.md" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask" Version="2.3.*" />
+    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask" Version="2.4.*" />
     <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="1.0.*" />
   </ItemGroup>
   <ItemGroup>
