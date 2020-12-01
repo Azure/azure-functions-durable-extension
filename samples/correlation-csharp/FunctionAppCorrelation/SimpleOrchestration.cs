@@ -1,17 +1,12 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Net.Http;
-using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Logging;
 
@@ -36,7 +31,6 @@ namespace FunctionAppCorrelation
         [FunctionName(nameof(SayHello))]
         public static string SayHello([ActivityTrigger] string name, ILogger log)
         {
-            var currentActivity = Activity.Current;
             log.LogInformation($"Saying hello to {name}.");
             return $"Hello {name}!";
         }

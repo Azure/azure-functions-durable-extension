@@ -7,7 +7,6 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Text;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using Microsoft.ApplicationInsights;
@@ -37,7 +36,7 @@ namespace FunctionAppCorrelation
         public async Task<List<string>> Orchestration_W3C(
            [OrchestrationTrigger] IDurableOrchestrationContext context)
         {
-            if (!CorrelationTraceContext.Current is W3CTraceContext correlationContext)
+            if (!(CorrelationTraceContext.Current is W3CTraceContext correlationContext))
             {
                 throw new InvalidOperationException($"This sample expects a correlation trace context of {nameof(W3CTraceContext)}, but the context isof type {CorrelationTraceContext.Current.GetType()}");
             }
@@ -63,7 +62,6 @@ namespace FunctionAppCorrelation
         public string Hello_W3C([ActivityTrigger] string name, ILogger log)
         {
             // Send Custom Telemetry
-            var currentActivity = Activity.Current;
             this.telemetryClient.TrackTrace($"Message from Activity: {name}.");
 
             log.LogInformation($"Saying hello to {name}.");
