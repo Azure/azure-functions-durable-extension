@@ -42,7 +42,7 @@ _host.json_
 
 ## AppSettings
 
-You need to specify the Application Insights instrumentation key in you app settings, local.settings.json, or environment variables.
+You need to specify the Application Insights instrumentation key in your app settings, local.settings.json, or environment variables. The name of the setting is `APPINSIGHTS_INSTRUMENTATIONKEY`.
 
 _local.settings.json_ 
 
