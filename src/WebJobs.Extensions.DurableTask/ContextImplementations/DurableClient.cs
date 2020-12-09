@@ -370,8 +370,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     hubName: this.TaskHubName,
                     functionName: state.Name,
                     instanceId: instanceId,
-                    message: $"Cannot terminate orchestration instance in {state.Status} state");
-                throw new InvalidOperationException($"Cannot terminate the orchestration instance {instanceId} because instance is in {state.Status} state");
+                    message: $"Cannot terminate orchestration instance in the {state.OrchestrationStatus} state.");
+                throw new InvalidOperationException($"Cannot terminate the orchestration instance {instanceId} because instance is in the {state.OrchestrationStatus} state.");
             }
         }
 
