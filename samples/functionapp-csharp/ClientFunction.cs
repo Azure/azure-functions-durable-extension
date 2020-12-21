@@ -14,11 +14,11 @@ using Microsoft.Extensions.Configuration;
 
 namespace DurableClientSampleFunctionApp
 {
-    public class HelloSequence
+    public class ClientFunction
     {
         private readonly IDurableClient _client;
 
-        public HelloSequence(IDurableClientFactory clientFactory, IConfiguration configuration)
+        public ClientFunction(IDurableClientFactory clientFactory, IConfiguration configuration)
         {
             _client = clientFactory.CreateClient(new DurableClientOptions
             {

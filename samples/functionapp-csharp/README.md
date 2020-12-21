@@ -18,8 +18,6 @@ In the local.settings.json file, add values for "Storage" and "TaskHub". Add the
 }
 ```
 
-Specify the task hub name in the Azure Function HTTP Trigger (`CallHelloSequence`) where it says `<TaskHubName>`. The provided storage account connection string and task hub name for this application must match the connection string and task hub name used for the Function App that stores the Durable Function.
-
 This sample calls the orchestrator function, `E1_HelloSequence` found in the [precompiled samples folder](https://github.com/Azure/azure-functions-durable-extension/blob/dev/samples/precompiled/HelloSequence.cs). Make sure that function is running at the same time.
 
 ## Running the sample locally
