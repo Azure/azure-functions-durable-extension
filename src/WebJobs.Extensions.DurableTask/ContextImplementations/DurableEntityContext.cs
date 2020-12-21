@@ -45,8 +45,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         // The current state is determined by this.CurrentStateAccess and this.CurrentState.
         internal enum StateAccess
         {
-            NotAccessed, // current state is same as last checkpoint in this.State
-            Accessed, // current state is stored in this.CurrentState
+            NotAccessed, // current state is stored in this.State (serialized)
+            Accessed, // current state is stored in this.CurrentState (deserialized)
+            Clean, // current state is stored in both this.CurrentState (deserialized) and in this.State (serialized)
             Deleted, // current state is deleted
         }
 
@@ -98,8 +99,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.ThrowIfInvalidAccess();
                 switch (this.CurrentStateAccess)
                 {
-                    case StateAccess.Accessed: return true;
-                    case StateAccess.Deleted: return false;
+                    case StateAccess.Accessed:
+                    case StateAccess.Clean:
+                        return true;
+
+                    case StateAccess.Deleted:
+                        return false;
+
                     default: return this.State.EntityExists;
                 }
             }
@@ -212,6 +218,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 return (TState)this.CurrentState;
             }
+            else if (this.CurrentStateAccess == StateAccess.Clean)
+            {
+                this.CurrentStateAccess = StateAccess.Accessed;
+                return (TState)this.CurrentState;
+            }
 
             TState result;
 
@@ -257,6 +268,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             if (this.CurrentStateAccess == StateAccess.Accessed)
             {
+                return (TState)this.CurrentState;
+            }
+            else if (this.CurrentStateAccess == StateAccess.Clean)
+            {
+                this.CurrentStateAccess = StateAccess.Accessed;
                 return (TState)this.CurrentState;
             }
 
@@ -313,6 +329,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     this.State.EntityState = this.messageDataConverter.Serialize(this.CurrentState);
                     this.State.EntityExists = true;
+                    this.CurrentStateAccess = StateAccess.Clean;
                 }
                 catch (Exception e)
                 {
@@ -324,10 +341,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                     serializationErrorMessage = new ResponseMessage();
                     serializationErrorMessage.SetExceptionResult(serializationException, operation, this.errorDataConverter);
-                }
 
-                this.CurrentState = null;
-                this.CurrentStateAccess = StateAccess.NotAccessed;
+                    this.CurrentStateAccess = StateAccess.NotAccessed;
+                    this.CurrentState = null;
+                }
+            }
+            else
+            {
+                // the state was not accessed, or is clean, so we don't need to write anything back
             }
 
             return serializationErrorMessage == null;
