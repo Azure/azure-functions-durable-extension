@@ -9,7 +9,7 @@ assignees: comcmaho, amdeel, davidmrdavid, bachuv
 
 **Prep Release: (assigned to:)**
 _Due: <two-businessdays-before-release>_
-- [ ] Merge all features and fixes into the `master` branch
+- [ ] Merge all features and fixes into the `main` branch
 - [ ] Publish updated versions of DurableTask.Core and DurableTask.AzureStorage to app-service MyGet feed
 - [ ] Increment extension version
 - [ ] Publish signed version of Microsoft.Azure.WebJobs.Extensions.DurableTask to app-service MyGet feed
