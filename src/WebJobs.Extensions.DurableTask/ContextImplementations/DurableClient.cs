@@ -297,7 +297,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new ArgumentNullException(nameof(operationName));
             }
 
-            if (this.ClientReferencesCurrentApp(durableClient))
+            if (!this.attribute.ExternalClient && this.ClientReferencesCurrentApp(durableClient))
             {
                 this.config.ThrowIfFunctionDoesNotExist(entityId.EntityName, FunctionType.Entity);
             }
