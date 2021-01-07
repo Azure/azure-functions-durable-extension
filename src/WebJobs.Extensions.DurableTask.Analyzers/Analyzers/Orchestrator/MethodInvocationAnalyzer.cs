@@ -22,12 +22,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         public static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, Severity, isEnabledByDefault: true, description: Description);
 
-        public static void RegisterDiagnostics(CompilationAnalysisContext context, MethodInformation methodInformation)
+        private HashSet<MethodInformation> methodsVisited;
+
+        public MethodInvocationAnalyzer()
         {
-            var methodsVisited = new HashSet<MethodInformation>();
+            methodsVisited = new HashSet<MethodInformation>();
+        }
+
+        public void RegisterDiagnostics(CompilationAnalysisContext context, MethodInformation methodInformation)
+        {
             RegisterDiagnosticsOnInvocations(context, methodInformation, methodsVisited);
         }
-        private static void RegisterDiagnosticsOnInvocations(CompilationAnalysisContext context, MethodInformation methodInformation, HashSet<MethodInformation> methodsVisited)
+        private void RegisterDiagnosticsOnInvocations(CompilationAnalysisContext context, MethodInformation methodInformation, HashSet<MethodInformation> methodsVisited)
         {
             methodsVisited.Add(methodInformation);
             var methodInvocations = methodInformation?.Invocations;
@@ -44,7 +50,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             }
         }
 
-        private static void RegisterDiagnosticsOnParents(CompilationAnalysisContext context, MethodInformation methodInformation, HashSet<MethodInformation> methodsVisited)
+        private void RegisterDiagnosticsOnParents(CompilationAnalysisContext context, MethodInformation methodInformation, HashSet<MethodInformation> methodsVisited)
         {
             var parents = methodInformation.Parents;
             if (parents != null && parents.Any())

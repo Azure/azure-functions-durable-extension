@@ -46,6 +46,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         private void RegisterAnalyzers(CompilationAnalysisContext context)
         {
+            var methodInvocationAnalyzer = new MethodInvocationAnalyzer();
             var orchestratorMethods = orchestratorMethodCollector.GetOrchestratorMethods();
             Parallel.ForEach(orchestratorMethods, methodInformation =>
             {
@@ -61,7 +62,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     | TimerAnalyzer.RegisterDiagnostic(context, semanticModel, methodDeclaration)
                     | CancellationTokenAnalyzer.RegisterDiagnostic(context, methodDeclaration))
                 {
-                    MethodInvocationAnalyzer.RegisterDiagnostics(context, methodInformation);
+                    methodInvocationAnalyzer.RegisterDiagnostics(context, methodInformation);
                 }
             });
         }
