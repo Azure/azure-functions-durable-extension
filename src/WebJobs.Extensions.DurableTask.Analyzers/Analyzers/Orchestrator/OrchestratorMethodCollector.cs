@@ -37,35 +37,36 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             }
         }
 
-        private void FindInvokedMethods(SemanticModel semanticModel, MethodInformation methodInformation)
+        private void FindInvokedMethods(SemanticModel semanticModel, MethodInformation parentMethodInformation)
         {
-            var parentDeclaration = methodInformation.Declaration;
+            var parentDeclaration = parentMethodInformation.Declaration;
             var invocationExpressions = parentDeclaration.DescendantNodes().OfType<InvocationExpressionSyntax>();
             foreach (var invocation in invocationExpressions)
             {
-                if (SyntaxNodeUtils.TryGetDeclaredSyntaxNode(semanticModel, invocation, out SyntaxNode methodDeclaration)
-                    && methodDeclaration is MethodDeclarationSyntax
+                if (SyntaxNodeUtils.TryGetDeclaredSyntaxNode(semanticModel, invocation, out SyntaxNode invokedMethodDeclaration)
+                    && invokedMethodDeclaration is MethodDeclarationSyntax
                     && SyntaxNodeUtils.TryGetISymbol(semanticModel, invocation, out ISymbol invokedSymbol))
                 {
-                    var invokedMethodInformation = new MethodInformation()
-                    {
-                        SemanticModel = semanticModel,
-                        Declaration = methodDeclaration,
-                        DeclarationSymbol = invokedSymbol,
-                        Invocations = new List<InvocationExpressionSyntax>(){ invocation },
-                        Parents = new HashSet<MethodInformation>(new List<MethodInformation>() { methodInformation }),
-                    };
 
                     if (this.orchestratorMethodDeclarations.TryGetValue(invokedSymbol, out MethodInformation existingMethodInformation))
                     {
                         existingMethodInformation.Invocations.Add(invocation);
-                        if (!existingMethodInformation.DeclarationSymbol.Equals(invokedSymbol))
+                        if (!existingMethodInformation.Equals(parentMethodInformation))
                         {
-                            existingMethodInformation.Parents.Add(methodInformation);
+                            existingMethodInformation.Parents.Add(parentMethodInformation);
                         }
                     }
                     else
                     {
+                        var invokedMethodInformation = new MethodInformation()
+                        {
+                            SemanticModel = semanticModel,
+                            Declaration = invokedMethodDeclaration,
+                            DeclarationSymbol = invokedSymbol,
+                            Invocations = new List<InvocationExpressionSyntax>() { invocation },
+                            Parents = new HashSet<MethodInformation>(new List<MethodInformation>() { parentMethodInformation }),
+                        };
+
                         this.orchestratorMethodDeclarations.Add(invokedSymbol, invokedMethodInformation);
 
                         FindInvokedMethods(semanticModel, invokedMethodInformation);

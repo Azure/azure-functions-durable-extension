@@ -341,12 +341,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
 
         public static void MutuallyRecursiveCall()
         {
+            var dateTime = DateTime.Now;
             MutuallyRecursiveCall2();
         }
 
         public static void MutuallyRecursiveCall2()
         {
-            var dateTime = DateTime.Now;
             MutuallyRecursiveCall();
         }
     }
@@ -366,23 +366,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
 
             expectedDiagnostics[1] = new DiagnosticResult
             {
-                Id = DiagnosticId,
-                Message = string.Format(Resources.MethodAnalyzerMessageFormat, "MutuallyRecursiveCall2()"),
-                Severity = Severity,
-                Locations =
-                    new[] {
-                            new DiagnosticResultLocation("Test0.cs", 20, 13)
-                        }
-            };
-
-            expectedDiagnostics[2] = new DiagnosticResult
-            {
                 Id = DateTimeAnalyzer.DiagnosticId,
                 Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "DateTime.Now"),
                 Severity = Severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 25, 28)
+                            new DiagnosticResultLocation("Test0.cs", 20, 28)
+                        }
+            };
+
+            expectedDiagnostics[2] = new DiagnosticResult
+            {
+                Id = DiagnosticId,
+                Message = string.Format(Resources.MethodAnalyzerMessageFormat, "MutuallyRecursiveCall2()"),
+                Severity = Severity,
+                Locations =
+                    new[] {
+                            new DiagnosticResultLocation("Test0.cs", 21, 13)
                         }
             };
 

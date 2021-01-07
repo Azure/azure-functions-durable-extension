@@ -4,6 +4,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
@@ -23,28 +24,37 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         public static void RegisterDiagnostics(CompilationAnalysisContext context, MethodInformation methodInformation)
         {
+            var methodsVisited = new HashSet<MethodInformation>();
+            RegisterDiagnosticsOnInvocations(context, methodInformation, methodsVisited);
+        }
+        private static void RegisterDiagnosticsOnInvocations(CompilationAnalysisContext context, MethodInformation methodInformation, HashSet<MethodInformation> methodsVisited)
+        {
+            methodsVisited.Add(methodInformation);
             var methodInvocations = methodInformation?.Invocations;
             if (methodInvocations != null && methodInvocations.Any())
             {
-                foreach(InvocationExpressionSyntax invocation in methodInvocations)
+                foreach (InvocationExpressionSyntax invocation in methodInvocations)
                 {
                     var diagnostic = Diagnostic.Create(Rule, invocation.GetLocation(), invocation);
 
                     context.ReportDiagnostic(diagnostic);
                 }
 
-                RegisterDiagnosticsOnParents(context, methodInformation);
+                RegisterDiagnosticsOnParents(context, methodInformation, methodsVisited);
             }
         }
 
-        private static void RegisterDiagnosticsOnParents(CompilationAnalysisContext context, MethodInformation methodInformation)
+        private static void RegisterDiagnosticsOnParents(CompilationAnalysisContext context, MethodInformation methodInformation, HashSet<MethodInformation> methodsVisited)
         {
             var parents = methodInformation.Parents;
             if (parents != null && parents.Any())
             {
                 foreach (MethodInformation parent in parents)
                 {
-                    RegisterDiagnostics(context, parent);
+                    if (!methodsVisited.Contains(parent))
+                    {
+                        RegisterDiagnosticsOnInvocations(context, parent, methodsVisited);
+                    }
                 }
             }
         }
