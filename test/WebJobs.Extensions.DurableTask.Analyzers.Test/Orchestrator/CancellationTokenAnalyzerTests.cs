@@ -66,7 +66,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
                 Severity = Severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 15, 17)
+                            new DiagnosticResultLocation("Test0.cs", 13, 74)
                         }
             };
 
@@ -75,7 +75,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
 
         protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()
         {
-            return new OrchestratorAnalyzer();
+            return new DeterministicMethodAnalyzer();
         }
     }
 }

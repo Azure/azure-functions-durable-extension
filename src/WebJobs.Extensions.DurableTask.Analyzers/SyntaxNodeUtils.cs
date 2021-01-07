@@ -4,7 +4,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis.Diagnostics;
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
@@ -29,16 +29,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         public static bool TryGetSemanticModelForSyntaxTree(SemanticModel model, SyntaxNode node, out SemanticModel newModel)
         {
-            if (model?.SyntaxTree == null || node?.SyntaxTree == null)
+            try
+            {
+                if (model?.SyntaxTree == null || node?.SyntaxTree == null)
+                {
+                    newModel = null;
+                    return false;
+                }
+
+                newModel = model.SyntaxTree == node.SyntaxTree
+                    ? model
+                    : model.Compilation.GetSemanticModel(node.SyntaxTree);
+                return newModel != null;
+            }
+            catch (ArgumentException)
             {
                 newModel = null;
                 return false;
             }
-
-            newModel = model.SyntaxTree == node.SyntaxTree
-                ? model
-                : model.Compilation.GetSemanticModel(node.SyntaxTree);
-            return newModel != null;
         }
 
         public static bool TryGetITypeSymbol(SemanticModel semanticModel, SyntaxNode node, out ITypeSymbol typeSymbol)
@@ -65,13 +73,40 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             return false;
         }
 
+        public static bool TryGetDeclaredSyntaxNode(SemanticModel semanticModel, SyntaxNode node, out SyntaxNode declaredNode)
+        {
+            if (TryGetISymbol(semanticModel, node, out ISymbol symbol))
+            {
+                var syntaxReference = symbol.DeclaringSyntaxReferences.FirstOrDefault();
+                if (syntaxReference != null)
+                {
+                    var declaration = syntaxReference.GetSyntax();
+                    if (declaration != null)
+                    {
+                        declaredNode = declaration;
+                        return true;
+                    }
+
+                }
+
+            }
+
+            declaredNode = null;
+            return false;
+        }
+
         public static bool TryGetClosestString(string name, IEnumerable<string> availableNames, out string closestString)
         {
             closestString = availableNames.OrderBy(x => x.LevenshteinDistance(name)).FirstOrDefault();
             return closestString != null;
         }
 
-        internal static bool IsInsideOrchestrator(SyntaxNode node)
+        public static bool IsInsideOrchestratorFunction(SemanticModel semanticModel, SyntaxNode node)
+        {
+            return IsInsideOrchestrationTrigger(node) && IsInsideFunction(semanticModel, node);
+        }
+
+        public static bool IsInsideOrchestrationTrigger(SyntaxNode node)
         {
             if (TryGetMethodDeclaration(node, out SyntaxNode methodDeclaration))
             {
@@ -92,6 +127,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             }
 
             return false;
+        }
+
+        public static bool IsInsideFunction(SemanticModel semanticModel, SyntaxNode node)
+        {
+            return TryGetFunctionName(semanticModel, node, out _);
         }
 
         internal static bool TryGetMethodReturnTypeNode(SyntaxNode node, out SyntaxNode returnTypeNode)
@@ -159,11 +199,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
             kindNode = currNode;
             return true;
-        }
-
-        internal static bool IsInsideFunction(SemanticModel semanticModel, SyntaxNode node)
-        {
-            return TryGetFunctionName(semanticModel, node, out string functionName);
         }
 
         internal static bool TryGetClassName(SyntaxNode node, out string className)
@@ -312,7 +347,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         private static bool TryGetFunctionAttribute(SyntaxNode attributeExpression, out SyntaxNode functionAttribute) => TryGetAttribute(attributeExpression, "FunctionName", out functionAttribute);
 
-        internal static bool TryGetParameterNodeNextToAttribute(SyntaxNodeAnalysisContext context, AttributeSyntax attributeExpression, out SyntaxNode inputType)
+        internal static bool TryGetParameterNodeNextToAttribute(AttributeSyntax attributeExpression, out SyntaxNode inputType)
         {
             var parameter = attributeExpression.Parent.Parent;
             return TryGetChildTypeNode(parameter, out inputType);

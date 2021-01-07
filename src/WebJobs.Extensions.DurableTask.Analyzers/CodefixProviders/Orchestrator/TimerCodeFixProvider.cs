@@ -46,7 +46,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             SemanticModel semanticModel = await context.Document.GetSemanticModelAsync();
             var durableVersion = SyntaxNodeUtils.GetDurableVersion(semanticModel);
 
-            if (SyntaxNodeUtils.IsInsideOrchestrator(invocationExpression) && durableVersion.Equals(DurableVersion.V2))
+            if (SyntaxNodeUtils.IsInsideOrchestrationTrigger(invocationExpression) && durableVersion.Equals(DurableVersion.V2))
             {
                 if (CodeFixProviderUtils.TryGetDurableOrchestrationContextVariableName(invocationExpression, out string variableName))
                 {

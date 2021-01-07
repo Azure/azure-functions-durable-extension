@@ -25,7 +25,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         private static DurableVersion version;
 
-        internal static bool RegisterDiagnostic(SyntaxNode method, CompilationAnalysisContext context, SemanticModel semanticModel)
+        internal static bool RegisterDiagnostic(CompilationAnalysisContext context, SemanticModel semanticModel, SyntaxNode method)
         {
             // | is the non short circuit or; this is important so that each method analyzes the code and reports all needed diagnostics.
             return (AnalyzeIdentifierTask(method, context, semanticModel) |

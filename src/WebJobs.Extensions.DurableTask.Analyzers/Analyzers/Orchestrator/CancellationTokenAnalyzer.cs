@@ -1,4 +1,7 @@
-﻿using Microsoft.CodeAnalysis;
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 
@@ -16,7 +19,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         public static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, Severity, isEnabledByDefault: true);
 
-        public static bool RegisterDiagnostic(SyntaxNode method, CompilationAnalysisContext context, SemanticModel semanticModel)
+        public static bool RegisterDiagnostic(CompilationAnalysisContext context, SyntaxNode method)
         {
             var diagnosedIssue = false;
 
@@ -24,8 +27,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             {
                 if (descendant is ParameterSyntax parameter)
                 {
-                    var identifierText = parameter.Identifier.ValueText;
-                    if (identifierText == "CancellationToken")
+                    var identifierType = parameter.Type;
+                    if (identifierType != null && identifierType.ToString() == "CancellationToken")
                     {
                         var diagnostic = Diagnostic.Create(Rule, parameter.GetLocation());
 
