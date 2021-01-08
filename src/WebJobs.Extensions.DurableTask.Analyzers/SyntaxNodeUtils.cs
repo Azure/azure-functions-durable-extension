@@ -29,24 +29,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         public static bool TryGetSemanticModelForSyntaxTree(SemanticModel model, SyntaxNode node, out SemanticModel newModel)
         {
-            try
-            {
-                if (model?.SyntaxTree == null || node?.SyntaxTree == null)
-                {
-                    newModel = null;
-                    return false;
-                }
-
-                newModel = model.SyntaxTree == node.SyntaxTree
-                    ? model
-                    : model.Compilation.GetSemanticModel(node.SyntaxTree);
-                return newModel != null;
-            }
-            catch (ArgumentException)
+            if (model?.SyntaxTree == null || node?.SyntaxTree == null)
             {
                 newModel = null;
                 return false;
             }
+            
+            newModel = model.SyntaxTree == node.SyntaxTree
+                ? model
+                : model.Compilation.GetSemanticModel(node.SyntaxTree);
+            return newModel != null;
         }
 
         public static bool TryGetITypeSymbol(SemanticModel semanticModel, SyntaxNode node, out ITypeSymbol typeSymbol)

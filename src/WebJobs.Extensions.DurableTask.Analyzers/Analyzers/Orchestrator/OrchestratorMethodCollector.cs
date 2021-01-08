@@ -77,7 +77,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         public IEnumerable<MethodInformation> GetOrchestratorMethods()
         {
-            return orchestratorMethodDeclarations.Values.ToList();
+            return orchestratorMethodDeclarations.Values;
         }
     }
 }

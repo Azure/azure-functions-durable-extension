@@ -43,11 +43,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                 compilation.RegisterSyntaxNodeAction(functionAnalyzer.orchestratorMethodCollector.FindOrchestratorMethods, SyntaxKind.MethodDeclaration);
                 compilation.RegisterSyntaxNodeAction(functionAnalyzer.FindActivityFunctionDefinition, SyntaxKind.Attribute);
 
-                compilation.RegisterCompilationEndAction(functionAnalyzer.CompleteEndActions);
+                compilation.RegisterCompilationEndAction(functionAnalyzer.CompilationEndActions);
             });
         }
 
-        private void CompleteEndActions(CompilationAnalysisContext context)
+        private void CompilationEndActions(CompilationAnalysisContext context)
         {
             this.FindActivityCalls();
 

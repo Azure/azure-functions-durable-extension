@@ -187,7 +187,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to CancellationToken should not be used as an orchestrator function paramter..
+        ///   Looks up a localized string similar to CancellationToken should not be used as an orchestrator function parameter..
         /// </summary>
         public static string CancellationTokenAnalyzerMessageFormat {
             get {
@@ -196,7 +196,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to CancellationToken should not be used as an orchestrator function paramter..
+        ///   Looks up a localized string similar to CancellationToken should not be used as an orchestrator function parameter..
         /// </summary>
         public static string CancellationTokenAnalyzerTitle {
             get {
