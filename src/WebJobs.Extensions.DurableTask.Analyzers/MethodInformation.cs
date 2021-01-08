@@ -30,9 +30,5 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             return -1876124485 + EqualityComparer<ISymbol>.Default.GetHashCode(DeclarationSymbol);
         }
     }
-
-    
-
-
 }
 
