@@ -9,17 +9,26 @@ using System.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 {
+    /// <summary>
+    /// This class collects all orchestator methods and methods used within orchestrators defined in the solution.
+    /// This is meant to be used with a DiagnosticAnalyzer by registering actions on SyntaxKind.MethodDeclaration.
+    /// </summary>
     public class OrchestratorMethodCollector
     {
-        private Dictionary<ISymbol, MethodInformation> orchestratorMethodDeclarations = new Dictionary<ISymbol, MethodInformation>();
+        private readonly Dictionary<ISymbol, MethodInformation> orchestratorMethodDeclarations = new Dictionary<ISymbol, MethodInformation>();
 
+        /// <summary>
+        /// Method used to collect orchestrator methods and methods used in orchestrators that are defined in
+        /// the solution. Call this on a DiagnosticAnalyzer by registering actions on SyntaxKind.MethodDeclaration.
+        /// </summary>
+        /// <param name="context"></param>
         public void FindOrchestratorMethods(SyntaxNodeAnalysisContext context)
         {
             var semanticModel = context.SemanticModel;
             var symbol = context.ContainingSymbol;
-            if (context.Node is MethodDeclarationSyntax declaration
-                && SyntaxNodeUtils.IsInsideOrchestratorFunction(semanticModel, declaration)
-                && symbol != null)
+            if (symbol != null
+                && context.Node is MethodDeclarationSyntax declaration
+                && SyntaxNodeUtils.IsInsideOrchestratorFunction(semanticModel, declaration))
             {
                 var methodInformation = new MethodInformation()
                 {
@@ -75,6 +84,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             }
         }
 
+        /// <summary>
+        /// Gets colleciton of methods stored in this OrchestratorMethodCollector.
+        /// Call this as a CompilationEndAction on the DiagnosticAnalyzer using an instance of this class.
+        /// </summary>
+        /// <returns>The collection of orchestrator methods and methods used within orchestrator functions.</returns>
         public IEnumerable<MethodInformation> GetOrchestratorMethods()
         {
             return orchestratorMethodDeclarations.Values;

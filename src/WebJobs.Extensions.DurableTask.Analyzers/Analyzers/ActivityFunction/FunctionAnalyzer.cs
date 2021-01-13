@@ -8,10 +8,13 @@ using Microsoft.CodeAnalysis.Diagnostics;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 {
+    /// <summary>
+    /// Collects ActivityFunctionDefinitions and ActivityFunctionCalls and diagnoses issues on them.
+    /// Requires full solution analysis.
+    /// </summary>
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class FunctionAnalyzer : DiagnosticAnalyzer
     {
@@ -74,7 +77,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
                     this.semanticModel = methodInformation.SemanticModel;
 
-                    Parallel.ForEach(invocationExpressions, invocation =>
+                    foreach(var invocation in invocationExpressions)
                     {
                         if (IsActivityInvocation(invocation))
                         {
@@ -103,7 +106,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                                 InvocationExpression = invocation
                             });
                         }
-                    });
+                    }
                 }
             }
         }
@@ -144,7 +147,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         private static bool TryGetInputNodeFromCallActivityInvocation(SemanticModel semanticModel, InvocationExpressionSyntax invocationExpression, out SyntaxNode inputNode)
         {
-            // If CallActivity is a custom method in user code
+            // If method invocation is a custom CallActivity extension method defined in user code
             if (SyntaxNodeUtils.TryGetDeclaredSyntaxNode(semanticModel, invocationExpression, out SyntaxNode declaration))
             {
                 if (TryGetSpecificParameterIndex(declaration, "object input", out int inputParameterIndex))
@@ -203,7 +206,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         private static bool IsExtensionMethod(IEnumerable<SyntaxNode> parameters)
         {
             var firstParameter = parameters.ElementAt(0);
-            if (firstParameter.ToString() == "this IDurableOrchestrationContext context")
+            if (firstParameter.ToString().StartsWith("this IDurableOrchestrationContext"))
             {
                 return true;
             }

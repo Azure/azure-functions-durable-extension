@@ -22,7 +22,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         public static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, Severity, isEnabledByDefault: true, description: Description);
 
-        private HashSet<MethodInformation> methodsVisited;
+        private readonly HashSet<MethodInformation> methodsVisited;
 
         public MethodInvocationAnalyzer()
         {

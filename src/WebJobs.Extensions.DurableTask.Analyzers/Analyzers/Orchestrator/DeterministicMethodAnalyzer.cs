@@ -5,10 +5,13 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
 using System.Collections.Immutable;
-using System.Threading.Tasks;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 {
+    /// <summary>
+    /// Diagnoses issues on orchestrator methods and methods used within orchestrators defined in the soution that are
+    /// meant to be deterministic. Requires full solution analysis.
+    /// </summary>
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class DeterministicMethodAnalyzer : DiagnosticAnalyzer
     {
@@ -48,7 +51,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         {
             var methodInvocationAnalyzer = new MethodInvocationAnalyzer();
             var orchestratorMethods = orchestratorMethodCollector.GetOrchestratorMethods();
-            Parallel.ForEach(orchestratorMethods, methodInformation =>
+            foreach(var methodInformation in orchestratorMethods)
             {
                 var semanticModel = methodInformation.SemanticModel;
                 var methodDeclaration = methodInformation.Declaration;
@@ -64,7 +67,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                 {
                     methodInvocationAnalyzer.RegisterDiagnostics(context, methodInformation);
                 }
-            });
+            }
         }
     }
 }
