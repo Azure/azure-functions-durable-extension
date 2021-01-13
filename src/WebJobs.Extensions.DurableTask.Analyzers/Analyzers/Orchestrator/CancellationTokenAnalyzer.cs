@@ -22,19 +22,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         public static bool RegisterDiagnostic(CompilationAnalysisContext context, SyntaxNode method)
         {
             var diagnosedIssue = false;
-
-            foreach (SyntaxNode descendant in method.DescendantNodes())
+            
+            if (SyntaxNodeUtils.IsInsideOrchestrationTrigger(method))
             {
-                if (descendant is ParameterSyntax parameter)
+                foreach (SyntaxNode descendant in method.DescendantNodes())
                 {
-                    var identifierType = parameter.Type;
-                    if (identifierType != null && identifierType.ToString() == "CancellationToken")
+                    if (descendant is ParameterSyntax parameter)
                     {
-                        var diagnostic = Diagnostic.Create(Rule, parameter.GetLocation());
+                        var identifierType = parameter.Type;
+                        if (identifierType != null && identifierType.ToString() == "CancellationToken")
+                        {
+                            var diagnostic = Diagnostic.Create(Rule, parameter.GetLocation());
 
-                        context.ReportDiagnostic(diagnostic);
+                            context.ReportDiagnostic(diagnostic);
 
-                        diagnosedIssue = true;
+                            diagnosedIssue = true;
+                        }
                     }
                 }
             }
