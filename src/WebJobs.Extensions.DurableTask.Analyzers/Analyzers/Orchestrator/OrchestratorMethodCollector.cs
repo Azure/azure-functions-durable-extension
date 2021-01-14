@@ -85,7 +85,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         }
 
         /// <summary>
-        /// Gets colleciton of methods stored in this OrchestratorMethodCollector.
+        /// Gets a collection of methods stored in this OrchestratorMethodCollector.
         /// Call this as a CompilationEndAction on the DiagnosticAnalyzer using an instance of this class.
         /// </summary>
         /// <returns>The collection of orchestrator methods and methods used within orchestrator functions.</returns>
