@@ -6,12 +6,9 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
-
-#if !FUNCTIONS_V1
-using Mono.Unix.Native;
-#endif
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
@@ -173,9 +170,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // Rename current file to older file.
 
 #if !FUNCTIONS_V1
-            Syscall.rename(this.logFilePath, this.archiveFilePath);
+            rename(this.logFilePath, this.archiveFilePath);
 #endif
 
         }
+
+#if !FUNCTIONS_V1
+        [DllImport("libc", SetLastError = true)]
+        private static extern int rename(string oldPath, string newPath);
+#endif
     }
 }
