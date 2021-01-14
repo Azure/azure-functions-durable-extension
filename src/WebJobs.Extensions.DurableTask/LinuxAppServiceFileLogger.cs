@@ -173,7 +173,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // Rename current file to older file.
 
 #if !FUNCTIONS_V1
-            Syscall.rename(this.logFilePath, this.archiveFilePath);
+            try
+            {
+                Syscall.rename(this.logFilePath, this.archiveFilePath);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Linux Logger failed to roll files", ex);
+            }
 #endif
 
         }
