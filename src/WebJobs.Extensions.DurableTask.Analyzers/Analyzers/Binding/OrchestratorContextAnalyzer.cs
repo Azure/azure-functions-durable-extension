@@ -45,7 +45,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
                 if (string.Equals(attribute.ToString(), "OrchestrationTrigger"))
                 {
-                    if (SyntaxNodeUtils.TryGetParameterNodeNextToAttribute(context, attribute, out SyntaxNode parameterNode))
+                    if (SyntaxNodeUtils.TryGetParameterNodeNextToAttribute(attribute, out SyntaxNode parameterNode))
                     {
                         if (!ParameterTypeIsCorrectDurableType(parameterNode))
                         {
