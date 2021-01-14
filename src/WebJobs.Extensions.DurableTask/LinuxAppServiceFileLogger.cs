@@ -6,12 +6,9 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
-
-#if !FUNCTIONS_V1
-using Mono.Unix.Native;
-#endif
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
@@ -175,7 +172,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #if !FUNCTIONS_V1
             try
             {
-                Syscall.rename(this.logFilePath, this.archiveFilePath);
+                rename(this.logFilePath, this.archiveFilePath);
             }
             catch (Exception ex)
             {
@@ -184,5 +181,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #endif
 
         }
+
+#if !FUNCTIONS_V1
+        [DllImport("libc", SetLastError = true)]
+#pragma warning disable SA1300 // Element should begin with upper-case letter
+        private static extern int rename(string oldPath, string newPath);
+#pragma warning restore SA1300 // Element should begin with upper-case letter
+#endif
     }
 }
