@@ -6,5 +6,6 @@
 
 ## Breaking changes
 
-## Dependency Changes 
+## Dependency Changes
 
+Removed dependency on Mono.Posix.NETStandard by instead relying on P/Invoke to generate inotify signals in Linux; reducing the size of the package (https://github.com/Azure/azure-functions-durable-extension/pull/1643)
