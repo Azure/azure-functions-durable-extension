@@ -168,16 +168,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private void RollFiles()
         {
             // Rename current file to older file.
-
 #if !FUNCTIONS_V1
-            try
-            {
-                rename(this.logFilePath, this.archiveFilePath);
-            }
-            catch (Exception ex)
-            {
-                throw new Exception("Linux Logger failed to roll files", ex);
-            }
+            rename(this.logFilePath, this.archiveFilePath);
 #endif
 
         }
