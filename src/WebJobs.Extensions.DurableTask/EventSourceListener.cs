@@ -15,6 +15,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     {
         private readonly LinuxAppServiceLogger logger;
         private readonly bool disableVerbose;
+        private EndToEndTraceHelper traceHelper;
 
         /// <summary>
         /// Create an EventSourceListener to capture and log Durable EventSource
@@ -22,10 +23,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </summary>
         /// <param name="logger">A LinuxAppService logger configured for the current linux host.</param>
         /// <param name="enableVerbose">If true, durableTask.Core verbose logs are enabled. The opposite if false.</param>
-        public EventSourceListener(LinuxAppServiceLogger logger, bool enableVerbose)
+        /// <param name="traceHelper">A tracing client to log exceptions.</param>
+        public EventSourceListener(LinuxAppServiceLogger logger, bool enableVerbose, EndToEndTraceHelper traceHelper)
         {
             this.logger = logger;
-            this.disableVerbose = !enableVerbose; // We set the opposite to simply logic later
+            this.disableVerbose = !enableVerbose; // We track the opposite value ro simplify logic later
+            this.traceHelper = traceHelper;
         }
 
         /// <summary>
@@ -60,7 +63,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                && eventData.EventSource.Name == "DurableTask-Core"
                && eventData.Level == EventLevel.Verbose))
             {
-                this.logger.Log(eventData);
+                try
+                {
+                    this.logger.Log(eventData);
+                }
+                catch (Exception)
+                {
+                    this.traceHelper.ExtensionWarningEvent(
+                        hubName: string.Empty,
+                        instanceId: string.Empty,
+                        functionName: string.Empty,
+                        message: $"The Linux Logger failed to log, logs might be lost.");
+                    throw;
+                }
             }
         }
     }
