@@ -3,6 +3,7 @@
 ## New Features
 
 ## Bug fixes
+- Fix a NullReferenceException in IDurableClient.SignalClient() for IDurableClient objects created by the new DurabilityClientFactory (#1644)
 
 ## Breaking changes
 
