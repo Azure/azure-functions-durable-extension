@@ -187,6 +187,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to CancellationToken should not be used as an orchestrator function parameter..
+        /// </summary>
+        public static string CancellationTokenAnalyzerMessageFormat {
+            get {
+                return ResourceManager.GetString("CancellationTokenAnalyzerMessageFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to CancellationToken should not be used as an orchestrator function parameter..
+        /// </summary>
+        public static string CancellationTokenAnalyzerTitle {
+            get {
+                return ResourceManager.GetString("CancellationTokenAnalyzerTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to DateTime calls must be deterministic inside an orchestrator function..
         /// </summary>
         public static string DateTimeAnalyzerTitle {

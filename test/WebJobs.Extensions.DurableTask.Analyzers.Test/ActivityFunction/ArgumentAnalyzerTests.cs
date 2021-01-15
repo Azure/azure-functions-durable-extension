@@ -235,6 +235,71 @@ namespace VSSample
         }
 
         [TestMethod]
+        public void Argument_NoDiagnosticTestCases_CustomMethods()
+        {
+            var test = @"
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using Microsoft.Azure.WebJobs;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
+
+namespace VSSample
+{
+    public static class HelloSequence
+    {
+        [FunctionName(""ArgumentAnalyzerTestCases"")]
+        public static async Task<string> Run(
+            [OrchestrationTrigger] IDurableOrchestrationContext context)
+            {
+                var retryOptions = new RetryOptions(new TimeSpan(), 2);
+
+                // Test correct custom method is used to determine which argument the input is.
+                await context.CallActivityAsync<string>(""Extension_InputNotLast"", ""input"", retryOptions);
+
+                // Test argument analyzer does not compare input on default parameter.
+                await context.CallActivityAsync<string>(""Extension_InputNotLast"", ""notInput"", 2, 3, retryOptions: retryOptions);
+            }
+
+        [FunctionName(""Extension_InputNotLast"")]
+        public static string ExtensionInputNotLast([ActivityTrigger] string name)
+            {
+                return $""Hello {name}!"";
+            }
+
+            // Test correct custom method is used to determine which argument the input is
+
+            public static Task<TResult> CallActivityAsync<TResult>(
+            this IDurableOrchestrationContext context, string functionName, object input, RetryOptions retryOptions)
+            {
+                return retryOptions != null
+                    ? context.CallActivityWithRetryAsync<TResult>(functionName, retryOptions, input)
+                    : context.CallActivityAsync<TResult>(functionName, input);
+            }
+
+            public static Task<TResult> CallActivityAsync<TResult>(
+            this IDurableOrchestrationContext context, string functionName, int integer, object input, RetryOptions retryOptions)
+            {
+                return retryOptions != null
+                    ? context.CallActivityWithRetryAsync<TResult>(functionName, retryOptions, input)
+                    : context.CallActivityAsync<TResult>(functionName, input);
+            }
+
+            // Test argument analyzer does not compare input on default parameter
+
+            public static Task<TResult> CallActivityAsync<TResult>(
+            this IDurableOrchestrationContext context, string functionName, string stringOne, int integerOne, int integerTwo, object input = null, RetryOptions retryOptions = null)
+            {
+                return retryOptions != null
+                    ? context.CallActivityWithRetryAsync<TResult>(functionName, retryOptions, input)
+                    : context.CallActivityAsync<TResult>(functionName, input);
+            }
+        }
+}";
+            VerifyCSharpDiagnostic(test);
+        }
+
+        [TestMethod]
         public void Argument_GivenInt_TakesString_OffContext()
         {
             var test = @"
@@ -430,6 +495,54 @@ namespace VSSample
 
         [TestMethod]
         public void Argument_InputNullWithValueType()
+        {
+            var test = @"
+using System;
+using System.Collections.Generic;
+using System.Net;
+using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
+using Microsoft.WindowsAzure.Storage.Blob;
+using Microsoft.WindowsAzure.Storage.Queue;
+using Microsoft.WindowsAzure.Storage.Table;
+
+namespace VSSample
+{
+    public static class HelloSequence
+    {
+        [FunctionName(""ArgumentAnalyzerTestCases"")]
+        public static async Task<string> Run(
+            [OrchestrationTrigger] IDurableOrchestrationContext context)
+            {
+                await context.CallActivityAsync<string>(""InvalidNullInput"", null));
+            
+                return ""Hello World!"";
+            }
+
+        [FunctionName(""InvalidNullInput"")]
+        public static string InvalidNullInput([ActivityTrigger] int input)
+        {
+            return $""Hello World!"";
+        }
+    }
+}";
+            var expectedDiagnostics = new DiagnosticResult
+            {
+                Id = DiagnosticId,
+                Message = string.Format(Resources.ActivityArgumentAnalyzerMessageFormatInvalidNull, "InvalidNullInput", "int"),
+                Severity = Severity,
+                Locations =
+                 new[] {
+                            new DiagnosticResultLocation("Test0.cs", 21, 77)
+                     }
+            };
+            VerifyCSharpDiagnostic(test, expectedDiagnostics);
+        }
+
+        [TestMethod]
+        public void Argument_InputNullWithValueType2()
         {
             var test = @"
 using System;

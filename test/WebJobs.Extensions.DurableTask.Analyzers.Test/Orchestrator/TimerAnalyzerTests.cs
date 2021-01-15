@@ -244,7 +244,7 @@ namespace VSSample
             var expectedDiagnostics = new DiagnosticResult[5];
             expectedDiagnostics[0] = new DiagnosticResult
             {
-                Id = MethodAnalyzer.DiagnosticId,
+                Id = MethodInvocationAnalyzer.DiagnosticId,
                 Message = string.Format(Resources.MethodAnalyzerMessageFormat, "DirectCall()"),
                 Severity = Severity,
                 Locations =
@@ -691,7 +691,7 @@ namespace VSSample
 
         protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()
         {
-            return new OrchestratorAnalyzer();
+            return new DeterministicMethodAnalyzer();
         }
     }
 }

@@ -160,7 +160,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         void SignalEntity<TEntityInterface>(EntityId entityId, DateTime scheduledTimeUtc, Action<TEntityInterface> operation);
 
         /// <summary>
-        /// Schedules a orchestration function named <paramref name="functionName"/> for execution./>.
+        /// Schedules an orchestration function named <paramref name="functionName"/> for execution./>.
         /// Any result or exception is ignored (fire and forget).
         /// </summary>
         /// <param name="functionName">The name of the orchestrator function to call.</param>

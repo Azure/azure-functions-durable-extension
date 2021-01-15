@@ -317,7 +317,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             var expectedDiagnostics = new DiagnosticResult[7];
             expectedDiagnostics[0] = new DiagnosticResult
             {
-                Id = MethodAnalyzer.DiagnosticId,
+                Id = MethodInvocationAnalyzer.DiagnosticId,
                 Message = string.Format(Resources.MethodAnalyzerMessageFormat, "DirectCall()"),
                 Severity = Severity,
                 Locations =
@@ -402,7 +402,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
 
         protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()
         {
-            return new OrchestratorAnalyzer();
+            return new DeterministicMethodAnalyzer();
         }
     }
 }
