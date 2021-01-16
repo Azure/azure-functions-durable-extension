@@ -369,7 +369,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 // we write back the entity state after each successful operation
                 if (!operationFailed)
                 {
-                    if (!this.context.TryWriteback(out var errorResponseMessage))
+                    if (!this.context.TryWriteback(out var errorResponseMessage, request.Operation, request.Id.ToString()))
                     {
                         // state serialization failed; create error response and roll back.
                         this.context.CurrentOperationResponse = errorResponseMessage;
@@ -450,9 +450,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             var outOfProcResult = jObj.ToObject<OutOfProcResult>();
 
+            // determine what happened to the entity state
+            bool stateWasCreated = !this.context.State.EntityExists && outOfProcResult.EntityExists;
+            bool stateWasDeleted = this.context.State.EntityExists && !outOfProcResult.EntityExists;
+
             // update the state
             this.context.State.EntityExists = outOfProcResult.EntityExists;
             this.context.State.EntityState = outOfProcResult.EntityState;
+
+            // emit trace if state was created
+            if (stateWasCreated)
+            {
+                this.Config.TraceHelper.EntityStateCreated(
+                        this.context.HubName,
+                        this.context.Name,
+                        this.context.InstanceId,
+                        "", // operation name left blank because it is a batch
+                        "", // operation id left blank because it is a batch
+                        isReplay: false);
+            }
 
             // for each operation, emit trace and send response message (if not a signal)
             for (int i = 0; i < this.OperationBatch.Count; i++)
@@ -523,6 +539,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     InstanceId = EntityId.GetSchedulerIdFromEntityId(signal.Target),
                 };
                 this.context.SendOperationMessage(target, request);
+            }
+
+            if (stateWasDeleted)
+            {
+                this.Config.TraceHelper.EntityStateDeleted(
+                        this.context.HubName,
+                        this.context.Name,
+                        this.context.InstanceId,
+                        "", // operation name left blank because it is a batch
+                        "", // operation id left blank because it is a batch
+                        isReplay: false);
             }
         }
 

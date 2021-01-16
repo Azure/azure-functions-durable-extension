@@ -559,6 +559,68 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
+        public void EntityStateCreated(
+            string hubName,
+            string functionName,
+            string instanceId,
+            string operationName,
+            string operationId,
+            bool isReplay)
+        {
+            if (this.ShouldLogEvent(isReplay))
+            {
+                FunctionType functionType = FunctionType.Entity;
+
+                EtwEventSource.Instance.EntityStateCreated(
+                    hubName,
+                    LocalAppName,
+                    LocalSlotName,
+                    functionName,
+                    instanceId,
+                    operationName,
+                    operationId,
+                    FunctionType.Entity.ToString(),
+                    ExtensionVersion,
+                    isReplay);
+
+                this.logger.LogInformation(
+                    "{instanceId}: Function '{functionName} ({functionType})' created entity state in '{operationName}' operation {operationId}. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
+                    instanceId, functionName, functionType, operationName, operationId, FunctionState.EntityStateCreated, hubName,
+                    LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++);
+            }
+        }
+
+        public void EntityStateDeleted(
+            string hubName,
+            string functionName,
+            string instanceId,
+            string operationName,
+            string operationId,
+            bool isReplay)
+        {
+            if (this.ShouldLogEvent(isReplay))
+            {
+                FunctionType functionType = FunctionType.Entity;
+
+                EtwEventSource.Instance.EntityStateDeleted(
+                    hubName,
+                    LocalAppName,
+                    LocalSlotName,
+                    functionName,
+                    instanceId,
+                    operationName,
+                    operationId,
+                    FunctionType.Entity.ToString(),
+                    ExtensionVersion,
+                    isReplay);
+
+                this.logger.LogInformation(
+                    "{instanceId}: Function '{functionName} ({functionType})' deleted entity state in '{operationName}' operation {operationId}. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
+                    instanceId, functionName, functionType, operationName, operationId, FunctionState.EntityStateDeleted, hubName,
+                    LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++);
+            }
+        }
+
         public void EntityLockAcquired(
             string hubName,
             string functionName,

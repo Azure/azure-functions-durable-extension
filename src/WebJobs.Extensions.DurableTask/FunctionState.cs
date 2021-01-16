@@ -18,5 +18,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         LockReleased,
         TimerExpired,
         Rewound,
+        EntityStateCreated,
+        EntityStateDeleted,
     }
 }
