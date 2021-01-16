@@ -7,4 +7,4 @@
 ## Breaking changes
 
 ## Dependency Changes 
-
+- Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers --> 0.4.0
