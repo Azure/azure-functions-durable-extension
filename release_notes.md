@@ -9,6 +9,8 @@
 
 ## Breaking changes
 
-## Dependency Changes
+
+## Dependency Changes 
+- Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers --> 0.4.0
 
 Removed dependency on Mono.Posix.NETStandard by instead relying on P/Invoke to generate inotify signals in Linux; reducing the size of the package (#1643)
