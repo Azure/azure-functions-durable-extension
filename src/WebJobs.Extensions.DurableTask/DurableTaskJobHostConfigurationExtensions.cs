@@ -13,8 +13,12 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 #else
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.Host.Config;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 #endif
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
@@ -24,36 +28,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// </summary>
     public static class DurableTaskJobHostConfigurationExtensions
     {
-#if !FUNCTIONS_V1
-        /// <summary>
-        /// Adds the Durable Task extension to the provided <see cref="IWebJobsBuilder"/>.
-        /// </summary>
-        /// <param name="builder">The <see cref="IWebJobsBuilder"/> to configure.</param>
-        /// <returns>Returns the provided <see cref="IWebJobsBuilder"/>.</returns>
-        public static IWebJobsBuilder AddDurableTask(this IWebJobsBuilder builder)
-        {
-            if (builder == null)
-            {
-                throw new ArgumentNullException(nameof(builder));
-            }
-
-            var serviceCollection = builder.AddExtension<DurableTaskExtension>()
-                .BindOptions<DurableTaskOptions>()
-                .Services.AddSingleton<IConnectionStringResolver, WebJobsConnectionStringProvider>();
-
-            serviceCollection.TryAddSingleton<IDurableHttpMessageHandlerFactory, DurableHttpMessageHandlerFactory>();
-            serviceCollection.TryAddSingleton<IDurabilityProviderFactory, AzureStorageDurabilityProviderFactory>();
-            serviceCollection.TryAddSingleton<IMessageSerializerSettingsFactory, MessageSerializerSettingsFactory>();
-            serviceCollection.TryAddSingleton<IErrorSerializerSettingsFactory, ErrorSerializerSettingsFactory>();
-            serviceCollection.TryAddSingleton<IApplicationLifetimeWrapper, HostLifecycleService>();
-#if !FUNCTIONS_V1
-            serviceCollection.AddSingleton<ITelemetryActivator, TelemetryActivator>();
-#endif
-            serviceCollection.TryAddSingleton<IDurableClientFactory, DurableClientFactory>();
-
-            return builder;
-        }
-
         /// <summary>
         /// Adds the Durable Task extension to the provided <see cref="IServiceCollection"/>.
         /// </summary>
@@ -86,6 +60,34 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             AddDurableClientFactory(serviceCollection);
             serviceCollection.Configure<DurableClientOptions>(optionsBuilder.Invoke);
             return serviceCollection;
+        }
+
+#if !FUNCTIONS_V1
+        /// <summary>
+        /// Adds the Durable Task extension to the provided <see cref="IWebJobsBuilder"/>.
+        /// </summary>
+        /// <param name="builder">The <see cref="IWebJobsBuilder"/> to configure.</param>
+        /// <returns>Returns the provided <see cref="IWebJobsBuilder"/>.</returns>
+        public static IWebJobsBuilder AddDurableTask(this IWebJobsBuilder builder)
+        {
+            if (builder == null)
+            {
+                throw new ArgumentNullException(nameof(builder));
+            }
+
+            var serviceCollection = builder.AddExtension<DurableTaskExtension>()
+                .BindOptions<DurableTaskOptions>()
+                .Services.AddSingleton<IConnectionStringResolver, WebJobsConnectionStringProvider>();
+
+            serviceCollection.TryAddSingleton<IDurableHttpMessageHandlerFactory, DurableHttpMessageHandlerFactory>();
+            serviceCollection.TryAddSingleton<IDurabilityProviderFactory, AzureStorageDurabilityProviderFactory>();
+            serviceCollection.TryAddSingleton<IMessageSerializerSettingsFactory, MessageSerializerSettingsFactory>();
+            serviceCollection.TryAddSingleton<IErrorSerializerSettingsFactory, ErrorSerializerSettingsFactory>();
+            serviceCollection.TryAddSingleton<IApplicationLifetimeWrapper, HostLifecycleService>();
+            serviceCollection.AddSingleton<ITelemetryActivator, TelemetryActivator>();
+            serviceCollection.TryAddSingleton<IDurableClientFactory, DurableClientFactory>();
+
+            return builder;
         }
 
         /// <summary>
