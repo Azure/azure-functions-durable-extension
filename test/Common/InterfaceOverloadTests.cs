@@ -11,7 +11,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     /// Tests to make sure that calls to interface methods with closely related overloads
     /// do not change as we add/tweak methods on the interfaces.
     ///
-    /// TODO: Add more tests: https://github.com/Azure/azure-functions-durable-extension/issues/1500
+    /// TODO: Add more tests: https://github.com/Azure/azure-functions-durable-extension/issues/1500.
     /// </summary>
     public class InterfaceOverloadTests
     {
