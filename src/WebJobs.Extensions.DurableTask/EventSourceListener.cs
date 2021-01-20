@@ -3,7 +3,6 @@
 
 using System;
 using System.Diagnostics.Tracing;
-using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {

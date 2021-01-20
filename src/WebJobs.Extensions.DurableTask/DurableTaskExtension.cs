@@ -247,11 +247,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="context">Extension context provided by WebJobs.</param>
         void IExtensionConfigProvider.Initialize(ExtensionConfigContext context)
         {
-#if !FUNCTIONS_V1
-            // .NET461 is not supported in linux, so this is conditionally compiled
             // We initialize linux logging early on in case any initialization steps below were to trigger a log event.
             this.InitializeLinuxLogging();
-#endif
 
             ConfigureLoaderHooks();
 

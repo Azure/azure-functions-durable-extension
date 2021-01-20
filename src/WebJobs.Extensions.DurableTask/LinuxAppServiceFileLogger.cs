@@ -168,17 +168,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private void RollFiles()
         {
             // Rename current file to older file.
-#if !FUNCTIONS_V1
             rename(this.logFilePath, this.archiveFilePath);
-#endif
-
         }
 
-#if !FUNCTIONS_V1
         [DllImport("libc", SetLastError = true)]
 #pragma warning disable SA1300 // Element should begin with upper-case letter
         private static extern int rename(string oldPath, string newPath);
 #pragma warning restore SA1300 // Element should begin with upper-case letter
-#endif
     }
 }

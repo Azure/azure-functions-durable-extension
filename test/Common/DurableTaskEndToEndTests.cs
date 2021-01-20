@@ -223,7 +223,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
-#if !FUNCTIONS_V1
         /// <summary>
         /// By simulating the appropiate enviorment variables for Linux Consumption,
         /// this test checks that we are writing our JSON logs to the console. It does not
@@ -687,7 +686,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             // To ensure other tests generate the path
             File.Delete(LinuxAppServiceLogger.LoggingPath);
         }*/
-#endif
 
         /// <summary>
         /// End-to-end test which runs a simple orchestrator function that calls a single activity function.
