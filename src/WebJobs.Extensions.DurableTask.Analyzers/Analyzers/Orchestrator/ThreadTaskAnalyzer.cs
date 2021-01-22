@@ -22,7 +22,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         public static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, Severity, isEnabledByDefault: true, description: Description);
 
-        internal static bool RegisterDiagnostic(SyntaxNode method, CompilationAnalysisContext context, SemanticModel semanticModel)
+        internal static bool RegisterDiagnostic(CompilationAnalysisContext context, SemanticModel semanticModel, SyntaxNode method)
         {
             // | is the non short circuit or; this is important so that each method analyzes the code and reports all needed diagnostics.
             return (AnalyzeIdentifierTask(method, context, semanticModel) |
@@ -107,7 +107,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                         {
                             if (memberSymbol != null && memberSymbol.ToString().StartsWith("System.Threading.Thread"))
                             {
-                                var diagnostic = Diagnostic.Create(Rule, memberAccessExpression.GetLocation(), memberAccessExpression);
+                                var diagnostic = Diagnostic.Create(Rule, memberAccessExpression.GetLocation(), "Thread.Start");
 
                                 context.ReportDiagnostic(diagnostic);
 
@@ -132,20 +132,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     var identifierText = identifierName.Identifier.ValueText;
                     if (identifierText == "ContinueWith")
                     {
-                        var memberAccessExpression = identifierName.Parent;
-                        if (SyntaxNodeUtils.TryGetISymbol(semanticModel, memberAccessExpression, out ISymbol memberSymbol))
+                        if (!HasExecuteSynchronously(identifierName))
                         {
-                            if (memberSymbol != null && memberSymbol.ToString().StartsWith("System.Threading.Tasks.Task"))
-                            {
-                                if (!HasExecuteSynchronously(identifierName))
-                                {
-                                    var diagnostic = Diagnostic.Create(Rule, memberAccessExpression.GetLocation(), memberAccessExpression);
+                            var memberAccessExpression = identifierName.Parent;
 
-                                    context.ReportDiagnostic(diagnostic);
+                            var diagnostic = Diagnostic.Create(Rule, memberAccessExpression.GetLocation(), "Task.ContinueWith");
 
-                                    diagnosedIssue = true;
-                                }
-                            }
+                            context.ReportDiagnostic(diagnostic);
+                            
+                            diagnosedIssue = true;
                         }
                     }
                 }

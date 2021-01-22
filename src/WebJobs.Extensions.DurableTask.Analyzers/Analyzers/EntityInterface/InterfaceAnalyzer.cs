@@ -92,20 +92,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         private bool TryFindEntityInterface(SyntaxNodeAnalysisContext context, SyntaxNode identifierName, out EntityInterface entityInterface)
         {
-            if (SyntaxNodeUtils.TryGetISymbol(context.SemanticModel, identifierName, out ISymbol interfaceSymbol))
+            if (SyntaxNodeUtils.TryGetDeclaredSyntaxNode(context.SemanticModel, identifierName, out SyntaxNode declaration))
             {
-                var syntaxReference = interfaceSymbol.DeclaringSyntaxReferences.FirstOrDefault();
-                if (syntaxReference != null)
+                if (IsInterface(declaration))
                 {
-                    var declaration = syntaxReference.GetSyntax(context.CancellationToken);
-                    if (declaration != null)
-                    {
-                        if (IsInterface(declaration))
-                        {
-                            entityInterface = new EntityInterface { Name = identifierName.ToString(), InterfaceDeclaration = declaration };
-                            return true;
-                        }
-                    }
+                    entityInterface = new EntityInterface { Name = identifierName.ToString(), InterfaceDeclaration = declaration };
+                    return true;
                 }
             }
 
