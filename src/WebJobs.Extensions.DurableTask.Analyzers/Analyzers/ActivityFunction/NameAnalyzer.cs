@@ -3,7 +3,6 @@
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -22,12 +21,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         public static readonly DiagnosticDescriptor CloseRule = new DiagnosticDescriptor(DiagnosticId, Title, CloseMessageFormat, Category, Severity, isEnabledByDefault: true, description: Description);
         public static readonly DiagnosticDescriptor MissingRule = new DiagnosticDescriptor(DiagnosticId, Title, MissingMessageFormat, Category, Severity, isEnabledByDefault: true, description: Description);
 
-
-        private static string GetClosestString(string name, IEnumerable<string> availableNames)
-        {
-            return availableNames.OrderBy(x => x.LevenshteinDistance(name)).First();
-        }
-
         public static void ReportProblems(
             CompilationAnalysisContext context,
             SemanticModel semanticModel,
@@ -36,7 +29,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         {
             foreach (var invocation in functionInvocations)
             {
-                // If invocation uses constant and there is no matching function name in function definition, trust the customer for correctness in case they are using <FunctionsInDependencies>true</FunctionsInDependencies>
+                // If invocation uses constant and there is no matching function name in function definition, trust the customer for correctness in case they are using 
+                // <FunctionsInDependencies>true</FunctionsInDependencies>
                 if (!functionDefinitions.Select(x => x.FunctionName).Contains(invocation.FunctionName) && !IsConstant(semanticModel, invocation.NameNode))
                 {
                     if (SyntaxNodeUtils.TryGetClosestString(invocation.FunctionName, functionDefinitions.Select(x => x.FunctionName), out string closestName))
@@ -57,7 +51,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         private static bool IsConstant(SemanticModel semanticModel, SyntaxNode nameNode)
         {
-            return SyntaxNodeUtils.TryGetFunctionNameInConstant(semanticModel, nameNode, out string functionName);
+            return SyntaxNodeUtils.TryGetFunctionNameInConstant(semanticModel, nameNode, out _);
         }
     }
 }

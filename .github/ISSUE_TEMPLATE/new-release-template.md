@@ -3,21 +3,34 @@ name: New release template
 about: Template for creating new releases of Durable Functions
 title: ''
 labels: ''
-assignees: cgillum
+assignees: comcmaho, amdeel, davidmrdavid, bachuv
 
 ---
 
-As part of a release, the following items need to be taken care of. For any items that are not applicable, they should be crossed out using the `~~ ~~` markdown syntax with an explanation.
+**Prep Release: (assigned to:)**
+_Due: <3-business-days-before-release>_
+- [ ] Merge all features and fixes into the `dev` branch
+- [ ] Publish updated versions of DurableTask.Core and DurableTask.AzureStorage to app-service MyGet feed
+- [ ] Update dependencies and increment extension version in the `dev` branch.
+- [ ] Publish signed version of Microsoft.Azure.WebJobs.Extensions.DurableTask to app-service MyGet feed
+- [ ] Close out or punt remaining GitHub issues for the current milestone
 
-- [ ] Run private scale tests and ensure no regressions
-- [ ] Publish updated versions of [DurableTask.Core](https://www.nuget.org/packages/Microsoft.Azure.DurableTask.Core/) and [DurableTask.AzureStorage](https://www.nuget.org/packages/Microsoft.Azure.DurableTask.AzureStorage/) to nuget.org
-- [ ] Merge all features and fixes into the `master` branch
-- [ ] Update .NET API docs at https://azure.github.io/azure-functions-durable-extension
-- [ ] Publish signed version of [Microsoft.Azure.WebJobs.Extensions.DurableTask](https://www.nuget.org/packages/Microsoft.Azure.WebJobs.Extensions.DurableTask/) to nuget.org
-- [ ] Update samples to point to the latest nuget packages
+
+**Validation (assigned to: )**
+_Due: <2-business-days-before-release>_
+- [ ] Run private performance tests and ensure no regressions
+- [ ] Smoke test Functions V1 and Functions V3 .NET apps
+- [ ] Smoke test JavaScript and Python apps
+- [ ] Check for package size, make sure it's not surprisingly heavier than a previous release
+
+
+** Release Completion (assigned to: )**:
+_Due: <release-deadline>_
+- [ ] Push staged package on MyGet to Nuget.org (for Durable Task Framework, you may need to manually update them)
 - [ ] Create a PR in the [Azure Functions templates repo](https://github.com/Azure/azure-functions-templates) to update templates to the latest version
 - [ ] Create a PR in the [Azure Functions bundles repo](https://github.com/Azure/azure-functions-extension-bundles) to update bundles to the latest version
-- [ ] Close out or punt remaining GitHub issues for the current milestone
-- [ ] Update official docs under https://docs.microsoft.com/en-us/azure/azure-functions/durable ([private docs repo for Microsoft employees](http://github.com/MicrosoftDocs/azure-docs-pr))
-- [ ] Publish release notes
+- [ ] Merge all pending PR docs from `pending_docs.md`
+- [ ] Reset `pending_docs.md` and `release_notes.md` in the `dev` branch. You will want to save `release_notes.md` somewhere for when you publish release notes.
+- [ ] Merge `dev` into `main`
+- [ ] Publish release notes from the pre-reset `release_notes.md`
 - [ ] Post announcement on [App Service Announcements GitHub repo](https://github.com/Azure/app-service-announcements) and Twitter.

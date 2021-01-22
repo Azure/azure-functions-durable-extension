@@ -3,9 +3,7 @@
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -28,16 +26,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         public static void ReportProblems(
             CompilationAnalysisContext context,
-            SemanticModel semanticModel,
             IEnumerable<ActivityFunctionDefinition> functionDefinitions,
             IEnumerable<ActivityFunctionCall> functionInvocations)
         {
             foreach (var invocation in functionInvocations)
             {
                 var definition = functionDefinitions.FirstOrDefault(x => x.FunctionName == invocation.FunctionName);
-                if (definition != null)
+                if (definition != null && invocation.InputNode != null)
                 {
-                    if (InvocationInputIsNull(invocation))
+                    if (invocation.InputNode.IsKind(SyntaxKind.NullLiteralExpression))
                     {
                         if (DefinitionInputIsNonNullableValueType(definition))
                         {
@@ -63,11 +60,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     }
                 }
             }
-        }
-
-        private static bool InvocationInputIsNull(ActivityFunctionCall invocation)
-        {
-            return invocation.InputNode != null && invocation.InputNode.IsKind(SyntaxKind.NullLiteralExpression);
         }
 
         private static bool DefinitionInputIsNonNullableValueType(ActivityFunctionDefinition definition)

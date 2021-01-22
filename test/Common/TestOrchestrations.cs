@@ -917,11 +917,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 ctx.SignalEntity(entityId, "Set", 56);
                 ctx.SignalEntity(entityId, "SetToUnDeserializable");
                 ctx.SignalEntity(entityId, "Set", 12);
-                ctx.SignalEntity(entityId, "SetAndThrow", 999);
+                ctx.SignalEntity(entityId, "SetThenThrow", 999);
 
                 if (rollbackOnException)
                 {
+                    // we rolled back to an un-deserializable state
                     await Assert.ThrowsAsync<EntitySchedulerException>(() => entity.Get());
+                }
+                else
+                {
+                    Assert.Equal(999, await entity.Get());
                 }
 
                 await ctx.CallEntityAsync<bool>(entityId, "deletewithoutreading");

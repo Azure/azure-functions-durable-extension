@@ -132,7 +132,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <inheritdoc />
         async Task<string> IDurableOrchestrationClient.StartNewAsync<T>(string orchestratorFunctionName, string instanceId, T input)
         {
-            if (!this.attribute.ExternalClient && this.ClientReferencesCurrentApp(this))
+            if (this.ClientReferencesCurrentApp(this))
             {
                 this.config.ThrowIfFunctionDoesNotExist(orchestratorFunctionName, FunctionType.Orchestrator);
             }
@@ -336,7 +336,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private bool ClientReferencesCurrentApp(DurableClient client)
         {
-            return this.TaskHubMatchesCurrentApp(client) && this.ConnectionNameMatchesCurrentApp(client);
+            return !client.attribute.ExternalClient &&
+                this.TaskHubMatchesCurrentApp(client) &&
+                this.ConnectionNameMatchesCurrentApp(client);
         }
 
         private bool TaskHubMatchesCurrentApp(DurableClient client)
@@ -370,8 +372,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     hubName: this.TaskHubName,
                     functionName: state.Name,
                     instanceId: instanceId,
-                    message: $"Cannot terminate orchestration instance in {state.Status} state");
-                throw new InvalidOperationException($"Cannot terminate the orchestration instance {instanceId} because instance is in {state.Status} state");
+                    message: $"Cannot terminate orchestration instance in the {state.OrchestrationStatus} state.");
+                throw new InvalidOperationException($"Cannot terminate the orchestration instance {instanceId} because instance is in the {state.OrchestrationStatus} state.");
             }
         }
 
