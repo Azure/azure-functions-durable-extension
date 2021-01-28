@@ -235,8 +235,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     this.loggerProvider,
                     nameResolver: nameResolver,
                     testName: "CanWriteToConsole",
-                    enableExtendedSessions: false,
-                    storageProviderType: "azure_storage"))
+                    enableExtendedSessions: false
+                    ))
                 {
                     await host.StartAsync();
                     var client = await host.StartOrchestratorAsync(orchestratorName, input: "World", this.output);
@@ -301,8 +301,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 this.loggerProvider,
                 nameResolver: nameResolver,
                 testName: "CanWriteToFile",
-                enableExtendedSessions: false,
-                storageProviderType: "azure_storage"))
+                enableExtendedSessions: false
+                ))
             {
                 await host.StartAsync();
                 var client = await host.StartOrchestratorAsync(orchestratorName, input: "World", this.output);
@@ -345,8 +345,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     this.loggerProvider,
                     nameResolver: nameResolver,
                     testName: "FiltersVerboseLogsByDefault",
-                    enableExtendedSessions: false,
-                    storageProviderType: "azure_storage"))
+                    enableExtendedSessions: false
+                    ))
                 {
                     await host.StartAsync();
                     var client = await host.StartOrchestratorAsync(orchestratorName, input: "World", this.output);
@@ -421,8 +421,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     nameResolver: nameResolver,
                     testName: "CanEnableVerboseLogsInLinux",
                     enableExtendedSessions: false,
-                    allowVerboseLinuxTelemetry: true, // enabling verbose telemetry
-                    storageProviderType: "azure_storage"))
+                    allowVerboseLinuxTelemetry: true // enabling verbose telemetry
+                    ))
                 {
                     await host.StartAsync();
                     var client = await host.StartOrchestratorAsync(orchestratorName, input: "World", this.output);
@@ -496,8 +496,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 this.loggerProvider,
                 nameResolver: nameResolver,
                 testName: "RemovesNewlinesFromExceptions",
-                enableExtendedSessions: false,
-                storageProviderType: "azure_storage"))
+                enableExtendedSessions: false
+                ))
             {
                 await host.StartAsync();
 

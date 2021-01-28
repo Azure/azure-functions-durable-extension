@@ -62,10 +62,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 NotificationHandler = eventGridNotificationHandler,
                 EventGridPublishEventTypes = eventGridPublishEventTypes,
                 FetchLargeMessagesAutomatically = autoFetchLargeMessages,
-                LocalRpcEndpointEnabled = localRpcEndpointEnabled
-                TraceReplayEvents = traceReplayEvents,
-                AllowVerboseLinuxTelemetry = allowVerboseLinuxTelemetry,
+                LocalRpcEndpointEnabled = localRpcEndpointEnabled,
             };
+
+            durableTaskOptions.Tracing.AllowVerboseLinuxTelemetry = allowVerboseLinuxTelemetry;
 
             if (eventGridRetryCount.HasValue)
             {
