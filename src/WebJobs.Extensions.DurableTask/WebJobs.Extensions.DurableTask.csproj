@@ -7,7 +7,7 @@
     <DocumentationFile>$(AssemblyName)-$(TargetFramework).xml</DocumentationFile>
     <MajorVersion>1</MajorVersion>
     <MinorVersion>8</MinorVersion>
-    <PatchVersion>6</PatchVersion>
+    <PatchVersion>7</PatchVersion>
     <Version>$(MajorVersion).$(MinorVersion).$(PatchVersion)</Version>
     <FileVersion>$(MajorVersion).$(MinorVersion).$(PatchVersion)</FileVersion>
     <AssemblyVersion>$(MajorVersion).0.0.0</AssemblyVersion>
@@ -52,7 +52,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" Version="1.7.7" />
+    <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" Version="1.8.4" />
   </ItemGroup>
 
   <!-- NuGet Publishing Metadata -->
