@@ -389,7 +389,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 }
             }
         }
-
+        /* These tests don't apply to V1 Functions
         /// <summary>
         /// By simulating the appropiate enviorment variables for Linux Consumption,
         /// this test checks that we can enable verbose logs from DurableTask.Core in Linux.
@@ -469,6 +469,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Assert.True(foundVerboseLog);
             }
         }
+        */
 
         /// <summary>
         /// By simulating the appropiate enviorment variables for Linux Dedicated,
