@@ -30,6 +30,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public string HubName { get; set; } = DefaultHubName;
 
         /// <summary>
+        /// The section of configuration related to tracing.
+        /// </summary>
+        public TraceOptions Tracing { get; set; } = new TraceOptions();
+
+
+        /// <summary>
         /// Gets or sets the number of messages to pull from the control queue at a time.
         /// </summary>
         /// <remarks>
