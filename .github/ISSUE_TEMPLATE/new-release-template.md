@@ -20,7 +20,7 @@ _Due: <2-business-days-before-release>_
 - [ ] Update Durable Functions references (Analyzer? DTFx?) and check current version.
 - [ ] Add Durable Functions package to myget staging feed.
 - [ ] Check for package size, make sure it's not surprisingly heavier than a previous release.
-- [ ] Merge dev into main (Merge NOT Squash merge).
+- [ ] Merge dev into main. Person performing validation must approve PR. Important: Merge NOT Squash merge.
 
 **Validation**
 _Due: <1-business-days-before-release>_
