@@ -9,15 +9,15 @@ assignees: comcmaho, amdeel, davidmrdavid, bachuv
 
 **Prep DTFx Release: (assigned to:)**
 _Due: <2-3-business-days-before-release>_
-- [ ] Increment updated DTFx packages (either DT-AzureStorage only or DT-AzureStorage, DT-Core, DT-Emulator, and DT-Redis)
+- [ ] Check DTFx package versions (either DT-AzureStorage only or if there were Core changes DT-AzureStorage, DT-Core, DT-Emulator, and DT-Redis)
 - [ ] Delete DTFx test packages from staging myget.
 - [ ] Update OneBranch durabletask repo, run signing pipeline (using these notes:  [Durable Task Framework Build Pipeline] (https://microsoft.sharepoint.com/teams/AzureWebjobs/_layouts/OneNote.aspx?id=%2Fteams%2FAzureWebjobs%2FSiteAssets%2FAzureWebjobs%20Notebook&wd=target%28Planning%2FFunctions%20Post-GA.one%7CA43CF112-7272-481A-B23E-9AA5CA8EEE06%2FDurable%20Task%20Framework%20Build%20Pipeline%7CD0946823-6FB0-44E3-A57F-E252617B69CD%2F%29
 onenote:https://microsoft.sharepoint.com/teams/AzureWebjobs/SiteAssets/AzureWebjobs%20Notebook/Planning/Functions%20Post-GA.one#Durable%20Task%20Framework%20Build%20Pipeline&section-id={A43CF112-7272-481A-B23E-9AA5CA8EEE06}&page-id={D0946823-6FB0-44E3-A57F-E252617B69CD}&end) ).
-- [ ] Publish DTFx packages to staging myget for testing. (either DT-AzureStorage only or DT-AzureStorage, DT-Core, DT-Redis, and DT-Emulator)
+- [ ] Publish DTFx packages to staging myget for testing. (either DT-AzureStorage only or if there were Core changes DT-AzureStorage, DT-Core, DT-Redis, and DT-Emulator)
 
 **Prep Release (assigned to: )**
 _Due: <2-business-days-before-release>_
-- [ ] Update Durable Functions references (Analyzer? DTFx?) and increment version.
+- [ ] Update Durable Functions references (Analyzer? DTFx?) and check current version.
 - [ ] Add Durable Functions package to myget staging feed.
 - [ ] Check for package size, make sure it's not surprisingly heavier than a previous release.
 - [ ] Merge dev into main (Merge NOT Squash merge).
@@ -32,6 +32,7 @@ _Due: <1-business-days-before-release>_
 _Due: <release-deadline>_
 - [ ] Publish DTFx packages to nuget (directly to nuget.org).
 - [ ] Publish release notes for DTFx.
+- [ ] Patch increment DTFx packages that were released (either DT-AzureStorage only or if there were Core changes DT-AzureStorage, DT-Core, DT-Emulator, and DT-Redis)
 
 **Release Completion (assigned to: )**
 _Due: <release-deadline>_
@@ -45,3 +46,4 @@ _Due: <release-deadline>_
 - [ ] Merge `dev` into `main.`
 - [ ] Publish release notes from the pre-reset `release_notes.md.`
 - [ ] Post announcement on [App Service Announcements GitHub repo](https://github.com/Azure/app-service-announcements) and Twitter (Chris).
+- [ ] Increment Durable Functions patch version.
