@@ -88,10 +88,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             if (!string.IsNullOrEmpty(execution.Error))
             {
-                string exceptionDetails = $"Message: {execution.Error}, StackTrace: {result.Exception.StackTrace}";
+                if (TryParseErrorDetails(execution.Error, out string message, out string serializedException))
+                {
+                    throw new OrchestrationFailureException(
+                        $"Orchestrator function '{this.context.Name}' failed: {message}",
+                        details: serializedException);
+                }
+
+                // Don't recognize the format of this error response. Just return the full error payload.
                 throw new OrchestrationFailureException(
-                        $"Orchestrator function '{this.context.Name}' failed: {execution.Error}",
-                        exceptionDetails);
+                    $"Orchestrator function '{this.context.Name}' failed: {execution.Error}",
+                    details: null);
             }
 
             if (execution.IsDone)
@@ -101,6 +108,43 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             // there are more executions to process
+            return true;
+        }
+
+        private static bool TryParseErrorDetails(string rawError, out string message, out string serializedException)
+        {
+            message = null;
+            serializedException = null;
+
+            if (string.IsNullOrEmpty(rawError))
+            {
+                return false;
+            }
+
+            // Expected format from Python is "message \n {json-details}"
+            int newlineIndex = rawError.IndexOf('\n', 0);
+            if (newlineIndex <= 0)
+            {
+                return false;
+            }
+
+            string secondPart = rawError.Substring(newlineIndex + 1).Trim();
+            if (!secondPart.StartsWith("{"))
+            {
+                return false;
+            }
+
+            try
+            {
+                JObject.Parse(secondPart);
+            }
+            catch (JsonReaderException)
+            {
+                return false;
+            }
+
+            message = rawError.Substring(0, newlineIndex).Trim();
+            serializedException = secondPart;
             return true;
         }
 
