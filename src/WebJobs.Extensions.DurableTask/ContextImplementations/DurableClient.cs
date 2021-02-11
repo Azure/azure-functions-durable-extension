@@ -125,7 +125,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         async Task<IActionResult> IDurableOrchestrationClient.WaitForCompletionOrCreateCheckStatusResponseAsync(HttpRequest request, string instanceId, TimeSpan? timeout, TimeSpan? retryInterval, bool returnInternalServerErrorOnFailure)
         {
             HttpRequestMessage requestMessage = ConvertHttpRequestMessage(request);
-            HttpResponseMessage responseMessage = await ((IDurableOrchestrationClient)this).WaitForCompletionOrCreateCheckStatusResponseAsync(requestMessage, instanceId, timeout, retryInterval);
+            HttpResponseMessage responseMessage = await ((IDurableOrchestrationClient)this).WaitForCompletionOrCreateCheckStatusResponseAsync(requestMessage, instanceId, timeout, retryInterval, returnInternalServerErrorOnFailure);
             return ConvertHttpResponseMessage(responseMessage);
         }
 
