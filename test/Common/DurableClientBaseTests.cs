@@ -255,8 +255,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             HttpResponseMessage netCoreResponse = (HttpResponseMessage)((ObjectResult)durableOrchestrationClient.CreateCheckStatusResponse(netCoreRequest, sampleId)).Value;
             await AssertHttpResponsesEqual(netFrameworkResponse, netCoreResponse);
 
+            netFrameworkResponse = durableOrchestrationClient.CreateCheckStatusResponse(netFrameworkRequest, sampleId, returnInternalServerErrorOnFailure: true);
+            netCoreResponse = (HttpResponseMessage)((ObjectResult)durableOrchestrationClient.CreateCheckStatusResponse(netCoreRequest, sampleId, returnInternalServerErrorOnFailure: true)).Value;
+            await AssertHttpResponsesEqual(netFrameworkResponse, netCoreResponse);
+
             netFrameworkResponse = await durableOrchestrationClient.WaitForCompletionOrCreateCheckStatusResponseAsync(netFrameworkRequest, sampleId);
             netCoreResponse = (HttpResponseMessage)((ObjectResult)await durableOrchestrationClient.WaitForCompletionOrCreateCheckStatusResponseAsync(netCoreRequest, sampleId)).Value;
+            await AssertHttpResponsesEqual(netFrameworkResponse, netCoreResponse);
+
+            netFrameworkResponse = await durableOrchestrationClient.WaitForCompletionOrCreateCheckStatusResponseAsync(netFrameworkRequest, sampleId, returnInternalServerErrorOnFailure: true);
+            netCoreResponse = (HttpResponseMessage)((ObjectResult)await durableOrchestrationClient.WaitForCompletionOrCreateCheckStatusResponseAsync(netCoreRequest, sampleId, returnInternalServerErrorOnFailure: true)).Value;
             await AssertHttpResponsesEqual(netFrameworkResponse, netCoreResponse);
         }
 
