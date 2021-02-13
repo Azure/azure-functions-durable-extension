@@ -29,8 +29,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public override DurabilityProvider GetDurabilityProvider()
         {
             AzureStorageDurabilityProvider provider = base.GetDurabilityProvider() as AzureStorageDurabilityProvider;
-            provider.MaximumDelayTime = TimeSpan.FromMinutes(1);
-            provider.LongRunningTimerIntervalLength = TimeSpan.FromSeconds(25);
+            provider.MaximumDelayTime = TimeSpan.FromSeconds(10);
+            provider.LongRunningTimerIntervalLength = TimeSpan.FromSeconds(3);
             return provider;
         }
     }
