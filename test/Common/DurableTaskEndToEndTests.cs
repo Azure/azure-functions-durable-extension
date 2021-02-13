@@ -1091,7 +1091,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 // Wait for the instance to go into the Running state. This is necessary to ensure log validation consistency.
                 await client.WaitForStartupAsync(this.output);
 
-                TimeSpan waitTimeout = TimeSpan.FromSeconds(Debugger.IsAttached ? 300 : 10);
+                TimeSpan waitTimeout = TimeSpan.FromSeconds(Debugger.IsAttached ? 300 : 5);
 
                 // Perform some operations
                 await client.RaiseEventAsync("operation", "incr", this.output);
@@ -1492,7 +1492,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 await host.StartAsync();
 
-                var timeout = TimeSpan.FromSeconds(10);
+                var timeout = TimeSpan.FromSeconds(2);
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], timeout, this.output);
                 await client.WaitForStartupAsync(this.output);
 
@@ -3289,7 +3289,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 while (true)
                 {
-                    await Task.Delay(5000);
+                    await Task.Delay(1000);
 
                     // while the orchestration is running, just for fun,
                     // send some deactivation signals which unload the entity from memory.
@@ -3696,9 +3696,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await client.SignalEntity(this.output, "get", "https://www.microsoft.com");
                 await client.SignalEntity(this.output, "get", "https://bing.com");
 
-                await Task.Delay(TimeSpan.FromSeconds(10));
-
-                var state = await client.WaitForEntityState<IDictionary<string, string>>(this.output);
+                var state = await client.WaitForEntityState<IDictionary<string, string>>(this.output, TimeSpan.FromSeconds(10));
                 Assert.NotNull(state);
 
                 if (state.TryGetValue("error", out string error))
@@ -4031,6 +4029,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.ContinueAsNewMultipleTimersAndEvents), numSignals, this.output);
 
+                // TODO: Try removing delay
                 await Task.Delay(TimeSpan.FromSeconds(10));
 
                 for (int i = numSignals; i > 0; i--)
@@ -4621,6 +4620,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.CreateEmptyEntities), entityIds, this.output);
                 var status = await client.WaitForCompletionAsync(this.output);
 
+                // TODO: try removing
                 if (storageProvider == TestHelpers.AzureStorageProviderType)
                 {
                     // account for delay in updating instance tables
@@ -5265,8 +5265,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
-
+#if FUNCTIONS_V1
+                var logger = this.loggerProvider.CreatedLoggers.FirstOrDefault(l => l.Category.Equals("Function"));
+#else
                 var logger = this.loggerProvider.CreatedLoggers.FirstOrDefault(l => l.Category.Equals("Function.ReplaySafeLogger_OneLogMessage.User"));
+#endif
                 var logMessages = logger.LogMessages.Where(
                     msg => msg.FormattedMessage.Contains("ReplaySafeLogger Test: About to say Hello")).ToList();
                 Assert.Single(logMessages);

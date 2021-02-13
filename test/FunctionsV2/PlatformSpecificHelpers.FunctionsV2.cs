@@ -34,6 +34,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             IMessageSerializerSettingsFactory serializerSettingsFactory,
             Action<ITelemetry> onSend)
         {
+            // Unless otherwise specified, use legacy partition management for tests as it makes them run faster.
+            if (!options.Value.StorageProvider.ContainsKey(nameof(AzureStorageOptions.UseLegacyPartitionManagement)))
+            {
+                options.Value.StorageProvider.Add(nameof(AzureStorageOptions.UseLegacyPartitionManagement), true);
+            }
+
             IHost host = new HostBuilder()
                 .ConfigureLogging(
                     loggingBuilder =>

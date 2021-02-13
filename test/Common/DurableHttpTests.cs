@@ -71,7 +71,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         private static bool IsLogFriendlyPlatform()
         {
-            return !RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
+            return false;
         }
 
         [Fact]
@@ -138,7 +138,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
   },
   ""Content"": null,
   ""TokenSource"": {
-    ""$type"": ""Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests.DurableHttpTests+MockTokenSource, WebJobs.Extensions.DurableTask.Tests.V2"",
+    ""$type"": ""Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests.DurableHttpTests+MockTokenSource, WebJobs.Extensions.DurableTask.Tests." + PlatformSpecificHelpers.VersionSuffix + @""",
     ""testToken"": ""dummy token"",
     ""options"": {
       ""authorityhost"": ""https://dummy.login.microsoftonline.com/"",
@@ -809,8 +809,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             asyncTestHeaders.Add("Location", "https://www.dummy-location-url.com");
 
             HttpResponseMessage acceptedHttpResponseMessage = CreateTestHttpResponseMessage(
-                                                                                               statusCode: HttpStatusCode.Accepted,
-                                                                                               headers: asyncTestHeaders);
+                statusCode: HttpStatusCode.Accepted,
+                headers: asyncTestHeaders);
 
             HttpMessageHandler httpMessageHandler = MockAsynchronousHttpMessageHandler(acceptedHttpResponseMessage);
 
