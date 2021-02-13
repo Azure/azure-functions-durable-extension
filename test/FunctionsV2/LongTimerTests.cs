@@ -89,7 +89,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
                 TestEntityClient client = await host.GetEntityClientAsync(entityId, this.output);
 
                 var now = DateTime.UtcNow;
-                var fireAt = now.AddMinutes(2);
+                var fireAt = now.AddSeconds(20);
 
                 await client.SignalEntity(this.output, fireAt, "fire", null);
 
