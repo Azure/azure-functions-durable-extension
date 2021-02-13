@@ -71,7 +71,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         private static bool IsLogFriendlyPlatform()
         {
-            return false;
+            return !RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
         }
 
         [Fact]
