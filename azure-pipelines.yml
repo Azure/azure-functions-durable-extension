@@ -77,7 +77,6 @@ jobs:
         rerunFailedTests: true
         rerunFailedThreshold: 10
         rerunMaxAttempts: 2
-        runInParallel: true
       env:
         AzureWebJobsStorage: $(AzureWebJobsStorage)
         APPINSIGHTS_INSTRUMENTATIONKEY: $(APPINSIGHTS_INSTRUMENTATIONKEY) 
