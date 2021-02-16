@@ -10,7 +10,6 @@ jobs:
       buildConfiguration: 'Release'
       NUGET_PACKAGES: $(UserProfile)/.nuget/packages
 
-steps:
     steps:
     - task: NuGetToolInstaller@1
 
