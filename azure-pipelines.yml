@@ -7,7 +7,7 @@ jobs:
     variables:
       solution: 'WebJobs.Extensions.DurableTask.sln'
       buildPlatform: 'Any CPU'
-      buildConfiguration: 'Release'variables:
+      buildConfiguration: 'Release'
       NUGET_PACKAGES: $(UserProfile)/.nuget/packages
 
 steps:
