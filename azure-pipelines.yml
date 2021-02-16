@@ -7,17 +7,27 @@ jobs:
     variables:
       solution: 'WebJobs.Extensions.DurableTask.sln'
       buildPlatform: 'Any CPU'
-      buildConfiguration: 'Debug'
+      buildConfiguration: 'Release'variables:
+      NUGET_PACKAGES: $(UserProfile)/.nuget/packages
 
+steps:
     steps:
     - task: NuGetToolInstaller@1
 
     - task: DotNetCoreCLI@2
       inputs:
         command: 'restore'
-        projects: '**/**/*.csproj'
+        projects: 'test/FunctionsV1/*.csproj'
         feedsToUse: 'config'
         nugetConfigPath: '.nuget/nuget.config'
+
+    - task: Cache@2
+      inputs:
+        key: '"FunctionsV1" | nuget | "$(Agent.OS)" | **/packages.lock.json,!**/bin/**'
+        restoreKeys: |
+           "FunctionsV1" | nuget | "$(Agent.OS)"
+        path: $(NUGET_PACKAGES)
+      displayName: Cache NuGet packages
 
     - task: VSBuild@1
       inputs:
@@ -50,6 +60,7 @@ jobs:
       solution: 'WebJobs.Extensions.DurableTask.sln'
       buildPlatform: 'Any CPU'
       buildConfiguration: 'Release'
+      NUGET_PACKAGES: $(UserProfile)/.nuget/packages
 
     steps:
     - task: NuGetToolInstaller@1
@@ -57,9 +68,17 @@ jobs:
     - task: DotNetCoreCLI@2
       inputs:
         command: 'restore'
-        projects: '**/**/*.csproj'
+        projects: 'test/FunctionsV2/*.csproj'
         feedsToUse: 'config'
         nugetConfigPath: '.nuget/nuget.config'
+        
+    - task: Cache@2
+      inputs:
+        key: '"FunctionsV2" | nuget | "$(Agent.OS)" | **/packages.lock.json,!**/bin/**'
+        restoreKeys: |
+           "FunctionsV2" | nuget | "$(Agent.OS)"
+        path: $(NUGET_PACKAGES)
+      displayName: Cache NuGet packages
 
     - task: VSBuild@1
       inputs:
@@ -88,7 +107,8 @@ jobs:
     variables:
       solution: '**/WebJobs.Extensions.DurableTask.Analyzers.sln'
       buildPlatform: 'Any CPU'
-      buildConfiguration: 'Debug'
+      buildConfiguration: 'Release'
+      NUGET_PACKAGES: $(UserProfile)/.nuget/packages
 
     steps:
     - task: NuGetToolInstaller@1
@@ -96,9 +116,17 @@ jobs:
     - task: DotNetCoreCLI@2
       inputs:
         command: 'restore'
-        projects: '**/**/*.csproj'
+        projects: 'test/WebJobs.Extensions.DurableTask.Analyzers.Test/*.csproj'
         feedsToUse: 'config'
         nugetConfigPath: '.nuget/nuget.config'
+        
+    - task: Cache@2
+      inputs:
+        key: '"Analyzers" | nuget | "$(Agent.OS)" | **/packages.lock.json,!**/bin/**'
+        restoreKeys: |
+           "Analyzers" | nuget | "$(Agent.OS)"
+        path: $(NUGET_PACKAGES)
+      displayName: Cache NuGet packages
 
     - task: VSBuild@1
       inputs:
