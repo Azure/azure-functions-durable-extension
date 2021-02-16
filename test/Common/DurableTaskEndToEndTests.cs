@@ -63,9 +63,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             if (this.useTestLogger)
             {
+                // Use GUID for eventsource, as TraceEventProviders.GetProviderGuidByName() is causing
+                // the CI to abort runs.
                 var traceConfig = new Dictionary<string, TraceEventLevel>
                 {
-                    { "DurableTask-AzureStorage", TraceEventLevel.Informational },
+                    { "4c4ad4a2-f396-5e18-01b6-618c12a10433", TraceEventLevel.Informational }, // DurableTask.AzureStorage
                     { "7DA4779A-152E-44A2-A6F2-F80D991A5BEE", TraceEventLevel.Warning }, // DurableTask.Core
                 };
 
