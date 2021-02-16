@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -15,9 +16,6 @@ using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.WindowsAzure.Storage;
-using Microsoft.WindowsAzure.Storage.Blob;
-using Microsoft.WindowsAzure.Storage.Queue;
-using Microsoft.WindowsAzure.Storage.Table;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -207,6 +205,34 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 default:
                     throw new InvalidOperationException($"Storage provider {storageProvider} is not supported for testing infrastructure.");
             }
+        }
+
+        /// <summary>
+        /// Helper function to regularly poll for some condition until it is true. If timeout hits, throw timeoutexception
+        /// </summary>
+        /// <param name="predicate">Predicate to wait until it returns true</param>
+        /// <param name="timeout">Time to wait until predicate is true.</param>
+        /// <param name="retryInterval">How frequently to test predicate. Defaults to 100 ms.</param>
+        public static async Task WaitUntilTrue(Func<bool> predicate, string conditionDescription, TimeSpan timeout, TimeSpan? retryInterval = null)
+        {
+            if (retryInterval == null)
+            {
+                retryInterval = TimeSpan.FromMilliseconds(100);
+            }
+
+            Stopwatch sw = new Stopwatch();
+            do
+            {
+                if (predicate())
+                {
+                    return;
+                }
+
+                await Task.Delay(retryInterval.Value);
+            }
+            while (sw.Elapsed < timeout);
+
+            throw new TimeoutException($"Did not meet {conditionDescription} within {timeout}");
         }
 
         // Create a valid task hub from the test name, and add a random suffix to avoid conflicts

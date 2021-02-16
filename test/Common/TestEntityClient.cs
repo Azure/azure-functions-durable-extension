@@ -84,7 +84,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     output.WriteLine($"Waiting for {this.entityId} to have state.");
                 }
 
-                await Task.Delay(TimeSpan.FromSeconds(1));
+                await Task.Delay(TimeSpan.FromMilliseconds(100));
             }
             while (sw.Elapsed < timeout);
 

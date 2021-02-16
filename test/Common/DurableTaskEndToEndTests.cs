@@ -329,11 +329,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var client = await host.StartOrchestratorAsync(orchestratorName, input: "World", this.output);
                 var status = await client.WaitForCompletionAsync(this.output);
                 await host.StopAsync();
-                await Task.Delay(TimeSpan.FromSeconds(10)); // giving the logger enough time to flush
             }
 
-            // Ensure the logging file was at least generated
-            Assert.True(File.Exists(LinuxAppServiceLogger.LoggingPath));
+            await TestHelpers.WaitUntilTrue(
+                predicate: () => File.Exists(LinuxAppServiceLogger.LoggingPath),
+                conditionDescription: "Log file exists",
+                timeout: TimeSpan.FromSeconds(20));
         }
 
         /// <summary>
