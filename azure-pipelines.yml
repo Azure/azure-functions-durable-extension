@@ -8,7 +8,6 @@ jobs:
       solution: 'WebJobs.Extensions.DurableTask.sln'
       buildPlatform: 'Any CPU'
       buildConfiguration: 'Release'
-      NUGET_PACKAGES: $(UserProfile)/.nuget/packages
 
     steps:
     - task: NuGetToolInstaller@1
@@ -59,7 +58,6 @@ jobs:
       solution: 'WebJobs.Extensions.DurableTask.sln'
       buildPlatform: 'Any CPU'
       buildConfiguration: 'Release'
-      NUGET_PACKAGES: $(UserProfile)/.nuget/packages
 
     steps:
     - task: NuGetToolInstaller@1
@@ -107,7 +105,6 @@ jobs:
       solution: '**/WebJobs.Extensions.DurableTask.Analyzers.sln'
       buildPlatform: 'Any CPU'
       buildConfiguration: 'Release'
-      NUGET_PACKAGES: $(UserProfile)/.nuget/packages
 
     steps:
     - task: NuGetToolInstaller@1
