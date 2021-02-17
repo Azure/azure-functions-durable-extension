@@ -3442,9 +3442,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// </summary>
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task DurableEntity_ScheduledSignal(bool extendedSessions)
+        [InlineData(true, true)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(false, false)]
+        public async Task DurableEntity_ScheduledSignal(bool extendedSessions, bool useUtc)
         {
             using (var host = TestHelpers.GetJobHost(
                 this.loggerProvider,
@@ -3459,7 +3461,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 // Wait 8 seconds to account for time to grab ownership lease.
                 await Task.Delay(8000);
 
-                var now = DateTime.UtcNow;
+                var now = useUtc ? DateTime.UtcNow : DateTime.Now;
 
                 await client.SignalEntity(this.output, now + TimeSpan.FromSeconds(4), "delayed", null);
                 await client.SignalEntity(this.output, "immediate", null);
