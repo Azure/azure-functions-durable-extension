@@ -4033,7 +4033,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.ContinueAsNewMultipleTimersAndEvents), numSignals, this.output);
 
-                // TODO: Try removing delay
                 await Task.Delay(TimeSpan.FromSeconds(10));
 
                 for (int i = numSignals; i > 0; i--)
@@ -4624,7 +4623,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.CreateEmptyEntities), entityIds, this.output);
                 var status = await client.WaitForCompletionAsync(this.output);
 
-                // TODO: try removing
                 if (storageProvider == TestHelpers.AzureStorageProviderType)
                 {
                     // account for delay in updating instance tables

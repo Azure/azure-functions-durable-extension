@@ -34,8 +34,8 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task CleanupOldAzureStorageTaskHubs()
         {
-            // The CI should run at least once a day, so this timespan should avoid deleting
-            // deterministic taskhubs
+            // The CI should run at least once a day, so this timespan should prevent us from deleting
+            // deterministic taskhubs while they are running, which causes those tests to fail.
             TimeSpan oldTaskHubDeletionThreshold = TimeSpan.FromHours(25);
 
             // An approximate limit to the number of taskhubs to delete to prevent test from taking to long.

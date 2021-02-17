@@ -73,7 +73,7 @@ jobs:
       inputs:
         testSelector: 'testAssemblies'
         testAssemblyVer2: |
-          **\\bin\\**\\*tests.v2.dll
+          **/bin/**/*tests.v2.dll
         distributionBatchType: basedOnExecutionTime
         diagnosticsEnabled: true
         rerunFailedTests: true
@@ -114,7 +114,7 @@ jobs:
       inputs:
         testSelector: 'testAssemblies'
         testAssemblyVer2: |
-           **\\bin\\**\\*Analyzers.Test.dll
+           **/bin/**/*Analyzers.Test.dll
         distributionBatchType: basedOnExecutionTime
         diagnosticsEnabled: true
         rerunFailedTests: true
