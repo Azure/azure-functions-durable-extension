@@ -217,8 +217,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     TaskHub = TestConstants.TaskHub,
                     ConnectionName = TestConstants.ConnectionName,
                 },
-                TimeSpan.FromSeconds(100),
                 TimeSpan.FromSeconds(10),
+                TimeSpan.FromSeconds(3),
                 true);
             stopWatch.Stop();
             Assert.Equal(HttpStatusCode.Accepted, httpResponseMessage.StatusCode);
@@ -237,7 +237,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(
                 $"{TestConstants.NotificationUrlBase}/instances/9b59154ae666471993659902ed0ba749?taskHub=SampleHubVS&connection=Storage&code=mykey",
                 (string)status["purgeHistoryDeleteUri"]);
-            Assert.True(stopWatch.Elapsed > TimeSpan.FromSeconds(30));
+            Assert.True(stopWatch.Elapsed > TimeSpan.FromSeconds(10));
         }
 
         [Fact]
@@ -257,8 +257,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     TaskHub = TestConstants.TaskHub,
                     ConnectionName = TestConstants.ConnectionName,
                 },
-                TimeSpan.FromSeconds(100),
-                TimeSpan.FromSeconds(10));
+                TimeSpan.FromSeconds(10),
+                TimeSpan.FromSeconds(3));
             stopWatch.Stop();
             Assert.Equal(HttpStatusCode.Accepted, httpResponseMessage.StatusCode);
             var content = await httpResponseMessage.Content.ReadAsStringAsync();
@@ -279,7 +279,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(
                 $"{TestConstants.NotificationUrlBase}/instances/9b59154ae666471993659902ed0ba749/restart?taskHub=SampleHubVS&connection=Storage&code=mykey",
                 (string)status["restartPostUri"]);
-            Assert.True(stopWatch.Elapsed > TimeSpan.FromSeconds(30));
+            Assert.True(stopWatch.Elapsed > TimeSpan.FromSeconds(10));
         }
 
         [Fact]
@@ -323,14 +323,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     TaskHub = TestConstants.TaskHub,
                     ConnectionName = TestConstants.ConnectionName,
                 },
-                TimeSpan.FromSeconds(30),
-                TimeSpan.FromSeconds(8));
+                TimeSpan.FromSeconds(10),
+                TimeSpan.FromSeconds(3));
             stopwatch.Stop();
             Assert.Equal(HttpStatusCode.OK, httpResponseMessage.StatusCode);
             var content = await httpResponseMessage.Content.ReadAsStringAsync();
             var value = JsonConvert.DeserializeObject<string>(content);
             Assert.Equal("Hello Tokyo!", value);
-            Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(30));
+            Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10));
         }
 
         [Fact]

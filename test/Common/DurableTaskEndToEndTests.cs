@@ -63,9 +63,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             if (this.useTestLogger)
             {
+                // Use GUID for eventsource, as TraceEventProviders.GetProviderGuidByName() is causing
+                // the CI to abort runs.
                 var traceConfig = new Dictionary<string, TraceEventLevel>
                 {
-                    { "DurableTask-AzureStorage", TraceEventLevel.Informational },
+                    { "4c4ad4a2-f396-5e18-01b6-618c12a10433", TraceEventLevel.Informational }, // DurableTask.AzureStorage
                     { "7DA4779A-152E-44A2-A6F2-F80D991A5BEE", TraceEventLevel.Warning }, // DurableTask.Core
                 };
 
@@ -329,11 +331,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var client = await host.StartOrchestratorAsync(orchestratorName, input: "World", this.output);
                 var status = await client.WaitForCompletionAsync(this.output);
                 await host.StopAsync();
-                await Task.Delay(TimeSpan.FromSeconds(10)); // giving the logger enough time to flush
             }
 
-            // Ensure the logging file was at least generated
-            Assert.True(File.Exists(LinuxAppServiceLogger.LoggingPath));
+            await TestHelpers.WaitUntilTrue(
+                predicate: () => File.Exists(LinuxAppServiceLogger.LoggingPath),
+                conditionDescription: "Log file exists",
+                timeout: TimeSpan.FromSeconds(20));
         }
 
         /// <summary>
@@ -526,11 +529,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var client = await host.StartOrchestratorAsync(orchestratorName, input: null, this.output);
                 var status = await client.WaitForCompletionAsync(this.output);
                 await host.StopAsync();
-                await Task.Delay(TimeSpan.FromSeconds(10)); // giving the logger enough time to flush
             }
 
-            // Ensure the logging file was at least generated
-            Assert.True(File.Exists(LinuxAppServiceLogger.LoggingPath));
+            await TestHelpers.WaitUntilTrue(
+                predicate: () => File.Exists(LinuxAppServiceLogger.LoggingPath),
+                conditionDescription: "Log file exists",
+                timeout: TimeSpan.FromSeconds(20));
 
             // string[] lines = File.ReadAllLines(LinuxAppServiceLogger.LoggingPath);
 
@@ -1091,7 +1095,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 // Wait for the instance to go into the Running state. This is necessary to ensure log validation consistency.
                 await client.WaitForStartupAsync(this.output);
 
-                TimeSpan waitTimeout = TimeSpan.FromSeconds(Debugger.IsAttached ? 300 : 10);
+                TimeSpan waitTimeout = TimeSpan.FromSeconds(Debugger.IsAttached ? 300 : 5);
 
                 // Perform some operations
                 await client.RaiseEventAsync("operation", "incr", this.output);
@@ -1492,7 +1496,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 await host.StartAsync();
 
-                var timeout = TimeSpan.FromSeconds(10);
+                var timeout = TimeSpan.FromSeconds(2);
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], timeout, this.output);
                 await client.WaitForStartupAsync(this.output);
 
@@ -3289,7 +3293,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 while (true)
                 {
-                    await Task.Delay(5000);
+                    await Task.Delay(1000);
 
                     // while the orchestration is running, just for fun,
                     // send some deactivation signals which unload the entity from memory.
@@ -3696,9 +3700,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await client.SignalEntity(this.output, "get", "https://www.microsoft.com");
                 await client.SignalEntity(this.output, "get", "https://bing.com");
 
-                await Task.Delay(TimeSpan.FromSeconds(10));
-
-                var state = await client.WaitForEntityState<IDictionary<string, string>>(this.output);
+                var state = await client.WaitForEntityState<IDictionary<string, string>>(this.output, TimeSpan.FromSeconds(10));
                 Assert.NotNull(state);
 
                 if (state.TryGetValue("error", out string error))
@@ -3935,7 +3937,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             using (var host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.DurableEntity_EntityProxy),
+                nameof(this.DurableEntity_EntityProxy_UsesBindings),
                 extendedSessions))
             {
                 await host.StartAsync();
@@ -5265,8 +5267,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
-
+#if FUNCTIONS_V1
+                var logger = this.loggerProvider.CreatedLoggers.FirstOrDefault(l => l.Category.Equals("Function"));
+#else
                 var logger = this.loggerProvider.CreatedLoggers.FirstOrDefault(l => l.Category.Equals("Function.ReplaySafeLogger_OneLogMessage.User"));
+#endif
                 var logMessages = logger.LogMessages.Where(
                     msg => msg.FormattedMessage.Contains("ReplaySafeLogger Test: About to say Hello")).ToList();
                 Assert.Single(logMessages);

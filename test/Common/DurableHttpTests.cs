@@ -31,47 +31,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         private readonly ITestOutputHelper output;
 
         private readonly TestLoggerProvider loggerProvider;
-        private readonly bool useTestLogger = IsLogFriendlyPlatform();
-        private readonly LogEventTraceListener eventSourceListener;
 
         public DurableHttpTests(ITestOutputHelper output)
         {
             this.output = output;
             this.loggerProvider = new TestLoggerProvider(output);
-            this.eventSourceListener = new LogEventTraceListener();
-            this.StartLogCapture();
         }
 
         public void Dispose()
         {
-            this.eventSourceListener.Dispose();
-        }
-
-        private void OnEventSourceListenerTraceLog(object sender, LogEventTraceListener.TraceLogEventArgs e)
-        {
-            this.output.WriteLine($"      ETW: {e.ProviderName} [{e.Level}] : {e.Message}");
-        }
-
-        private void StartLogCapture()
-        {
-            if (this.useTestLogger)
-            {
-                var traceConfig = new Dictionary<string, TraceEventLevel>
-                {
-                    { "DurableTask-AzureStorage", TraceEventLevel.Informational },
-                    { "7DA4779A-152E-44A2-A6F2-F80D991A5BEE", TraceEventLevel.Warning }, // DurableTask.Core
-                };
-
-                this.eventSourceListener.OnTraceLog += this.OnEventSourceListenerTraceLog;
-
-                string sessionName = "DTFxTrace" + Guid.NewGuid().ToString("N");
-                this.eventSourceListener.CaptureLogs(sessionName, traceConfig);
-            }
-        }
-
-        private static bool IsLogFriendlyPlatform()
-        {
-            return !RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
         }
 
         [Fact]
@@ -138,7 +106,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
   },
   ""Content"": null,
   ""TokenSource"": {
-    ""$type"": ""Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests.DurableHttpTests+MockTokenSource, WebJobs.Extensions.DurableTask.Tests.V2"",
+    ""$type"": ""Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests.DurableHttpTests+MockTokenSource, WebJobs.Extensions.DurableTask.Tests." + PlatformSpecificHelpers.VersionSuffix + @""",
     ""testToken"": ""dummy token"",
     ""options"": {
       ""authorityhost"": ""https://dummy.login.microsoftonline.com/"",
@@ -809,8 +777,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             asyncTestHeaders.Add("Location", "https://www.dummy-location-url.com");
 
             HttpResponseMessage acceptedHttpResponseMessage = CreateTestHttpResponseMessage(
-                                                                                               statusCode: HttpStatusCode.Accepted,
-                                                                                               headers: asyncTestHeaders);
+                statusCode: HttpStatusCode.Accepted,
+                headers: asyncTestHeaders);
 
             HttpMessageHandler httpMessageHandler = MockAsynchronousHttpMessageHandler(acceptedHttpResponseMessage);
 
