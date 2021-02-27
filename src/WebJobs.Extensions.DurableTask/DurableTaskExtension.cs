@@ -101,7 +101,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="options">The configuration options for this extension.</param>
         /// <param name="loggerFactory">The logger factory used for extension-specific logging and orchestration tracking.</param>
         /// <param name="nameResolver">The name resolver to use for looking up application settings.</param>
-        /// <param name="orchestrationServiceFactory">The factory used to create orchestration service based on the configured storage provider.</param>
+        /// <param name="orchestrationServiceFactories">The factories used to create orchestration service based on the configured storage provider.</param>
         /// <param name="durableHttpMessageHandlerFactory">The HTTP message handler that handles HTTP requests and HTTP responses.</param>
         /// <param name="hostLifetimeService">The host shutdown notification service for detecting and reacting to host shutdowns.</param>
         /// <param name="lifeCycleNotificationHelper">The lifecycle notification helper used for custom orchestration tracking.</param>
@@ -113,7 +113,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             IOptions<DurableTaskOptions> options,
             ILoggerFactory loggerFactory,
             INameResolver nameResolver,
-            IDurabilityProviderFactory orchestrationServiceFactory,
+            IEnumerable<IDurabilityProviderFactory> orchestrationServiceFactories,
             IApplicationLifetimeWrapper hostLifetimeService,
             IDurableHttpMessageHandlerFactory durableHttpMessageHandlerFactory = null,
             ILifeCycleNotificationHelper lifeCycleNotificationHelper = null,
@@ -137,7 +137,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             this.TraceHelper = new EndToEndTraceHelper(logger, this.Options.Tracing.TraceReplayEvents);
             this.LifeCycleNotificationHelper = lifeCycleNotificationHelper ?? this.CreateLifeCycleNotificationHelper();
-            this.durabilityProviderFactory = orchestrationServiceFactory;
+            this.durabilityProviderFactory = this.GetDurabilityProviderFactory(logger, orchestrationServiceFactories);
             this.defaultDurabilityProvider = this.durabilityProviderFactory.GetDurabilityProvider();
             this.isOptionsConfigured = true;
 
@@ -170,11 +170,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             IOptions<DurableTaskOptions> options,
             ILoggerFactory loggerFactory,
             INameResolver nameResolver,
-            IDurabilityProviderFactory orchestrationServiceFactory,
+            IEnumerable<IDurabilityProviderFactory> orchestrationServiceFactories,
             IConnectionStringResolver connectionStringResolver,
             IApplicationLifetimeWrapper shutdownNotification,
             IDurableHttpMessageHandlerFactory durableHttpMessageHandlerFactory)
-            : this(options, loggerFactory, nameResolver, orchestrationServiceFactory, shutdownNotification, durableHttpMessageHandlerFactory)
+            : this(options, loggerFactory, nameResolver, orchestrationServiceFactories, shutdownNotification, durableHttpMessageHandlerFactory)
         {
             this.connectionStringResolver = connectionStringResolver;
         }
@@ -234,6 +234,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             isDefault = errorSerializerSettingsFactory is ErrorSerializerSettingsFactory;
 
             return new MessagePayloadDataConverter(errorSerializerSettingsFactory.CreateJsonSerializerSettings(), isDefault);
+        }
+
+        private IDurabilityProviderFactory GetDurabilityProviderFactory(ILogger logger, IEnumerable<IDurabilityProviderFactory> orchestrationServiceFactories)
+        {
+            bool storageTypeIsConfigured = this.Options.StorageProvider.TryGetValue("type", out object storageType);
+            if (!storageTypeIsConfigured)
+            {
+                logger.LogInformation("Using the default storage provider: Azure Storage.");
+                return orchestrationServiceFactories.FirstOrDefault(f => f.Name.Equals("Azure Storage"));
+            }
+
+            if (orchestrationServiceFactories.FirstOrDefault(f => f.Name.Equals(storageType)) == null)
+            {
+                IList<string> factoryNames = orchestrationServiceFactories.Select(f => f.Name).ToList();
+                logger.LogWarning($"Storage provider type ({storageType}) was not found. " +
+                    $"Available storage providers: {string.Join(", ", factoryNames)}. " +
+                    $"Using the default storage provider: Azure Storage.");
+
+                return orchestrationServiceFactories.FirstOrDefault(f => f.Name.Equals("Azure Storage"));
+            }
+
+            logger.LogInformation($"Using the {storageType} storage provider.");
+            return orchestrationServiceFactories.FirstOrDefault(f => f.Name.Equals(storageType));
         }
 
         internal string GetBackendInfo()

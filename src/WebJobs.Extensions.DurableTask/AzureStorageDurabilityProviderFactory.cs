@@ -41,6 +41,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.defaultConnectionName = this.azureStorageOptions.ConnectionStringName ?? ConnectionStringNames.Storage;
         }
 
+        public string Name => "Azure Storage";
+
         internal string GetDefaultStorageConnectionString()
         {
             return this.connectionStringResolver.Resolve(this.defaultConnectionName);
