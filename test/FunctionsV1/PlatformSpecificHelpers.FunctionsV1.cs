@@ -51,7 +51,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 options,
                 loggerFactory,
                 nameResolver,
-                new[] { orchestrationServiceFactory }.ToList(),
+                new[] { orchestrationServiceFactory },
                 shutdownNotificationService ?? new TestHostShutdownNotificationService(),
                 durableHttpMessageHandler,
                 lifeCycleNotificationHelper,

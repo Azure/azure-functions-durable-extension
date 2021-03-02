@@ -1252,7 +1252,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 wrappedOptions,
                 new LoggerFactory(),
                 mockNameResolver.Object,
-                new[] { serviceFactory }.ToList(),
+                new[] { serviceFactory },
                 new TestHostShutdownNotificationService());
 
             var eventGridLifeCycleNotification = (EventGridLifeCycleNotificationHelper)extension.LifeCycleNotificationHelper;
@@ -1291,15 +1291,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var wrappedOptions = new OptionsWrapper<DurableTaskOptions>(options);
             var nameResolver = new SimpleNameResolver();
             var serviceFactory = new AzureStorageDurabilityProviderFactory(
-                    wrappedOptions,
-                    new TestConnectionStringResolver(),
-                    nameResolver,
-                    NullLoggerFactory.Instance);
+                wrappedOptions,
+                new TestConnectionStringResolver(),
+                nameResolver,
+                NullLoggerFactory.Instance);
             var extension = new DurableTaskExtension(
                 wrappedOptions,
                 new LoggerFactory(),
                 nameResolver,
-                new[] { serviceFactory }.ToList(),
+                new[] { serviceFactory },
                 new TestHostShutdownNotificationService());
 
             var lifeCycleNotificationHelper = extension.LifeCycleNotificationHelper;
@@ -1328,7 +1328,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 wrappedOptions,
                 new LoggerFactory(),
                 nameResolver,
-                new[] { serviceFactory }.ToList(),
+                new[] { serviceFactory },
                 new TestHostShutdownNotificationService());
 
             int callCount = 0;

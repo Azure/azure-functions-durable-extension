@@ -1396,7 +1396,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                         new TestConnectionStringResolver(),
                         TestHelpers.GetTestNameResolver(),
                         NullLoggerFactory.Instance),
-                    }.ToList(),
+                    },
                     new TestHostShutdownNotificationService(),
                     new DurableHttpMessageHandlerFactory())
             {

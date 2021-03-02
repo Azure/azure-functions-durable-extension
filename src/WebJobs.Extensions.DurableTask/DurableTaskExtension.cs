@@ -46,6 +46,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         INameVersionObjectManager<TaskOrchestration>,
         INameVersionObjectManager<TaskActivity>
     {
+        private const string DefaultProvider = "AzureStorage";
+
         internal static readonly string LoggerCategoryName = LogCategories.CreateTriggerCategory("DurableTask");
 
         // Creating client objects is expensive, so we cache them when the attributes match.
@@ -79,7 +81,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private bool isTaskHubWorkerStarted;
         private HttpClient durableHttpClient;
         private EventSourceListener eventSourceListener;
-
 #if FUNCTIONS_V1
         private IConnectionStringResolver connectionStringResolver;
 
@@ -137,7 +138,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             this.TraceHelper = new EndToEndTraceHelper(logger, this.Options.Tracing.TraceReplayEvents);
             this.LifeCycleNotificationHelper = lifeCycleNotificationHelper ?? this.CreateLifeCycleNotificationHelper();
-            this.durabilityProviderFactory = this.GetDurabilityProviderFactory(logger, orchestrationServiceFactories);
+            this.durabilityProviderFactory = this.GetDurabilityProviderFactory(this.Options, logger, orchestrationServiceFactories);
             this.defaultDurabilityProvider = this.durabilityProviderFactory.GetDurabilityProvider();
             this.isOptionsConfigured = true;
 
@@ -236,27 +237,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return new MessagePayloadDataConverter(errorSerializerSettingsFactory.CreateJsonSerializerSettings(), isDefault);
         }
 
-        private IDurabilityProviderFactory GetDurabilityProviderFactory(ILogger logger, IEnumerable<IDurabilityProviderFactory> orchestrationServiceFactories)
+        private IDurabilityProviderFactory GetDurabilityProviderFactory(DurableTaskOptions options, ILogger logger, IEnumerable<IDurabilityProviderFactory> orchestrationServiceFactories)
         {
-            bool storageTypeIsConfigured = this.Options.StorageProvider.TryGetValue("type", out object storageType);
+            bool storageTypeIsConfigured = options.StorageProvider.TryGetValue("type", out object storageType);
+
             if (!storageTypeIsConfigured)
             {
                 logger.LogInformation("Using the default storage provider: Azure Storage.");
-                return orchestrationServiceFactories.FirstOrDefault(f => f.Name.Equals("Azure Storage"));
+                return orchestrationServiceFactories.FirstOrDefault(f => f.Name.Equals(DefaultProvider));
             }
 
-            if (orchestrationServiceFactories.FirstOrDefault(f => f.Name.Equals(storageType)) == null)
+            IDurabilityProviderFactory selectedFactory = orchestrationServiceFactories.FirstOrDefault(f => string.Equals(f.Name, storageType.ToString(), StringComparison.OrdinalIgnoreCase));
+
+            if (selectedFactory == null)
             {
                 IList<string> factoryNames = orchestrationServiceFactories.Select(f => f.Name).ToList();
-                logger.LogWarning($"Storage provider type ({storageType}) was not found. " +
-                    $"Available storage providers: {string.Join(", ", factoryNames)}. " +
-                    $"Using the default storage provider: Azure Storage.");
-
-                return orchestrationServiceFactories.FirstOrDefault(f => f.Name.Equals("Azure Storage"));
+                throw new InvalidOperationException($"Storage provider type ({storageType}) was not found. " +
+                    $"Available storage providers: {string.Join(", ", factoryNames)}.");
             }
 
             logger.LogInformation($"Using the {storageType} storage provider.");
-            return orchestrationServiceFactories.FirstOrDefault(f => f.Name.Equals(storageType));
+            return selectedFactory;
         }
 
         internal string GetBackendInfo()
