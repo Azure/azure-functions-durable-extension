@@ -17,6 +17,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly string defaultConnectionName;
         private readonly INameResolver nameResolver;
         private readonly ILoggerFactory loggerFactory;
+        private readonly bool inConsumption; // If true, optimize defaults for consumption
         private AzureStorageDurabilityProvider defaultStorageProvider;
 
         // Must wait to get settings until we have validated taskhub name.
@@ -27,12 +28,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             IOptions<DurableTaskOptions> options,
             IConnectionStringResolver connectionStringResolver,
             INameResolver nameResolver,
-            ILoggerFactory loggerFactory)
+            ILoggerFactory loggerFactory,
+            PlatformInformation platformInfo = null)
         {
             this.options = options.Value;
             this.nameResolver = nameResolver;
             this.loggerFactory = loggerFactory;
             this.azureStorageOptions = new AzureStorageOptions();
+            this.inConsumption = platformInfo != null ? platformInfo.InConsumption() : false;
+
+            if (this.inConsumption)
+            {
+                this.azureStorageOptions.ControlQueueBufferThreshold = 32;
+                this.options.MaxConcurrentOrchestratorFunctions = 5;
+            }
+
             JsonConvert.PopulateObject(JsonConvert.SerializeObject(this.options.StorageProvider), this.azureStorageOptions);
 
             this.azureStorageOptions.Validate();
@@ -154,6 +164,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 LoggerFactory = this.loggerFactory,
                 UseLegacyPartitionManagement = this.azureStorageOptions.UseLegacyPartitionManagement,
             };
+
+            if (this.inConsumption)
+            {
+                settings.MaxStorageOperationConcurrency = 25;
+            }
 
             // When running on App Service VMSS stamps, these environment variables are the best way
             // to enure unqique worker names

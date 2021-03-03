@@ -70,7 +70,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #endif
         private readonly bool isOptionsConfigured;
         private readonly IApplicationLifetimeWrapper hostLifetimeService = HostLifecycleService.NoOp;
-
+        private readonly PlatformInformation platformInfo;
         private IDurabilityProviderFactory durabilityProviderFactory;
         private INameResolver nameResolver;
         private ILoggerFactory loggerFactory;
@@ -155,6 +155,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.HttpApiHandler = new HttpApiHandler(this, logger);
 
             this.hostLifetimeService = hostLifetimeService;
+            this.platformInfo = new PlatformInformation(this.nameResolver);
 
 #if !FUNCTIONS_V1
             // The RPC server is started when the extension is initialized.
@@ -341,19 +342,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </summary>
         private void InitializeLinuxLogging()
         {
-            // Read enviroment variables to determine host platform
-            string containerName = this.nameResolver.Resolve("CONTAINER_NAME");
-            string azureWebsiteInstanceId = this.nameResolver.Resolve("WEBSITE_INSTANCE_ID");
-            string functionsLogsMountPath = this.nameResolver.Resolve("FUNCTIONS_LOGS_MOUNT_PATH");
-
             // Determine host platform
-            bool inAppService = !string.IsNullOrEmpty(azureWebsiteInstanceId);
-            bool inLinuxDedicated = inAppService && !string.IsNullOrEmpty(functionsLogsMountPath);
-            bool inLinuxConsumption = !inAppService && !string.IsNullOrEmpty(containerName);
+            bool inLinuxDedicated = this.platformInfo.InLinuxAppService();
+            bool inLinuxConsumption = this.platformInfo.InLinuxConsumption();
 
-            // Reading other enviroment variables for intializing the logger
-            string tenant = this.nameResolver.Resolve("WEBSITE_STAMP_DEPLOYMENT_ID");
-            string stampName = this.nameResolver.Resolve("WEBSITE_HOME_STAMPNAME");
+            string tenant = this.platformInfo.GetLinuxTenant();
+            string stampName = this.platformInfo.GetLinuxStampName();
+            string containerName = this.platformInfo.GetContainerName();
 
             // If running in linux, initialize the EventSource listener with the appropiate logger.
             LinuxAppServiceLogger linuxLogger = null;
@@ -447,7 +442,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 new OptionsWrapper<DurableTaskOptions>(this.Options),
                 this.connectionStringResolver,
                 this.nameResolver,
-                this.loggerFactory);
+                this.loggerFactory,
+                this.platformInfo);
             this.defaultDurabilityProvider = this.durabilityProviderFactory.GetDurabilityProvider();
             this.LifeCycleNotificationHelper = this.CreateLifeCycleNotificationHelper();
             var messageSerializerSettingsFactory = new MessageSerializerSettingsFactory();
