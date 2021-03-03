@@ -2125,6 +2125,7 @@
             <param name="messageSerializerSettingsFactory">The factory used to create <see cref="T:Newtonsoft.Json.JsonSerializerSettings"/> for message settings.</param>
             <param name="errorSerializerSettingsFactory">The factory used to create <see cref="T:Newtonsoft.Json.JsonSerializerSettings"/> for error settings.</param>
             <param name="telemetryActivator">The activator of DistributedTracing. .netstandard2.0 only.</param>
+            <param name="platformInformationService">The platform information provider to inspect the OS, app service plan, and other enviroment information.</param>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.HubName">
             <summary>
@@ -3017,6 +3018,58 @@
             Creates or retrieves <see cref="T:Newtonsoft.Json.JsonSerializerSettings"/> to be used throughout the extension for message serialization.
             </summary>
             <returns><see cref="T:Newtonsoft.Json.JsonSerializerSettings"/> to be used by the Durable Task Extension for message serialization.</returns>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IPlatformInformationService">
+             <summary>
+             Interface for accessing the AppService plan information,
+             the OS, and user-facing PL.
+            
+             Note: The functionality is currently limited, but will grow
+             along with the pursuit of more platform-specific defaults.
+             </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IPlatformInformationService.InConsumption">
+            <summary>
+            Determines if the application is running on a Consumption plan,
+            irrespective of OS.
+            </summary>
+            <returns>True if running in Consumption. Otherwise, False.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IPlatformInformationService.InLinuxConsumption">
+            <summary>
+            Determines if the application is running in a Linux Consumption plan.
+            </summary>
+            <returns>True if running in Linux Consumption. Otherwise, False.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IPlatformInformationService.InWindowsConsumption">
+            <summary>
+            Determines if the application is running in a Windows Consumption plan.
+            </summary>
+            <returns>True if running in Linux Consumption. Otherwise, False.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IPlatformInformationService.InLinuxAppService">
+            <summary>
+            Determines if the application is running in a Linux AppService plan.
+            </summary>
+            <returns>True if running in Linux AppService. Otherwise, False.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IPlatformInformationService.GetLinuxTenant">
+            <summary>
+            Returns the application tenant when running on linux.
+            </summary>
+            <returns>The application tenant.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IPlatformInformationService.GetLinuxStampName">
+            <summary>
+            Returns the application stamp name when running on linux.
+            </summary>
+            <returns>The application stamp name.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IPlatformInformationService.GetContainerName">
+            <summary>
+            Returns the application container name when running on linux.
+            </summary>
+            <returns>The application container name.</returns>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.ITokenSource">
             <summary>

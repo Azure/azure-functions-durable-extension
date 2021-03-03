@@ -70,7 +70,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #endif
         private readonly bool isOptionsConfigured;
         private readonly IApplicationLifetimeWrapper hostLifetimeService = HostLifecycleService.NoOp;
-        private readonly PlatformInformation platformInfo;
+        private readonly IPlatformInformationService platformInformationService;
         private IDurabilityProviderFactory durabilityProviderFactory;
         private INameResolver nameResolver;
         private ILoggerFactory loggerFactory;
@@ -108,6 +108,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="messageSerializerSettingsFactory">The factory used to create <see cref="JsonSerializerSettings"/> for message settings.</param>
         /// <param name="errorSerializerSettingsFactory">The factory used to create <see cref="JsonSerializerSettings"/> for error settings.</param>
         /// <param name="telemetryActivator">The activator of DistributedTracing. .netstandard2.0 only.</param>
+        /// <param name="platformInformationService">The platform information provider to inspect the OS, app service plan, and other enviroment information.</param>
 #pragma warning restore CS1572
         public DurableTaskExtension(
             IOptions<DurableTaskOptions> options,
@@ -121,8 +122,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #if !FUNCTIONS_V1
             IErrorSerializerSettingsFactory errorSerializerSettingsFactory = null,
 #pragma warning disable SA1113, SA1001, SA1115
-            ITelemetryActivator telemetryActivator = null)
+            ITelemetryActivator telemetryActivator = null,
 #pragma warning restore SA1113, SA1001, SA1115
+            IPlatformInformationService platformInformationService = null)
+
 #else
             IErrorSerializerSettingsFactory errorSerializerSettingsFactory = null)
 #endif
@@ -155,7 +158,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.HttpApiHandler = new HttpApiHandler(this, logger);
 
             this.hostLifetimeService = hostLifetimeService;
-            this.platformInfo = new PlatformInformation(this.nameResolver);
+            this.platformInformationService = platformInformationService ?? throw new ArgumentNullException(nameof(platformInformationService));
 
 #if !FUNCTIONS_V1
             // The RPC server is started when the extension is initialized.
@@ -343,12 +346,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private void InitializeLinuxLogging()
         {
             // Determine host platform
-            bool inLinuxDedicated = this.platformInfo.InLinuxAppService();
-            bool inLinuxConsumption = this.platformInfo.InLinuxConsumption();
+            bool inLinuxDedicated = this.platformInformationService.InLinuxAppService();
+            bool inLinuxConsumption = this.platformInformationService.InLinuxConsumption();
 
-            string tenant = this.platformInfo.GetLinuxTenant();
-            string stampName = this.platformInfo.GetLinuxStampName();
-            string containerName = this.platformInfo.GetContainerName();
+            string tenant = this.platformInformationService.GetLinuxTenant();
+            string stampName = this.platformInformationService.GetLinuxStampName();
+            string containerName = this.platformInformationService.GetContainerName();
 
             // If running in linux, initialize the EventSource listener with the appropiate logger.
             LinuxAppServiceLogger linuxLogger = null;
@@ -443,7 +446,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.connectionStringResolver,
                 this.nameResolver,
                 this.loggerFactory,
-                this.platformInfo);
+                this.platformInformationService);
             this.defaultDurabilityProvider = this.durabilityProviderFactory.GetDurabilityProvider();
             this.LifeCycleNotificationHelper = this.CreateLifeCycleNotificationHelper();
             var messageSerializerSettingsFactory = new MessageSerializerSettingsFactory();

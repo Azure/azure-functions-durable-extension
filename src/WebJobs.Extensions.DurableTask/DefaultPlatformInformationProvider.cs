@@ -5,11 +5,11 @@ using System;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
-    internal class PlatformInformation
+    internal class DefaultPlatformInformationProvider : IPlatformInformationService
     {
         private readonly INameResolver nameResolver;
 
-        public PlatformInformation(INameResolver nameResolver)
+        public DefaultPlatformInformationProvider(INameResolver nameResolver)
         {
             this.nameResolver = nameResolver;
         }

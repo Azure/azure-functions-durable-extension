@@ -86,6 +86,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             serviceCollection.TryAddSingleton<IApplicationLifetimeWrapper, HostLifecycleService>();
             serviceCollection.AddSingleton<ITelemetryActivator, TelemetryActivator>();
             serviceCollection.TryAddSingleton<IDurableClientFactory, DurableClientFactory>();
+            serviceCollection.AddSingleton<IPlatformInformationService, DefaultPlatformInformationProvider>();
 
             return builder;
         }

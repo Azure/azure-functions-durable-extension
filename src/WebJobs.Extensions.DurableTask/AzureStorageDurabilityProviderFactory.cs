@@ -29,7 +29,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             IConnectionStringResolver connectionStringResolver,
             INameResolver nameResolver,
             ILoggerFactory loggerFactory,
-            PlatformInformation platformInfo = null)
+            IPlatformInformationService platformInfo = null)
         {
             this.options = options.Value;
             this.nameResolver = nameResolver;
