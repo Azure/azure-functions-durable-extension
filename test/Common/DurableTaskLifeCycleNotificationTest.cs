@@ -1325,7 +1325,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     wrappedOptions,
                     new TestConnectionStringResolver(),
                     nameResolver,
-                    NullLoggerFactory.Instance),
+                    NullLoggerFactory.Instance,
+                    TestHelpers.GetMockPlatformInformationService()),
                 new TestHostShutdownNotificationService());
 
             int callCount = 0;
