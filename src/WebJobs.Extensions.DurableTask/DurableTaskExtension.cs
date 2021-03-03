@@ -46,7 +46,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         INameVersionObjectManager<TaskOrchestration>,
         INameVersionObjectManager<TaskActivity>
     {
-        private const string DefaultProvider = "AzureStorage";
+        private const string DefaultProvider = AzureStorageDurabilityProviderFactory.ProviderName;
 
         internal static readonly string LoggerCategoryName = LogCategories.CreateTriggerCategory("DurableTask");
 
@@ -243,21 +243,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             if (!storageTypeIsConfigured)
             {
-                logger.LogInformation("Using the default storage provider: Azure Storage.");
-                return orchestrationServiceFactories.FirstOrDefault(f => f.Name.Equals(DefaultProvider));
+                try
+                {
+                    IDurabilityProviderFactory defaultFactory = orchestrationServiceFactories.First(f => f.Name.Equals(DefaultProvider));
+                    logger.LogInformation($"Using the default storage provider: {DefaultProvider}.");
+                    return defaultFactory;
+                }
+                catch (InvalidOperationException e)
+                {
+                    throw new InvalidOperationException($"Couldn't find the default storage provider: {DefaultProvider}.", e);
+                }
             }
 
-            IDurabilityProviderFactory selectedFactory = orchestrationServiceFactories.FirstOrDefault(f => string.Equals(f.Name, storageType.ToString(), StringComparison.OrdinalIgnoreCase));
-
-            if (selectedFactory == null)
+            try
+            {
+                IDurabilityProviderFactory selectedFactory = orchestrationServiceFactories.First(f => string.Equals(f.Name, storageType.ToString(), StringComparison.OrdinalIgnoreCase));
+                logger.LogInformation($"Using the {storageType} storage provider.");
+                return selectedFactory;
+            }
+            catch (InvalidOperationException e)
             {
                 IList<string> factoryNames = orchestrationServiceFactories.Select(f => f.Name).ToList();
-                throw new InvalidOperationException($"Storage provider type ({storageType}) was not found. " +
-                    $"Available storage providers: {string.Join(", ", factoryNames)}.");
+                throw new InvalidOperationException($"Storage provider type ({storageType}) was not found. Available storage providers: {string.Join(", ", factoryNames)}.", e);
             }
-
-            logger.LogInformation($"Using the {storageType} storage provider.");
-            return selectedFactory;
         }
 
         internal string GetBackendInfo()

@@ -11,6 +11,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     internal class AzureStorageDurabilityProviderFactory : IDurabilityProviderFactory
     {
+        internal const string ProviderName = "AzureStorage";
+
         private readonly DurableTaskOptions options;
         private readonly AzureStorageOptions azureStorageOptions;
         private readonly IConnectionStringResolver connectionStringResolver;
@@ -41,7 +43,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.defaultConnectionName = this.azureStorageOptions.ConnectionStringName ?? ConnectionStringNames.Storage;
         }
 
-        public string Name => "AzureStorage";
+        public string Name => ProviderName;
 
         internal string GetDefaultStorageConnectionString()
         {
