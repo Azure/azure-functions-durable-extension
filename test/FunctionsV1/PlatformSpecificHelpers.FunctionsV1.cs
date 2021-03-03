@@ -30,7 +30,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             ILifeCycleNotificationHelper lifeCycleNotificationHelper,
             IMessageSerializerSettingsFactory serializerSettingsFactory,
             IApplicationLifetimeWrapper shutdownNotificationService = null,
-            Action<ITelemetry> onSend = null)
+            Action<ITelemetry> onSend = null,
+            IPlatformInformationService platformInformationService = null)
         {
             var config = new JobHostConfiguration { HostId = "durable-task-host" };
             config.TypeLocator = TestHelpers.GetTypeLocator();
@@ -62,7 +63,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 shutdownNotificationService ?? new TestHostShutdownNotificationService(),
                 durableHttpMessageHandler,
                 lifeCycleNotificationHelper,
-                serializerSettingsFactory);
+                serializerSettingsFactory,
+                platformInformationService ?? TestHelpers.GetMockPlatformInformationService());
             config.UseDurableTask(extension);
 
             // Mock INameResolver for not setting EnvironmentVariables.

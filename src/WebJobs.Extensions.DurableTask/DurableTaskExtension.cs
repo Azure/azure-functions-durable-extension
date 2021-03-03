@@ -177,10 +177,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             IDurabilityProviderFactory orchestrationServiceFactory,
             IConnectionStringResolver connectionStringResolver,
             IApplicationLifetimeWrapper shutdownNotification,
-            IDurableHttpMessageHandlerFactory durableHttpMessageHandlerFactory)
+            IDurableHttpMessageHandlerFactory durableHttpMessageHandlerFactory,
+            IPlatformInformationService platformInformationService)
             : this(options, loggerFactory, nameResolver, orchestrationServiceFactory, shutdownNotification, durableHttpMessageHandlerFactory)
         {
             this.connectionStringResolver = connectionStringResolver;
+            this.platformInformationService = platformInformationService;
         }
 
         /// <summary>
