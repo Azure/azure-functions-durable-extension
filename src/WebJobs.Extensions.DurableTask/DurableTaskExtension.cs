@@ -119,12 +119,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             IDurableHttpMessageHandlerFactory durableHttpMessageHandlerFactory = null,
             ILifeCycleNotificationHelper lifeCycleNotificationHelper = null,
             IMessageSerializerSettingsFactory messageSerializerSettingsFactory = null,
+            IPlatformInformationService platformInformationService = null,
 #if !FUNCTIONS_V1
             IErrorSerializerSettingsFactory errorSerializerSettingsFactory = null,
 #pragma warning disable SA1113, SA1001, SA1115
-            ITelemetryActivator telemetryActivator = null,
+            ITelemetryActivator telemetryActivator = null)
 #pragma warning restore SA1113, SA1001, SA1115
-            IPlatformInformationService platformInformationService = null)
 
 #else
             IErrorSerializerSettingsFactory errorSerializerSettingsFactory = null)
@@ -134,6 +134,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.Options = options?.Value ?? new DurableTaskOptions();
             this.nameResolver = nameResolver ?? throw new ArgumentNullException(nameof(nameResolver));
             this.loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
+            this.platformInformationService = platformInformationService ?? throw new ArgumentNullException(nameof(platformInformationService));
             this.ResolveAppSettingOptions();
 
             ILogger logger = loggerFactory.CreateLogger(LoggerCategoryName);
@@ -158,7 +159,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.HttpApiHandler = new HttpApiHandler(this, logger);
 
             this.hostLifetimeService = hostLifetimeService;
-            this.platformInformationService = platformInformationService ?? throw new ArgumentNullException(nameof(platformInformationService));
 
 #if !FUNCTIONS_V1
             // The RPC server is started when the extension is initialized.
