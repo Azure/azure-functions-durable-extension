@@ -1329,7 +1329,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     nameResolver,
                     NullLoggerFactory.Instance,
                     TestHelpers.GetMockPlatformInformationService()),
-                new TestHostShutdownNotificationService());
+                new TestHostShutdownNotificationService(),
+                platformInformationService: TestHelpers.GetMockPlatformInformationService());
 
             int callCount = 0;
             Action<string> handler = eventName => { callCount++; };
