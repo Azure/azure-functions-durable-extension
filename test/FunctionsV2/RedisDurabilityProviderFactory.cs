@@ -26,7 +26,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 RedisConnectionString = redisConnectionString,
             });
 
-            this.defaultProvider = new DurabilityProvider("Redis", defaultTaskHubService, defaultTaskHubService, this.defaultConnectionName);
+            this.defaultProvider = new DurabilityProvider("Redis", defaultTaskHubService, defaultTaskHubService, this.defaultConnectionName, "Redis");
         }
 
         public bool SupportsEntities => false;
@@ -50,7 +50,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 RedisConnectionString = redisConnectionString,
             });
 
-            return new DurabilityProvider("Redis", redisOrchestartionService, redisOrchestartionService, attribute.ConnectionName);
+            return new DurabilityProvider("Redis", redisOrchestartionService, redisOrchestartionService, attribute.ConnectionName, "Redis");
         }
 
         public DurabilityProvider GetDurabilityProvider()

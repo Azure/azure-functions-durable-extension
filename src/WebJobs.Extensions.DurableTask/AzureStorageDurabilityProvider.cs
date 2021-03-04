@@ -30,7 +30,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             AzureStorageOrchestrationService service,
             string connectionName,
             AzureStorageOptions options)
-            : base("Azure Storage", service, service, connectionName)
+            : base("Azure Storage", service, service, connectionName, "DurableTask-AzureStorage")
         {
             this.serviceClient = service;
             this.connectionName = connectionName;
