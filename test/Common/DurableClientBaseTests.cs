@@ -337,7 +337,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 nameResolver,
                 serviceFactory,
                 new TestHostShutdownNotificationService(),
-                new DurableHttpMessageHandlerFactory());
+                new DurableHttpMessageHandlerFactory(),
+                platformInformationService: TestHelpers.GetMockPlatformInformationService());
         }
     }
 }

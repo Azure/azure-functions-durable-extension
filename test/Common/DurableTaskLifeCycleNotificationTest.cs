@@ -1252,7 +1252,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     connectionStringResolver,
                     mockNameResolver.Object,
                     NullLoggerFactory.Instance),
-                new TestHostShutdownNotificationService());
+                new TestHostShutdownNotificationService(),
+                platformInformationService: TestHelpers.GetMockPlatformInformationService());
 
             var eventGridLifeCycleNotification = (EventGridLifeCycleNotificationHelper)extension.LifeCycleNotificationHelper;
 
@@ -1298,7 +1299,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     new TestConnectionStringResolver(),
                     nameResolver,
                     NullLoggerFactory.Instance),
-                new TestHostShutdownNotificationService());
+                new TestHostShutdownNotificationService(),
+                platformInformationService: TestHelpers.GetMockPlatformInformationService());
 
             var lifeCycleNotificationHelper = extension.LifeCycleNotificationHelper;
 
