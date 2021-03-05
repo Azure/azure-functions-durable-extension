@@ -46,7 +46,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.innerService = service ?? throw new ArgumentNullException(nameof(service));
             this.innerServiceClient = serviceClient ?? throw new ArgumentNullException(nameof(serviceClient));
             this.connectionName = connectionName ?? throw new ArgumentNullException(connectionName);
-            this.name = eventSourceName ?? throw new ArgumentNullException(nameof(eventSourceName));
+            this.eventSourceName = eventSourceName ?? throw new ArgumentNullException(nameof(eventSourceName));
         }
 
         /// <summary>
