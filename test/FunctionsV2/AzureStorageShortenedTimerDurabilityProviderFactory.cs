@@ -13,8 +13,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             IOptions<DurableTaskOptions> options,
             IConnectionStringResolver connectionStringResolver,
             INameResolver nameResolver,
-            ILoggerFactory loggerFactory)
-            : base(options, connectionStringResolver, nameResolver, loggerFactory)
+            ILoggerFactory loggerFactory,
+            IPlatformInformationService platformInformationService)
+            : base(options, connectionStringResolver, nameResolver, loggerFactory, platformInformationService)
         {
         }
 

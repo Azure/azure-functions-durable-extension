@@ -5,6 +5,10 @@ using System;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
+    /// <summary>
+    /// Provides information about the enviroment (OS, app service plan, user-facing PL)
+    /// using the DI-injected INameResolver.
+    /// </summary>
     internal class DefaultPlatformInformationProvider : IPlatformInformationService
     {
         private readonly INameResolver nameResolver;

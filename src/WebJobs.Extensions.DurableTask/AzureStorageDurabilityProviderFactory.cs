@@ -29,13 +29,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             IConnectionStringResolver connectionStringResolver,
             INameResolver nameResolver,
             ILoggerFactory loggerFactory,
-            IPlatformInformationService platformInfo = null)
+            IPlatformInformationService platformInfo)
         {
             this.options = options.Value;
             this.nameResolver = nameResolver;
             this.loggerFactory = loggerFactory;
             this.azureStorageOptions = new AzureStorageOptions();
-            this.inConsumption = platformInfo != null ? platformInfo.InConsumption() : false;
+            this.inConsumption = platformInfo.InConsumption();
 
             if (this.inConsumption)
             {

@@ -49,11 +49,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 options.Value.StorageProvider.Add(nameof(AzureStorageOptions.UseLegacyPartitionManagement), true);
             }
 
+            platformInformationService = platformInformationService ?? TestHelpers.GetMockPlatformInformationService();
+
             IDurabilityProviderFactory orchestrationServiceFactory = new AzureStorageDurabilityProviderFactory(
                 options,
                 connectionResolver,
                 nameResolver,
-                loggerFactory);
+                loggerFactory,
+                platformInformationService);
 
             var extension = new DurableTaskExtension(
                 options,
@@ -64,7 +67,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 durableHttpMessageHandler,
                 lifeCycleNotificationHelper,
                 serializerSettingsFactory,
-                platformInformationService ?? TestHelpers.GetMockPlatformInformationService());
+                platformInformationService);
             config.UseDurableTask(extension);
 
             // Mock INameResolver for not setting EnvironmentVariables.

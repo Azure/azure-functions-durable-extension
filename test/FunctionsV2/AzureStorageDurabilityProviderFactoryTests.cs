@@ -26,7 +26,8 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
                 mockOptions,
                 connectionStringResolver,
                 nameResolver,
-                NullLoggerFactory.Instance);
+                NullLoggerFactory.Instance,
+                TestHelpers.GetMockPlatformInformationService());
 
             var settings = factory.GetAzureStorageOrchestrationServiceSettings();
 
@@ -49,7 +50,8 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
                 mockOptions,
                 connectionStringResolver,
                 nameResolver,
-                NullLoggerFactory.Instance);
+                NullLoggerFactory.Instance,
+                TestHelpers.GetMockPlatformInformationService());
 
             var settings = factory.GetAzureStorageOrchestrationServiceSettings();
 
