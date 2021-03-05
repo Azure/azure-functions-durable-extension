@@ -75,6 +75,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private IDurabilityProviderFactory durabilityProviderFactory;
         private INameResolver nameResolver;
         private ILoggerFactory loggerFactory;
+        private ILogger logger;
         private DurabilityProvider defaultDurabilityProvider;
         private TaskHubWorker taskHubWorker;
         private bool isTaskHubWorkerStarted;
@@ -134,9 +135,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
             this.ResolveAppSettingOptions();
 
-            ILogger logger = loggerFactory.CreateLogger(LoggerCategoryName);
+            this.logger = loggerFactory.CreateLogger(LoggerCategoryName);
 
-            this.TraceHelper = new EndToEndTraceHelper(logger, this.Options.Tracing.TraceReplayEvents);
+            this.TraceHelper = new EndToEndTraceHelper(this.logger, this.Options.Tracing.TraceReplayEvents);
             this.LifeCycleNotificationHelper = lifeCycleNotificationHelper ?? this.CreateLifeCycleNotificationHelper();
             this.durabilityProviderFactory = orchestrationServiceFactory;
             this.defaultDurabilityProvider = this.durabilityProviderFactory.GetDurabilityProvider();
@@ -153,7 +154,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.MessageDataConverter = CreateMessageDataConverter(messageSerializerSettingsFactory);
             this.ErrorDataConverter = this.CreateErrorDataConverter(errorSerializerSettingsFactory);
 
-            this.HttpApiHandler = new HttpApiHandler(this, logger);
+            this.HttpApiHandler = new HttpApiHandler(this, this.logger);
 
             this.hostLifetimeService = hostLifetimeService;
 
@@ -1271,27 +1272,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal IScaleMonitor GetScaleMonitor(string functionId, FunctionName functionName, string storageConnectionString)
         {
-            if (this.defaultDurabilityProvider is AzureStorageDurabilityProvider)
+            if (this.defaultDurabilityProvider.TryGetScaleMonitor(
+                functionId,
+                functionName.Name,
+                this.Options.HubName,
+                storageConnectionString,
+                this.logger,
+                this,
+                out IScaleMonitor scaleMonitor))
             {
-                // use the Azure Storage scale monitor
-                return new DurableTaskScaleMonitor(
-                        functionId,
-                        functionName,
-                        this.Options.HubName,
-                        storageConnectionString,
-                        this.TraceHelper);
-            }
-            else if ((this.defaultDurabilityProvider is ProviderUtils.IProviderWithAutoScaling provider)
-                     && provider.TryGetScaleMonitor(this, out var scaleMonitor))
-            {
-                // use the scale monitor given by the provider
                 return scaleMonitor;
             }
             else
             {
                 // the durability provider does not support runtime scaling.
                 // Create an empty scale monitor to avoid exceptions (unless runtime scaling is actually turned on).
-                return new PseudoScaleMonitor($"{functionId}-DurableTaskTrigger-{this.Options.HubName}".ToLower());
+                return new NoOpScaleMonitor($"{functionId}-DurableTaskTrigger-{this.Options.HubName}".ToLower());
             }
         }
 
@@ -1300,13 +1296,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// This is required to allow operation of those providers even if runtime scaling is turned off
         /// see discussion https://github.com/Azure/azure-functions-durable-extension/pull/1009/files#r341767018.
         /// </summary>
-        private sealed class PseudoScaleMonitor : IScaleMonitor
+        private sealed class NoOpScaleMonitor : IScaleMonitor
         {
             /// <summary>
             /// Construct a placeholder scale monitor.
             /// </summary>
             /// <param name="name">A descriptive name.</param>
-            public PseudoScaleMonitor(string name)
+            public NoOpScaleMonitor(string name)
             {
                 this.Descriptor = new ScaleMonitorDescriptor(name);
             }

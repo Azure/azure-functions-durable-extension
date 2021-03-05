@@ -9,10 +9,14 @@ using System.Threading.Tasks;
 using DurableTask.AzureStorage;
 using DurableTask.AzureStorage.Tracking;
 using DurableTask.Core;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
+#if !FUNCTIONS_V1
+using Microsoft.Azure.WebJobs.Host.Scale;
+#endif
 using AzureStorage = DurableTask.AzureStorage;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
@@ -178,5 +182,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 FetchInput = condition.ShowInput,
             };
         }
+
+#if !FUNCTIONS_V1
+        /// <inheritdoc/>
+        public override bool TryGetScaleMonitor(
+            string functionId,
+            string functionName,
+            string hubName,
+            string storageConnectionString,
+            ILogger logger,
+            DurableTaskExtension extension,
+            out IScaleMonitor scaleMonitor)
+        {
+            scaleMonitor = new DurableTaskScaleMonitor(
+                functionId,
+                functionName,
+                hubName,
+                storageConnectionString,
+                logger);
+            return true;
+        }
+#endif
     }
 }

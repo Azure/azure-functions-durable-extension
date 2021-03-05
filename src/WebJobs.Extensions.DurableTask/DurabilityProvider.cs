@@ -6,8 +6,12 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+#if !FUNCTIONS_V1
+using Microsoft.Azure.WebJobs.Host.Scale;
+#endif
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
@@ -433,5 +437,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             return this.ConnectionName.Equals(durabilityProvider.ConnectionName);
         }
+
+#if !FUNCTIONS_V1
+        /// <summary>
+        /// Tries to obtain a scale monitor for autoscaling.
+        /// </summary>
+        /// <param name="functionId">Function id.</param>
+        /// <param name="functionName">Function name.</param>
+        /// <param name="hubName">Task hub name.</param>
+        /// <param name="storageConnectionString">Storage account connection string, used for Azure Storage provider.</param>
+        /// <param name="logger">Logger used for emitting logs.</param>
+        /// <param name="extension">The extension, which is used for tracing.</param>
+        /// <param name="scaleMonitor">The scale monitor.</param>
+        /// <returns>True if autoscaling is supported, false otherwise.</returns>
+        public virtual bool TryGetScaleMonitor(
+            string functionId,
+            string functionName,
+            string hubName,
+            string storageConnectionString,
+            ILogger logger,
+            DurableTaskExtension extension,
+            out IScaleMonitor scaleMonitor)
+        {
+            scaleMonitor = null;
+            return false;
+        }
+#endif
     }
 }

@@ -3878,6 +3878,27 @@
             <param name="orchestrationState">The orchestration state.</param>
             <returns>The orchestration status.</returns>
         </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.ProviderUtils.TraceInformationalEvent(Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension,System.String,System.String,System.String,System.String,System.Boolean)">
+            <summary>
+            Trace an informational event for the extension.
+            </summary>
+            <param name="extension">The durable task extension.</param>
+            <param name="hubName">The name of the task hub.</param>
+            <param name="instanceId">The instance id.</param>
+            <param name="functionName">The function name.</param>
+            <param name="message">The message.</param>
+            <param name="writeToUserLogs">Whether to write this event to the user logs.</param>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.ProviderUtils.TraceWarningEvent(Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension,System.String,System.String,System.String,System.String)">
+            <summary>
+            Trace a warning event for the extension.
+            </summary>
+            <param name="extension">The durable task extension.</param>
+            <param name="hubName">The name of the task hub.</param>
+            <param name="functionName">The function name.</param>
+            <param name="instanceId">The instance id.</param>
+            <param name="message">The message.</param>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.PurgeHistoryResult">
             <summary>
             Class to hold statistics about this execution of purge history.
