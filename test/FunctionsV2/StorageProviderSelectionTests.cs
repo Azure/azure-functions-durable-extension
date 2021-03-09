@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Moq;
 using Xunit;
@@ -51,6 +52,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         public static IEnumerable<object[]> ValidStorageProviderTypesData { get; }
 
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [MemberData(nameof(ValidStorageProviderTypesData))]
         public void SelectingAvailableStorageProvider(string storageProvider, IDurabilityProviderFactory expectedFactory)
         {
@@ -60,6 +62,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         }
 
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData("AzureStorage")]
         public void SelectingFromEmptyFactoryListThrowsException(string storageProvider)
         {
@@ -67,6 +70,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         }
 
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData("storage")]
         public void SelectingUnavailableStorageProviderThrowsException(string storageProvider)
         {
