@@ -40,8 +40,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (this.inConsumption)
             {
                 this.azureStorageOptions.ControlQueueBufferThreshold = 32;
-                this.azureStorageOptions.ControlQueueBatchSize = this.azureStorageOptions.ControlQueueBufferThreshold / 4;
                 this.options.MaxConcurrentOrchestratorFunctions = 5;
+                this.options.MaxConcurrentActivityFunctions = 10;
             }
 
             JsonConvert.PopulateObject(JsonConvert.SerializeObject(this.options.StorageProvider), this.azureStorageOptions);
