@@ -6,9 +6,6 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
-#if !FUNCTIONS_V1
-using Microsoft.Azure.WebJobs.Host.Scale;
-#endif
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -19,22 +16,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// </summary>
     public static class ProviderUtils
     {
-#if !FUNCTIONS_V1
-        /// <summary>
-        /// Providers can implement this interface to override the autoscaling.
-        /// </summary>
-        public interface IProviderWithAutoScaling
-        {
-            /// <summary>
-            /// Tries to obtain a scale monitor for autoscaling.
-            /// </summary>
-            /// <param name="extension">The extension, which is used for tracing.</param>
-            /// <param name="scaleMonitor">The scale monitor.</param>
-            /// <returns>True if autoscaling is supported, false otherwise.</returns>
-            bool TryGetScaleMonitor(DurableTaskExtension extension, out IScaleMonitor scaleMonitor);
-        }
-#endif
-
         /// <summary>
         /// Returns the instance id of the entity scheduler for a given entity id.
         /// </summary>
