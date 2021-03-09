@@ -199,8 +199,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         // Used for mocking the lifecycle notification helper.
         internal HttpMessageHandler NotificationHandler { get; set; }
 
-        // This is purely a way for tests to overwrite the webhook url, since there is no easyway
-        // to mock the value from ExtensionConfigContext.
+        // This is just a way for tests to overwrite the webhook url, since there is no easy way
+        // to mock the value from ExtensionConfigContext. It should not be used in production code paths.
         internal Uri TestWebhookUri { get; set; }
 
         /// <summary>

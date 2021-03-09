@@ -277,15 +277,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
                 else
                 {
-                    Uri webhookUrl = this.GetWebhookUri();
-                    if (webhookUrl != null)
-                    {
-                        basePath = webhookUrl.AbsolutePath;
-                    }
-                    else
-                    {
-                        throw new InvalidOperationException($"Don't know how to handle request to {request.RequestUri}.");
-                    }
+                    basePath = this.GetWebhookUri().AbsolutePath;
                 }
 
                 string path = "/" + request.RequestUri.AbsolutePath.Substring(basePath.Length).Trim('/');

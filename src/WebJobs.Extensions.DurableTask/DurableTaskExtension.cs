@@ -273,6 +273,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             if (this.Options.TestWebhookUri == null)
             {
+                // This line ensure every time we need the webhook URI, we get it directly from the
+                // function runtime, which has the most up-to-date knowledge about the site hostname.
                 this.HttpApiHandler.RegisterWebhookProvider(() => context.GetWebhookHandler());
             }
 #pragma warning restore CS0618 // Type or member is obsolete

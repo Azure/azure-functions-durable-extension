@@ -64,7 +64,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public void OutOfProcEndpoints_UpdateWithUpdatedWebhookUri()
+        public void OutOfProcEndpoints_UpdateWithNewWebhookUri()
         {
             var httpApiHandler = new HttpApiHandler(GetTestExtension(), null);
             var webhookProvider = new ChangingWebhookProvider() { WebhookUri = new Uri(TestConstants.NotificationUrl) };
