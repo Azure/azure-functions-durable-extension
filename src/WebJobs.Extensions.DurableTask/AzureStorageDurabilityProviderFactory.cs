@@ -40,6 +40,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (this.inConsumption)
             {
                 this.azureStorageOptions.ControlQueueBufferThreshold = 32;
+                this.azureStorageOptions.ControlQueueBatchSize = this.azureStorageOptions.ControlQueueBufferThreshold / 4;
                 this.options.MaxConcurrentOrchestratorFunctions = 5;
             }
 
