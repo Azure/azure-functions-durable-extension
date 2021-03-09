@@ -106,6 +106,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="hostLifetimeService">The host shutdown notification service for detecting and reacting to host shutdowns.</param>
         /// <param name="lifeCycleNotificationHelper">The lifecycle notification helper used for custom orchestration tracking.</param>
         /// <param name="messageSerializerSettingsFactory">The factory used to create <see cref="JsonSerializerSettings"/> for message settings.</param>
+        /// <param name="webhookProvider">A delegate to fetch the webhook URL.</param>
         /// <param name="errorSerializerSettingsFactory">The factory used to create <see cref="JsonSerializerSettings"/> for error settings.</param>
         /// <param name="telemetryActivator">The activator of DistributedTracing. .netstandard2.0 only.</param>
 #pragma warning restore CS1572
@@ -265,13 +266,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // Throw if any of the configured options are invalid
             this.Options.Validate(this.nameResolver, this.TraceHelper);
 
-            // For 202 support
-            if (this.Options.NotificationUrl == null)
-            {
 #pragma warning disable CS0618 // Type or member is obsolete
-                this.Options.NotificationUrl = context.GetWebhookHandler();
-#pragma warning restore CS0618 // Type or member is obsolete
+
+            // Invoke webhook handler to make functions runtime register extension endpoints.
+            context.GetWebhookHandler();
+
+            if (this.Options.TestWebhookUri == null)
+            {
+                this.HttpApiHandler.RegisterWebhookProvider(() => context.GetWebhookHandler());
             }
+#pragma warning restore CS0618 // Type or member is obsolete
 
             this.TraceConfigurationSettings();
 

@@ -71,6 +71,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly EndToEndTraceHelper traceHelper;
         private readonly DurableTaskOptions durableTaskOptions;
         private readonly DurableTaskExtension config;
+        private Func<Uri> webhookUrlProvider;
 
         public HttpApiHandler(
             EndToEndTraceHelper traceHelper,
@@ -82,6 +83,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.logger = logger;
             this.durableTaskOptions = durableTaskOptions;
             this.traceHelper = traceHelper;
+
+            if (this.durableTaskOptions.TestWebhookUri != null)
+            {
+                this.webhookUrlProvider = () => this.durableTaskOptions.TestWebhookUri;
+            }
 
             // The listen URL must not include the path.
             this.localHttpListener = new LocalHttpListener(
@@ -116,6 +122,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 httpManagementPayload.TerminatePostUri,
                 httpManagementPayload.PurgeHistoryDeleteUri,
                 httpManagementPayload.RestartPostUri);
+        }
+
+        public void RegisterWebhookProvider(Func<Uri> webhookProvider)
+        {
+            this.webhookUrlProvider = webhookProvider;
         }
 
         // /orchestrators/{functionName}/{instanceId?}
@@ -264,13 +275,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     basePath = this.localHttpListener.InternalRpcUri.AbsolutePath;
                 }
-                else if (this.durableTaskOptions.NotificationUrl != null)
-                {
-                    basePath = this.durableTaskOptions.NotificationUrl.AbsolutePath;
-                }
                 else
                 {
-                    throw new InvalidOperationException($"Don't know how to handle request to {request.RequestUri}.");
+                    Uri webhookUrl = this.GetWebhookUri();
+                    if (webhookUrl != null)
+                    {
+                        basePath = webhookUrl.AbsolutePath;
+                    }
+                    else
+                    {
+                        throw new InvalidOperationException($"Don't know how to handle request to {request.RequestUri}.");
+                    }
                 }
 
                 string path = "/" + request.RequestUri.AbsolutePath.Substring(basePath.Length).Trim('/');
@@ -1021,9 +1036,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal string GetBaseUrl()
         {
-            this.ThrowIfWebhooksNotConfigured();
-
-            Uri notificationUri = this.durableTaskOptions.NotificationUrl;
+            Uri notificationUri = this.GetWebhookUri();
 
             string hostUrl = notificationUri.GetLeftPart(UriPartial.Authority);
             return hostUrl + notificationUri.AbsolutePath.TrimEnd('/');
@@ -1031,9 +1044,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal string GetUniversalQueryStrings()
         {
-            this.ThrowIfWebhooksNotConfigured();
-
-            Uri notificationUri = this.durableTaskOptions.NotificationUrl;
+            Uri notificationUri = this.GetWebhookUri();
 
             return !string.IsNullOrEmpty(notificationUri.Query)
                 ? notificationUri.Query.TrimStart('?')
@@ -1063,9 +1074,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
              string connectionName,
              bool returnInternalServerErrorOnFailure = false)
         {
-            this.ThrowIfWebhooksNotConfigured();
-
-            Uri notificationUri = this.durableTaskOptions.NotificationUrl;
+            Uri notificationUri = this.GetWebhookUri();
             Uri baseUri = request?.RequestUri ?? notificationUri;
 
             // e.g. http://{host}/runtime/webhooks/durabletask?code={systemKey}
@@ -1130,12 +1139,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return response;
         }
 
-        private void ThrowIfWebhooksNotConfigured()
+        private Uri GetWebhookUri()
         {
-            if (this.durableTaskOptions.NotificationUrl == null)
-            {
-                throw new InvalidOperationException("Webhooks are not configured");
-            }
+            return this.webhookUrlProvider?.Invoke() ?? throw new InvalidOperationException("Webhooks are not configured");
         }
 
         internal bool TryGetRpcBaseUrl(out Uri rpcBaseUrl)
