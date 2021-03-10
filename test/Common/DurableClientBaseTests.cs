@@ -322,7 +322,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             var options = new DurableTaskOptions();
             options.HubName = "DurableTaskHub";
-            options.TestWebhookUri = new Uri("https://sampleurl.net");
+            options.WebhookUriProviderOverride = () => new Uri("https://sampleurl.net");
             var wrappedOptions = new OptionsWrapper<DurableTaskOptions>(options);
             var nameResolver = TestHelpers.GetTestNameResolver();
             var connectionStringResolver = new TestConnectionStringResolver();

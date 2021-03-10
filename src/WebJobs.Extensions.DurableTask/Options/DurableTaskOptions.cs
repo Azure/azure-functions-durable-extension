@@ -201,7 +201,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         // This is just a way for tests to overwrite the webhook url, since there is no easy way
         // to mock the value from ExtensionConfigContext. It should not be used in production code paths.
-        internal Uri TestWebhookUri { get; set; }
+        internal Func<Uri> WebhookUriProviderOverride { get; set; }
 
         /// <summary>
         /// Sets HubName to a value that is considered a default value.

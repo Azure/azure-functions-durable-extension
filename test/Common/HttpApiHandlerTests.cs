@@ -33,7 +33,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 Notifications = new NotificationOptions(),
             };
-            options.TestWebhookUri = null;
+
+            // With a null override, and the production code path returning null webhook path,
+            // this simulates a non-configured webhook url.
+            options.WebhookUriProviderOverride = null;
             options.HubName = "DurableTaskHub";
 
             var httpApiHandler = new HttpApiHandler(GetTestExtension(options), null);
@@ -1393,7 +1396,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         private static DurableTaskExtension GetTestExtension()
         {
             var options = new DurableTaskOptions();
-            options.TestWebhookUri = new Uri(TestConstants.NotificationUrl);
+            options.WebhookUriProviderOverride = () => new Uri(TestConstants.NotificationUrl);
             options.HubName = "DurableFunctionsHub";
 
             return GetTestExtension(options);
