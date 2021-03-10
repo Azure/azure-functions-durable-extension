@@ -37,6 +37,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.azureStorageOptions = new AzureStorageOptions();
             this.inConsumption = platformInfo.InConsumption();
 
+            // The consumption plan has different performance characteristics so we provide
+            // different defaults for key configuration values.
             if (this.inConsumption)
             {
                 this.azureStorageOptions.ControlQueueBufferThreshold = 32;
@@ -44,6 +46,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.options.MaxConcurrentActivityFunctions = 10;
             }
 
+            // Override the configuration defaults with user-provided values in host.json, if any.
             JsonConvert.PopulateObject(JsonConvert.SerializeObject(this.options.StorageProvider), this.azureStorageOptions);
 
             this.azureStorageOptions.Validate();

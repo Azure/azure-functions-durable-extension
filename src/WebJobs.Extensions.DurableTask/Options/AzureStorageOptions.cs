@@ -222,6 +222,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 throw new InvalidOperationException($"{nameof(this.ControlQueueBufferThreshold)} must be between 1 and 1000.");
             }
+
+            if (this.ControlQueueBatchSize > this.ControlQueueBufferThreshold)
+            {
+                throw new InvalidOperationException($"{nameof(this.ControlQueueBatchSize)} cannot be larger than {nameof(this.ControlQueueBufferThreshold)}");
+            }
         }
     }
 }
