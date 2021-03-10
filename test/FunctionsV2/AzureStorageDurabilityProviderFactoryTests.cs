@@ -36,6 +36,28 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void ConsumptionDefaultsAreApplied()
+        {
+            var connectionStringResolver = new TestConnectionStringResolver();
+            var mockOptions = new OptionsWrapper<DurableTaskOptions>(new DurableTaskOptions());
+            var nameResolver = new Mock<INameResolver>().Object;
+            var factory = new AzureStorageDurabilityProviderFactory(
+                mockOptions,
+                connectionStringResolver,
+                nameResolver,
+                NullLoggerFactory.Instance,
+                TestHelpers.GetMockPlatformInformationService(inConsumption: true));
+
+            var settings = factory.GetAzureStorageOrchestrationServiceSettings();
+
+            Assert.Equal(32, settings.ControlQueueBufferThreshold);
+            Assert.Equal(5, settings.MaxConcurrentTaskOrchestrationWorkItems);
+            Assert.Equal(10, settings.MaxConcurrentTaskActivityWorkItems);
+            Assert.Equal(25, settings.MaxStorageOperationConcurrency);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void EnvironmentIsVMSS_WorkerIdFromEnvironmentVariables()
         {
             var connectionStringResolver = new TestConnectionStringResolver();
