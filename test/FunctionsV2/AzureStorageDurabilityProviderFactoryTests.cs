@@ -58,6 +58,59 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void ConsumptionDefaultsAreNotAlwaysApplied()
+        {
+            var connectionStringResolver = new TestConnectionStringResolver();
+            var mockOptions = new OptionsWrapper<DurableTaskOptions>(new DurableTaskOptions());
+            var nameResolver = new Mock<INameResolver>().Object;
+            var factory = new AzureStorageDurabilityProviderFactory(
+                mockOptions,
+                connectionStringResolver,
+                nameResolver,
+                NullLoggerFactory.Instance,
+                TestHelpers.GetMockPlatformInformationService(inConsumption: false));
+
+            var settings = factory.GetAzureStorageOrchestrationServiceSettings();
+
+            // We want to make sure that the consumption defaults (listed below)
+            // aren't applied on non-consumption plans.
+            Assert.NotEqual(32, settings.ControlQueueBufferThreshold);
+            Assert.NotEqual(5, settings.MaxConcurrentTaskOrchestrationWorkItems);
+            Assert.NotEqual(10, settings.MaxConcurrentTaskActivityWorkItems);
+            Assert.NotEqual(25, settings.MaxStorageOperationConcurrency);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void ConsumptionDefaulstDoNotOverrideCustomerOptions()
+        {
+            var connectionStringResolver = new TestConnectionStringResolver();
+            var options = new DurableTaskOptions();
+
+            options.StorageProvider.Add("ControlQueueBufferThreshold", 999);
+            options.MaxConcurrentOrchestratorFunctions = 888;
+            options.MaxConcurrentActivityFunctions = 777;
+
+            var mockOptions = new OptionsWrapper<DurableTaskOptions>(options);
+            var nameResolver = new Mock<INameResolver>().Object;
+            var factory = new AzureStorageDurabilityProviderFactory(
+                mockOptions,
+                connectionStringResolver,
+                nameResolver,
+                NullLoggerFactory.Instance,
+                TestHelpers.GetMockPlatformInformationService(inConsumption: true));
+
+            var settings = factory.GetAzureStorageOrchestrationServiceSettings();
+
+            // We want to make sure that the consumption defaults (listed below)
+            // aren't applied on non-consumption plans.
+            Assert.Equal(999, settings.ControlQueueBufferThreshold);
+            Assert.Equal(888, settings.MaxConcurrentTaskOrchestrationWorkItems);
+            Assert.Equal(777, settings.MaxConcurrentTaskActivityWorkItems);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void EnvironmentIsVMSS_WorkerIdFromEnvironmentVariables()
         {
             var connectionStringResolver = new TestConnectionStringResolver();
