@@ -20,6 +20,7 @@ using Microsoft.WindowsAzure.Storage.Queue;
 using Microsoft.WindowsAzure.Storage.Table;
 using Xunit;
 using Xunit.Abstractions;
+using static Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests.PlatformSpecificHelpers;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
@@ -193,6 +194,33 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 serializerSettingsFactory: serializerSettings,
                 onSend: onSend);
         }
+
+#if !FUNCTIONS_V1
+        public static ITestHost GetJobHostWithMultipleDurabilityProviders(
+        DurableTaskOptions options = null,
+        IEnumerable<IDurabilityProviderFactory> durabilityProviderFactories = null)
+        {
+            if (options == null)
+            {
+                options = new DurableTaskOptions();
+            }
+
+            return GetJobHostWithOptionsWithMultipleDurabilityProviders(
+                options,
+                durabilityProviderFactories);
+        }
+
+        public static ITestHost GetJobHostWithOptionsWithMultipleDurabilityProviders(
+            DurableTaskOptions durableTaskOptions,
+            IEnumerable<IDurabilityProviderFactory> durabilityProviderFactories = null)
+        {
+            var optionsWrapper = new OptionsWrapper<DurableTaskOptions>(durableTaskOptions);
+
+            return CreateJobHostWithMultipleDurabilityProviders(
+                optionsWrapper,
+                durabilityProviderFactories);
+        }
+#endif
 
         public static DurableTaskOptions GetDurableTaskOptionsForStorageProvider(string storageProvider)
         {
