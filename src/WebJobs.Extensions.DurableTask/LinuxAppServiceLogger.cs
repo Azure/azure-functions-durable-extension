@@ -101,7 +101,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         // we need to be able to change the logging path for a windows-based CI
         // the logger being internal static is convenient for flushing it
 #pragma warning disable SA1401 // Fields should be private
-        internal static string LoggingPath = "/var/log/functionsLogs/durableevents.log";
+        internal static string LoggingPath = "/var/log/functionsLogs/durableeventsJSON.log";
         internal static LinuxAppServiceFileLogger Logger; // The File Logger
 #pragma warning restore SA1401 // Fields should be private
 
