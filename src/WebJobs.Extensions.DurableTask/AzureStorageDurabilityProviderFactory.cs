@@ -39,8 +39,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             // The consumption plan has different performance characteristics so we provide
             // different defaults for key configuration values.
-            int maxConcurrentOrchestratorsDefault = this.inConsumption ? 32 : 10 * Environment.ProcessorCount;
-            int maxConcurrentActivitiesDefault = this.inConsumption ? 5 : 10 * Environment.ProcessorCount;
+            int maxConcurrentOrchestratorsDefault = this.inConsumption ? 5 : 10 * Environment.ProcessorCount;
+            int maxConcurrentActivitiesDefault = this.inConsumption ? 10 : 10 * Environment.ProcessorCount;
             this.azureStorageOptions.ControlQueueBufferThreshold = this.inConsumption ? 32 : this.azureStorageOptions.ControlQueueBufferThreshold;
 
             // The following defaults are only applied if the customer did not explicitely set them on `host.json`
