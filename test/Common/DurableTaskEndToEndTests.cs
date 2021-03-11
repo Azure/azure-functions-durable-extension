@@ -4803,16 +4803,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public async Task MultipleHostsOnSameVM(bool enableLocalRpc)
         {
             // This test wants to be sure there are no race conditions while starting up multiple hosts in parallel,
-            // so attempt various times to make sure to hit race condition if it exists.
+            // so attempt various times to increase the likelihood of hitting a race condition if one exists.
             int numAttempts = 5;
             for (int attempt = 0; attempt < numAttempts; attempt++)
             {
-                int numHost = 10;
-                var hosts = new List<ITestHost>(numHost);
+                int numThreads = 10;
+                var hosts = new List<ITestHost>(numThreads);
 
                 try
                 {
-                    Parallel.For(0, numHost, new ParallelOptions() { MaxDegreeOfParallelism = numHost }, (i) =>
+                    Parallel.For(0, numThreads, new ParallelOptions() { MaxDegreeOfParallelism = numThreads }, (i) =>
                         hosts.Add(TestHelpers.GetJobHost(
                                 this.loggerProvider,
                                 nameof(this.MultipleHostsOnSameVM) + i,

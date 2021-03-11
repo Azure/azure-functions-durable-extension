@@ -37,7 +37,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.durableTaskOptions = durableTaskOptions ?? throw new ArgumentNullException(nameof(durableTaskOptions));
 
             // Set to a non null value
-            this.InternalRpcUri = new Uri($"http://127.0.0.1:{DefaultPort}/defaultvalue/");
+            this.InternalRpcUri = new Uri($"http://uninitialized");
             this.localWebHost = new NoOpWebHost();
         }
 
@@ -45,7 +45,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public bool IsListening { get; private set; }
 
-        public void Dispose() => this.localWebHost?.Dispose();
+        public void Dispose() => this.localWebHost.Dispose();
 
         public async Task StartAsync()
         {
@@ -55,6 +55,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
 #if !FUNCTIONS_V1
+            const int maxAttempts = 10;
             int numAttempts = 1;
             do
             {
@@ -73,7 +74,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.IsListening = true;
                     break;
                 }
-                catch
+                catch (IOException)
                 {
                     this.traceHelper.ExtensionWarningEvent(
                         this.durableTaskOptions.HubName,
@@ -81,9 +82,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         instanceId: string.Empty,
                         message: $"Failed to open local socket {availablePort}. This was attempt #{numAttempts} to open a local port.");
                     numAttempts++;
+                    var random = new Random();
+                    var millisecondsToWait = (int)Math.Round(random.NextDouble() * 1000);
+                    await Task.Delay(millisecondsToWait);
                 }
             }
-            while (numAttempts <= 3);
+            while (numAttempts <= maxAttempts);
+
+            if (!this.IsListening)
+            {
+                throw new IOException($"Unable to find a port to open an RPC endpoint on after {maxAttempts} attempts");
+            }
 #else
             // no-op: this is dummy code to make build warnings go away
             await Task.Yield();
