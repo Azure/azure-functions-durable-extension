@@ -1549,7 +1549,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         private static HttpMessageHandler MockSynchronousHttpMessageHandlerWithHttpRequestException()
         {
-            HttpResponseMessage httpResponseMessage = CreateTestHttpResponseMessage(HttpStatusCode.OK);
+            HttpResponseMessage httpResponseMessage = CreateTestHttpResponseMessage(HttpStatusCode.NotFound);
 
             httpResponseMessage.Content = new ExceptionThrowingContent(new HttpRequestException("No such host is known."));
 
