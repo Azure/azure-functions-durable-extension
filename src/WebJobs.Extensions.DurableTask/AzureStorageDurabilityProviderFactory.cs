@@ -39,12 +39,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             // The consumption plan has different performance characteristics so we provide
             // different defaults for key configuration values.
-            if (this.inConsumption)
-            {
-                this.azureStorageOptions.ControlQueueBufferThreshold = 32;
-                this.options.MaxConcurrentOrchestratorFunctions = 5;
-                this.options.MaxConcurrentActivityFunctions = 10;
-            }
+            int maxConcurrentOrchestratorsDefault = this.inConsumption ? 32 : 10 * Environment.ProcessorCount;
+            int maxConcurrentActivitiesDefault = this.inConsumption ? 5 : 10 * Environment.ProcessorCount;
+            this.azureStorageOptions.ControlQueueBufferThreshold = this.inConsumption ? this.azureStorageOptions.ControlQueueBufferThreshold : 32;
+
+            // The following defaults are only applied if the customer did not explicitely set them on `host.json`
+            this.options.MaxConcurrentOrchestratorFunctions = this.options.MaxConcurrentOrchestratorFunctions ?? maxConcurrentOrchestratorsDefault;
+            this.options.MaxConcurrentOrchestratorFunctions = this.options.MaxConcurrentOrchestratorFunctions ?? maxConcurrentActivitiesDefault;
 
             // Override the configuration defaults with user-provided values in host.json, if any.
             JsonConvert.PopulateObject(JsonConvert.SerializeObject(this.options.StorageProvider), this.azureStorageOptions);
@@ -152,8 +153,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 ControlQueueBufferThreshold = this.azureStorageOptions.ControlQueueBufferThreshold,
                 ControlQueueVisibilityTimeout = this.azureStorageOptions.ControlQueueVisibilityTimeout,
                 WorkItemQueueVisibilityTimeout = this.azureStorageOptions.WorkItemQueueVisibilityTimeout,
-                MaxConcurrentTaskOrchestrationWorkItems = this.options.MaxConcurrentOrchestratorFunctions,
-                MaxConcurrentTaskActivityWorkItems = this.options.MaxConcurrentActivityFunctions,
+                MaxConcurrentTaskOrchestrationWorkItems = this.options.MaxConcurrentOrchestratorFunctions ?? throw new InvalidOperationException($"{nameof(this.options.MaxConcurrentOrchestratorFunctions)} needs a default value"),
+                MaxConcurrentTaskActivityWorkItems = this.options.MaxConcurrentActivityFunctions ?? throw new InvalidOperationException($"{nameof(this.options.MaxConcurrentOrchestratorFunctions)} needs a default value"),
                 ExtendedSessionsEnabled = this.options.ExtendedSessionsEnabled,
                 ExtendedSessionIdleTimeout = extendedSessionTimeout,
                 MaxQueuePollingInterval = this.azureStorageOptions.MaxQueuePollingInterval,

@@ -3522,7 +3522,7 @@
             also increase the total CPU and memory usage on a single worker instance.
             </remarks>
             <value>
-            A positive integer configured by the host. The default value is 10X the number of processors on the current machine.
+            A positive integer configured by the host.
             </value>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.MaxConcurrentOrchestratorFunctions">
@@ -3530,7 +3530,7 @@
             Gets or sets the maximum number of orchestrator functions that can be processed concurrently on a single host instance.
             </summary>
             <value>
-            A positive integer configured by the host. The default value is 10X the number of processors on the current machine.
+            A positive integer configured by the host.
             </value>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.NotificationUrl">
