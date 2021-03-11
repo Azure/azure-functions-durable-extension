@@ -4814,12 +4814,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             try
             {
-                // Schedule the startups in Task.Run to schedule on a separate
-                // TaskPool (see https://stackoverflow.com/a/34375762/9035640)
-                Parallel.ForEach(
-                  hosts,
-                  new ParallelOptions { MaxDegreeOfParallelism = 10 },
-                  async (host) => await host.StartAsync());
+                await Task.WhenAll(hosts.Select(host => host.StartAsync()));
             }
             catch (Exception)
             {
