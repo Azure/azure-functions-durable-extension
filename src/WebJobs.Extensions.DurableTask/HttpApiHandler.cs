@@ -1140,13 +1140,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal bool TryGetRpcBaseUrl(out Uri rpcBaseUrl)
         {
-            if (this.durableTaskOptions.LocalRpcEndpointEnabled != false)
+            if (this.durableTaskOptions.LocalRpcEndpointEnabled != false
+                && this.localHttpListener.IsListening)
             {
                 rpcBaseUrl = this.localHttpListener.InternalRpcUri;
                 return true;
             }
 
-            // The app owner explicitly disabled the local RPC endpoint.
+            // The app owner explicitly disabled the local RPC endpoint, or we were unable to
+            // successfully find a port after several tries.
             rpcBaseUrl = null;
             return false;
         }
@@ -1156,14 +1158,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             if (!this.localHttpListener.IsListening)
             {
+                await this.localHttpListener.StartAsync();
+
                 this.traceHelper.ExtensionInformationalEvent(
                     this.durableTaskOptions.HubName,
                     instanceId: string.Empty,
                     functionName: string.Empty,
-                    message: $"Opening local RPC endpoint: {this.localHttpListener.InternalRpcUri}",
+                    message: $"Opened local RPC endpoint: {this.localHttpListener.InternalRpcUri}",
                     writeToUserLogs: true);
-
-                await this.localHttpListener.StartAsync();
             }
         }
 

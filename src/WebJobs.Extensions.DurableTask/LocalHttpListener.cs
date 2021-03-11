@@ -22,10 +22,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     {
         private const int DefaultPort = 17071;
 
-        private readonly IWebHost localWebHost;
         private readonly Func<HttpRequestMessage, Task<HttpResponseMessage>> handler;
         private readonly EndToEndTraceHelper traceHelper;
         private readonly DurableTaskOptions durableTaskOptions;
+        private IWebHost localWebHost;
 
         public LocalHttpListener(
             EndToEndTraceHelper traceHelper,
@@ -36,27 +36,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.handler = handler ?? throw new ArgumentNullException(nameof(handler));
             this.durableTaskOptions = durableTaskOptions ?? throw new ArgumentNullException(nameof(durableTaskOptions));
 
-#if !FUNCTIONS_V1
-            this.InternalRpcUri = new Uri($"http://127.0.0.1:{this.GetAvailablePort()}/durabletask/");
-            var listenUri = new Uri(this.InternalRpcUri.GetLeftPart(UriPartial.Authority));
-            this.localWebHost = new WebHostBuilder()
-                .UseKestrel()
-                .UseUrls(listenUri.OriginalString)
-                .Configure(a => a.Run(this.HandleRequestAsync))
-                .Build();
-#else
-            // Just use default port for internal Uri. No need to check for port availability since
-            // we won't be listening to this endpoint.
-            this.InternalRpcUri = new Uri($"http://127.0.0.1:{DefaultPort}/durabletask/");
+            // Set to a non null value
+            this.InternalRpcUri = new Uri($"http://127.0.0.1:{DefaultPort}/defaultvalue/");
             this.localWebHost = new NoOpWebHost();
-#endif
         }
 
-        public Uri InternalRpcUri { get; }
+        public Uri InternalRpcUri { get; private set; }
 
         public bool IsListening { get; private set; }
 
-        public void Dispose() => this.localWebHost.Dispose();
+        public void Dispose() => this.localWebHost?.Dispose();
 
         public async Task StartAsync()
         {
@@ -66,8 +55,35 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
 #if !FUNCTIONS_V1
-            await this.localWebHost.StartAsync();
-            this.IsListening = true;
+            int numAttempts = 1;
+            do
+            {
+                int availablePort = this.GetAvailablePort();
+                try
+                {
+                    this.InternalRpcUri = new Uri($"http://127.0.0.1:{availablePort}/durabletask/");
+                    var listenUri = new Uri(this.InternalRpcUri.GetLeftPart(UriPartial.Authority));
+                    this.localWebHost = new WebHostBuilder()
+                        .UseKestrel()
+                        .UseUrls(listenUri.OriginalString)
+                        .Configure(a => a.Run(this.HandleRequestAsync))
+                        .Build();
+
+                    await this.localWebHost.StartAsync();
+                    this.IsListening = true;
+                    break;
+                }
+                catch
+                {
+                    this.traceHelper.ExtensionWarningEvent(
+                        this.durableTaskOptions.HubName,
+                        functionName: string.Empty,
+                        instanceId: string.Empty,
+                        message: $"Failed to open local socket {availablePort}. This was attempt #{numAttempts} to open a local port.");
+                    numAttempts++;
+                }
+            }
+            while (numAttempts <= 3);
 #else
             // no-op: this is dummy code to make build warnings go away
             await Task.Yield();
@@ -158,7 +174,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-#if FUNCTIONS_V1
         private class NoOpWebHost : IWebHost
         {
             public IFeatureCollection ServerFeatures => throw new NotImplementedException();
@@ -173,6 +188,5 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             public Task StopAsync(CancellationToken cancellationToken = default(CancellationToken)) => Task.CompletedTask;
         }
-#endif
     }
 }
