@@ -4796,36 +4796,44 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
-        [Fact]
+        [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task MultipleHostsLocalRpcSameDevice()
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task MultipleHostsOnSameVM(bool enableLocalRpc)
         {
-            int numHost = 10;
-            ITestHost[] hosts = new ITestHost[numHost];
-            Task[] hostStartups = new Task[numHost];
-            for (int i = 0; i < numHost; i++)
+            // This test wants to be sure there are no race conditions while starting up multiple hosts in parallel,
+            // so attempt various times to make sure to hit race condition if it exists.
+            int numAttempts = 5;
+            for (int attempt = 0; attempt < numAttempts; attempt++)
             {
-                hosts[i] = TestHelpers.GetJobHost(
-                    this.loggerProvider,
-                    nameof(this.MultipleHostsLocalRpcSameDevice) + i,
-                    false,
-                    localRpcEndpointEnabled: true);
-            }
+                int numHost = 10;
+                var hosts = new List<ITestHost>(numHost);
 
-            try
-            {
-                await Task.WhenAll(hosts.Select(host => host.StartAsync()));
-            }
-            catch (Exception)
-            {
-                Assert.True(false, "Could not start up two hosts on the same device in parallel");
-            }
-            finally
-            {
-                foreach (var host in hosts)
+                try
                 {
-                    await host.StopAsync();
-                    host.Dispose();
+                    Parallel.For(0, numHost, new ParallelOptions() { MaxDegreeOfParallelism = numHost }, (i) =>
+                        hosts.Add(TestHelpers.GetJobHost(
+                                this.loggerProvider,
+                                nameof(this.MultipleHostsOnSameVM) + i,
+                                false,
+                                localRpcEndpointEnabled: enableLocalRpc))
+                    );
+
+                    await Task.WhenAll(hosts.Select(host => host.StartAsync()));
+                }
+                catch (Exception)
+                {
+                    Assert.True(false, "Could not start up two hosts on the same device in parallel");
+                }
+                finally
+                {
+
+                    foreach (var host in hosts)
+                    {
+                        await host.StopAsync();
+                        host.Dispose();
+                    }
                 }
             }
         }
