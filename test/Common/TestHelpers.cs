@@ -193,6 +193,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 onSend: onSend);
         }
 
+#pragma warning disable CS0612 // Type or member is obsolete
         public static IPlatformInformationService GetMockPlatformInformationService(
             bool inConsumption = false,
             bool inLinuxConsumption = false,
@@ -200,8 +201,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             bool inLinuxAppsService = false,
             string getLinuxStampName = "",
             string getContainerName = "")
+#pragma warning restore CS0612 // Type or member is obsolete
         {
+#pragma warning disable CS0612 // Type or member is obsolete
             var mockPlatformProvider = new Mock<IPlatformInformationService>();
+#pragma warning restore CS0612 // Type or member is obsolete
             mockPlatformProvider.Setup(x => x.InConsumption()).Returns(inConsumption);
             mockPlatformProvider.Setup(x => x.InLinuxConsumption()).Returns(inLinuxConsumption);
             mockPlatformProvider.Setup(x => x.InWindowsConsumption()).Returns(inWindowsConsumption);

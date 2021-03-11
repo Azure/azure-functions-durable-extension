@@ -29,7 +29,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             IConnectionStringResolver connectionStringResolver,
             INameResolver nameResolver,
             ILoggerFactory loggerFactory,
+#pragma warning disable CS0612 // Type or member is obsolete
             IPlatformInformationService platformInfo)
+#pragma warning restore CS0612 // Type or member is obsolete
         {
             this.options = options.Value;
             this.nameResolver = nameResolver;
@@ -50,7 +52,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // Override the configuration defaults with user-provided values in host.json, if any.
             JsonConvert.PopulateObject(JsonConvert.SerializeObject(this.options.StorageProvider), this.azureStorageOptions);
 
-            this.azureStorageOptions.Validate();
+            var logger = loggerFactory.CreateLogger(nameof(this.azureStorageOptions));
+            this.azureStorageOptions.Validate(logger);
 
             this.connectionStringResolver = connectionStringResolver ?? throw new ArgumentNullException(nameof(connectionStringResolver));
             this.defaultConnectionName = this.azureStorageOptions.ConnectionStringName ?? ConnectionStringNames.Storage;

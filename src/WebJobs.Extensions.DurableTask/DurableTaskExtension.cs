@@ -70,7 +70,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #endif
         private readonly bool isOptionsConfigured;
         private readonly IApplicationLifetimeWrapper hostLifetimeService = HostLifecycleService.NoOp;
+#pragma warning disable CS0612 // Type or member is obsolete
         private readonly IPlatformInformationService platformInformationService;
+#pragma warning restore CS0612 // Type or member is obsolete
         private IDurabilityProviderFactory durabilityProviderFactory;
         private INameResolver nameResolver;
         private ILoggerFactory loggerFactory;
@@ -119,7 +121,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             IDurableHttpMessageHandlerFactory durableHttpMessageHandlerFactory = null,
             ILifeCycleNotificationHelper lifeCycleNotificationHelper = null,
             IMessageSerializerSettingsFactory messageSerializerSettingsFactory = null,
+#pragma warning disable CS0612 // Type or member is obsolete
             IPlatformInformationService platformInformationService = null,
+#pragma warning restore CS0612 // Type or member is obsolete
 #if !FUNCTIONS_V1
             IErrorSerializerSettingsFactory errorSerializerSettingsFactory = null,
 #pragma warning disable SA1113, SA1001, SA1115
@@ -178,7 +182,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             IConnectionStringResolver connectionStringResolver,
             IApplicationLifetimeWrapper shutdownNotification,
             IDurableHttpMessageHandlerFactory durableHttpMessageHandlerFactory,
+#pragma warning disable CS0612 // Type or member is obsolete
             IPlatformInformationService platformInformationService)
+#pragma warning restore CS0612 // Type or member is obsolete
+
             : this(options, loggerFactory, nameResolver, orchestrationServiceFactory, shutdownNotification, durableHttpMessageHandlerFactory)
         {
             this.connectionStringResolver = connectionStringResolver;

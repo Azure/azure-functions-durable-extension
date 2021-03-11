@@ -9,7 +9,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// Provides information about the enviroment (OS, app service plan, user-facing PL)
     /// using the DI-injected INameResolver.
     /// </summary>
+#pragma warning disable CS0612 // Type or member is obsolete
     internal class DefaultPlatformInformationProvider : IPlatformInformationService
+#pragma warning restore CS0612 // Type or member is obsolete
     {
         private readonly INameResolver nameResolver;
 

@@ -1,6 +1,8 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using System;
+
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     /// <summary>
@@ -10,6 +12,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// Note: The functionality is currently limited, but will grow
     /// along with the pursuit of more platform-specific defaults.
     /// </summary>
+    [Obsolete]
     public interface IPlatformInformationService
     {
         /// <summary>
