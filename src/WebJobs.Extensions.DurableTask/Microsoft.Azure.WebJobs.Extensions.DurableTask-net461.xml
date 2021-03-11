@@ -1591,7 +1591,7 @@
             methods/operations are virtual and can be overwritten by creating a subclass.
             </summary>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.#ctor(System.String,DurableTask.Core.IOrchestrationService,DurableTask.Core.IOrchestrationServiceClient,System.String,System.String)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.#ctor(System.String,DurableTask.Core.IOrchestrationService,DurableTask.Core.IOrchestrationServiceClient,System.String)">
             <summary>
             Creates the default <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider"/>.
             </summary>
@@ -1601,7 +1601,6 @@
             <param name="serviceClient">The internal <see cref="T:DurableTask.Core.IOrchestrationServiceClient"/> that provides functionality
             for this classes implementions of <see cref="T:DurableTask.Core.IOrchestrationServiceClient"/>.</param>
             <param name="connectionName">The name of the app setting that stores connection details for the storage provider.</param>
-            <param name="eventSourceName">The name of the event source provider.</param>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.ConnectionName">
             <summary>

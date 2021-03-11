@@ -13,7 +13,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public EmulatorDurabilityProviderFactory()
         {
             var service = new LocalOrchestrationService();
-            this.provider = new DurabilityProvider("emulator", service, service, "emulator", "emulator");
+            this.provider = new DurabilityProvider("emulator", service, service, "emulator");
         }
 
         public bool SupportsEntities => false;

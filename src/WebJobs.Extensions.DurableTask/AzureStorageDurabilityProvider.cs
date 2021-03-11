@@ -30,7 +30,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             AzureStorageOrchestrationService service,
             string connectionName,
             AzureStorageOptions options)
-            : base("Azure Storage", service, service, connectionName, "DurableTask-AzureStorage")
+            : base("Azure Storage", service, service, connectionName)
         {
             this.serviceClient = service;
             this.connectionName = connectionName;
@@ -55,6 +55,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public override TimeSpan MaximumDelayTime { get; set; } = TimeSpan.FromDays(6);
 
         public override TimeSpan LongRunningTimerIntervalLength { get; set; } = TimeSpan.FromDays(3);
+
+        public override string EventSourceName { get; set; } = "DurableTask-AzureStorage";
 
         /// <inheritdoc/>
         public async override Task<IList<OrchestrationState>> GetAllOrchestrationStates(CancellationToken cancellationToken)

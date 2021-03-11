@@ -28,7 +28,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly IOrchestrationService innerService;
         private readonly IOrchestrationServiceClient innerServiceClient;
         private readonly string connectionName;
-        private readonly string eventSourceName;
 
         /// <summary>
         /// Creates the default <see cref="DurabilityProvider"/>.
@@ -39,14 +38,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="serviceClient">The internal <see cref="IOrchestrationServiceClient"/> that provides functionality
         /// for this classes implementions of <see cref="IOrchestrationServiceClient"/>.</param>
         /// <param name="connectionName">The name of the app setting that stores connection details for the storage provider.</param>
-        /// <param name="eventSourceName">The name of the event source provider.</param>
-        public DurabilityProvider(string storageProviderName, IOrchestrationService service, IOrchestrationServiceClient serviceClient, string connectionName, string eventSourceName)
+        public DurabilityProvider(string storageProviderName, IOrchestrationService service, IOrchestrationServiceClient serviceClient, string connectionName)
         {
             this.name = storageProviderName ?? throw new ArgumentNullException(nameof(storageProviderName));
             this.innerService = service ?? throw new ArgumentNullException(nameof(service));
             this.innerServiceClient = serviceClient ?? throw new ArgumentNullException(nameof(serviceClient));
             this.connectionName = connectionName ?? throw new ArgumentNullException(connectionName);
-            this.eventSourceName = eventSourceName ?? throw new ArgumentNullException(nameof(eventSourceName));
         }
 
         /// <summary>
@@ -88,7 +85,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <summary>
         /// Event source name (e.g. DurableTask-AzureStorage).
         /// </summary>
-        public string EventSourceName => this.eventSourceName;
+        public virtual string EventSourceName { get; set; }
 
         /// <inheritdoc/>
         public int TaskOrchestrationDispatcherCount => this.GetOrchestrationService().TaskOrchestrationDispatcherCount;
