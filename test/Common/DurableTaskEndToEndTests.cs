@@ -4817,8 +4817,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                                 this.loggerProvider,
                                 nameof(this.MultipleHostsOnSameVM) + i,
                                 false,
-                                localRpcEndpointEnabled: enableLocalRpc))
-                    );
+                                localRpcEndpointEnabled: enableLocalRpc)));
 
                     await Task.WhenAll(hosts.Select(host => host.StartAsync()));
                 }
@@ -4828,7 +4827,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 }
                 finally
                 {
-
                     foreach (var host in hosts)
                     {
                         await host.StopAsync();
