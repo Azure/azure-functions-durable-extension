@@ -4800,20 +4800,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task MultipleHostsLocalRpcSameDevice()
         {
-            ITestHost host1 = TestHelpers.GetJobHost(
+            int numHost = 10;
+            ITestHost[] hosts = new ITestHost[numHost];
+            Task[] hostStartups = new Task[numHost];
+            for (int i = 0; i < numHost; i++)
+            {
+                hosts[i] = TestHelpers.GetJobHost(
                     this.loggerProvider,
-                    nameof(this.MultipleHostsLocalRpcSameDevice) + "1",
+                    nameof(this.MultipleHostsLocalRpcSameDevice) + i,
                     false,
                     localRpcEndpointEnabled: true);
-            await host1.StartAsync();
-            ITestHost host2 = TestHelpers.GetJobHost(
-                    this.loggerProvider,
-                    nameof(this.MultipleHostsLocalRpcSameDevice) + "2",
-                    false,
-                    localRpcEndpointEnabled: true);
+            }
+
             try
             {
-                await host2.StartAsync();
+                // Schedule the startups in Task.Run to schedule on a separate
+                // TaskPool (see https://stackoverflow.com/a/34375762/9035640)
+                Parallel.ForEach(
+                  hosts,
+                  new ParallelOptions { MaxDegreeOfParallelism = 10 },
+                  async (host) => await host.StartAsync());
             }
             catch (Exception)
             {
@@ -4821,10 +4827,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
             finally
             {
-                await host1.StopAsync();
-                host1.Dispose();
-                await host2.StopAsync();
-                host2.Dispose();
+                foreach (var host in hosts)
+                {
+                    await host.StopAsync();
+                    host.Dispose();
+                }
             }
         }
 
