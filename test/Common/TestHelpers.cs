@@ -256,6 +256,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
+        /// <summary>
+        /// Read a file's contents, line by line, even if another process is currently writing to it.
+        /// </summary>
+        /// <param name="path">The file's path</param>
+        /// <returns>An array of each line in the file.</returns>
         public static string[] WriteSafeReadAllLines(string path)
         {
             using (var csv = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))

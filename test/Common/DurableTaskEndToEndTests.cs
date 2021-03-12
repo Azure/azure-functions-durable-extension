@@ -585,12 +585,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 conditionDescription: "Log file exists",
                 timeout: TimeSpan.FromSeconds(30));
 
-            // The file buffer gets flushed every 30 seconds
+            // The file buffer gets flushed every 30 seconds, so we wait a little over 30 seconds
+            // before inspecting the file's contents
             await Task.Delay(TimeSpan.FromSeconds(35));
 
             string[] lines = TestHelpers.WriteSafeReadAllLines(LinuxAppServiceLogger.LoggingPath);
 
-            // Ensure newlines are removed by checking the number of lines is equal to the number of "TimeStamp" columns,
+            // Ensure newlines are removed by checking the number of lines is equal to the number of "EventTimestamp" columns,
             // which corresponds to the number of JSONs logged
             int countTimeStampCols = Regex.Matches(string.Join("", lines), "\"EventTimestamp\":").Count;
             Assert.Equal(lines.Length, countTimeStampCols);
@@ -645,11 +646,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 conditionDescription: "Log file exists",
                 timeout: TimeSpan.FromSeconds(30));
 
-            // The file buffer gets flushed every 30 seconds
+            // The file buffer gets flushed every 30 seconds, so we wait a little over 30 seconds
+            // before inspecting the file's contents
             await Task.Delay(TimeSpan.FromSeconds(35));
 
-            // Ensure newlines are removed by checking the number of lines is equal to the number of "TimeStamp" columns,
-            // which corresponds to the number of JSONs logged
             string[] lines = TestHelpers.WriteSafeReadAllLines(LinuxAppServiceLogger.LoggingPath);
 
             bool foundAzureStorageLog = false;
