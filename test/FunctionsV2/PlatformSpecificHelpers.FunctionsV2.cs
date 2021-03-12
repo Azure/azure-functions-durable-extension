@@ -215,6 +215,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return builder;
         }
 
+        /// <summary>
+        /// Registers the services needed for DurableClientFactory and calls AddDurableClientFactory()
+        /// which adds the Durable Task extension that uses Azure Storage.
+        /// </summary>
         private static IWebJobsBuilder AddDurableClientFactoryDurableTask(this IWebJobsBuilder builder, IOptions<DurableTaskOptions> options, IEnumerable<IDurabilityProviderFactory> durabilityProviderFactories = null)
         {
             builder.Services.AddDurableClientFactory();

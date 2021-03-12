@@ -8,11 +8,11 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using FluentAssertions;
+using Microsoft.Azure.WebJobs.Host.TestCommon;
 #if !FUNCTIONS_V1
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
-using Microsoft.Azure.WebJobs.Host.TestCommon;
 #endif
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -29,17 +29,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     public class DurableClientBaseTests
     {
         private readonly ITestOutputHelper output;
-
-#if !FUNCTIONS_V1
         private readonly TestLoggerProvider loggerProvider;
-#endif
 
         public DurableClientBaseTests(ITestOutputHelper output)
         {
             this.output = output;
-#if !FUNCTIONS_V1
             this.loggerProvider = new TestLoggerProvider(output);
-#endif
         }
 
         [Theory]
