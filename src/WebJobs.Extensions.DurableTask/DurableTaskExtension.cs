@@ -187,7 +187,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             IPlatformInformationService platformInformationService)
 #pragma warning restore CS0612 // Type or member is obsolete
 
-            : this(options, loggerFactory, nameResolver, orchestrationServiceFactory, shutdownNotification, durableHttpMessageHandlerFactory)
+            : this(options, loggerFactory, nameResolver, orchestrationServiceFactories, shutdownNotification, durableHttpMessageHandlerFactory)
         {
             this.connectionStringResolver = connectionStringResolver;
             this.platformInformationService = platformInformationService;
