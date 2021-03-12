@@ -150,6 +150,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 .Services.AddSingleton<IConnectionStringResolver, WebJobsConnectionStringProvider>();
 
             serviceCollection.TryAddSingleton<IApplicationLifetimeWrapper, HostLifecycleService>();
+#pragma warning disable CS0612 // Type or member is obsolete
+            serviceCollection.TryAddSingleton<IPlatformInformationService, DefaultPlatformInformationProvider>();
+#pragma warning restore CS0612 // Type or member is obsolete
 
             return builder;
         }

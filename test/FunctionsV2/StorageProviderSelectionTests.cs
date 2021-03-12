@@ -62,7 +62,6 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         [MemberData(nameof(DurabilityProviderFactoriesListsWithoutAzureStorage))]
         public void NoProviderSpecified_AzureStorageFactoryNotRegistered(IEnumerable<IDurabilityProviderFactory> durabilityProviderFactories)
         {
-
             var ex = Assert.Throws<InvalidOperationException>(() =>
                 TestHelpers.GetJobHostWithMultipleDurabilityProviders(
                     durabilityProviderFactories: durabilityProviderFactories));
