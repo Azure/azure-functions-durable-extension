@@ -80,12 +80,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 .Services.AddSingleton<IConnectionStringResolver, WebJobsConnectionStringProvider>();
 
             serviceCollection.TryAddSingleton<IDurableHttpMessageHandlerFactory, DurableHttpMessageHandlerFactory>();
-            serviceCollection.TryAddSingleton<IDurabilityProviderFactory, AzureStorageDurabilityProviderFactory>();
+            serviceCollection.AddSingleton<IDurabilityProviderFactory, AzureStorageDurabilityProviderFactory>();
             serviceCollection.TryAddSingleton<IMessageSerializerSettingsFactory, MessageSerializerSettingsFactory>();
             serviceCollection.TryAddSingleton<IErrorSerializerSettingsFactory, ErrorSerializerSettingsFactory>();
             serviceCollection.TryAddSingleton<IApplicationLifetimeWrapper, HostLifecycleService>();
             serviceCollection.AddSingleton<ITelemetryActivator, TelemetryActivator>();
             serviceCollection.TryAddSingleton<IDurableClientFactory, DurableClientFactory>();
+#pragma warning disable CS0612 // Type or member is obsolete
+            serviceCollection.AddSingleton<IPlatformInformationService, DefaultPlatformInformationProvider>();
+#pragma warning restore CS0612 // Type or member is obsolete
 
             return builder;
         }

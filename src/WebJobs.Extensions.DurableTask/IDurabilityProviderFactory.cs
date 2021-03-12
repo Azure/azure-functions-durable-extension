@@ -9,6 +9,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     public interface IDurabilityProviderFactory
     {
         /// <summary>
+        /// Specifies the Durability Provider Factory name.
+        /// </summary>
+        string Name { get; }
+
+        /// <summary>
         /// Creates or retrieves a durability provider to be used throughout the extension.
         /// </summary>
         /// <returns>An durability provider to be used by the Durable Task Extension.</returns>
