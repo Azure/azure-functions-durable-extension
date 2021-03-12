@@ -326,18 +326,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var wrappedOptions = new OptionsWrapper<DurableTaskOptions>(options);
             var nameResolver = TestHelpers.GetTestNameResolver();
             var connectionStringResolver = new TestConnectionStringResolver();
+            var platformInformationService = TestHelpers.GetMockPlatformInformationService();
             var serviceFactory = new AzureStorageDurabilityProviderFactory(
                 wrappedOptions,
                 connectionStringResolver,
                 nameResolver,
-                NullLoggerFactory.Instance);
+                NullLoggerFactory.Instance,
+                platformInformationService);
             return new DurableTaskExtension(
                 wrappedOptions,
                 new LoggerFactory(),
                 nameResolver,
                 new[] { serviceFactory },
                 new TestHostShutdownNotificationService(),
-                new DurableHttpMessageHandlerFactory());
+                new DurableHttpMessageHandlerFactory(),
+                platformInformationService: platformInformationService);
         }
     }
 }

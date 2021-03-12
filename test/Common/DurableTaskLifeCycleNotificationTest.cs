@@ -1243,17 +1243,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             var wrappedOptions = new OptionsWrapper<DurableTaskOptions>(options);
             var connectionStringResolver = new TestConnectionStringResolver();
+            var platformInformationService = TestHelpers.GetMockPlatformInformationService();
+
             var serviceFactory = new AzureStorageDurabilityProviderFactory(
-                    wrappedOptions,
-                    connectionStringResolver,
-                    mockNameResolver.Object,
-                    NullLoggerFactory.Instance);
+                wrappedOptions,
+                connectionStringResolver,
+                mockNameResolver.Object,
+                NullLoggerFactory.Instance,
+                platformInformationService);
+
             var extension = new DurableTaskExtension(
                 wrappedOptions,
                 new LoggerFactory(),
                 mockNameResolver.Object,
                 new[] { serviceFactory },
-                new TestHostShutdownNotificationService());
+                new TestHostShutdownNotificationService(),
+                platformInformationService: platformInformationService);
 
             var eventGridLifeCycleNotification = (EventGridLifeCycleNotificationHelper)extension.LifeCycleNotificationHelper;
 
@@ -1290,17 +1295,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             var wrappedOptions = new OptionsWrapper<DurableTaskOptions>(options);
             var nameResolver = new SimpleNameResolver();
+            var platformInformationService = TestHelpers.GetMockPlatformInformationService();
+
             var serviceFactory = new AzureStorageDurabilityProviderFactory(
                 wrappedOptions,
                 new TestConnectionStringResolver(),
                 nameResolver,
-                NullLoggerFactory.Instance);
+                NullLoggerFactory.Instance,
+                platformInformationService);
+
             var extension = new DurableTaskExtension(
                 wrappedOptions,
                 new LoggerFactory(),
                 nameResolver,
                 new[] { serviceFactory },
-                new TestHostShutdownNotificationService());
+                new TestHostShutdownNotificationService(),
+                platformInformationService: platformInformationService);
 
             var lifeCycleNotificationHelper = extension.LifeCycleNotificationHelper;
 
@@ -1319,17 +1329,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             var wrappedOptions = new OptionsWrapper<DurableTaskOptions>(options);
             var nameResolver = new SimpleNameResolver();
+
             var serviceFactory = new AzureStorageDurabilityProviderFactory(
-                    wrappedOptions,
-                    new TestConnectionStringResolver(),
-                    nameResolver,
-                    NullLoggerFactory.Instance);
+                wrappedOptions,
+                new TestConnectionStringResolver(),
+                nameResolver,
+                NullLoggerFactory.Instance,
+                TestHelpers.GetMockPlatformInformationService());
+
             var extension = new DurableTaskExtension(
                 wrappedOptions,
                 new LoggerFactory(),
                 nameResolver,
                 new[] { serviceFactory },
-                new TestHostShutdownNotificationService());
+                new TestHostShutdownNotificationService(),
+                platformInformationService: TestHelpers.GetMockPlatformInformationService());
 
             int callCount = 0;
             Action<string> handler = eventName => { callCount++; };

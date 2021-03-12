@@ -378,7 +378,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             string message = ctx.GetInput<string>();
 
-            RetryOptions options = new RetryOptions(TimeSpan.FromSeconds(5), 3);
+            RetryOptions options = new RetryOptions(TimeSpan.FromSeconds(2), 3);
 
             // Specify an explicit sub-orchestration ID that can be queried by the test driver.
             Guid subInstanceId = await ctx.CallActivityAsync<Guid>(nameof(TestActivities.NewGuid), null);
@@ -411,7 +411,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 throw new ArgumentNullException(nameof(message));
             }
 
-            RetryOptions options = new RetryOptions(TimeSpan.FromSeconds(5), 3);
+            RetryOptions options = new RetryOptions(TimeSpan.FromSeconds(1), 3);
 
             // This throw happens in the implementation of an activity.
             await ctx.CallActivityWithRetryAsync(nameof(TestActivities.ThrowActivity), options, message);
