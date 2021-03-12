@@ -279,8 +279,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 var routeValues = new RouteValueDictionary();
                 if (StartOrchestrationRoute.TryMatch(pathString, routeValues))
                 {
-                    string functionName = this.GetDecodedRouteParameter(routeValues, FunctionNameRouteParameter);
-                    string instanceId = this.GetDecodedRouteParameter(routeValues, InstanceIdRouteParameter);
+                    string functionName = GetDecodedRouteParameter(routeValues, FunctionNameRouteParameter);
+                    string instanceId = GetDecodedRouteParameter(routeValues, InstanceIdRouteParameter);
                     if (request.Method == HttpMethod.Post)
                     {
                         return await this.HandleStartOrchestratorRequestAsync(request, functionName, instanceId);
@@ -295,8 +295,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     try
                     {
-                        string entityName = this.GetDecodedRouteParameter(routeValues, EntityNameRouteParameter);
-                        string entityKey = this.GetDecodedRouteParameter(routeValues, EntityKeyRouteParameter);
+                        string entityName = GetDecodedRouteParameter(routeValues, EntityNameRouteParameter);
+                        string entityKey = GetDecodedRouteParameter(routeValues, EntityKeyRouteParameter);
 
                         if (request.Method == HttpMethod.Get)
                         {
@@ -328,8 +328,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 if (InstancesRoute.TryMatch(pathString, routeValues))
                 {
-                    var instanceId = this.GetDecodedRouteParameter(routeValues, InstanceIdRouteParameter);
-                    var operation = this.GetDecodedRouteParameter(routeValues, OperationRouteParameter);
+                    var instanceId = GetDecodedRouteParameter(routeValues, InstanceIdRouteParameter);
+                    var operation = GetDecodedRouteParameter(routeValues, OperationRouteParameter);
 
                     if (instanceId == null)
                     {
@@ -385,8 +385,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 if (InstanceRaiseEventRoute.TryMatch(pathString, routeValues))
                 {
-                    string instanceId = this.GetDecodedRouteParameter(routeValues, InstanceIdRouteParameter);
-                    string eventName = this.GetDecodedRouteParameter(routeValues, EventNameRouteParameter);
+                    string instanceId = GetDecodedRouteParameter(routeValues, InstanceIdRouteParameter);
+                    string eventName = GetDecodedRouteParameter(routeValues, EventNameRouteParameter);
                     if (request.Method == HttpMethod.Post)
                     {
                         return await this.HandleRaiseEventRequestAsync(request, instanceId, eventName);
@@ -414,10 +414,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        private string GetDecodedRouteParameter(RouteValueDictionary routeValues, string routeParameter)
+        private static string GetDecodedRouteParameter(RouteValueDictionary routeValues, string routeParameter)
         {
             var parameter = (string)routeValues[routeParameter];
-            return Uri.UnescapeDataString(parameter);
+            return parameter != null ? Uri.UnescapeDataString(parameter) : null;
+        }
+
+        private static string GetDecodedQueryParameter(NameValueCollection queryParameters, string queryParameter)
+        {
+            var parameter = (string)queryParameters[queryParameter];
+            return parameter != null ? Uri.UnescapeDataString(parameter) : null;
         }
 
         private async Task<HttpResponseMessage> HandleGetStatusRequestAsync(
@@ -695,26 +701,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private static bool TryGetDateTimeQueryParameterValue(NameValueCollection queryStringNameValueCollection, string queryParameterName, out DateTime dateTimeValue)
         {
-            string value = queryStringNameValueCollection[queryParameterName];
+            string value = GetDecodedQueryParameter(queryStringNameValueCollection, queryParameterName);
             return DateTime.TryParse(value, out dateTimeValue);
         }
 
         private static bool TryGetBooleanQueryParameterValue(NameValueCollection queryStringNameValueCollection, string queryParameterName, out bool boolValue)
         {
-            string value = queryStringNameValueCollection[queryParameterName];
+            string value = GetDecodedQueryParameter(queryStringNameValueCollection, queryParameterName);
             return bool.TryParse(value, out boolValue);
         }
 
         private static bool TryGetIntQueryParameterValue(NameValueCollection queryStringNameValueCollection, string queryParameterName, out int intValue)
         {
-            string value = queryStringNameValueCollection[queryParameterName];
+            string value = GetDecodedQueryParameter(queryStringNameValueCollection, queryParameterName);
             return int.TryParse(value, out intValue);
         }
 
         private static bool TryGetTimeSpanQueryParameterValue(NameValueCollection queryStringNameValueCollection, string queryParameterName, out TimeSpan? timeSpanValue)
         {
             timeSpanValue = null;
-            string value = queryStringNameValueCollection[queryParameterName];
+            string value = GetDecodedQueryParameter(queryStringNameValueCollection, queryParameterName);
             if (double.TryParse(value, out double doubleValue))
             {
                 timeSpanValue = TimeSpan.FromSeconds(doubleValue);
