@@ -193,6 +193,33 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 onSend: onSend);
         }
 
+#if !FUNCTIONS_V1
+        public static ITestHost GetJobHostWithMultipleDurabilityProviders(
+            DurableTaskOptions options = null,
+            IEnumerable<IDurabilityProviderFactory> durabilityProviderFactories = null)
+        {
+            if (options == null)
+            {
+                options = new DurableTaskOptions();
+            }
+
+            return GetJobHostWithOptionsWithMultipleDurabilityProviders(
+                options,
+                durabilityProviderFactories);
+        }
+
+        public static ITestHost GetJobHostWithOptionsWithMultipleDurabilityProviders(
+            DurableTaskOptions durableTaskOptions,
+            IEnumerable<IDurabilityProviderFactory> durabilityProviderFactories = null)
+        {
+            var optionsWrapper = new OptionsWrapper<DurableTaskOptions>(durableTaskOptions);
+
+            return PlatformSpecificHelpers.CreateJobHostWithMultipleDurabilityProviders(
+                optionsWrapper,
+                durabilityProviderFactories);
+        }
+#endif
+
 #pragma warning disable CS0612 // Type or member is obsolete
         public static IPlatformInformationService GetMockPlatformInformationService(
             bool inConsumption = false,

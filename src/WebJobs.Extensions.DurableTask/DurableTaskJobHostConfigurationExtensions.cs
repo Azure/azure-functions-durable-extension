@@ -80,7 +80,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 .Services.AddSingleton<IConnectionStringResolver, WebJobsConnectionStringProvider>();
 
             serviceCollection.TryAddSingleton<IDurableHttpMessageHandlerFactory, DurableHttpMessageHandlerFactory>();
-            serviceCollection.TryAddSingleton<IDurabilityProviderFactory, AzureStorageDurabilityProviderFactory>();
+            serviceCollection.AddSingleton<IDurabilityProviderFactory, AzureStorageDurabilityProviderFactory>();
             serviceCollection.TryAddSingleton<IMessageSerializerSettingsFactory, MessageSerializerSettingsFactory>();
             serviceCollection.TryAddSingleton<IErrorSerializerSettingsFactory, ErrorSerializerSettingsFactory>();
             serviceCollection.TryAddSingleton<IApplicationLifetimeWrapper, HostLifecycleService>();
