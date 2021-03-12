@@ -16,60 +16,26 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
     {
         public StorageProviderSelectionTests() { }
 
+        private static IEnumerable<IDurabilityProviderFactory> MicrosoftSQLAndNetheriteProviderFactoriesList =>
+            new List<IDurabilityProviderFactory>
+            {
+                GetMicrosoftSQLStorageProviderMock(new Mock<IOrchestrationServiceClient>()).Object,
+                GetNetheriteStorageProviderMock(new Mock<IOrchestrationServiceClient>()).Object,
+            };
+
+        public static IEnumerable<object[]> DurabilityProviderFactoriesListsWithoutAzureStorage =>
+            new List<object[]>
+            {
+                new[] { Enumerable.Empty<IDurabilityProviderFactory>() },
+                new[] { MicrosoftSQLAndNetheriteProviderFactoriesList },
+            };
+
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData("AzureStorage")]
-        public void SelectingAzureStorageStorageProvider(string storageProvider)
-        {
-            var orchestrationServiceClientMock = new Mock<IOrchestrationServiceClient>();
-            Mock<IDurabilityProviderFactory> azureStorageMock = GetAzureStorageStorageProviderMock(orchestrationServiceClientMock);
-            Mock<IDurabilityProviderFactory> microsoftSQLMock = GetMicrosoftSQLStorageProviderMock(orchestrationServiceClientMock);
-            Mock<IDurabilityProviderFactory> netheriteMock = GetNetheriteStorageProviderMock(orchestrationServiceClientMock);
-
-            IEnumerable<IDurabilityProviderFactory> durabilityProviderFactories = new[] { azureStorageMock.Object, microsoftSQLMock.Object, netheriteMock.Object };
-
-            DurableTaskOptions options = new DurableTaskOptions();
-            options.StorageProvider["type"] = storageProvider;
-
-            using (ITestHost host = TestHelpers.GetJobHostWithMultipleDurabilityProviders(
-                options: options,
-                durabilityProviderFactories: durabilityProviderFactories))
-            {
-                azureStorageMock.Verify(a => a.GetDurabilityProvider(), Times.Once());
-                netheriteMock.Verify(n => n.GetDurabilityProvider(), Times.Never());
-                microsoftSQLMock.Verify(m => m.GetDurabilityProvider(), Times.Never());
-            }
-        }
-
-        [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [InlineData("Netherite")]
-        public void SelectingNetheriteStorageProvider(string storageProvider)
-        {
-            var orchestrationServiceClientMock = new Mock<IOrchestrationServiceClient>();
-            Mock<IDurabilityProviderFactory> azureStorageMock = GetAzureStorageStorageProviderMock(orchestrationServiceClientMock);
-            Mock<IDurabilityProviderFactory> microsoftSQLMock = GetMicrosoftSQLStorageProviderMock(orchestrationServiceClientMock);
-            Mock<IDurabilityProviderFactory> netheriteMock = GetNetheriteStorageProviderMock(orchestrationServiceClientMock);
-
-            IEnumerable<IDurabilityProviderFactory> durabilityProviderFactories = new[] { azureStorageMock.Object, microsoftSQLMock.Object, netheriteMock.Object };
-
-            DurableTaskOptions options = new DurableTaskOptions();
-            options.StorageProvider["type"] = storageProvider;
-
-            using (ITestHost host = TestHelpers.GetJobHostWithMultipleDurabilityProviders(
-                options: options,
-                durabilityProviderFactories: durabilityProviderFactories))
-            {
-                azureStorageMock.Verify(a => a.GetDurabilityProvider(), Times.Never());
-                netheriteMock.Verify(n => n.GetDurabilityProvider(), Times.Once());
-                microsoftSQLMock.Verify(m => m.GetDurabilityProvider(), Times.Never());
-            }
-        }
-
-        [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData("MicrosoftSQL")]
-        public void SelectingMicrosoftSQLStorageProvider(string storageProvider)
+        [InlineData("Netherite")]
+        public void StorageProviderTypeSpecified_CorrectStorageProviderFactoryUsed(string storageProvider)
         {
             var orchestrationServiceClientMock = new Mock<IOrchestrationServiceClient>();
             Mock<IDurabilityProviderFactory> azureStorageMock = GetAzureStorageStorageProviderMock(orchestrationServiceClientMock);
@@ -85,21 +51,21 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
                 options: options,
                 durabilityProviderFactories: durabilityProviderFactories))
             {
-                azureStorageMock.Verify(a => a.GetDurabilityProvider(), Times.Never());
-                netheriteMock.Verify(n => n.GetDurabilityProvider(), Times.Never());
-                microsoftSQLMock.Verify(m => m.GetDurabilityProvider(), Times.Once());
+                azureStorageMock.Verify(a => a.GetDurabilityProvider(), string.Equals(storageProvider, "AzureStorage") ? Times.Once() : Times.Never());
+                microsoftSQLMock.Verify(m => m.GetDurabilityProvider(), string.Equals(storageProvider, "MicrosoftSQL") ? Times.Once() : Times.Never());
+                netheriteMock.Verify(n => n.GetDurabilityProvider(), string.Equals(storageProvider, "Netherite") ? Times.Once() : Times.Never());
             }
         }
 
-        [Fact]
+        [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public void SelectingFromEmptyFactoryListThrowsException()
+        [MemberData(nameof(DurabilityProviderFactoriesListsWithoutAzureStorage))]
+        public void NoProviderSpecified_AzureStorageFactoryNotRegistered(IEnumerable<IDurabilityProviderFactory> durabilityProviderFactories)
         {
-            IEnumerable<IDurabilityProviderFactory> emptyDurabilityProviderFactoriesList = Enumerable.Empty<IDurabilityProviderFactory>();
 
             var ex = Assert.Throws<InvalidOperationException>(() =>
                 TestHelpers.GetJobHostWithMultipleDurabilityProviders(
-                    durabilityProviderFactories: emptyDurabilityProviderFactoriesList));
+                    durabilityProviderFactories: durabilityProviderFactories));
 
             Assert.Equal($"Couldn't find the default storage provider: AzureStorage.", ex.Message);
         }

@@ -20,7 +20,6 @@ using Microsoft.WindowsAzure.Storage.Queue;
 using Microsoft.WindowsAzure.Storage.Table;
 using Xunit;
 using Xunit.Abstractions;
-using static Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests.PlatformSpecificHelpers;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
@@ -197,8 +196,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
 #if !FUNCTIONS_V1
         public static ITestHost GetJobHostWithMultipleDurabilityProviders(
-        DurableTaskOptions options = null,
-        IEnumerable<IDurabilityProviderFactory> durabilityProviderFactories = null)
+            DurableTaskOptions options = null,
+            IEnumerable<IDurabilityProviderFactory> durabilityProviderFactories = null)
         {
             if (options == null)
             {
@@ -216,7 +215,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             var optionsWrapper = new OptionsWrapper<DurableTaskOptions>(durableTaskOptions);
 
-            return CreateJobHostWithMultipleDurabilityProviders(
+            return PlatformSpecificHelpers.CreateJobHostWithMultipleDurabilityProviders(
                 optionsWrapper,
                 durabilityProviderFactories);
         }
