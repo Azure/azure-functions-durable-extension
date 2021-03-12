@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Linq;
 using Microsoft.Azure.WebJobs.Host.Executors;
 using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Extensions.Logging;
@@ -57,18 +58,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var wrappedOptions = new OptionsWrapper<DurableTaskOptions>(options);
             var nameResolver = TestHelpers.GetTestNameResolver();
             var connectionStringResolver = new TestConnectionStringResolver();
+            var platformInformationService = TestHelpers.GetMockPlatformInformationService();
             var serviceFactory = new AzureStorageDurabilityProviderFactory(
                 wrappedOptions,
                 connectionStringResolver,
                 nameResolver,
-                NullLoggerFactory.Instance);
+                NullLoggerFactory.Instance,
+                platformInformationService);
             return new DurableTaskExtension(
                 wrappedOptions,
                 new LoggerFactory(),
                 nameResolver,
-                serviceFactory,
+                new[] { serviceFactory },
                 new TestHostShutdownNotificationService(),
-                new DurableHttpMessageHandlerFactory());
+                new DurableHttpMessageHandlerFactory(),
+                platformInformationService: platformInformationService);
         }
     }
 }
