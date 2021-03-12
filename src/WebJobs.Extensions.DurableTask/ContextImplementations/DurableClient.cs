@@ -145,10 +145,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 throw new ArgumentException(nameof(instanceId), "Orchestration instance ids must not start with @.");
             }
-            else if (instanceId.Any(IsInvalidCharacter))
-            {
-                throw new ArgumentException(nameof(instanceId), "Orchestration instance ids must not contain /, \\, #, ?, or control characters.");
-            }
 
             if (instanceId.Length > MaxInstanceIdLength)
             {
@@ -185,11 +181,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             return new OrchestrationStatus[0];
-        }
-
-        private static bool IsInvalidCharacter(char c)
-        {
-            return c == '/' || c == '\\' || c == '?' || c == '#' || char.IsControl(c);
         }
 
         /// <inheritdoc />
@@ -287,10 +278,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private async Task SignalEntityAsyncInternal(DurableClient durableClient, string hubName, EntityId entityId, DateTime? scheduledTimeUtc, string operationName, object operationInput)
         {
             var entityKey = entityId.EntityKey;
-            if (entityKey.Any(IsInvalidCharacter))
-            {
-                throw new ArgumentException(nameof(entityKey), "Entity keys must not contain /, \\, #, ?, or control characters.");
-            }
 
             if (operationName == null)
             {
