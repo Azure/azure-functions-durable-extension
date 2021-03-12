@@ -370,6 +370,48 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
+        [InlineData("%2f")]
+        [InlineData("%3F")]
+        [InlineData("%23")]
+        [InlineData("%25")]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task HandleRequestAsync_ProperlyDecodesParameters(string encodedParam)
+        {
+            var encodedInstanceId = Guid.NewGuid().ToString() + encodedParam;
+            var decodedInstanceId = Uri.UnescapeDataString(encodedInstanceId);
+
+
+            var correctResult = $"Got valid decoded parameters! encoded: {encodedInstanceId} decoded: {decodedInstanceId}";
+            var list = (IList<DurableOrchestrationStatus>)new List<DurableOrchestrationStatus>
+            {
+                new DurableOrchestrationStatus
+                {
+                    Name = correctResult,
+                },
+            };
+
+            var clientMock = new Mock<IDurableClient>();
+            clientMock
+                .Setup(x => x.GetStatusAsync(decodedInstanceId, false, false, true))
+                .Returns(Task.FromResult(list.First()));
+            var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);
+
+            var getStatusRequestUriBuilder = new UriBuilder(TestConstants.NotificationUrl);
+            getStatusRequestUriBuilder.Path += $"/Instances/" + encodedInstanceId;
+
+            var responseMessage = await httpApiHandler.HandleRequestAsync(
+                new HttpRequestMessage
+                {
+                    Method = HttpMethod.Get,
+                    RequestUri = getStatusRequestUriBuilder.Uri,
+                });
+
+            var actual = JsonConvert.DeserializeObject<StatusResponsePayload>(await responseMessage.Content.ReadAsStringAsync());
+
+            Assert.Equal(correctResult, actual.Name);
+        }
+
+        [Theory]
         [InlineData(true, HttpStatusCode.InternalServerError)]
         [InlineData(false, HttpStatusCode.OK)]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
