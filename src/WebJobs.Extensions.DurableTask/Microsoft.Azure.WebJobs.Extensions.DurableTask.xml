@@ -1851,6 +1851,11 @@
             Interval time used for long running timers.
             </summary>
         </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.EventSourceName">
+            <summary>
+            Event source name (e.g. DurableTask-AzureStorage).
+            </summary>
+        </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.TaskOrchestrationDispatcherCount">
             <inheritdoc/>
         </member>
@@ -2892,7 +2897,7 @@
             that we use to capture their data and log it in Linux App Service plans.
             </summary>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.EventSourceListener.#ctor(Microsoft.Azure.WebJobs.Extensions.DurableTask.LinuxAppServiceLogger,System.Boolean,Microsoft.Azure.WebJobs.Extensions.DurableTask.EndToEndTraceHelper)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.EventSourceListener.#ctor(Microsoft.Azure.WebJobs.Extensions.DurableTask.LinuxAppServiceLogger,System.Boolean,Microsoft.Azure.WebJobs.Extensions.DurableTask.EndToEndTraceHelper,System.String)">
             <summary>
             Create an EventSourceListener to capture and log Durable EventSource
             data in Linux.
@@ -2900,6 +2905,7 @@
             <param name="logger">A LinuxAppService logger configured for the current linux host.</param>
             <param name="enableVerbose">If true, durableTask.Core verbose logs are enabled. The opposite if false.</param>
             <param name="traceHelper">A tracing client to log exceptions.</param>
+            <param name="durabilityProviderEventSourceName">The durability provider's event source name.</param>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.EventSourceListener.OnEventSourceCreated(System.Diagnostics.Tracing.EventSource)">
             <summary>
