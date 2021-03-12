@@ -84,10 +84,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.durableTaskOptions = durableTaskOptions;
             this.traceHelper = traceHelper;
 
-            if (this.durableTaskOptions.WebhookUriProviderOverride != null)
-            {
-                this.webhookUrlProvider = this.durableTaskOptions.WebhookUriProviderOverride;
-            }
+            this.webhookUrlProvider = this.durableTaskOptions.WebhookUriProviderOverride;
 
             // The listen URL must not include the path.
             this.localHttpListener = new LocalHttpListener(

@@ -319,7 +319,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // function runtime, which has the most up-to-date knowledge about the site hostname.
             this.HttpApiHandler.RegisterWebhookProvider(
                 this.Options.WebhookUriProviderOverride ??
-                (() => context.GetWebhookHandler()));
+                context.GetWebhookHandler);
 #pragma warning restore CS0618 // Type or member is obsolete
 
             this.TraceConfigurationSettings();
