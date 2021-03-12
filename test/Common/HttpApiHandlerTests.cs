@@ -1393,9 +1393,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                         new OptionsWrapper<DurableTaskOptions>(options),
                         new TestConnectionStringResolver(),
                         TestHelpers.GetTestNameResolver(),
-                        NullLoggerFactory.Instance),
+                        NullLoggerFactory.Instance,
+                        TestHelpers.GetMockPlatformInformationService()),
                     new TestHostShutdownNotificationService(),
-                    new DurableHttpMessageHandlerFactory())
+                    new DurableHttpMessageHandlerFactory(),
+                    platformInformationService: TestHelpers.GetMockPlatformInformationService())
             {
             }
 

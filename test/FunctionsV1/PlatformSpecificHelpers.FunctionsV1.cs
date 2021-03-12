@@ -30,7 +30,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             ILifeCycleNotificationHelper lifeCycleNotificationHelper,
             IMessageSerializerSettingsFactory serializerSettingsFactory,
             IApplicationLifetimeWrapper shutdownNotificationService = null,
-            Action<ITelemetry> onSend = null)
+            Action<ITelemetry> onSend = null,
+#pragma warning disable CS0612 // Type or member is obsolete
+            IPlatformInformationService platformInformationService = null)
+#pragma warning restore CS0612 // Type or member is obsolete
         {
             var config = new JobHostConfiguration { HostId = "durable-task-host" };
             config.TypeLocator = TestHelpers.GetTypeLocator();
@@ -48,11 +51,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 options.Value.StorageProvider.Add(nameof(AzureStorageOptions.UseLegacyPartitionManagement), true);
             }
 
+            platformInformationService = platformInformationService ?? TestHelpers.GetMockPlatformInformationService();
+
             IDurabilityProviderFactory orchestrationServiceFactory = new AzureStorageDurabilityProviderFactory(
                 options,
                 connectionResolver,
                 nameResolver,
-                loggerFactory);
+                loggerFactory,
+                platformInformationService);
 
             var extension = new DurableTaskExtension(
                 options,
@@ -62,7 +68,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 shutdownNotificationService ?? new TestHostShutdownNotificationService(),
                 durableHttpMessageHandler,
                 lifeCycleNotificationHelper,
-                serializerSettingsFactory);
+                serializerSettingsFactory,
+                platformInformationService);
             config.UseDurableTask(extension);
 
             // Mock INameResolver for not setting EnvironmentVariables.
