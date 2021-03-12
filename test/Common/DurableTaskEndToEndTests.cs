@@ -536,37 +536,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 conditionDescription: "Log file exists",
                 timeout: TimeSpan.FromSeconds(20));
 
-            // string[] lines = File.ReadAllLines(LinuxAppServiceLogger.LoggingPath);
+            string[] lines = File.ReadAllLines(LinuxAppServiceLogger.LoggingPath);
 
-            /* TODO: The snippet below would be the test once JSON logging is enabled. Currently disabled.
             // Ensure newlines are removed by checking the number of lines is equal to the number of "TimeStamp" columns,
             // which corresponds to the number of JSONs logged
-
             int countTimeStampCols = Regex.Matches(string.Join("", lines), "\"TimeStamp\":").Count;
-            Assert.Equal(lineCount, countTimeStampCols);
-            */
-
-            // If every line can be parsed, we know newlines were removed
-            /* foreach (string line in lines)
-            {
-                System.Text.RegularExpressions.Match match = Regex.Match(line, TestHelpers.RegexPattern);
-                Assert.True(match.Success);
-            }*/
-            using (var fs = new FileStream(LinuxAppServiceLogger.LoggingPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-            {
-                using (var sr = new StreamReader(fs, Encoding.Default))
-                {
-                    string line;
-                    while ((line = sr.ReadLine()) != null)
-                    {
-                        System.Text.RegularExpressions.Match match = Regex.Match(line, TestHelpers.RegexPattern);
-                        Assert.True(match.Success);
-                    }
-                }
-            }
+            Assert.Equal(lines.Length, countTimeStampCols);
         }
-
-        /* TODO: The snippet below would be the test once JSON logging is enabled. Currently disabled.
 
         /// <summary>
         /// By simulating the appropiate enviorment variables for Linux Dedicated,
@@ -690,7 +666,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             // To ensure other tests generate the path
             File.Delete(LinuxAppServiceLogger.LoggingPath);
-        }*/
+        }
 #endif
 
         /// <summary>
