@@ -583,13 +583,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             await TestHelpers.WaitUntilTrue(
                 predicate: () => File.Exists(LinuxAppServiceLogger.LoggingPath),
                 conditionDescription: "Log file exists",
-                timeout: TimeSpan.FromSeconds(20));
+                timeout: TimeSpan.FromSeconds(30));
 
-            string[] lines = File.ReadAllLines(LinuxAppServiceLogger.LoggingPath);
+
+            string[] lines = TestHelpers.WriteSafeReadAllLines(LinuxAppServiceLogger.LoggingPath);
+
 
             // Ensure newlines are removed by checking the number of lines is equal to the number of "TimeStamp" columns,
             // which corresponds to the number of JSONs logged
-            int countTimeStampCols = Regex.Matches(string.Join("", lines), "\"TimeStamp\":").Count;
+            int countTimeStampCols = Regex.Matches(string.Join("", lines), "\"EventTimestamp\":").Count;
             Assert.Equal(lines.Length, countTimeStampCols);
         }
 
@@ -637,12 +639,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StopAsync();
             }
 
+            await Task.Delay(40000);
+
+            await TestHelpers.WaitUntilTrue(
+                predicate: () => File.Exists(LinuxAppServiceLogger.LoggingPath),
+                conditionDescription: "Log file exists",
+                timeout: TimeSpan.FromSeconds(30));
+
             // Ensure the logging file was at least generated
             Assert.True(File.Exists(LinuxAppServiceLogger.LoggingPath));
 
             // Ensure newlines are removed by checking the number of lines is equal to the number of "TimeStamp" columns,
             // which corresponds to the number of JSONs logged
-            string[] lines = File.ReadAllLines(LinuxAppServiceLogger.LoggingPath);
+            string[] lines = TestHelpers.WriteSafeReadAllLines(LinuxAppServiceLogger.LoggingPath);
+
+
 
             bool foundAzureStorageLog = false;
             bool foundEtwEventSourceLog = false;
@@ -664,7 +675,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Assert.Contains("ProviderName", keys);
                 Assert.Contains("TaskName", keys);
                 Assert.Contains("EventId", keys);
-                Assert.Contains("TimeStamp", keys);
+                Assert.Contains("EventTimestamp", keys);
                 Assert.Contains("Tenant", keys);
                 Assert.Contains("Pid", keys);
                 Assert.Contains("Tid", keys);

@@ -4,8 +4,10 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Text;
 using System.Threading.Tasks;
 using DurableTask.AzureStorage;
 using Microsoft.ApplicationInsights.Channel;
@@ -251,6 +253,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     return new DurableTaskOptions();
                 default:
                     throw new InvalidOperationException($"Storage provider {storageProvider} is not supported for testing infrastructure.");
+            }
+        }
+
+        public static string[] WriteSafeReadAllLines(string path)
+        {
+            using (var csv = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            using (var sr = new StreamReader(csv, Encoding.Default))
+            {
+                List<string> file = new List<string>();
+                while (!sr.EndOfStream)
+                {
+                    file.Add(sr.ReadLine());
+                }
+
+                return file.ToArray();
             }
         }
 
