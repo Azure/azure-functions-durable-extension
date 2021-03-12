@@ -287,10 +287,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private async Task SignalEntityAsyncInternal(DurableClient durableClient, string hubName, EntityId entityId, DateTime? scheduledTimeUtc, string operationName, object operationInput)
         {
             var entityKey = entityId.EntityKey;
-            if (entityKey.Any(IsInvalidCharacter))
-            {
-                throw new ArgumentException(nameof(entityKey), "Entity keys must not contain /, \\, #, ?, or control characters.");
-            }
 
             if (operationName == null)
             {
