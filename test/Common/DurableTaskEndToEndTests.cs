@@ -585,9 +585,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 conditionDescription: "Log file exists",
                 timeout: TimeSpan.FromSeconds(30));
 
+            // The file buffer gets flushed every 30 seconds
+            await Task.Delay(TimeSpan.FromSeconds(35));
 
             string[] lines = TestHelpers.WriteSafeReadAllLines(LinuxAppServiceLogger.LoggingPath);
-
 
             // Ensure newlines are removed by checking the number of lines is equal to the number of "TimeStamp" columns,
             // which corresponds to the number of JSONs logged
@@ -639,21 +640,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StopAsync();
             }
 
-            await Task.Delay(40000);
-
             await TestHelpers.WaitUntilTrue(
                 predicate: () => File.Exists(LinuxAppServiceLogger.LoggingPath),
                 conditionDescription: "Log file exists",
                 timeout: TimeSpan.FromSeconds(30));
 
-            // Ensure the logging file was at least generated
-            Assert.True(File.Exists(LinuxAppServiceLogger.LoggingPath));
+            // The file buffer gets flushed every 30 seconds
+            await Task.Delay(TimeSpan.FromSeconds(35));
 
             // Ensure newlines are removed by checking the number of lines is equal to the number of "TimeStamp" columns,
             // which corresponds to the number of JSONs logged
             string[] lines = TestHelpers.WriteSafeReadAllLines(LinuxAppServiceLogger.LoggingPath);
-
-
 
             bool foundAzureStorageLog = false;
             bool foundEtwEventSourceLog = false;
