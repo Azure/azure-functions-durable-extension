@@ -16,6 +16,7 @@ using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.WindowsAzure.Storage;
+using Moq;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -192,6 +193,55 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 onSend: onSend);
         }
 
+#if !FUNCTIONS_V1
+        public static ITestHost GetJobHostWithMultipleDurabilityProviders(
+            DurableTaskOptions options = null,
+            IEnumerable<IDurabilityProviderFactory> durabilityProviderFactories = null)
+        {
+            if (options == null)
+            {
+                options = new DurableTaskOptions();
+            }
+
+            return GetJobHostWithOptionsWithMultipleDurabilityProviders(
+                options,
+                durabilityProviderFactories);
+        }
+
+        public static ITestHost GetJobHostWithOptionsWithMultipleDurabilityProviders(
+            DurableTaskOptions durableTaskOptions,
+            IEnumerable<IDurabilityProviderFactory> durabilityProviderFactories = null)
+        {
+            var optionsWrapper = new OptionsWrapper<DurableTaskOptions>(durableTaskOptions);
+
+            return PlatformSpecificHelpers.CreateJobHostWithMultipleDurabilityProviders(
+                optionsWrapper,
+                durabilityProviderFactories);
+        }
+#endif
+
+#pragma warning disable CS0612 // Type or member is obsolete
+        public static IPlatformInformationService GetMockPlatformInformationService(
+            bool inConsumption = false,
+            bool inLinuxConsumption = false,
+            bool inWindowsConsumption = false,
+            bool inLinuxAppsService = false,
+            string getLinuxStampName = "",
+            string getContainerName = "")
+#pragma warning restore CS0612 // Type or member is obsolete
+        {
+#pragma warning disable CS0612 // Type or member is obsolete
+            var mockPlatformProvider = new Mock<IPlatformInformationService>();
+#pragma warning restore CS0612 // Type or member is obsolete
+            mockPlatformProvider.Setup(x => x.InConsumption()).Returns(inConsumption);
+            mockPlatformProvider.Setup(x => x.InLinuxConsumption()).Returns(inLinuxConsumption);
+            mockPlatformProvider.Setup(x => x.InWindowsConsumption()).Returns(inWindowsConsumption);
+            mockPlatformProvider.Setup(x => x.InLinuxAppService()).Returns(inLinuxAppsService);
+            mockPlatformProvider.Setup(x => x.GetLinuxStampName()).Returns(getLinuxStampName);
+            mockPlatformProvider.Setup(x => x.GetContainerName()).Returns(getContainerName);
+            return mockPlatformProvider.Object;
+        }
+
         public static DurableTaskOptions GetDurableTaskOptionsForStorageProvider(string storageProvider)
         {
             switch (storageProvider)
@@ -208,9 +258,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
-        /// Helper function to regularly poll for some condition until it is true. If timeout hits, throw timeoutexception
+        /// Helper function to regularly poll for some condition until it is true. If timeout hits, throw timeoutexception.
         /// </summary>
-        /// <param name="predicate">Predicate to wait until it returns true</param>
+        /// <param name="predicate">Predicate to wait until it returns true.</param>
         /// <param name="timeout">Time to wait until predicate is true.</param>
         /// <param name="retryInterval">How frequently to test predicate. Defaults to 100 ms.</param>
         public static async Task WaitUntilTrue(Func<bool> predicate, string conditionDescription, TimeSpan timeout, TimeSpan? retryInterval = null)

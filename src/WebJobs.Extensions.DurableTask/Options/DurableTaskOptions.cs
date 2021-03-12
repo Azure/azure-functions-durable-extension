@@ -86,17 +86,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// also increase the total CPU and memory usage on a single worker instance.
         /// </remarks>
         /// <value>
-        /// A positive integer configured by the host. The default value is 10X the number of processors on the current machine.
+        /// A positive integer configured by the host.
         /// </value>
-        public int MaxConcurrentActivityFunctions { get; set; } = 10 * Environment.ProcessorCount;
+        public int? MaxConcurrentActivityFunctions { get; set; } = null;
 
         /// <summary>
         /// Gets or sets the maximum number of orchestrator functions that can be processed concurrently on a single host instance.
         /// </summary>
         /// <value>
-        /// A positive integer configured by the host. The default value is 10X the number of processors on the current machine.
+        /// A positive integer configured by the host.
         /// </value>
-        public int MaxConcurrentOrchestratorFunctions { get; set; } = 10 * Environment.ProcessorCount;
+        public int? MaxConcurrentOrchestratorFunctions { get; set; } = null;
 
         /// <summary>
         /// Gets or sets a value indicating whether to enable the local RPC endpoint managed by this extension.

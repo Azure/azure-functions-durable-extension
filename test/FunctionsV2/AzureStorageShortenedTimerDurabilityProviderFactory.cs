@@ -13,8 +13,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             IOptions<DurableTaskOptions> options,
             IConnectionStringResolver connectionStringResolver,
             INameResolver nameResolver,
-            ILoggerFactory loggerFactory)
-            : base(options, connectionStringResolver, nameResolver, loggerFactory)
+            ILoggerFactory loggerFactory,
+#pragma warning disable CS0612 // Type or member is obsolete
+            IPlatformInformationService platformInformationService)
+#pragma warning restore CS0612 // Type or member is obsolete
+            : base(options, connectionStringResolver, nameResolver, loggerFactory, platformInformationService)
         {
         }
 
