@@ -107,6 +107,64 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return new FunctionsV2HostWrapper(host, options);
         }
 
+        public static ITestHost CreateJobHostForDurableClient(
+            IOptions<DurableTaskOptions> options,
+            ILoggerProvider loggerProvider,
+            INameResolver nameResolver,
+            IDurableHttpMessageHandlerFactory durableHttpMessageHandler,
+            ILifeCycleNotificationHelper lifeCycleNotificationHelper,
+            IMessageSerializerSettingsFactory serializerSettingsFactory,
+            Action<ITelemetry> onSend,
+            bool addDurableClient = false)
+        {
+            IHost host = new HostBuilder()
+                .ConfigureLogging(
+                    loggingBuilder =>
+                    {
+                        loggingBuilder.AddProvider(loggerProvider);
+                    })
+                .ConfigureWebJobs(
+                    webJobsBuilder =>
+                    {
+                        webJobsBuilder.AddDurableClientFactoryDurableTask(options);
+                        webJobsBuilder.AddAzureStorage();
+                    })
+                .ConfigureServices(
+                    serviceCollection =>
+                    {
+                        ITypeLocator typeLocator = TestHelpers.GetTypeLocator();
+                        serviceCollection.AddSingleton(typeLocator);
+                        serviceCollection.AddSingleton(nameResolver);
+                        serviceCollection.AddSingleton(durableHttpMessageHandler);
+
+                        if (lifeCycleNotificationHelper != null)
+                        {
+                            serviceCollection.AddSingleton(lifeCycleNotificationHelper);
+                        }
+
+                        if (serializerSettingsFactory != null)
+                        {
+                            serviceCollection.AddSingleton(serializerSettingsFactory);
+                        }
+
+                        if (onSend != null)
+                        {
+                            serviceCollection.AddSingleton<ITelemetryActivator>(serviceProvider =>
+                            {
+                                var durableTaskOptions = serviceProvider.GetService<IOptions<DurableTaskOptions>>();
+                                var telemetryActivator = new TelemetryActivator(durableTaskOptions)
+                                {
+                                    OnSend = onSend,
+                                };
+                                return telemetryActivator;
+                            });
+                        }
+                    })
+                .Build();
+
+            return new FunctionsV2HostWrapper(host, options, nameResolver);
+        }
+
         private static IWebJobsBuilder AddDurableTask(this IWebJobsBuilder builder, IOptions<DurableTaskOptions> options, string storageProvider, Type durabilityProviderFactoryType = null)
         {
             if (durabilityProviderFactoryType != null)
@@ -153,6 +211,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 #pragma warning disable CS0612 // Type or member is obsolete
             serviceCollection.TryAddSingleton<IPlatformInformationService, DefaultPlatformInformationProvider>();
 #pragma warning restore CS0612 // Type or member is obsolete
+
+            return builder;
+        }
+
+        private static IWebJobsBuilder AddDurableClientFactoryDurableTask(this IWebJobsBuilder builder, IOptions<DurableTaskOptions> options, IEnumerable<IDurabilityProviderFactory> durabilityProviderFactories = null)
+        {
+            builder.Services.AddDurableClientFactory();
+
+            builder.Services.AddSingleton(options);
+
+            var serviceCollection = builder.AddExtension<DurableTaskExtension>()
+                .BindOptions<DurableTaskOptions>()
+                .Services.AddSingleton<IConnectionStringResolver, WebJobsConnectionStringProvider>();
+
+            serviceCollection.TryAddSingleton<IApplicationLifetimeWrapper, HostLifecycleService>();
 
             return builder;
         }

@@ -12,6 +12,7 @@ using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
+using Microsoft.Azure.WebJobs.Host.TestCommon;
 #endif
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -20,12 +21,27 @@ using Microsoft.Extensions.Primitives;
 using Moq;
 using Newtonsoft.Json;
 using Xunit;
+using Xunit.Abstractions;
 using static Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests.HttpApiHandlerTests;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
     public class DurableClientBaseTests
     {
+        private readonly ITestOutputHelper output;
+
+#if !FUNCTIONS_V1
+        private readonly TestLoggerProvider loggerProvider;
+#endif
+
+        public DurableClientBaseTests(ITestOutputHelper output)
+        {
+            this.output = output;
+#if !FUNCTIONS_V1
+            this.loggerProvider = new TestLoggerProvider(output);
+#endif
+        }
+
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData("@invalid")]
@@ -210,6 +226,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             var durableOrchestrationClient = this.GetDurableClient(orchestrationServiceClientMock.Object);
             Assert.ThrowsAny<InvalidOperationException>(() => durableOrchestrationClient.CreateHttpManagementPayload("testInstanceId"));
+        }
+
+        /// <summary>
+        /// End to end test that ensures that DurableClientFactory is set up correctly
+        /// (i.e. the correct services are injected through dependency injection
+        /// and AzureStorageDurabilityProvider is created).
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task DurableClient_AzureStorage_SuccessfulSetup()
+        {
+            string orchestratorName = nameof(TestOrchestrations.SayHelloInline);
+            using (ITestHost host = TestHelpers.GetJobHost(
+                loggerProvider: this.loggerProvider,
+                testName: nameof(this.DurableClient_AzureStorage_SuccessfulSetup),
+                enableExtendedSessions: false,
+                storageProviderType: "azure_storage",
+                addDurableClientFactory: true))
+            {
+                await host.StartAsync();
+                var client = await host.StartOrchestratorAsync(orchestratorName, input: "World", this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
+                await host.StopAsync();
+            }
         }
 
         private IDurableOrchestrationClient GetDurableClient(IOrchestrationServiceClient orchestrationServiceClientMockObject)

@@ -63,7 +63,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Action<ITelemetry> onSend = null,
             bool rollbackEntityOperationsOnExceptions = true,
             int entityMessageReorderWindowInMinutes = 30,
-            string exactTaskHubName = null)
+            string exactTaskHubName = null,
+            bool addDurableClientFactory = false)
         {
             switch (storageProviderType)
             {
@@ -144,6 +145,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 options.StorageProvider["maxQueuePollingInterval"] = maxQueuePollingInterval.Value;
             }
 
+#if !FUNCTIONS_V1
+            if (addDurableClientFactory)
+            {
+                return GetJobHostWithOptionsForDurableClient(
+                    loggerProvider,
+                    options,
+                    nameResolver,
+                    durableHttpMessageHandler,
+                    lifeCycleNotificationHelper,
+                    serializerSettings,
+                    onSend);
+            }
+#endif
+
             return GetJobHostWithOptions(
                 loggerProvider,
                 options,
@@ -217,6 +232,37 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return PlatformSpecificHelpers.CreateJobHostWithMultipleDurabilityProviders(
                 optionsWrapper,
                 durabilityProviderFactories);
+        }
+
+        public static ITestHost GetJobHostWithOptionsForDurableClient(
+            ILoggerProvider loggerProvider,
+            DurableTaskOptions durableTaskOptions,
+            INameResolver nameResolver = null,
+            IDurableHttpMessageHandlerFactory durableHttpMessageHandler = null,
+            ILifeCycleNotificationHelper lifeCycleNotificationHelper = null,
+            IMessageSerializerSettingsFactory serializerSettings = null,
+            Action<ITelemetry> onSend = null)
+        {
+            if (serializerSettings == null)
+            {
+                serializerSettings = new MessageSerializerSettingsFactory();
+            }
+
+            var optionsWrapper = new OptionsWrapper<DurableTaskOptions>(durableTaskOptions);
+            var testNameResolver = new TestNameResolver(nameResolver);
+            if (durableHttpMessageHandler == null)
+            {
+                durableHttpMessageHandler = new DurableHttpMessageHandlerFactory();
+            }
+
+            return PlatformSpecificHelpers.CreateJobHostForDurableClient(
+                options: optionsWrapper,
+                loggerProvider: loggerProvider,
+                nameResolver: testNameResolver,
+                durableHttpMessageHandler: durableHttpMessageHandler,
+                lifeCycleNotificationHelper: lifeCycleNotificationHelper,
+                serializerSettingsFactory: serializerSettings,
+                onSend: onSend);
         }
 #endif
 
