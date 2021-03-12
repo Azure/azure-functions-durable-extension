@@ -208,9 +208,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
-        /// Helper function to regularly poll for some condition until it is true. If timeout hits, throw timeoutexception
+        /// Helper function to regularly poll for some condition until it is true. If timeout hits, throw timeoutexception.
         /// </summary>
-        /// <param name="predicate">Predicate to wait until it returns true</param>
+        /// <param name="predicate">Predicate to wait until it returns true.</param>
         /// <param name="timeout">Time to wait until predicate is true.</param>
         /// <param name="retryInterval">How frequently to test predicate. Defaults to 100 ms.</param>
         public static async Task WaitUntilTrue(Func<bool> predicate, string conditionDescription, TimeSpan timeout, TimeSpan? retryInterval = null)

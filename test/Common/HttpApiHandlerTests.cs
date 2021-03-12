@@ -380,7 +380,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var encodedInstanceId = Guid.NewGuid().ToString() + encodedParam;
             var decodedInstanceId = Uri.UnescapeDataString(encodedInstanceId);
 
-
             var correctResult = $"Got valid decoded parameters! encoded: {encodedInstanceId} decoded: {decodedInstanceId}";
             var list = (IList<DurableOrchestrationStatus>)new List<DurableOrchestrationStatus>
             {
