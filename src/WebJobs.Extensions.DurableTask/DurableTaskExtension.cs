@@ -310,13 +310,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // Throw if any of the configured options are invalid
             this.Options.Validate(this.nameResolver, this.TraceHelper);
 
-            // For 202 support
-            if (this.Options.NotificationUrl == null)
-            {
 #pragma warning disable CS0618 // Type or member is obsolete
-                this.Options.NotificationUrl = context.GetWebhookHandler();
+
+            // Invoke webhook handler to make functions runtime register extension endpoints.
+            context.GetWebhookHandler();
+
+            // This line ensure every time we need the webhook URI, we get it directly from the
+            // function runtime, which has the most up-to-date knowledge about the site hostname.
+            this.HttpApiHandler.RegisterWebhookProvider(
+                this.Options.WebhookUriProviderOverride ??
+                context.GetWebhookHandler);
 #pragma warning restore CS0618 // Type or member is obsolete
-            }
 
             this.TraceConfigurationSettings();
 

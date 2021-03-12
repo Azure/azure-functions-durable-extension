@@ -103,7 +103,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 DefaultAsyncRequestSleepTimeMilliseconds = httpAsyncSleepTime,
             };
-            options.NotificationUrl = notificationUrl;
+            options.WebhookUriProviderOverride = () => notificationUrl;
             options.ExtendedSessionsEnabled = enableExtendedSessions;
             options.MaxConcurrentOrchestratorFunctions = 200;
             options.MaxConcurrentActivityFunctions = 200;
