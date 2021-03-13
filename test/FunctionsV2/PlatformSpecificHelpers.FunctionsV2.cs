@@ -34,7 +34,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             IDurableHttpMessageHandlerFactory durableHttpMessageHandler,
             ILifeCycleNotificationHelper lifeCycleNotificationHelper,
             IMessageSerializerSettingsFactory serializerSettingsFactory,
-            Action<ITelemetry> onSend)
+            Action<ITelemetry> onSend,
+            bool addDurableClientFactory)
         {
             // Unless otherwise specified, use legacy partition management for tests as it makes the task hubs start up faster.
             // These tests run on a single task hub workers, so they don't test partition management anyways, and that is tested
@@ -53,7 +54,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 .ConfigureWebJobs(
                     webJobsBuilder =>
                     {
-                        webJobsBuilder.AddDurableTask(options, storageProvider, durabilityProviderFactoryType);
+                        if (addDurableClientFactory)
+                        {
+                            webJobsBuilder.AddDurableClientFactoryDurableTask(options);
+                        }
+                        else
+                        {
+                            webJobsBuilder.AddDurableTask(options, storageProvider, durabilityProviderFactoryType);
+                        }
+
                         webJobsBuilder.AddAzureStorage();
                     })
                 .ConfigureServices(
@@ -105,64 +114,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 .Build();
 
             return new FunctionsV2HostWrapper(host, options);
-        }
-
-        public static ITestHost CreateJobHostForDurableClient(
-            IOptions<DurableTaskOptions> options,
-            ILoggerProvider loggerProvider,
-            INameResolver nameResolver,
-            IDurableHttpMessageHandlerFactory durableHttpMessageHandler,
-            ILifeCycleNotificationHelper lifeCycleNotificationHelper,
-            IMessageSerializerSettingsFactory serializerSettingsFactory,
-            Action<ITelemetry> onSend,
-            bool addDurableClient = false)
-        {
-            IHost host = new HostBuilder()
-                .ConfigureLogging(
-                    loggingBuilder =>
-                    {
-                        loggingBuilder.AddProvider(loggerProvider);
-                    })
-                .ConfigureWebJobs(
-                    webJobsBuilder =>
-                    {
-                        webJobsBuilder.AddDurableClientFactoryDurableTask(options);
-                        webJobsBuilder.AddAzureStorage();
-                    })
-                .ConfigureServices(
-                    serviceCollection =>
-                    {
-                        ITypeLocator typeLocator = TestHelpers.GetTypeLocator();
-                        serviceCollection.AddSingleton(typeLocator);
-                        serviceCollection.AddSingleton(nameResolver);
-                        serviceCollection.AddSingleton(durableHttpMessageHandler);
-
-                        if (lifeCycleNotificationHelper != null)
-                        {
-                            serviceCollection.AddSingleton(lifeCycleNotificationHelper);
-                        }
-
-                        if (serializerSettingsFactory != null)
-                        {
-                            serviceCollection.AddSingleton(serializerSettingsFactory);
-                        }
-
-                        if (onSend != null)
-                        {
-                            serviceCollection.AddSingleton<ITelemetryActivator>(serviceProvider =>
-                            {
-                                var durableTaskOptions = serviceProvider.GetService<IOptions<DurableTaskOptions>>();
-                                var telemetryActivator = new TelemetryActivator(durableTaskOptions)
-                                {
-                                    OnSend = onSend,
-                                };
-                                return telemetryActivator;
-                            });
-                        }
-                    })
-                .Build();
-
-            return new FunctionsV2HostWrapper(host, options, nameResolver);
         }
 
         private static IWebJobsBuilder AddDurableTask(this IWebJobsBuilder builder, IOptions<DurableTaskOptions> options, string storageProvider, Type durabilityProviderFactoryType = null)

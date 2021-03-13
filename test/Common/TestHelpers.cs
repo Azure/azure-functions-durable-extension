@@ -145,30 +145,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 options.StorageProvider["maxQueuePollingInterval"] = maxQueuePollingInterval.Value;
             }
 
-#if !FUNCTIONS_V1
-            if (addDurableClientFactory)
-            {
-                return GetJobHostWithOptionsForDurableClient(
-                    loggerProvider,
-                    options,
-                    nameResolver,
-                    durableHttpMessageHandler,
-                    lifeCycleNotificationHelper,
-                    serializerSettings,
-                    onSend);
-            }
-#endif
-
             return GetJobHostWithOptions(
-                loggerProvider,
-                options,
-                storageProviderType,
-                nameResolver,
-                durableHttpMessageHandler,
-                lifeCycleNotificationHelper,
-                serializerSettings,
-                onSend,
-                durabilityProviderFactoryType);
+                loggerProvider: loggerProvider,
+                durableTaskOptions: options,
+                storageProviderType: storageProviderType,
+                nameResolver: nameResolver,
+                durableHttpMessageHandler: durableHttpMessageHandler,
+                lifeCycleNotificationHelper: lifeCycleNotificationHelper,
+                serializerSettings: serializerSettings,
+                onSend: onSend,
+#if !FUNCTIONS_V1
+                addDurableClientFactory: addDurableClientFactory,
+#endif
+                durabilityProviderFactoryType: durabilityProviderFactoryType);
         }
 
         public static ITestHost GetJobHostWithOptions(
@@ -180,7 +169,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             ILifeCycleNotificationHelper lifeCycleNotificationHelper = null,
             IMessageSerializerSettingsFactory serializerSettings = null,
             Action<ITelemetry> onSend = null,
-            Type durabilityProviderFactoryType = null)
+            Type durabilityProviderFactoryType = null,
+            bool addDurableClientFactory = false)
         {
             if (serializerSettings == null)
             {
@@ -199,6 +189,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 storageProvider: storageProviderType,
 #if !FUNCTIONS_V1
                 durabilityProviderFactoryType: durabilityProviderFactoryType,
+                addDurableClientFactory: addDurableClientFactory,
 #endif
                 loggerProvider: loggerProvider,
                 nameResolver: testNameResolver,
@@ -232,37 +223,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return PlatformSpecificHelpers.CreateJobHostWithMultipleDurabilityProviders(
                 optionsWrapper,
                 durabilityProviderFactories);
-        }
-
-        public static ITestHost GetJobHostWithOptionsForDurableClient(
-            ILoggerProvider loggerProvider,
-            DurableTaskOptions durableTaskOptions,
-            INameResolver nameResolver = null,
-            IDurableHttpMessageHandlerFactory durableHttpMessageHandler = null,
-            ILifeCycleNotificationHelper lifeCycleNotificationHelper = null,
-            IMessageSerializerSettingsFactory serializerSettings = null,
-            Action<ITelemetry> onSend = null)
-        {
-            if (serializerSettings == null)
-            {
-                serializerSettings = new MessageSerializerSettingsFactory();
-            }
-
-            var optionsWrapper = new OptionsWrapper<DurableTaskOptions>(durableTaskOptions);
-            var testNameResolver = new TestNameResolver(nameResolver);
-            if (durableHttpMessageHandler == null)
-            {
-                durableHttpMessageHandler = new DurableHttpMessageHandlerFactory();
-            }
-
-            return PlatformSpecificHelpers.CreateJobHostForDurableClient(
-                options: optionsWrapper,
-                loggerProvider: loggerProvider,
-                nameResolver: testNameResolver,
-                durableHttpMessageHandler: durableHttpMessageHandler,
-                lifeCycleNotificationHelper: lifeCycleNotificationHelper,
-                serializerSettingsFactory: serializerSettings,
-                onSend: onSend);
         }
 #endif
 
