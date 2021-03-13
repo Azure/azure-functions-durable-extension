@@ -26,8 +26,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
     public class DurableClientBaseTests
     {
-        public DurableClientBaseTests() { }
-
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData("@invalid")]
