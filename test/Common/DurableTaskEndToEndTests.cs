@@ -195,6 +195,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
+        /// End to end test that ensures that DurableClientFactory is set up correctly
+        /// (i.e. the correct services are injected through dependency injection
+        /// and AzureStorageDurabilityProvider is created).
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task DurableClient_AzureStorage_SuccessfulSetup()
+        {
+            string orchestratorName = nameof(TestOrchestrations.SayHelloInline);
+            using (ITestHost host = TestHelpers.GetJobHost(
+                loggerProvider: this.loggerProvider,
+                testName: nameof(this.DurableClient_AzureStorage_SuccessfulSetup),
+                enableExtendedSessions: false,
+                storageProviderType: "azure_storage",
+                addDurableClientFactory: true))
+            {
+                await host.StartAsync();
+                var client = await host.StartOrchestratorAsync(orchestratorName, input: "World", this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
         /// End-to-end test which validates a simple orchestrator function does not have assigned value for <see cref="DurableOrchestrationContext.ParentInstanceId"/>.
         /// </summary>
         [Theory]

@@ -34,7 +34,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             IDurableHttpMessageHandlerFactory durableHttpMessageHandler,
             ILifeCycleNotificationHelper lifeCycleNotificationHelper,
             IMessageSerializerSettingsFactory serializerSettingsFactory,
-            Action<ITelemetry> onSend)
+            Action<ITelemetry> onSend,
+            bool addDurableClientFactory)
         {
             // Unless otherwise specified, use legacy partition management for tests as it makes the task hubs start up faster.
             // These tests run on a single task hub workers, so they don't test partition management anyways, and that is tested
@@ -53,7 +54,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 .ConfigureWebJobs(
                     webJobsBuilder =>
                     {
-                        webJobsBuilder.AddDurableTask(options, storageProvider, durabilityProviderFactoryType);
+                        if (addDurableClientFactory)
+                        {
+                            webJobsBuilder.AddDurableClientFactoryDurableTask(options);
+                        }
+                        else
+                        {
+                            webJobsBuilder.AddDurableTask(options, storageProvider, durabilityProviderFactoryType);
+                        }
+
                         webJobsBuilder.AddAzureStorage();
                     })
                 .ConfigureServices(
@@ -153,6 +162,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 #pragma warning disable CS0612 // Type or member is obsolete
             serviceCollection.TryAddSingleton<IPlatformInformationService, DefaultPlatformInformationProvider>();
 #pragma warning restore CS0612 // Type or member is obsolete
+
+            return builder;
+        }
+
+        /// <summary>
+        /// Registers the services needed for DurableClientFactory and calls AddDurableClientFactory()
+        /// which adds the Durable Task extension that uses Azure Storage.
+        /// </summary>
+        private static IWebJobsBuilder AddDurableClientFactoryDurableTask(this IWebJobsBuilder builder, IOptions<DurableTaskOptions> options)
+        {
+            builder.Services.AddDurableClientFactory();
+
+            builder.Services.AddSingleton(options);
+
+            var serviceCollection = builder.AddExtension<DurableTaskExtension>()
+                .BindOptions<DurableTaskOptions>()
+                .Services.AddSingleton<IConnectionStringResolver, WebJobsConnectionStringProvider>();
+
+            serviceCollection.TryAddSingleton<IApplicationLifetimeWrapper, HostLifecycleService>();
 
             return builder;
         }

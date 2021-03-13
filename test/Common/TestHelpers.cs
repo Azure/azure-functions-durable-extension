@@ -63,7 +63,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Action<ITelemetry> onSend = null,
             bool rollbackEntityOperationsOnExceptions = true,
             int entityMessageReorderWindowInMinutes = 30,
-            string exactTaskHubName = null)
+            string exactTaskHubName = null,
+            bool addDurableClientFactory = false)
         {
             switch (storageProviderType)
             {
@@ -145,15 +146,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
 
             return GetJobHostWithOptions(
-                loggerProvider,
-                options,
-                storageProviderType,
-                nameResolver,
-                durableHttpMessageHandler,
-                lifeCycleNotificationHelper,
-                serializerSettings,
-                onSend,
-                durabilityProviderFactoryType);
+                loggerProvider: loggerProvider,
+                durableTaskOptions: options,
+                storageProviderType: storageProviderType,
+                nameResolver: nameResolver,
+                durableHttpMessageHandler: durableHttpMessageHandler,
+                lifeCycleNotificationHelper: lifeCycleNotificationHelper,
+                serializerSettings: serializerSettings,
+                onSend: onSend,
+#if !FUNCTIONS_V1
+                addDurableClientFactory: addDurableClientFactory,
+#endif
+                durabilityProviderFactoryType: durabilityProviderFactoryType);
         }
 
         public static ITestHost GetJobHostWithOptions(
@@ -165,7 +169,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             ILifeCycleNotificationHelper lifeCycleNotificationHelper = null,
             IMessageSerializerSettingsFactory serializerSettings = null,
             Action<ITelemetry> onSend = null,
-            Type durabilityProviderFactoryType = null)
+            Type durabilityProviderFactoryType = null,
+            bool addDurableClientFactory = false)
         {
             if (serializerSettings == null)
             {
@@ -184,6 +189,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 storageProvider: storageProviderType,
 #if !FUNCTIONS_V1
                 durabilityProviderFactoryType: durabilityProviderFactoryType,
+                addDurableClientFactory: addDurableClientFactory,
 #endif
                 loggerProvider: loggerProvider,
                 nameResolver: testNameResolver,
