@@ -29,11 +29,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly AzureStorageOrchestrationService serviceClient;
         private readonly string connectionName;
         private readonly JObject storageOptionsJson;
+        private readonly ILogger logger;
 
         public AzureStorageDurabilityProvider(
             AzureStorageOrchestrationService service,
             string connectionName,
-            AzureStorageOptions options)
+            AzureStorageOptions options,
+            ILogger logger)
             : base("Azure Storage", service, service, connectionName)
         {
             this.serviceClient = service;
@@ -45,6 +47,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     Converters = { new StringEnumConverter() },
                     ContractResolver = new CamelCasePropertyNamesContractResolver(),
                 });
+            this.logger = logger;
         }
 
         public override bool SupportsEntities => true;
@@ -190,7 +193,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string functionName,
             string hubName,
             string storageConnectionString,
-            ILogger logger,
             DurableTaskExtension extension,
             out IScaleMonitor scaleMonitor)
         {
@@ -199,7 +201,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 functionName,
                 hubName,
                 storageConnectionString,
-                logger);
+                this.logger);
             return true;
         }
 #endif

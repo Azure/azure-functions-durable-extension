@@ -177,9 +177,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (writeToUserLogs)
             {
                 this.logger.LogInformation(
-                $"Durable Functions Trigger Scale Decision: {scaleStatus.Vote.ToString()}, Reason: {scaleRecommendation?.Reason}",
-                this.hubName,
-                this.functionName);
+                    $"Durable Functions Trigger Scale Decision: {scaleStatus.Vote.ToString()}, Reason: {scaleRecommendation?.Reason}",
+                    this.hubName,
+                    this.functionName);
             }
 
             return scaleStatus;

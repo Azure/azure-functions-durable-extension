@@ -63,20 +63,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <summary>
-        /// Trace an informational event for the extension.
-        /// </summary>
-        /// <param name="extension">The durable task extension.</param>
-        /// <param name="hubName">The name of the task hub.</param>
-        /// <param name="instanceId">The instance id.</param>
-        /// <param name="functionName">The function name.</param>
-        /// <param name="message">The message.</param>
-        /// <param name="writeToUserLogs">Whether to write this event to the user logs.</param>
-        public static void TraceInformationalEvent(this DurableTaskExtension extension, string hubName, string instanceId, string functionName, string message, bool writeToUserLogs)
-        {
-            extension.TraceHelper.ExtensionInformationalEvent(hubName, instanceId, functionName, message, writeToUserLogs);
-        }
-
-        /// <summary>
         /// Trace a warning event for the extension.
         /// </summary>
         /// <param name="extension">The durable task extension.</param>
