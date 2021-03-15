@@ -38,6 +38,9 @@
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageDurabilityProvider.GetOrchestrationStateWithPagination(Microsoft.Azure.WebJobs.Extensions.DurableTask.OrchestrationStatusQueryCondition,System.Threading.CancellationToken)">
             <inheritdoc/>
         </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageDurabilityProvider.TryGetScaleMonitor(System.String,System.String,System.String,System.String,Microsoft.Azure.WebJobs.Host.Scale.IScaleMonitor@)">
+            <inheritdoc/>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.CleanEntityStorageResult">
             <summary>
             The result of a clean entity storage operation.
@@ -2042,6 +2045,17 @@
             <param name="durabilityProvider">The DurabilityProvider used to check for matching connection string names.</param>
             <returns>A boolean indicating whether the connection names match.</returns>
         </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.TryGetScaleMonitor(System.String,System.String,System.String,System.String,Microsoft.Azure.WebJobs.Host.Scale.IScaleMonitor@)">
+            <summary>
+            Tries to obtain a scale monitor for autoscaling.
+            </summary>
+            <param name="functionId">Function id.</param>
+            <param name="functionName">Function name.</param>
+            <param name="hubName">Task hub name.</param>
+            <param name="storageConnectionString">Storage account connection string, used for Azure Storage provider.</param>
+            <param name="scaleMonitor">The scale monitor.</param>
+            <returns>True if autoscaling is supported, false otherwise.</returns>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClientAttribute">
             <summary>
             Attribute used to bind a function parameter to a <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableClient"/>, <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableEntityClient"/>, or <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient"/> instance.
@@ -2336,7 +2350,6 @@
             <param name="hostLifetimeService">The host shutdown notification service for detecting and reacting to host shutdowns.</param>
             <param name="lifeCycleNotificationHelper">The lifecycle notification helper used for custom orchestration tracking.</param>
             <param name="messageSerializerSettingsFactory">The factory used to create <see cref="T:Newtonsoft.Json.JsonSerializerSettings"/> for message settings.</param>
-            <param name="webhookProvider">A delegate to fetch the webhook URL.</param>
             <param name="errorSerializerSettingsFactory">The factory used to create <see cref="T:Newtonsoft.Json.JsonSerializerSettings"/> for error settings.</param>
             <param name="telemetryActivator">The activator of DistributedTracing. .netstandard2.0 only.</param>
             <param name="platformInformationService">The platform information provider to inspect the OS, app service plan, and other enviroment information.</param>
@@ -2429,6 +2442,30 @@
             Tags the current Activity with metadata: DurableFunctionsType, DurableFunctionsInstanceId, DurableFunctionsRuntimeStatus.
             This metadata will show up in Application Insights, if enabled.
             </summary>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.NoOpScaleMonitor">
+            <summary>
+            A placeholder scale monitor, can be used by durability providers that do not support runtime scaling.
+            This is required to allow operation of those providers even if runtime scaling is turned off
+            see discussion https://github.com/Azure/azure-functions-durable-extension/pull/1009/files#r341767018.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.NoOpScaleMonitor.#ctor(System.String)">
+            <summary>
+            Construct a placeholder scale monitor.
+            </summary>
+            <param name="name">A descriptive name.</param>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.NoOpScaleMonitor.Descriptor">
+            <summary>
+            A descriptive name.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.NoOpScaleMonitor.Microsoft#Azure#WebJobs#Host#Scale#IScaleMonitor#GetMetricsAsync">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.NoOpScaleMonitor.Microsoft#Azure#WebJobs#Host#Scale#IScaleMonitor#GetScaleStatus(Microsoft.Azure.WebJobs.Host.Scale.ScaleStatusContext)">
+            <inheritdoc/>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskJobHostConfigurationExtensions">
             <summary>
@@ -4164,34 +4201,6 @@
             Option to only start a new orchestrator instance with an existing instance Id when the existing
             instance is in a terminated, failed, or completed state.
             </summary>
-        </member>
-        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.ProviderUtils">
-            <summary>
-            Provides access to internal functionality for the purpose of implementing durability providers.
-            </summary>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.ProviderUtils.GetSchedulerIdFromEntityId(Microsoft.Azure.WebJobs.Extensions.DurableTask.EntityId)">
-            <summary>
-            Returns the instance id of the entity scheduler for a given entity id.
-            </summary>
-            <param name="entityId">The entity id.</param>
-            <returns>The instance id of the scheduler.</returns>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.ProviderUtils.TryGetEntityStateFromSerializedSchedulerState(DurableTask.Core.OrchestrationState,Newtonsoft.Json.JsonSerializerSettings,System.String@)">
-            <summary>
-            Reads the state of an entity from the serialized entity scheduler state.
-            </summary>
-            <param name="state">The orchestration state of the scheduler.</param>
-            <param name="serializerSettings">The serializer settings.</param>
-            <param name="result">The serialized state of the entity.</param>
-            <returns>true if the entity exists, false otherwise.</returns>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.ProviderUtils.ConvertOrchestrationStateToStatus(DurableTask.Core.OrchestrationState)">
-            <summary>
-            Converts the DTFx representation of the orchestration state into the DF representation.
-            </summary>
-            <param name="orchestrationState">The orchestration state.</param>
-            <returns>The orchestration status.</returns>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.PurgeHistoryResult">
             <summary>
