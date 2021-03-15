@@ -284,7 +284,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     throw new Exception($"JSON log did not contain expected key {expectedKey}. Keys found were: {keys}");
                 }
             }
-
         }
 
         /// <summary>

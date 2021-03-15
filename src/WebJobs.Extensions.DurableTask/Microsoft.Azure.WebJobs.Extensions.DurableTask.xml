@@ -2336,7 +2336,6 @@
             <param name="hostLifetimeService">The host shutdown notification service for detecting and reacting to host shutdowns.</param>
             <param name="lifeCycleNotificationHelper">The lifecycle notification helper used for custom orchestration tracking.</param>
             <param name="messageSerializerSettingsFactory">The factory used to create <see cref="T:Newtonsoft.Json.JsonSerializerSettings"/> for message settings.</param>
-            <param name="webhookProvider">A delegate to fetch the webhook URL.</param>
             <param name="errorSerializerSettingsFactory">The factory used to create <see cref="T:Newtonsoft.Json.JsonSerializerSettings"/> for error settings.</param>
             <param name="telemetryActivator">The activator of DistributedTracing. .netstandard2.0 only.</param>
             <param name="platformInformationService">The platform information provider to inspect the OS, app service plan, and other enviroment information.</param>
