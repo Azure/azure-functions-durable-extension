@@ -1577,6 +1577,12 @@
             Now obsolete: use <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient"/> instead.
             </summary>
         </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DefaultPlatformInformationProvider">
+            <summary>
+            Provides information about the enviroment (OS, app service plan, user-facing PL)
+            using the DI-injected INameResolver.
+            </summary>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DeterministicAttribute">
             <summary>
             Attribute used with the Durable Functions Analyzer to label a method as Deterministic. This allows the method to be called in an Orchestration function without causing a compiler warning.
@@ -1636,6 +1642,11 @@
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.LongRunningTimerIntervalLength">
             <summary>
             Interval time used for long running timers.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.EventSourceName">
+            <summary>
+            Event source name (e.g. DurableTask-AzureStorage).
             </summary>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.TaskOrchestrationDispatcherCount">
@@ -2111,20 +2122,21 @@
             Obsolete. Please use an alternate constructor overload.
             </summary>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.#ctor(Microsoft.Extensions.Options.IOptions{Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions},Microsoft.Extensions.Logging.ILoggerFactory,Microsoft.Azure.WebJobs.INameResolver,Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurabilityProviderFactory,Microsoft.Azure.WebJobs.Extensions.DurableTask.IApplicationLifetimeWrapper,Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableHttpMessageHandlerFactory,Microsoft.Azure.WebJobs.Extensions.DurableTask.ILifeCycleNotificationHelper,Microsoft.Azure.WebJobs.Extensions.DurableTask.IMessageSerializerSettingsFactory,Microsoft.Azure.WebJobs.Extensions.DurableTask.IErrorSerializerSettingsFactory)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.#ctor(Microsoft.Extensions.Options.IOptions{Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions},Microsoft.Extensions.Logging.ILoggerFactory,Microsoft.Azure.WebJobs.INameResolver,System.Collections.Generic.IEnumerable{Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurabilityProviderFactory},Microsoft.Azure.WebJobs.Extensions.DurableTask.IApplicationLifetimeWrapper,Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableHttpMessageHandlerFactory,Microsoft.Azure.WebJobs.Extensions.DurableTask.ILifeCycleNotificationHelper,Microsoft.Azure.WebJobs.Extensions.DurableTask.IMessageSerializerSettingsFactory,Microsoft.Azure.WebJobs.Extensions.DurableTask.IPlatformInformationService,Microsoft.Azure.WebJobs.Extensions.DurableTask.IErrorSerializerSettingsFactory)">
             <summary>
             Initializes a new instance of the <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension"/>.
             </summary>
             <param name="options">The configuration options for this extension.</param>
             <param name="loggerFactory">The logger factory used for extension-specific logging and orchestration tracking.</param>
             <param name="nameResolver">The name resolver to use for looking up application settings.</param>
-            <param name="orchestrationServiceFactory">The factory used to create orchestration service based on the configured storage provider.</param>
+            <param name="orchestrationServiceFactories">The factories used to create orchestration service based on the configured storage provider.</param>
             <param name="durableHttpMessageHandlerFactory">The HTTP message handler that handles HTTP requests and HTTP responses.</param>
             <param name="hostLifetimeService">The host shutdown notification service for detecting and reacting to host shutdowns.</param>
             <param name="lifeCycleNotificationHelper">The lifecycle notification helper used for custom orchestration tracking.</param>
             <param name="messageSerializerSettingsFactory">The factory used to create <see cref="T:Newtonsoft.Json.JsonSerializerSettings"/> for message settings.</param>
             <param name="errorSerializerSettingsFactory">The factory used to create <see cref="T:Newtonsoft.Json.JsonSerializerSettings"/> for error settings.</param>
             <param name="telemetryActivator">The activator of DistributedTracing. .netstandard2.0 only.</param>
+            <param name="platformInformationService">The platform information provider to inspect the OS, app service plan, and other enviroment information.</param>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.HubName">
             <summary>
@@ -2672,7 +2684,7 @@
             that we use to capture their data and log it in Linux App Service plans.
             </summary>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.EventSourceListener.#ctor(Microsoft.Azure.WebJobs.Extensions.DurableTask.LinuxAppServiceLogger,System.Boolean,Microsoft.Azure.WebJobs.Extensions.DurableTask.EndToEndTraceHelper)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.EventSourceListener.#ctor(Microsoft.Azure.WebJobs.Extensions.DurableTask.LinuxAppServiceLogger,System.Boolean,Microsoft.Azure.WebJobs.Extensions.DurableTask.EndToEndTraceHelper,System.String)">
             <summary>
             Create an EventSourceListener to capture and log Durable EventSource
             data in Linux.
@@ -2680,6 +2692,7 @@
             <param name="logger">A LinuxAppService logger configured for the current linux host.</param>
             <param name="enableVerbose">If true, durableTask.Core verbose logs are enabled. The opposite if false.</param>
             <param name="traceHelper">A tracing client to log exceptions.</param>
+            <param name="durabilityProviderEventSourceName">The durability provider's event source name.</param>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.EventSourceListener.OnEventSourceCreated(System.Diagnostics.Tracing.EventSource)">
             <summary>
@@ -2925,6 +2938,11 @@
             Interface defining methods to build instances of <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider"/>.
             </summary>
         </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurabilityProviderFactory.Name">
+            <summary>
+            Specifies the Durability Provider Factory name.
+            </summary>
+        </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurabilityProviderFactory.GetDurabilityProvider">
             <summary>
             Creates or retrieves a durability provider to be used throughout the extension.
@@ -3017,6 +3035,58 @@
             Creates or retrieves <see cref="T:Newtonsoft.Json.JsonSerializerSettings"/> to be used throughout the extension for message serialization.
             </summary>
             <returns><see cref="T:Newtonsoft.Json.JsonSerializerSettings"/> to be used by the Durable Task Extension for message serialization.</returns>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IPlatformInformationService">
+             <summary>
+             Interface for accessing the AppService plan information,
+             the OS, and user-facing PL.
+            
+             Note: The functionality is currently limited, but will grow
+             along with the pursuit of more platform-specific defaults.
+             </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IPlatformInformationService.InConsumption">
+            <summary>
+            Determines if the application is running on a Consumption plan,
+            irrespective of OS.
+            </summary>
+            <returns>True if running in Consumption. Otherwise, False.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IPlatformInformationService.InLinuxConsumption">
+            <summary>
+            Determines if the application is running in a Linux Consumption plan.
+            </summary>
+            <returns>True if running in Linux Consumption. Otherwise, False.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IPlatformInformationService.InWindowsConsumption">
+            <summary>
+            Determines if the application is running in a Windows Consumption plan.
+            </summary>
+            <returns>True if running in Linux Consumption. Otherwise, False.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IPlatformInformationService.InLinuxAppService">
+            <summary>
+            Determines if the application is running in a Linux AppService plan.
+            </summary>
+            <returns>True if running in Linux AppService. Otherwise, False.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IPlatformInformationService.GetLinuxTenant">
+            <summary>
+            Returns the application tenant when running on linux.
+            </summary>
+            <returns>The application tenant.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IPlatformInformationService.GetLinuxStampName">
+            <summary>
+            Returns the application stamp name when running on linux.
+            </summary>
+            <returns>The application stamp name.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IPlatformInformationService.GetContainerName">
+            <summary>
+            Returns the application container name when running on linux.
+            </summary>
+            <returns>The application container name.</returns>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.ITokenSource">
             <summary>
@@ -3378,7 +3448,7 @@
             Throws an exception if the provided hub name violates any naming conventions for the storage provider.
             </summary>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageOptions.Validate">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageOptions.Validate(Microsoft.Extensions.Logging.ILogger)">
             <summary>
             Throws an exception if any of the settings of the storage provider are invalid.
             </summary>
@@ -3463,7 +3533,7 @@
             also increase the total CPU and memory usage on a single worker instance.
             </remarks>
             <value>
-            A positive integer configured by the host. The default value is 10X the number of processors on the current machine.
+            A positive integer configured by the host.
             </value>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.MaxConcurrentOrchestratorFunctions">
@@ -3471,18 +3541,7 @@
             Gets or sets the maximum number of orchestrator functions that can be processed concurrently on a single host instance.
             </summary>
             <value>
-            A positive integer configured by the host. The default value is 10X the number of processors on the current machine.
-            </value>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.NotificationUrl">
-            <summary>
-            Gets or sets the base URL for the HTTP APIs managed by this extension.
-            </summary>
-            <remarks>
-            This property is intended for use only by runtime hosts.
-            </remarks>
-            <value>
-            A URL pointing to the hosted function app that responds to status polling requests.
+            A positive integer configured by the host.
             </value>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.LocalRpcEndpointEnabled">

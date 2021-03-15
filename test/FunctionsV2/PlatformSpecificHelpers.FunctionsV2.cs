@@ -3,11 +3,13 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.ApplicationInsights.Channel;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -32,8 +34,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             IDurableHttpMessageHandlerFactory durableHttpMessageHandler,
             ILifeCycleNotificationHelper lifeCycleNotificationHelper,
             IMessageSerializerSettingsFactory serializerSettingsFactory,
-            Action<ITelemetry> onSend)
+            Action<ITelemetry> onSend,
+            bool addDurableClientFactory)
         {
+            // Unless otherwise specified, use legacy partition management for tests as it makes the task hubs start up faster.
+            // These tests run on a single task hub workers, so they don't test partition management anyways, and that is tested
+            // in the DTFx repo.
+            if (!options.Value.StorageProvider.ContainsKey(nameof(AzureStorageOptions.UseLegacyPartitionManagement)))
+            {
+                options.Value.StorageProvider.Add(nameof(AzureStorageOptions.UseLegacyPartitionManagement), true);
+            }
+
             IHost host = new HostBuilder()
                 .ConfigureLogging(
                     loggingBuilder =>
@@ -43,7 +54,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 .ConfigureWebJobs(
                     webJobsBuilder =>
                     {
-                        webJobsBuilder.AddDurableTask(options, storageProvider, durabilityProviderFactoryType);
+                        if (addDurableClientFactory)
+                        {
+                            webJobsBuilder.AddDurableClientFactoryDurableTask(options);
+                        }
+                        else
+                        {
+                            webJobsBuilder.AddDurableTask(options, storageProvider, durabilityProviderFactoryType);
+                        }
+
                         webJobsBuilder.AddAzureStorage();
                     })
                 .ConfigureServices(
@@ -82,6 +101,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return new FunctionsV2HostWrapper(host, options, nameResolver);
         }
 
+        public static ITestHost CreateJobHostWithMultipleDurabilityProviders(
+            IOptions<DurableTaskOptions> options,
+            IEnumerable<IDurabilityProviderFactory> durabilityProviderFactories)
+        {
+            IHost host = new HostBuilder()
+                .ConfigureWebJobs(
+                    webJobsBuilder =>
+                    {
+                        webJobsBuilder.AddMultipleDurabilityProvidersDurableTask(options, durabilityProviderFactories);
+                    })
+                .Build();
+
+            return new FunctionsV2HostWrapper(host, options);
+        }
+
         private static IWebJobsBuilder AddDurableTask(this IWebJobsBuilder builder, IOptions<DurableTaskOptions> options, string storageProvider, Type durabilityProviderFactoryType = null)
         {
             if (durabilityProviderFactoryType != null)
@@ -110,6 +144,47 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return builder;
         }
 
+        private static IWebJobsBuilder AddMultipleDurabilityProvidersDurableTask(this IWebJobsBuilder builder, IOptions<DurableTaskOptions> options, IEnumerable<IDurabilityProviderFactory> durabilityProviderFactories = null)
+        {
+            for (int i = 0; i < durabilityProviderFactories?.Count(); i++)
+            {
+                IDurabilityProviderFactory factory = durabilityProviderFactories.ElementAt(i);
+                builder.Services.AddSingleton(typeof(IDurabilityProviderFactory), factory);
+            }
+
+            builder.Services.AddSingleton(options);
+
+            var serviceCollection = builder.AddExtension<DurableTaskExtension>()
+                .BindOptions<DurableTaskOptions>()
+                .Services.AddSingleton<IConnectionStringResolver, WebJobsConnectionStringProvider>();
+
+            serviceCollection.TryAddSingleton<IApplicationLifetimeWrapper, HostLifecycleService>();
+#pragma warning disable CS0612 // Type or member is obsolete
+            serviceCollection.TryAddSingleton<IPlatformInformationService, DefaultPlatformInformationProvider>();
+#pragma warning restore CS0612 // Type or member is obsolete
+
+            return builder;
+        }
+
+        /// <summary>
+        /// Registers the services needed for DurableClientFactory and calls AddDurableClientFactory()
+        /// which adds the Durable Task extension that uses Azure Storage.
+        /// </summary>
+        private static IWebJobsBuilder AddDurableClientFactoryDurableTask(this IWebJobsBuilder builder, IOptions<DurableTaskOptions> options)
+        {
+            builder.Services.AddDurableClientFactory();
+
+            builder.Services.AddSingleton(options);
+
+            var serviceCollection = builder.AddExtension<DurableTaskExtension>()
+                .BindOptions<DurableTaskOptions>()
+                .Services.AddSingleton<IConnectionStringResolver, WebJobsConnectionStringProvider>();
+
+            serviceCollection.TryAddSingleton<IApplicationLifetimeWrapper, HostLifecycleService>();
+
+            return builder;
+        }
+
         private static IWebJobsBuilder AddRedisDurableTask(this IWebJobsBuilder builder)
         {
             builder.Services.AddSingleton<IDurabilityProviderFactory, RedisDurabilityProviderFactory>();
@@ -122,7 +197,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return builder;
         }
 
-        private class FunctionsV2HostWrapper : ITestHost
+        internal class FunctionsV2HostWrapper : ITestHost
         {
             private readonly IHost innerHost;
             private readonly JobHost innerWebJobsHost;
@@ -138,6 +213,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 this.innerWebJobsHost = (JobHost)this.innerHost.Services.GetService<IJobHost>();
                 this.options = options.Value;
                 this.nameResolver = nameResolver;
+            }
+
+            internal FunctionsV2HostWrapper(
+                IHost innerHost,
+                IOptions<DurableTaskOptions> options)
+            {
+                this.innerHost = innerHost;
+                this.innerWebJobsHost = (JobHost)this.innerHost.Services.GetService<IJobHost>();
+                this.options = options.Value;
             }
 
             public Task CallAsync(string methodName, IDictionary<string, object> args)

@@ -86,6 +86,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </summary>
         public virtual TimeSpan LongRunningTimerIntervalLength { get; set; }
 
+        /// <summary>
+        /// Event source name (e.g. DurableTask-AzureStorage).
+        /// </summary>
+        public virtual string EventSourceName { get; set; }
+
         /// <inheritdoc/>
         public int TaskOrchestrationDispatcherCount => this.GetOrchestrationService().TaskOrchestrationDispatcherCount;
 

@@ -12,6 +12,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     internal class AzureStorageDurabilityProviderFactory : IDurabilityProviderFactory
     {
         private const string LoggerName = "Host.Triggers.DurableTask.AzureStorage";
+        internal const string ProviderName = "AzureStorage";
 
         private readonly DurableTaskOptions options;
         private readonly AzureStorageOptions azureStorageOptions;
@@ -19,6 +20,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly string defaultConnectionName;
         private readonly INameResolver nameResolver;
         private readonly ILoggerFactory loggerFactory;
+        private readonly bool inConsumption; // If true, optimize defaults for consumption
         private AzureStorageDurabilityProvider defaultStorageProvider;
 
         // Must wait to get settings until we have validated taskhub name.
@@ -29,19 +31,38 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             IOptions<DurableTaskOptions> options,
             IConnectionStringResolver connectionStringResolver,
             INameResolver nameResolver,
-            ILoggerFactory loggerFactory)
+            ILoggerFactory loggerFactory,
+#pragma warning disable CS0612 // Type or member is obsolete
+            IPlatformInformationService platformInfo)
+#pragma warning restore CS0612 // Type or member is obsolete
         {
             this.options = options.Value;
             this.nameResolver = nameResolver;
             this.loggerFactory = loggerFactory;
             this.azureStorageOptions = new AzureStorageOptions();
+            this.inConsumption = platformInfo.InConsumption();
+
+            // The consumption plan has different performance characteristics so we provide
+            // different defaults for key configuration values.
+            int maxConcurrentOrchestratorsDefault = this.inConsumption ? 5 : 10 * Environment.ProcessorCount;
+            int maxConcurrentActivitiesDefault = this.inConsumption ? 10 : 10 * Environment.ProcessorCount;
+            this.azureStorageOptions.ControlQueueBufferThreshold = this.inConsumption ? 32 : this.azureStorageOptions.ControlQueueBufferThreshold;
+
+            // The following defaults are only applied if the customer did not explicitely set them on `host.json`
+            this.options.MaxConcurrentOrchestratorFunctions = this.options.MaxConcurrentOrchestratorFunctions ?? maxConcurrentOrchestratorsDefault;
+            this.options.MaxConcurrentActivityFunctions = this.options.MaxConcurrentActivityFunctions ?? maxConcurrentActivitiesDefault;
+
+            // Override the configuration defaults with user-provided values in host.json, if any.
             JsonConvert.PopulateObject(JsonConvert.SerializeObject(this.options.StorageProvider), this.azureStorageOptions);
 
-            this.azureStorageOptions.Validate();
+            var logger = loggerFactory.CreateLogger(nameof(this.azureStorageOptions));
+            this.azureStorageOptions.Validate(logger);
 
             this.connectionStringResolver = connectionStringResolver ?? throw new ArgumentNullException(nameof(connectionStringResolver));
             this.defaultConnectionName = this.azureStorageOptions.ConnectionStringName ?? ConnectionStringNames.Storage;
         }
+
+        public string Name => ProviderName;
 
         internal string GetDefaultStorageConnectionString()
         {
@@ -144,8 +165,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 ControlQueueBufferThreshold = this.azureStorageOptions.ControlQueueBufferThreshold,
                 ControlQueueVisibilityTimeout = this.azureStorageOptions.ControlQueueVisibilityTimeout,
                 WorkItemQueueVisibilityTimeout = this.azureStorageOptions.WorkItemQueueVisibilityTimeout,
-                MaxConcurrentTaskOrchestrationWorkItems = this.options.MaxConcurrentOrchestratorFunctions,
-                MaxConcurrentTaskActivityWorkItems = this.options.MaxConcurrentActivityFunctions,
+                MaxConcurrentTaskOrchestrationWorkItems = this.options.MaxConcurrentOrchestratorFunctions ?? throw new InvalidOperationException($"{nameof(this.options.MaxConcurrentOrchestratorFunctions)} needs a default value"),
+                MaxConcurrentTaskActivityWorkItems = this.options.MaxConcurrentActivityFunctions ?? throw new InvalidOperationException($"{nameof(this.options.MaxConcurrentOrchestratorFunctions)} needs a default value"),
                 ExtendedSessionsEnabled = this.options.ExtendedSessionsEnabled,
                 ExtendedSessionIdleTimeout = extendedSessionTimeout,
                 MaxQueuePollingInterval = this.azureStorageOptions.MaxQueuePollingInterval,
@@ -160,6 +181,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 LoggerFactory = this.loggerFactory,
                 UseLegacyPartitionManagement = this.azureStorageOptions.UseLegacyPartitionManagement,
             };
+
+            if (this.inConsumption)
+            {
+                settings.MaxStorageOperationConcurrency = 25;
+            }
 
             // When running on App Service VMSS stamps, these environment variables are the best way
             // to enure unqique worker names

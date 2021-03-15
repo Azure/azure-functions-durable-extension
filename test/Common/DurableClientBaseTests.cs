@@ -7,7 +7,6 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using DurableTask.Core;
-using FluentAssertions;
 #if !FUNCTIONS_V1
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -20,6 +19,7 @@ using Microsoft.Extensions.Primitives;
 using Moq;
 using Newtonsoft.Json;
 using Xunit;
+using Xunit.Abstractions;
 using static Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests.HttpApiHandlerTests;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
@@ -322,22 +322,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             var options = new DurableTaskOptions();
             options.HubName = "DurableTaskHub";
-            options.NotificationUrl = new Uri("https://sampleurl.net");
+            options.WebhookUriProviderOverride = () => new Uri("https://sampleurl.net");
             var wrappedOptions = new OptionsWrapper<DurableTaskOptions>(options);
             var nameResolver = TestHelpers.GetTestNameResolver();
             var connectionStringResolver = new TestConnectionStringResolver();
+            var platformInformationService = TestHelpers.GetMockPlatformInformationService();
             var serviceFactory = new AzureStorageDurabilityProviderFactory(
                 wrappedOptions,
                 connectionStringResolver,
                 nameResolver,
-                NullLoggerFactory.Instance);
+                NullLoggerFactory.Instance,
+                platformInformationService);
             return new DurableTaskExtension(
                 wrappedOptions,
                 new LoggerFactory(),
                 nameResolver,
-                serviceFactory,
+                new[] { serviceFactory },
                 new TestHostShutdownNotificationService(),
-                new DurableHttpMessageHandlerFactory());
+                new DurableHttpMessageHandlerFactory(),
+                platformInformationService: platformInformationService);
         }
     }
 }

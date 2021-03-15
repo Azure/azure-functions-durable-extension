@@ -1,7 +1,7 @@
-<-- Start the PR description with some context for the change. -->
+<!-- Start the PR description with some context for the change. -->
 
 
-<-- Make sure to delete the markdown comments and the below sections when squash merging -->
+<!-- Make sure to delete the markdown comments and the below sections when squash merging -->
 ### Issue describing the changes in this PR
 
 resolves #issue_for_this_pr

@@ -297,6 +297,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new ArgumentNullException(nameof(operationName));
             }
 
+            if (scheduledTimeUtc.HasValue)
+            {
+                scheduledTimeUtc = scheduledTimeUtc.Value.ToUniversalTime();
+            }
+
             if (this.ClientReferencesCurrentApp(durableClient))
             {
                 this.config.ThrowIfFunctionDoesNotExist(entityId.EntityName, FunctionType.Entity);

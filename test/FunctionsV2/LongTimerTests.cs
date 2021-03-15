@@ -37,7 +37,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
             {
                 await host.StartAsync();
 
-                var fireAt = DateTime.UtcNow.AddMinutes(2);
+                var fireAt = DateTime.UtcNow.AddSeconds(30);
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.Timer), fireAt, this.output);
                 var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromMinutes(3));
 
@@ -61,7 +61,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
             {
                 await host.StartAsync();
 
-                var fireAt = DateTime.UtcNow.AddSeconds(30);
+                var fireAt = DateTime.UtcNow.AddSeconds(5);
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.Timer), fireAt, this.output);
                 var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromMinutes(2));
 
@@ -89,11 +89,11 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
                 TestEntityClient client = await host.GetEntityClientAsync(entityId, this.output);
 
                 var now = DateTime.UtcNow;
-                var fireAt = now.AddMinutes(2);
+                var fireAt = now.AddSeconds(20);
 
                 await client.SignalEntity(this.output, fireAt, "fire", null);
 
-                var timeout = TimeSpan.FromMinutes(3);
+                var timeout = TimeSpan.FromSeconds(30);
                 var state = await client.WaitForEntityState<System.Collections.Generic.List<string>>(
                     this.output,
                     timeout,
@@ -117,7 +117,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
             {
                 await host.StartAsync();
 
-                var fireAt = TimeSpan.FromSeconds(90);
+                var fireAt = TimeSpan.FromSeconds(30);
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.ApprovalWithTimeout), (fireAt, "throw"), this.output);
                 var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromMinutes(2));
 
