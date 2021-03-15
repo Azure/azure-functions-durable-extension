@@ -19,6 +19,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.WindowsAzure.Storage;
 using Moq;
+using Newtonsoft.Json.Linq;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -257,19 +258,53 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
+        /// Ensures a JSON Durable log has all the minimum-required keys.
+        /// If not, it throws an exception.
+        /// </summary>
+        /// <param name="json">The JSON log to validate.</param>
+        public static void IsValidJSONLog(JObject json)
+        {
+            List<string> expectedKeys = new List<string>
+            {
+                "EventStampName",
+                "EventPrimaryStampName",
+                "ProviderName",
+                "TaskName",
+                "EventId",
+                "EventTimestamp",
+                "Tenant",
+                "Pid",
+                "Tid",
+            };
+            List<string> keys = json.Properties().Select(p => p.Name).ToList();
+            foreach (string expectedKey in expectedKeys)
+            {
+                if (!keys.Contains(expectedKey))
+                {
+                    throw new Exception($"JSON log did not contain expected key {expectedKey}. Keys found were: {keys}");
+                }
+            }
+
+        }
+
+        /// <summary>
         /// Read a file's contents, line by line, even if another process is currently writing to it.
         /// </summary>
-        /// <param name="path">The file's path</param>
+        /// <param name="path">The file's path.</param>
         /// <returns>An array of each line in the file.</returns>
         public static string[] WriteSafeReadAllLines(string path)
         {
-            using (var csv = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-            using (var sr = new StreamReader(csv, Encoding.Default))
+            /* A method like File.ReadAllLines cannot open a file that is open for writing by another process
+             * This is due to the File.ReadAllLines  not opening the process with ReadWrite permissions.
+             * As a result, we implement a variant ReadAllLines with the right permission mode
+             */
+            using (var fileStream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            using (var streamReader = new StreamReader(fileStream, Encoding.Default))
             {
                 List<string> file = new List<string>();
-                while (!sr.EndOfStream)
+                while (!streamReader.EndOfStream)
                 {
-                    file.Add(sr.ReadLine());
+                    file.Add(streamReader.ReadLine());
                 }
 
                 return file.ToArray();
