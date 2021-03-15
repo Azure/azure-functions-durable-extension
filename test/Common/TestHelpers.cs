@@ -295,7 +295,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             /* A method like File.ReadAllLines cannot open a file that is open for writing by another process
              * This is due to the File.ReadAllLines  not opening the process with ReadWrite permissions.
-             * As a result, we implement a variant ReadAllLines with the right permission mode
+             * As a result, we implement a variant ReadAllLines with the right permission mode.
+             *
+             * More info in: https://stackoverflow.com/questions/12744725/how-do-i-perform-file-readalllines-on-a-file-that-is-also-open-in-excel
              */
             using (var fileStream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
             using (var streamReader = new StreamReader(fileStream, Encoding.Default))
