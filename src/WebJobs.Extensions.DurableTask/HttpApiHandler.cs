@@ -1141,7 +1141,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return true;
             }
 
-            // The app owner explicitly disabled the local RPC endpoint.
+            // The app owner explicitly disabled the local RPC endpoint
             rpcBaseUrl = null;
             return false;
         }
@@ -1151,14 +1151,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             if (!this.localHttpListener.IsListening)
             {
+                await this.localHttpListener.StartAsync();
+
                 this.traceHelper.ExtensionInformationalEvent(
                     this.durableTaskOptions.HubName,
                     instanceId: string.Empty,
                     functionName: string.Empty,
-                    message: $"Opening local RPC endpoint: {this.localHttpListener.InternalRpcUri}",
+                    message: $"Opened local RPC endpoint: {this.localHttpListener.InternalRpcUri}",
                     writeToUserLogs: true);
-
-                await this.localHttpListener.StartAsync();
             }
         }
 

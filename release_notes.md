@@ -4,3 +4,5 @@
 
 ## Bug Fixes:
 - Properly used update management API URLs after a successful slot swap (#1716)
+- Fix race condition when multiple apps start with local RPC endpoints on the same VM in parallel. (#1719)
+
