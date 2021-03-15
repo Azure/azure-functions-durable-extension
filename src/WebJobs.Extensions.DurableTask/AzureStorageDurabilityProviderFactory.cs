@@ -11,7 +11,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     internal class AzureStorageDurabilityProviderFactory : IDurabilityProviderFactory
     {
-        private const string LoggerName = "AzureStorage";
+        private const string LoggerName = "Host.Triggers.DurableTask.AzureStorage";
 
         private readonly DurableTaskOptions options;
         private readonly AzureStorageOptions azureStorageOptions;
