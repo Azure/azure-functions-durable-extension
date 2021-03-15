@@ -87,7 +87,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             catch (StorageException e)
             {
-                this.logger.LogWarning(e.ToString(), this.hubName, this.functionName);
+                this.logger.LogWarning("{details}. Function: {functionName}. HubName: {hubName}.", e.ToString(), this.functionName, this.hubName);
             }
 
             if (heartbeat != null)

@@ -193,7 +193,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string functionName,
             string hubName,
             string storageConnectionString,
-            DurableTaskExtension extension,
             out IScaleMonitor scaleMonitor)
         {
             scaleMonitor = new DurableTaskScaleMonitor(

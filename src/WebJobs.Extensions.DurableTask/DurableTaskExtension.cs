@@ -75,7 +75,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private IDurabilityProviderFactory durabilityProviderFactory;
         private INameResolver nameResolver;
         private ILoggerFactory loggerFactory;
-        private ILogger logger;
         private DurabilityProvider defaultDurabilityProvider;
         private TaskHubWorker taskHubWorker;
         private bool isTaskHubWorkerStarted;
@@ -135,9 +134,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
             this.ResolveAppSettingOptions();
 
-            this.logger = loggerFactory.CreateLogger(LoggerCategoryName);
+            ILogger logger = loggerFactory.CreateLogger(LoggerCategoryName);
 
-            this.TraceHelper = new EndToEndTraceHelper(this.logger, this.Options.Tracing.TraceReplayEvents);
+            this.TraceHelper = new EndToEndTraceHelper(logger, this.Options.Tracing.TraceReplayEvents);
             this.LifeCycleNotificationHelper = lifeCycleNotificationHelper ?? this.CreateLifeCycleNotificationHelper();
             this.durabilityProviderFactory = orchestrationServiceFactory;
             this.defaultDurabilityProvider = this.durabilityProviderFactory.GetDurabilityProvider();
@@ -154,7 +153,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.MessageDataConverter = CreateMessageDataConverter(messageSerializerSettingsFactory);
             this.ErrorDataConverter = this.CreateErrorDataConverter(errorSerializerSettingsFactory);
 
-            this.HttpApiHandler = new HttpApiHandler(this, this.logger);
+            this.HttpApiHandler = new HttpApiHandler(this, logger);
 
             this.hostLifetimeService = hostLifetimeService;
 
@@ -1277,7 +1276,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     functionName.Name,
                     this.Options.HubName,
                     storageConnectionString,
-                    this,
                     out IScaleMonitor scaleMonitor))
             {
                 return scaleMonitor;
