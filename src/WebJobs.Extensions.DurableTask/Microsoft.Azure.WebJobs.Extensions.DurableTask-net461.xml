@@ -2134,6 +2134,7 @@
             <param name="hostLifetimeService">The host shutdown notification service for detecting and reacting to host shutdowns.</param>
             <param name="lifeCycleNotificationHelper">The lifecycle notification helper used for custom orchestration tracking.</param>
             <param name="messageSerializerSettingsFactory">The factory used to create <see cref="T:Newtonsoft.Json.JsonSerializerSettings"/> for message settings.</param>
+            <param name="webhookProvider">A delegate to fetch the webhook URL.</param>
             <param name="errorSerializerSettingsFactory">The factory used to create <see cref="T:Newtonsoft.Json.JsonSerializerSettings"/> for error settings.</param>
             <param name="telemetryActivator">The activator of DistributedTracing. .netstandard2.0 only.</param>
             <param name="platformInformationService">The platform information provider to inspect the OS, app service plan, and other enviroment information.</param>
@@ -3542,17 +3543,6 @@
             </summary>
             <value>
             A positive integer configured by the host.
-            </value>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.NotificationUrl">
-            <summary>
-            Gets or sets the base URL for the HTTP APIs managed by this extension.
-            </summary>
-            <remarks>
-            This property is intended for use only by runtime hosts.
-            </remarks>
-            <value>
-            A URL pointing to the hosted function app that responds to status polling requests.
             </value>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.LocalRpcEndpointEnabled">
