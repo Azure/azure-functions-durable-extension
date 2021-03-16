@@ -63,9 +63,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             if (this.useTestLogger)
             {
+                // Use GUID for eventsource, as TraceEventProviders.GetProviderGuidByName() is causing
+                // the CI to abort runs.
                 var traceConfig = new Dictionary<string, TraceEventLevel>
                 {
-                    { "DurableTask-AzureStorage", TraceEventLevel.Informational },
+                    { "4c4ad4a2-f396-5e18-01b6-618c12a10433", TraceEventLevel.Informational }, // DurableTask.AzureStorage
                     { "7DA4779A-152E-44A2-A6F2-F80D991A5BEE", TraceEventLevel.Warning }, // DurableTask.Core
                 };
 
@@ -193,6 +195,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
+        /// End to end test that ensures that DurableClientFactory is set up correctly
+        /// (i.e. the correct services are injected through dependency injection
+        /// and AzureStorageDurabilityProvider is created).
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task DurableClient_AzureStorage_SuccessfulSetup()
+        {
+            string orchestratorName = nameof(TestOrchestrations.SayHelloInline);
+            using (ITestHost host = TestHelpers.GetJobHost(
+                loggerProvider: this.loggerProvider,
+                testName: nameof(this.DurableClient_AzureStorage_SuccessfulSetup),
+                enableExtendedSessions: false,
+                storageProviderType: "azure_storage",
+                addDurableClientFactory: true))
+            {
+                await host.StartAsync();
+                var client = await host.StartOrchestratorAsync(orchestratorName, input: "World", this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
         /// End-to-end test which validates a simple orchestrator function does not have assigned value for <see cref="DurableOrchestrationContext.ParentInstanceId"/>.
         /// </summary>
         [Theory]
@@ -224,6 +250,55 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
 #if !FUNCTIONS_V1
+        /// <summary>
+        /// By simulating the appropiate environment variables for Linux Consumption,
+        /// this test checks that we are emitting logs from DurableTask.AzureStorage
+        /// and reading the DurabilityProvider's EventSourceName property correctly.
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task AzureStorageEmittingLogsWithEventSourceName()
+        {
+            var prefix = "MS_DURABLE_FUNCTION_EVENTS_LOGS";
+            string orchestratorName = nameof(TestOrchestrations.SayHelloInline);
+
+            // To capture console output in a StringWritter
+            using (StringWriter sw = new StringWriter())
+            {
+                // Set console to write to StringWritter
+                Console.SetOut(sw);
+
+                // Simulate enviroment variables indicating linux consumption
+                var nameResolver = new SimpleNameResolver(new Dictionary<string, string>()
+                {
+                    { "CONTAINER_NAME", "val1" },
+                    { "WEBSITE_STAMP_DEPLOYMENT_ID", "val3" },
+                    { "WEBSITE_HOME_STAMPNAME", "val4" },
+                });
+
+                // Run trivial orchestrator
+                using (var host = TestHelpers.GetJobHost(
+                    this.loggerProvider,
+                    nameResolver: nameResolver,
+                    testName: "FiltersVerboseLogsByDefault",
+                    enableExtendedSessions: false,
+                    storageProviderType: "azure_storage"))
+                {
+                    await host.StartAsync();
+                    var client = await host.StartOrchestratorAsync(orchestratorName, input: "World", this.output);
+                    var status = await client.WaitForCompletionAsync(this.output);
+                    await host.StopAsync();
+                }
+
+                string consoleOutput = sw.ToString();
+
+                // Validate that the JSON has DurableTask-AzureStorage fields
+                string[] lines = consoleOutput.Split('\n');
+                var azureStorageLogLines = lines.Where(l => l.Contains("DurableTask-AzureStorage") && l.StartsWith(prefix));
+                Assert.NotEmpty(azureStorageLogLines);
+            }
+        }
+
         /// <summary>
         /// By simulating the appropiate enviorment variables for Linux Consumption,
         /// this test checks that we are writing our JSON logs to the console. It does not
@@ -329,11 +404,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var client = await host.StartOrchestratorAsync(orchestratorName, input: "World", this.output);
                 var status = await client.WaitForCompletionAsync(this.output);
                 await host.StopAsync();
-                await Task.Delay(TimeSpan.FromSeconds(10)); // giving the logger enough time to flush
             }
 
-            // Ensure the logging file was at least generated
-            Assert.True(File.Exists(LinuxAppServiceLogger.LoggingPath));
+            await TestHelpers.WaitUntilTrue(
+                predicate: () => File.Exists(LinuxAppServiceLogger.LoggingPath),
+                conditionDescription: "Log file exists",
+                timeout: TimeSpan.FromSeconds(20));
         }
 
         /// <summary>
@@ -526,11 +602,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var client = await host.StartOrchestratorAsync(orchestratorName, input: null, this.output);
                 var status = await client.WaitForCompletionAsync(this.output);
                 await host.StopAsync();
-                await Task.Delay(TimeSpan.FromSeconds(10)); // giving the logger enough time to flush
             }
 
-            // Ensure the logging file was at least generated
-            Assert.True(File.Exists(LinuxAppServiceLogger.LoggingPath));
+            await TestHelpers.WaitUntilTrue(
+                predicate: () => File.Exists(LinuxAppServiceLogger.LoggingPath),
+                conditionDescription: "Log file exists",
+                timeout: TimeSpan.FromSeconds(20));
 
             // string[] lines = File.ReadAllLines(LinuxAppServiceLogger.LoggingPath);
 
@@ -1091,7 +1168,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 // Wait for the instance to go into the Running state. This is necessary to ensure log validation consistency.
                 await client.WaitForStartupAsync(this.output);
 
-                TimeSpan waitTimeout = TimeSpan.FromSeconds(Debugger.IsAttached ? 300 : 10);
+                TimeSpan waitTimeout = TimeSpan.FromSeconds(Debugger.IsAttached ? 300 : 5);
 
                 // Perform some operations
                 await client.RaiseEventAsync("operation", "incr", this.output);
@@ -1492,7 +1569,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 await host.StartAsync();
 
-                var timeout = TimeSpan.FromSeconds(10);
+                var timeout = TimeSpan.FromSeconds(2);
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], timeout, this.output);
                 await client.WaitForStartupAsync(this.output);
 
@@ -3289,7 +3366,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 while (true)
                 {
-                    await Task.Delay(5000);
+                    await Task.Delay(1000);
 
                     // while the orchestration is running, just for fun,
                     // send some deactivation signals which unload the entity from memory.
@@ -3442,9 +3519,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// </summary>
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task DurableEntity_ScheduledSignal(bool extendedSessions)
+        [InlineData(true, true)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(false, false)]
+        public async Task DurableEntity_ScheduledSignal(bool extendedSessions, bool useUtc)
         {
             using (var host = TestHelpers.GetJobHost(
                 this.loggerProvider,
@@ -3459,7 +3538,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 // Wait 8 seconds to account for time to grab ownership lease.
                 await Task.Delay(8000);
 
-                var now = DateTime.UtcNow;
+                var now = useUtc ? DateTime.UtcNow : DateTime.Now;
 
                 await client.SignalEntity(this.output, now + TimeSpan.FromSeconds(4), "delayed", null);
                 await client.SignalEntity(this.output, "immediate", null);
@@ -3696,9 +3775,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await client.SignalEntity(this.output, "get", "https://www.microsoft.com");
                 await client.SignalEntity(this.output, "get", "https://bing.com");
 
-                await Task.Delay(TimeSpan.FromSeconds(10));
-
-                var state = await client.WaitForEntityState<IDictionary<string, string>>(this.output);
+                var state = await client.WaitForEntityState<IDictionary<string, string>>(this.output, TimeSpan.FromSeconds(10));
                 Assert.NotNull(state);
 
                 if (state.TryGetValue("error", out string error))
@@ -3935,7 +4012,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             using (var host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.DurableEntity_EntityProxy),
+                nameof(this.DurableEntity_EntityProxy_UsesBindings),
                 extendedSessions))
             {
                 await host.StartAsync();
@@ -4792,35 +4869,43 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
-        [Fact]
+        [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task MultipleHostsLocalRpcSameDevice()
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task MultipleHostsOnSameVM(bool enableLocalRpc)
         {
-            ITestHost host1 = TestHelpers.GetJobHost(
-                    this.loggerProvider,
-                    nameof(this.MultipleHostsLocalRpcSameDevice) + "1",
-                    false,
-                    localRpcEndpointEnabled: true);
-            await host1.StartAsync();
-            ITestHost host2 = TestHelpers.GetJobHost(
-                    this.loggerProvider,
-                    nameof(this.MultipleHostsLocalRpcSameDevice) + "2",
-                    false,
-                    localRpcEndpointEnabled: true);
-            try
+            // This test wants to be sure there are no race conditions while starting up multiple hosts in parallel,
+            // so attempt various times to increase the likelihood of hitting a race condition if one exists.
+            int numAttempts = 5;
+            for (int attempt = 0; attempt < numAttempts; attempt++)
             {
-                await host2.StartAsync();
-            }
-            catch (Exception)
-            {
-                Assert.True(false, "Could not start up two hosts on the same device in parallel");
-            }
-            finally
-            {
-                await host1.StopAsync();
-                host1.Dispose();
-                await host2.StopAsync();
-                host2.Dispose();
+                int numThreads = 10;
+                var hosts = new List<ITestHost>(numThreads);
+
+                try
+                {
+                    Parallel.For(0, numThreads, new ParallelOptions() { MaxDegreeOfParallelism = numThreads }, (i) =>
+                        hosts.Add(TestHelpers.GetJobHost(
+                                this.loggerProvider,
+                                nameof(this.MultipleHostsOnSameVM) + i,
+                                false,
+                                localRpcEndpointEnabled: enableLocalRpc)));
+
+                    await Task.WhenAll(hosts.Select(host => host.StartAsync()));
+                }
+                catch (Exception)
+                {
+                    Assert.True(false, "Could not start up two hosts on the same device in parallel");
+                }
+                finally
+                {
+                    foreach (var host in hosts)
+                    {
+                        await host.StopAsync();
+                        host.Dispose();
+                    }
+                }
             }
         }
 
@@ -5265,8 +5350,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
-
+#if FUNCTIONS_V1
+                var logger = this.loggerProvider.CreatedLoggers.FirstOrDefault(l => l.Category.Equals("Function"));
+#else
                 var logger = this.loggerProvider.CreatedLoggers.FirstOrDefault(l => l.Category.Equals("Function.ReplaySafeLogger_OneLogMessage.User"));
+#endif
                 var logMessages = logger.LogMessages.Where(
                     msg => msg.FormattedMessage.Contains("ReplaySafeLogger Test: About to say Hello")).ToList();
                 Assert.Single(logMessages);

@@ -28,7 +28,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly FunctionType functionType;
         private readonly string storageConnectionString;
 #if !FUNCTIONS_V1
-        private readonly Lazy<DurableTaskScaleMonitor> scaleMonitor;
+        private readonly Lazy<IScaleMonitor> scaleMonitor;
 #endif
 
         public DurableTaskListener(
@@ -52,13 +52,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.functionType = functionType;
             this.storageConnectionString = storageConnectionString;
 #if !FUNCTIONS_V1
-            this.scaleMonitor = new Lazy<DurableTaskScaleMonitor>(() =>
-                new DurableTaskScaleMonitor(
+            this.scaleMonitor = new Lazy<IScaleMonitor>(() =>
+                this.config.GetScaleMonitor(
                     this.functionId,
                     this.functionName,
-                    this.config.Options.HubName,
-                    this.storageConnectionString,
-                    this.config.TraceHelper));
+                    this.storageConnectionString));
 #endif
         }
 

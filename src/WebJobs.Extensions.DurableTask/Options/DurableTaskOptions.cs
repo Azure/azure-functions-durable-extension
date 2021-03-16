@@ -86,28 +86,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// also increase the total CPU and memory usage on a single worker instance.
         /// </remarks>
         /// <value>
-        /// A positive integer configured by the host. The default value is 10X the number of processors on the current machine.
+        /// A positive integer configured by the host.
         /// </value>
-        public int MaxConcurrentActivityFunctions { get; set; } = 10 * Environment.ProcessorCount;
+        public int? MaxConcurrentActivityFunctions { get; set; } = null;
 
         /// <summary>
         /// Gets or sets the maximum number of orchestrator functions that can be processed concurrently on a single host instance.
         /// </summary>
         /// <value>
-        /// A positive integer configured by the host. The default value is 10X the number of processors on the current machine.
+        /// A positive integer configured by the host.
         /// </value>
-        public int MaxConcurrentOrchestratorFunctions { get; set; } = 10 * Environment.ProcessorCount;
-
-        /// <summary>
-        /// Gets or sets the base URL for the HTTP APIs managed by this extension.
-        /// </summary>
-        /// <remarks>
-        /// This property is intended for use only by runtime hosts.
-        /// </remarks>
-        /// <value>
-        /// A URL pointing to the hosted function app that responds to status polling requests.
-        /// </value>
-        public Uri NotificationUrl { get; set; }
+        public int? MaxConcurrentOrchestratorFunctions { get; set; } = null;
 
         /// <summary>
         /// Gets or sets a value indicating whether to enable the local RPC endpoint managed by this extension.
@@ -210,6 +199,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         // Used for mocking the lifecycle notification helper.
         internal HttpMessageHandler NotificationHandler { get; set; }
 
+        // This is just a way for tests to overwrite the webhook url, since there is no easy way
+        // to mock the value from ExtensionConfigContext. It should not be used in production code paths.
+        internal Func<Uri> WebhookUriProviderOverride { get; set; }
+
         /// <summary>
         /// Sets HubName to a value that is considered a default value.
         /// </summary>
@@ -225,14 +218,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // Clone the options to avoid making changes to the original.
             // We make updates to the clone rather than to JSON to ensure we're updating what we think we're updating.
             DurableTaskOptions clone = JObject.FromObject(this).ToObject<DurableTaskOptions>();
-
-            // Don't trace the notification URL query string since it may contain secrets.
-            // This is the only property which we expect to contain secrets. Everything else should be *names*
-            // of secrets that are resolved later from environment variables, etc.
-            if (clone.NotificationUrl != null)
-            {
-                clone.NotificationUrl = new Uri(clone.NotificationUrl.GetLeftPart(UriPartial.Path));
-            }
 
             // At this stage the task hub name is expected to have been resolved. However, we want to know
             // what the original value was in addition to the resolved value, so we're updating the JSON
