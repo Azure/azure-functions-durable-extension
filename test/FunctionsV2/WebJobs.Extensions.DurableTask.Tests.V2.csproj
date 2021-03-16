@@ -26,8 +26,8 @@
     <PackageReference Include="xunit" Version="2.4.1" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.4.1" />
     <PackageReference Include="StyleCop.Analyzers" Version="1.1.*" PrivateAssets="All" />
-    <PackageReference Include="Microsoft.Azure.DurableTask.Emulator" Version="2.5.1" />
-    <PackageReference Include="Microsoft.Azure.DurableTask.Redis" Version="0.1.7-alpha" />
+    <PackageReference Include="Microsoft.Azure.DurableTask.Emulator" Version="2.5.2" />
+    <PackageReference Include="Microsoft.Azure.DurableTask.Redis" Version="0.1.8-alpha" />
   </ItemGroup>
 
   <ItemGroup>
