@@ -96,7 +96,7 @@
     <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
     <PackageTags>Microsoft;Azure;WebJobs;Durable;Extension;Orchestration;Workflow;Functions</PackageTags>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
-    <PackageLicenseUrl>https://raw.githubusercontent.com/Azure/azure-functions-durable-extension/7e01577f57fdfdb15d20fa66b09c3714926e0aea/LICENSE</PackageLicenseUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/Azure/azure-functions-durable-extension</PackageProjectUrl>
     <IncludeSymbols>true</IncludeSymbols>
     <IncludeReferenceProjects>true</IncludeReferenceProjects>
