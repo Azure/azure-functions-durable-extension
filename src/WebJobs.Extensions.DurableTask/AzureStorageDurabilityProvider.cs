@@ -9,10 +9,14 @@ using System.Threading.Tasks;
 using DurableTask.AzureStorage;
 using DurableTask.AzureStorage.Tracking;
 using DurableTask.Core;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
+#if !FUNCTIONS_V1
+using Microsoft.Azure.WebJobs.Host.Scale;
+#endif
 using AzureStorage = DurableTask.AzureStorage;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
@@ -25,11 +29,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly AzureStorageOrchestrationService serviceClient;
         private readonly string connectionName;
         private readonly JObject storageOptionsJson;
+        private readonly ILogger logger;
 
         public AzureStorageDurabilityProvider(
             AzureStorageOrchestrationService service,
             string connectionName,
-            AzureStorageOptions options)
+            AzureStorageOptions options,
+            ILogger logger)
             : base("Azure Storage", service, service, connectionName)
         {
             this.serviceClient = service;
@@ -41,6 +47,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     Converters = { new StringEnumConverter() },
                     ContractResolver = new CamelCasePropertyNamesContractResolver(),
                 });
+            this.logger = logger;
         }
 
         public override bool SupportsEntities => true;
@@ -55,6 +62,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public override TimeSpan MaximumDelayTime { get; set; } = TimeSpan.FromDays(6);
 
         public override TimeSpan LongRunningTimerIntervalLength { get; set; } = TimeSpan.FromDays(3);
+
+        public override string EventSourceName { get; set; } = "DurableTask-AzureStorage";
 
         /// <inheritdoc/>
         public async override Task<IList<OrchestrationState>> GetAllOrchestrationStates(CancellationToken cancellationToken)
@@ -178,5 +187,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 FetchInput = condition.ShowInput,
             };
         }
+
+#if !FUNCTIONS_V1
+        /// <inheritdoc/>
+        public override bool TryGetScaleMonitor(
+            string functionId,
+            string functionName,
+            string hubName,
+            string storageConnectionString,
+            out IScaleMonitor scaleMonitor)
+        {
+            scaleMonitor = new DurableTaskScaleMonitor(
+                functionId,
+                functionName,
+                hubName,
+                storageConnectionString,
+                this.logger);
+            return true;
+        }
+#endif
     }
 }

@@ -127,7 +127,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     return status;
                 }
 
-                await Task.Delay(TimeSpan.FromSeconds(1));
+                await Task.Delay(TimeSpan.FromMilliseconds(200));
             }
             while (sw.Elapsed < timeout);
 
@@ -159,7 +159,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     return status;
                 }
 
-                await Task.Delay(TimeSpan.FromSeconds(1));
+                await Task.Delay(TimeSpan.FromMilliseconds(200));
             }
             while (sw.Elapsed < timeout);
 

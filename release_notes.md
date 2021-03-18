@@ -1,16 +1,11 @@
-<!-- Please put your changes into the appropriate category (or categories) below. -->
-
 ## New Features
-- Exposed IServiceCollection extension methods AddDurableTaskFactory() for net461 releases so classic .NET Framework apps using the .NET Core model of dependency injection can create their own Durable Clients. (#1653)
+- Added support to select a storage backend provider when multiple are installed (#1702): Select which storage backend to use by setting the `type` field under `durableTask/storageProvider` in host.json. If this field isn't set, then the storage backend will default to using Azure Storage.
+- Improved concurrency defaults for the App Service Consumption plan (https://github.com/Azure/azure-functions-durable-extension/pull/1706)
 
-## Bug fixes
-- Remove incorrect information from C# docs summary for IDurableEntityClient.ReadEntityStateAsync() regarding states large than 16KB (#1637)
-- Fix a NullReferenceException in IDurableClient.SignalClient() for IDurableClient objects created by the new DurabilityClientFactory (#1644)
+## Bug Fixes:
+- Properly used update management API URLs after a successful slot swap on Functions V3 (#1716)
+- Fix race condition when multiple apps start with local RPC endpoints on the same VM in parallel. (#1719)
+- Fix CallHttpAsync() to throw an HttpRequestException instead of a serialization exception if the target endpoint doesn't exist (#1718)
 
 ## Breaking changes
-
-
-## Dependency Changes 
-- Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers --> 0.4.0
-
-Removed dependency on Mono.Posix.NETStandard by instead relying on P/Invoke to generate inotify signals in Linux; reducing the size of the package (#1643)
+- Fix CallHttpAsync() to throw an HttpRequestException instead of a serialization exception if the target endpoint doesn't exist (#1718). This is a breaking change if you were handling `HttpRequestException`s by catching `FunctionFailedException`s.

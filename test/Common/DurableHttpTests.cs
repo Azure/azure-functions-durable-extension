@@ -31,47 +31,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         private readonly ITestOutputHelper output;
 
         private readonly TestLoggerProvider loggerProvider;
-        private readonly bool useTestLogger = IsLogFriendlyPlatform();
-        private readonly LogEventTraceListener eventSourceListener;
 
         public DurableHttpTests(ITestOutputHelper output)
         {
             this.output = output;
             this.loggerProvider = new TestLoggerProvider(output);
-            this.eventSourceListener = new LogEventTraceListener();
-            this.StartLogCapture();
         }
 
         public void Dispose()
         {
-            this.eventSourceListener.Dispose();
-        }
-
-        private void OnEventSourceListenerTraceLog(object sender, LogEventTraceListener.TraceLogEventArgs e)
-        {
-            this.output.WriteLine($"      ETW: {e.ProviderName} [{e.Level}] : {e.Message}");
-        }
-
-        private void StartLogCapture()
-        {
-            if (this.useTestLogger)
-            {
-                var traceConfig = new Dictionary<string, TraceEventLevel>
-                {
-                    { "DurableTask-AzureStorage", TraceEventLevel.Informational },
-                    { "7DA4779A-152E-44A2-A6F2-F80D991A5BEE", TraceEventLevel.Warning }, // DurableTask.Core
-                };
-
-                this.eventSourceListener.OnTraceLog += this.OnEventSourceListenerTraceLog;
-
-                string sessionName = "DTFxTrace" + Guid.NewGuid().ToString("N");
-                this.eventSourceListener.CaptureLogs(sessionName, traceConfig);
-            }
-        }
-
-        private static bool IsLogFriendlyPlatform()
-        {
-            return !RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
         }
 
         [Fact]
@@ -138,7 +106,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
   },
   ""Content"": null,
   ""TokenSource"": {
-    ""$type"": ""Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests.DurableHttpTests+MockTokenSource, WebJobs.Extensions.DurableTask.Tests.V2"",
+    ""$type"": ""Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests.DurableHttpTests+MockTokenSource, WebJobs.Extensions.DurableTask.Tests." + PlatformSpecificHelpers.VersionSuffix + @""",
     ""testToken"": ""dummy token"",
     ""options"": {
       ""authorityhost"": ""https://dummy.login.microsoftonline.com/"",
@@ -388,6 +356,44 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 var output = status?.Output;
                 Assert.Contains("Orchestrator function 'CallHttpAsyncOrchestrator' failed: The operation was canceled. Reached user specified timeout: 00:00:05", output.ToString());
+                Assert.Equal(OrchestrationRuntimeStatus.Failed, status?.RuntimeStatus);
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
+        /// End-to-end test which checks if the CallHttpAsync Orchestrator fails  when the
+        /// target url doesn't exist and throws an HttpRequestException.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        public async Task DurableHttpAsync_Synchronous_HttpRequestException(string storageProvider)
+        {
+            HttpMessageHandler httpMessageHandler = MockSynchronousHttpMessageHandlerWithHttpRequestException();
+
+            using (ITestHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.DurableHttpAsync_Synchronous_HttpRequestException),
+                enableExtendedSessions: false,
+                storageProviderType: storageProvider,
+                durableHttpMessageHandler: new DurableHttpMessageHandlerFactory(httpMessageHandler)))
+            {
+                await host.StartAsync();
+
+                Dictionary<string, string> headers = new Dictionary<string, string>();
+                headers.Add("Accept", "application/json");
+                TestDurableHttpRequest testRequest = new TestDurableHttpRequest(
+                    httpMethod: HttpMethod.Get,
+                    headers: headers);
+
+                string functionName = nameof(TestOrchestrations.CallHttpAsyncOrchestrator);
+                var client = await host.StartOrchestratorAsync(functionName, testRequest, this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
+
+                var output = status?.Output;
+                Assert.Contains("No such host is known.", output.ToString());
                 Assert.Equal(OrchestrationRuntimeStatus.Failed, status?.RuntimeStatus);
 
                 await host.StopAsync();
@@ -809,8 +815,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             asyncTestHeaders.Add("Location", "https://www.dummy-location-url.com");
 
             HttpResponseMessage acceptedHttpResponseMessage = CreateTestHttpResponseMessage(
-                                                                                               statusCode: HttpStatusCode.Accepted,
-                                                                                               headers: asyncTestHeaders);
+                statusCode: HttpStatusCode.Accepted,
+                headers: asyncTestHeaders);
 
             HttpMessageHandler httpMessageHandler = MockAsynchronousHttpMessageHandler(acceptedHttpResponseMessage);
 
@@ -1537,6 +1543,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                    await Task.Delay(timeoutTimespan);
                    return httpResponseMessage;
                });
+
+            return handlerMock.Object;
+        }
+
+        private static HttpMessageHandler MockSynchronousHttpMessageHandlerWithHttpRequestException()
+        {
+            HttpResponseMessage httpResponseMessage = CreateTestHttpResponseMessage(HttpStatusCode.NotFound);
+
+            httpResponseMessage.Content = new ExceptionThrowingContent(new HttpRequestException("No such host is known."));
+
+            var handlerMock = new Mock<HttpMessageHandler>(MockBehavior.Strict);
+            handlerMock
+               .Protected()
+               .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+               .ReturnsAsync(httpResponseMessage);
 
             return handlerMock.Object;
         }

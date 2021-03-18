@@ -19,15 +19,15 @@
     <PackageReference Include="Microsoft.Azure.WebJobs" Version="3.0.14" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.Storage" Version="3.0.0" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Logging.ApplicationInsights" Version="3.0.14" />
-    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="2.0.33" />
+    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="2.0.65" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="3.1.5" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.9.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.8.3" />
     <PackageReference Include="Moq" Version="4.7.145" />
     <PackageReference Include="xunit" Version="2.4.1" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.4.1" />
     <PackageReference Include="StyleCop.Analyzers" Version="1.1.*" PrivateAssets="All" />
-    <PackageReference Include="Microsoft.Azure.DurableTask.Emulator" Version="2.5.1" />
-    <PackageReference Include="Microsoft.Azure.DurableTask.Redis" Version="0.1.7-alpha" />
+    <PackageReference Include="Microsoft.Azure.DurableTask.Emulator" Version="2.5.2" />
+    <PackageReference Include="Microsoft.Azure.DurableTask.Redis" Version="0.1.8-alpha" />
   </ItemGroup>
 
   <ItemGroup>
