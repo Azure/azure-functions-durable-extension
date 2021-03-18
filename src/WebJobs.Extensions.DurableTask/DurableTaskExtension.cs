@@ -202,6 +202,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             : this(options, loggerFactory, nameResolver, orchestrationServiceFactories, shutdownNotification, durableHttpMessageHandlerFactory)
         {
             this.connectionStringResolver = connectionStringResolver;
+            if (platformInformationService == null)
+            {
+                platformInformationService = new DefaultPlatformInformationProvider(nameResolver);
+            }
+
             this.platformInformationService = platformInformationService;
         }
 
