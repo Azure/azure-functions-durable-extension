@@ -40,12 +40,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.nameResolver = nameResolver;
             this.loggerFactory = loggerFactory;
             this.azureStorageOptions = new AzureStorageOptions();
-#if FUNCTIONS_V1
-            if (platformInfo == null)
-            {
-                platformInfo = new DefaultPlatformInformationProvider(nameResolver);
-            }
-#endif
 
             this.inConsumption = platformInfo.InConsumption();
 

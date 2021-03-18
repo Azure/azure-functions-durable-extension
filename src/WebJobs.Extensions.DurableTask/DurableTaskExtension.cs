@@ -74,7 +74,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly bool isOptionsConfigured;
         private readonly IApplicationLifetimeWrapper hostLifetimeService = HostLifecycleService.NoOp;
 #pragma warning disable CS0612 // Type or member is obsolete
-        private readonly IPlatformInformationService platformInformationService;
+        private IPlatformInformationService platformInformationService;
 #pragma warning restore CS0612 // Type or member is obsolete
         private IDurabilityProviderFactory durabilityProviderFactory;
         private INameResolver nameResolver;
@@ -143,7 +143,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.Options = options?.Value ?? new DurableTaskOptions();
             this.nameResolver = nameResolver ?? throw new ArgumentNullException(nameof(nameResolver));
             this.loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
-            this.platformInformationService = platformInformationService ?? throw new ArgumentNullException(nameof(platformInformationService));
+            this.platformInformationService = platformInformationService ?? new DefaultPlatformInformationProvider(nameResolver);
             this.ResolveAppSettingOptions();
 
             ILogger logger = loggerFactory.CreateLogger(LoggerCategoryName);
@@ -202,12 +202,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             : this(options, loggerFactory, nameResolver, orchestrationServiceFactories, shutdownNotification, durableHttpMessageHandlerFactory)
         {
             this.connectionStringResolver = connectionStringResolver;
-            if (platformInformationService == null)
-            {
-                platformInformationService = new DefaultPlatformInformationProvider(nameResolver);
-            }
-
-            this.platformInformationService = platformInformationService;
         }
 
         /// <summary>
@@ -508,6 +502,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             ILogger logger = this.loggerFactory.CreateLogger(LoggerCategoryName);
             this.TraceHelper = new EndToEndTraceHelper(logger, this.Options.Tracing.TraceReplayEvents);
             this.connectionStringResolver = new WebJobsConnectionStringProvider();
+            this.platformInformationService = new DefaultPlatformInformationProvider(this.nameResolver);
             this.durabilityProviderFactory = new AzureStorageDurabilityProviderFactory(
                 new OptionsWrapper<DurableTaskOptions>(this.Options),
                 this.connectionStringResolver,
