@@ -3,7 +3,7 @@
 - Improved concurrency defaults for the App Service Consumption plan (https://github.com/Azure/azure-functions-durable-extension/pull/1706)
 
 ## Bug Fixes:
-- Properly used update management API URLs after a successful slot swap (#1716)
+- Properly used update management API URLs after a successful slot swap on Functions V3 (#1716)
 - Fix race condition when multiple apps start with local RPC endpoints on the same VM in parallel. (#1719)
 - Fix CallHttpAsync() to throw an HttpRequestException instead of a serialization exception if the target endpoint doesn't exist (#1718)
 

@@ -111,6 +111,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="lifeCycleNotificationHelper">The lifecycle notification helper used for custom orchestration tracking.</param>
         /// <param name="messageSerializerSettingsFactory">The factory used to create <see cref="JsonSerializerSettings"/> for message settings.</param>
         /// <param name="errorSerializerSettingsFactory">The factory used to create <see cref="JsonSerializerSettings"/> for error settings.</param>
+        /// <param name="webhookProvider">Provides webhook urls for HTTP management APIs.</param>
         /// <param name="telemetryActivator">The activator of DistributedTracing. .netstandard2.0 only.</param>
         /// <param name="platformInformationService">The platform information provider to inspect the OS, app service plan, and other enviroment information.</param>
 #pragma warning restore CS1572
@@ -128,10 +129,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #pragma warning restore CS0612 // Type or member is obsolete
 #if !FUNCTIONS_V1
             IErrorSerializerSettingsFactory errorSerializerSettingsFactory = null,
+#pragma warning disable CS0618 // Type or member is obsolete
+            IWebHookProvider webhookProvider = null,
+#pragma warning restore CS0618 // Type or member is obsolete
 #pragma warning disable SA1113, SA1001, SA1115
             ITelemetryActivator telemetryActivator = null)
 #pragma warning restore SA1113, SA1001, SA1115
-
 #else
             IErrorSerializerSettingsFactory errorSerializerSettingsFactory = null)
 #endif
@@ -163,6 +166,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.ErrorDataConverter = this.CreateErrorDataConverter(errorSerializerSettingsFactory);
 
             this.HttpApiHandler = new HttpApiHandler(this, logger);
+#if !FUNCTIONS_V1
+            // This line ensure every time we need the webhook URI, we get it directly from the
+            // function runtime, which has the most up-to-date knowledge about the site hostname.
+            Func<Uri> webhookDelegate = () => webhookProvider.GetUrl(this);
+            this.HttpApiHandler.RegisterWebhookProvider(
+                this.Options.WebhookUriProviderOverride ??
+                webhookDelegate);
+#endif
 
             this.hostLifetimeService = hostLifetimeService;
 
@@ -314,13 +325,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #pragma warning disable CS0618 // Type or member is obsolete
 
             // Invoke webhook handler to make functions runtime register extension endpoints.
-            context.GetWebhookHandler();
+            var initialWebhookUri = context.GetWebhookHandler();
 
-            // This line ensure every time we need the webhook URI, we get it directly from the
-            // function runtime, which has the most up-to-date knowledge about the site hostname.
+#if FUNCTIONS_V1
+            // In Functions V1, there is no notion of an IWebhookProvider that
+            // we can dynamically call to fetch the webhook URI, and since context.GetWebhookHandler()
+            // only works in the scope of the Initialize() function, we just have to live with the static URI
+            // we grab now.
+            Func<Uri> staticWebhookHandler = () => initialWebhookUri;
             this.HttpApiHandler.RegisterWebhookProvider(
                 this.Options.WebhookUriProviderOverride ??
-                context.GetWebhookHandler);
+                staticWebhookHandler);
+#endif
 #pragma warning restore CS0618 // Type or member is obsolete
 
             this.TraceConfigurationSettings();
