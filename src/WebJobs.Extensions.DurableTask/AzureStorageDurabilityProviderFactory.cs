@@ -40,7 +40,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.nameResolver = nameResolver;
             this.loggerFactory = loggerFactory;
             this.azureStorageOptions = new AzureStorageOptions();
-
             this.inConsumption = platformInfo.InConsumption();
 
             // The consumption plan has different performance characteristics so we provide
