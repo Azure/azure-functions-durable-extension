@@ -143,7 +143,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.Options = options?.Value ?? new DurableTaskOptions();
             this.nameResolver = nameResolver ?? throw new ArgumentNullException(nameof(nameResolver));
             this.loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
-            this.platformInformationService = platformInformationService ?? new DefaultPlatformInformationProvider(nameResolver);
+            this.platformInformationService = platformInformationService ?? throw new ArgumentNullException(nameof(platformInformationService));
             this.ResolveAppSettingOptions();
 
             ILogger logger = loggerFactory.CreateLogger(LoggerCategoryName);
