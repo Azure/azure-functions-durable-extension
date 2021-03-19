@@ -88,10 +88,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             if (!string.IsNullOrEmpty(execution.Error))
             {
-                string exceptionDetails = $"Message: {execution.Error}, StackTrace: {result.Exception.StackTrace}";
+                if (TryParseErrorDetails(execution.Error, out string message, out string serializedException))
+                {
+                    throw new OrchestrationFailureException(
+                        $"Orchestrator function '{this.context.Name}' failed: {message}",
+                        details: serializedException);
+                }
+
+                // Don't recognize the format of this error response. Just return the full error payload.
                 throw new OrchestrationFailureException(
-                        $"Orchestrator function '{this.context.Name}' failed: {execution.Error}",
-                        exceptionDetails);
+                    $"Orchestrator function '{this.context.Name}' failed: {execution.Error}",
+                    details: null);
             }
 
             if (execution.IsDone)
@@ -101,6 +108,43 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             // there are more executions to process
+            return true;
+        }
+
+        private static bool TryParseErrorDetails(string rawError, out string message, out string serializedException)
+        {
+            message = null;
+            serializedException = null;
+
+            if (string.IsNullOrEmpty(rawError))
+            {
+                return false;
+            }
+
+            // Expected format from Python is "message \n {json-details}"
+            int newlineIndex = rawError.IndexOf('\n', 0);
+            if (newlineIndex <= 0)
+            {
+                return false;
+            }
+
+            string secondPart = rawError.Substring(newlineIndex + 1).Trim();
+            if (!secondPart.StartsWith("{"))
+            {
+                return false;
+            }
+
+            try
+            {
+                JObject.Parse(secondPart);
+            }
+            catch (JsonReaderException)
+            {
+                return false;
+            }
+
+            message = rawError.Substring(0, newlineIndex).Trim();
+            serializedException = secondPart;
             return true;
         }
 
@@ -115,15 +159,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             foreach (AsyncAction[] actionSet in actions)
             {
                 var tasks = new List<Task>(actions.Length);
-                DurableOrchestrationContext ctx = this.context as DurableOrchestrationContext;
+                var ctx = this.context as DurableOrchestrationContext;
 
                 // An actionSet represents all actions that were scheduled within that execution.
                 foreach (AsyncAction action in actionSet)
                 {
+                    Task newTask = null;
                     switch (action.ActionType)
                     {
                         case AsyncActionType.CallActivity:
-                            tasks.Add(this.context.CallActivityAsync(action.FunctionName, action.Input));
+                            newTask = this.context.CallActivityAsync(action.FunctionName, action.Input);
                             break;
                         case AsyncActionType.CreateTimer:
                             using (var cts = new CancellationTokenSource())
@@ -133,7 +178,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                                     ctx.ThrowIfInvalidTimerLengthForStorageProvider(action.FireAt);
                                 }
 
-                                tasks.Add(this.context.CreateTimer(action.FireAt, cts.Token));
+                                newTask = this.context.CreateTimer(action.FireAt, cts.Token);
 
                                 if (action.IsCanceled)
                                 {
@@ -143,18 +188,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                             break;
                         case AsyncActionType.CallActivityWithRetry:
-                            tasks.Add(this.context.CallActivityWithRetryAsync(action.FunctionName, action.RetryOptions, action.Input));
+                            newTask = this.context.CallActivityWithRetryAsync(action.FunctionName, action.RetryOptions, action.Input);
                             break;
                         case AsyncActionType.CallSubOrchestrator:
-                            tasks.Add(this.context.CallSubOrchestratorAsync(action.FunctionName, action.InstanceId, action.Input));
+                            newTask = this.context.CallSubOrchestratorAsync(action.FunctionName, action.InstanceId, action.Input);
                             break;
                         case AsyncActionType.CallSubOrchestratorWithRetry:
-                            tasks.Add(this.context.CallSubOrchestratorWithRetryAsync(action.FunctionName, action.RetryOptions, action.InstanceId, action.Input));
+                            newTask = this.context.CallSubOrchestratorWithRetryAsync(action.FunctionName, action.RetryOptions, action.InstanceId, action.Input);
                             break;
                         case AsyncActionType.CallEntity:
                             {
                                 var entityId = EntityId.GetEntityIdFromSchedulerId(action.InstanceId);
-                                tasks.Add(this.context.CallEntityAsync(entityId, action.EntityOperation, action.Input));
+                                newTask = this.context.CallEntityAsync(entityId, action.EntityOperation, action.Input);
                                 break;
                             }
 
@@ -178,13 +223,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             this.context.ContinueAsNew(action.Input);
                             break;
                         case AsyncActionType.WaitForExternalEvent:
-                            tasks.Add(this.context.WaitForExternalEvent<object>(action.ExternalEventName));
+                            newTask = this.context.WaitForExternalEvent<object>(action.ExternalEventName);
                             break;
                         case AsyncActionType.CallHttp:
-                            tasks.Add(this.context.CallHttpAsync(action.HttpRequest));
+                            newTask = this.context.CallHttpAsync(action.HttpRequest);
                             break;
                         default:
                             break;
+                    }
+
+                    if (newTask != null)
+                    {
+                        // Check to see if the context API call failed e.g. because the caller tried to schedule a function that doesn't exist.
+                        if (newTask.IsFaulted)
+                        {
+                            // Awaiting a faulted task will cause the exception to be thrown.
+                            await newTask;
+                        }
+
+                        tasks.Add(newTask);
                     }
                 }
 
