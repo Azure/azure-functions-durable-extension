@@ -3,9 +3,11 @@
     <TargetFramework>net461</TargetFramework>
     <AzureFunctionsVersion>v1</AzureFunctionsVersion>
   </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\src\WebJobs.Extensions.DurableTask\WebJobs.Extensions.DurableTask.csproj" />
+  </ItemGroup>
   <!-- Common packages for all targets -->
   <ItemGroup>
-    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask" Version="2.4.1" />
     <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="1.0.30" />
     <PackageReference Include="Microsoft.Azure.WebJobs" Version="2.3.0" />
     <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
