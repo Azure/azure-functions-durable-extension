@@ -12,11 +12,8 @@
     }
   },
   "extensions": {
-    "http": {
-      "routePrefix": ""
-    },
     "durableTask": {
-      "hubName": "%MyTaskHubName%"
+      "hubName": "DotNetSmokeTestV3"
     }
   }
 }

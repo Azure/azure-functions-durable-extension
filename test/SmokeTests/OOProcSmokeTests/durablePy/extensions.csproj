@@ -1,10 +1,18 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
   <WarningsAsErrors></WarningsAsErrors>
   <DefaultItemExcludes>**</DefaultItemExcludes>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask" Version="2.3.9" />
+    <None Include="host.json" />
+    <None Include="requirements.txt" />
+    <None Include="local.settings.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\src\WebJobs.Extensions.DurableTask\WebJobs.Extensions.DurableTask.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Azure.WebJobs.Script.ExtensionsMetadataGenerator" Version="1.2.1" />
   </ItemGroup>
 </Project>

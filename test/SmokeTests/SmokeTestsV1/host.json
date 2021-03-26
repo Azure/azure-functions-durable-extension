@@ -1,5 +1,5 @@
 {
   "durableTask": {
-    "hubName": "%MyTaskHubName%"
+    "hubName": "DotNetSmokeTestV1"
   }
 }

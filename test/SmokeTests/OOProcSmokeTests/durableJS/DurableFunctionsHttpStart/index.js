@@ -2,7 +2,7 @@
 
 module.exports = async function (context, req) {
     const client = df.getClient(context);
-    const instanceId = await client.startNew(req.params.functionName, undefined, req.body);
+    const instanceId = await client.startNew("DurableFunctionsOrchestratorJS", undefined, req.body);
 
     context.log(`Started orchestration with ID = '${instanceId}'.`);
 
