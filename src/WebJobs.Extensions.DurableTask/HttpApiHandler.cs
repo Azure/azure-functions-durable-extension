@@ -66,7 +66,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private static readonly TemplateMatcher EntityRoute = GetEntityRoute();
         private static readonly TemplateMatcher InstancesRoute = GetInstancesRoute();
         private static readonly TemplateMatcher InstanceRaiseEventRoute = GetInstanceRaiseEventRoute();
-        private static readonly TemplateMatcher AppLeaseRoute = GetStealAppLeaseRoute();
+        private static readonly TemplateMatcher StealAppLeaseRoute = GetStealAppLeaseRoute();
 
         private readonly ILogger logger;
         private readonly MessagePayloadDataConverter messageDataConverter;
@@ -410,12 +410,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     }
                 }
 
-                if (AppLeaseRoute.TryMatch(path, routeValues))
+                if (StealAppLeaseRoute.TryMatch(path, routeValues))
                 {
-                    if (routeValues[StealLeaseRouteParameter] != null)
-                    {
-                        return await this.HandleStealAppLeaseRequestAsync(request);
-                    }
+                    return await this.HandleStealAppLeaseRequestAsync(request);
                 }
 
                 return request.CreateResponse(HttpStatusCode.NotFound);
