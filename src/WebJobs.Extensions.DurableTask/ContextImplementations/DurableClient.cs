@@ -975,6 +975,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return proxyContext.SignalTask;
         }
 
+        /// <inheritdoc/>
+        Task IDurableOrchestrationClient.StealAppLeaseAsync()
+        {
+            if (this.durableTaskOptions.UseAppLease == false)
+            {
+                throw new InvalidOperationException("Cannot steal the AppLease. This app is not using the AppLease feature.");
+            }
+
+            return this.durabilityProvider.StealAppLeaseAsync();
+        }
+
         private class EventIndexDateMapping
         {
             public int Index { get; set; }

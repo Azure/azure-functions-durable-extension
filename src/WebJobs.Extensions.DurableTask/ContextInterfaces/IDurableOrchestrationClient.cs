@@ -298,5 +298,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <returns>A task that completes when the orchestration is started. The task contains the instance id of the started
         /// orchestratation instance.</returns>
         Task<string> RestartAsync(string instanceId, bool restartWithNewInstanceId = true);
+
+        /// <summary>
+        ///  Steals AppLease if this app doesn't already have it. To use this, must be using the AppLease feature by setting UseAppLease to true in host.json.
+        /// </summary>
+        /// <returns>A task that completes when the steal app message is written to storage.</returns>
+        Task StealAppLeaseAsync();
     }
 }

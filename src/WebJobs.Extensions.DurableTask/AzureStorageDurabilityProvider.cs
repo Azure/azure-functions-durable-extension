@@ -157,6 +157,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return base.ValidateDelayTime(timespan, out errorMessage);
         }
 
+        /// <inheritdoc/>
+        public async override Task StealAppLeaseAsync()
+        {
+            await this.serviceClient.ForceChangeAppLeaseAsync();
+        }
+
         private OrchestrationStatusQueryResult ConvertFrom(DurableStatusQueryResult statusContext)
         {
             var results = new List<DurableOrchestrationStatus>();
