@@ -8,38 +8,38 @@ In this article, you use command-line tools to create a function app, then publi
 
 # Create a function app
 
-Go to Azure Portal, Click the cloud shell on the right top of the Azure Portal. Open Bash.
+Go to Azure Portal, Click the cloud shell on the right top of the Azure Portal. Open Bash if it's not already selected.
 
 ![Cloud Shell](images/cloud-shell.png)
 
 ## Create a Resource Group
 
-Create a resource group.
+Run the following commands to create a resource group.
 
 ```bash
-ResourceGroup=DurableFunctionsQucikstart-rg
+ResourceGroup=DurableFunctionsQuickstart-rg
 Location=westus
 az group create --name $ResourceGroup --location $Location
 ```
 ## Create a Storage Account
 
-Create a storage account. The storage account name should be globally unique. 
+Run the following commands to create a storage account. The storage account name should be globally unique. 
 
 ```bash
 StorageAccountName=<STORAGE_NAME>
 az storage account create --name $StorageAccountName --location $Location --resource-group $ResourceGroup --sku Standard_LRS
 ```
 
-## Create an Application Insights
+## Create an Application Insights Resource
 FunctionAppName should be globally unique. 
 
 ```bash
 az extension add -n application-insights
-FunctionAppName=<FUNCION_APP_NAME>
+FunctionAppName=<FUNCTION_APP_NAME>
 InstrumentationKey=`az monitor app-insights component create --app $FunctionAppName --location $Location --kind web -g $ResourceGroup --application-type web |  jq .instrumentationKey | xargs`
 ```
 
-You can see your InstrumentationKey of the Application Insights. We'll use this key at the configuration part of the sample applications. 
+`InstrumentationKey` now holds the Application Insights instrumentation key. We'll use this key when we configure the sample app's settings. 
 
 ```bash
 echo $InstrumentationKey
@@ -52,24 +52,26 @@ echo $InstrumentationKey
 az functionapp create --resource-group $ResourceGroup --consumption-plan-location $Location --runtime dotnet --functions-version 3 --name $FunctionAppName --storage-account $StorageAccountName  --app-insights $FunctionAppName --app-insights-key $InstrumentationKey
 ```
 
-**NOTE:** The samples targeting functions version 3. Distributed Tracing works for version 2 but not for version 1. 
+**NOTE:** The samples target Functions version 3. Distributed Tracing works for version 2 and 3, but not for version 1. 
 
 # Publish samples 
+
+Run the following commands on your local machine in a terminal of your choice.
+These commands will clone the `azure-functions-durable-extension` repository and create a local branch where you can make modifications to local.settings.json and host.json before publishing.
 
 ```bash
 git clone git@github.com:Azure/azure-functions-durable-extension.git
 cd azure-functions-durable-extension
-git switch -c correlation origin/correlation
+git checkout -b "correlation-sample"
 ```
 
 ## Open the .sln file
 
-Go to `samples/correlation-csharp/` then open FunctionAppCorrelation.sln with Visual Studio 2019. 
+Navigate to `samples/correlation-csharp/` then open FunctionAppCorrelation.sln with Visual Studio 2019. 
 
-## Create a local.settings.json
+## Modify a local.settings.json
 
-Create your `local.settings.json` for local execution. 
-You can copy and modify `local.settings.json.example.` Set the Application Insights Key. If you are not familiar with the Application Insights key, refer to [Create an Application Insights resource](https://docs.microsoft.com/en-us/azure/azure-monitor/app/create-new-resource). 
+Update the `APPINSIGHTS_INSTRUMENTATIONKEY` value in `local.settings.json` with the `InstrumentationKey` created in earlier. 
 
 ```json
 {
@@ -77,7 +79,7 @@ You can copy and modify `local.settings.json.example.` Set the Application Insig
   "Values": {
     "AzureWebJobsStorage": "UseDevelopmentStorage=true",
     "FUNCTIONS_WORKER_RUNTIME": "dotnet",
-    "APPINSIGHTS_INSTRUMENTATIONKEY": "<YOUR_APPINSGITHS_INSTRUMENTATIONKEY_HERE>"
+    "APPINSIGHTS_INSTRUMENTATIONKEY": "<YOUR_APPINSIGHTS_INSTRUMENTATIONKEY_HERE>"
   }
 }
 ```
@@ -123,7 +125,7 @@ Source: https://www.myget.org/F/azure-appservice-staging/api/v3/index.json
 
 During pre-release, we use `Microsoft.Azure.WebJobs.Extensions.DurableTask.Telemetry` NuGet package start with Version `2.2.0-alpha`.
 
-## Push the samples to the Function App
+## Publish the samples to the Function App
 
 Right-click the `FunctionAppCorrelation` project, then select `Publish.`  
 
@@ -137,20 +139,17 @@ Then select the target function app. Then click `OK.`
 
 ## Run the samples
 
-Refer to [the scenario](Readme.md#sample-scenario) that includes the samples. Some scenarios do not support distributed tracing. We'll support it in the future. For executing samples, call `HttpStart_*` functions as the endpoints. 
-
-If you can't pick one, you can try `/api/HttpStart_sampleOrchestration` on your FunctionApp. For the complex orchestration, try `/api/HttpStart_MultiLayerOrchestrationWithRetry`
-
-Refer the [Sample scenario](Readme.md#sample-scenario).
+Refer to the [sample scenarios section](Readme.md#sample-scenario) to find a list of available scenarios and descriptions of each one. Please note that all scenarios are not supported yet. 
+To execute samples, call the `HttpStart_*` functions as the endpoints. For example, you can try sending a request to the `/api/HttpStart_SimpleOrchestration` endpoint of your Function App. To run a complex orchestration, try `/api/HttpStart_MultiLayerOrchestrationWithRetry`.
 
 ## Diagnose the Telemetry
 
-Go to your Azure Portal, then go to your Application Insights resource. 
-Click `Search` on your left list. Filter it with `Last 30 minutes` and `Event types: Request.` You can see the `Start Orchestration` request. Click it.
+To see the emitted telemetry, go to the Application Insights resource in the Azure Portal. You can easily find this by going to the `DurableFunctionsQuickstart-rg` resource group. 
+Click `Transaction Search` in the menu. Filter it with `Last 30 minutes` and `Event types: Request.` Click on the `Start Orchestration` request.
 
 ![Search](images/search.png)
 
-Then You can see end-to-end tracing. Click and see how it correlates with each other. 
+You can see the end-to-end tracing here. Click and see how it correlates with each other. 
 
 ![End To End Tracing](images/end-to-end.png)
 
@@ -160,5 +159,3 @@ Then You can see end-to-end tracing. Click and see how it correlates with each o
 
 * [Configuration](configuration.md)
 * [Reference](reference.md)
-
-
