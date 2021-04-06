@@ -86,14 +86,16 @@ Update the `APPINSIGHTS_INSTRUMENTATIONKEY` value in `local.settings.json` with 
 
 ## host.json
 
-Configure host.json. This JSON is the sample of the Distributed Tracing with the W3C trace context. Distributed Tracing is enabled by default. You need to configure the telemetry protocol. For more details, refer [reference](reference.md).
+Configure host.json. The host.json sample below enables Distributed Tracing and sets [W3C Trace Context](https://github.com/Azure/azure-functions-durable-extension/blob/dev/samples/correlation-csharp/reference.md#w3ctracecontext) as the tracing protocol. The default value for `distributedTracingProtocol` is [HttpCorrelationTraceContext](https://github.com/Azure/azure-functions-durable-extension/blob/dev/samples/correlation-csharp/reference.md#httpcorrelationtracecontext).
 
 ```json
 {
+  "version": "2.0",
   "extensions": {
     "durableTask": {
       "tracing": {
-        "DistributedTracingProtocol": "W3CTraceContext"
+        "distributedTracingEnabled": true,
+        "distributedTracingProtocol": "W3CTraceContext"
       }
     }
   },
@@ -101,29 +103,14 @@ Configure host.json. This JSON is the sample of the Distributed Tracing with the
     "applicationInsights": {
       "httpAutoCollectionOptions": {
         "enableW3CDistributedTracing": true
-      } 
+      }
     }
-  },
-  "version": "2.0"
+  }
 }
 ```
 
 ## Storage Emulator 
 For the local execution, you need the [Strorage Emulator](https://docs.microsoft.com/en-us/azure/storage/common/storage-use-emulator). Download it from the link and execute it before you run the functions. 
-
-## Configure NuGet 
-
-Goto the Package source on Visual Studio. Right-click FunctionAppCorrelation project, select `Manage NuGet packages...`, then click the icon. 
-
-![NuGet Manager](images/nuget-manager.png)
-
-Add Available package sources. 
-NOTE: Distributed Tracing is pre-release. We currently use myget.org until it is going to GA. 
-
-Name: azure-appservice-staging
-Source: https://www.myget.org/F/azure-appservice-staging/api/v3/index.json
-
-During pre-release, we use `Microsoft.Azure.WebJobs.Extensions.DurableTask.Telemetry` NuGet package start with Version `2.2.0-alpha`.
 
 ## Publish the samples to the Function App
 
@@ -145,7 +132,7 @@ To execute samples, call the `HttpStart_*` functions as the endpoints. For examp
 ## Diagnose the Telemetry
 
 To see the emitted telemetry, go to the Application Insights resource in the Azure Portal. You can easily find this by going to the `DurableFunctionsQuickstart-rg` resource group. 
-Click `Transaction Search` in the menu. Filter it with `Last 30 minutes` and `Event types: Request.` Click on the `Start Orchestration` request.
+Once you have navigated to the Application Insights resource, click `Transaction Search` in the menu. Filter it with `Last 30 minutes` and `Event types: Request.` Click on the `Start Orchestration` request or any request that starts with 'Dt'.
 
 ![Search](images/search.png)
 
@@ -153,7 +140,7 @@ You can see the end-to-end tracing here. Click and see how it correlates with ea
 
 ![End To End Tracing](images/end-to-end.png)
 
-**NOTE:** When you see the correlation breaks, you might wait for a while. The request telemetry of the first orchestrator comes last. 
+**NOTE:** If you see correlation breaks, you might have to wait for the telemetry to propagate to the Application Insights Resource. The request telemetry of the first orchestrator comes last. 
 
 # Next Steps
 
