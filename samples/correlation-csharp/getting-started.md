@@ -8,7 +8,7 @@ In this article, you use command-line tools to create a function app, then publi
 
 # Create a function app
 
-Go to Azure Portal, Click the cloud shell on the right top of the Azure Portal. Open Bash if it's not already selected.
+Go to the [Azure Portal](https://ms.portal.azure.com/), click the cloud shell icon on the right top of the Azure Portal, and select Bash from the dropdown if it's not already selected.
 
 ![Cloud Shell](images/cloud-shell.png)
 
@@ -52,7 +52,7 @@ echo $InstrumentationKey
 az functionapp create --resource-group $ResourceGroup --consumption-plan-location $Location --runtime dotnet --functions-version 3 --name $FunctionAppName --storage-account $StorageAccountName  --app-insights $FunctionAppName --app-insights-key $InstrumentationKey
 ```
 
-**NOTE:** The samples target Functions version 3. Distributed Tracing works for version 2 and 3, but not for version 1. 
+**NOTE:** The samples target Functions version 3. Distributed Tracing works for version 2 and 3, but doesn't work for version 1. 
 
 # Publish samples 
 
@@ -69,9 +69,9 @@ git checkout -b "correlation-sample"
 
 Navigate to `samples/correlation-csharp/` then open FunctionAppCorrelation.sln with Visual Studio 2019. 
 
-## Modify a local.settings.json
+## Modify local.settings.json
 
-Update the `APPINSIGHTS_INSTRUMENTATIONKEY` value in `local.settings.json` with the `InstrumentationKey` created in earlier. 
+Update the `APPINSIGHTS_INSTRUMENTATIONKEY` value in `local.settings.json` with the `InstrumentationKey` created earlier. 
 
 ```json
 {
@@ -126,7 +126,7 @@ Then select the target function app. Then click `OK.`
 
 ## Run the samples
 
-Refer to the [sample scenarios section](Readme.md#sample-scenario) to find a list of available scenarios and descriptions of each one. Please note that all scenarios are not supported yet. 
+Refer to the [sample scenarios section](Readme.md#sample-scenario) to find a list of available scenarios and descriptions. Please note that all scenarios are not supported yet. 
 To execute samples, call the `HttpStart_*` functions as the endpoints. For example, you can try sending a request to the `/api/HttpStart_SimpleOrchestration` endpoint of your Function App. To run a complex orchestration, try `/api/HttpStart_MultiLayerOrchestrationWithRetry`.
 
 ## Diagnose the Telemetry
