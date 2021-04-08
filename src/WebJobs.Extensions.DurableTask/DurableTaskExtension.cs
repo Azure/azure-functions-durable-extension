@@ -182,7 +182,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // The RPC server is stopped when the host has finished shutting down.
             this.hostLifetimeService.OnStopped.Register(this.StopLocalRcpServer);
             this.telemetryActivator = telemetryActivator;
-            this.telemetryActivator?.Initialize();
+            this.telemetryActivator?.Initialize(logger);
 #endif
         }
 

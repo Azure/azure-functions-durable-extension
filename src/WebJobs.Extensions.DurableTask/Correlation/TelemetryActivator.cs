@@ -7,6 +7,7 @@ using DurableTask.Core.Settings;
 using Microsoft.ApplicationInsights;
 using Microsoft.ApplicationInsights.Channel;
 using Microsoft.ApplicationInsights.Extensibility;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
@@ -37,12 +38,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
         /// <summary>
         /// Initialize is initialize the telemetry client.
         /// </summary>
-        public void Initialize()
+        public void Initialize(ILogger logger)
         {
             this.SetUpDistributedTracing();
             if (CorrelationSettings.Current.EnableDistributedTracing)
             {
-                this.SetUpTelemetryClient();
+                this.SetUpTelemetryClient(logger);
                 this.SetUpTelemetryCallbacks();
             }
         }
@@ -80,7 +81,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
                 });
         }
 
-        private void SetUpTelemetryClient()
+        private void SetUpTelemetryClient(ILogger logger)
         {
             TelemetryConfiguration config = TelemetryConfiguration.CreateDefault();
             if (this.OnSend != null)
@@ -93,7 +94,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
             telemetryInitializer.ExcludeComponentCorrelationHttpHeadersOnDomains.Add("127.0.0.1");
             config.TelemetryInitializers.Add(telemetryInitializer);
 
-            config.InstrumentationKey = Environment.GetEnvironmentVariable("APPINSIGHTS_INSTRUMENTATIONKEY");
+            if (Environment.GetEnvironmentVariable("APPINSIGHTS_INSTRUMENTATIONKEY") != null)
+            {
+                config.InstrumentationKey = Environment.GetEnvironmentVariable("APPINSIGHTS_INSTRUMENTATIONKEY");
+            }
+            else
+            {
+                logger.LogWarning("'APPINSIGHTS_INSTRUMENTATIONKEY' isn't defined in the current environment variables, but Distributed Tracing is enabled. Please set 'APPINSIGHTS_INSTRUMENTATIONKEY' to use Distributed Tracing.");
+            }
 
             this.telemetryClient = new TelemetryClient(config);
         }

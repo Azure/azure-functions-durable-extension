@@ -155,6 +155,62 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return new Tuple<List<OperationTelemetry>, List<ExceptionTelemetry>>(result.CorrelationSort(), exceptionTelemetryList);
         }
 
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void TelemetryClientSetupWithoutAppInsightsInstrumentationKeyEmitsWarning(bool extendedSessions)
+        {
+            TraceOptions traceOptions = new TraceOptions()
+            {
+                DistributedTracingEnabled = true,
+                DistributedTracingProtocol = "W3CTraceContext",
+            };
+
+            DurableTaskOptions options = new DurableTaskOptions();
+            options.Tracing = traceOptions;
+
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                "SingleOrchestration",
+                extendedSessions,
+                options: options))
+            {
+                string warningMessage = "'APPINSIGHTS_INSTRUMENTATIONKEY' isn't defined in the current environment variables, but Distributed Tracing is enabled. Please set 'APPINSIGHTS_INSTRUMENTATIONKEY' to use Distributed Tracing.";
+                var warningLogMessage = this.loggerProvider.GetAllLogMessages().ToList().FindAll(l => l.FormattedMessage.Equals(warningMessage));
+                Assert.True(warningLogMessage.Count != 0);
+            }
+        }
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void TelemetryClientSetupWithoutAppInsightsInstrumentationKeySucceeds(bool extendedSessions)
+        {
+            TraceOptions traceOptions = new TraceOptions()
+            {
+                DistributedTracingEnabled = true,
+                DistributedTracingProtocol = "W3CTraceContext",
+            };
+
+            DurableTaskOptions options = new DurableTaskOptions();
+            options.Tracing = traceOptions;
+
+            Environment.SetEnvironmentVariable("APPINSIGHTS_INSTRUMENTATIONKEY", "test key");
+
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                "SingleOrchestration",
+                extendedSessions,
+                options: options))
+            {
+                string warningMessage = "'APPINSIGHTS_INSTRUMENTATIONKEY' isn't defined in the current environment variables, but Distributed Tracing is enabled. Please set 'APPINSIGHTS_INSTRUMENTATIONKEY' to use Distributed Tracing.";
+                var warningLogMessage = this.loggerProvider.GetAllLogMessages().ToList().FindAll(l => l.FormattedMessage.Equals(warningMessage));
+                Assert.True(warningLogMessage.Count == 0);
+            }
+        }
+
         private IEnumerable<OperationTelemetry> FilterOperationTelemetry(IEnumerable<OperationTelemetry> operationTelemetries)
         {
             return operationTelemetries.Where(
