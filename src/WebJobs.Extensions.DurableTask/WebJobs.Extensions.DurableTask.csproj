@@ -89,6 +89,7 @@
     <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" Version="1.8.5" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers" Version="0.4.0" />
     <PackageReference Include="Azure.Identity" Version="1.1.1" />
+    <PackageReference Include="System.Text.Encodings.Web" Version="4.7.2" />
   </ItemGroup>
 
   <!-- NuGet Publishing Metadata -->
