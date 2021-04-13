@@ -72,7 +72,6 @@
     
     <!-- Explicitly pinned transitive dependencies with CVE vulnerabilities.-->
     <PackageReference Include="Microsoft.AspNetCore.Server.Kestrel.Transport.Sockets" Version="2.2.1" />
-    <PackageReference Include="System.Text.Encodings.Web" Version="4.5.1" />
   </ItemGroup>
 
   <ItemGroup>
@@ -89,6 +88,8 @@
     <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" Version="1.8.5" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers" Version="0.4.0" />
     <PackageReference Include="Azure.Identity" Version="1.1.1" />
+
+    <!-- Explicitly pinned transitive dependencies with CVE vulnerabilities.-->
     <PackageReference Include="System.Text.Encodings.Web" Version="4.7.2" />
   </ItemGroup>
 
