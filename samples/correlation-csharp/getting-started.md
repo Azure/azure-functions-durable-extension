@@ -52,7 +52,7 @@ echo $InstrumentationKey
 az functionapp create --resource-group $ResourceGroup --consumption-plan-location $Location --runtime dotnet --functions-version 3 --name $FunctionAppName --storage-account $StorageAccountName  --app-insights $FunctionAppName --app-insights-key $InstrumentationKey
 ```
 
-**NOTE:** The samples target Functions version 3. Distributed Tracing works for version 2 and 3, but doesn't work for version 1. 
+**NOTE:** The samples target Functions version 3. Distributed Tracing doesn't work for Functions version 1.
 
 # Publish samples 
 
