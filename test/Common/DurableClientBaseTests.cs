@@ -7,7 +7,6 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using DurableTask.Core;
-using FluentAssertions;
 #if !FUNCTIONS_V1
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -20,6 +19,7 @@ using Microsoft.Extensions.Primitives;
 using Moq;
 using Newtonsoft.Json;
 using Xunit;
+using Xunit.Abstractions;
 using static Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests.HttpApiHandlerTests;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests

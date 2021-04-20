@@ -42,32 +42,40 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             HttpRequestMessage requestMessage = await this.ConvertToHttpRequestMessage(durableHttpRequest);
 
             HttpResponseMessage response;
-            if (durableHttpRequest.Timeout == null)
+            try
             {
-                response = await this.httpClient.SendAsync(requestMessage);
-            }
-            else
-            {
-                try
+                if (durableHttpRequest.Timeout == null)
                 {
-                    using (CancellationTokenSource cts = new CancellationTokenSource())
+                    response = await this.httpClient.SendAsync(requestMessage);
+                }
+                else
+                {
+                    try
                     {
-                        cts.CancelAfter(durableHttpRequest.Timeout.Value);
-                        response = await this.httpClient.SendAsync(requestMessage, cts.Token);
+                        using (CancellationTokenSource cts = new CancellationTokenSource())
+                        {
+                            cts.CancelAfter(durableHttpRequest.Timeout.Value);
+                            response = await this.httpClient.SendAsync(requestMessage, cts.Token);
+                        }
+                    }
+                    catch (OperationCanceledException ex)
+                    {
+                        TimeoutException e = new TimeoutException(ex.Message + $" Reached user specified timeout: {durableHttpRequest.Timeout.Value}.");
+
+                        string details = Utils.SerializeCause(e, this.config.ErrorDataConverter);
+                        throw new TaskFailureException(e.Message, e, details);
                     }
                 }
-                catch (OperationCanceledException ex)
-                {
-                    TimeoutException e = new TimeoutException(ex.Message + $" Reached user specified timeout: {durableHttpRequest.Timeout.Value}.");
 
-                    string details = Utils.SerializeCause(e, this.config.ErrorDataConverter);
-                    throw new TaskFailureException(e.Message, e, details);
-                }
+                DurableHttpResponse durableHttpResponse = await DurableHttpResponse.CreateDurableHttpResponseWithHttpResponseMessage(response);
+
+                return JsonConvert.SerializeObject(durableHttpResponse);
             }
-
-            DurableHttpResponse durableHttpResponse = await DurableHttpResponse.CreateDurableHttpResponseWithHttpResponseMessage(response);
-
-            return JsonConvert.SerializeObject(durableHttpResponse);
+            catch (HttpRequestException ex)
+            {
+                string details = Utils.SerializeCause(ex, this.config.ErrorDataConverter);
+                throw new TaskFailureException(ex.Message, ex, details);
+            }
         }
 
         private static DurableHttpRequest ReconstructDurableHttpRequest(string serializedRequest)

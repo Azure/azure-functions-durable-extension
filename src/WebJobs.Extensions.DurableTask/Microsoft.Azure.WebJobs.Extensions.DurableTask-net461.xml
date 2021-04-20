@@ -2135,6 +2135,7 @@
             <param name="lifeCycleNotificationHelper">The lifecycle notification helper used for custom orchestration tracking.</param>
             <param name="messageSerializerSettingsFactory">The factory used to create <see cref="T:Newtonsoft.Json.JsonSerializerSettings"/> for message settings.</param>
             <param name="errorSerializerSettingsFactory">The factory used to create <see cref="T:Newtonsoft.Json.JsonSerializerSettings"/> for error settings.</param>
+            <param name="webhookProvider">Provides webhook urls for HTTP management APIs.</param>
             <param name="telemetryActivator">The activator of DistributedTracing. .netstandard2.0 only.</param>
             <param name="platformInformationService">The platform information provider to inspect the OS, app service plan, and other enviroment information.</param>
         </member>
@@ -3908,34 +3909,6 @@
             Option to only start a new orchestrator instance with an existing instance Id when the existing
             instance is in a terminated, failed, or completed state.
             </summary>
-        </member>
-        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.ProviderUtils">
-            <summary>
-            Provides access to internal functionality for the purpose of implementing durability providers.
-            </summary>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.ProviderUtils.GetSchedulerIdFromEntityId(Microsoft.Azure.WebJobs.Extensions.DurableTask.EntityId)">
-            <summary>
-            Returns the instance id of the entity scheduler for a given entity id.
-            </summary>
-            <param name="entityId">The entity id.</param>
-            <returns>The instance id of the scheduler.</returns>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.ProviderUtils.TryGetEntityStateFromSerializedSchedulerState(DurableTask.Core.OrchestrationState,Newtonsoft.Json.JsonSerializerSettings,System.String@)">
-            <summary>
-            Reads the state of an entity from the serialized entity scheduler state.
-            </summary>
-            <param name="state">The orchestration state of the scheduler.</param>
-            <param name="serializerSettings">The serializer settings.</param>
-            <param name="result">The serialized state of the entity.</param>
-            <returns>true if the entity exists, false otherwise.</returns>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.ProviderUtils.ConvertOrchestrationStateToStatus(DurableTask.Core.OrchestrationState)">
-            <summary>
-            Converts the DTFx representation of the orchestration state into the DF representation.
-            </summary>
-            <param name="orchestrationState">The orchestration state.</param>
-            <returns>The orchestration status.</returns>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.PurgeHistoryResult">
             <summary>

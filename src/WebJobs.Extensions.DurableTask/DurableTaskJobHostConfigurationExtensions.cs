@@ -45,6 +45,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             serviceCollection.TryAddSingleton<IDurabilityProviderFactory, AzureStorageDurabilityProviderFactory>();
             serviceCollection.TryAddSingleton<IDurableClientFactory, DurableClientFactory>();
             serviceCollection.TryAddSingleton<IMessageSerializerSettingsFactory, MessageSerializerSettingsFactory>();
+#pragma warning disable CS0612 // Type or member is obsolete
+            serviceCollection.TryAddSingleton<IPlatformInformationService, DefaultPlatformInformationProvider>();
+#pragma warning restore CS0612 // Type or member is obsolete
 
             return serviceCollection;
         }

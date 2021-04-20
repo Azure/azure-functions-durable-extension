@@ -11,6 +11,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     internal class AzureStorageDurabilityProviderFactory : IDurabilityProviderFactory
     {
+        private const string LoggerName = "Host.Triggers.DurableTask.AzureStorage";
         internal const string ProviderName = "AzureStorage";
 
         private readonly DurableTaskOptions options;
@@ -95,10 +96,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (this.defaultStorageProvider == null)
             {
                 var defaultService = new AzureStorageOrchestrationService(this.defaultSettings);
+                ILogger logger = this.loggerFactory.CreateLogger(LoggerName);
                 this.defaultStorageProvider = new AzureStorageDurabilityProvider(
                     defaultService,
                     this.defaultConnectionName,
-                    this.azureStorageOptions);
+                    this.azureStorageOptions,
+                    logger);
             }
 
             return this.defaultStorageProvider;
@@ -126,10 +129,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             else
             {
+                ILogger logger = this.loggerFactory.CreateLogger(LoggerName);
                 innerClient = new AzureStorageDurabilityProvider(
                     new AzureStorageOrchestrationService(settings),
                     connectionName,
-                    this.azureStorageOptions);
+                    this.azureStorageOptions,
+                    logger);
             }
 
             return innerClient;

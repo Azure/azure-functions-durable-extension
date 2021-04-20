@@ -20,6 +20,7 @@ using DurableTask.Core.Middleware;
 using Microsoft.Azure.WebJobs.Description;
 #if !FUNCTIONS_V1
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
+using Microsoft.Azure.WebJobs.Host.Scale;
 #endif
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener;
 using Microsoft.Azure.WebJobs.Host;
@@ -73,7 +74,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly bool isOptionsConfigured;
         private readonly IApplicationLifetimeWrapper hostLifetimeService = HostLifecycleService.NoOp;
 #pragma warning disable CS0612 // Type or member is obsolete
-        private readonly IPlatformInformationService platformInformationService;
+        private IPlatformInformationService platformInformationService;
 #pragma warning restore CS0612 // Type or member is obsolete
         private IDurabilityProviderFactory durabilityProviderFactory;
         private INameResolver nameResolver;
@@ -110,6 +111,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="lifeCycleNotificationHelper">The lifecycle notification helper used for custom orchestration tracking.</param>
         /// <param name="messageSerializerSettingsFactory">The factory used to create <see cref="JsonSerializerSettings"/> for message settings.</param>
         /// <param name="errorSerializerSettingsFactory">The factory used to create <see cref="JsonSerializerSettings"/> for error settings.</param>
+        /// <param name="webhookProvider">Provides webhook urls for HTTP management APIs.</param>
         /// <param name="telemetryActivator">The activator of DistributedTracing. .netstandard2.0 only.</param>
         /// <param name="platformInformationService">The platform information provider to inspect the OS, app service plan, and other enviroment information.</param>
 #pragma warning restore CS1572
@@ -127,10 +129,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #pragma warning restore CS0612 // Type or member is obsolete
 #if !FUNCTIONS_V1
             IErrorSerializerSettingsFactory errorSerializerSettingsFactory = null,
+#pragma warning disable CS0618 // Type or member is obsolete
+            IWebHookProvider webhookProvider = null,
+#pragma warning restore CS0618 // Type or member is obsolete
 #pragma warning disable SA1113, SA1001, SA1115
             ITelemetryActivator telemetryActivator = null)
 #pragma warning restore SA1113, SA1001, SA1115
-
 #else
             IErrorSerializerSettingsFactory errorSerializerSettingsFactory = null)
 #endif
@@ -162,6 +166,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.ErrorDataConverter = this.CreateErrorDataConverter(errorSerializerSettingsFactory);
 
             this.HttpApiHandler = new HttpApiHandler(this, logger);
+#if !FUNCTIONS_V1
+            // This line ensure every time we need the webhook URI, we get it directly from the
+            // function runtime, which has the most up-to-date knowledge about the site hostname.
+            Func<Uri> webhookDelegate = () => webhookProvider.GetUrl(this);
+            this.HttpApiHandler.RegisterWebhookProvider(
+                this.Options.WebhookUriProviderOverride ??
+                webhookDelegate);
+#endif
 
             this.hostLifetimeService = hostLifetimeService;
 
@@ -190,7 +202,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             : this(options, loggerFactory, nameResolver, orchestrationServiceFactories, shutdownNotification, durableHttpMessageHandlerFactory)
         {
             this.connectionStringResolver = connectionStringResolver;
-            this.platformInformationService = platformInformationService;
         }
 
         /// <summary>
@@ -313,13 +324,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #pragma warning disable CS0618 // Type or member is obsolete
 
             // Invoke webhook handler to make functions runtime register extension endpoints.
-            context.GetWebhookHandler();
+            var initialWebhookUri = context.GetWebhookHandler();
 
-            // This line ensure every time we need the webhook URI, we get it directly from the
-            // function runtime, which has the most up-to-date knowledge about the site hostname.
+#if FUNCTIONS_V1
+            // In Functions V1, there is no notion of an IWebhookProvider that
+            // we can dynamically call to fetch the webhook URI, and since context.GetWebhookHandler()
+            // only works in the scope of the Initialize() function, we just have to live with the static URI
+            // we grab now.
+            Func<Uri> staticWebhookHandler = () => initialWebhookUri;
             this.HttpApiHandler.RegisterWebhookProvider(
                 this.Options.WebhookUriProviderOverride ??
-                context.GetWebhookHandler);
+                staticWebhookHandler);
+#endif
 #pragma warning restore CS0618 // Type or member is obsolete
 
             this.TraceConfigurationSettings();
@@ -486,6 +502,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             ILogger logger = this.loggerFactory.CreateLogger(LoggerCategoryName);
             this.TraceHelper = new EndToEndTraceHelper(logger, this.Options.Tracing.TraceReplayEvents);
             this.connectionStringResolver = new WebJobsConnectionStringProvider();
+            this.platformInformationService = new DefaultPlatformInformationProvider(this.nameResolver);
             this.durabilityProviderFactory = new AzureStorageDurabilityProviderFactory(
                 new OptionsWrapper<DurableTaskOptions>(this.Options),
                 this.connectionStringResolver,
@@ -1309,6 +1326,59 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 activity.AddTag("DurableFunctionsType", functionsType);
                 activity.AddTag("DurableFunctionsInstanceId", instanceId);
                 activity.AddTag("DurableFunctionsRuntimeStatus", statusStr);
+            }
+        }
+
+        internal IScaleMonitor GetScaleMonitor(string functionId, FunctionName functionName, string storageConnectionString)
+        {
+            if (this.defaultDurabilityProvider.TryGetScaleMonitor(
+                    functionId,
+                    functionName.Name,
+                    this.Options.HubName,
+                    storageConnectionString,
+                    out IScaleMonitor scaleMonitor))
+            {
+                return scaleMonitor;
+            }
+            else
+            {
+                // the durability provider does not support runtime scaling.
+                // Create an empty scale monitor to avoid exceptions (unless runtime scaling is actually turned on).
+                return new NoOpScaleMonitor($"{functionId}-DurableTaskTrigger-{this.Options.HubName}".ToLower());
+            }
+        }
+
+        /// <summary>
+        /// A placeholder scale monitor, can be used by durability providers that do not support runtime scaling.
+        /// This is required to allow operation of those providers even if runtime scaling is turned off
+        /// see discussion https://github.com/Azure/azure-functions-durable-extension/pull/1009/files#r341767018.
+        /// </summary>
+        private sealed class NoOpScaleMonitor : IScaleMonitor
+        {
+            /// <summary>
+            /// Construct a placeholder scale monitor.
+            /// </summary>
+            /// <param name="name">A descriptive name.</param>
+            public NoOpScaleMonitor(string name)
+            {
+                this.Descriptor = new ScaleMonitorDescriptor(name);
+            }
+
+            /// <summary>
+            /// A descriptive name.
+            /// </summary>
+            public ScaleMonitorDescriptor Descriptor { get; private set; }
+
+            /// <inheritdoc/>
+            Task<ScaleMetrics> IScaleMonitor.GetMetricsAsync()
+            {
+                throw new InvalidOperationException("The current DurableTask backend configuration does not support runtime scaling");
+            }
+
+            /// <inheritdoc/>
+            ScaleStatus IScaleMonitor.GetScaleStatus(ScaleStatusContext context)
+            {
+                throw new InvalidOperationException("The current DurableTask backend configuration does not support runtime scaling");
             }
         }
 #endif
