@@ -24,7 +24,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
             telemetry.Timestamp = context.StartTime;
             telemetry.Id = context.TelemetryId;
             telemetry.Context.Operation.Id = context.TelemetryContextOperationId;
+            telemetry.Context.Operation.Name = context.OperationName.Split(' ')[0] == "DtActivity" || context.OperationName.Split(' ')[0] == "DtOrchestrator" ? context.OperationName.Split(' ')[1] : context.OperationName;
             telemetry.Context.Operation.ParentId = context.TelemetryContextOperationParentId;
+            telemetry.Context.Cloud.RoleName = EndToEndTraceHelper.LocalAppName.ToLower();
 
             return telemetry;
         }
