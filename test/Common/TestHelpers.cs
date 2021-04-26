@@ -264,11 +264,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
-        /// Ensures a JSON Durable log has all the minimum-required keys.
-        /// If not, it throws an exception.
+        /// Returns <c>true</c> if a JSON Durable log has all the minimum-required keys.
+        /// Else, returns <c>false</c>.
         /// </summary>
         /// <param name="json">The JSON log to validate.</param>
-        public static void IsValidJSONLog(JObject json)
+        public static bool IsValidJSONLog(JObject json)
         {
             List<string> expectedKeys = new List<string>
             {
@@ -287,9 +287,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 if (!keys.Contains(expectedKey))
                 {
-                    throw new Exception($"JSON log did not contain expected key {expectedKey}. Keys found were: {keys}");
+                    return false;
                 }
             }
+            return true;
         }
 
         /// <summary>

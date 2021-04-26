@@ -644,59 +644,45 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             await TestHelpers.WaitUntilTrue(
                 predicate: () =>
                 {
-                    bool foundEtwEventSourceLog, foundAzureStorageLog, foundDurableTaskCoreLog, foundActivityId, foundRelatedActivityId;
-                    foundEtwEventSourceLog = foundAzureStorageLog = foundDurableTaskCoreLog = foundActivityId = foundRelatedActivityId = false;
-
                     string[] lines = TestHelpers.WriteSafeReadAllLines(LinuxAppServiceLogger.LoggingPath);
+                    IEnumerable<JObject> jsons = lines.Select(line => JObject.Parse(line));
 
-                    // Validating JSON outputs
-                    foreach (string line in lines)
+                    if (!jsons.All(json => TestHelpers.IsValidJSONLog(json)))
                     {
-                        // (1) Ensure it can be parsed to JSON
-                        JObject json = JObject.Parse(line);
-
-                        // (2) Contains minimal expected fields
-                        TestHelpers.IsValidJSONLog(json);
-
-                        // recording EventSource providers seen
-                        int eventId = (int)json.GetValue("EventId");
-                        if (eventId == 202)
-                        {
-                            foundEtwEventSourceLog = true;
-                        }
-                        else if (eventId == 10)
-                        {
-                            foundDurableTaskCoreLog = true;
-                        }
-                        else if (eventId == 120)
-                        {
-                            foundAzureStorageLog = true;
-                        }
-
-                        // recording if ActivityId and RelatedActivityId are seen
-                        // we expect to see them, at some point, in a trivial orchestrator
-                        List<string> keys = json.Properties().Select(p => p.Name).ToList();
-                        if (keys.Contains("ActivityId"))
-                        {
-                            foundActivityId = true;
-                        }
-
-                        if (keys.Contains("RelatedActivityId"))
-                        {
-                            foundRelatedActivityId = true;
-                        }
-
-                        // (3) Ensure some Enums are printed correctly: as strings
-                        string eventType = (string)json.GetValue("EventType");
-                        if (!string.IsNullOrEmpty(eventType) && eventType.All(char.IsDigit))
-                        {
-                            return false;
-                        }
+                        return false;
                     }
 
-                    return foundAzureStorageLog && foundEtwEventSourceLog &&
-                        foundDurableTaskCoreLog && foundActivityId &&
-                        foundRelatedActivityId;
+                    if (!jsons.Any(json => ((string)json.GetValue("ProviderName")) == "DurableTask-Core"))
+                    {
+                        return false;
+                    }
+
+                    if (!jsons.Any(json => ((string)json.GetValue("ProviderName")) == "DurableTask-AzureStorage"))
+                    {
+                        return false;
+                    }
+
+                    if (!jsons.Any(json => json.Properties().Select(p => p.Name).ToList().Contains("ActivityId")))
+                    {
+                        return false;
+                    }
+
+                    if (!jsons.Any(json => json.Properties().Select(p => p.Name).ToList().Contains("RelatedActivityId")))
+                    {
+                        return false;
+                    }
+
+                    if (jsons.Any(json =>
+                        {
+                            var eventType = (string)json.GetValue("EventType");
+                            var val = !string.IsNullOrEmpty(eventType) && eventType.All(char.IsDigit);
+                            return !string.IsNullOrEmpty(eventType) && eventType.All(char.IsDigit);
+                        }))
+                    {
+                        return false;
+                    }
+
+                    return true;
                 },
                 conditionDescription: "Log file contains all required fields and expected events",
                 timeout: TimeSpan.FromSeconds(35));
