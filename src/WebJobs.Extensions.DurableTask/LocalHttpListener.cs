@@ -22,10 +22,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     {
         private const int DefaultPort = 17071;
 
+        // Minimum port value is 1024, as the app service sandbox blocks ports below that.
+        private const int MinPort = 1024;
+
+        // Ephemeral ports for most OS start well above this range. See https://www.ncftp.com/ncftpd/doc/misc/ephemeral_ports.html
+        private const int MaxPort = 32768;
+
         private readonly Func<HttpRequestMessage, Task<HttpResponseMessage>> handler;
         private readonly EndToEndTraceHelper traceHelper;
         private readonly DurableTaskOptions durableTaskOptions;
         private IWebHost localWebHost;
+        private Random portGenerator;
 
         public LocalHttpListener(
             EndToEndTraceHelper traceHelper,
@@ -39,6 +46,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // Set to a non null value
             this.InternalRpcUri = new Uri($"http://uninitialized");
             this.localWebHost = new NoOpWebHost();
+            this.portGenerator = new Random();
         }
 
         public Uri InternalRpcUri { get; private set; }
@@ -59,7 +67,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             int numAttempts = 1;
             do
             {
-                int availablePort = this.GetAvailablePort();
+                int availablePort = numAttempts == 1
+                    ? DefaultPort
+                    : this.portGenerator.Next(MinPort, MaxPort);
                 try
                 {
                     this.InternalRpcUri = new Uri($"http://127.0.0.1:{availablePort}/durabletask/");
@@ -80,11 +90,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         this.durableTaskOptions.HubName,
                         functionName: string.Empty,
                         instanceId: string.Empty,
-                        message: $"Failed to open local socket {availablePort}. This was attempt #{numAttempts} to open a local port.");
+                        message: $"Failed to open local port {availablePort}. This was attempt #{numAttempts} to open a local port.");
                     numAttempts++;
-                    var random = new Random();
-                    var millisecondsToWait = (int)Math.Round(random.NextDouble() * 1000);
-                    await Task.Delay(millisecondsToWait);
                 }
             }
             while (numAttempts <= maxAttempts);
@@ -108,29 +115,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             await Task.Yield();
 #endif
             this.IsListening = false;
-        }
-
-        private int GetAvailablePort()
-        {
-            // If we are able to successfully start a listener looking on the default port without
-            // an exception, we can use the default port. Otherwise, let the TcpListener class decide for us.
-            try
-            {
-                var listener = new TcpListener(IPAddress.Loopback, DefaultPort);
-                listener.Start();
-                listener.Stop();
-                return DefaultPort;
-            }
-            catch (SocketException)
-            {
-                // Following guidance of this stack overflow answer
-                // to find available port: https://stackoverflow.com/a/150974/9035640
-                var listener = new TcpListener(IPAddress.Loopback, 0);
-                listener.Start();
-                int availablePort = ((IPEndPoint)listener.LocalEndpoint).Port;
-                listener.Stop();
-                return availablePort;
-            }
         }
 
         private async Task HandleRequestAsync(HttpContext context)
