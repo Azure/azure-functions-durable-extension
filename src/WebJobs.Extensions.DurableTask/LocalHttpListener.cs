@@ -49,6 +49,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.InternalRpcUri = new Uri($"http://uninitialized");
             this.localWebHost = new NoOpWebHost();
             this.portGenerator = new Random();
+            this.attemptedPorts = new HashSet<int>();
         }
 
         public Uri InternalRpcUri { get; private set; }
