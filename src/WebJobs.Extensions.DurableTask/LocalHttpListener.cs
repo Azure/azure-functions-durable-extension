@@ -22,17 +22,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     {
         private const int DefaultPort = 17071;
 
-        // Minimum port value is 1024, as the app service sandbox blocks ports below that.
-        private const int MinPort = 1024;
-
-        // Ephemeral ports for most OS start well above this range. See https://www.ncftp.com/ncftpd/doc/misc/ephemeral_ports.html
-        private const int MaxPort = 32768;
+        // Pick a large, fixed range of ports that are going to be valid in all environment.
+        // Avoiding ports below 1024 as those are blocked by app service sandbox.
+        // Ephemeral ports for most OS start well above 32768. See https://www.ncftp.com/ncftpd/doc/misc/ephemeral_ports.html
+        private const int MinPort = 30000;
+        private const int MaxPort = 31000;
 
         private readonly Func<HttpRequestMessage, Task<HttpResponseMessage>> handler;
         private readonly EndToEndTraceHelper traceHelper;
         private readonly DurableTaskOptions durableTaskOptions;
+        private readonly Random portGenerator;
+        private readonly HashSet<int> attemptedPorts;
+
         private IWebHost localWebHost;
-        private Random portGenerator;
 
         public LocalHttpListener(
             EndToEndTraceHelper traceHelper,
@@ -67,12 +69,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             int numAttempts = 1;
             do
             {
-                int availablePort = numAttempts == 1
+                int listeningPort = numAttempts == 1
                     ? DefaultPort
-                    : this.portGenerator.Next(MinPort, MaxPort);
+                    : this.GetRandomPort();
                 try
                 {
-                    this.InternalRpcUri = new Uri($"http://127.0.0.1:{availablePort}/durabletask/");
+                    this.InternalRpcUri = new Uri($"http://127.0.0.1:{listeningPort}/durabletask/");
                     var listenUri = new Uri(this.InternalRpcUri.GetLeftPart(UriPartial.Authority));
                     this.localWebHost = new WebHostBuilder()
                         .UseKestrel()
@@ -90,7 +92,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         this.durableTaskOptions.HubName,
                         functionName: string.Empty,
                         instanceId: string.Empty,
-                        message: $"Failed to open local port {availablePort}. This was attempt #{numAttempts} to open a local port.");
+                        message: $"Failed to open local port {listeningPort}. This was attempt #{numAttempts} to open a local port.");
+                    this.attemptedPorts.Add(listeningPort);
                     numAttempts++;
                 }
             }
@@ -104,6 +107,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // no-op: this is dummy code to make build warnings go away
             await Task.Yield();
 #endif
+        }
+
+        private int GetRandomPort()
+        {
+            // Get a random port that has not already been attempted so we don't waste time trying
+            // to listen to a port we know is not free.
+            int randomPort;
+            do
+            {
+                randomPort = this.portGenerator.Next(MinPort, MaxPort);
+            }
+            while (this.attemptedPorts.Contains(randomPort));
+
+            return randomPort;
         }
 
         public async Task StopAsync()
