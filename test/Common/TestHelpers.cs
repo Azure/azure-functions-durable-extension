@@ -290,6 +290,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     return false;
                 }
             }
+
             return true;
         }
 
