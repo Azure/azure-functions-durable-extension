@@ -3,8 +3,11 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Text;
 using System.Threading.Tasks;
 using DurableTask.AzureStorage;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
@@ -14,6 +17,8 @@ using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Blob;
 using Microsoft.WindowsAzure.Storage.Queue;
 using Microsoft.WindowsAzure.Storage.Table;
+using Moq;
+using Newtonsoft.Json.Linq;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -22,9 +27,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     internal static class TestHelpers
     {
         public const string LogCategory = "Host.Triggers.DurableTask";
-
-        // The regex pattern that parses our Linux Dedicated logs
-        public static readonly string RegexPattern = "(?<Account>[^,]*),(?<ActiveActivities>[^,]*),(?<ActiveOrchestrators>[^,]*),(?<Age>[^,]*),(?<AppName>[^,]*),(?<ContinuedAsNew>[^,]*),(?<CreatedTimeFrom>[^,]*),(?<CreatedTimeTo>[^,]*),(?<DequeueCount>[^,]*),\"(?<Details>[^\"]*)\",(?<Duration>[^,]*),(?<ETag>[^,]*),(?<Episode>[^,]*),(?<EventCount>[^,]*),(?<EventName>[^,]*),(?<EventType>[^,]*),(?<Exception>[^,]*),\"(?<ExceptionMessage>[^\"]*)\",(?<ExecutionId>[^,]*),(?<ExtensionVersion>[^,]*),(?<FromWorkerName>[^,]*),(?<FunctionName>[^,]*),(?<FunctionState>[^,]*),(?<FunctionType>[^,]*),(?<Input>[^,]*),(?<InstanceId>[^,]*),(?<IsCheckpointComplete>[^,]*),(?<IsExtendedSession>[^,]*),(?<IsReplay>[^,]*),(?<LastCheckpointTime>[^,]*),(?<LatencyMs>[^,]*),(?<MessageId>[^,]*),(?<MessagesRead>[^,]*),(?<MessagesSent>[^,]*),(?<MessagesUpdated>[^,]*),(?<NewEventCount>[^,]*),(?<NewEvents>[^,]*),(?<NextVisibleTime>[^,]*),(?<OperationId>[^,]*),(?<OperationName>[^,]*),(?<Output>[^,]*),(?<PartitionId>[^,]*),(?<PendingOrchestratorMessages>[^,]*),(?<PendingOrchestrators>[^,]*),(?<Reason>[^,]*),(?<RelatedActivityId>[^,]*),(?<RequestCount>[^,]*),(?<RequestId>[^,]*),(?<RequestingExecutionId>[^,]*),(?<RequestingInstance>[^,]*),(?<RequestingInstanceId>[^,]*),(?<Result>[^,]*),(?<RuntimeStatus>[^,]*),(?<SequenceNumber>[^,]*),(?<SizeInBytes>[^,]*),(?<SlotName>[^,]*),(?<StatusCode>[^,]*),(?<StorageRequests>[^,]*),(?<Success>[^,]*),(?<TableEntitiesRead>[^,]*),(?<TableEntitiesWritten>[^,]*),(?<TargetExecutionId>[^,]*),(?<TargetInstanceId>[^,]*),(?<TaskEventId>[^,]*),(?<TaskHub>[^,]*),(?<Token>[^,]*),(?<TotalEventCount>[^,]*),(?<Version>[^,]*),(?<VisibilityTimeoutSeconds>[^,]*),(?<WorkerName>[^,]*)";
 
         public static ITestHost GetJobHost(
             ILoggerProvider loggerProvider,
@@ -109,6 +111,91 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             string deterministicSuffix = (enableExtendedSessions ? "EX" : "") + PlatformSpecificHelpers.VersionSuffix;
             string randomSuffix = Guid.NewGuid().ToString().Substring(0, 4);
             return truncatedTestName + deterministicSuffix + randomSuffix;
+        }
+
+        /// <summary>
+        /// Returns <c>true</c> if a JSON Durable log has all the minimum-required keys.
+        /// Else, returns <c>false</c>.
+        /// </summary>
+        /// <param name="json">The JSON log to validate.</param>
+        public static bool IsValidJSONLog(JObject json)
+        {
+            List<string> expectedKeys = new List<string>
+            {
+                "EventStampName",
+                "EventPrimaryStampName",
+                "ProviderName",
+                "TaskName",
+                "EventId",
+                "EventTimestamp",
+                "Tenant",
+                "Pid",
+                "Tid",
+            };
+            List<string> keys = json.Properties().Select(p => p.Name).ToList();
+            foreach (string expectedKey in expectedKeys)
+            {
+                if (!keys.Contains(expectedKey))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Read a file's contents, line by line, even if another process is currently writing to it.
+        /// </summary>
+        /// <param name="path">The file's path.</param>
+        /// <returns>An array of each line in the file.</returns>
+        public static string[] WriteSafeReadAllLines(string path)
+        {
+            /* A method like File.ReadAllLines cannot open a file that is open for writing by another process
+             * This is due to the File.ReadAllLines  not opening the process with ReadWrite permissions.
+             * As a result, we implement a variant ReadAllLines with the right permission mode.
+             *
+             * More info in: https://stackoverflow.com/questions/12744725/how-do-i-perform-file-readalllines-on-a-file-that-is-also-open-in-excel
+             */
+            using (var fileStream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            using (var streamReader = new StreamReader(fileStream, Encoding.Default))
+            {
+                List<string> file = new List<string>();
+                while (!streamReader.EndOfStream)
+                {
+                    file.Add(streamReader.ReadLine());
+                }
+
+                return file.ToArray();
+            }
+        }
+
+        /// <summary>
+        /// Helper function to regularly poll for some condition until it is true. If timeout hits, throw timeoutexception.
+        /// </summary>
+        /// <param name="predicate">Predicate to wait until it returns true.</param>
+        /// <param name="timeout">Time to wait until predicate is true.</param>
+        /// <param name="retryInterval">How frequently to test predicate. Defaults to 100 ms.</param>
+        public static async Task WaitUntilTrue(Func<bool> predicate, string conditionDescription, TimeSpan timeout, TimeSpan? retryInterval = null)
+        {
+            if (retryInterval == null)
+            {
+                retryInterval = TimeSpan.FromMilliseconds(100);
+            }
+
+            Stopwatch sw = new Stopwatch();
+            do
+            {
+                if (predicate())
+                {
+                    return;
+                }
+
+                await Task.Delay(retryInterval.Value);
+            }
+            while (sw.Elapsed < timeout);
+
+            throw new TimeoutException($"Did not meet {conditionDescription} within {timeout}");
         }
 
         internal static async Task DeleteAllElementsInStorageTaskHubAsync(string connectionString, string taskHub, int partitionCount)
