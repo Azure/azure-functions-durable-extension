@@ -27,7 +27,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
 
             // Operation Name is set as "DtActivity FunctionName" and we only want the "FunctionName" as the operationName
             string[] operationNameArray = context.OperationName.Split(' ');
-            bool isActivityRequest = operationNameArray.Length == 2 && string.Equals(operationNameArray[0], "DtActivity");
+            bool isActivityRequest = operationNameArray.Length == 2 && string.Equals(operationNameArray[0], TraceConstants.Activity);
             telemetry.Context.Operation.Name = isActivityRequest ? operationNameArray[1] : context.OperationName;
 
             telemetry.Context.Operation.ParentId = context.TelemetryContextOperationParentId;
