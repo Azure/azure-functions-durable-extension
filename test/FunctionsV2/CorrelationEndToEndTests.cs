@@ -68,6 +68,62 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 }.ToList(), actual.Select(x => (x.GetType(), x.Name)).ToList());
         }
 
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(false, "W3CTraceContext")]
+        [InlineData(true, "HttpCorrelationProtocol")]
+        [InlineData(true, "W3CTraceContext")]
+        [InlineData(false, "HttpCorrelationProtocol")]
+        public async Task CheckOperationName_RequestTelemetry_SingleOrchestration(bool extendedSessions, string protocol)
+        {
+            string[] orchestrationFunctionNames =
+            {
+                nameof(TestOrchestrations.SayHelloWithActivity),
+            };
+
+            var result = await
+                this.ExecuteOrchestrationWithExceptionAsync(
+                    orchestrationFunctionNames,
+                    "SingleOrchestration",
+                    "world",
+                    extendedSessions,
+                    protocol);
+            var actual = result.Item1;
+
+            // Using actual.First() because there's only one Request Telemetry where the name is "DtActivity Hello"
+            RequestTelemetry dtActivityReqTelemetry = actual.First(x => x.GetType() == typeof(RequestTelemetry) && x.Name.Contains("DtActivity")) as RequestTelemetry;
+            Assert.Equal("Hello", dtActivityReqTelemetry.Context.Operation.Name);
+        }
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(false, "W3CTraceContext")]
+        [InlineData(true, "HttpCorrelationProtocol")]
+        [InlineData(true, "W3CTraceContext")]
+        [InlineData(false, "HttpCorrelationProtocol")]
+        public async Task CheckCloudRoleName_RequestTelemetry_SingleOrchestration(bool extendedSessions, string protocol)
+        {
+            string[] orchestrationFunctionNames =
+            {
+                nameof(TestOrchestrations.SayHelloWithActivity),
+            };
+
+            Environment.SetEnvironmentVariable("WEBSITE_SITE_NAME", "TestSite");
+
+            var result = await
+                this.ExecuteOrchestrationWithExceptionAsync(
+                    orchestrationFunctionNames,
+                    "SingleOrchestration",
+                    "world",
+                    extendedSessions,
+                    protocol);
+            var actual = result.Item1;
+            List<OperationTelemetry> requestTelemetryWithCloudRoleNamesList = actual.Where(x => x.GetType() == typeof(RequestTelemetry) && x.Context.Cloud.RoleName.Equals("testsite")).ToList();
+            Assert.NotEmpty(requestTelemetryWithCloudRoleNamesList);
+
+            Environment.SetEnvironmentVariable("WEBSITE_SITE_NAME", null);
+        }
+
         /*
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
