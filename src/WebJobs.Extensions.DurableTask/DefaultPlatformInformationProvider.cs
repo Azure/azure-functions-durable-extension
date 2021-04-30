@@ -63,5 +63,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             return this.nameResolver.Resolve("CONTAINER_NAME");
         }
+
+        public string GetPL()
+        {
+            return this.nameResolver.Resolve("FUNCTIONS_WORKER_RUNTIME");
+        }
     }
 }
