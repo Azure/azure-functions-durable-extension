@@ -11,11 +11,11 @@
     "storageProvider": {
       "partitionCount": 6,
       "controlQueueBufferThreshold": 1000
-    },
-    "applicationInsights": {
-      "sampling": {
-        "isEnabled": true
-      }
+    }
+  },
+  "applicationInsights": {
+    "sampling": {
+      "isEnabled": true
     }
   }
 }
