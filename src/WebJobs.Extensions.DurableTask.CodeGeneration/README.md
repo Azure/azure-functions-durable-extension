@@ -45,7 +45,7 @@ public static string SayHello([ActivityTrigger] IDurableActivityContext context,
 using Microsoft.Azure.WebJobs.Generated;
 ```
 
-1. Replace ```IDurableClient``` / ```IDurableOrchestrationContext``` usage for their generated counterparts ```IGeneratedDurableClient``` / ```IGeneratedDurableOrchestrationContext```. The generated interfaces can perform all operations exposed by standard interfaces, in additional to performing typed calls to Orchestration/Activity Function.
+5. Replace ```IDurableClient``` / ```IDurableOrchestrationContext``` usage for their generated counterparts ```IGeneratedDurableClient``` / ```IGeneratedDurableOrchestrationContext```. The generated interfaces can perform all operations exposed by standard interfaces, in additional to performing typed calls to Orchestration/Activity Function.
 
 Some example Activity calls through the generated interface:
 
@@ -177,6 +177,25 @@ public partial interface IGeneratedDurableActivityCaller
     {
         return context.CallActivityAsync<int>("Add", (num1, num2));
     }
+}
+```
+
+```csharp
+[FunctionName("Multiply")]
+public async Task<int> Multiply(
+    [OrchestrationTrigger] IGeneratedDurableOrchestrationContext context
+)
+{
+    var (num1, num2) = context.GetInput<(int, int)>();
+
+    var result = 0;
+
+    for (var i = 0; i < num2; i++)
+    {
+        result = await context.Activity.Add(result, num1);
+    }
+
+    return result;
 }
 ```
 

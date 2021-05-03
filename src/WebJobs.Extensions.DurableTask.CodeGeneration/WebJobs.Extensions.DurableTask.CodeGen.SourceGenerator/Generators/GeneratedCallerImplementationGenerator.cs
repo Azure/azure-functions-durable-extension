@@ -13,12 +13,12 @@ namespace WebJobs.Extensions.DurableTask.CodeGeneration.SourceGenerator.Generato
     {
         protected MethodDeclarationSyntax GenerateCallMethodWithRetry(DurableFunction function)
         {
-            return GenerateCallerMethod(function, true);
+            return GenerateCallerMethod(function, withRetry: true);
         }
 
         protected MethodDeclarationSyntax GenerateCallMethodWithoutRetry(DurableFunction function)
         {
-            return GenerateCallerMethod(function, false);
+            return GenerateCallerMethod(function, withRetry: false);
         }
 
         private MethodDeclarationSyntax GenerateCallerMethod(

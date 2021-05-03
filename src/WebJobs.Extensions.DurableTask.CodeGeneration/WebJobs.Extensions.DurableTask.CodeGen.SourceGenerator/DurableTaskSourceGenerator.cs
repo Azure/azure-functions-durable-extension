@@ -37,6 +37,12 @@ namespace WebJobs.Extensions.DurableTask.CodeGeneration.SourceGenerator
 
                 var parseOptions = context.ParseOptions;
 
+                // Our overall goal is to make sure that if we can't successfully generate everything,
+                // we don't generate anything at all.
+                // First we will validate we can generate a CompilationUnit for all the necessary
+                // generated code. If any fails, we will exit immediately and not add the units as source
+                // text - so nothing will be generated. Otherwise we will add them all as source text.
+
                 if (!IGeneratedDurableOrchestrationContextGenerator.TryGenerate(receiver.DurableOrchestrationContextTypeSymbol, out var iOrchestrationContext))
                     return;
 
