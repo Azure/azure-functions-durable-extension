@@ -31,6 +31,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Linq.Expressions;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
@@ -165,6 +166,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.MessageDataConverter = CreateMessageDataConverter(messageSerializerSettingsFactory);
             this.ErrorDataConverter = this.CreateErrorDataConverter(errorSerializerSettingsFactory);
 
+            this.GeneratedCodeProvider = new GeneratedCodeProvider();
+            this.GeneratedCodeProvider.Initialize();
+
             this.HttpApiHandler = new HttpApiHandler(this, logger);
 #if !FUNCTIONS_V1
             // This line ensure every time we need the webhook URI, we get it directly from the
@@ -231,6 +235,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         internal MessagePayloadDataConverter MessageDataConverter { get; private set; }
 
         internal MessagePayloadDataConverter ErrorDataConverter { get; private set; }
+
+        internal GeneratedCodeProvider GeneratedCodeProvider { get; private set; }
 
         internal TimeSpan MessageReorderWindow
             => this.defaultDurabilityProvider.GuaranteesOrderedDelivery ? TimeSpan.Zero : TimeSpan.FromMinutes(this.Options.EntityMessageReorderWindowInMinutes);
@@ -353,6 +359,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             rule.BindToInput<IDurableEntityClient>(this.GetClient);
             rule.BindToInput<IDurableClient>(this.GetClient);
 
+            if (this.GeneratedCodeProvider.IsInitialized)
+            {
+                rule.Bind(new GeneratedDurableClientBindingProvider(this.GeneratedCodeProvider, this.GetClient));
+            }
+
             // We add a binding rule to support the now deprecated `orchestrationClient` binding
             // A cleaner solution would be to have the prior rule have an OR-style selector between
             // DurableClientAttribute and OrchestrationClientAttribute, but it's unclear if that's
@@ -368,6 +379,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             backwardsCompRule.BindToInput<IDurableOrchestrationClient>(this.GetClient);
             backwardsCompRule.BindToInput<IDurableEntityClient>(this.GetClient);
             backwardsCompRule.BindToInput<IDurableClient>(this.GetClient);
+
+            if (this.GeneratedCodeProvider.IsInitialized)
+            {
+                backwardsCompRule.Bind(new GeneratedDurableClientBindingProvider(this.GeneratedCodeProvider, this.GetClient));
+            }
 
             string storageConnectionString = null;
             var providerFactory = this.durabilityProviderFactory as AzureStorageDurabilityProviderFactory;
@@ -991,6 +1007,56 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 });
 
             return client;
+        }
+
+        /// <summary>
+        /// Gets a <see cref="IDurableClient"/> using configuration from a <see cref="DurableClientAttribute"/> instance.
+        /// </summary>
+        /// <param name="attribute">The attribute containing the client configuration parameters.</param>
+        /// <returns>Returns a <see cref="IDurableClient"/> instance. The returned instance may be a cached instance.</returns>
+        protected internal virtual T GetGeneratedClient<T>(DurableClientAttribute attribute)
+        {
+            var genCodeProvider = new GeneratedCodeProvider();
+            genCodeProvider.Initialize();
+
+            return (T)genCodeProvider.InstantiateGeneratedDurableClient(this.GetClient(attribute));
+        }
+
+
+        /// <summary>
+        /// Gets a <see cref="IDurableClient"/> using configuration from a <see cref="DurableClientAttribute"/> instance.
+        /// </summary>
+        /// <param name="attribute">The attribute containing the client configuration parameters.</param>
+        /// <returns>Returns a <see cref="IDurableClient"/> instance. The returned instance may be a cached instance.</returns>
+        protected internal virtual IDurableClient GetDurableClient(DurableClientAttribute attribute)
+        {
+            DurableClient client = this.cachedClients.GetOrAdd(
+                attribute,
+                attr =>
+                {
+                    DurabilityProvider innerClient = this.durabilityProviderFactory.GetDurabilityProvider(attribute);
+                    return new DurableClient(innerClient, this, this.HttpApiHandler, attr);
+                });
+
+            var codeGenerator = new GeneratedCodeProvider();
+
+            codeGenerator.Initialize();
+
+            return (IDurableClient)codeGenerator.InstantiateGeneratedDurableClient(client);
+        }
+
+        /// <summary>
+        /// Gets a <see cref="IDurableClient"/> using configuration from a <see cref="DurableClientAttribute"/> instance.
+        /// </summary>
+        /// <param name="attribute">The attribute containing the client configuration parameters.</param>
+        /// <returns>Returns a <see cref="IDurableClient"/> instance. The returned instance may be a cached instance.</returns>
+        protected internal virtual T GetGeneratedDurableClient<T>(DurableClientAttribute attribute)
+        {
+            var generatedCodeProvider = new GeneratedCodeProvider();
+
+            generatedCodeProvider.Initialize();
+
+            return (T)generatedCodeProvider.InstantiateGeneratedDurableClient(this.GetClient(attribute));
         }
 
         internal void RegisterOrchestrator(FunctionName orchestratorFunction, RegisteredFunctionInfo orchestratorInfo)

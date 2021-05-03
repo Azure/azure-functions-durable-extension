@@ -80,6 +80,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.isReplaying = value;
             }
         }
+        
         internal bool ContinuedAsNew { get; private set; }
 
         internal bool IsCompleted { get; set; }

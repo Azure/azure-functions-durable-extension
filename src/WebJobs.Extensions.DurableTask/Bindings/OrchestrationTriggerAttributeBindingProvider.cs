@@ -114,13 +114,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     convertedValue = orchestrationContext;
                 }
-                else if (destinationType.Name == GeneratedCodeProvider.IGeneratedDurableOrchestrationContext)
+                else if (this.config.GeneratedCodeProvider.IsInitialized &&
+                    destinationType.Name == GeneratedCodeProvider.IGeneratedDurableOrchestrationContext)
                 {
-                    var provider = new GeneratedCodeProvider();
-
-                    provider.Initialize();
-
-                    convertedValue = provider.InstantiateGeneratedDurableOrchestrationContext(orchestrationContext);
+                    convertedValue = this.config.GeneratedCodeProvider.InstantiateGeneratedDurableOrchestrationContext(orchestrationContext);
                 }
                 else if (destinationType == typeof(string))
                 {
