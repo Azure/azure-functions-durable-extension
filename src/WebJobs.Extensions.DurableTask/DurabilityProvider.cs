@@ -364,9 +364,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         ///  Steals AppLease if this app doesn't already have it. To use this, must be using the AppLease feature by setting UseAppLease to true in host.json.
         /// </summary>
         /// <returns>A task that completes when the steal app message is written to storage.</returns>
-        public virtual Task StealAppLeaseAsync()
+        public virtual Task InitiateStealAppLeaseOperationAsync()
         {
-            throw this.GetNotImplementedException(nameof(this.StealAppLeaseAsync));
+            throw this.GetNotImplementedException(nameof(this.InitiateStealAppLeaseOperationAsync));
         }
 
         /// <inheritdoc />

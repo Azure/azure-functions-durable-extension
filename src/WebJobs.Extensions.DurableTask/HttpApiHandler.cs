@@ -671,7 +671,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             IDurableOrchestrationClient client = this.GetClient(request);
 
-            await client.StealAppLeaseAsync();
+            await client.InitiateStealAppLeaseOperationAsync();
 
             return request.CreateResponse(HttpStatusCode.OK);
         }

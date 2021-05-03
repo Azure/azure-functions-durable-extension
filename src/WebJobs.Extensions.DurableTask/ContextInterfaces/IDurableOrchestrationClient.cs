@@ -300,9 +300,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         Task<string> RestartAsync(string instanceId, bool restartWithNewInstanceId = true);
 
         /// <summary>
-        ///  Steals AppLease if this app doesn't already have it. To use this, must be using the AppLease feature by setting UseAppLease to true in host.json.
+        ///  Initiates the operation to steal the AppLease if this app doesn't already have it. Must be using the AppLease feature by setting UseAppLease to true in host.json.
         /// </summary>
-        /// <returns>A task that completes when the steal app message is written to storage.</returns>
-        Task StealAppLeaseAsync();
+        /// <returns>A task that completes when the steal operation has started and the message has been written to storage.</returns>
+        Task InitiateStealAppLeaseOperationAsync();
     }
 }

@@ -38,6 +38,9 @@
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageDurabilityProvider.GetOrchestrationStateWithPagination(Microsoft.Azure.WebJobs.Extensions.DurableTask.OrchestrationStatusQueryCondition,System.Threading.CancellationToken)">
             <inheritdoc/>
         </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageDurabilityProvider.StealAppLeaseAsync">
+            <inheritdoc/>
+        </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageDurabilityProvider.TryGetScaleMonitor(System.String,System.String,System.String,System.String,Microsoft.Azure.WebJobs.Host.Scale.IScaleMonitor@)">
             <inheritdoc/>
         </member>
@@ -178,6 +181,9 @@
             <inheritdoc/>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient.Microsoft#Azure#WebJobs#Extensions#DurableTask#IDurableEntityClient#SignalEntityAsync``1(Microsoft.Azure.WebJobs.Extensions.DurableTask.EntityId,System.DateTime,System.Action{``0})">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient.Microsoft#Azure#WebJobs#Extensions#DurableTask#IDurableOrchestrationClient#StealAppLeaseAsync">
             <inheritdoc/>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations.DurableClientFactory">
@@ -997,6 +1003,12 @@
             reuse the old instanceId. Defauls to <c>true</c>.</param>
             <returns>A task that completes when the orchestration is started. The task contains the instance id of the started
             orchestratation instance.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient.StealAppLeaseAsync">
+            <summary>
+             Steals AppLease if this app doesn't already have it. To use this, must be using the AppLease feature by setting UseAppLease to true in host.json.
+            </summary>
+            <returns>A task that completes when the steal app message is written to storage.</returns>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationContext">
             <summary>
@@ -2037,6 +2049,12 @@
             <param name="timespan">The timespan that the code will have to wait for.</param>
             <param name="errorMessage">The error message if the timespan is invalid.</param>
             <returns>A boolean indicating whether the time interval is valid.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.StealAppLeaseAsync">
+            <summary>
+             Steals AppLease if this app doesn't already have it. To use this, must be using the AppLease feature by setting UseAppLease to true in host.json.
+            </summary>
+            <returns>A task that completes when the steal app message is written to storage.</returns>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.ConnectionNameMatches(Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider)">
             <summary>
