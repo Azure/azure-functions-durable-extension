@@ -4,8 +4,10 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Text;
 using System.Threading.Tasks;
 using DurableTask.AzureStorage;
 using Microsoft.ApplicationInsights.Channel;
@@ -16,6 +18,8 @@ using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.WindowsAzure.Storage;
+using Moq;
+using Newtonsoft.Json.Linq;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -30,9 +34,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         public const string LogCategory = "Host.Triggers.DurableTask";
         public const string EmptyStorageProviderType = "empty";
-
-        // The regex pattern that parses our Linux Dedicated logs
-        public static readonly string RegexPattern = "(?<Account>[^,]*),(?<ActiveActivities>[^,]*),(?<ActiveOrchestrators>[^,]*),(?<Age>[^,]*),(?<AppName>[^,]*),(?<ContinuedAsNew>[^,]*),(?<CreatedTimeFrom>[^,]*),(?<CreatedTimeTo>[^,]*),(?<DequeueCount>[^,]*),\"(?<Details>[^\"]*)\",(?<Duration>[^,]*),(?<ETag>[^,]*),(?<Episode>[^,]*),(?<EventCount>[^,]*),(?<EventName>[^,]*),(?<EventType>[^,]*),(?<Exception>[^,]*),\"(?<ExceptionMessage>[^\"]*)\",(?<ExecutionId>[^,]*),(?<ExtensionVersion>[^,]*),(?<FromWorkerName>[^,]*),(?<FunctionName>[^,]*),(?<FunctionState>[^,]*),(?<FunctionType>[^,]*),(?<Input>[^,]*),(?<InstanceId>[^,]*),(?<IsCheckpointComplete>[^,]*),(?<IsExtendedSession>[^,]*),(?<IsReplay>[^,]*),(?<LastCheckpointTime>[^,]*),(?<LatencyMs>[^,]*),(?<MessageId>[^,]*),(?<MessagesRead>[^,]*),(?<MessagesSent>[^,]*),(?<MessagesUpdated>[^,]*),(?<NewEventCount>[^,]*),(?<NewEvents>[^,]*),(?<NextVisibleTime>[^,]*),(?<OperationId>[^,]*),(?<OperationName>[^,]*),(?<Output>[^,]*),(?<PartitionId>[^,]*),(?<PendingOrchestratorMessages>[^,]*),(?<PendingOrchestrators>[^,]*),(?<Reason>[^,]*),(?<RelatedActivityId>[^,]*),(?<RequestCount>[^,]*),(?<RequestId>[^,]*),(?<RequestingExecutionId>[^,]*),(?<RequestingInstance>[^,]*),(?<RequestingInstanceId>[^,]*),(?<Result>[^,]*),(?<RuntimeStatus>[^,]*),(?<SequenceNumber>[^,]*),(?<SizeInBytes>[^,]*),(?<SlotName>[^,]*),(?<StatusCode>[^,]*),(?<StorageRequests>[^,]*),(?<Success>[^,]*),(?<TableEntitiesRead>[^,]*),(?<TableEntitiesWritten>[^,]*),(?<TargetExecutionId>[^,]*),(?<TargetInstanceId>[^,]*),(?<TaskEventId>[^,]*),(?<TaskHub>[^,]*),(?<Token>[^,]*),(?<TotalEventCount>[^,]*),(?<Version>[^,]*),(?<VisibilityTimeoutSeconds>[^,]*),(?<WorkerName>[^,]*)";
 
         public static ITestHost GetJobHost(
             ILoggerProvider loggerProvider,
@@ -62,7 +63,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Action<ITelemetry> onSend = null,
             bool rollbackEntityOperationsOnExceptions = true,
             int entityMessageReorderWindowInMinutes = 30,
-            string exactTaskHubName = null)
+            string exactTaskHubName = null,
+            bool addDurableClientFactory = false)
         {
             switch (storageProviderType)
             {
@@ -103,7 +105,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 DefaultAsyncRequestSleepTimeMilliseconds = httpAsyncSleepTime,
             };
-            options.NotificationUrl = notificationUrl;
+            options.WebhookUriProviderOverride = () => notificationUrl;
             options.ExtendedSessionsEnabled = enableExtendedSessions;
             options.MaxConcurrentOrchestratorFunctions = 200;
             options.MaxConcurrentActivityFunctions = 200;
@@ -144,15 +146,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
 
             return GetJobHostWithOptions(
-                loggerProvider,
-                options,
-                storageProviderType,
-                nameResolver,
-                durableHttpMessageHandler,
-                lifeCycleNotificationHelper,
-                serializerSettings,
-                onSend,
-                durabilityProviderFactoryType);
+                loggerProvider: loggerProvider,
+                durableTaskOptions: options,
+                storageProviderType: storageProviderType,
+                nameResolver: nameResolver,
+                durableHttpMessageHandler: durableHttpMessageHandler,
+                lifeCycleNotificationHelper: lifeCycleNotificationHelper,
+                serializerSettings: serializerSettings,
+                onSend: onSend,
+#if !FUNCTIONS_V1
+                addDurableClientFactory: addDurableClientFactory,
+#endif
+                durabilityProviderFactoryType: durabilityProviderFactoryType);
         }
 
         public static ITestHost GetJobHostWithOptions(
@@ -164,7 +169,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             ILifeCycleNotificationHelper lifeCycleNotificationHelper = null,
             IMessageSerializerSettingsFactory serializerSettings = null,
             Action<ITelemetry> onSend = null,
-            Type durabilityProviderFactoryType = null)
+            Type durabilityProviderFactoryType = null,
+            bool addDurableClientFactory = false)
         {
             if (serializerSettings == null)
             {
@@ -183,6 +189,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 storageProvider: storageProviderType,
 #if !FUNCTIONS_V1
                 durabilityProviderFactoryType: durabilityProviderFactoryType,
+                addDurableClientFactory: addDurableClientFactory,
 #endif
                 loggerProvider: loggerProvider,
                 nameResolver: testNameResolver,
@@ -190,6 +197,55 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 lifeCycleNotificationHelper: lifeCycleNotificationHelper,
                 serializerSettingsFactory: serializerSettings,
                 onSend: onSend);
+        }
+
+#if !FUNCTIONS_V1
+        public static ITestHost GetJobHostWithMultipleDurabilityProviders(
+            DurableTaskOptions options = null,
+            IEnumerable<IDurabilityProviderFactory> durabilityProviderFactories = null)
+        {
+            if (options == null)
+            {
+                options = new DurableTaskOptions();
+            }
+
+            return GetJobHostWithOptionsWithMultipleDurabilityProviders(
+                options,
+                durabilityProviderFactories);
+        }
+
+        public static ITestHost GetJobHostWithOptionsWithMultipleDurabilityProviders(
+            DurableTaskOptions durableTaskOptions,
+            IEnumerable<IDurabilityProviderFactory> durabilityProviderFactories = null)
+        {
+            var optionsWrapper = new OptionsWrapper<DurableTaskOptions>(durableTaskOptions);
+
+            return PlatformSpecificHelpers.CreateJobHostWithMultipleDurabilityProviders(
+                optionsWrapper,
+                durabilityProviderFactories);
+        }
+#endif
+
+#pragma warning disable CS0612 // Type or member is obsolete
+        public static IPlatformInformationService GetMockPlatformInformationService(
+            bool inConsumption = false,
+            bool inLinuxConsumption = false,
+            bool inWindowsConsumption = false,
+            bool inLinuxAppsService = false,
+            string getLinuxStampName = "",
+            string getContainerName = "")
+#pragma warning restore CS0612 // Type or member is obsolete
+        {
+#pragma warning disable CS0612 // Type or member is obsolete
+            var mockPlatformProvider = new Mock<IPlatformInformationService>();
+#pragma warning restore CS0612 // Type or member is obsolete
+            mockPlatformProvider.Setup(x => x.InConsumption()).Returns(inConsumption);
+            mockPlatformProvider.Setup(x => x.InLinuxConsumption()).Returns(inLinuxConsumption);
+            mockPlatformProvider.Setup(x => x.InWindowsConsumption()).Returns(inWindowsConsumption);
+            mockPlatformProvider.Setup(x => x.InLinuxAppService()).Returns(inLinuxAppsService);
+            mockPlatformProvider.Setup(x => x.GetLinuxStampName()).Returns(getLinuxStampName);
+            mockPlatformProvider.Setup(x => x.GetContainerName()).Returns(getContainerName);
+            return mockPlatformProvider.Object;
         }
 
         public static DurableTaskOptions GetDurableTaskOptionsForStorageProvider(string storageProvider)
@@ -208,9 +264,66 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
-        /// Helper function to regularly poll for some condition until it is true. If timeout hits, throw timeoutexception
+        /// Returns <c>true</c> if a JSON Durable log has all the minimum-required keys.
+        /// Else, returns <c>false</c>.
         /// </summary>
-        /// <param name="predicate">Predicate to wait until it returns true</param>
+        /// <param name="json">The JSON log to validate.</param>
+        public static bool IsValidJSONLog(JObject json)
+        {
+            List<string> expectedKeys = new List<string>
+            {
+                "EventStampName",
+                "EventPrimaryStampName",
+                "ProviderName",
+                "TaskName",
+                "EventId",
+                "EventTimestamp",
+                "Tenant",
+                "Pid",
+                "Tid",
+            };
+            List<string> keys = json.Properties().Select(p => p.Name).ToList();
+            foreach (string expectedKey in expectedKeys)
+            {
+                if (!keys.Contains(expectedKey))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Read a file's contents, line by line, even if another process is currently writing to it.
+        /// </summary>
+        /// <param name="path">The file's path.</param>
+        /// <returns>An array of each line in the file.</returns>
+        public static string[] WriteSafeReadAllLines(string path)
+        {
+            /* A method like File.ReadAllLines cannot open a file that is open for writing by another process
+             * This is due to the File.ReadAllLines  not opening the process with ReadWrite permissions.
+             * As a result, we implement a variant ReadAllLines with the right permission mode.
+             *
+             * More info in: https://stackoverflow.com/questions/12744725/how-do-i-perform-file-readalllines-on-a-file-that-is-also-open-in-excel
+             */
+            using (var fileStream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            using (var streamReader = new StreamReader(fileStream, Encoding.Default))
+            {
+                List<string> file = new List<string>();
+                while (!streamReader.EndOfStream)
+                {
+                    file.Add(streamReader.ReadLine());
+                }
+
+                return file.ToArray();
+            }
+        }
+
+        /// <summary>
+        /// Helper function to regularly poll for some condition until it is true. If timeout hits, throw timeoutexception.
+        /// </summary>
+        /// <param name="predicate">Predicate to wait until it returns true.</param>
         /// <param name="timeout">Time to wait until predicate is true.</param>
         /// <param name="retryInterval">How frequently to test predicate. Defaults to 100 ms.</param>
         public static async Task WaitUntilTrue(Func<bool> predicate, string conditionDescription, TimeSpan timeout, TimeSpan? retryInterval = null)

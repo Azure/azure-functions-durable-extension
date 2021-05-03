@@ -1,0 +1,13 @@
+{
+  "name": "durablejs",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "start": "func start",
+    "test": "echo \"No tests yet...\""
+  },
+  "dependencies": {
+    "durable-functions": "^1.4.6"
+  },
+  "devDependencies": {}
+}

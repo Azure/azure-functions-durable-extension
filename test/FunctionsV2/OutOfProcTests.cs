@@ -348,7 +348,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 // Validate if we opened local RPC endpoint by looking at log statements.
                 var logger = this.loggerProvider.CreatedLoggers.Single(l => l.Category == TestHelpers.LogCategory);
                 var logMessages = logger.LogMessages.ToList();
-                bool enabledRpcEndpoint = logMessages.Any(msg => msg.Level == Microsoft.Extensions.Logging.LogLevel.Information && msg.FormattedMessage.StartsWith("Opening local RPC endpoint:"));
+                bool enabledRpcEndpoint = logMessages.Any(msg => msg.Level == Microsoft.Extensions.Logging.LogLevel.Information && msg.FormattedMessage.StartsWith("Opened local RPC endpoint:"));
 
                 Assert.Equal(enabledExpected, enabledRpcEndpoint);
 

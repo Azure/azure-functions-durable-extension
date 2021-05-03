@@ -195,6 +195,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
+        /// End to end test that ensures that DurableClientFactory is set up correctly
+        /// (i.e. the correct services are injected through dependency injection
+        /// and AzureStorageDurabilityProvider is created).
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task DurableClient_AzureStorage_SuccessfulSetup()
+        {
+            string orchestratorName = nameof(TestOrchestrations.SayHelloInline);
+            using (ITestHost host = TestHelpers.GetJobHost(
+                loggerProvider: this.loggerProvider,
+                testName: nameof(this.DurableClient_AzureStorage_SuccessfulSetup),
+                enableExtendedSessions: false,
+                storageProviderType: "azure_storage",
+                addDurableClientFactory: true))
+            {
+                await host.StartAsync();
+                var client = await host.StartOrchestratorAsync(orchestratorName, input: "World", this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
         /// End-to-end test which validates a simple orchestrator function does not have assigned value for <see cref="DurableOrchestrationContext.ParentInstanceId"/>.
         /// </summary>
         [Theory]
@@ -226,6 +250,55 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
 #if !FUNCTIONS_V1
+        /// <summary>
+        /// By simulating the appropiate environment variables for Linux Consumption,
+        /// this test checks that we are emitting logs from DurableTask.AzureStorage
+        /// and reading the DurabilityProvider's EventSourceName property correctly.
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task AzureStorageEmittingLogsWithEventSourceName()
+        {
+            var prefix = "MS_DURABLE_FUNCTION_EVENTS_LOGS";
+            string orchestratorName = nameof(TestOrchestrations.SayHelloInline);
+
+            // To capture console output in a StringWritter
+            using (StringWriter sw = new StringWriter())
+            {
+                // Set console to write to StringWritter
+                Console.SetOut(sw);
+
+                // Simulate enviroment variables indicating linux consumption
+                var nameResolver = new SimpleNameResolver(new Dictionary<string, string>()
+                {
+                    { "CONTAINER_NAME", "val1" },
+                    { "WEBSITE_STAMP_DEPLOYMENT_ID", "val3" },
+                    { "WEBSITE_HOME_STAMPNAME", "val4" },
+                });
+
+                // Run trivial orchestrator
+                using (var host = TestHelpers.GetJobHost(
+                    this.loggerProvider,
+                    nameResolver: nameResolver,
+                    testName: "FiltersVerboseLogsByDefault",
+                    enableExtendedSessions: false,
+                    storageProviderType: "azure_storage"))
+                {
+                    await host.StartAsync();
+                    var client = await host.StartOrchestratorAsync(orchestratorName, input: "World", this.output);
+                    var status = await client.WaitForCompletionAsync(this.output);
+                    await host.StopAsync();
+                }
+
+                string consoleOutput = sw.ToString();
+
+                // Validate that the JSON has DurableTask-AzureStorage fields
+                string[] lines = consoleOutput.Split('\n');
+                var azureStorageLogLines = lines.Where(l => l.Contains("DurableTask-AzureStorage") && l.StartsWith(prefix));
+                Assert.NotEmpty(azureStorageLogLines);
+            }
+        }
+
         /// <summary>
         /// By simulating the appropiate enviorment variables for Linux Consumption,
         /// this test checks that we are writing our JSON logs to the console. It does not
@@ -282,16 +355,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                         jsonStr = line.Replace(prefix, "");
                         JObject json = JObject.Parse(jsonStr);
 
-                        List<string> keys = json.Properties().Select(p => p.Name).ToList();
-                        Assert.Contains("EventStampName", keys);
-                        Assert.Contains("EventPrimaryStampName", keys);
-                        Assert.Contains("ProviderName", keys);
-                        Assert.Contains("TaskName", keys);
-                        Assert.Contains("EventId", keys);
-                        Assert.Contains("EventTimestamp", keys);
-                        Assert.Contains("Tenant", keys);
-                        Assert.Contains("Pid", keys);
-                        Assert.Contains("Tid", keys);
+                        TestHelpers.IsValidJSONLog(json);
                     }
                 }
             }
@@ -393,16 +457,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                         jsonStr = line.Replace(prefix, "");
                         JObject json = JObject.Parse(jsonStr);
 
-                        List<string> keys = json.Properties().Select(p => p.Name).ToList();
-                        Assert.Contains("EventStampName", keys);
-                        Assert.Contains("EventPrimaryStampName", keys);
-                        Assert.Contains("ProviderName", keys);
-                        Assert.Contains("TaskName", keys);
-                        Assert.Contains("EventId", keys);
-                        Assert.Contains("EventTimestamp", keys);
-                        Assert.Contains("Tenant", keys);
-                        Assert.Contains("Pid", keys);
-                        Assert.Contains("Tid", keys);
+                        TestHelpers.IsValidJSONLog(json);
 
                         // Ensuring no DurableTask-Core Verbose logs are found
                         if ((int)json["Level"] == (int)EventLevel.Verbose)
@@ -470,16 +525,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                         jsonStr = line.Replace(prefix, "");
                         JObject json = JObject.Parse(jsonStr);
 
-                        List<string> keys = json.Properties().Select(p => p.Name).ToList();
-                        Assert.Contains("EventStampName", keys);
-                        Assert.Contains("EventPrimaryStampName", keys);
-                        Assert.Contains("ProviderName", keys);
-                        Assert.Contains("TaskName", keys);
-                        Assert.Contains("EventId", keys);
-                        Assert.Contains("EventTimestamp", keys);
-                        Assert.Contains("Tenant", keys);
-                        Assert.Contains("Pid", keys);
-                        Assert.Contains("Tid", keys);
+                        TestHelpers.IsValidJSONLog(json);
 
                         // Ensuring DurableTask-Core Verbose logs are found
                         if (((int)json["Level"] == (int)EventLevel.Verbose)
@@ -532,41 +578,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
 
             await TestHelpers.WaitUntilTrue(
-                predicate: () => File.Exists(LinuxAppServiceLogger.LoggingPath),
-                conditionDescription: "Log file exists",
-                timeout: TimeSpan.FromSeconds(20));
-
-            // string[] lines = File.ReadAllLines(LinuxAppServiceLogger.LoggingPath);
-
-            /* TODO: The snippet below would be the test once JSON logging is enabled. Currently disabled.
-            // Ensure newlines are removed by checking the number of lines is equal to the number of "TimeStamp" columns,
-            // which corresponds to the number of JSONs logged
-
-            int countTimeStampCols = Regex.Matches(string.Join("", lines), "\"TimeStamp\":").Count;
-            Assert.Equal(lineCount, countTimeStampCols);
-            */
-
-            // If every line can be parsed, we know newlines were removed
-            /* foreach (string line in lines)
-            {
-                System.Text.RegularExpressions.Match match = Regex.Match(line, TestHelpers.RegexPattern);
-                Assert.True(match.Success);
-            }*/
-            using (var fs = new FileStream(LinuxAppServiceLogger.LoggingPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-            {
-                using (var sr = new StreamReader(fs, Encoding.Default))
+                predicate: () =>
                 {
-                    string line;
-                    while ((line = sr.ReadLine()) != null)
-                    {
-                        System.Text.RegularExpressions.Match match = Regex.Match(line, TestHelpers.RegexPattern);
-                        Assert.True(match.Success);
-                    }
-                }
-            }
+                    /* Exceptions have newlines embeded in them. Therefore, if there are as many lines
+                     * as there are JSON (each of which has 1 EventTimestamp field), then we know that
+                     * Exceptions must have had their newlines removed.
+                     */
+                    string[] lines = TestHelpers.WriteSafeReadAllLines(LinuxAppServiceLogger.LoggingPath);
+                    int countTimeStampCols = Regex.Matches(string.Join("", lines), "\"EventTimestamp\":").Count;
+                    return lines.Length == countTimeStampCols;
+                },
+                conditionDescription: "Log file exists and newlines are removed from exceptions",
+                timeout: TimeSpan.FromSeconds(65)); // enabling at least 2 file-buffer flushes (happen every 30 seconds)
         }
-
-        /* TODO: The snippet below would be the test once JSON logging is enabled. Currently disabled.
 
         /// <summary>
         /// By simulating the appropiate enviorment variables for Linux Dedicated,
@@ -612,85 +636,57 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StopAsync();
             }
 
-            // Ensure the logging file was at least generated
-            Assert.True(File.Exists(LinuxAppServiceLogger.LoggingPath));
+            await TestHelpers.WaitUntilTrue(
+                predicate: () => File.Exists(LinuxAppServiceLogger.LoggingPath),
+                conditionDescription: "Log file exists",
+                timeout: TimeSpan.FromSeconds(30));
 
-            // Ensure newlines are removed by checking the number of lines is equal to the number of "TimeStamp" columns,
-            // which corresponds to the number of JSONs logged
-            string[] lines = File.ReadAllLines(LinuxAppServiceLogger.LoggingPath);
-
-            bool foundAzureStorageLog = false;
-            bool foundEtwEventSourceLog = false;
-            bool foundDurableTaskCoreLog = false;
-
-            bool foundActivityId = false;
-            bool foundRelatedActivityId = false;
-
-            // Validating JSON outputs
-            foreach (string line in lines)
-            {
-                // (1) Ensure it can be parsed to JSON
-                JObject json = JObject.Parse(line);
-
-                // (2) Contains minimal expected fields
-                List<string> keys = json.Properties().Select(p => p.Name).ToList();
-                Assert.Contains("EventStampName", keys);
-                Assert.Contains("EventPrimaryStampName", keys);
-                Assert.Contains("ProviderName", keys);
-                Assert.Contains("TaskName", keys);
-                Assert.Contains("EventId", keys);
-                Assert.Contains("TimeStamp", keys);
-                Assert.Contains("Tenant", keys);
-                Assert.Contains("Pid", keys);
-                Assert.Contains("Tid", keys);
-
-                // recording EventSource providers seen
-                int eventId = (int)json.GetValue("EventId");
-                if (eventId == 202)
+            await TestHelpers.WaitUntilTrue(
+                predicate: () =>
                 {
-                    foundEtwEventSourceLog = true;
-                }
-                else if (eventId == 10)
-                {
-                    foundDurableTaskCoreLog = true;
-                }
-                else if (eventId == 120)
-                {
-                    foundAzureStorageLog = true;
-                }
+                    string[] lines = TestHelpers.WriteSafeReadAllLines(LinuxAppServiceLogger.LoggingPath);
+                    IEnumerable<JObject> jsons = lines.Select(line => JObject.Parse(line));
 
-                // recording if ActivityId and RelatedActivityId are seen
-                // we expect to see them, at some point, in a trivial orchestrator
-                if (keys.Contains("ActivityId"))
-                {
-                    foundActivityId = true;
-                }
+                    if (!jsons.All(json => TestHelpers.IsValidJSONLog(json)))
+                    {
+                        return false;
+                    }
 
-                if (keys.Contains("RelatedActivityId"))
-                {
-                    foundRelatedActivityId = true;
-                }
+                    if (!jsons.Any(json => ((string)json.GetValue("ProviderName")) == "DurableTask-Core"))
+                    {
+                        return false;
+                    }
 
-                // (3) Ensure some Enums are printed correctly: as strings
-                string eventType = (string)json.GetValue("EventType");
-                if (!string.IsNullOrEmpty(eventType))
-                {
-                    Assert.True(!eventType.All(char.IsDigit));
-                }
-            }
+                    if (!jsons.Any(json => ((string)json.GetValue("ProviderName")) == "DurableTask-AzureStorage"))
+                    {
+                        return false;
+                    }
 
-            // (4) That we have logs from a variety of EventSource providers.
-            Assert.True(foundAzureStorageLog);
-            Assert.True(foundEtwEventSourceLog);
-            Assert.True(foundDurableTaskCoreLog);
+                    if (!jsons.Any(json => json.Properties().Select(p => p.Name).ToList().Contains("ActivityId")))
+                    {
+                        return false;
+                    }
 
-            // (5) Ensure ActivityId and RelatedActivityId are present in logs
-            Assert.True(foundActivityId);
-            Assert.True(foundRelatedActivityId);
+                    if (!jsons.Any(json => json.Properties().Select(p => p.Name).ToList().Contains("RelatedActivityId")))
+                    {
+                        return false;
+                    }
 
-            // To ensure other tests generate the path
-            File.Delete(LinuxAppServiceLogger.LoggingPath);
-        }*/
+                    if (jsons.Any(json =>
+                        {
+                            var eventType = (string)json.GetValue("EventType");
+                            var val = !string.IsNullOrEmpty(eventType) && eventType.All(char.IsDigit);
+                            return !string.IsNullOrEmpty(eventType) && eventType.All(char.IsDigit);
+                        }))
+                    {
+                        return false;
+                    }
+
+                    return true;
+                },
+                conditionDescription: "Log file contains all required fields and expected events",
+                timeout: TimeSpan.FromSeconds(35));
+        }
 #endif
 
         /// <summary>
@@ -4796,35 +4792,43 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
-        [Fact]
+        [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task MultipleHostsLocalRpcSameDevice()
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task MultipleHostsOnSameVM(bool enableLocalRpc)
         {
-            ITestHost host1 = TestHelpers.GetJobHost(
-                    this.loggerProvider,
-                    nameof(this.MultipleHostsLocalRpcSameDevice) + "1",
-                    false,
-                    localRpcEndpointEnabled: true);
-            await host1.StartAsync();
-            ITestHost host2 = TestHelpers.GetJobHost(
-                    this.loggerProvider,
-                    nameof(this.MultipleHostsLocalRpcSameDevice) + "2",
-                    false,
-                    localRpcEndpointEnabled: true);
-            try
+            // This test wants to be sure there are no race conditions while starting up multiple hosts in parallel,
+            // so attempt various times to increase the likelihood of hitting a race condition if one exists.
+            int numAttempts = 5;
+            for (int attempt = 0; attempt < numAttempts; attempt++)
             {
-                await host2.StartAsync();
-            }
-            catch (Exception)
-            {
-                Assert.True(false, "Could not start up two hosts on the same device in parallel");
-            }
-            finally
-            {
-                await host1.StopAsync();
-                host1.Dispose();
-                await host2.StopAsync();
-                host2.Dispose();
+                int numThreads = 10;
+                var hosts = new List<ITestHost>(numThreads);
+
+                try
+                {
+                    Parallel.For(0, numThreads, new ParallelOptions() { MaxDegreeOfParallelism = numThreads }, (i) =>
+                        hosts.Add(TestHelpers.GetJobHost(
+                                this.loggerProvider,
+                                nameof(this.MultipleHostsOnSameVM) + i,
+                                false,
+                                localRpcEndpointEnabled: enableLocalRpc)));
+
+                    await Task.WhenAll(hosts.Select(host => host.StartAsync()));
+                }
+                catch (Exception)
+                {
+                    Assert.True(false, "Could not start up two hosts on the same device in parallel");
+                }
+                finally
+                {
+                    foreach (var host in hosts)
+                    {
+                        await host.StopAsync();
+                        host.Dispose();
+                    }
+                }
             }
         }
 

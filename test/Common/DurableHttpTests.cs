@@ -363,6 +363,44 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
+        /// End-to-end test which checks if the CallHttpAsync Orchestrator fails  when the
+        /// target url doesn't exist and throws an HttpRequestException.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        public async Task DurableHttpAsync_Synchronous_HttpRequestException(string storageProvider)
+        {
+            HttpMessageHandler httpMessageHandler = MockSynchronousHttpMessageHandlerWithHttpRequestException();
+
+            using (ITestHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.DurableHttpAsync_Synchronous_HttpRequestException),
+                enableExtendedSessions: false,
+                storageProviderType: storageProvider,
+                durableHttpMessageHandler: new DurableHttpMessageHandlerFactory(httpMessageHandler)))
+            {
+                await host.StartAsync();
+
+                Dictionary<string, string> headers = new Dictionary<string, string>();
+                headers.Add("Accept", "application/json");
+                TestDurableHttpRequest testRequest = new TestDurableHttpRequest(
+                    httpMethod: HttpMethod.Get,
+                    headers: headers);
+
+                string functionName = nameof(TestOrchestrations.CallHttpAsyncOrchestrator);
+                var client = await host.StartOrchestratorAsync(functionName, testRequest, this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
+
+                var output = status?.Output;
+                Assert.Contains("No such host is known.", output.ToString());
+                Assert.Equal(OrchestrationRuntimeStatus.Failed, status?.RuntimeStatus);
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
         /// End-to-end test which checks if the UserAgent header is set in the HttpResponseMessage.
         /// </summary>
         [Theory]
@@ -1505,6 +1543,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                    await Task.Delay(timeoutTimespan);
                    return httpResponseMessage;
                });
+
+            return handlerMock.Object;
+        }
+
+        private static HttpMessageHandler MockSynchronousHttpMessageHandlerWithHttpRequestException()
+        {
+            HttpResponseMessage httpResponseMessage = CreateTestHttpResponseMessage(HttpStatusCode.NotFound);
+
+            httpResponseMessage.Content = new ExceptionThrowingContent(new HttpRequestException("No such host is known."));
+
+            var handlerMock = new Mock<HttpMessageHandler>(MockBehavior.Strict);
+            handlerMock
+               .Protected()
+               .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+               .ReturnsAsync(httpResponseMessage);
 
             return handlerMock.Object;
         }

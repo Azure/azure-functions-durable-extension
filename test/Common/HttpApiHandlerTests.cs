@@ -33,7 +33,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 Notifications = new NotificationOptions(),
             };
-            options.NotificationUrl = null;
+
+            // With a null override, and the production code path returning null webhook path,
+            // this simulates a non-configured webhook url.
+            options.WebhookUriProviderOverride = null;
             options.HubName = "DurableTaskHub";
 
             var httpApiHandler = new HttpApiHandler(GetTestExtension(options), null);
@@ -60,6 +63,45 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 TimeSpan.FromSeconds(0),
                 TimeSpan.FromSeconds(100)));
             Assert.Equal($"Total timeout 0 should be bigger than retry timeout 100", ex.Message);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void OutOfProcEndpoints_UpdateWithNewWebhookUri()
+        {
+            var httpApiHandler = new HttpApiHandler(GetTestExtension(), null);
+            var webhookProvider = new ChangingWebhookProvider() { WebhookUri = new Uri(TestConstants.NotificationUrl) };
+            httpApiHandler.RegisterWebhookProvider(() => webhookProvider.WebhookUri);
+
+            AssertApisUsingCorrectWebhookUri(httpApiHandler, TestConstants.NotificationUrlBase);
+
+            string newWebhookUri = TestConstants.NotificationUrl.Replace("localhost:7071", "localhost:5050");
+            string newBaseUri = TestConstants.NotificationUrlBase.Replace("localhost:7071", "localhost:5050");
+            webhookProvider.WebhookUri = new Uri(newWebhookUri);
+
+            AssertApisUsingCorrectWebhookUri(httpApiHandler, newBaseUri);
+        }
+
+        // Validate the expected uris are used for CreateHttpManagementPayload(), GetBaseUrl(), and GetInstanceCreationLinks()
+        private static void AssertApisUsingCorrectWebhookUri(HttpApiHandler httpApiHandler, string expectedBaseUri)
+        {
+            HttpManagementPayload managementPayload = httpApiHandler.CreateHttpManagementPayload(
+                 TestConstants.InstanceId,
+                 null,
+                 null);
+
+            Assert.StartsWith(expectedBaseUri, managementPayload.StatusQueryGetUri);
+            Assert.StartsWith(expectedBaseUri, managementPayload.SendEventPostUri);
+            Assert.StartsWith(expectedBaseUri, managementPayload.PurgeHistoryDeleteUri);
+            Assert.StartsWith(expectedBaseUri, managementPayload.RestartPostUri);
+            Assert.StartsWith(expectedBaseUri, managementPayload.TerminatePostUri);
+
+            string baseUri = httpApiHandler.GetBaseUrl();
+            Assert.Equal(expectedBaseUri, baseUri);
+
+            HttpCreationPayload creationPayload = httpApiHandler.GetInstanceCreationLinks();
+            Assert.StartsWith(expectedBaseUri, creationPayload.CreateNewInstancePostUri);
+            Assert.StartsWith(expectedBaseUri, creationPayload.CreateAndWaitOnNewInstancePostUri);
         }
 
         [Fact]
@@ -1354,7 +1396,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         private static DurableTaskExtension GetTestExtension()
         {
             var options = new DurableTaskOptions();
-            options.NotificationUrl = new Uri(TestConstants.NotificationUrl);
+            options.WebhookUriProviderOverride = () => new Uri(TestConstants.NotificationUrl);
             options.HubName = "DurableFunctionsHub";
 
             return GetTestExtension(options);
@@ -1382,6 +1424,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
+        private class ChangingWebhookProvider
+        {
+            public Uri WebhookUri { get; set; }
+        }
+
         private class MockDurableTaskExtension : DurableTaskExtension
         {
             public MockDurableTaskExtension(DurableTaskOptions options)
@@ -1389,13 +1436,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     new OptionsWrapper<DurableTaskOptions>(options),
                     new LoggerFactory(),
                     TestHelpers.GetTestNameResolver(),
-                    new AzureStorageDurabilityProviderFactory(
+                    new[]
+                    {
+                        new AzureStorageDurabilityProviderFactory(
                         new OptionsWrapper<DurableTaskOptions>(options),
                         new TestConnectionStringResolver(),
                         TestHelpers.GetTestNameResolver(),
-                        NullLoggerFactory.Instance),
+                        NullLoggerFactory.Instance,
+                        TestHelpers.GetMockPlatformInformationService()),
+                    },
                     new TestHostShutdownNotificationService(),
-                    new DurableHttpMessageHandlerFactory())
+                    new DurableHttpMessageHandlerFactory(),
+                    platformInformationService: TestHelpers.GetMockPlatformInformationService())
             {
             }
 

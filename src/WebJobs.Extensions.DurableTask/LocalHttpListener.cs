@@ -22,10 +22,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     {
         private const int DefaultPort = 17071;
 
-        private readonly IWebHost localWebHost;
+        // Pick a large, fixed range of ports that are going to be valid in all environment.
+        // Avoiding ports below 1024 as those are blocked by app service sandbox.
+        // Ephemeral ports for most OS start well above 32768. See https://www.ncftp.com/ncftpd/doc/misc/ephemeral_ports.html
+        private const int MinPort = 30000;
+        private const int MaxPort = 31000;
+
         private readonly Func<HttpRequestMessage, Task<HttpResponseMessage>> handler;
         private readonly EndToEndTraceHelper traceHelper;
         private readonly DurableTaskOptions durableTaskOptions;
+        private readonly Random portGenerator;
+        private readonly HashSet<int> attemptedPorts;
+
+        private IWebHost localWebHost;
 
         public LocalHttpListener(
             EndToEndTraceHelper traceHelper,
@@ -36,23 +45,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.handler = handler ?? throw new ArgumentNullException(nameof(handler));
             this.durableTaskOptions = durableTaskOptions ?? throw new ArgumentNullException(nameof(durableTaskOptions));
 
-#if !FUNCTIONS_V1
-            this.InternalRpcUri = new Uri($"http://127.0.0.1:{this.GetAvailablePort()}/durabletask/");
-            var listenUri = new Uri(this.InternalRpcUri.GetLeftPart(UriPartial.Authority));
-            this.localWebHost = new WebHostBuilder()
-                .UseKestrel()
-                .UseUrls(listenUri.OriginalString)
-                .Configure(a => a.Run(this.HandleRequestAsync))
-                .Build();
-#else
-            // Just use default port for internal Uri. No need to check for port availability since
-            // we won't be listening to this endpoint.
-            this.InternalRpcUri = new Uri($"http://127.0.0.1:{DefaultPort}/durabletask/");
+            // Set to a non null value
+            this.InternalRpcUri = new Uri($"http://uninitialized");
             this.localWebHost = new NoOpWebHost();
-#endif
+            this.portGenerator = new Random();
+            this.attemptedPorts = new HashSet<int>();
         }
 
-        public Uri InternalRpcUri { get; }
+        public Uri InternalRpcUri { get; private set; }
 
         public bool IsListening { get; private set; }
 
@@ -66,12 +66,62 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
 #if !FUNCTIONS_V1
-            await this.localWebHost.StartAsync();
-            this.IsListening = true;
+            const int maxAttempts = 10;
+            int numAttempts = 1;
+            do
+            {
+                int listeningPort = numAttempts == 1
+                    ? DefaultPort
+                    : this.GetRandomPort();
+                try
+                {
+                    this.InternalRpcUri = new Uri($"http://127.0.0.1:{listeningPort}/durabletask/");
+                    var listenUri = new Uri(this.InternalRpcUri.GetLeftPart(UriPartial.Authority));
+                    this.localWebHost = new WebHostBuilder()
+                        .UseKestrel()
+                        .UseUrls(listenUri.OriginalString)
+                        .Configure(a => a.Run(this.HandleRequestAsync))
+                        .Build();
+
+                    await this.localWebHost.StartAsync();
+                    this.IsListening = true;
+                    break;
+                }
+                catch (IOException)
+                {
+                    this.traceHelper.ExtensionWarningEvent(
+                        this.durableTaskOptions.HubName,
+                        functionName: string.Empty,
+                        instanceId: string.Empty,
+                        message: $"Failed to open local port {listeningPort}. This was attempt #{numAttempts} to open a local port.");
+                    this.attemptedPorts.Add(listeningPort);
+                    numAttempts++;
+                }
+            }
+            while (numAttempts <= maxAttempts);
+
+            if (!this.IsListening)
+            {
+                throw new IOException($"Unable to find a port to open an RPC endpoint on after {maxAttempts} attempts");
+            }
 #else
             // no-op: this is dummy code to make build warnings go away
             await Task.Yield();
 #endif
+        }
+
+        private int GetRandomPort()
+        {
+            // Get a random port that has not already been attempted so we don't waste time trying
+            // to listen to a port we know is not free.
+            int randomPort;
+            do
+            {
+                randomPort = this.portGenerator.Next(MinPort, MaxPort);
+            }
+            while (this.attemptedPorts.Contains(randomPort));
+
+            return randomPort;
         }
 
         public async Task StopAsync()
@@ -83,29 +133,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             await Task.Yield();
 #endif
             this.IsListening = false;
-        }
-
-        private int GetAvailablePort()
-        {
-            // If we are able to successfully start a listener looking on the default port without
-            // an exception, we can use the default port. Otherwise, let the TcpListener class decide for us.
-            try
-            {
-                var listener = new TcpListener(IPAddress.Loopback, DefaultPort);
-                listener.Start();
-                listener.Stop();
-                return DefaultPort;
-            }
-            catch (SocketException)
-            {
-                // Following guidance of this stack overflow answer
-                // to find available port: https://stackoverflow.com/a/150974/9035640
-                var listener = new TcpListener(IPAddress.Loopback, 0);
-                listener.Start();
-                int availablePort = ((IPEndPoint)listener.LocalEndpoint).Port;
-                listener.Stop();
-                return availablePort;
-            }
         }
 
         private async Task HandleRequestAsync(HttpContext context)
@@ -158,7 +185,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-#if FUNCTIONS_V1
         private class NoOpWebHost : IWebHost
         {
             public IFeatureCollection ServerFeatures => throw new NotImplementedException();
@@ -173,6 +199,5 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             public Task StopAsync(CancellationToken cancellationToken = default(CancellationToken)) => Task.CompletedTask;
         }
-#endif
     }
 }
