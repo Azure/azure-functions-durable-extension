@@ -10,7 +10,7 @@
   },
   "extensions": {
     "durableTask": {
-      "hubName": "DFBotAppTaskHub"
+      "hubName": "DFBotStagingAppTaskHub2"
     }
   }
 }

@@ -80,7 +80,7 @@ namespace DFTestBot
             string markdownComment,
             ILogger log)
         {
-            string message = "🤖**Durable Functions Test Bot**🤖" + Environment.NewLine + Environment.NewLine + markdownComment;
+            string message = markdownComment;
             log.LogInformation($"Sending GitHub comment: {message}");
 
             if (!GitHubCommentsDisabled)
@@ -114,7 +114,7 @@ namespace DFTestBot
             ILogger log)
         {
             string message = currentCommentBody + Environment.NewLine + Environment.NewLine;
-            message += "🤖**Durable Functions Test Bot**🤖" + Environment.NewLine + Environment.NewLine + markdownComment;
+            message += markdownComment;
             log.LogInformation($"Sending GitHub comment: {message}");
 
             if (!GitHubCommentsDisabled)

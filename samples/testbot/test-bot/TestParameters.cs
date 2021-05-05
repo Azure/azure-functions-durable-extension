@@ -81,6 +81,18 @@ namespace DFTestBot
         public string GitHubBranch { get; set; }
 
         /// <summary>
+        /// Gets or sets the project file directory path e.g. "test\DFPerfScenarios"
+        /// </summary>
+        [JsonProperty("projectFileDirPath")]
+        public string ProjectFileDirPath { get; set; }
+
+        /// <summary>
+        /// Gets or sets the framework e.g. "netcoreapp3.1"
+        /// </summary>
+        [JsonProperty("Framework")]
+        public string Framework { get; set; }
+
+        /// <summary>
         /// Gets or sets the app plan type (e.g. Elastic Premium, Consumption).
         /// </summary>
         [JsonProperty("appPlanType")]
@@ -111,9 +123,21 @@ namespace DFTestBot
         public string OSType { get; set; }
 
         /// <summary>
+        /// Gets or sets the Runtime for the Function App (e.g. 'DotNet', 'Node', 'Python')
+        /// </summary>
+        [JsonProperty("Runtime")]
+        public string Runtime { get; set; }
+
+        /// <summary>
         /// Gets or sets the functions version
         /// </summary>
         [JsonProperty("functionsVersion")]
         public string FunctionsVersion { get; set; }
+
+        /// <summary>
+        /// Gets or sets the functions version
+        /// </summary>
+        [JsonProperty("isStagingTest")]
+        public bool IsStagingTest { get; set; }
     }
 }

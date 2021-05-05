@@ -4,7 +4,11 @@
 namespace DFTestBot
 {
     using System;
+    using System.Collections.Generic;
     using System.IO;
+    using System.Linq;
+    using System.Net;
+    using System.Net.Http;
     using System.Text;
     using System.Threading.Tasks;
     using Microsoft.AspNetCore.Http;
@@ -24,54 +28,78 @@ namespace DFTestBot
         static readonly string TestAppSubscriptionId = Environment.GetEnvironmentVariable("TEST_APP_SUBSCRIPTION_ID");
 
         [FunctionName("GitHubComment")]
-        public static async Task<IActionResult> Run(
+        public static async Task Run(
             [HttpTrigger(AuthorizationLevel.Function, "POST")] HttpRequest req,
             [DurableClient] IDurableClient durableClient,
             ILogger log)
         {
             log.LogInformation($"Received a webhook: {req.GetDisplayUrl()}");
 
+            // Validate that the HttpRequest Content is JSON
             if (!req.ContentType.StartsWith("application/json", StringComparison.OrdinalIgnoreCase))
             {
-                return new BadRequestObjectResult("Expected application/json");
+                log.LogInformation("Expected application/json");
+                return;
             }
 
-            dynamic json;
+            // Deserialize the json payload into a GitHubRequestPayload
+            GitHubRequestPayload gitHubRequestPayload;
             using (var reader = new StreamReader(req.Body, Encoding.UTF8))
             {
                 string content = await reader.ReadToEndAsync();
                 try
                 {
-                    json = JObject.Parse(content);
+                    gitHubRequestPayload = JsonConvert.DeserializeObject<GitHubRequestPayload>(content);
                 }
                 catch (JsonReaderException e)
                 {
-                    return new BadRequestObjectResult($"Invalid JSON: {e.Message}");
+                    log.LogInformation($"Invalid JSON: {e.Message}");
+                    return;
                 }
             }
-
-            if (json?.issue?.pull_request == null)
-            {
-                return new BadRequestObjectResult("Not a pull request comment");
-            }
-            else if (json.action != "created" && json.action != "edited")
-            {
-                return new BadRequestObjectResult($"Not a new/edited comment (action = '{json.action}')");
-            }
-
-            string commentBody = json.comment.body;
+            string commentBody = gitHubRequestPayload.Comment.Body;
             log.LogInformation($"Comment: {commentBody}");
 
-            Uri commentApiUrl = new Uri((string)json.issue.comments_url);
-            Uri commentIdApiUrl = new Uri((string)json.comment.url);
+            Uri commentApiUrl = new Uri((string)gitHubRequestPayload.Issue.Comments_Url);
+            Uri commentIdApiUrl = new Uri((string)gitHubRequestPayload.Comment.Url);
 
-            // TODO: We should support multiple tests runs in a single comment at some point.
-
-            bool startsWithDFTest = commentBody.StartsWith(CommandPrefix);
-            if (!startsWithDFTest || commentBody.Contains("Durable Functions Test Bot"))
+            string currCommandPrefix = CommandPrefix;
+            string stagingCommandPrefix = "/DFStagingTest";
+            bool isStagingTest = false;
+            if (commentBody.StartsWith(stagingCommandPrefix))
             {
-                // Ignore unrelated comments or comments that come from the bot (like the help message)
-                return new OkObjectResult($"No commands detected");
+                currCommandPrefix = stagingCommandPrefix;
+                isStagingTest = true;
+            }
+
+            int commandStartIndex = commentBody.IndexOf(currCommandPrefix, StringComparison.OrdinalIgnoreCase);
+            string command = commentBody.Substring(commandStartIndex + currCommandPrefix.Length);
+
+            var sb = new StringBuilder();
+            sb.AppendLine("🤖**Durable Functions Test Bot**🤖");
+            sb.AppendLine();
+            sb.Append("Hi! I have received your command: ");
+            sb.AppendLine($"`{command}`");
+            sb.AppendLine();
+
+            string payloadAuthorAssociation = gitHubRequestPayload?.Issue?.Author_Association;
+            if (!string.Equals(payloadAuthorAssociation, "COLLABORATOR") &&
+                !string.Equals(payloadAuthorAssociation, "OWNER") &&
+                !string.Equals(payloadAuthorAssociation, "MEMBER"))
+            {
+                sb.AppendLine($"Unfortunately, only owners, collaborators, and members are allowed to run these commands.");
+
+                string internalMessage = $"Command {command} rejected because author_association = {payloadAuthorAssociation}.";
+                log.LogWarning(internalMessage);
+                await GitHubClient.PatchCommentAsync(commentIdApiUrl, commentBody, sb.ToString(), log);
+                return;
+            }
+
+            if (!TryParseCommand(command, out string friendlyTestName, out TestDescription testInfo, out string testParameters, out string errorMessage))
+            {
+                await GitHubClient.PatchCommentAsync(commentIdApiUrl, commentBody, errorMessage, log);
+                log.LogInformation("Replied with instructions");
+                return;
             }
 
             // get information about environment parameters if the user added any custom configuration
@@ -87,51 +115,28 @@ namespace DFTestBot
                 maxCount = maxCountValue;
             }
 
-            ParseOSTypeAndFunctionsVersion(commentBody, out string OSValue, out string functionsVersion);
+            ParseOSTypeRuntimeFunctionsVersion(commentBody, out string OSValue, out string runtime, out string functionsVersion);
 
-            // string testCommand = "run";
-            // int commandIndex = commentBody.IndexOf(testCommand);
-            int commandStartIndex = commentBody.IndexOf(CommandPrefix, StringComparison.OrdinalIgnoreCase);
-            string command = commentBody.Substring(commandStartIndex + CommandPrefix.Length); // commentBody.Substring(commandIndex);
-            if (!TryParseCommand(command, out string friendlyTestName, out TestDescription testInfo, out string testParameters, out string errorMessage))
-            {
-                //await GitHubClient.PostCommentAsync(commentApiUrl, errorMessage, log);
-                await GitHubClient.PatchCommentAsync(commentIdApiUrl, commentBody, errorMessage, log);
-                return new OkObjectResult($"Replied with instructions");
-            }
-
-            var sb = new StringBuilder();
-            sb.Append("Hi! I have received your command: ");
-            sb.AppendLine($"`{command}`");
-            sb.AppendLine();
-
-            if (json.issue.author_association != "COLLABORATOR" &&
-                json.issue.author_association != "OWNER")
-            {
-                sb.AppendLine($"Unfortunately, only collaborators are allowed to run these commands.");
-
-                string internalMessage = $"Command {command} rejected because author_association = {json.issue.author_association}.";
-                log.LogWarning(internalMessage);
-                return new OkObjectResult(internalMessage);
-            }
-
-            Uri pullRequestUrl = new Uri((string)json.issue.pull_request.url);
+            Uri pullRequestUrl = new Uri(gitHubRequestPayload.Issue.Pull_Request.Url);
             dynamic pullRequestJson = await GitHubClient.GetPullRequestInfoAsync(pullRequestUrl);
             string branchName = pullRequestJson.head.@ref;
-            string commentAction = json.action;
+            string commentAction = gitHubRequestPayload.Action;
 
             // NOTE: site names must be 60 characters or less, leaving ~24 characters for test names
             string shortenedTestName = friendlyTestName.Length >= 6 ? friendlyTestName.Substring(0, 6) : friendlyTestName;
-            string issueId = json.issue.number;
+            string issueId = gitHubRequestPayload.Issue.Number;
             string dftestWithFriendlyName = $"dftest-{shortenedTestName}";
             string prNum = $"pr{issueId}";
             string dateTime = $"{DateTime.UtcNow:yyyyMMdd}";
             string guid = Guid.NewGuid().ToString().Substring(0, 4);
-            
+
             string appName = $"{dftestWithFriendlyName}-{prNum}-{dateTime}-{guid}";
             string resourceGroupName = appName + "-rg";
             string storageAccountName = $"dftest{dateTime}{guid}sa";
             string appPlanName = appName + "-plan";
+
+            string dirPath = functionsVersion.Equals("1") ? "test\\DFPerfScenariosV1" : "test\\DFPerfScenarios";
+            string framework = functionsVersion.Equals("1") ? "net461" : "netcoreapp3.1";
 
             var parameters = new TestParameters
             {
@@ -142,6 +147,8 @@ namespace DFTestBot
                 GitHubCommentIdApiUrl = commentIdApiUrl,
                 GitHubCommentAction = commentAction,
                 GitHubBranch = branchName,
+                ProjectFileDirPath = dirPath,
+                Framework = framework,
                 AppName = appName,
                 AppPlanName = appPlanName,
                 TestName = testInfo.StarterFunctionName,
@@ -152,7 +159,9 @@ namespace DFTestBot
                 MinInstanceCount = minCount,
                 MaxInstanceCount = maxCount,
                 OSType = OSValue,
-                FunctionsVersion = functionsVersion
+                Runtime = runtime,
+                FunctionsVersion = functionsVersion,
+                IsStagingTest = isStagingTest
             };
 
             string instanceId = $"DFTestBot-PR{issueId}-{DateTime.UtcNow:yyyyMMddhhmmss}";
@@ -188,10 +197,9 @@ namespace DFTestBot
             {
                 currentCommentBody = await GitHubClient.GetCommentBodyAsync(commentIdApiUrl, log);
             }
-            
+
             await GitHubClient.PatchCommentAsync(commentIdApiUrl, currentCommentBody, sb.ToString(), log);
             log.LogInformation("Test scheduled successfully!");
-            return new OkObjectResult("Test scheduled successfully!");
         }
 
         private static void ParsePremiumPlanParameters(string commentBody, out string sku, out string minCountValue, out string maxCountValue)
@@ -220,14 +228,24 @@ namespace DFTestBot
             }
         }
 
-        private static void ParseOSTypeAndFunctionsVersion(string commentBody, out string oSType, out string functionsVersion)
+        private static void ParseOSTypeRuntimeFunctionsVersion(string commentBody, out string oSType, out string runtime, out string functionsVersion)
         {
+            // get OS type
             int osTypeIndex = commentBody.IndexOf("os");
             oSType = "Windows";
 
             if (osTypeIndex >= 0)
             {
                 oSType = commentBody.Substring(osTypeIndex).Split(' ')[1];
+            }
+
+            // get runtime
+            int runtimeIndex = commentBody.IndexOf("runtime");
+            runtime = "dotnet";
+
+            if (runtimeIndex > 0)
+            {
+                runtime = commentBody.Substring(runtimeIndex).Split(' ')[1];
             }
 
             // get functions version
@@ -262,7 +280,6 @@ namespace DFTestBot
             int runIndex = input.IndexOf(runString);
             int endIndex = input.IndexOf(endString);
 
-            // if (parts.Length < 2 || !parts[0].Equals("run", StringComparison.OrdinalIgnoreCase))
             if (parts.Length < 2 || runIndex < 0 || endIndex < 0)
             {
                 testName = null;
@@ -271,7 +288,7 @@ namespace DFTestBot
                 errorMessage = GetSyntaxHelp();
                 return false;
             }
-            parts = input.Substring(runIndex, endIndex-runIndex).Split(' ');
+            parts = input.Substring(runIndex, endIndex - runIndex).Split(' ');
             testName = parts[1];
             testParameters = string.Join('&', parts[2..]);
             if (SupportedTests.TryGetTestInfo(testName, out testInfo))
@@ -289,11 +306,11 @@ namespace DFTestBot
         static string GetSyntaxHelp()
         {
             var sb = new StringBuilder();
-            sb.AppendLine($"The syntax for a test with a Consumption plan is: `{CommandPrefix.Trim()} Consumption os <os type> functionsVersion <version> run <TestName> <Param1> <Param2> ...`");
-            sb.AppendLine($"Example: `{CommandPrefix.Trim()} Consumption os Windows functionsVersion 3 run ManySequences`");
+            sb.AppendLine($"The syntax for a test with a Consumption plan is: `{CommandPrefix.Trim()} Consumption os <os type> functionsVersion <version> run <TestName> <Param1> <Param2> ... end`");
+            sb.AppendLine($"Example: `{CommandPrefix.Trim()} Consumption os Windows functionsVersion 3 run HelloSequence end`");
             sb.AppendLine();
-            sb.AppendLine($"The syntax for a test with an Elastic Premium plan is: `{CommandPrefix.Trim()} ElasticPremium sku <skuValue> minCount <count> maxCount <count> os <os type> functionsVersion <version> run <TestName> <Param1> <Param2> ...`");
-            sb.AppendLine($"Example: `{CommandPrefix.Trim()} ElasticPremium sku EP1 minCount 1 maxCount 3 os Windows functionsVersion 3 run ManySequences`");
+            sb.AppendLine($"The syntax for a test with an Elastic Premium plan is: `{CommandPrefix.Trim()} ElasticPremium sku <skuValue> minCount <count> maxCount <count> os <os type> functionsVersion <version> run <TestName> <Param1> <Param2> ... end`");
+            sb.AppendLine($"Example: `{CommandPrefix.Trim()} ElasticPremium sku EP1 minCount 1 maxCount 3 os Windows functionsVersion 3 run HelloSequence end`");
             return sb.ToString();
         }
 
@@ -314,5 +331,37 @@ namespace DFTestBot
 
             return sb.ToString();
         }
+
+        internal class GitHubRequestPayload
+        {
+            public string Action { get; set; }
+            public IssuePayload Issue { get; set; }
+            public CommentPayload Comment { get; set; }
+            public object Repository { get; set; }
+            public object Organization { get; set; }
+            public object Enterprise { get; set; }
+            public object Sender { get; set; }
+        }
+
+        internal class IssuePayload
+        {
+            public string Url { get; set; }
+            public string Comments_Url { get; set; }
+            public string Author_Association { get; set; }
+            public string Number { get; set; }
+            public IssuePullRequestPayload Pull_Request { get; set; }
+        }
+
+        internal class CommentPayload
+        {
+            public string Url { get; set; }
+            public string Body { get; set; }
+        }
+
+        internal class IssuePullRequestPayload
+        {
+            public string Url { get; set; }
+        }
+
     }
 }

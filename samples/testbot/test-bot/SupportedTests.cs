@@ -28,6 +28,20 @@ namespace DFTestBot
                     StarterFunctionName = "StartFanOutFanIn",
                     IsEnabled = false,
                 },
+                ["SubOrchFanOutFanIn"] = new TestDescription
+                {
+                    Description = "Runs a single orchestration that fans out to `count` number of orchestrator functions. Example: `/DFTest run SubOrchestrationFanOutFanIn count=100000 end`.",
+                    AppLensDetector = "DurableFunctions_SubOrchFanOutFanIn",
+                    StarterFunctionName = "StartFanOutFanIn",
+                    IsEnabled = true,
+                },
+                ["SingleCounterEntity"] = new TestDescription
+                {
+                    Description = "Runs the entity counter test. Example: `/DFTest run SingleCounterEntity end`.",
+                    AppLensDetector = "DurableFunctions_SingleCounterEntityTest",
+                    StarterFunctionName = "StartFanOutFanIn",
+                    IsEnabled = true,
+                }
             };
         }
 

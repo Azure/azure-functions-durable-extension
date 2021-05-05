@@ -9,13 +9,15 @@ $appPlanName = $Request.Body.appPlanName
 $subscriptionId = $Request.Body.subscriptionId
 Set-AzContext -SubscriptionId $subscriptionId
 
-try {
+try 
+{
     Get-AzFunctionAppPlan -Name $appPlanName -ResourceGroupName $resourceGroupName
     Push-OutputBinding -Name Response -Value ([HttpResponseContext]@{
         StatusCode = [HttpStatusCode]::OK
     })
 }
-catch {
+catch 
+{
     Push-OutputBinding -Name Response -Value ([HttpResponseContext]@{
         StatusCode = [HttpStatusCode]::NotFound
     })

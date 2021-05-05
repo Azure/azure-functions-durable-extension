@@ -19,6 +19,7 @@ namespace DFTestBot
         // NOTE: Using environment variables in orchestrator functions is not safe since environment variables are non-deterministic.
         //       I'm ignoring this advice for now for the sake of expediency
         static readonly Uri DeploymentServiceBaseUrl = new Uri(Environment.GetEnvironmentVariable("DEPLOYMENT_SERVICE_BASE_URL"));
+        static readonly Uri DeploymentServiceStagingBaseUrl = new Uri(Environment.GetEnvironmentVariable("DEPLOYMENT_SERVICE_STAGING_BASE_URL"));
         static readonly string DeploymentServiceKey = Environment.GetEnvironmentVariable("DEPLOYMENT_SERVICE_API_KEY");
 
         [FunctionName(nameof(BotOrchestrator))]
@@ -135,15 +136,8 @@ namespace DFTestBot
                     throw new Exception(message);
                 }
 
-                DurableOrchestrationStatus status;
-                try
-                {
-                    status = await WaitForStartAsync(context, log, managementUrls);
-                }
-                catch(Exception)
-                {
-                    throw;
-                }
+                await SleepAsync(context, TimeSpan.FromMinutes(1));
+                DurableOrchestrationStatus status = await WaitForStartAsync(context, log, managementUrls);
                 
                 if (status == null)
                 {
@@ -265,9 +259,11 @@ namespace DFTestBot
             TestParameters testParameters,
             Action<string> handleResponsePayload = null)
         {
+            Uri deploymentServiceUri = testParameters.IsStagingTest ? DeploymentServiceStagingBaseUrl : DeploymentServiceBaseUrl;
+
             var request = new DurableHttpRequest(
                 HttpMethod.Post,
-                new Uri(DeploymentServiceBaseUrl, httpApiPath),
+                new Uri(deploymentServiceUri, httpApiPath),
                 headers: new Dictionary<string, StringValues>
                 {
                     { "x-functions-key", DeploymentServiceKey },

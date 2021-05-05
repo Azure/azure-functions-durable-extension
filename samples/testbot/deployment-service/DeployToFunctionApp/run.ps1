@@ -6,8 +6,9 @@ $ErrorActionPreference = "Stop"
 
 $GitHubOrg = "Azure"
 $ProjectName = "azure-functions-durable-extension"
-$ProjectFileDir = "test\DFPerfScenarios"
-$Framework = "netcoreapp3.1"
+$ProjectFileDir = $Request.Body.projectFileDirPath ?? "test\DFPerfScenarios"
+$Framework = $Request.Body.framework ?? "netcoreapp3.1"
+
 
 # Delete the target directory if it already exists
 $srcDir = "$env:TEMP\$ProjectName"
@@ -72,14 +73,13 @@ Write-Host "Publishing $targetZipFilePath to $appName in resource group $resourc
 Write-Host "Publish-AzWebApp -ResourceGroupName $resourceGroup -Name $appName -DefaultProfile $defaultProfile -ArchivePath $targetZipFilePath -Force"
 Publish-AzWebApp -ResourceGroupName $resourceGroup -Name $appName -DefaultProfile $defaultProfile -ArchivePath $targetZipFilePath -Force
 
-# Triggering the many instances function
-# TODO: Consider having the calling orchestration service do this instead
+# Triggering the test function
+$routePrefix = "tests"
 $testName = $Request.Body.testName
 $testParameters = $Request.Body.testParameters
-$httpApiUrl = "https://${appName}.azurewebsites.net/tests/${testName}?${testParameters}"
-#$httpApiUrl = "https://${appName}.azurewebsites.net/tests/${testName}"
+$httpApiUrl = "https://${appName}.azurewebsites.net/${routePrefix}/${testName}?${testParameters}"
+
 Write-Host "Starting test by sending a POST to $httpApiUrl..."
-#$httpResponse = Invoke-WebRequest -Method POST "${httpApiUrl}&code=${env:DFTEST_MASTER_KEY}"
 $httpResponse = Invoke-WebRequest -Method POST "${httpApiUrl}"
 
 # Send back the response content, which is expected to be the management URLs
