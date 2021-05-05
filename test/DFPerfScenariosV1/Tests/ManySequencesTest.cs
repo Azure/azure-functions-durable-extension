@@ -4,9 +4,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
@@ -18,19 +19,23 @@ namespace DFPerfScenarios.Tests
     public static class ManySequencesTest
     {
         [FunctionName(nameof(StartManySequences))]
-        public static async Task<IActionResult> StartManySequences(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = null)] HttpRequest req,
+        public static HttpResponseMessage StartManySequences(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = null)] HttpRequestMessage req,
             [DurableClient] IDurableClient starter,
             ILogger log)
         {
-            if (!int.TryParse(req.Query["count"], out int count) || count < 1)
+            if (!int.TryParse(req.GetQueryNameValuePairs().First(q => q.Key == "count").Value, out int count) || count < 1)
             {
-                return new BadRequestObjectResult("A 'count' query string parameter is required and it must contain a positive number.");
+                return new HttpResponseMessage
+                {
+                    StatusCode = HttpStatusCode.BadRequest,
+                    ReasonPhrase = "A 'count' query string parameter is required and it must contain a positive number."
+                };
             }
 
             string orchestratorName = nameof(ManySequencesOrchestrator);
             string instanceId = $"{orchestratorName}-{DateTime.UtcNow:yyyyMMdd-hhmmss}";
-            await starter.StartNewAsync(orchestratorName, instanceId, count);
+            starter.StartNewAsync(orchestratorName, instanceId, count);
 
             return starter.CreateCheckStatusResponse(req, instanceId);
         }
@@ -70,7 +75,7 @@ namespace DFPerfScenarios.Tests
                 // ignore failures
             }
 
-            int succeeded = instances.Count(i => i.IsCompletedSuccessfully);
+            int succeeded = instances.Count(i => i.IsCompleted);
             int failed = instances.Count(i => i.IsFaulted);
 
             context.SetCustomStatus(
