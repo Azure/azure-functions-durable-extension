@@ -73,11 +73,44 @@ Write-Host "Publishing $targetZipFilePath to $appName in resource group $resourc
 Write-Host "Publish-AzWebApp -ResourceGroupName $resourceGroup -Name $appName -DefaultProfile $defaultProfile -ArchivePath $targetZipFilePath -Force"
 Publish-AzWebApp -ResourceGroupName $resourceGroup -Name $appName -DefaultProfile $defaultProfile -ArchivePath $targetZipFilePath -Force
 
+Write-Host "Deployed code to function app"
+
+# Get function key
+Write-Host "Getting publishing credentials"
+$publishingCredentials = Invoke-AzResourceAction  `
+     -ResourceGroupName $resourceGroup `
+     -ResourceType 'Microsoft.Web/sites/config' `
+     -ResourceName ('{0}/publishingcredentials' -f $appName) `
+     -Action list `
+     -ApiVersion 2019-08-01 `
+     -Force
+
+Write-Host "Getting base64 credentials"
+$base64Credentials = [Convert]::ToBase64String(
+    [Text.Encoding]::ASCII.GetBytes(
+        ('{0}:{1}' -f $publishingCredentials.Properties.PublishingUserName, $publishingCredentials.Properties.PublishingPassword)
+    )
+)
+
+Write-Host "Getting jwt"
+$jwtToken = Invoke-RestMethod `
+     -Uri ('https://{0}.scm.azurewebsites.net/api/functions/admin/token' -f $appName) `
+     -Headers @{ Authorization = ('Basic {0}' -f $base64Credentials) }
+
+$testName = $Request.Body.testName
+
+Write-Host "Getting function key"
+$functionsKeysResponse = Invoke-RestMethod `
+     -Uri ('https://{0}.azurewebsites.net/admin/functions/{1}/keys' -f $appName, $testName) `
+     -Headers @{Authorization = ("Bearer {0}" -f $jwtToken) } `
+     -Method GET
+
+$functionKey = $functionsKeysResponse.keys.value
+
 # Triggering the test function
 $routePrefix = "tests"
-$testName = $Request.Body.testName
 $testParameters = $Request.Body.testParameters
-$httpApiUrl = "https://${appName}.azurewebsites.net/${routePrefix}/${testName}?${testParameters}"
+$httpApiUrl = "https://${appName}.azurewebsites.net/${routePrefix}/${testName}?${testParameters}&code={$functionKey}"
 
 Write-Host "Starting test by sending a POST to $httpApiUrl..."
 $httpResponse = Invoke-WebRequest -Method POST "${httpApiUrl}"
