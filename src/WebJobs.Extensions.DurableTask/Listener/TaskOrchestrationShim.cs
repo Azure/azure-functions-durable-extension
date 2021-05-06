@@ -102,6 +102,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             await this.InvokeUserCodeAndHandleResults(orchestratorInfo, innerContext);
+            this.context.IsReplaying = this.context.History[this.context.History.Count - 1].IsPlayed;
 
             // release any locks that were held by the orchestration
             // just in case the application code did not do so already
