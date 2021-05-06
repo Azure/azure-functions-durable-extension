@@ -102,7 +102,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             await this.InvokeUserCodeAndHandleResults(orchestratorInfo, innerContext);
-            this.context.IsReplaying = this.context.History[this.context.History.Count - 1].IsPlayed;
 
             // release any locks that were held by the orchestration
             // just in case the application code did not do so already
@@ -157,6 +156,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             {
                                 ReturnValue = returnValue,
                             });
+
+                            // In some cases, `HandleDurableTaskReplay` might exit before the DTFx-level replay
+                            // has completed. This can lead us to an inconsistent internal state, specifically
+                            // around the `isReplay` flag.
+                            // At the end of every DTFx replay, all History Events have been played.
+                            // So we wait until we reach that state.
+                            int waitTimeInMilliseconds = 100;
+                            while (!this.context.History[this.context.History.Count - 1].IsPlayed)
+                            {
+                                await Task.Delay(waitTimeInMilliseconds);
+                            }
                         }
                         else
                         {
