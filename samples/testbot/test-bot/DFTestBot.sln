@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31205.134
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DFTestBot", "DFTestBot.csproj", "{A0DEA2C4-CB96-443D-8537-1E29E165050C}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A0DEA2C4-CB96-443D-8537-1E29E165050C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A0DEA2C4-CB96-443D-8537-1E29E165050C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A0DEA2C4-CB96-443D-8537-1E29E165050C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A0DEA2C4-CB96-443D-8537-1E29E165050C}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {624D354A-5EC6-4177-B976-CD8A43E00264}
+	EndGlobalSection
+EndGlobal

@@ -271,7 +271,7 @@ namespace DFTestBot
                 testName = null;
                 testInfo = null;
                 testParameters = null;
-                errorMessage = GetSyntaxHelp() + Environment.NewLine + Environment.NewLine + GetTestNameHelp();
+                errorMessage = "🤖**Durable Functions Test Bot**🤖" + Environment.NewLine + GetSyntaxHelp() + Environment.NewLine + Environment.NewLine + GetTestNameHelp();
                 return false;
             }
 
@@ -285,7 +285,7 @@ namespace DFTestBot
                 testName = null;
                 testInfo = null;
                 testParameters = null;
-                errorMessage = GetSyntaxHelp();
+                errorMessage = "🤖**Durable Functions Test Bot**🤖" + Environment.NewLine + GetSyntaxHelp();
                 return false;
             }
             parts = input.Substring(runIndex, endIndex - runIndex).Split(' ');
@@ -298,7 +298,7 @@ namespace DFTestBot
             }
             else
             {
-                errorMessage = GetTestNameHelp();
+                errorMessage = "🤖**Durable Functions Test Bot**🤖" + Environment.NewLine + GetTestNameHelp();
                 return false;
             }
         }

@@ -1,7 +1,7 @@
 {
   "bindings": [
     {
-      "authLevel": "anonymous",
+      "authLevel": "function",
       "name": "Request",
       "type": "httpTrigger",
       "direction": "in",
@@ -15,11 +15,6 @@
       "type": "http",
       "direction": "out",
       "name": "Response"
-    },
-    {
-      "name": "starter",
-      "type": "orchestrationClient",
-      "direction": "in"
     }
   ]
 }

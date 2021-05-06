@@ -33,7 +33,7 @@ namespace DFTestBot
             TestParameters testParameters = context.GetInput<TestParameters>();
 
             // Create a new resource group
-            if (!await TryCallDeploymentServiceHttpApiAsync("api/CreateNewResourceGroup", context, log, testParameters))
+            if (!await TryCallDeploymentServiceHttpApiAsync("api", "CreateNewResourceGroup", context, log, testParameters))
             {
                 string message = $"Failed to create a new resource group! 💣 Check the internal deployment service logs for more details.";
                 await context.CallActivityAsync(nameof(PatchGitHubComment), (testParameters.GitHubCommentIdApiUrl, message));
@@ -41,7 +41,7 @@ namespace DFTestBot
             }
 
             // Check if the resource group was created and ready to use
-            while (!await TryCallDeploymentServiceHttpApiAsync("api/CheckResourceGroupStatus", context, log, testParameters))
+            while (!await TryCallDeploymentServiceHttpApiAsync("api", "CheckResourceGroupStatus", context, log, testParameters))
             {
                 // Retry every 10 seconds
                 await SleepAsync(context, TimeSpan.FromSeconds(10));
@@ -50,7 +50,7 @@ namespace DFTestBot
             await context.CallActivityAsync(nameof(PatchGitHubComment), (testParameters.GitHubCommentIdApiUrl, "Successfully created a new resource group."));
 
             // Create storage account
-            if (!await TryCallDeploymentServiceHttpApiAsync("api/CreateNewStorageAccount", context, log, testParameters))
+            if (!await TryCallDeploymentServiceHttpApiAsync("api", "CreateNewStorageAccount", context, log, testParameters))
             {
                 string message = $"Failed to create a new storage account! 💣 Check the internal deployment service logs for more details.";
                 await context.CallActivityAsync(nameof(PatchGitHubComment), (testParameters.GitHubCommentIdApiUrl, message));
@@ -58,7 +58,7 @@ namespace DFTestBot
             }
 
             // Check if the storage account was created and ready to use
-            while (!await TryCallDeploymentServiceHttpApiAsync("api/CheckStorageAccountStatus", context, log, testParameters))
+            while (!await TryCallDeploymentServiceHttpApiAsync("api", "CheckStorageAccountStatus", context, log, testParameters))
             {
                 // Retry every 10 seconds
                 await SleepAsync(context, TimeSpan.FromSeconds(10));
@@ -69,7 +69,7 @@ namespace DFTestBot
             if (string.Equals(testParameters.AppPlanType, "ElasticPremium"))
             {
                 // Create a new function app plan
-                if (!await TryCallDeploymentServiceHttpApiAsync("api/CreateNewFunctionAppPlan", context, log, testParameters))
+                if (!await TryCallDeploymentServiceHttpApiAsync("api", "CreateNewFunctionAppPlan", context, log, testParameters))
                 {
                     string message = $"Failed to create a new function app plan! 💣 Check the internal deployment service logs for more details.";
                     await context.CallActivityAsync(nameof(PatchGitHubComment), (testParameters.GitHubCommentIdApiUrl, message));
@@ -77,7 +77,7 @@ namespace DFTestBot
                 }
 
                 // Check if the function app plan was created and ready to use
-                while (!await TryCallDeploymentServiceHttpApiAsync("api/CheckFunctionAppPlanStatus", context, log, testParameters))
+                while (!await TryCallDeploymentServiceHttpApiAsync("api", "CheckFunctionAppPlanStatus", context, log, testParameters))
                 {
                     // Retry every 10 seconds
                     await SleepAsync(context, TimeSpan.FromSeconds(10));
@@ -86,7 +86,7 @@ namespace DFTestBot
                 await context.CallActivityAsync(nameof(PatchGitHubComment), (testParameters.GitHubCommentIdApiUrl, "Successfully created a new function app plan."));
 
                 // Create a new function app with plan
-                if (!await TryCallDeploymentServiceHttpApiAsync("api/CreateNewFunctionAppWithPlan", context, log, testParameters))
+                if (!await TryCallDeploymentServiceHttpApiAsync("api", "CreateNewFunctionAppWithPlan", context, log, testParameters))
                 {
                     string message = $"Failed to create a new function app! 💣 Check the internal deployment service logs for more details.";
                     await context.CallActivityAsync(nameof(PatchGitHubComment), (testParameters.GitHubCommentIdApiUrl, message));
@@ -100,7 +100,7 @@ namespace DFTestBot
             else
             {
                 // Create a new function app
-                if (!await TryCallDeploymentServiceHttpApiAsync("api/CreateNewFunctionApp", context, log, testParameters))
+                if (!await TryCallDeploymentServiceHttpApiAsync("api", "CreateNewFunctionApp", context, log, testParameters))
                 {
                     string message = $"Failed to create a new function app! 💣 Check the internal deployment service logs for more details.";
                     await context.CallActivityAsync(nameof(PatchGitHubComment), (testParameters.GitHubCommentIdApiUrl, message));
@@ -117,7 +117,7 @@ namespace DFTestBot
                 // Deploy and start the test app
                 HttpManagementPayload managementUrls = null;
                 if (!await TryCallDeploymentServiceHttpApiAsync(
-                    "api/DeployToFunctionApp",
+                    "api", "DeployToFunctionApp",
                     context,
                     log,
                     testParameters,
@@ -253,7 +253,8 @@ namespace DFTestBot
         }
 
         static async Task<bool> TryCallDeploymentServiceHttpApiAsync(
-            string httpApiPath,
+            string routePrefix,
+            string functionName,
             IDurableOrchestrationContext context,
             ILogger log,
             TestParameters testParameters,
@@ -261,12 +262,15 @@ namespace DFTestBot
         {
             Uri deploymentServiceUri = testParameters.IsStagingTest ? DeploymentServiceStagingBaseUrl : DeploymentServiceBaseUrl;
 
+            string httpApiPath = $"{routePrefix}/{functionName}";
+            string deploymentFunctionKey = await GetFunctionKey(functionName, context, testParameters, log);
+
             var request = new DurableHttpRequest(
                 HttpMethod.Post,
                 new Uri(deploymentServiceUri, httpApiPath),
                 headers: new Dictionary<string, StringValues>
                 {
-                    { "x-functions-key", DeploymentServiceKey },
+                    { "x-functions-key", deploymentFunctionKey },
                     { "Content-Type", "application/json" },
                 },
                 content: JsonConvert.SerializeObject(testParameters));
@@ -282,6 +286,40 @@ namespace DFTestBot
             }
 
             return false;
+        }
+
+        private static async Task<string> GetFunctionKey(string functionName, IDurableOrchestrationContext context, TestParameters testParameters, ILogger log)
+        {
+            string subscriptionId = testParameters.SubscriptionId;
+            string resourceGroupName = "dfdeploymentservice";
+            string siteName = "dfdeploymentservice";
+            string slot = "staging";
+
+            string listKeyProdUrl = $"https://management.azure.com/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{siteName}/functions/{functionName}/listkeys?api-version=2019-08-01";
+            string listKeySlotUrl = $"https://management.azure.com/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{siteName}/slots/{slot}/functions/{functionName}/listkeys?api-version=2019-08-01";
+            string listKeysUrl = testParameters.IsStagingTest ? listKeySlotUrl : listKeyProdUrl;
+
+            log.LogInformation($"listKeysUrl = {listKeysUrl}");
+
+            var getFunctionKeysRequest = new DurableHttpRequest(
+                HttpMethod.Post,
+                new Uri(listKeysUrl),
+                tokenSource: new ManagedIdentityTokenSource("https://management.core.windows.net/.default"));
+
+            DurableHttpResponse getFunctionKeysResponse = await context.CallHttpAsync(getFunctionKeysRequest);
+            string functionsKey = "";
+            try
+            {
+                log.LogInformation($"getFunctionKeysResponse.Content = {getFunctionKeysResponse.Content}");
+                functionsKey = JsonConvert.DeserializeObject<Dictionary<string, string>>(getFunctionKeysResponse.Content)["default"];
+            }
+            catch (Exception e)
+            {
+                log.LogInformation(e.Message);
+                log.LogInformation(e.InnerException.ToString());
+                log.LogInformation(e.StackTrace);
+            }
+            return functionsKey;
         }
 
         [FunctionName(nameof(PostGitHubComment))]

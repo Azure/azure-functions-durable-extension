@@ -26,7 +26,7 @@ namespace DFTestBot
                     Description = "Runs a single orchestration that fans out to `count` number of activity functions. Example: `/DFTest run FanOutFanIn count=10000 end`.",
                     AppLensDetector = "DurableFunctions_FanOutTest",
                     StarterFunctionName = "StartFanOutFanIn",
-                    IsEnabled = false,
+                    IsEnabled = true,
                 },
                 ["SubOrchFanOutFanIn"] = new TestDescription
                 {
