@@ -8,9 +8,9 @@ $ErrorActionPreference = "Stop"
 $appName = $Request.Body.appName
 $resourceGroup = $Request.Body.resourceGroup
 $storageAccount = $Request.Body.storageAccount
-$runtime = $Request.Body.runtime ?? "dotnet"
+$runtime = $Request.Body.runtime
 $subscriptionId = $Request.Body.subscriptionId
-$location = $Request.Body.location ?? "centralus"
+$location = "EastUS2EUAP"
 $functionsVersion = $Request.Body.functionsVersion
 $osType = $Request.Body.OSType
 
