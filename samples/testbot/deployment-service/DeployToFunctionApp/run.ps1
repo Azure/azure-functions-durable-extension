@@ -33,7 +33,6 @@ if ($LASTEXITCODE) {
     Throw "git failed (exit code: $LASTEXITCODE):`n$($result -join "`n")"
 }
 $result | ForEach-Object ToString
-#$ErrorActionPreference = "Stop"
 
 # Build the project using the "publish" command so we can get the output for publishing
 $buildDir = "$srcDir\$ProjectFileDir"
@@ -76,7 +75,6 @@ Publish-AzWebApp -ResourceGroupName $resourceGroup -Name $appName -DefaultProfil
 Write-Host "Deployed code to function app"
 
 # Get function key
-Write-Host "Getting publishing credentials"
 $publishingCredentials = Invoke-AzResourceAction  `
      -ResourceGroupName $resourceGroup `
      -ResourceType 'Microsoft.Web/sites/config' `
@@ -85,21 +83,18 @@ $publishingCredentials = Invoke-AzResourceAction  `
      -ApiVersion 2019-08-01 `
      -Force
 
-Write-Host "Getting base64 credentials"
 $base64Credentials = [Convert]::ToBase64String(
     [Text.Encoding]::ASCII.GetBytes(
         ('{0}:{1}' -f $publishingCredentials.Properties.PublishingUserName, $publishingCredentials.Properties.PublishingPassword)
     )
 )
 
-Write-Host "Getting jwt"
 $jwtToken = Invoke-RestMethod `
      -Uri ('https://{0}.scm.azurewebsites.net/api/functions/admin/token' -f $appName) `
      -Headers @{ Authorization = ('Basic {0}' -f $base64Credentials) }
 
 $testName = $Request.Body.testName
 
-Write-Host "Getting function key"
 $functionsKeysResponse = Invoke-RestMethod `
      -Uri ('https://{0}.azurewebsites.net/admin/functions/{1}/keys' -f $appName, $testName) `
      -Headers @{Authorization = ("Bearer {0}" -f $jwtToken) } `

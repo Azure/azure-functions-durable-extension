@@ -20,7 +20,6 @@ namespace DFTestBot
         //       I'm ignoring this advice for now for the sake of expediency
         static readonly Uri DeploymentServiceBaseUrl = new Uri(Environment.GetEnvironmentVariable("DEPLOYMENT_SERVICE_BASE_URL"));
         static readonly Uri DeploymentServiceStagingBaseUrl = new Uri(Environment.GetEnvironmentVariable("DEPLOYMENT_SERVICE_STAGING_BASE_URL"));
-        static readonly string DeploymentServiceKey = Environment.GetEnvironmentVariable("DEPLOYMENT_SERVICE_API_KEY");
 
         [FunctionName(nameof(BotOrchestrator))]
         public static async Task BotOrchestrator(
@@ -33,82 +32,37 @@ namespace DFTestBot
             TestParameters testParameters = context.GetInput<TestParameters>();
 
             // Create a new resource group
-            if (!await TryCallDeploymentServiceHttpApiAsync("api", "CreateNewResourceGroup", context, log, testParameters))
+            if (!await TryCreateNewResource(context, log, testParameters, "CreateNewResourceGroup", "CheckResourceGroupStatus", "Failed to create a new resource group!", "Successfully created a new resource group."))
             {
-                string message = $"Failed to create a new resource group! 💣 Check the internal deployment service logs for more details.";
-                await context.CallActivityAsync(nameof(PatchGitHubComment), (testParameters.GitHubCommentIdApiUrl, message));
-                throw new Exception(message);
+                throw new Exception("Failed to create a new resource group!");
             }
 
-            // Check if the resource group was created and ready to use
-            while (!await TryCallDeploymentServiceHttpApiAsync("api", "CheckResourceGroupStatus", context, log, testParameters))
+            // Create a new storage account
+            if (!await TryCreateNewResource(context, log, testParameters, "CreateNewStorageAccount", "CheckStorageAccountStatus", "Failed to create a new storage account!", "Successfully created a new storage account."))
             {
-                // Retry every 10 seconds
-                await SleepAsync(context, TimeSpan.FromSeconds(10));
+                throw new Exception("Failed to create a new storage account!");
             }
-
-            await context.CallActivityAsync(nameof(PatchGitHubComment), (testParameters.GitHubCommentIdApiUrl, "Successfully created a new resource group."));
-
-            // Create storage account
-            if (!await TryCallDeploymentServiceHttpApiAsync("api", "CreateNewStorageAccount", context, log, testParameters))
-            {
-                string message = $"Failed to create a new storage account! 💣 Check the internal deployment service logs for more details.";
-                await context.CallActivityAsync(nameof(PatchGitHubComment), (testParameters.GitHubCommentIdApiUrl, message));
-                throw new Exception(message);
-            }
-
-            // Check if the storage account was created and ready to use
-            while (!await TryCallDeploymentServiceHttpApiAsync("api", "CheckStorageAccountStatus", context, log, testParameters))
-            {
-                // Retry every 10 seconds
-                await SleepAsync(context, TimeSpan.FromSeconds(10));
-            }
-
-            await context.CallActivityAsync(nameof(PatchGitHubComment), (testParameters.GitHubCommentIdApiUrl, "Successfully created a new storage account."));
 
             if (string.Equals(testParameters.AppPlanType, "ElasticPremium"))
             {
                 // Create a new function app plan
-                if (!await TryCallDeploymentServiceHttpApiAsync("api", "CreateNewFunctionAppPlan", context, log, testParameters))
+                if (!await TryCreateNewResource(context, log, testParameters, "CreateNewFunctionAppPlan", "CheckFunctionAppPlanStatus", "Failed to create a new function app plan!", "Successfully created a new function app plan."))
                 {
-                    string message = $"Failed to create a new function app plan! 💣 Check the internal deployment service logs for more details.";
-                    await context.CallActivityAsync(nameof(PatchGitHubComment), (testParameters.GitHubCommentIdApiUrl, message));
-                    throw new Exception(message);
+                    throw new Exception("Failed to create a new storage account!");
                 }
-
-                // Check if the function app plan was created and ready to use
-                while (!await TryCallDeploymentServiceHttpApiAsync("api", "CheckFunctionAppPlanStatus", context, log, testParameters))
-                {
-                    // Retry every 10 seconds
-                    await SleepAsync(context, TimeSpan.FromSeconds(10));
-                }
-
-                await context.CallActivityAsync(nameof(PatchGitHubComment), (testParameters.GitHubCommentIdApiUrl, "Successfully created a new function app plan."));
 
                 // Create a new function app with plan
-                if (!await TryCallDeploymentServiceHttpApiAsync("api", "CreateNewFunctionAppWithPlan", context, log, testParameters))
+                if (!await TryCreateNewResource(context, log, testParameters, "CreateNewFunctionAppWithPlan", null, "Failed to create a new function app!", "Successfully created a new function app on an existing plan."))
                 {
-                    string message = $"Failed to create a new function app! 💣 Check the internal deployment service logs for more details.";
-                    await context.CallActivityAsync(nameof(PatchGitHubComment), (testParameters.GitHubCommentIdApiUrl, message));
-                    throw new Exception(message);
-                }
-                else
-                {
-                    await context.CallActivityAsync(nameof(PatchGitHubComment), (testParameters.GitHubCommentIdApiUrl, "Successfully created a new function app on an existing plan."));
-                }
+                    throw new Exception("Failed to create a new storage account!");
+                } 
             }
             else
             {
                 // Create a new function app
-                if (!await TryCallDeploymentServiceHttpApiAsync("api", "CreateNewFunctionApp", context, log, testParameters))
+                if (!await TryCreateNewResource(context, log, testParameters, "CreateNewFunctionApp", null, "Failed to create a new function app!", "Successfully created a new function app."))
                 {
-                    string message = $"Failed to create a new function app! 💣 Check the internal deployment service logs for more details.";
-                    await context.CallActivityAsync(nameof(PatchGitHubComment), (testParameters.GitHubCommentIdApiUrl, message));
-                    throw new Exception(message);
-                }
-                else
-                {
-                    await context.CallActivityAsync(nameof(PatchGitHubComment), (testParameters.GitHubCommentIdApiUrl, "Successfully created a new function app."));
+                    throw new Exception("Failed to create a new storage account!");
                 }
             }
 
@@ -117,7 +71,7 @@ namespace DFTestBot
                 // Deploy and start the test app
                 HttpManagementPayload managementUrls = null;
                 if (!await TryCallDeploymentServiceHttpApiAsync(
-                    "api", "DeployToFunctionApp",
+                    "DeployToFunctionApp",
                     context,
                     log,
                     testParameters,
@@ -155,8 +109,6 @@ namespace DFTestBot
                     {
                         // There is a new status update - post it back to the PR thread.
                         log.LogInformation($"Current test status: {currentCustomStatus}");
-                        // TODO: look at if this post comment is necessary
-                        // await context.CallActivityAsync(nameof(PostGitHubComment), (testParameters.GitHubCommentApiUrl, currentCustomStatus));
                         previousCustomStatus = currentCustomStatus;
                     }
 
@@ -184,46 +136,13 @@ namespace DFTestBot
                 };
 
                 // Generate the AppLens link
-                // Example: https://applens.azurewebsites.net/subscriptions/92d757cd-ef0d-4710-967d-2efa3c952358/resourceGroups/perf-testing/providers/Microsoft.Web/sites/dfperf-dedicated2/detectors/DurableFunctions_ManySequencesTest?startTime=2020-08-22T00:00&endTime=2020-08-22T01:00
-
-                // AppLens time range restrictions: Start and End date time must not be more than 24 hrs apart
-                //                                  Start and End date time must be at least 15 minutes apart
-                //                                  Start date must be within the past 30 days
-                //                                  End date must be 15 minutes less than the current time
-                //                                  Start date time must be 30 minutes less than current date time
-
                 DateTime endTimeUtc = context.CurrentUtcDateTime.AddMinutes(5);
-                if (endTimeUtc.Subtract(startTimeUtc).TotalMinutes < 15)
-                {
-                    startTimeUtc = endTimeUtc.AddMinutes(-15);
-                }
-
-                string startTime = startTimeUtc.ToString("yyyy-MM-ddTHH:mm");
-                string endTime = endTimeUtc.ToString("yyyy-MM-ddTHH:mm");
-                string resultsAvailableTime = (endTimeUtc.AddMinutes(15)).ToString("yyyy-MM-dd HH:mm UTC");
-
-                string subscriptionId = testParameters.SubscriptionId;
-                string resourceGroup = testParameters.ResourceGroup;
-                string appName = testParameters.AppName;
-                string detectorName = testParameters.DetectorName;
-
-                string link = $"https://applens.azurewebsites.net/subscriptions/{subscriptionId}/resourceGroups/{resourceGroup}/providers/Microsoft.Web/sites/{appName}/detectors/{detectorName}?startTime={startTime}&endTime={endTime}";
+                string resultsAvailableTime = CalculateResultsAvailableTime(context, startTimeUtc, endTimeUtc);
+                string link = GenerateAppLensLink(context, testParameters, startTimeUtc, endTimeUtc);
 
                 string appLensLinkString = $"You can view more detailed results in [AppLens]({link}) (Microsoft internal). The results will be available at {resultsAvailableTime}🔗📈";
                 finalMessage += Environment.NewLine + Environment.NewLine + appLensLinkString;
                 await context.CallActivityAsync(nameof(PatchGitHubComment), (testParameters.GitHubCommentIdApiUrl, finalMessage));
-
-                /*
-                // TODO: resource group clean up functionality
-                TimeSpan cleanupInterval = TimeSpan.FromHours(1);
-                DateTime cleanupTime = context.CurrentUtcDateTime.Add(cleanupInterval);
-                finalMessage += Environment.NewLine + Environment.NewLine + $"The test app **{appName}** will be deleted at {cleanupTime:yyyy-MM-dd hh:mm:ss} UTC.";
-
-                await context.CallActivityAsync(nameof(PostGitHubComment), (testParameters.GitHubCommentApiUrl, finalMessage));
-
-                log.LogInformation($"Sleeping until {cleanupTime:yyyy-MM-dd hh:mm:ss} UTC to delete the test function app.");
-                await context.CreateTimer(cleanupTime, CancellationToken.None);
-                */
             }
             catch (Exception)
             {
@@ -231,29 +150,77 @@ namespace DFTestBot
                 await context.CallActivityAsync(nameof(PatchGitHubComment), (testParameters.GitHubCommentIdApiUrl, message));
                 throw;
             }
-            finally
-            {
-                /*   
-                // TODO: add functionality to delete the resource group when the PR is merged or closed
-
-                // Any intermediate failures should result in an automatic cleanup
-                log.LogInformation($"Deleting the test function app, {testParameters.AppName}.");
-                if (!await TryCallDeploymentServiceHttpApiAsync("api/DeleteFunctionApp", context, log, testParameters))
-                {
-                    string failureMessage = $"Failed to delete the test app! 💣 Check the internal deployment service logs for more details.";
-                    await context.CallActivityAsync(nameof(PostGitHubComment), (testParameters.GitHubCommentApiUrl, failureMessage));
-                    throw new Exception(failureMessage);
-                }
-
-                string cleanupSuccessMessage = $"The test app {testParameters.AppName} has been deleted. Thanks for using the DFTest bot!";
-                await context.CallActivityAsync(nameof(PostGitHubComment), (testParameters.GitHubCommentApiUrl, cleanupSuccessMessage));
-                */
-            }
 
         }
 
+        static string CalculateResultsAvailableTime(IDurableOrchestrationContext context, DateTime startTimeUtc, DateTime endTimeUtc)
+        {
+            // AppLens time range restrictions: Start and End date time must not be more than 24 hrs apart
+            //                                  Start and End date time must be at least 15 minutes apart
+            //                                  Start date must be within the past 30 days
+            //                                  End date must be 15 minutes less than the current time
+            //                                  Start date time must be 30 minutes less than current date time
+
+            
+            if (endTimeUtc.Subtract(startTimeUtc).TotalMinutes < 15)
+            {
+                startTimeUtc = endTimeUtc.AddMinutes(-15);
+            }
+
+            string resultsAvailableTime = (endTimeUtc.AddMinutes(15)).ToString("yyyy-MM-dd HH:mm UTC");
+            return resultsAvailableTime;
+        }
+
+        static string GenerateAppLensLink(IDurableOrchestrationContext context, TestParameters testParameters, DateTime startTimeUtc, DateTime endTimeUtc)
+        {
+            // Generate the AppLens link
+            // Example: https://applens.azurewebsites.net/subscriptions/92d757cd-ef0d-4710-967d-2efa3c952358/resourceGroups/perf-testing/providers/Microsoft.Web/sites/dfperf-dedicated2/detectors/DurableFunctions_ManySequencesTest?startTime=2020-08-22T00:00&endTime=2020-08-22T01:00
+
+            string subscriptionId = testParameters.SubscriptionId;
+            string resourceGroup = testParameters.ResourceGroup;
+            string appName = testParameters.AppName;
+            string detectorName = testParameters.DetectorName;
+
+            string startTime = startTimeUtc.ToString("yyyy-MM-ddTHH:mm");
+            string endTime = endTimeUtc.ToString("yyyy-MM-ddTHH:mm");
+
+            string link = $"https://applens.azurewebsites.net/subscriptions/{subscriptionId}/resourceGroups/{resourceGroup}/providers/Microsoft.Web/sites/{appName}/detectors/{detectorName}?startTime={startTime}&endTime={endTime}";
+            return link;
+        }
+
+        static async Task<bool> TryCreateNewResource(
+            IDurableOrchestrationContext context,
+            ILogger log,
+            TestParameters testParameters,
+            string deploymentServiceCreateFuncName,
+            string deploymentServiceCheckStatusFuncName,
+            string errorMessage,
+            string successMessage)
+        {
+            // Create the resource
+            if (!await TryCallDeploymentServiceHttpApiAsync(deploymentServiceCreateFuncName, context, log, testParameters))
+            {
+                string message = $"{errorMessage} 💣 Check the internal deployment service logs for more details.";
+                await context.CallActivityAsync(nameof(PatchGitHubComment), (testParameters.GitHubCommentIdApiUrl, message));
+                //throw new Exception(message);
+                return false;
+            }
+
+            if (deploymentServiceCheckStatusFuncName != null)
+            {
+                // Check if the resource was created and is ready to use
+                while (!await TryCallDeploymentServiceHttpApiAsync(deploymentServiceCheckStatusFuncName, context, log, testParameters))
+                {
+                    // Retry every 10 seconds
+                    await SleepAsync(context, TimeSpan.FromSeconds(10));
+                }
+            }
+
+            await context.CallActivityAsync(nameof(PatchGitHubComment), (testParameters.GitHubCommentIdApiUrl, successMessage));
+            return true;
+        }
+
         static async Task<bool> TryCallDeploymentServiceHttpApiAsync(
-            string routePrefix,
             string functionName,
             IDurableOrchestrationContext context,
             ILogger log,
@@ -262,7 +229,7 @@ namespace DFTestBot
         {
             Uri deploymentServiceUri = testParameters.IsStagingTest ? DeploymentServiceStagingBaseUrl : DeploymentServiceBaseUrl;
 
-            string httpApiPath = $"{routePrefix}/{functionName}";
+            string httpApiPath = $"api/{functionName}";
             string deploymentFunctionKey = await GetFunctionKey(functionName, context, testParameters, log);
 
             var request = new DurableHttpRequest(
