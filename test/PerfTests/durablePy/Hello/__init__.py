@@ -10,4 +10,6 @@ import logging
 
 
 def main(name: str) -> str:
+    if name == "19":
+        raise Exception("wakawaka eh eh")
     return f"Hello {name}!"
