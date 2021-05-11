@@ -32,13 +32,13 @@ namespace DFTestBot
             TestParameters testParameters = context.GetInput<TestParameters>();
 
             // Create a new resource group
-            if (!await TryCreateNewResource(context, log, testParameters, "CreateNewResourceGroup", "CheckResourceGroupStatus", "Failed to create a new resource group!", "Successfully created a new resource group."))
+            if (!await TryCreateNewResource(context, log, testParameters, "CreateNewResourceGroup", "CheckResourceGroupStatus", "Failed to create a new resource group!", "Successfully created a new resource group!"))
             {
                 throw new Exception("Failed to create a new resource group!");
             }
 
             // Create a new storage account
-            if (!await TryCreateNewResource(context, log, testParameters, "CreateNewStorageAccount", "CheckStorageAccountStatus", "Failed to create a new storage account!", "Successfully created a new storage account."))
+            if (!await TryCreateNewResource(context, log, testParameters, "CreateNewStorageAccount", "CheckStorageAccountStatus", "Failed to create a new storage account!", "Successfully created a new storage account!"))
             {
                 throw new Exception("Failed to create a new storage account!");
             }
@@ -46,13 +46,13 @@ namespace DFTestBot
             if (string.Equals(testParameters.AppPlanType, "ElasticPremium"))
             {
                 // Create a new function app plan
-                if (!await TryCreateNewResource(context, log, testParameters, "CreateNewFunctionAppPlan", "CheckFunctionAppPlanStatus", "Failed to create a new function app plan!", "Successfully created a new function app plan."))
+                if (!await TryCreateNewResource(context, log, testParameters, "CreateNewFunctionAppPlan", "CheckFunctionAppPlanStatus", "Failed to create a new function app plan!", "Successfully created a new function app plan!"))
                 {
                     throw new Exception("Failed to create a new storage account!");
                 }
 
                 // Create a new function app with plan
-                if (!await TryCreateNewResource(context, log, testParameters, "CreateNewFunctionAppWithPlan", null, "Failed to create a new function app!", "Successfully created a new function app on an existing plan."))
+                if (!await TryCreateNewResource(context, log, testParameters, "CreateNewFunctionAppWithPlan", null, "Failed to create a new function app!", "Successfully created a new function app on an existing plan!"))
                 {
                     throw new Exception("Failed to create a new storage account!");
                 } 
@@ -60,24 +60,37 @@ namespace DFTestBot
             else
             {
                 // Create a new function app
-                if (!await TryCreateNewResource(context, log, testParameters, "CreateNewFunctionApp", null, "Failed to create a new function app!", "Successfully created a new function app."))
+                if (!await TryCreateNewResource(context, log, testParameters, "CreateNewFunctionApp", null, "Failed to create a new function app!", "Successfully created a new function app!"))
                 {
                     throw new Exception("Failed to create a new storage account!");
                 }
             }
 
+            // Deploy code to the function app
+            if (!await TryCallDeploymentServiceHttpApiAsync("DeployToFunctionApp", context, log, testParameters))
+            {
+                string message = $"Failed to deploy code to the function app! 💣 Check the internal deployment service logs for more details.";
+                await context.CallActivityAsync(nameof(PatchGitHubComment), (testParameters.GitHubCommentIdApiUrl, message));
+                throw new Exception(message);
+            }
+            else
+            {
+                string message = "Successfully deployed code to the function app!" + Environment.NewLine + Environment.NewLine + $"Sending request to {testParameters.TestName}";
+                await context.CallActivityAsync(nameof(PatchGitHubComment), (testParameters.GitHubCommentIdApiUrl, message));
+            }
+
             try
             {
-                // Deploy and start the test app
+                // Trigger the test function
                 HttpManagementPayload managementUrls = null;
                 if (!await TryCallDeploymentServiceHttpApiAsync(
-                    "DeployToFunctionApp",
+                    "TriggerTestFunction",
                     context,
                     log,
                     testParameters,
                     (responseJson) => managementUrls = JsonConvert.DeserializeObject<HttpManagementPayload>(responseJson)))
                 {
-                    string message = $"Failed to deploy the test app! 💣 Check the internal deployment service logs for more details.";
+                    string message = $"Failed to trigger the test function! 💣 Check the internal deployment service logs for more details.";
                     await context.CallActivityAsync(nameof(PatchGitHubComment), (testParameters.GitHubCommentIdApiUrl, message));
                     throw new Exception(message);
                 }
@@ -202,7 +215,6 @@ namespace DFTestBot
             {
                 string message = $"{errorMessage} 💣 Check the internal deployment service logs for more details.";
                 await context.CallActivityAsync(nameof(PatchGitHubComment), (testParameters.GitHubCommentIdApiUrl, message));
-                //throw new Exception(message);
                 return false;
             }
 

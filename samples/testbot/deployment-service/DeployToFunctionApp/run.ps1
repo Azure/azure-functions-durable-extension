@@ -66,53 +66,27 @@ Write-Host "sub id - $subscriptionId"
 Set-AzContext -SubscriptionId $subscriptionId
 
 #"**********Deploying a zip file to Function***********"
-$appName = $Request.Body.appName
-$resourceGroup = $Request.Body.resourceGroup ?? "perf-testing"
-Write-Host "Publishing $targetZipFilePath to $appName in resource group $resourceGroup..."
-Write-Host "Publish-AzWebApp -ResourceGroupName $resourceGroup -Name $appName -DefaultProfile $defaultProfile -ArchivePath $targetZipFilePath -Force"
-Publish-AzWebApp -ResourceGroupName $resourceGroup -Name $appName -DefaultProfile $defaultProfile -ArchivePath $targetZipFilePath -Force
+try
+{
+    $appName = $Request.Body.appName
+    $resourceGroup = $Request.Body.resourceGroup
+    Write-Host "Publishing $targetZipFilePath to $appName in resource group $resourceGroup..."
+    Write-Host "Publish-AzWebApp -ResourceGroupName $resourceGroup -Name $appName -DefaultProfile $defaultProfile -ArchivePath $targetZipFilePath -Force"
+    Publish-AzWebApp -ResourceGroupName $resourceGroup -Name $appName -DefaultProfile $defaultProfile -ArchivePath $targetZipFilePath -Force
+    
+    Write-Host "Deployed code to function app"
+    
+    Push-OutputBinding -Name Response -Value ([HttpResponseContext]@{
+        StatusCode = [HttpStatusCode]::OK
+    })
+}
+catch [Exception]
+{
+    Write-Host $_.Exception.Message
+    Write-Host $_.Exception.InnerException
+    
+    Push-OutputBinding -Name Response -Value ([HttpResponseContext]@{
+        StatusCode = [HttpStatusCode]::BadRequest
+    })
+}
 
-Write-Host "Deployed code to function app"
-
-# Get function key
-$publishingCredentials = Invoke-AzResourceAction  `
-     -ResourceGroupName $resourceGroup `
-     -ResourceType 'Microsoft.Web/sites/config' `
-     -ResourceName ('{0}/publishingcredentials' -f $appName) `
-     -Action list `
-     -ApiVersion 2019-08-01 `
-     -Force
-
-$base64Credentials = [Convert]::ToBase64String(
-    [Text.Encoding]::ASCII.GetBytes(
-        ('{0}:{1}' -f $publishingCredentials.Properties.PublishingUserName, $publishingCredentials.Properties.PublishingPassword)
-    )
-)
-
-$jwtToken = Invoke-RestMethod `
-     -Uri ('https://{0}.scm.azurewebsites.net/api/functions/admin/token' -f $appName) `
-     -Headers @{ Authorization = ('Basic {0}' -f $base64Credentials) }
-
-$testName = $Request.Body.testName
-
-$functionsKeysResponse = Invoke-RestMethod `
-     -Uri ('https://{0}.azurewebsites.net/admin/functions/{1}/keys' -f $appName, $testName) `
-     -Headers @{Authorization = ("Bearer {0}" -f $jwtToken) } `
-     -Method GET
-
-$functionKey = $functionsKeysResponse.keys.value
-
-# Triggering the test function
-$routePrefix = "tests"
-$testParameters = $Request.Body.testParameters
-$httpApiUrl = "https://${appName}.azurewebsites.net/${routePrefix}/${testName}?${testParameters}&code={$functionKey}"
-
-Write-Host "Starting test by sending a POST to $httpApiUrl..."
-$httpResponse = Invoke-WebRequest -Method POST "${httpApiUrl}"
-
-# Send back the response content, which is expected to be the management URLs
-# of the root orchestrator function
-Push-OutputBinding -Name Response -Value ([HttpResponseContext]@{
-    StatusCode = [HttpStatusCode]::OK
-    Body = $httpResponse.Content
-})
