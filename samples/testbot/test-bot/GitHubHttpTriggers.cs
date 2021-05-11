@@ -135,8 +135,17 @@ namespace DFTestBot
             string storageAccountName = $"dftest{dateTime}{guid}sa";
             string appPlanName = appName + "-plan";
 
-            string dirPath = functionsVersion.Equals("1") ? "test\\DFPerfScenariosV1" : "test\\DFPerfScenarios";
-            string framework = functionsVersion.Equals("1") ? "net461" : "netcoreapp3.1";
+            string dirPath = testInfo.DirPath;
+            string framework = "";
+
+            if (runtime.Equals("dotnet"))
+            {
+                if (dirPath == null)
+                {
+                    dirPath = functionsVersion.Equals("1") ? "test\\DFPerfScenariosV1" : "test\\DFPerfScenarios";
+                }
+                framework = functionsVersion.Equals("1") ? "net461" : "netcoreapp3.1";
+            }
 
             var parameters = new TestParameters
             {
@@ -147,6 +156,7 @@ namespace DFTestBot
                 GitHubCommentIdApiUrl = commentIdApiUrl,
                 GitHubCommentAction = commentAction,
                 GitHubBranch = branchName,
+                HttpPath = testInfo.HttpPath,
                 ProjectFileDirPath = dirPath,
                 Framework = framework,
                 AppName = appName,

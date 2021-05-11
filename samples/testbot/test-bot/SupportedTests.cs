@@ -20,6 +20,8 @@ namespace DFTestBot
                     AppLensDetector = "DurableFunctions_ManySequencesTest",
                     StarterFunctionName = "StartManySequences",
                     IsEnabled = true,
+                    HttpPath = "tests/StartManySequences",
+                    DirPath = null
                 },
                 ["FanOutFanIn"] = new TestDescription
                 {
@@ -27,6 +29,8 @@ namespace DFTestBot
                     AppLensDetector = "DurableFunctions_FanOutTest",
                     StarterFunctionName = "StartFanOutFanIn",
                     IsEnabled = true,
+                    HttpPath = "tests/StartFanOutFanIn",
+                    DirPath = null
                 },
                 ["SubOrchFanOutFanIn"] = new TestDescription
                 {
@@ -34,13 +38,35 @@ namespace DFTestBot
                     AppLensDetector = "DurableFunctions_SubOrchFanOutFanIn",
                     StarterFunctionName = "StartFanOutFanIn",
                     IsEnabled = true,
+                    HttpPath = "tests/StartFanOutFanIn",
+                    DirPath = null
                 },
                 ["SingleCounterEntity"] = new TestDescription
                 {
                     Description = "Runs the entity counter test. Example: `/DFTest run SingleCounterEntity end`.",
                     AppLensDetector = "DurableFunctions_SingleCounterEntityTest",
-                    StarterFunctionName = "StartFanOutFanIn",
+                    StarterFunctionName = "Counter",
                     IsEnabled = true,
+                    HttpPath = "tests/Counter",
+                    DirPath = null
+                },
+                ["SmokeTestV3"] = new TestDescription
+                {
+                    Description = "Runs the entity counter test. Example: `/DFTest run SmokeTestV3 end`.",
+                    AppLensDetector = null,
+                    StarterFunctionName = "HttpStart",
+                    IsEnabled = true,
+                    HttpPath = "api/HttpStart",
+                    DirPath = "test\\SmokeTests\\SmokeTestsV3"
+                },
+                ["SmokeTestV1"] = new TestDescription
+                {
+                    Description = "Runs the entity counter test. Example: `/DFTest run SmokeTestV1 end`.",
+                    AppLensDetector = null,
+                    StarterFunctionName = "HttpStart",
+                    IsEnabled = true,
+                    HttpPath = "api/HttpStart",
+                    DirPath = "test\\SmokeTests\\SmokeTestsV1"
                 }
             };
         }
@@ -73,5 +99,15 @@ namespace DFTestBot
         /// Gets or sets the name of the starter function for this test.
         /// </summary>
         public string StarterFunctionName { get; set; }
+
+        /// <summary>
+        /// Gets or sets the HTTP path for the starter function (e.g. tests/ManySequences)
+        /// </summary>
+        public string HttpPath { get; set; }
+
+        /// <summary>
+        /// Gets or sets the directory path in the durable-extension repo for the starter function (e.g. test/SmokeTests/SmokeTestsV3)
+        /// </summary>
+        public string DirPath { get; set; }
     }
 }

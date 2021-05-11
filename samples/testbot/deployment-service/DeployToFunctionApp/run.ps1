@@ -6,8 +6,8 @@ $ErrorActionPreference = "Stop"
 
 $GitHubOrg = "Azure"
 $ProjectName = "azure-functions-durable-extension"
-$ProjectFileDir = $Request.Body.projectFileDirPath ?? "test\DFPerfScenarios"
-$Framework = $Request.Body.framework ?? "netcoreapp3.1"
+$ProjectFileDir = $Request.Body.projectFileDirPath
+$Framework = $Request.Body.framework
 
 
 # Delete the target directory if it already exists
@@ -84,7 +84,7 @@ catch [Exception]
 {
     Write-Host $_.Exception.Message
     Write-Host $_.Exception.InnerException
-    
+
     Push-OutputBinding -Name Response -Value ([HttpResponseContext]@{
         StatusCode = [HttpStatusCode]::BadRequest
     })

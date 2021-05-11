@@ -113,10 +113,11 @@ namespace DFTestBot
                     throw new Exception(message);
                 }
 
+                DateTime expiryTime = context.CurrentUtcDateTime.AddMinutes(120);
                 string previousCustomStatus = string.Empty;
-                while (true)
+
+                while (context.CurrentUtcDateTime < expiryTime)
                 {
-                    // The test orchestration reports back using a string message in the CustomStatus field
                     string currentCustomStatus = (string)status.CustomStatus;
                     if (currentCustomStatus != previousCustomStatus)
                     {
@@ -145,7 +146,8 @@ namespace DFTestBot
                     OrchestrationRuntimeStatus.Completed => "The test completed successfully! ✅",
                     OrchestrationRuntimeStatus.Failed => "The test failed! 💣",
                     OrchestrationRuntimeStatus.Terminated => "The test was terminated or timed out. ⚠",
-                    _ => $"The test stopped unexpectedly. Runtime status = **{status.RuntimeStatus}**. 🤔"
+                    OrchestrationRuntimeStatus.Running => "The test has been running for over 120 minutes and the test bot has stopped status polling. Please check internal logs for more details",
+                    _ => $"The test run stopped unexpectedly. Runtime status = **{status.RuntimeStatus}**. 🤔",
                 };
 
                 // Generate the AppLens link
@@ -159,7 +161,7 @@ namespace DFTestBot
             }
             catch (Exception)
             {
-                string message = $"An unexpected failure occurred! 💣 Unfortunately, we can't continue the test run and the test app will be deleted. 😞";
+                string message = $"An unexpected failure occurred! 💣 Unfortunately, we can't continue the test run. 😞";
                 await context.CallActivityAsync(nameof(PatchGitHubComment), (testParameters.GitHubCommentIdApiUrl, message));
                 throw;
             }
@@ -197,7 +199,9 @@ namespace DFTestBot
             string startTime = startTimeUtc.ToString("yyyy-MM-ddTHH:mm");
             string endTime = endTimeUtc.ToString("yyyy-MM-ddTHH:mm");
 
-            string link = $"https://applens.azurewebsites.net/subscriptions/{subscriptionId}/resourceGroups/{resourceGroup}/providers/Microsoft.Web/sites/{appName}/detectors/{detectorName}?startTime={startTime}&endTime={endTime}";
+            string link = testParameters.DetectorName == null ?
+                $"https://applens.azurewebsites.net/subscriptions/{subscriptionId}/resourceGroups/{resourceGroup}/providers/Microsoft.Web/sites/{appName}/home/category?startTime={startTime}&endTime={endTime}" :
+                $"https://applens.azurewebsites.net/subscriptions/{subscriptionId}/resourceGroups/{resourceGroup}/providers/Microsoft.Web/sites/{appName}/detectors/{detectorName}?startTime={startTime}&endTime={endTime}";
             return link;
         }
 

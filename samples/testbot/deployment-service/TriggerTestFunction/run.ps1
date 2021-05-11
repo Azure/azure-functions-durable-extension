@@ -39,9 +39,9 @@ $functionsKeysResponse = Invoke-RestMethod `
 $functionKey = $functionsKeysResponse.keys.value
 
 # Triggering the test function
-$routePrefix = "tests"
+$httpPath = $Request.Body.httpPath
 $testParameters = $Request.Body.testParameters
-$httpApiUrl = "https://${appName}.azurewebsites.net/${routePrefix}/${testName}?${testParameters}&code={$functionKey}"
+$httpApiUrl = "https://${appName}.azurewebsites.net/${httpPath}?${testParameters}code=${functionKey}"
 
 Write-Host "Starting test by sending a POST to $httpApiUrl..."
 $httpResponse = Invoke-WebRequest -Method POST "${httpApiUrl}"

@@ -81,6 +81,12 @@ namespace DFTestBot
         public string GitHubBranch { get; set; }
 
         /// <summary>
+        /// Gets or sets the http path for the function e.g. "api/HttpStart"
+        /// </summary>
+        [JsonProperty("httpPath")]
+        public string HttpPath { get; set; }
+
+        /// <summary>
         /// Gets or sets the project file directory path e.g. "test\DFPerfScenarios"
         /// </summary>
         [JsonProperty("projectFileDirPath")]
