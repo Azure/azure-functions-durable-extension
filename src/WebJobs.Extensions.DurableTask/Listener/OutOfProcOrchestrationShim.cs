@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core.Exceptions;
@@ -27,6 +28,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public OutOfProcOrchestrationShim(IDurableOrchestrationContext context)
         {
             this.context = context ?? throw new ArgumentNullException(nameof(context));
+        }
+
+        /// <summary>
+        /// Identifiers for each OOProc Schema Version.
+        /// </summary>
+        private enum SchemaVersion
+        {
+            Original = 0,
+            ReplayPatchV1 = 1,
+        }
+
+        /// <summary>
+        /// Identifiers for each kind of action object.
+        /// </summary>
+        private enum TaskGroupingType
+        {
+            Unknown = -1,
+            Atomic = 0,
+            Any = 1,
+            All = 2,
         }
 
         private enum AsyncActionType
@@ -84,7 +105,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.context.SetCustomStatus(execution.CustomStatus);
             }
 
-            await this.ProcessAsyncActions(execution.Actions);
+            await this.ReplayOOProcOrchestration(execution.Actions, execution.SchemaVersion);
 
             if (!string.IsNullOrEmpty(execution.Error))
             {
@@ -102,6 +123,195 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             // there are more executions to process
             return true;
+        }
+
+        /// <summary>
+        /// Invokes a DF API based on the input action object.
+        /// Most APIs will return a Task to be awaited, but others such as SignalEntity do not.
+        /// </summary>
+        /// <param name="action">An OOProc action object representing a DF task.</param>
+        /// <returns>If the API returns a task, the DF task corresponding to the input action. Else, null.</returns>
+        private Task InvokeAPIFromAction(AsyncAction action)
+        {
+            Task task = null;
+            switch (action.ActionType)
+            {
+                case AsyncActionType.CallActivity:
+                    task = this.context.CallActivityAsync(action.FunctionName, action.Input);
+                    break;
+                case AsyncActionType.CreateTimer:
+                    DurableOrchestrationContext ctx = this.context as DurableOrchestrationContext;
+                    using (var cts = new CancellationTokenSource())
+                    {
+                        if (ctx != null)
+                        {
+                            ctx.ThrowIfInvalidTimerLengthForStorageProvider(action.FireAt);
+                        }
+
+                        task = this.context.CreateTimer(action.FireAt, cts.Token);
+
+                        if (action.IsCanceled)
+                        {
+                            cts.Cancel();
+                        }
+                    }
+
+                    break;
+                case AsyncActionType.CallActivityWithRetry:
+                    task = this.context.CallActivityWithRetryAsync(action.FunctionName, action.RetryOptions, action.Input);
+                    break;
+                case AsyncActionType.CallSubOrchestrator:
+                    task = this.context.CallSubOrchestratorAsync(action.FunctionName, action.InstanceId, action.Input);
+                    break;
+                case AsyncActionType.CallSubOrchestratorWithRetry:
+                    task = this.context.CallSubOrchestratorWithRetryAsync(action.FunctionName, action.RetryOptions, action.InstanceId, action.Input);
+                    break;
+                case AsyncActionType.CallEntity:
+                    {
+                        var entityId = EntityId.GetEntityIdFromSchedulerId(action.InstanceId);
+                        task = this.context.CallEntityAsync(entityId, action.EntityOperation, action.Input);
+                        break;
+                    }
+
+                case AsyncActionType.SignalEntity:
+                    {
+                        // We do not add a task because this is 'fire and forget'
+                        var entityId = EntityId.GetEntityIdFromSchedulerId(action.InstanceId);
+                        this.context.SignalEntity(entityId, action.EntityOperation, action.Input);
+                        break;
+                    }
+
+                case AsyncActionType.ScheduledSignalEntity:
+                    {
+                        // We do not add a task because this is 'fire and forget'
+                        var entityId = EntityId.GetEntityIdFromSchedulerId(action.InstanceId);
+                        this.context.SignalEntity(entityId, action.FireAt, action.EntityOperation, action.Input);
+                        break;
+                    }
+
+                case AsyncActionType.ContinueAsNew:
+                    this.context.ContinueAsNew(action.Input);
+                    break;
+                case AsyncActionType.WaitForExternalEvent:
+                    task = this.context.WaitForExternalEvent<object>(action.ExternalEventName);
+                    break;
+                case AsyncActionType.CallHttp:
+                    task = this.context.CallHttpAsync(action.HttpRequest);
+                    break;
+                default:
+                    break;
+            }
+
+            return task;
+        }
+
+        /// <summary>
+        /// Replays the orchestration execution from an OOProc SDK in .NET.
+        /// This is the V2 implementation of that replay procedure.
+        /// </summary>
+        /// <param name="actionSet">The OOProc actions payload.</param>
+        /// <returns>An awaitable Task that completes once replay completes.</returns>
+        private async Task ProcessAsyncActionsV2(AsyncAction[][] actionSet)
+        {
+            foreach (AsyncAction[] actions in actionSet)
+            {
+                Task newTask;
+                AsyncAction topLevelAction = actions[0];
+
+                if (actions.Length == 1)
+                {
+                    newTask = this.InvokeAPIFromAction(topLevelAction);
+                }
+                else
+                {
+                    // If there's more than one action, we know we're looking at a compound Task / a task of tasks
+                    // such as Task.WhenAll or Task.WhenAny. Recursively, we construct that compound task.
+                    (newTask, _) = this.GetCompoundTaskFromActions(actions, 0, topLevelAction.Depth, topLevelAction.TaskGrouping);
+                }
+
+                // check for null, for when an action is fire-and-forget
+                if (newTask != null)
+                {
+                    await newTask;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Recursively construct a compound Task (a task of tasks) from a list of actions.
+        /// </summary>
+        /// <param name="actions">The OOProc actions payload.</param>
+        /// <param name="index">The index at which to start processing the actions.</param>
+        /// <param name="depth">The current task depth, equal to the number of outer / parent tasks.</param>
+        /// <param name="kind">The kind of parent task: WhenAll or WhenAny.</param>
+        /// <returns>A compound task, either: WhenAll or WhenAny.</returns>
+        private (Task, int) GetCompoundTaskFromActions(AsyncAction[] actions, int index, int depth, TaskGroupingType kind)
+        {
+            Task newTask;
+            Task outputTask;
+            AsyncAction action;
+            List<Task> tasks = new List<Task>();
+
+            while (index < actions.Length)
+            {
+                action = actions[index];
+                if (depth == action.Depth)
+                {
+                    // we aggregate tasks from this current compound Task depth
+                    newTask = this.InvokeAPIFromAction(action);
+                    index++;
+                }
+                else if (action.Depth > depth)
+                {
+                    // We've encountered the start of another compound task
+                    // we recurse down, processing its sequence of tasks to obtain the singular, top-level, compound task that correspond to our depth.
+                    (newTask, index) = this.GetCompoundTaskFromActions(actions, index, action.Depth, action.TaskGrouping);
+                }
+                else
+                {
+                    break;
+                }
+
+                // check for null, for when an action is fire-and-forget
+                if (newTask != null)
+                {
+                    tasks.Add(newTask);
+                }
+            }
+
+            switch (kind)
+            {
+                case TaskGroupingType.Any:
+                    outputTask = Task.WhenAny(tasks);
+                    break;
+                case TaskGroupingType.All:
+                    outputTask = Task.WhenAll(tasks);
+                    break;
+                default:
+                    throw new ArgumentException($"Unexpected TaskGroupingType at Depth {depth} of value {kind.ToString()} and index {index}");
+            }
+
+            return (outputTask, index);
+        }
+
+        /// <summary>
+        /// Replays the OOProc orchestration based on the actions array. It uses the schema enum to
+        /// determine which replay implementation is most appropiate.
+        /// </summary>
+        /// <param name="actions">The OOProc actions payload.</param>
+        /// <param name="schema">The OOProc protocol schema version.</param>
+        /// <returns>An awaitable Task that completes once replay completes.</returns>
+        private async Task ReplayOOProcOrchestration(AsyncAction[][] actions, SchemaVersion schema)
+        {
+            switch (schema)
+            {
+                case SchemaVersion.ReplayPatchV1:
+                    await this.ProcessAsyncActionsV2(actions);
+                    break;
+                default: // same as: case SchemaVersion.Original
+                    await this.ProcessAsyncActions(actions);
+                    break;
+            }
         }
 
         private async Task ProcessAsyncActions(AsyncAction[][] actions)
@@ -211,6 +421,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             [JsonProperty("customStatus")]
             internal object CustomStatus { get; set; }
+
+            [DefaultValue(SchemaVersion.Original)]
+            [JsonConverter(typeof(StringEnumConverter))]
+            [JsonProperty("schemaVersion", DefaultValueHandling = DefaultValueHandling.Populate)]
+            internal SchemaVersion SchemaVersion { get; set; }
         }
 
         private class AsyncAction
@@ -237,6 +452,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             [JsonProperty("retryOptions")]
             [JsonConverter(typeof(RetryOptionsConverter))]
             internal RetryOptions RetryOptions { get; set; }
+
+            [JsonProperty("depth")]
+            internal int Depth { get; set; }
+
+            [DefaultValue(TaskGroupingType.Unknown)]
+            [JsonProperty("kind", DefaultValueHandling = DefaultValueHandling.Populate)]
+            [JsonConverter(typeof(StringEnumConverter))]
+            internal TaskGroupingType TaskGrouping { get; set; }
 
             [JsonProperty("instanceId")]
             internal string InstanceId { get; set; }
