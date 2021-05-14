@@ -15,4 +15,9 @@
     <PackageReference Include="Microsoft.CodeAnalysis.Workspaces.Common" Version="3.9.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <AdditionalFiles Include="..\..\..\.stylecop\stylecop.json" />
+    <Compile Include="..\..\..\.stylecop\GlobalSuppressions.cs" Link="GlobalSuppressions.cs" />
+  </ItemGroup>
+
 </Project>
