@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.Generated;
+using Microsoft.Azure.Webjobs.Extensions.DurableTask.Generated;
 using Microsoft.Extensions.Logging;
 
 namespace WebJobs.Extensions.DurableTask.CodeGen.Example

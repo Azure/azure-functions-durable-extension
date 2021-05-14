@@ -42,7 +42,7 @@ public static string SayHello([ActivityTrigger] IDurableActivityContext context,
 4. Manually add using statement to reference the generated code.
 
 ```
-using Microsoft.Azure.WebJobs.Generated;
+using Microsoft.Azure.Webjobs.Extensions.DurableTask.Generated;
 ```
 
 5. Replace ```IDurableClient``` / ```IDurableOrchestrationContext``` usage for their generated counterparts ```IGeneratedDurableClient``` / ```IGeneratedDurableOrchestrationContext```. The generated interfaces can perform all operations exposed by standard interfaces, in additional to performing typed calls to Orchestration/Activity Function.
@@ -203,11 +203,11 @@ public async Task<int> Multiply(
 
 ### 1. Manually Adding Namespace
 
-For the moment, generated code will not show up intellisense unless the namespace containing the code is added to the file you are trying to use them in. Generated code is placed in the namespace ```Microsoft.Azure.WebJobs.Generated```. 
+For the moment, generated code will not show up intellisense unless the namespace containing the code is added to the file you are trying to use them in. Generated code is placed in the namespace ```Microsoft.Azure.Webjobs.Extensions.DurableTask.Generated```. 
 
 To use the generated interfaces, and have intellisense available for the generated types, you must manually include the using statement:
 ```csharp
-using Microsoft.Azure.WebJobs.Generated;
+using Microsoft.Azure.Webjobs.Extensions.DurableTask.Generated;
 ```
 
 ### 2. Scoped Code Generation

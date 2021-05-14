@@ -2,7 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
-using Microsoft.Azure.WebJobs.Generated;
+using Microsoft.Azure.Webjobs.Extensions.DurableTask.Generated;
 using Moq;
 using System.Threading.Tasks;
 using WebJobs.Extensions.DurableTask.CodeGen.Example;

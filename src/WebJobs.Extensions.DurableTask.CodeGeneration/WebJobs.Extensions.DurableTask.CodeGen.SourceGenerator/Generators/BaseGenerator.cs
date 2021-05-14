@@ -1,4 +1,4 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System.Collections.Generic;
@@ -11,7 +11,7 @@ namespace WebJobs.Extensions.DurableTask.CodeGeneration.SourceGenerator.Generato
 {
     public abstract class BaseGenerator
     {
-        private const string Namespace = "Microsoft.Azure.WebJobs.Generated";
+        private const string Namespace = "Microsoft.Azure.Webjobs.Extensions.DurableTask.Generated";
 
         protected static NamespaceDeclarationSyntax GenerateNamespace()
         {

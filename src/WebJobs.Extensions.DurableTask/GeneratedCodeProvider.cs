@@ -7,7 +7,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     internal class GeneratedCodeProvider
     {
-        public const string Namespace = "Microsoft.Azure.WebJobs.Generated";
+        public const string Namespace = "Microsoft.Azure.Webjobs.Extensions.DurableTask.Generated";
 
         public const string GeneratedDurableOrchestrationContext = "GeneratedDurableOrchestrationContext";
         public const string IGeneratedDurableOrchestrationContext = "IGeneratedDurableOrchestrationContext";

@@ -7,7 +7,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
-using Microsoft.Azure.WebJobs.Generated;
+using Microsoft.Azure.Webjobs.Extensions.DurableTask.Generated;
 using WebJobs.Extensions.DurableTask.CodeGen.Example.Models;
 
 namespace WebJobs.Extensions.DurableTask.CodeGen.Example
