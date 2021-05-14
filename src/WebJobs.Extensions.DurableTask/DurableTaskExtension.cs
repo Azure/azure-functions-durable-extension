@@ -1014,20 +1014,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </summary>
         /// <param name="attribute">The attribute containing the client configuration parameters.</param>
         /// <returns>Returns a <see cref="IDurableClient"/> instance. The returned instance may be a cached instance.</returns>
-        protected internal virtual T GetGeneratedClient<T>(DurableClientAttribute attribute)
-        {
-            var genCodeProvider = new GeneratedCodeProvider();
-            genCodeProvider.Initialize();
-
-            return (T)genCodeProvider.InstantiateGeneratedDurableClient(this.GetClient(attribute));
-        }
-
-
-        /// <summary>
-        /// Gets a <see cref="IDurableClient"/> using configuration from a <see cref="DurableClientAttribute"/> instance.
-        /// </summary>
-        /// <param name="attribute">The attribute containing the client configuration parameters.</param>
-        /// <returns>Returns a <see cref="IDurableClient"/> instance. The returned instance may be a cached instance.</returns>
         protected internal virtual IDurableClient GetDurableClient(DurableClientAttribute attribute)
         {
             DurableClient client = this.cachedClients.GetOrAdd(
