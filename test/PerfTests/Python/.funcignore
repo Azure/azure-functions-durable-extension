@@ -3,3 +3,4 @@
 local.settings.json
 test
 .venv
+venv

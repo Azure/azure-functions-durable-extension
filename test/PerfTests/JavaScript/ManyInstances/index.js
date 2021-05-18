@@ -1,14 +1,15 @@
 ﻿const df = require("durable-functions");
+const validateInput = require("../SharedUtils/validateInput")
+const pLimit = require('p-limit');
 
 module.exports = async function (context, req) {
     const client = df.getClient(context);
     const numInstances = req.body;
 
-    for(var i = 0; i < numInstances; i++)
-    {
-        var instanceId = await client.startNew("ManyInstancesOrchestrator");
-        context.log(`Started orchestration with ID = '${instanceId}'.`);
-    }
+    validateInput(numInstances);
+    var orchestratorStarts = new Array(numInstances).fill(client.startNew("SequentialOrchestration"));
 
-    return client.createCheckStatusResponse(context.bindingData.req, instanceId);
+    // concurrency limit to 200 async threads
+    pLimit(200);
+    await Promise.all(orchestratorStarts);
 };
