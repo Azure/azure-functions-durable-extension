@@ -82,6 +82,11 @@ namespace Microsoft.Azure.WebJobs
             }
 
             JToken jToken = this.GetInputAsJson();
+            if (jToken == null)
+            {
+                return null;
+            }
+
             var value = jToken as JValue;
             if (value != null)
             {
