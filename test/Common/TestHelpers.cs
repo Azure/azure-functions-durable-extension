@@ -333,7 +333,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 retryInterval = TimeSpan.FromMilliseconds(100);
             }
 
-            Stopwatch sw = new Stopwatch();
+            Stopwatch sw = Stopwatch.StartNew();
+
             do
             {
                 if (predicate())
