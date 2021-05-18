@@ -184,11 +184,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
 
             Stopwatch sw = new Stopwatch();
+            sw.Start();
             do
             {
-                if (predicate())
+                try
                 {
-                    return;
+                    if (predicate())
+                    {
+                        return;
+                    }
+                }
+                catch
+                {
                 }
 
                 await Task.Delay(retryInterval.Value);
