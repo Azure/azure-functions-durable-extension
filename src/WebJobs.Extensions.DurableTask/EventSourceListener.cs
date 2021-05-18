@@ -43,6 +43,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // so we provide extra logic to ignore it.
             if ((eventSource.Name == "DurableTask-Core"
                   && eventSource.Guid != new Guid("7DA4779A-152E-44A2-A6F2-F80D991A5BEE")) ||
+                eventSource.Name == "DurableTask-AzureStorage" ||
                 eventSource.Name == "WebJobs-Extensions-DurableTask" ||
                 eventSource.Name == "DurableTask-SqlServer")
             {
