@@ -8,7 +8,7 @@ async def main(req: func.HttpRequest, starter: str) -> func.HttpResponse:
     client = df.DurableOrchestrationClient(starter)
     num_instances = parse_and_validate_input(req.get_body())
 
-    tasks = map(lambda _: client.start_new("ManyInstancesOrchestrator"), range(num_instances))
+    tasks = map(lambda _: client.start_new("SequentialOrchestrator"), range(num_instances))
     await gather(tasks=tasks, max_concurrency=200)
     return ""
 

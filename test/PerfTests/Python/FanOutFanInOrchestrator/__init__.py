@@ -16,8 +16,8 @@ def orchestrator_function(context: df.DurableOrchestrationContext):
     num_activities = context.get_input()
     tasks = []
 
-    for _ in range(num_activities):
-        tasks.append(context.call_activity("Hello", "Tokyo"))
+    for num in range(num_activities):
+        tasks.append(context.call_activity("Hello", str(num)))
     yield context.task_all(tasks)
     return "done"
 

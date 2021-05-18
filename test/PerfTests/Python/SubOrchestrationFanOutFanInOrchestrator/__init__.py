@@ -10,7 +10,7 @@ def orchestrator_function(context: df.DurableOrchestrationContext):
     tasks = []
 
     for _ in range(num_activities):
-        tasks.append(context.call_sub_orchestrator("ManyInstancesOrchestrator"))
+        tasks.append(context.call_sub_orchestrator("SequentialOrchestrator"))
     yield context.task_all(tasks)
     return "done"
 
