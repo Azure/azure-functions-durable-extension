@@ -1,11 +1,12 @@
 ﻿const df = require("durable-functions");
-const validateInput = require("../SharedUtils/validateInput")
 
 module.exports = df.orchestrator(function* (context) {
     const outputs = [];
     const numSubOrchestrators = context.df.getInput();
 
-    validateInput(numSubOrchestrators);
+    for(var i = 0; i < numSubOrchestrators; i++){
+        outputs.push(context.df.callSubOrchestrator("ManyInstancesOrchestrator"));
+    }
 
     yield context.df.Task.all(outputs);
     return "Done!";
