@@ -52,6 +52,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly AsyncLock taskHubLock = new AsyncLock();
 
         private readonly bool isOptionsConfigured;
+        private ILoggerFactory loggerFactory;
 
         private INameResolver nameResolver;
         private AzureStorageOrchestrationService orchestrationService;
@@ -93,6 +94,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // Options will be null in Functions v1 runtime - populated later.
             this.Options = options?.Value ?? new DurableTaskOptions();
             this.nameResolver = nameResolver ?? throw new ArgumentNullException(nameof(nameResolver));
+            this.loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
             this.connectionStringResolver = connectionStringResolver ?? throw new ArgumentNullException(nameof(connectionStringResolver));
 
             if (loggerFactory == null)
@@ -199,7 +201,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             this.orchestrationServiceSettings = this.GetOrchestrationServiceSettings();
             this.orchestrationService = new AzureStorageOrchestrationService(this.orchestrationServiceSettings);
-            this.taskHubWorker = new TaskHubWorker(this.orchestrationService, this, this);
+            this.taskHubWorker = new TaskHubWorker(this.orchestrationService, this, this, this.loggerFactory);
             this.taskHubWorker.AddOrchestrationDispatcherMiddleware(this.OrchestrationMiddleware);
 
 #if !FUNCTIONS_V1
@@ -292,8 +294,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
 #if FUNCTIONS_V1
             context.ApplyConfig(this.Options, "DurableTask");
+            this.loggerFactory = context.Config.LoggerFactory;
 
-            ILogger logger = context.Config.LoggerFactory.CreateLogger(LoggerCategoryName);
+            ILogger logger = this.loggerFactory.CreateLogger(LoggerCategoryName);
 
             this.TraceHelper = new EndToEndTraceHelper(logger, this.Options.LogReplayEvents);
             this.HttpApiHandler = new HttpApiHandler(this, logger);
