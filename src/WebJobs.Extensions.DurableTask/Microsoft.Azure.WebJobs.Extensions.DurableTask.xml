@@ -3297,6 +3297,12 @@
              along with the pursuit of more platform-specific defaults.
              </summary>
         </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IPlatformInformationService.GetPL">
+            <summary>
+            Obtains a representation of the current function language.
+            </summary>
+            <returns>A representation of the function's language.</returns>
+        </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IPlatformInformationService.InConsumption">
             <summary>
             Determines if the application is running on a Consumption plan,

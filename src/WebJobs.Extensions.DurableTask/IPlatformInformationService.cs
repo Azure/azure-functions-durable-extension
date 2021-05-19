@@ -16,6 +16,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     public interface IPlatformInformationService
     {
         /// <summary>
+        /// Obtains a representation of the current function language.
+        /// </summary>
+        /// <returns>A representation of the function's language.</returns>
+        string GetPL();
+
+        /// <summary>
         /// Determines if the application is running on a Consumption plan,
         /// irrespective of OS.
         /// </summary>

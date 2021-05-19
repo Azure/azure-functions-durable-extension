@@ -156,6 +156,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             {
                                 ReturnValue = returnValue,
                             });
+
+                            // In some cases, `HandleDurableTaskReplay` might exit before the DTFx-level replay
+                            // has completed. This can lead us to an inconsistent internal state. Specifically.
+                            // the `isReplay` flag might be incorrectly flagged as `true` because DTFx is still replaying.
+                            // So, if the `isReplay` flag is true, but not all History events are played, we wait.
+                            // However, if the `isReplay` flag is false, then we know DTFx has definitely completed its replay.
+                            int waitTimeInMilliseconds = 100;
+                            while (this.context.IsReplaying && !this.context.History[this.context.History.Count - 1].IsPlayed)
+                            {
+                                await Task.Delay(waitTimeInMilliseconds);
+                            }
                         }
                         else
                         {
