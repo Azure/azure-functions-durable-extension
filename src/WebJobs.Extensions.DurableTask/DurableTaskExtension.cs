@@ -294,8 +294,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
 #if FUNCTIONS_V1
             context.ApplyConfig(this.Options, "DurableTask");
+            this.loggerFactory = context.Config.LoggerFactory;
 
-            ILogger logger = context.Config.LoggerFactory.CreateLogger(LoggerCategoryName);
+            ILogger logger = this.loggerFactory.CreateLogger(LoggerCategoryName);
 
             this.TraceHelper = new EndToEndTraceHelper(logger, this.Options.LogReplayEvents);
             this.HttpApiHandler = new HttpApiHandler(this, logger);
