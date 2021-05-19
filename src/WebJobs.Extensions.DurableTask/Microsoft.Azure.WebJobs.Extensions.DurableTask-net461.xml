@@ -3176,36 +3176,27 @@
             Identifiers for each OOProc Schema Version.
             </summary>
         </member>
-        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationShim.TaskGroupingType">
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationShim.OperationType">
             <summary>
             Identifiers for each kind of action object.
             </summary>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationShim.InvokeAPIFromAction(Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationShim.AsyncAction)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationShim.InvokeAPIFromAction(Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationShim.AsyncAction,System.Boolean)">
             <summary>
             Invokes a DF API based on the input action object.
             Most APIs will return a Task to be awaited, but others such as SignalEntity do not.
             </summary>
             <param name="action">An OOProc action object representing a DF task.</param>
+            <param name="returnfireAndForgetTask">Whether to return a `CompletedTask` to represent fire-and-forget APIs. Defaults to `true`.</param>
             <returns>If the API returns a task, the DF task corresponding to the input action. Else, null.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationShim.ProcessAsyncActionsV2(Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationShim.AsyncAction[][])">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationShim.ProcessAsyncActionsV2(Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationShim.AsyncAction[])">
             <summary>
             Replays the orchestration execution from an OOProc SDK in .NET.
             This is the V2 implementation of that replay procedure.
             </summary>
-            <param name="actionSet">The OOProc actions payload.</param>
-            <returns>An awaitable Task that completes once replay completes.</returns>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationShim.GetCompoundTaskFromActions(Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationShim.AsyncAction[],System.Int32,System.Int32,Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationShim.TaskGroupingType)">
-            <summary>
-            Recursively construct a compound Task (a task of tasks) from a list of actions.
-            </summary>
             <param name="actions">The OOProc actions payload.</param>
-            <param name="index">The index at which to start processing the actions.</param>
-            <param name="depth">The current task depth, equal to the number of outer / parent tasks.</param>
-            <param name="kind">The kind of parent task: WhenAll or WhenAny.</param>
-            <returns>A compound task, either: WhenAll or WhenAny.</returns>
+            <returns>An awaitable Task that completes once replay completes.</returns>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationShim.ReplayOOProcOrchestration(Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationShim.AsyncAction[][],Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationShim.SchemaVersion)">
             <summary>
