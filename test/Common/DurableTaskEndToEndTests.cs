@@ -486,7 +486,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                      * as there are JSON (each of which has 1 EventTimestamp field), then we know that
                      * Exceptions must have had their newlines removed.
                      */
-                    string[] lines = TestHelpers.WriteSafeReadAllLines(LinuxAppServiceLogger.LoggingPath);
+                    List<string> lines = TestHelpers.WriteSafeReadAllLines(LinuxAppServiceLogger.LoggingPath);
                     int countTimeStampCols = Regex.Matches(string.Join("", lines), "\"EventTimestamp\":").Count;
                     return lines.Length == countTimeStampCols;
                 },
@@ -545,7 +545,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             await TestHelpers.WaitUntilTrue(
                 predicate: () =>
                 {
-                    string[] lines = TestHelpers.WriteSafeReadAllLines(LinuxAppServiceLogger.LoggingPath);
+                    List<string> lines = TestHelpers.WriteSafeReadAllLines(LinuxAppServiceLogger.LoggingPath);
                     IEnumerable<JObject> jsons = lines.Select(line => JObject.Parse(line));
 
                     if (!jsons.All(json => TestHelpers.IsValidJSONLog(json)))
