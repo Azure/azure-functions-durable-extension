@@ -29,16 +29,18 @@ $psCred = New-Object System.Management.Automation.PSCredential($env:AZURE_APP_ID
 Connect-AzAccount -Credential $psCred -Tenant $env:AZURE_TENANT_ID -ServicePrincipal
 Set-AzContext -SubscriptionId $subscriptionId
 
-Write-Host "New-AzFunctionAppPlan -Location $location -Name $appPlanName -ResourceGroupName $resourceGroup -Sku $sku -WorkerType $workerType -MinimumWorkerCount $minimumWorkerCount -MaximumWorkerCount $maximumWorkerCount"
-
 try {
-    New-AzFunctionAppPlan -Location $location -Name $appPlanName -ResourceGroupName $resourceGroup -Sku $sku -WorkerType $workerType -MinimumWorkerCount $minimumWorkerCount -MaximumWorkerCount $maximumWorkerCount
+    $createNewAppPlanCommand = "New-AzFunctionAppPlan -Location $location -Name $appPlanName -ResourceGroupName $resourceGroup -Sku $sku -WorkerType $workerType -MinimumWorkerCount $minimumWorkerCount -MaximumWorkerCount $maximumWorkerCount"
+    Write-Host $createNewAppPlanCommand
+    Invoke-Expression $createNewAppPlanCommand
 
     Push-OutputBinding -Name Response -Value ([HttpResponseContext]@{
         StatusCode = [HttpStatusCode]::Created
     })
 }
 catch {
+    Write-Host $_
+    Write-Host $_.ScriptStackTrace
     Push-OutputBinding -Name Response -Value ([HttpResponseContext]@{
         StatusCode = [HttpStatusCode]::BadRequest
     })

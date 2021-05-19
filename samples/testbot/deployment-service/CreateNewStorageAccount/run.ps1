@@ -23,6 +23,8 @@ try {
     })
 }
 catch {
+    Write-Host $_
+    Write-Host $_.ScriptStackTrace
     Push-OutputBinding -Name Response -Value ([HttpResponseContext]@{
         StatusCode = [HttpStatusCode]::BadRequest
     })

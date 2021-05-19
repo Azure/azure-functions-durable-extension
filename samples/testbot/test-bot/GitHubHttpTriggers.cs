@@ -76,6 +76,7 @@ namespace DFTestBot
             string command = commentBody.Substring(commandStartIndex + currCommandPrefix.Length);
 
             var sb = new StringBuilder();
+            sb.AppendLine();
             sb.AppendLine("🤖**Durable Functions Test Bot**🤖");
             sb.AppendLine();
             sb.Append("Hi! I have received your command: ");
@@ -144,6 +145,7 @@ namespace DFTestBot
                 {
                     dirPath = functionsVersion.Equals("1") ? "test\\DFPerfScenariosV1" : "test\\DFPerfScenarios";
                 }
+
                 framework = functionsVersion.Equals("1") ? "net461" : "netcoreapp3.1";
             }
 
@@ -281,7 +283,7 @@ namespace DFTestBot
                 testName = null;
                 testInfo = null;
                 testParameters = null;
-                errorMessage = "🤖**Durable Functions Test Bot**🤖" + Environment.NewLine + GetSyntaxHelp() + Environment.NewLine + Environment.NewLine + GetTestNameHelp();
+                errorMessage = Environment.NewLine + "🤖**Durable Functions Test Bot**🤖" + Environment.NewLine + GetSyntaxHelp() + Environment.NewLine + Environment.NewLine + GetTestNameHelp();
                 return false;
             }
 
@@ -295,7 +297,7 @@ namespace DFTestBot
                 testName = null;
                 testInfo = null;
                 testParameters = null;
-                errorMessage = "🤖**Durable Functions Test Bot**🤖" + Environment.NewLine + GetSyntaxHelp();
+                errorMessage = Environment.NewLine + "🤖**Durable Functions Test Bot**🤖" + Environment.NewLine + GetSyntaxHelp();
                 return false;
             }
             parts = input.Substring(runIndex, endIndex - runIndex).Split(' ');
@@ -308,7 +310,7 @@ namespace DFTestBot
             }
             else
             {
-                errorMessage = "🤖**Durable Functions Test Bot**🤖" + Environment.NewLine + GetTestNameHelp();
+                errorMessage = Environment.NewLine + "🤖**Durable Functions Test Bot**🤖" + Environment.NewLine + GetTestNameHelp();
                 return false;
             }
         }

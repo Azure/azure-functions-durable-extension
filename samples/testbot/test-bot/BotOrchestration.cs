@@ -16,10 +16,6 @@ namespace DFTestBot
 {
     public static class BotOrchestration
     {
-        // NOTE: Using environment variables in orchestrator functions is not safe since environment variables are non-deterministic.
-        //       I'm ignoring this advice for now for the sake of expediency
-        static readonly Uri DeploymentServiceBaseUrl = new Uri(Environment.GetEnvironmentVariable("DEPLOYMENT_SERVICE_BASE_URL"));
-        static readonly Uri DeploymentServiceStagingBaseUrl = new Uri(Environment.GetEnvironmentVariable("DEPLOYMENT_SERVICE_STAGING_BASE_URL"));
 
         [FunctionName(nameof(BotOrchestrator))]
         public static async Task BotOrchestrator(
@@ -48,13 +44,13 @@ namespace DFTestBot
                 // Create a new function app plan
                 if (!await TryCreateNewResource(context, log, testParameters, "CreateNewFunctionAppPlan", "CheckFunctionAppPlanStatus", "Failed to create a new function app plan!", "Successfully created a new function app plan!"))
                 {
-                    throw new Exception("Failed to create a new storage account!");
+                    throw new Exception("Failed to create a new function app plan!");
                 }
 
                 // Create a new function app with plan
                 if (!await TryCreateNewResource(context, log, testParameters, "CreateNewFunctionAppWithPlan", null, "Failed to create a new function app!", "Successfully created a new function app on an existing plan!"))
                 {
-                    throw new Exception("Failed to create a new storage account!");
+                    throw new Exception("Failed to create a new function app on an existing plan!");
                 } 
             }
             else
@@ -62,7 +58,7 @@ namespace DFTestBot
                 // Create a new function app
                 if (!await TryCreateNewResource(context, log, testParameters, "CreateNewFunctionApp", null, "Failed to create a new function app!", "Successfully created a new function app!"))
                 {
-                    throw new Exception("Failed to create a new storage account!");
+                    throw new Exception("Failed to create a new function app!");
                 }
             }
 
@@ -243,7 +239,7 @@ namespace DFTestBot
             TestParameters testParameters,
             Action<string> handleResponsePayload = null)
         {
-            Uri deploymentServiceUri = testParameters.IsStagingTest ? DeploymentServiceStagingBaseUrl : DeploymentServiceBaseUrl;
+            Uri deploymentServiceUri = await context.CallActivityAsync<Uri>(nameof(GetDeploymentServiceUri), testParameters.IsStagingTest);
 
             string httpApiPath = $"api/{functionName}";
             string deploymentFunctionKey = await GetFunctionKey(functionName, context, testParameters, log);
@@ -271,12 +267,25 @@ namespace DFTestBot
             return false;
         }
 
+        [FunctionName(nameof(GetDeploymentServiceUri))]
+        public static Uri GetDeploymentServiceUri([ActivityTrigger] bool isStagingTest)
+        {
+            Uri DeploymentServiceBaseUrl = new Uri(Environment.GetEnvironmentVariable("DEPLOYMENT_SERVICE_BASE_URL"));
+            Uri DeploymentServiceStagingBaseUrl = new Uri(Environment.GetEnvironmentVariable("DEPLOYMENT_SERVICE_STAGING_BASE_URL"));
+            Uri deploymentServiceUri = isStagingTest ? DeploymentServiceStagingBaseUrl : DeploymentServiceBaseUrl;
+            return deploymentServiceUri;
+        }
+
         private static async Task<string> GetFunctionKey(string functionName, IDurableOrchestrationContext context, TestParameters testParameters, ILogger log)
         {
             string subscriptionId = testParameters.SubscriptionId;
             string resourceGroupName = "dfdeploymentservice";
             string siteName = "dfdeploymentservice";
-            string slot = "staging";
+            string slot = "staging2";
+            
+            // TODO: get slot name
+            // TODO: get listkeys url
+
 
             string listKeyProdUrl = $"https://management.azure.com/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{siteName}/functions/{functionName}/listkeys?api-version=2019-08-01";
             string listKeySlotUrl = $"https://management.azure.com/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{siteName}/slots/{slot}/functions/{functionName}/listkeys?api-version=2019-08-01";

@@ -71,8 +71,10 @@ try
     $appName = $Request.Body.appName
     $resourceGroup = $Request.Body.resourceGroup
     Write-Host "Publishing $targetZipFilePath to $appName in resource group $resourceGroup..."
-    Write-Host "Publish-AzWebApp -ResourceGroupName $resourceGroup -Name $appName -DefaultProfile $defaultProfile -ArchivePath $targetZipFilePath -Force"
-    Publish-AzWebApp -ResourceGroupName $resourceGroup -Name $appName -DefaultProfile $defaultProfile -ArchivePath $targetZipFilePath -Force
+
+    $publishCommand = "Publish-AzWebApp -ResourceGroupName $resourceGroup -Name $appName -ArchivePath $targetZipFilePath -Force"
+    Write-Host $publishCommand
+    Invoke-Expression $publishCommand
     
     Write-Host "Deployed code to function app"
     

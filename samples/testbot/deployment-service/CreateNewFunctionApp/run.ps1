@@ -35,8 +35,9 @@ try {
         $functionsVersion = "2"
     }
 
-    Write-Host "New-AzFunctionApp -Name $appName -ResourceGroupName $resourceGroup -Location $location -StorageAccount $storageAccount -Runtime $runtime -SubscriptionId $subscriptionId -FunctionsVersion $functionsVersion -OSType $osType"
-    New-AzFunctionApp -Name $appName -ResourceGroupName $resourceGroup -Location $location -StorageAccount $storageAccount -Runtime $runtime -SubscriptionId $subscriptionId -FunctionsVersion $functionsVersion -OSType $osType
+    $createNewFunctionAppCommand = "New-AzFunctionApp -Name $appName -ResourceGroupName $resourceGroup -Location $location -StorageAccount $storageAccount -Runtime $runtime -SubscriptionId $subscriptionId -FunctionsVersion $functionsVersion -OSType $osType"
+    Write-Host $createNewFunctionAppCommand
+    Invoke-Expression $createNewFunctionAppCommand
     
     if ($originalFunctionsVersion -eq "1"){
         $v1setting = @{"FUNCTIONS_EXTENSION_VERSION"="~1"}
@@ -48,6 +49,8 @@ try {
     })
 }
 catch {
+    Write-Host $_
+    Write-Host $_.ScriptStackTrace
     Push-OutputBinding -Name Response -Value ([HttpResponseContext]@{
         StatusCode = [HttpStatusCode]::BadRequest
     })

@@ -6,6 +6,7 @@ $ErrorActionPreference = "Stop"
 
 $resourceGroupName = $Request.Body.resourceGroup
 $subscriptionId = $Request.Body.subscriptionId
+Write-Host $subscriptionId
 Set-AzContext -SubscriptionId $subscriptionId
 
 try
@@ -17,6 +18,8 @@ try
 }
 catch
 {
+    Write-Host $_
+    Write-Host $_.ScriptStackTrace
     Push-OutputBinding -Name Response -Value ([HttpResponseContext]@{
         StatusCode = [HttpStatusCode]::NotFound
     })

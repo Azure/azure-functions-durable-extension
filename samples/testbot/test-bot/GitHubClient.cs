@@ -113,7 +113,7 @@ namespace DFTestBot
             string markdownComment,
             ILogger log)
         {
-            string message = currentCommentBody + Environment.NewLine + Environment.NewLine;
+            string message = currentCommentBody + Environment.NewLine;
             message += markdownComment;
             log.LogInformation($"Sending GitHub comment: {message}");
 

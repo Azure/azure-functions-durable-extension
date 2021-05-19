@@ -12,7 +12,7 @@ Connect-AzAccount -Credential $psCred -Tenant $env:AZURE_TENANT_ID -ServicePrinc
 Set-AzContext -SubscriptionId $subscriptionId
 
 try {
-   #Create new resource group
+    #Create new resource group
     New-AzResourceGroup -Name $resourceGroupName -Location "centralUS"
 
     Push-OutputBinding -Name Response -Value ([HttpResponseContext]@{
@@ -20,6 +20,8 @@ try {
     }) 
 }
 catch {
+    Write-Host $_
+    Write-Host $_.ScriptStackTrace
     Push-OutputBinding -Name Response -Value ([HttpResponseContext]@{
         StatusCode = [HttpStatusCode]::BadRequest
     })
