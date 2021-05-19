@@ -33,7 +33,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <summary>
         /// Identifiers for each OOProc Schema Version.
         /// </summary>
-        private enum SchemaVersion
+        internal enum SchemaVersion
         {
             Original = 0,
             ReplayPatchV1 = 1,
