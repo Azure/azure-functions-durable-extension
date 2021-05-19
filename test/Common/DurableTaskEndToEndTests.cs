@@ -488,7 +488,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                      */
                     List<string> lines = TestHelpers.WriteSafeReadAllLines(LinuxAppServiceLogger.LoggingPath);
                     int countTimeStampCols = Regex.Matches(string.Join("", lines), "\"EventTimestamp\":").Count;
-                    return lines.Length == countTimeStampCols;
+                    return lines.Count == countTimeStampCols;
                 },
                 conditionDescription: "Log file exists and newlines are removed from exceptions",
                 timeout: TimeSpan.FromSeconds(65)); // enabling at least 2 file-buffer flushes (happen every 30 seconds)
