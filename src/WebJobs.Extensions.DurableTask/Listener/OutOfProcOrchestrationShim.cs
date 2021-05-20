@@ -21,16 +21,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     internal class OutOfProcOrchestrationShim
     {
         private readonly IDurableOrchestrationContext context;
-
-        private EndToEndTraceHelper traceHelper;
+        private readonly DurableCommonContext durablecommonContext;
+        private readonly EndToEndTraceHelper traceHelper;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="OutOfProcOrchestrationShim"/> class.
         /// </summary>
         /// <param name="context">The orchestration execution context.</param>
-        public OutOfProcOrchestrationShim(IDurableOrchestrationContext context)
+        /// <param name="durablecommonContext">The durable app shared context.</param>
+        /// <param name="traceHelper">The traceHelper for OOProc-specific telemetry.</param>
+        public OutOfProcOrchestrationShim(IDurableOrchestrationContext context, DurableCommonContext durablecommonContext, EndToEndTraceHelper traceHelper)
         {
             this.context = context ?? throw new ArgumentNullException(nameof(context));
+            this.durablecommonContext = durablecommonContext ?? throw new ArgumentNullException(nameof(durablecommonContext));
+            this.traceHelper = traceHelper ?? throw new ArgumentNullException(nameof(traceHelper));
         }
 
         /// <summary>
@@ -59,11 +63,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             WhenAll = 12,
         }
 
-        public void SetTraceHelper(EndToEndTraceHelper tracehelper)
-        {
-            this.traceHelper = tracehelper;
-        }
-
         // Handles replaying the Durable Task APIs that the out-of-proc function scheduled
         // with user code.
         public async Task HandleDurableTaskReplay(OrchestrationInvocationResult executionJson)
@@ -85,11 +84,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 try
                 {
-                    this.traceHelper.ProcessingOutOfProcPayload(
-                        taskHub: "TBD",
-                        instanceId: this.context.InstanceId,
-                        details: jsonText);
-
                     jObj = JObject.Parse(jsonText);
                 }
                 catch
@@ -103,7 +97,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new ArgumentException("The data returned by the out-of-process function execution was not valid json.");
             }
 
-            var execution = JsonConvert.DeserializeObject<OutOfProcOrchestratorState>(jObj.ToString());
+            string jObjectString = jObj.ToString();
+            this.traceHelper.ProcessingOutOfProcPayload(
+                functionName: this.durablecommonContext.FunctionName,
+                taskHub: this.durablecommonContext.HubName,
+                instanceId: this.context.InstanceId,
+                details: jObjectString);
+
+            var execution = JsonConvert.DeserializeObject<OutOfProcOrchestratorState>(jObjectString);
             if (execution.CustomStatus != null)
             {
                 this.context.SetCustomStatus(execution.CustomStatus);

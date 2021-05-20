@@ -25,15 +25,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             this.config = config;
             this.context = new DurableOrchestrationContext(config, durabilityProvider, name);
-            this.outOfProcShim = new OutOfProcOrchestrationShim(this.context);
+            this.outOfProcShim = new OutOfProcOrchestrationShim(this.context, this.Context, this.Config.TraceHelper);
         }
 
         public override DurableCommonContext Context => this.context;
-
-        public void SetOutOfProcTraceHelper(EndToEndTraceHelper traceHelper)
-        {
-            this.outOfProcShim.SetTraceHelper(traceHelper);
-        }
 
         public override RegisteredFunctionInfo GetFunctionInfo()
         {

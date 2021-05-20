@@ -3445,11 +3445,13 @@
             Not intended for public consumption.
             </summary>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationShim.#ctor(Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationContext)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationShim.#ctor(Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationContext,Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableCommonContext,Microsoft.Azure.WebJobs.Extensions.DurableTask.EndToEndTraceHelper)">
             <summary>
             Initializes a new instance of the <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationShim"/> class.
             </summary>
             <param name="context">The orchestration execution context.</param>
+            <param name="durablecommonContext">The durable app shared context.</param>
+            <param name="traceHelper">The traceHelper for OOProc-specific telemetry.</param>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationShim.SchemaVersion">
             <summary>

@@ -403,6 +403,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         [Event(225, Level = EventLevel.Informational)]
         public void ProcessingOutOfProcPayload(
+            string FunctionName,
             string TaskHub,
             string AppName,
             string SlotName,
@@ -410,7 +411,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string Details,
             string ExtensionVersion)
         {
-            this.WriteEvent(225, TaskHub, AppName, SlotName, InstanceId, Details, FunctionType.Orchestrator, ExtensionVersion);
+            this.WriteEvent(225, FunctionName, TaskHub, AppName, SlotName, InstanceId, Details, FunctionType.Orchestrator, ExtensionVersion);
         }
 #pragma warning restore SA1313 // Parameter names should begin with lower-case letter
     }

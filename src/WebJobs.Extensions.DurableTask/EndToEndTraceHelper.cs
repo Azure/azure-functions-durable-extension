@@ -240,11 +240,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         public void ProcessingOutOfProcPayload(
+            string functionName,
             string taskHub,
             string instanceId,
             string details)
         {
                 EtwEventSource.Instance.ProcessingOutOfProcPayload(
+                    functionName,
                     taskHub,
                     LocalAppName,
                     LocalSlotName,
@@ -252,7 +254,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     details,
                     ExtensionVersion);
 
-                this.logger.LogInformation("TBD");
+                this.logger.LogInformation(
+                    "{instanceId}: Function '{functionName} ({functionType})' is being replayed. Details: {details}. : {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
+                    instanceId, functionName, FunctionType.Orchestrator, details, taskHub, LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++);
         }
 
         public void FunctionTerminated(
