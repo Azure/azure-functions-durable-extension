@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core.Exceptions;
@@ -121,23 +122,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// Most APIs will return a Task to be awaited, but others such as SignalEntity do not.
         /// </summary>
         /// <param name="action">An OOProc action object representing a DF task.</param>
-        /// <param name="returnfireAndForgetTask">Whether to return a `CompletedTask` to represent fire-and-forget APIs. Defaults to `true`.</param>
         /// <returns>If the API returns a task, the DF task corresponding to the input action. Else, null.</returns>
-        private Task InvokeAPIFromAction(AsyncAction action, bool returnfireAndForgetTask = true)
+        private Task InvokeAPIFromAction(AsyncAction action)
         {
-            // Helper function to obtain a list of tasks for compoundTasks.
-            Func<AsyncAction[], Task[]> mapInvokeAPIFromAction = (actions) =>
-            {
-                Task[] tasks = new Task[actions.Length];
-                for (var i = 0; i < actions.Length; i++)
-                {
-                    tasks[i] = this.InvokeAPIFromAction(actions[i]);
-                }
 
-                return tasks;
-            };
-
-            Task fireAndForgetTask = returnfireAndForgetTask ? Task.CompletedTask : null;
+            Task fireAndForgetTask = Task.CompletedTask;
             Task task = null;
             switch (action.ActionType)
             {
@@ -207,13 +196,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     task = this.context.CallHttpAsync(action.HttpRequest);
                     break;
                 case AsyncActionType.WhenAll:
-                    task = Task.WhenAll(mapInvokeAPIFromAction.Invoke(action.CompoundActions));
+                    task = Task.WhenAll(action.CompoundActions.Select(x => this.InvokeAPIFromAction(x)));
                     break;
                 case AsyncActionType.WhenAny:
-                    task = Task.WhenAny(mapInvokeAPIFromAction.Invoke(action.CompoundActions));
+                    task = Task.WhenAny(action.CompoundActions.Select(x => this.InvokeAPIFromAction(x)));
                     break;
                 default:
-                    break;
+                    throw new Exception($"Reached default-case when processing AsyncActionType of value: ${action.ActionType}.");
             }
 
             return task;
@@ -276,8 +265,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 Task newTask;
                 foreach (AsyncAction action in actionSet)
                 {
-                    newTask = this.InvokeAPIFromAction(action, returnfireAndForgetTask: false);
-                    if (newTask != null)
+                    newTask = this.InvokeAPIFromAction(action);
+                    if (newTask != Task.CompletedTask)
                     {
                         tasks.Add(newTask);
                     }
