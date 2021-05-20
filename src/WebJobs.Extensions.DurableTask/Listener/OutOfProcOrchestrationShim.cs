@@ -22,7 +22,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     {
         private readonly IDurableOrchestrationContext context;
 
-        private EndToEndTraceHelper TraceHelper;
+        private EndToEndTraceHelper traceHelper;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="OutOfProcOrchestrationShim"/> class.
@@ -31,11 +31,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public OutOfProcOrchestrationShim(IDurableOrchestrationContext context)
         {
             this.context = context ?? throw new ArgumentNullException(nameof(context));
-        }
-
-        public void SetTraceHelper(EndToEndTraceHelper tracehelper)
-        {
-            this.TraceHelper = tracehelper;
         }
 
         /// <summary>
@@ -64,6 +59,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             WhenAll = 12,
         }
 
+        public void SetTraceHelper(EndToEndTraceHelper tracehelper)
+        {
+            this.traceHelper = tracehelper;
+        }
+
         // Handles replaying the Durable Task APIs that the out-of-proc function scheduled
         // with user code.
         public async Task HandleDurableTaskReplay(OrchestrationInvocationResult executionJson)
@@ -85,7 +85,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 try
                 {
-                    this.TraceHelper.ProcessingOutOfProcPayload("", "", jsonText, "", this.context.IsReplaying);
+                    this.traceHelper.ProcessingOutOfProcPayload(
+                        taskHub: "TBD",
+                        instanceId: this.context.InstanceId,
+                        details: jsonText);
+
                     jObj = JObject.Parse(jsonText);
                 }
                 catch
@@ -133,7 +137,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <returns>If the API returns a task, the DF task corresponding to the input action. Else, null.</returns>
         private Task InvokeAPIFromAction(AsyncAction action)
         {
-
             Task fireAndForgetTask = Task.CompletedTask;
             Task task = null;
             switch (action.ActionType)

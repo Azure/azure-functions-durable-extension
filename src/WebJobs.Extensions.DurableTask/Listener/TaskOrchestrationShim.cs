@@ -19,7 +19,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly DurableOrchestrationContext context;
         private readonly OutOfProcOrchestrationShim outOfProcShim;
         private readonly DurableTaskExtension config;
-        private EndToEndTraceHelper traceHelper;
 
         public TaskOrchestrationShim(DurableTaskExtension config, DurabilityProvider durabilityProvider, string name)
             : base(config)
@@ -29,12 +28,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.outOfProcShim = new OutOfProcOrchestrationShim(this.context);
         }
 
+        public override DurableCommonContext Context => this.context;
+
         public void SetOutOfProcTraceHelper(EndToEndTraceHelper traceHelper)
         {
             this.outOfProcShim.SetTraceHelper(traceHelper);
         }
-
-        public override DurableCommonContext Context => this.context;
 
         public override RegisteredFunctionInfo GetFunctionInfo()
         {
