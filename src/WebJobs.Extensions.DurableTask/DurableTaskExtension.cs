@@ -648,6 +648,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return;
             }
 
+            shim.SetOutOfProcTraceHelper(this.TraceHelper);
             DurableOrchestrationContext context = (DurableOrchestrationContext)shim.Context;
 
             OrchestrationRuntimeState orchestrationRuntimeState = dispatchContext.GetProperty<OrchestrationRuntimeState>();

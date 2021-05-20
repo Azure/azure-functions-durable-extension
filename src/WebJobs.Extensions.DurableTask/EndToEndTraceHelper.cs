@@ -239,6 +239,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
+        public void ProcessingOutOfProcPayload(
+            string taskHub,
+            string instanceId,
+            string details,
+            string functionType,
+            bool isReplay)
+        {
+                EtwEventSource.Instance.ProcessingOutOfProcPayload(
+                    taskHub,
+                    LocalAppName,
+                    LocalSlotName,
+                    details,
+                    instanceId,
+                    functionType.ToString(),
+                    ExtensionVersion,
+                    isReplay);
+
+                this.logger.LogInformation("TBD");
+
+        }
+
         public void FunctionTerminated(
             string hubName,
             string functionName,

@@ -22,6 +22,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     {
         private readonly IDurableOrchestrationContext context;
 
+        private EndToEndTraceHelper TraceHelper;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="OutOfProcOrchestrationShim"/> class.
         /// </summary>
@@ -29,6 +31,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public OutOfProcOrchestrationShim(IDurableOrchestrationContext context)
         {
             this.context = context ?? throw new ArgumentNullException(nameof(context));
+        }
+
+        public void SetTraceHelper(EndToEndTraceHelper tracehelper)
+        {
+            this.TraceHelper = tracehelper;
         }
 
         /// <summary>
@@ -78,6 +85,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 try
                 {
+                    this.TraceHelper.ProcessingOutOfProcPayload("", "", jsonText, "", this.context.IsReplaying);
                     jObj = JObject.Parse(jsonText);
                 }
                 catch
