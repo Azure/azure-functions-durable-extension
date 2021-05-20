@@ -20,14 +20,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
         private readonly DurableTaskOptions options;
         private TelemetryClient telemetryClient;
         private EndToEndTraceHelper endToEndTraceHelper;
+        private INameResolver nameResolver;
 
         /// <summary>
         /// Constructor for initializing Distributed Tracing.
         /// </summary>
         /// <param name="options">DurableTask options.</param>
-        public TelemetryActivator(IOptions<DurableTaskOptions> options)
+        /// <param name="nameResolver">Name resolver used for environment variables.</param>
+        public TelemetryActivator(IOptions<DurableTaskOptions> options, INameResolver nameResolver)
         {
             this.options = options.Value;
+            this.nameResolver = nameResolver;
         }
 
         /// <summary>
@@ -96,9 +99,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
             telemetryInitializer.ExcludeComponentCorrelationHttpHeadersOnDomains.Add("127.0.0.1");
             config.TelemetryInitializers.Add(telemetryInitializer);
 
-            if (Environment.GetEnvironmentVariable("APPINSIGHTS_INSTRUMENTATIONKEY") != null)
+            string resolvedInstrumentationKey = this.nameResolver.Resolve("APPINSIGHTS_INSTRUMENTATIONKEY");
+            if (!string.IsNullOrEmpty(resolvedInstrumentationKey))
             {
-                config.InstrumentationKey = Environment.GetEnvironmentVariable("APPINSIGHTS_INSTRUMENTATIONKEY");
+                config.InstrumentationKey = resolvedInstrumentationKey;
             }
             else
             {
