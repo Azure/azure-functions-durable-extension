@@ -171,11 +171,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     {
                         if (orchestratorInfo.IsOutOfProc)
                         {
-                            this.TraceOutOfProcReplay(returnValue);
-                            await this.outOfProcShim.HandleDurableTaskReplay(new OrchestrationInvocationResult()
-                            {
-                                ReturnValue = returnValue,
-                            });
+                            OrchestrationInvocationResult invocationResult = this.GetInvocationResult(returnValue);
+                            await this.outOfProcShim.HandleDurableTaskReplay(invocationResult);
                         }
                         else
                         {
@@ -196,11 +193,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     try
                     {
-                        await this.outOfProcShim.HandleDurableTaskReplay(new OrchestrationInvocationResult()
-                        {
-                            ReturnValue = returnValue,
-                            Exception = e,
-                        });
+                        OrchestrationInvocationResult invocationResult = this.GetInvocationResult(returnValue, e);
+                        await this.outOfProcShim.HandleDurableTaskReplay(invocationResult);
                     }
                     catch (OrchestrationFailureException ex)
                     {
@@ -254,11 +248,56 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
+        private OrchestrationInvocationResult GetInvocationResult(object ooprocResult, Exception ex = null)
+        {
+            JObject resultJObject = this.ParseOOProcResult(ooprocResult);
+            string resultJSONString = resultJObject.ToString();
+
+            this.Config.TraceHelper.ProcessingOutOfProcPayload(
+                functionName: this.Context.FunctionName,
+                taskHub: this.Context.HubName,
+                instanceId: this.Context.InstanceId,
+                details: resultJSONString);
+
+            OrchestrationInvocationResult invocationResult = new OrchestrationInvocationResult()
+            {
+                ReturnValue = ooprocResult,
+                Exception = ex,
+                JsonString = resultJSONString,
+            };
+            return invocationResult;
+        }
+
+        private JObject ParseOOProcResult(object result)
+        {
+            JObject jObj = result as JObject;
+            if (jObj == null && result is string jsonText)
+            {
+                try
+                {
+                    jObj = JObject.Parse(jsonText);
+                }
+                catch
+                {
+                    throw new ArgumentException("Out of proc orchestrators must return a valid JSON schema");
+                }
+            }
+
+            if (jObj == null)
+            {
+                throw new ArgumentException("The data returned by the out-of-process function execution was not valid json.");
+            }
+
+            return jObj;
+        }
+
         internal class OrchestrationInvocationResult
         {
             public object ReturnValue { get; set; }
 
             public Exception Exception { get; set; }
+
+            public string JsonString { get; set; }
         }
     }
 }

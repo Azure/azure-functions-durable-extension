@@ -71,33 +71,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        internal JObject ParseOOProcResult(OrchestrationInvocationResult result)
-        {
-            JObject jObj = result.ReturnValue as JObject;
-            if (jObj == null && result.ReturnValue is string jsonText)
-            {
-                try
-                {
-                    jObj = JObject.Parse(jsonText);
-                }
-                catch
-                {
-                    throw new ArgumentException("Out of proc orchestrators must return a valid JSON schema");
-                }
-            }
-
-            if (jObj == null)
-            {
-                throw new ArgumentException("The data returned by the out-of-process function execution was not valid json.");
-            }
-
-            return jObj;
-        }
-
         internal async Task<bool> ScheduleDurableTaskEvents(OrchestrationInvocationResult result)
         {
-            JObject jObj = this.ParseOOProcResult(result);
-            var execution = JsonConvert.DeserializeObject<OutOfProcOrchestratorState>(jObj.ToString());
+            var execution = JsonConvert.DeserializeObject<OutOfProcOrchestratorState>(result.JsonString);
             if (execution.CustomStatus != null)
             {
                 this.context.SetCustomStatus(execution.CustomStatus);
