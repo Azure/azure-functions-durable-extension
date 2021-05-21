@@ -73,7 +73,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal async Task<bool> ScheduleDurableTaskEvents(OrchestrationInvocationResult result)
         {
-            var execution = JsonConvert.DeserializeObject<OutOfProcOrchestratorState>(result.JsonString);
+            var execution = result.Json.ToObject<OutOfProcOrchestratorState>();
             if (execution.CustomStatus != null)
             {
                 this.context.SetCustomStatus(execution.CustomStatus);
