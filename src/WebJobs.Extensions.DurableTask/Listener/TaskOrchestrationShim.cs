@@ -250,8 +250,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private OrchestrationInvocationResult GetInvocationResult(object ooprocResult, Exception ex = null)
         {
-            JObject resultJObject = this.ParseOOProcResult(ooprocResult);
-            string resultJSONString = resultJObject.ToString();
+            (JObject resultJObject, string resultJSONString) = this.ParseOOProcResult(ooprocResult);
 
             this.Config.TraceHelper.ProcessingOutOfProcPayload(
                 functionName: this.Context.FunctionName,
@@ -263,32 +262,41 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 ReturnValue = ooprocResult,
                 Exception = ex,
+                Json = resultJObject,
                 JsonString = resultJSONString,
             };
             return invocationResult;
         }
 
-        private JObject ParseOOProcResult(object result)
+        private (JObject, string) ParseOOProcResult(object result)
         {
-            JObject jObj = result as JObject;
-            if (jObj == null && result is string jsonText)
+            string jsonString;
+            JObject json = result as JObject;
+            if (json == null)
             {
-                try
+                if (result is string text)
                 {
-                    jObj = JObject.Parse(jsonText);
+                    try
+                    {
+                        jsonString = text;
+                        json = JObject.Parse(text);
+                    }
+                    catch
+                    {
+                        throw new ArgumentException("Out of proc orchestrators must return a valid JSON schema");
+                    }
                 }
-                catch
+                else
                 {
-                    throw new ArgumentException("Out of proc orchestrators must return a valid JSON schema");
+                    throw new ArgumentException("The data returned by the out-of-process function execution was not valid json.");
                 }
             }
-
-            if (jObj == null)
+            else // result was a JObject all long, need to assign jsonString
             {
-                throw new ArgumentException("The data returned by the out-of-process function execution was not valid json.");
+                jsonString = json.ToString();
             }
 
-            return jObj;
+            return (json, jsonString);
         }
 
         internal class OrchestrationInvocationResult
@@ -296,6 +304,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             public object ReturnValue { get; set; }
 
             public Exception Exception { get; set; }
+
+            public JObject Json { get; set; }
 
             public string JsonString { get; set; }
         }
