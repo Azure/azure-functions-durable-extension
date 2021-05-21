@@ -72,6 +72,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             OrchestrationInvocationResult result = new OrchestrationInvocationResult()
             {
                 ReturnValue = jsonObject,
+                Json = jsonObject,
+                JsonString = executionJson,
             };
             bool moreWork = await shim.ScheduleDurableTaskEvents(result);
 
@@ -136,6 +138,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             OrchestrationInvocationResult result = new OrchestrationInvocationResult()
             {
                 ReturnValue = jsonObject,
+                Json = jsonObject,
+                JsonString = executionJson,
             };
             bool moreWork = await shim.ScheduleDurableTaskEvents(result);
 
@@ -191,6 +195,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             OrchestrationInvocationResult result = new OrchestrationInvocationResult()
             {
                 ReturnValue = jsonObject,
+                Json = jsonObject,
+                JsonString = executionJson,
             };
             bool moreWork = await shim.ScheduleDurableTaskEvents(result);
 
