@@ -25,7 +25,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             this.config = config;
             this.context = new DurableOrchestrationContext(config, durabilityProvider, name);
-            this.outOfProcShim = new OutOfProcOrchestrationShim(this.context, this.Context, this.Config.TraceHelper);
+            this.outOfProcShim = new OutOfProcOrchestrationShim(this.context);
         }
 
         public override DurableCommonContext Context => this.context;
@@ -134,6 +134,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return serializedOutput;
         }
 
+        private void TraceOutOfProcReplay(object result)
+        {
+            string details;
+            if (result is JObject)
+            {
+                details = ((JObject)result).ToString();
+            }
+            else
+            {
+                details = (string)result;
+            }
+
+            this.Config.TraceHelper.ProcessingOutOfProcPayload(
+                functionName: this.Context.FunctionName,
+                taskHub: this.Context.HubName,
+                instanceId: this.Context.InstanceId,
+                details: details);
+        }
+
         // Responsible for invoking the function, handling the exception, set the output, and if
         // the function execution is out-of-process, handles the replay.
         private async Task InvokeUserCodeAndHandleResults(
@@ -152,6 +171,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     {
                         if (orchestratorInfo.IsOutOfProc)
                         {
+                            this.TraceOutOfProcReplay(returnValue);
                             await this.outOfProcShim.HandleDurableTaskReplay(new OrchestrationInvocationResult()
                             {
                                 ReturnValue = returnValue,

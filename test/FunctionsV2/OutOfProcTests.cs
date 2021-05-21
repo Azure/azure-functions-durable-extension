@@ -44,10 +44,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 .Callback<DurableHttpRequest>(req => request = req)
                 .Returns(Task.FromResult(new DurableHttpResponse(System.Net.HttpStatusCode.OK)));
 
-            var durableCommonContextMock = new Mock<DurableCommonContext>();
-            var traceHelperMock = new Mock<EndToEndTraceHelper>();
-
-            var shim = new OutOfProcOrchestrationShim(contextMock.Object, durableCommonContextMock.Object, traceHelperMock.Object);
+            var shim = new OutOfProcOrchestrationShim(contextMock.Object);
 
             var executionJson = @"
 {
@@ -114,10 +111,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 .Callback<DurableHttpRequest>(req => request = req)
                 .Returns(Task.FromResult(new DurableHttpResponse(System.Net.HttpStatusCode.OK)));
 
-            var durableCommonContextMock = new Mock<DurableCommonContext>();
-            var traceHelperMock = new Mock<EndToEndTraceHelper>();
-
-            var shim = new OutOfProcOrchestrationShim(contextMock.Object, durableCommonContextMock.Object, traceHelperMock.Object);
+            var shim = new OutOfProcOrchestrationShim(contextMock.Object);
 
             var executionJson = @"
 {
@@ -168,10 +162,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 .Callback<DurableHttpRequest>(req => request = req)
                 .Returns(Task.FromResult(new DurableHttpResponse(System.Net.HttpStatusCode.OK)));
 
-            var durableCommonContextMock = new Mock<DurableCommonContext>();
-            var traceHelperMock = new Mock<EndToEndTraceHelper>();
-
-            var shim = new OutOfProcOrchestrationShim(contextMock.Object, durableCommonContextMock.Object, traceHelperMock.Object);
+            var shim = new OutOfProcOrchestrationShim(contextMock.Object);
 
             var executionJson = @"
 {

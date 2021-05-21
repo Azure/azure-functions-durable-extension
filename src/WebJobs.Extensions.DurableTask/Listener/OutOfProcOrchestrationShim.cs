@@ -21,20 +21,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     internal class OutOfProcOrchestrationShim
     {
         private readonly IDurableOrchestrationContext context;
-        private readonly DurableCommonContext durablecommonContext;
-        private readonly EndToEndTraceHelper traceHelper;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="OutOfProcOrchestrationShim"/> class.
         /// </summary>
         /// <param name="context">The orchestration execution context.</param>
-        /// <param name="durablecommonContext">The durable app shared context.</param>
-        /// <param name="traceHelper">The traceHelper for OOProc-specific telemetry.</param>
-        public OutOfProcOrchestrationShim(IDurableOrchestrationContext context, DurableCommonContext durablecommonContext, EndToEndTraceHelper traceHelper)
+        public OutOfProcOrchestrationShim(IDurableOrchestrationContext context)
         {
             this.context = context ?? throw new ArgumentNullException(nameof(context));
-            this.durablecommonContext = durablecommonContext ?? throw new ArgumentNullException(nameof(durablecommonContext));
-            this.traceHelper = traceHelper ?? throw new ArgumentNullException(nameof(traceHelper));
         }
 
         /// <summary>
@@ -77,9 +71,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        internal async Task<bool> ScheduleDurableTaskEvents(OrchestrationInvocationResult result)
+        internal JObject ParseOOProcResult(OrchestrationInvocationResult result)
         {
-            var jObj = result.ReturnValue as JObject;
+            JObject jObj = result.ReturnValue as JObject;
             if (jObj == null && result.ReturnValue is string jsonText)
             {
                 try
@@ -97,14 +91,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new ArgumentException("The data returned by the out-of-process function execution was not valid json.");
             }
 
-            string jObjectString = jObj.ToString();
-            this.traceHelper.ProcessingOutOfProcPayload(
-                functionName: this.durablecommonContext.FunctionName,
-                taskHub: this.durablecommonContext.HubName,
-                instanceId: this.context.InstanceId,
-                details: jObjectString);
+            return jObj;
+        }
 
-            var execution = JsonConvert.DeserializeObject<OutOfProcOrchestratorState>(jObjectString);
+        internal async Task<bool> ScheduleDurableTaskEvents(OrchestrationInvocationResult result)
+        {
+            JObject jObj = this.ParseOOProcResult(result);
+            var execution = JsonConvert.DeserializeObject<OutOfProcOrchestratorState>(jObj.ToString());
             if (execution.CustomStatus != null)
             {
                 this.context.SetCustomStatus(execution.CustomStatus);
