@@ -245,18 +245,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string instanceId,
             string details)
         {
-                EtwEventSource.Instance.ProcessingOutOfProcPayload(
-                    functionName,
-                    taskHub,
-                    LocalAppName,
-                    LocalSlotName,
-                    instanceId,
-                    details,
-                    ExtensionVersion);
+            EtwEventSource.Instance.ProcessingOutOfProcPayload(
+                functionName,
+                taskHub,
+                LocalAppName,
+                LocalSlotName,
+                instanceId,
+                details,
+                ExtensionVersion);
 
-                this.logger.LogInformation(
-                    "{instanceId}: Function '{functionName} ({functionType})' is being replayed. Details: {details}. : {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
-                    instanceId, functionName, FunctionType.Orchestrator, details, taskHub, LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++);
+            this.logger.LogInformation(
+                "{instanceId}: Function '{functionName} ({functionType})' is being replayed. Details: {details}. : {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
+                instanceId, functionName, FunctionType.Orchestrator, details, taskHub, LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++);
         }
 
         public void FunctionTerminated(

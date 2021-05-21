@@ -37,7 +37,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         internal enum SchemaVersion
         {
             Original = 0,
-            ReplayPatchV1 = 1,
+            V2 = 1,
         }
 
         private enum AsyncActionType
@@ -125,7 +125,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         /// <summary>
         /// Invokes a DF API based on the input action object.
-        /// Most APIs will return a Task to be awaited, but others such as SignalEntity do not.
         /// </summary>
         /// <param name="action">An OOProc action object representing a DF task.</param>
         /// <returns>If the API returns a task, the DF task corresponding to the input action. Else, null.</returns>
@@ -215,7 +214,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         /// <summary>
         /// Replays the orchestration execution from an OOProc SDK in .NET.
-        /// This is the V2 implementation of that replay procedure.
         /// </summary>
         /// <param name="actions">The OOProc actions payload.</param>
         /// <returns>An awaitable Task that completes once replay completes.</returns>
@@ -238,7 +236,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             switch (schema)
             {
-                case SchemaVersion.ReplayPatchV1:
+                case SchemaVersion.V2:
                     // In this schema, action arrays should be 1 dimensional (1 action per yield), but due to legacy behavior they're nested within a 2-dimensional array.
                     if (actions.Length != 1)
                     {
@@ -248,12 +246,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     await this.ProcessAsyncActionsV2(actions[0]);
                     break;
                 default: // same as: case SchemaVersion.Original
-                    await this.ProcessAsyncActions(actions);
+                    await this.ProcessAsyncActionsV1(actions);
                     break;
             }
         }
 
-        private async Task ProcessAsyncActions(AsyncAction[][] actions)
+        private async Task ProcessAsyncActionsV1(AsyncAction[][] actions)
         {
             if (actions == null)
             {

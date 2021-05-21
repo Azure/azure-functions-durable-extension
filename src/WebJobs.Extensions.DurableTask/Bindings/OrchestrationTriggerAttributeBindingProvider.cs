@@ -177,7 +177,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     new JProperty("instanceId", arg.InstanceId),
                     new JProperty("isReplaying", arg.IsReplaying),
                     new JProperty("parentInstanceId", arg.ParentInstanceId),
-                    new JProperty("upperSchemaVersion", SchemaVersion.ReplayPatchV1));
+                    new JProperty("upperSchemaVersion", SchemaVersion.V2));
                 return contextObject.ToString();
             }
         }
