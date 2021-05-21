@@ -207,7 +207,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     task = Task.WhenAny(action.CompoundActions.Select(x => this.InvokeAPIFromAction(x)));
                     break;
                 default:
-                    throw new Exception($"Reached default-case when processing AsyncActionType of value: ${action.ActionType}.");
+                    throw new Exception($"Received an unexpected action type from the out-of-proc function: '${action.ActionType}'.");
             }
 
             return task;
