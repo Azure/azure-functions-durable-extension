@@ -401,7 +401,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.WriteEvent(224, TaskHub, AppName, SlotName, FunctionName, InstanceId, Reason, FunctionType, ExtensionVersion, IsReplay);
         }
 
-        [Event(225, Level = EventLevel.Informational)]
+        [Event(225, Level = EventLevel.Verbose)]
         public void ProcessingOutOfProcPayload(
             string FunctionName,
             string TaskHub,
