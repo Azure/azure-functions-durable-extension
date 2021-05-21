@@ -254,8 +254,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 details,
                 ExtensionVersion);
 
-            this.logger.LogInformation(
-                "{instanceId}: Function '{functionName} ({functionType})' is being replayed. Details: {details}. : {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
+            this.logger.LogDebug(
+                "{instanceId}: Function '{functionName} ({functionType})' returned the following OOProc orchestration state: {details}. : {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
                 instanceId, functionName, FunctionType.Orchestrator, details, taskHub, LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++);
         }
 

@@ -69,12 +69,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             // Feed the out-of-proc execution result JSON to the out-of-proc shim.
             var jsonObject = JObject.Parse(executionJson);
-            OrchestrationInvocationResult result = new OrchestrationInvocationResult()
-            {
-                ReturnValue = jsonObject,
-                Json = jsonObject,
-                JsonString = executionJson,
-            };
+            OrchestrationInvocationResult result = new OrchestrationInvocationResult(jsonObject);
             bool moreWork = await shim.ScheduleDurableTaskEvents(result);
 
             // The request should not have completed because one additional replay is needed
@@ -135,12 +130,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             // Feed the out-of-proc execution result JSON to the out-of-proc shim.
             var jsonObject = JObject.Parse(executionJson);
-            OrchestrationInvocationResult result = new OrchestrationInvocationResult()
-            {
-                ReturnValue = jsonObject,
-                Json = jsonObject,
-                JsonString = executionJson,
-            };
+            OrchestrationInvocationResult result = new OrchestrationInvocationResult(jsonObject);
             bool moreWork = await shim.ScheduleDurableTaskEvents(result);
 
             Assert.NotNull(request);
@@ -192,12 +182,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             // Feed the out-of-proc execution result JSON to the out-of-proc shim.
             var jsonObject = JObject.Parse(executionJson);
-            OrchestrationInvocationResult result = new OrchestrationInvocationResult()
-            {
-                ReturnValue = jsonObject,
-                Json = jsonObject,
-                JsonString = executionJson,
-            };
+            OrchestrationInvocationResult result = new OrchestrationInvocationResult(jsonObject);
             bool moreWork = await shim.ScheduleDurableTaskEvents(result);
 
             Assert.NotNull(request);

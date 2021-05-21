@@ -221,9 +221,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                     await this.ProcessAsyncActionsV2(actions[0]);
                     break;
-                default: // same as: case SchemaVersion.Original
+                case SchemaVersion.Original:
                     await this.ProcessAsyncActionsV1(actions);
                     break;
+                default:
+                    throw new ArgumentException($"The OOProc schema of of version \"{schema}\" is unsupported by this durable-extension version.");
             }
         }
 

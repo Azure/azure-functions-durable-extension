@@ -134,25 +134,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return serializedOutput;
         }
 
-        private void TraceOutOfProcReplay(object result)
-        {
-            string details;
-            if (result is JObject)
-            {
-                details = ((JObject)result).ToString();
-            }
-            else
-            {
-                details = (string)result;
-            }
-
-            this.Config.TraceHelper.ProcessingOutOfProcPayload(
-                functionName: this.Context.FunctionName,
-                taskHub: this.Context.HubName,
-                instanceId: this.Context.InstanceId,
-                details: details);
-        }
-
         // Responsible for invoking the function, handling the exception, set the output, and if
         // the function execution is out-of-process, handles the replay.
         private async Task InvokeUserCodeAndHandleResults(
@@ -171,8 +152,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     {
                         if (orchestratorInfo.IsOutOfProc)
                         {
-                            OrchestrationInvocationResult invocationResult = this.GetInvocationResult(returnValue);
-                            await this.outOfProcShim.HandleDurableTaskReplay(invocationResult);
+                            await this.TraceAndReplay(returnValue);
                         }
                         else
                         {
@@ -193,8 +173,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     try
                     {
-                        OrchestrationInvocationResult invocationResult = this.GetInvocationResult(returnValue, e);
-                        await this.outOfProcShim.HandleDurableTaskReplay(invocationResult);
+                        await this.TraceAndReplay(returnValue, e);
                     }
                     catch (OrchestrationFailureException ex)
                     {
@@ -248,66 +227,67 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        private OrchestrationInvocationResult GetInvocationResult(object ooprocResult, Exception ex = null)
+        private async Task TraceAndReplay(object result, Exception ex = null)
         {
-            (JObject resultJObject, string resultJSONString) = this.ParseOOProcResult(ooprocResult);
-
+            var invocationResult = new OrchestrationInvocationResult(result, ex);
             this.Config.TraceHelper.ProcessingOutOfProcPayload(
                 functionName: this.Context.FunctionName,
                 taskHub: this.Context.HubName,
                 instanceId: this.Context.InstanceId,
-                details: resultJSONString);
-
-            OrchestrationInvocationResult invocationResult = new OrchestrationInvocationResult()
-            {
-                ReturnValue = ooprocResult,
-                Exception = ex,
-                Json = resultJObject,
-                JsonString = resultJSONString,
-            };
-            return invocationResult;
-        }
-
-        private (JObject, string) ParseOOProcResult(object result)
-        {
-            string jsonString;
-            JObject json = result as JObject;
-            if (json == null)
-            {
-                if (result is string text)
-                {
-                    try
-                    {
-                        jsonString = text;
-                        json = JObject.Parse(text);
-                    }
-                    catch
-                    {
-                        throw new ArgumentException("Out of proc orchestrators must return a valid JSON schema");
-                    }
-                }
-                else
-                {
-                    throw new ArgumentException("The data returned by the out-of-process function execution was not valid json.");
-                }
-            }
-            else // result was a JObject all long, need to assign jsonString
-            {
-                jsonString = json.ToString();
-            }
-
-            return (json, jsonString);
+                details: invocationResult.JsonString);
+            await this.outOfProcShim.HandleDurableTaskReplay(invocationResult);
         }
 
         internal class OrchestrationInvocationResult
         {
-            public object ReturnValue { get; set; }
+            public OrchestrationInvocationResult(object returnValue, Exception ex = null)
+            {
+                this.ReturnValue = returnValue;
+                this.Exception = ex;
 
-            public Exception Exception { get; set; }
+                (JObject resultJObject, string resultJSONString) = this.ParseOOProcResult(returnValue);
+                this.Json = resultJObject;
+                this.JsonString = resultJSONString;
+            }
 
-            public JObject Json { get; set; }
+            public object ReturnValue { get; private set; }
 
-            public string JsonString { get; set; }
+            public Exception Exception { get; private set; }
+
+            public JObject Json { get; private set; }
+
+            public string JsonString { get; private set; }
+
+            private (JObject, string) ParseOOProcResult(object result)
+            {
+                string jsonString;
+                JObject json = result as JObject;
+                if (json == null)
+                {
+                    if (result is string text)
+                    {
+                        try
+                        {
+                            jsonString = text;
+                            json = JObject.Parse(text);
+                        }
+                        catch
+                        {
+                            throw new ArgumentException("Out of proc orchestrators must return a valid JSON schema");
+                        }
+                    }
+                    else
+                    {
+                        throw new ArgumentException("The data returned by the out-of-process function execution was not valid json.");
+                    }
+                }
+                else // result was a JObject all long, need to assign jsonString
+                {
+                    jsonString = json.ToString();
+                }
+
+                return (json, jsonString);
+            }
         }
     }
 }
