@@ -250,13 +250,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.JsonString = resultJSONString;
             }
 
-            public object ReturnValue { get; private set; }
+            public object ReturnValue { get; }
 
-            public Exception Exception { get; private set; }
+            public Exception Exception { get; }
 
-            public JObject Json { get; private set; }
+            public JObject Json { get; }
 
-            public string JsonString { get; private set; }
+            public string JsonString { get; }
 
             private (JObject, string) ParseOOProcResult(object result)
             {
