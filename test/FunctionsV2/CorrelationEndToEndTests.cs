@@ -192,12 +192,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 string warningMessage = "'APPINSIGHTS_INSTRUMENTATIONKEY' isn't defined in the current environment variables, but Distributed Tracing is enabled. Please set 'APPINSIGHTS_INSTRUMENTATIONKEY' to use Distributed Tracing.";
                 var warningLogMessage = this.loggerProvider.GetAllLogMessages().Where(l => l.FormattedMessage.StartsWith(warningMessage));
 
+                string settingUpTelemetryClientMessage = "Setting up the telemetry client...";
+                var settingUpTelemetryClientLogMessage = this.loggerProvider.GetAllLogMessages().Where(l => l.FormattedMessage.StartsWith(settingUpTelemetryClientMessage));
+
+                string readingInstrumentationKeyMessage = "Reading APPINSIGHTS_INSTRUMENTATIONKEY...";
+                var readingInstrumentationKeyLogMessage = this.loggerProvider.GetAllLogMessages().Where(l => l.FormattedMessage.StartsWith(readingInstrumentationKeyMessage));
+
                 if (keyIsSet)
                 {
+                    Assert.Single(settingUpTelemetryClientLogMessage);
+                    Assert.Single(readingInstrumentationKeyLogMessage);
                     Assert.Empty(warningLogMessage);
                 }
                 else
                 {
+                    Assert.Single(settingUpTelemetryClientLogMessage);
+                    Assert.Empty(readingInstrumentationKeyLogMessage);
                     Assert.Single(warningLogMessage);
                 }
             }

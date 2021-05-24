@@ -88,6 +88,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
 
         private void SetUpTelemetryClient()
         {
+            this.endToEndTraceHelper.ExtensionInformationalEvent(
+                    hubName: this.options.HubName,
+                    functionName: string.Empty,
+                    instanceId: string.Empty,
+                    message: "Setting up the telemetry client...",
+                    writeToUserLogs: true);
+
             TelemetryConfiguration config = TelemetryConfiguration.CreateDefault();
             if (this.OnSend != null)
             {
@@ -102,6 +109,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
             string resolvedInstrumentationKey = this.nameResolver.Resolve("APPINSIGHTS_INSTRUMENTATIONKEY");
             if (!string.IsNullOrEmpty(resolvedInstrumentationKey))
             {
+                this.endToEndTraceHelper.ExtensionInformationalEvent(
+                    hubName: this.options.HubName,
+                    functionName: string.Empty,
+                    instanceId: string.Empty,
+                    message: "Reading APPINSIGHTS_INSTRUMENTATIONKEY...",
+                    writeToUserLogs: true);
+
                 config.InstrumentationKey = resolvedInstrumentationKey;
             }
             else
