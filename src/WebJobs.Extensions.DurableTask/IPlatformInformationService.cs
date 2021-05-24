@@ -35,6 +35,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         bool InWindowsConsumption();
 
         /// <summary>
+        /// Determines is the language worker is for Python.
+        /// </summary>
+        /// <returns>True if the language worker is for Python. Otherwise, False.</returns>
+        bool IsPython();
+
+        /// <summary>
         /// Determines if the application is running in a Linux AppService plan.
         /// </summary>
         /// <returns>True if running in Linux AppService. Otherwise, False.</returns>
