@@ -232,6 +232,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             bool inLinuxConsumption = false,
             bool inWindowsConsumption = false,
             bool inLinuxAppsService = false,
+            bool isPython = false,
             string getLinuxStampName = "",
             string getContainerName = "")
 #pragma warning restore CS0612 // Type or member is obsolete
@@ -245,6 +246,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             mockPlatformProvider.Setup(x => x.InLinuxAppService()).Returns(inLinuxAppsService);
             mockPlatformProvider.Setup(x => x.GetLinuxStampName()).Returns(getLinuxStampName);
             mockPlatformProvider.Setup(x => x.GetContainerName()).Returns(getContainerName);
+            mockPlatformProvider.Setup(x => x.IsPython()).Returns(isPython);
             return mockPlatformProvider.Object;
         }
 
