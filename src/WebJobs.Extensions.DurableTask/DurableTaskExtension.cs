@@ -60,7 +60,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private TaskHubWorker taskHubWorker;
         private IConnectionStringResolver connectionStringResolver;
         private bool isTaskHubWorkerStarted;
-        private HttpClient durableHttpClient;
         private EventSourceListener eventSourceListener;
 
 #if FUNCTIONS_V1

@@ -34,7 +34,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </summary>
         public TraceOptions Tracing { get; set; } = new TraceOptions();
 
-
         /// <summary>
         /// Gets or sets the number of messages to pull from the control queue at a time.
         /// </summary>
