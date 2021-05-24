@@ -53,8 +53,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     this.azureStorageOptions.ControlQueueBufferThreshold = 32;
                 }
-
-                this.azureStorageOptions.ControlQueueBufferThreshold = 128;
+                else
+                {
+                    this.azureStorageOptions.ControlQueueBufferThreshold = 128;
+                }
             }
 
             // The following defaults are only applied if the customer did not explicitely set them on `host.json`
