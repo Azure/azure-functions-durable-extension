@@ -11,6 +11,7 @@ using Microsoft.Azure.WebJobs.Host.Listeners;
 using Microsoft.Azure.WebJobs.Host.Protocols;
 using Microsoft.Azure.WebJobs.Host.Triggers;
 using Newtonsoft.Json.Linq;
+using static Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationShim;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
@@ -175,7 +176,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     new JProperty("input", input),
                     new JProperty("instanceId", arg.InstanceId),
                     new JProperty("isReplaying", arg.IsReplaying),
-                    new JProperty("parentInstanceId", arg.ParentInstanceId));
+                    new JProperty("parentInstanceId", arg.ParentInstanceId),
+                    new JProperty("upperSchemaVersion", SchemaVersion.V2));
                 return contextObject.ToString();
             }
         }
