@@ -9,7 +9,7 @@ using WebJobs.Extensions.DurableTask.CodeGeneration.SourceGenerator.Models;
 
 namespace WebJobs.Extensions.DurableTask.CodeGeneration.SourceGenerator.Generators
 {
-    public abstract class GeneratedCallerImplementationGenerator : BaseGenerator
+    public abstract class TypedCallerImplementationGenerator : BaseGenerator
     {
         protected MethodDeclarationSyntax GenerateCallMethodWithRetry(DurableFunction function)
         {

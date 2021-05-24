@@ -10,11 +10,11 @@ using WebJobs.Extensions.DurableTask.CodeGeneration.SourceGenerator.Models;
 
 namespace WebJobs.Extensions.DurableTask.CodeGeneration.SourceGenerator.Generators
 {
-    public abstract class GeneratedCallerInterfaceGenerator : BaseGenerator
+    public abstract class TypedCallerInterfaceGenerator : BaseGenerator
     {
         protected readonly List<DurableFunction> functions;
 
-        protected GeneratedCallerInterfaceGenerator(List<DurableFunction> functions)
+        protected TypedCallerInterfaceGenerator(List<DurableFunction> functions)
         {
             this.functions = functions;
         }

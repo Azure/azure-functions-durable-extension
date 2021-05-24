@@ -1,7 +1,7 @@
-﻿// Licensed under the MIT License. See LICENSE in the project root for license information.
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System.Collections.Generic;
-using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -10,7 +10,7 @@ using WebJobs.Extensions.DurableTask.CodeGeneration.SourceGenerator.Utils;
 
 namespace WebJobs.Extensions.DurableTask.CodeGeneration.SourceGenerator.Generators
 {
-    class IGeneratedDurableOrchestrationStarterGenerator : BaseGenerator
+    public class ITypedDurableOrchestrationCallerGenerator : TypedCallerInterfaceGenerator
     {
         private static readonly string[] requiredUsings = new[]
         {
@@ -18,16 +18,13 @@ namespace WebJobs.Extensions.DurableTask.CodeGeneration.SourceGenerator.Generato
             "System.Threading.Tasks"
         };
 
-        private List<DurableFunction> functions;
-
-        private IGeneratedDurableOrchestrationStarterGenerator(List<DurableFunction> functions) : base()
+        private ITypedDurableOrchestrationCallerGenerator(List<DurableFunction> functions) : base(functions)
         {
-            this.functions = functions;
         }
 
         public static bool TryGenerate(List<DurableFunction> functions, out CompilationUnitSyntax compilationSyntax)
         {
-            var generator = new IGeneratedDurableOrchestrationStarterGenerator(functions);
+            var generator = new ITypedDurableOrchestrationCallerGenerator(functions);
 
             compilationSyntax = generator.Generate();
             return true;
@@ -45,6 +42,8 @@ namespace WebJobs.Extensions.DurableTask.CodeGeneration.SourceGenerator.Generato
                 if (function.Kind != DurableFunctionKind.Orchestration)
                     continue;
 
+                memberList.Add(GenerateCallMethodWithRetry(function));
+                memberList.Add(GenerateCallMethodWithoutRetry(function));
                 memberList.Add(GenerateStartMethod(function));
 
                 requiredNamespaces.UnionWith(function.RequiredNamespaces);
@@ -52,7 +51,7 @@ namespace WebJobs.Extensions.DurableTask.CodeGeneration.SourceGenerator.Generato
 
             var members = SyntaxFactory.List(memberList);
 
-            var @interface = SyntaxFactory.InterfaceDeclaration(Names.IGeneratedDurableOrchestrationStarter)
+            var @interface = SyntaxFactory.InterfaceDeclaration(Names.ITypedDurableOrchestrationCaller)
                 .WithModifiers(modifiers)
                 .WithMembers(members);
 
@@ -61,26 +60,6 @@ namespace WebJobs.Extensions.DurableTask.CodeGeneration.SourceGenerator.Generato
             var usings = AsUsings(requiredNamespaces);
 
             return SyntaxFactory.CompilationUnit().AddUsings(usings).AddMembers(@namespace).NormalizeWhitespace();
-        }
-
-        protected MethodDeclarationSyntax GenerateStartMethod(
-            DurableFunction function
-        )
-        {
-            const string instanceParameterName = "instance";
-
-            var methodName = $"Start{function.Name}";
-
-            var leadingTrivia = AsCrefSummary(function.FullTypeName);
-
-            var parameterList = AsParameterList()
-                .AddParameters(function.Parameters.Select(p => AsParameter(p.Type.ToString(), p.Name)).ToArray())
-                .AddParameters(AsParameter("string", instanceParameterName).WithDefault(SyntaxFactory.EqualsValueClause(SyntaxFactory.LiteralExpression(SyntaxKind.NullLiteralExpression))));
-
-            return SyntaxFactory.MethodDeclaration(SyntaxFactory.ParseTypeName("Task<string>"), methodName)
-                .WithLeadingTrivia(leadingTrivia)
-                .WithParameterList(parameterList)
-                .WithSemicolonToken(SyntaxFactory.Token(SyntaxKind.SemicolonToken));
         }
     }
 }

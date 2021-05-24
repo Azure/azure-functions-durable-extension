@@ -10,19 +10,19 @@ namespace WebJobs.Extensions.DurableTask.CodeGeneration.SourceGenerator.Utils
         public const string IDurableOrchestrationContext = "IDurableOrchestrationContext";
         public const string IDurableClient = "IDurableClient";
 
-        public const string GeneratedDurableOrchestrationContext = "GeneratedDurableOrchestrationContext";
-        public const string IGeneratedDurableOrchestrationContext = "IGeneratedDurableOrchestrationContext";
+        public const string TypedDurableOrchestrationContext = "TypedDurableOrchestrationContext";
+        public const string ITypedDurableOrchestrationContext = "ITypedDurableOrchestrationContext";
 
-        public const string GeneratedDurableClient = "GeneratedDurableClient";
-        public const string IGeneratedDurableClient = "IGeneratedDurableClient";
+        public const string TypedDurableClient = "TypedDurableClient";
+        public const string ITypedDurableClient = "ITypedDurableClient";
 
-        public const string GeneratedDurableActivityCaller = "GeneratedDurableActivityCaller";
-        public const string IGeneratedDurableActivityCaller = "IGeneratedDurableActivityCaller";
+        public const string TypedDurableActivityCaller = "TypedDurableActivityCaller";
+        public const string ITypedDurableActivityCaller = "ITypedDurableActivityCaller";
 
-        public const string GeneratedDurableOrchestrationCaller = "GeneratedDurableOrchestrationCaller";
-        public const string IGeneratedDurableOrchestrationCaller = "IGeneratedDurableOrchestrationCaller";
+        public const string TypedDurableOrchestrationCaller = "TypedDurableOrchestrationCaller";
+        public const string ITypedDurableOrchestrationCaller = "ITypedDurableOrchestrationCaller";
 
-        public const string GeneratedDurableOrchestrationStarter = "GeneratedDurableOrchestrationStarter";
-        public const string IGeneratedDurableOrchestrationStarter = "IGeneratedDurableOrchestrationStarter";
+        public const string TypedDurableOrchestrationStarter = "TypedDurableOrchestrationStarter";
+        public const string ITypedDurableOrchestrationStarter = "ITypedDurableOrchestrationStarter";
     }
 }

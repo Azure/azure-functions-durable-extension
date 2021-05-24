@@ -9,10 +9,9 @@ using WebJobs.Extensions.DurableTask.CodeGeneration.SourceGenerator.Utils;
 
 namespace WebJobs.Extensions.DurableTask.CodeGeneration.SourceGenerator.Generators
 {
-    public class GeneratedDurableOrchestrationContextGenerator : WrapperImplementationGenerator
+    public class TypedDurableClientGenerator : WrapperImplementationGenerator
     {
-        private const string OrchestrationCallerPropertyName = "Orchestration";
-        private const string ActivityCallerPropertyName = "Activity";
+        private const string OrchestrationPropertyName = "Orchestration";
 
         private static readonly string[] requiredNamespaces = new[]
         {
@@ -21,42 +20,47 @@ namespace WebJobs.Extensions.DurableTask.CodeGeneration.SourceGenerator.Generato
             "System.Collections.Generic",
             "System.Net.Http",
             "System.Threading",
-            "System.Threading.Tasks"
+            "System.Threading.Tasks",
+            "Microsoft.AspNetCore.Http",
+            "Microsoft.AspNetCore.Mvc",
+            "DurableTask.Core"
         };
 
         protected override INamedTypeSymbol NamedTypeSymbol { get; }
-        protected override string InterfaceName => Names.IGeneratedDurableOrchestrationContext;
-        protected override string ClassName => Names.GeneratedDurableOrchestrationContext;
-        protected override string ContextFieldName => "_context";
+        protected override string InterfaceName => Names.ITypedDurableClient;
+        protected override string ClassName => Names.TypedDurableClient;
+        protected override string ContextFieldName => "_client";
 
-        private GeneratedDurableOrchestrationContextGenerator(INamedTypeSymbol namedTypeSymbol) : base()
+        private TypedDurableClientGenerator(INamedTypeSymbol namedTypeSymbol)
         {
             NamedTypeSymbol = namedTypeSymbol;
         }
 
         public static bool TryGenerate(INamedTypeSymbol namedTypeSymbol, out CompilationUnitSyntax compilationSyntax)
         {
-            var generator = new GeneratedDurableOrchestrationContextGenerator(namedTypeSymbol);
+            compilationSyntax = null;
+
+            if (namedTypeSymbol.Name != Names.IDurableClient)
+                return false;
+
+            var generator = new TypedDurableClientGenerator(namedTypeSymbol);
             compilationSyntax = generator.Generate();
             return true;
         }
 
         protected override ConstructorDeclarationSyntax GetConstructor()
         {
-            const string contextParameterName = "context";
+            const string contextParameterName = "client";
             const string orchestrationParameterName = "orchestration";
-            const string activityParameterName = "activity";
 
             var parameters = AsParameterList(
-                AsParameter(Names.IDurableOrchestrationContext, contextParameterName),
-                AsParameter(Names.IGeneratedDurableOrchestrationCaller, orchestrationParameterName),
-                AsParameter(Names.IGeneratedDurableActivityCaller, activityParameterName)
+                AsParameter(Names.IDurableClient, contextParameterName),
+                AsParameter(Names.ITypedDurableOrchestrationStarter, orchestrationParameterName)
             );
 
             var body = AsBlock(
                 AsSimpleAssignmentExpression(ContextFieldName, contextParameterName),
-                AsSimpleAssignmentExpression(OrchestrationCallerPropertyName, orchestrationParameterName),
-                AsSimpleAssignmentExpression(ActivityCallerPropertyName, activityParameterName)
+                AsSimpleAssignmentExpression(OrchestrationPropertyName, orchestrationParameterName)
             );
 
             return SyntaxFactory.ConstructorDeclaration(ClassName)
@@ -69,8 +73,7 @@ namespace WebJobs.Extensions.DurableTask.CodeGeneration.SourceGenerator.Generato
         {
             return new[]
             {
-                AsPublicPropertyWithGetter(Names.IGeneratedDurableOrchestrationCaller, OrchestrationCallerPropertyName),
-                AsPublicPropertyWithGetter(Names.IGeneratedDurableActivityCaller, ActivityCallerPropertyName)
+                AsPublicPropertyWithGetter(Names.ITypedDurableOrchestrationStarter, OrchestrationPropertyName)
             };
         }
 

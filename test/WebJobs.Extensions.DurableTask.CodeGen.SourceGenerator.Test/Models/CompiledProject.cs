@@ -15,6 +15,8 @@ namespace WebJobs.Extensions.DurableTask.CodeGeneration.SourceGenerator.Tests.Mo
         {
             if (!File.Exists(projectFilePath))
             {
+                var currentDirectory = Directory.GetCurrentDirectory();
+
                 throw new ArgumentException($"No project file exists at '{projectFilePath}'.");
             }
 
@@ -24,7 +26,6 @@ namespace WebJobs.Extensions.DurableTask.CodeGeneration.SourceGenerator.Tests.Mo
             this.Workspace = MSBuildWorkspace.Create();
             this.Workspace.LoadMetadataForReferencedProjects = true;
             this.Project = this.Workspace.OpenProjectAsync(projectFilePath).Result;
-
 
             this.Compilation = this.Project.GetCompilationAsync().Result;
         }

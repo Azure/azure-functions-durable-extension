@@ -45,14 +45,14 @@ public static string SayHello([ActivityTrigger] IDurableActivityContext context,
 using Microsoft.Azure.Webjobs.Extensions.DurableTask.Generated;
 ```
 
-5. Replace ```IDurableClient``` / ```IDurableOrchestrationContext``` usage for their generated counterparts ```IGeneratedDurableClient``` / ```IGeneratedDurableOrchestrationContext```. The generated interfaces can perform all operations exposed by standard interfaces, in additional to performing typed calls to Orchestration/Activity Function.
+5. Replace ```IDurableClient``` / ```IDurableOrchestrationContext``` usage for their generated counterparts ```ITypedDurableClient``` / ```ITypedDurableOrchestrationContext```. The generated interfaces can perform all operations exposed by standard interfaces, in additional to performing typed calls to Orchestration/Activity Function.
 
 Some example Activity calls through the generated interface:
 
 ```csharp
 [FunctionName("SimpleOrchestration")]
 public static async Task<List<string>> SimpleOrchestrator(
-    [OrchestrationTrigger] IGeneratedDurableOrchestrationContext context)
+    [OrchestrationTrigger] ITypedDurableOrchestrationContext context)
 {
     var outputs = new List<string>();
 
@@ -145,20 +145,20 @@ Using the recently released resource Roslyn-based [Source Generators](https://de
 
 The function name, duable function type (orchestration/activity), parameters (names/types) and return type call can all be discovered by statically analyzing the code. 
 
-An ```IGeneratedDurableOrchestrationCaller``` is generated for representing all Orchestration function calls in the project.
+An ```ITypedDurableOrchestrationCaller``` is generated for representing all Orchestration function calls in the project.
 
-An ```IGeneratedDurableActivityCaller``` is generated for representing all Activity function calls in the project.
+An ```ITypedDurableActivityCaller``` is generated for representing all Activity function calls in the project.
 
-An ```IGeneratedDurableOrchestrationStarter``` is generated for representing all Orchestration function starts in the project.
+An ```ITypedDurableOrchestrationStarter``` is generated for representing all Orchestration function starts in the project.
 
-An ```IGeneratedDurableOrchestrationContext``` interface is generated representing an interface for wrapping all operations against previous usage of ```IDurableOrchestrationContext``` and supporting calling Orchestration/Activity functions in the project - exposing an ```IGeneratedDurableOrchestrationCaller``` / ```IGeneratedDurableActivityCaller```.
+An ```ITypedDurableOrchestrationContext``` interface is generated representing an interface for wrapping all operations against previous usage of ```IDurableOrchestrationContext``` and supporting calling Orchestration/Activity functions in the project - exposing an ```ITypedDurableOrchestrationCaller``` / ```ITypedDurableActivityCaller```.
 
-An ```IGeneratedDurableClient``` interface is generated representing an interface for wrapping all operations against previous usage of ```IDurableClient``` and supporting starting Orchestration functions in the project - exposing ```IGeneratedDurableOrchestrationStarter```.
+An ```ITypedDurableClient``` interface is generated representing an interface for wrapping all operations against previous usage of ```IDurableClient``` and supporting starting Orchestration functions in the project - exposing ```ITypedDurableOrchestrationStarter```.
 
 Paired concrete implementations of the preceding interfaces are also generated to automatically handle forwarding all the calls appropriate through the pre-existing operations exposed by the DurableTask framework.
 
 ```csharp
-public partial interface IGeneratedDurableActivityCaller
+public partial interface ITypedDurableActivityCaller
 {
     /// <summary>
     /// See <see cref = "WebJobs.Extensions.DurableTask.CodeGen.Example.Calculator.Add"/>
@@ -168,7 +168,7 @@ public partial interface IGeneratedDurableActivityCaller
 ```
 
 ```csharp
-public partial interface IGeneratedDurableActivityCaller
+public partial interface ITypedDurableActivityCaller
 {
     /// <summary>
     /// See <see cref = "WebJobs.Extensions.DurableTask.CodeGen.Example.Calculator.Add"/>
@@ -183,7 +183,7 @@ public partial interface IGeneratedDurableActivityCaller
 ```csharp
 [FunctionName("Multiply")]
 public async Task<int> Multiply(
-    [OrchestrationTrigger] IGeneratedDurableOrchestrationContext context
+    [OrchestrationTrigger] ITypedDurableOrchestrationContext context
 )
 {
     var (num1, num2) = context.GetInput<(int, int)>();
@@ -212,4 +212,4 @@ using Microsoft.Azure.Webjobs.Extensions.DurableTask.Generated;
 
 ### 2. Scoped Code Generation
 
-Ideally, we would only update the generated code scoped to what the user is actively making changes to. Currently, SourceGenerators take an all or nothing approach - all code must be regenerated for all functions every update. However, they plan to add more granular support for creating code that can be scoped/udpated to have increased performance.
+Ideally, we would only update the generated code scoped to what the user is actively making changes to. Currently, SourceGenerators take an all or nothing approach - all code must be regenerated for all functions every update. However, the Roslyn team plans to add more granular support for creating code that can be scoped/udpated to have increased performance.

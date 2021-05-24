@@ -7,7 +7,7 @@ namespace WebJobs.Extensions.DurableTask.CodeGen.SourceGenerator.Test.Utils
 {
     internal class ProjectUtility
     {
-        private const string ProjectFilePath = @"..\..\..\..\..\src\codegen\WebJobs.Extensions.DurableTask.CodeGen.Example\WebJobs.Extensions.DurableTask.CodeGen.Example.csproj";
+        private const string ProjectFilePath = @"..\..\..\..\..\src\WebJobs.Extensions.DurableTask.CodeGeneration\WebJobs.Extensions.DurableTask.CodeGen.Example\WebJobs.Extensions.DurableTask.CodeGen.Example.csproj";
 
         private static CompiledProject instance;
 

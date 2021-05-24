@@ -10,7 +10,7 @@ using WebJobs.Extensions.DurableTask.CodeGeneration.SourceGenerator.Utils;
 
 namespace WebJobs.Extensions.DurableTask.CodeGeneration.SourceGenerator.Generators
 {
-    public class IGeneratedDurableClientGenerator : WrapperInterfaceGenerator
+    public class ITypedDurableClientGenerator : WrapperInterfaceGenerator
     {
         public const string OrchestrationPropertyName = "Orchestration";
 
@@ -20,16 +20,16 @@ namespace WebJobs.Extensions.DurableTask.CodeGeneration.SourceGenerator.Generato
         };
 
         protected override INamedTypeSymbol NamedTypeSymbol { get; }
-        protected override string InterfaceName => Names.IGeneratedDurableClient;
+        protected override string InterfaceName => Names.ITypedDurableClient;
 
-        private IGeneratedDurableClientGenerator(INamedTypeSymbol symbol)
+        private ITypedDurableClientGenerator(INamedTypeSymbol symbol)
         {
             NamedTypeSymbol = symbol;
         }
 
         public static bool TryGenerate(INamedTypeSymbol namedTypeSymbol, out CompilationUnitSyntax compilationSyntax)
         {
-            var generator = new IGeneratedDurableClientGenerator(namedTypeSymbol);
+            var generator = new ITypedDurableClientGenerator(namedTypeSymbol);
             compilationSyntax = generator.Generate();
             return true;
         }
@@ -45,7 +45,7 @@ namespace WebJobs.Extensions.DurableTask.CodeGeneration.SourceGenerator.Generato
         {
             return new List<PropertyDeclarationSyntax>()
             {
-                AsPropertyWithGetter(Names.IGeneratedDurableOrchestrationStarter, OrchestrationPropertyName)
+                AsPropertyWithGetter(Names.ITypedDurableOrchestrationStarter, OrchestrationPropertyName)
             };
         }
     }

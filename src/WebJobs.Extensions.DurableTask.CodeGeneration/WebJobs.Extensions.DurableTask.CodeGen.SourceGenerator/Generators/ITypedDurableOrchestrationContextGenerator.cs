@@ -9,7 +9,7 @@ using WebJobs.Extensions.DurableTask.CodeGeneration.SourceGenerator.Utils;
 
 namespace WebJobs.Extensions.DurableTask.CodeGeneration.SourceGenerator.Generators
 {
-    public class IGeneratedDurableOrchestrationContextGenerator : WrapperInterfaceGenerator
+    public class ITypedDurableOrchestrationContextGenerator : WrapperInterfaceGenerator
     {
         public const string OrchestrationPropertyName = "Orchestration";
         public const string ActivityPropertyName = "Activity";
@@ -20,9 +20,9 @@ namespace WebJobs.Extensions.DurableTask.CodeGeneration.SourceGenerator.Generato
         };
 
         protected override INamedTypeSymbol NamedTypeSymbol { get; }
-        protected override string InterfaceName => Names.IGeneratedDurableOrchestrationContext;
+        protected override string InterfaceName => Names.ITypedDurableOrchestrationContext;
 
-        private IGeneratedDurableOrchestrationContextGenerator(INamedTypeSymbol symbol)
+        private ITypedDurableOrchestrationContextGenerator(INamedTypeSymbol symbol)
         {
             NamedTypeSymbol = symbol;
         }
@@ -34,7 +34,7 @@ namespace WebJobs.Extensions.DurableTask.CodeGeneration.SourceGenerator.Generato
             if (namedTypeSymbol.Name != Names.IDurableOrchestrationContext)
                 return false;
 
-            var generator = new IGeneratedDurableOrchestrationContextGenerator(namedTypeSymbol);
+            var generator = new ITypedDurableOrchestrationContextGenerator(namedTypeSymbol);
             compilationSyntax = generator.Generate();
 
             return true;
@@ -51,8 +51,8 @@ namespace WebJobs.Extensions.DurableTask.CodeGeneration.SourceGenerator.Generato
         {
             return new List<PropertyDeclarationSyntax>()
             {
-                AsPropertyWithGetter(Names.IGeneratedDurableOrchestrationCaller, OrchestrationPropertyName),
-                AsPropertyWithGetter(Names.IGeneratedDurableActivityCaller, ActivityPropertyName)
+                AsPropertyWithGetter(Names.ITypedDurableOrchestrationCaller, OrchestrationPropertyName),
+                AsPropertyWithGetter(Names.ITypedDurableActivityCaller, ActivityPropertyName)
             };
         }
     }

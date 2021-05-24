@@ -43,46 +43,46 @@ namespace WebJobs.Extensions.DurableTask.CodeGeneration.SourceGenerator
                 // generated code. If any fails, we will exit immediately and not add the units as source
                 // text - so nothing will be generated. Otherwise we will add them all as source text.
 
-                if (!IGeneratedDurableOrchestrationContextGenerator.TryGenerate(receiver.DurableOrchestrationContextTypeSymbol, out var iOrchestrationContext))
+                if (!ITypedDurableOrchestrationContextGenerator.TryGenerate(receiver.DurableOrchestrationContextTypeSymbol, out var iOrchestrationContext))
                     return;
 
-                if (!GeneratedDurableOrchestrationContextGenerator.TryGenerate(receiver.DurableOrchestrationContextTypeSymbol, out var orchestrationContext))
+                if (!TypedDurableOrchestrationContextGenerator.TryGenerate(receiver.DurableOrchestrationContextTypeSymbol, out var orchestrationContext))
                     return;
 
-                if (!IGeneratedDurableClientGenerator.TryGenerate(receiver.DurableClientTypeSymbol, out var client))
+                if (!ITypedDurableClientGenerator.TryGenerate(receiver.DurableClientTypeSymbol, out var client))
                     return;
 
-                if (!GeneratedDurableClientGenerator.TryGenerate(receiver.DurableClientTypeSymbol, out var iClient))
+                if (!TypedDurableClientGenerator.TryGenerate(receiver.DurableClientTypeSymbol, out var iClient))
                     return;
 
-                if (!IGeneratedDurableOrchestrationCallerGenerator.TryGenerate(receiver.DurableFunctions, out CompilationUnitSyntax iOrchestrationCaller))
+                if (!ITypedDurableOrchestrationCallerGenerator.TryGenerate(receiver.DurableFunctions, out CompilationUnitSyntax iOrchestrationCaller))
                     return;
 
-                if (!GeneratedDurableOrchestrationCallerGenerator.TryGenerate(receiver.DurableFunctions, out CompilationUnitSyntax orchestrationCaller))
+                if (!TypedDurableOrchestrationCallerGenerator.TryGenerate(receiver.DurableFunctions, out CompilationUnitSyntax orchestrationCaller))
                     return;
 
-                if (!IGeneratedDurableActivityCallerGenerator.TryGenerate(receiver.DurableFunctions, out CompilationUnitSyntax iActivityCaller))
+                if (!ITypedDurableActivityCallerGenerator.TryGenerate(receiver.DurableFunctions, out CompilationUnitSyntax iActivityCaller))
                     return;
 
-                if (!GeneratedDurableActivityCallerGenerator.TryGenerate(receiver.DurableFunctions, out CompilationUnitSyntax activityCaller))
+                if (!TypedDurableActivityCallerGenerator.TryGenerate(receiver.DurableFunctions, out CompilationUnitSyntax activityCaller))
                     return;
 
-                if (!IGeneratedDurableOrchestrationStarterGenerator.TryGenerate(receiver.DurableFunctions, out CompilationUnitSyntax iOrchestrationStarter))
+                if (!ITypedDurableOrchestrationStarterGenerator.TryGenerate(receiver.DurableFunctions, out CompilationUnitSyntax iOrchestrationStarter))
                     return;
 
-                if (!GeneratedDurableOrchestrationStarterGenerator.TryGenerate(receiver.DurableFunctions, out CompilationUnitSyntax orchestrationStarter))
+                if (!TypedDurableOrchestrationStarterGenerator.TryGenerate(receiver.DurableFunctions, out CompilationUnitSyntax orchestrationStarter))
                     return;
 
-                context.AddSource("IGeneratedDurableOrchestrationContext.cs", AsSourceText(parseOptions, iOrchestrationContext));
-                context.AddSource("GeneratedDurableOrchestrationContext.cs", AsSourceText(parseOptions, orchestrationContext));
-                context.AddSource("IGeneratedDurableClient.cs", AsSourceText(parseOptions, client));
-                context.AddSource("GeneratedDurableClient.cs", AsSourceText(parseOptions, iClient));
-                context.AddSource("IGeneratedDurableOrchestrationCaller.cs", AsSourceText(parseOptions, iOrchestrationCaller));
-                context.AddSource("GeneratedDurableOrchestrationCaller.cs", AsSourceText(parseOptions, orchestrationCaller));
-                context.AddSource("IGeneratedDurableActivityCaller.cs", AsSourceText(parseOptions, iActivityCaller));
-                context.AddSource("GeneratedDurableActivityCaller.cs", AsSourceText(parseOptions, activityCaller));
-                context.AddSource($"IGeneratedDurableOrchestrationStarter.cs", AsSourceText(parseOptions, iOrchestrationStarter));
-                context.AddSource($"GeneratedDurableOrchestrationStarter.cs", AsSourceText(parseOptions, orchestrationStarter));
+                context.AddSource("ITypedDurableOrchestrationContext.cs", AsSourceText(parseOptions, iOrchestrationContext));
+                context.AddSource("TypedDurableOrchestrationContext.cs", AsSourceText(parseOptions, orchestrationContext));
+                context.AddSource("ITypedDurableClient.cs", AsSourceText(parseOptions, client));
+                context.AddSource("TypedDurableClient.cs", AsSourceText(parseOptions, iClient));
+                context.AddSource("ITypedDurableOrchestrationCaller.cs", AsSourceText(parseOptions, iOrchestrationCaller));
+                context.AddSource("TypedDurableOrchestrationCaller.cs", AsSourceText(parseOptions, orchestrationCaller));
+                context.AddSource("ITypedDurableActivityCaller.cs", AsSourceText(parseOptions, iActivityCaller));
+                context.AddSource("TypedDurableActivityCaller.cs", AsSourceText(parseOptions, activityCaller));
+                context.AddSource("ITypedDurableOrchestrationStarter.cs", AsSourceText(parseOptions, iOrchestrationStarter));
+                context.AddSource("TypedDurableOrchestrationStarter.cs", AsSourceText(parseOptions, orchestrationStarter));
             }
             catch (Exception ex)
             {

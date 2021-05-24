@@ -20,11 +20,11 @@ namespace DurableTask.Example.Tests.Backup
             var num2 = 10;
             var answer = num1 * num2;
 
-            var mockActivityCaller = new Mock<IGeneratedDurableActivityCaller>();
+            var mockActivityCaller = new Mock<ITypedDurableActivityCaller>();
             mockActivityCaller.Setup(c => c.Add(It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync((int a, int b) => a + b);
             var activityCaller = mockActivityCaller.Object;
 
-            var mockContext = new Mock<IGeneratedDurableOrchestrationContext>();
+            var mockContext = new Mock<ITypedDurableOrchestrationContext>();
             mockContext.Setup(c => c.Activity).Returns(activityCaller);
             mockContext.Setup(c => c.GetInput<(int, int)>()).Returns((5, 10));
             var context = mockContext.Object;

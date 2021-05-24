@@ -10,7 +10,7 @@ using WebJobs.Extensions.DurableTask.CodeGeneration.SourceGenerator.Utils;
 
 namespace WebJobs.Extensions.DurableTask.CodeGeneration.SourceGenerator.Generators
 {
-    public class IGeneratedDurableActivityCallerGenerator : GeneratedCallerInterfaceGenerator
+    public class ITypedDurableActivityCallerGenerator : TypedCallerInterfaceGenerator
     {
         private static readonly string[] requiredUsings = new[]
         {
@@ -18,13 +18,13 @@ namespace WebJobs.Extensions.DurableTask.CodeGeneration.SourceGenerator.Generato
             "System.Threading.Tasks"
         };
 
-        private IGeneratedDurableActivityCallerGenerator(List<DurableFunction> functions) : base(functions)
+        private ITypedDurableActivityCallerGenerator(List<DurableFunction> functions) : base(functions)
         {
         }
 
         public static bool TryGenerate(List<DurableFunction> functions, out CompilationUnitSyntax compilationSyntax)
         {
-            var generator = new IGeneratedDurableActivityCallerGenerator(functions);
+            var generator = new ITypedDurableActivityCallerGenerator(functions);
 
             compilationSyntax = generator.Generate();
             return true;
@@ -50,7 +50,7 @@ namespace WebJobs.Extensions.DurableTask.CodeGeneration.SourceGenerator.Generato
 
             var members = SyntaxFactory.List(memberList);
 
-            var @interface = SyntaxFactory.InterfaceDeclaration(Names.IGeneratedDurableActivityCaller)
+            var @interface = SyntaxFactory.InterfaceDeclaration(Names.ITypedDurableActivityCaller)
                 .WithModifiers(modifiers)
                 .WithMembers(members);
 

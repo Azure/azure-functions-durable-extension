@@ -10,7 +10,7 @@ using WebJobs.Extensions.DurableTask.CodeGeneration.SourceGenerator.Utils;
 
 namespace WebJobs.Extensions.DurableTask.CodeGeneration.SourceGenerator.Generators
 {
-    public class GeneratedDurableOrchestrationCallerGenerator : GeneratedCallerImplementationGenerator
+    public class TypedDurableOrchestrationCallerGenerator : TypedCallerImplementationGenerator
     {
         private const string ContextFieldName = "_context";
 
@@ -22,14 +22,14 @@ namespace WebJobs.Extensions.DurableTask.CodeGeneration.SourceGenerator.Generato
 
         private readonly List<DurableFunction> functions;
 
-        private GeneratedDurableOrchestrationCallerGenerator(List<DurableFunction> functions)
+        private TypedDurableOrchestrationCallerGenerator(List<DurableFunction> functions)
         {
             this.functions = functions;
         }
 
         public static bool TryGenerate(List<DurableFunction> functions, out CompilationUnitSyntax compilationSyntax)
         {
-            var generator = new GeneratedDurableOrchestrationCallerGenerator(functions);
+            var generator = new TypedDurableOrchestrationCallerGenerator(functions);
 
             compilationSyntax = generator.Generate();
             return true;
@@ -38,7 +38,7 @@ namespace WebJobs.Extensions.DurableTask.CodeGeneration.SourceGenerator.Generato
         private CompilationUnitSyntax Generate()
         {
             var modifiers = AsModifierList(SyntaxKind.PublicKeyword, SyntaxKind.PartialKeyword);
-            var baseTypes = AsBaseList(Names.IGeneratedDurableOrchestrationCaller);
+            var baseTypes = AsBaseList(Names.ITypedDurableOrchestrationCaller);
 
             var memberList = new List<MemberDeclarationSyntax>();
 
@@ -61,7 +61,7 @@ namespace WebJobs.Extensions.DurableTask.CodeGeneration.SourceGenerator.Generato
 
             var members = SyntaxFactory.List(memberList);
 
-            var @class = SyntaxFactory.ClassDeclaration(Names.GeneratedDurableOrchestrationCaller)
+            var @class = SyntaxFactory.ClassDeclaration(Names.TypedDurableOrchestrationCaller)
                 .WithModifiers(modifiers)
                 .WithBaseList(baseTypes)
                 .WithMembers(members);
@@ -80,7 +80,7 @@ namespace WebJobs.Extensions.DurableTask.CodeGeneration.SourceGenerator.Generato
             var parameters = AsParameterList(AsParameter(Names.IDurableOrchestrationContext, contextParameterName));
             var body = SyntaxFactory.Block(AsSimpleAssignmentExpression(ContextFieldName, contextParameterName));
 
-            return SyntaxFactory.ConstructorDeclaration(Names.GeneratedDurableOrchestrationCaller)
+            return SyntaxFactory.ConstructorDeclaration(Names.TypedDurableOrchestrationCaller)
                 .WithModifiers(modifiers)
                 .WithParameterList(parameters)
                 .WithBody(body);

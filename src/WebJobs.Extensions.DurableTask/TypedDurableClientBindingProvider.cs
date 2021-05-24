@@ -6,17 +6,17 @@ using Microsoft.Azure.WebJobs.Host.Protocols;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
-    public class GeneratedDurableClientBindingProvider : IBindingProvider
+    public class TypedDurableClientBindingProvider : IBindingProvider
     {
         private readonly Func<DurableClientAttribute, IDurableClient> clientGenerator;
-        private readonly GeneratedCodeProvider generatedCodeProvider;
+        private readonly TypedCodeProvider typedCodeProvider;
 
-        internal GeneratedDurableClientBindingProvider(
-            GeneratedCodeProvider generatedCodeProvider,
+        internal TypedDurableClientBindingProvider(
+            TypedCodeProvider typedCodeProvider,
             Func<DurableClientAttribute, IDurableClient> clientGenerator)
         {
             this.clientGenerator = clientGenerator;
-            this.generatedCodeProvider = generatedCodeProvider;
+            this.typedCodeProvider = typedCodeProvider;
         }
 
         public Task<IBinding> TryCreateAsync(BindingProviderContext context)
@@ -29,7 +29,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             var parameter = context.Parameter;
             var parameterType = parameter.ParameterType;
 
-            if (parameterType.Name != GeneratedCodeProvider.IGeneratedDurableClient)
+            if (parameterType.Name != TypedCodeProvider.ITypedDurableClient)
             {
                 return Task.FromResult<IBinding>(null);
             }
@@ -46,14 +46,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return Task.FromResult<IBinding>(null);
             }
 
-            return Task.FromResult<IBinding>(new GeneratedDurableClientBinding(this.generatedCodeProvider, client, parameter));
+            return Task.FromResult<IBinding>(new TypedDurableClientBinding(this.typedCodeProvider, client, parameter));
         }
 
-        private class GeneratedDurableClientValueProvider : IValueProvider
+        private class TypedDurableClientValueProvider : IValueProvider
         {
             private object client;
 
-            public GeneratedDurableClientValueProvider(Type type, object client)
+            public TypedDurableClientValueProvider(Type type, object client)
             {
                 this.Type = type;
                 this.client = client;
@@ -72,19 +72,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        private class GeneratedDurableClientBinding : IBinding
+        private class TypedDurableClientBinding : IBinding
         {
             private readonly IDurableClient client;
-            private readonly GeneratedCodeProvider generatedCodeProvider;
+            private readonly TypedCodeProvider typedCodeProvider;
             private readonly ParameterInfo parameterInfo;
 
-            public GeneratedDurableClientBinding(
-                GeneratedCodeProvider generatedCodeProvider,
+            public TypedDurableClientBinding(
+                TypedCodeProvider typedCodeProvider,
                 IDurableClient client,
                 ParameterInfo parameterInfo)
             {
                 this.client = client;
-                this.generatedCodeProvider = generatedCodeProvider;
+                this.typedCodeProvider = typedCodeProvider;
                 this.parameterInfo = parameterInfo;
             }
 
@@ -92,20 +92,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             public Task<IValueProvider> BindAsync(object value, ValueBindingContext context)
             {
-                var type = this.generatedCodeProvider.GeneratedDurableClientType;
-                var client = this.generatedCodeProvider.InstantiateGeneratedDurableClient(this.client);
+                var type = this.typedCodeProvider.TypedDurableClientType;
+                var client = this.typedCodeProvider.InstantiateTypedDurableClient(this.client);
 
-                var valueProvider = new GeneratedDurableClientValueProvider(type, client);
+                var valueProvider = new TypedDurableClientValueProvider(type, client);
 
                 return Task.FromResult<IValueProvider>(valueProvider);
             }
 
             public Task<IValueProvider> BindAsync(BindingContext context)
             {
-                var type = this.generatedCodeProvider.GeneratedDurableClientType;
-                var client = this.generatedCodeProvider.InstantiateGeneratedDurableClient(this.client);
+                var type = this.typedCodeProvider.TypedDurableClientType;
+                var client = this.typedCodeProvider.InstantiateTypedDurableClient(this.client);
 
-                var valueProvider = new GeneratedDurableClientValueProvider(type, client);
+                var valueProvider = new TypedDurableClientValueProvider(type, client);
 
                 return Task.FromResult<IValueProvider>(valueProvider);
             }

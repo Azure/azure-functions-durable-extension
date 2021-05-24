@@ -11,7 +11,7 @@ using WebJobs.Extensions.DurableTask.CodeGeneration.SourceGenerator.Utils;
 
 namespace WebJobs.Extensions.DurableTask.CodeGeneration.SourceGenerator.Generators
 {
-    public class GeneratedDurableOrchestrationStarterGenerator : BaseGenerator
+    public class TypedDurableOrchestrationStarterGenerator : BaseGenerator
     {
         private const string ClientFieldName = "_client";
 
@@ -23,14 +23,14 @@ namespace WebJobs.Extensions.DurableTask.CodeGeneration.SourceGenerator.Generato
 
         private List<DurableFunction> functions;
 
-        private GeneratedDurableOrchestrationStarterGenerator(List<DurableFunction> functions)
+        private TypedDurableOrchestrationStarterGenerator(List<DurableFunction> functions)
         {
             this.functions = functions;
         }
 
         public static bool TryGenerate(List<DurableFunction> functions, out CompilationUnitSyntax compilationSyntax)
         {
-            var generator = new GeneratedDurableOrchestrationStarterGenerator(functions);
+            var generator = new TypedDurableOrchestrationStarterGenerator(functions);
             compilationSyntax = generator.Generate();
             return true;
         }
@@ -38,7 +38,7 @@ namespace WebJobs.Extensions.DurableTask.CodeGeneration.SourceGenerator.Generato
         private CompilationUnitSyntax Generate()
         {
             var modifiers = AsModifierList(SyntaxKind.PublicKeyword, SyntaxKind.PartialKeyword);
-            var baseTypes = AsBaseList(Names.IGeneratedDurableOrchestrationStarter);
+            var baseTypes = AsBaseList(Names.ITypedDurableOrchestrationStarter);
 
             var memberList = new List<MemberDeclarationSyntax>();
 
@@ -59,7 +59,7 @@ namespace WebJobs.Extensions.DurableTask.CodeGeneration.SourceGenerator.Generato
 
             var members = SyntaxFactory.List(memberList);
 
-            var @class = SyntaxFactory.ClassDeclaration(Names.GeneratedDurableOrchestrationStarter)
+            var @class = SyntaxFactory.ClassDeclaration(Names.TypedDurableOrchestrationStarter)
                 .WithModifiers(modifiers)
                 .WithBaseList(baseTypes)
                 .WithMembers(members);
@@ -78,7 +78,7 @@ namespace WebJobs.Extensions.DurableTask.CodeGeneration.SourceGenerator.Generato
             var parameters = AsParameterList(AsParameter(Names.IDurableClient, clientParameterName));
             var body = SyntaxFactory.Block(AsSimpleAssignmentExpression(ClientFieldName, clientParameterName));
 
-            return SyntaxFactory.ConstructorDeclaration(Names.GeneratedDurableOrchestrationStarter)
+            return SyntaxFactory.ConstructorDeclaration(Names.TypedDurableOrchestrationStarter)
                 .WithModifiers(modifiers)
                 .WithParameterList(parameters)
                 .WithBody(body);

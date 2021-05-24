@@ -103,7 +103,7 @@ namespace WebJobs.Extensions.DurableTask.CodeGen.Example
 
         [FunctionName("Multiply")]
         public async Task<int> Multiply(
-            [OrchestrationTrigger] IGeneratedDurableOrchestrationContext context
+            [OrchestrationTrigger] ITypedDurableOrchestrationContext context
         )
         {
             var (num1, num2) = context.GetInput<(int, int)>();
