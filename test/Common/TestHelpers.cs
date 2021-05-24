@@ -282,10 +282,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 "Pid",
                 "Tid",
             };
-            List<string> keys = json.Properties().Select(p => p.Name).ToList();
+
             foreach (string expectedKey in expectedKeys)
             {
-                if (!keys.Contains(expectedKey))
+                if (!json.TryGetValue(expectedKey, out _))
                 {
                     return false;
                 }
@@ -299,7 +299,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// </summary>
         /// <param name="path">The file's path.</param>
         /// <returns>An array of each line in the file.</returns>
-        public static string[] WriteSafeReadAllLines(string path)
+        public static List<string> WriteSafeReadAllLines(string path)
         {
             /* A method like File.ReadAllLines cannot open a file that is open for writing by another process
              * This is due to the File.ReadAllLines  not opening the process with ReadWrite permissions.
@@ -316,7 +316,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     file.Add(streamReader.ReadLine());
                 }
 
-                return file.ToArray();
+                return file;
             }
         }
 
@@ -333,7 +333,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 retryInterval = TimeSpan.FromMilliseconds(100);
             }
 
-            Stopwatch sw = new Stopwatch();
+            Stopwatch sw = Stopwatch.StartNew();
+
             do
             {
                 if (predicate())
