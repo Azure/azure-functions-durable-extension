@@ -1719,11 +1719,12 @@
             TelemetryActivator initializes Distributed Tracing. This class only works for netstandard2.0.
             </summary>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.TelemetryActivator.#ctor(Microsoft.Extensions.Options.IOptions{Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions})">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.TelemetryActivator.#ctor(Microsoft.Extensions.Options.IOptions{Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions},Microsoft.Azure.WebJobs.INameResolver)">
             <summary>
             Constructor for initializing Distributed Tracing.
             </summary>
             <param name="options">DurableTask options.</param>
+            <param name="nameResolver">Name resolver used for environment variables.</param>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.TelemetryActivator.OnSend">
             <summary>
