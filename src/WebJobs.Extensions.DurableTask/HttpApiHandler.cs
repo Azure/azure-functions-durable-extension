@@ -35,7 +35,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private const string EntityKeyRouteParameter = "entityKey";
         private const string OperationRouteParameter = "operation";
         private const string EventNameRouteParameter = "eventName";
-        private const string StealLeaseRouteParameter = "stealLease";
+        private const string StealLeaseRouteParameter = "steal";
 
         // Query string parameters
         private const string TaskHubParameter = "taskHub";
@@ -168,10 +168,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return new TemplateMatcher(TemplateParser.Parse($"{InstancesControllerSegment}{{{InstanceIdRouteParameter}?}}/{RaiseEventOperation}/{{{EventNameRouteParameter}}}"), new RouteValueDictionary());
         }
 
-        // /applease/stealLease
+        // /applease/steal
         private static TemplateMatcher GetStealAppLeaseRoute()
         {
-            return new TemplateMatcher(TemplateParser.Parse($"{AppLeaseControllerSegment}/{StealLeaseRouteParameter}"), new RouteValueDictionary());
+            return new TemplateMatcher(TemplateParser.Parse($"{AppLeaseControllerSegment}{StealLeaseRouteParameter}"), new RouteValueDictionary());
         }
 
         internal HttpManagementPayload CreateHttpManagementPayload(
