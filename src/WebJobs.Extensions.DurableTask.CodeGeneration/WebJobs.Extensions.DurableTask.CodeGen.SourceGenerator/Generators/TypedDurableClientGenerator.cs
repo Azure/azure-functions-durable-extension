@@ -11,8 +11,6 @@ namespace WebJobs.Extensions.DurableTask.CodeGeneration.SourceGenerator.Generato
 {
     public class TypedDurableClientGenerator : WrapperImplementationGenerator
     {
-        private const string OrchestrationPropertyName = "Orchestration";
-
         private static readonly string[] requiredNamespaces = new[]
         {
             "Microsoft.Azure.WebJobs.Extensions.DurableTask",
@@ -60,7 +58,7 @@ namespace WebJobs.Extensions.DurableTask.CodeGeneration.SourceGenerator.Generato
 
             var body = AsBlock(
                 AsSimpleAssignmentExpression(ContextFieldName, contextParameterName),
-                AsSimpleAssignmentExpression(OrchestrationPropertyName, orchestrationParameterName)
+                AsSimpleAssignmentExpression(ITypedDurableClientGenerator.OrchestrationPropertyName, orchestrationParameterName)
             );
 
             return SyntaxFactory.ConstructorDeclaration(ClassName)
@@ -73,7 +71,7 @@ namespace WebJobs.Extensions.DurableTask.CodeGeneration.SourceGenerator.Generato
         {
             return new[]
             {
-                AsPublicPropertyWithGetter(Names.ITypedDurableOrchestrationStarter, OrchestrationPropertyName)
+                AsPublicPropertyWithGetter(Names.ITypedDurableOrchestrationStarter, ITypedDurableClientGenerator.OrchestrationPropertyName)
             };
         }
 

@@ -12,7 +12,7 @@ namespace WebJobs.Extensions.DurableTask.CodeGeneration.SourceGenerator.Generato
 {
     public class ITypedDurableClientGenerator : WrapperInterfaceGenerator
     {
-        public const string OrchestrationPropertyName = "Orchestration";
+        public const string OrchestrationPropertyName = "Orchestrations";
 
         private static readonly string[] requiredNamespaces = new[]
         {

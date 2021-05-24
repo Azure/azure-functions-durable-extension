@@ -21,7 +21,7 @@ namespace WebJobs.Extensions.DurableTask.CodeGen.Example
             [DurableClient] ITypedDurableClient client,
             ILogger log)
         {
-            string instanceId = await client.Orchestration.StartSimpleOrchestration(null);
+            string instanceId = await client.Orchestrations.StartSimpleOrchestration(null);
             log.LogInformation($"Started orchestration with ID = '{instanceId}'.");
             return client.CreateCheckStatusResponse(req, instanceId);
         }
@@ -33,9 +33,9 @@ namespace WebJobs.Extensions.DurableTask.CodeGen.Example
             var outputs = new List<string>();
 
             // Replace "hello" with the name of your Durable Activity Function.
-            outputs.Add(await context.Activity.SayHello("Tokyo"));
-            outputs.Add(await context.Activity.SayHello("Seattle"));
-            outputs.Add(await context.Activity.SayHello("London"));
+            outputs.Add(await context.Activities.SayHello("Tokyo"));
+            outputs.Add(await context.Activities.SayHello("Seattle"));
+            outputs.Add(await context.Activities.SayHello("London"));
 
             return outputs;
         }

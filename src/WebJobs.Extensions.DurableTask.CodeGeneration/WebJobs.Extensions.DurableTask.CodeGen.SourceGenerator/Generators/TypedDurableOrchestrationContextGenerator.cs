@@ -11,9 +11,6 @@ namespace WebJobs.Extensions.DurableTask.CodeGeneration.SourceGenerator.Generato
 {
     public class TypedDurableOrchestrationContextGenerator : WrapperImplementationGenerator
     {
-        private const string OrchestrationCallerPropertyName = "Orchestration";
-        private const string ActivityCallerPropertyName = "Activity";
-
         private static readonly string[] requiredNamespaces = new[]
         {
             "Microsoft.Azure.WebJobs.Extensions.DurableTask",
@@ -55,8 +52,8 @@ namespace WebJobs.Extensions.DurableTask.CodeGeneration.SourceGenerator.Generato
 
             var body = AsBlock(
                 AsSimpleAssignmentExpression(ContextFieldName, contextParameterName),
-                AsSimpleAssignmentExpression(OrchestrationCallerPropertyName, orchestrationParameterName),
-                AsSimpleAssignmentExpression(ActivityCallerPropertyName, activityParameterName)
+                AsSimpleAssignmentExpression(ITypedDurableOrchestrationContextGenerator.OrchestrationPropertyName, orchestrationParameterName),
+                AsSimpleAssignmentExpression(ITypedDurableOrchestrationContextGenerator.ActivityPropertyName, activityParameterName)
             );
 
             return SyntaxFactory.ConstructorDeclaration(ClassName)
@@ -69,8 +66,8 @@ namespace WebJobs.Extensions.DurableTask.CodeGeneration.SourceGenerator.Generato
         {
             return new[]
             {
-                AsPublicPropertyWithGetter(Names.ITypedDurableOrchestrationCaller, OrchestrationCallerPropertyName),
-                AsPublicPropertyWithGetter(Names.ITypedDurableActivityCaller, ActivityCallerPropertyName)
+                AsPublicPropertyWithGetter(Names.ITypedDurableOrchestrationCaller, ITypedDurableOrchestrationContextGenerator.OrchestrationPropertyName),
+                AsPublicPropertyWithGetter(Names.ITypedDurableActivityCaller, ITypedDurableOrchestrationContextGenerator.ActivityPropertyName)
             };
         }
 

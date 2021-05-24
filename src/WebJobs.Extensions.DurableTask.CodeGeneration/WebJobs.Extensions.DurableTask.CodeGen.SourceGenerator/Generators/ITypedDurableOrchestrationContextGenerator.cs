@@ -11,8 +11,8 @@ namespace WebJobs.Extensions.DurableTask.CodeGeneration.SourceGenerator.Generato
 {
     public class ITypedDurableOrchestrationContextGenerator : WrapperInterfaceGenerator
     {
-        public const string OrchestrationPropertyName = "Orchestration";
-        public const string ActivityPropertyName = "Activity";
+        public const string OrchestrationPropertyName = "Orchestrations";
+        public const string ActivityPropertyName = "Activities";
 
         private static readonly string[] requiredNamespaces = new[]
         {

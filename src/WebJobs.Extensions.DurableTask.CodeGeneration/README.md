@@ -192,7 +192,7 @@ public async Task<int> Multiply(
 
     for (var i = 0; i < num2; i++)
     {
-        result = await context.Activity.Add(result, num1);
+        result = await context.Activities.Add(result, num1);
     }
 
     return result;
