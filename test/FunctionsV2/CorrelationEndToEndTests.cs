@@ -17,6 +17,7 @@ using Microsoft.ApplicationInsights.Extensibility.Implementation;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
+using Moq;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -216,6 +217,76 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var exceptionTelemetryList = sendItemList.OfType<ExceptionTelemetry>().ToList();
             var result = this.FilterOperationTelemetry(operationTelemetryList).ToList();
             return new Tuple<List<OperationTelemetry>, List<ExceptionTelemetry>>(result.CorrelationSort(), exceptionTelemetryList);
+        }
+
+         /*
+         * End to end test that checks if a warning is logged when distributed tracing is
+         * enabled, but APPINSIGHTS_INSTRUMENTATIONKEY isn't set. The test also checks
+         * that the warning isn't logged when the environment variable is set.
+         */
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public void TelemetryClientSetup_AppInsightsInstrumentationKey_Warning(bool keyIsSet, bool extendedSessions)
+        {
+            TraceOptions traceOptions = new TraceOptions()
+            {
+                DistributedTracingEnabled = true,
+                DistributedTracingProtocol = "W3CTraceContext",
+            };
+
+            DurableTaskOptions options = new DurableTaskOptions();
+            options.Tracing = traceOptions;
+
+            string environmentVariableName = "APPINSIGHTS_INSTRUMENTATIONKEY";
+            string environmentVariableValue = "test key";
+            var mockNameResolver = keyIsSet
+                ? GetNameResolverMock(new[] { (environmentVariableName, environmentVariableValue) })
+                : GetNameResolverMock(new[] { (environmentVariableName, string.Empty) });
+
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                "SingleOrchestration",
+                extendedSessions,
+                nameResolver: mockNameResolver.Object,
+                options: options))
+            {
+                string warningMessage = "'APPINSIGHTS_INSTRUMENTATIONKEY' isn't defined in the current environment variables, but Distributed Tracing is enabled. Please set 'APPINSIGHTS_INSTRUMENTATIONKEY' to use Distributed Tracing.";
+                var warningLogMessage = this.loggerProvider.GetAllLogMessages().Where(l => l.FormattedMessage.StartsWith(warningMessage));
+
+                string settingUpTelemetryClientMessage = "Setting up the telemetry client...";
+                var settingUpTelemetryClientLogMessage = this.loggerProvider.GetAllLogMessages().Where(l => l.FormattedMessage.StartsWith(settingUpTelemetryClientMessage));
+
+                string readingInstrumentationKeyMessage = "Reading APPINSIGHTS_INSTRUMENTATIONKEY...";
+                var readingInstrumentationKeyLogMessage = this.loggerProvider.GetAllLogMessages().Where(l => l.FormattedMessage.StartsWith(readingInstrumentationKeyMessage));
+
+                if (keyIsSet)
+                {
+                    Assert.Single(settingUpTelemetryClientLogMessage);
+                    Assert.Single(readingInstrumentationKeyLogMessage);
+                    Assert.Empty(warningLogMessage);
+                }
+                else
+                {
+                    Assert.Single(settingUpTelemetryClientLogMessage);
+                    Assert.Empty(readingInstrumentationKeyLogMessage);
+                    Assert.Single(warningLogMessage);
+                }
+            }
+        }
+
+        private static Mock<INameResolver> GetNameResolverMock((string Key, string Value)[] settings)
+        {
+            var mock = new Mock<INameResolver>();
+            foreach (var setting in settings)
+            {
+                mock.Setup(x => x.Resolve(setting.Key)).Returns(setting.Value);
+            }
+
+            return mock;
         }
 
         private IEnumerable<OperationTelemetry> FilterOperationTelemetry(IEnumerable<OperationTelemetry> operationTelemetries)

@@ -88,7 +88,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                             serviceCollection.AddSingleton<ITelemetryActivator>(serviceProvider =>
                             {
                                 var durableTaskOptions = serviceProvider.GetService<IOptions<DurableTaskOptions>>();
-                                var telemetryActivator = new TelemetryActivator(durableTaskOptions)
+                                var nameResolver = serviceProvider.GetService<INameResolver>();
+                                var telemetryActivator = new TelemetryActivator(durableTaskOptions, nameResolver)
                                 {
                                     OnSend = onSend,
                                 };
