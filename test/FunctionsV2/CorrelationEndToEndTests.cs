@@ -180,7 +180,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             string environmentVariableName = "APPINSIGHTS_INSTRUMENTATIONKEY";
             string environmentVariableValue = "test key";
-            var mockNameResolver = keyIsSet ? GetNameResolverMock(new[] { (environmentVariableName, environmentVariableValue) }) : new Mock<INameResolver>();
+            var mockNameResolver = keyIsSet
+                ? GetNameResolverMock(new[] { (environmentVariableName, environmentVariableValue) })
+                : GetNameResolverMock(new[] { (environmentVariableName, string.Empty) });
 
             using (var host = TestHelpers.GetJobHost(
                 this.loggerProvider,
