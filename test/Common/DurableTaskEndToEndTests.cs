@@ -302,7 +302,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         /// <summary>
         /// By simulating the appropiate environment variables for Linux Consumption,
-        /// this test checks that we are emitting logs from DurableTask.AzureStorage
+        /// this test checks that we are emitting logs from DurableTask-CustomSource
         /// and reading the DurabilityProvider's EventSourceName property correctly.
         /// </summary>
         [Fact]
@@ -344,8 +344,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 // Validate that the JSON has DurableTask-AzureStorage fields
                 string[] lines = consoleOutput.Split('\n');
-                var azureStorageLogLines = lines.Where(l => l.Contains("DurableTask-CustomSource") && l.StartsWith(prefix));
-                Assert.NotEmpty(azureStorageLogLines);
+                var customeEtwLogs = lines.Where(l => l.Contains("DurableTask-CustomSource") && l.StartsWith(prefix));
+                Assert.NotEmpty(customeEtwLogs);
             }
         }
 

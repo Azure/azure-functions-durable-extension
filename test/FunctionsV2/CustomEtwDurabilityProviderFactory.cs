@@ -19,10 +19,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         public override DurabilityProvider GetDurabilityProvider(DurableClientAttribute attribute)
         {
-            DurabilityProvider provider = base.GetDurabilityProvider(attribute);
-            provider.EventSourceName = "DurableTask-CustomSource";
-            EtwSource.Current.Information("Created durability provider.");
-            return provider;
+            return this.GetDurabilityProvider();
         }
 
         public override DurabilityProvider GetDurabilityProvider()

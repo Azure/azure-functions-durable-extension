@@ -38,7 +38,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.durabilityProviderEventSourceName = durabilityProviderEventSourceName;
 
             // Check to see if any event sources were created before we knew the event source
-            //// name for the durability provider and enable that provider.
+            // name for the durability provider and enable that provider.
             var eventSourcesToEnable = this.pendingEventSources.Where(eventSource => eventSource.Name == this.durabilityProviderEventSourceName);
             foreach (var eventSource in eventSourcesToEnable)
             {
