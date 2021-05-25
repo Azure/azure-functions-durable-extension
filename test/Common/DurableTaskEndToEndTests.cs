@@ -13,6 +13,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using DurableTask.AzureStorage;
 using DurableTask.Core;
 using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
@@ -295,6 +296,55 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 // Validate that the JSON has DurableTask-AzureStorage fields
                 string[] lines = consoleOutput.Split('\n');
                 var azureStorageLogLines = lines.Where(l => l.Contains("DurableTask-AzureStorage") && l.StartsWith(prefix));
+                Assert.NotEmpty(azureStorageLogLines);
+            }
+        }
+
+        /// <summary>
+        /// By simulating the appropiate environment variables for Linux Consumption,
+        /// this test checks that we are emitting logs from DurableTask.AzureStorage
+        /// and reading the DurabilityProvider's EventSourceName property correctly.
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task CustomProviderEventSourceLogsWithEventSourceName()
+        {
+            var prefix = "MS_DURABLE_FUNCTION_EVENTS_LOGS";
+            string orchestratorName = nameof(TestOrchestrations.SayHelloInline);
+
+            // To capture console output in a StringWritter
+            using (StringWriter sw = new StringWriter())
+            {
+                // Set console to write to StringWritter
+                Console.SetOut(sw);
+
+                // Simulate enviroment variables indicating linux consumption
+                var nameResolver = new SimpleNameResolver(new Dictionary<string, string>()
+                {
+                    { "CONTAINER_NAME", "val1" },
+                    { "WEBSITE_STAMP_DEPLOYMENT_ID", "val3" },
+                    { "WEBSITE_HOME_STAMPNAME", "val4" },
+                });
+
+                // Run trivial orchestrator
+                using (var host = TestHelpers.GetJobHost(
+                    this.loggerProvider,
+                    nameResolver: nameResolver,
+                    testName: "FiltersVerboseLogsByDefault",
+                    enableExtendedSessions: false,
+                    durabilityProviderFactoryType: typeof(CustomEtwDurabilityProviderFactory)))
+                {
+                    await host.StartAsync();
+                    var client = await host.StartOrchestratorAsync(orchestratorName, input: "World", this.output);
+                    var status = await client.WaitForCompletionAsync(this.output);
+                    await host.StopAsync();
+                }
+
+                string consoleOutput = sw.ToString();
+
+                // Validate that the JSON has DurableTask-AzureStorage fields
+                string[] lines = consoleOutput.Split('\n');
+                var azureStorageLogLines = lines.Where(l => l.Contains("DurableTask-CustomSource") && l.StartsWith(prefix));
                 Assert.NotEmpty(azureStorageLogLines);
             }
         }

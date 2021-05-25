@@ -73,7 +73,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.defaultConnectionName = this.azureStorageOptions.ConnectionStringName ?? ConnectionStringNames.Storage;
         }
 
-        public string Name => ProviderName;
+        public virtual string Name => ProviderName;
 
         internal string GetDefaultStorageConnectionString()
         {

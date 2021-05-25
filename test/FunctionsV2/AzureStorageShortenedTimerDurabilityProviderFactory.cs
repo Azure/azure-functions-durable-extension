@@ -21,6 +21,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
         }
 
+        public override string Name => typeof(AzureStorageShortenedTimerDurabilityProviderFactory).Name;
+
         public override DurabilityProvider GetDurabilityProvider(DurableClientAttribute attribute)
         {
             AzureStorageDurabilityProvider provider = base.GetDurabilityProvider(attribute) as AzureStorageDurabilityProvider;

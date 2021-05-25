@@ -2,7 +2,9 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics.Tracing;
+using System.Linq;
 using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
@@ -18,6 +20,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly string durabilityProviderEventSourceName;
         private EndToEndTraceHelper traceHelper;
 
+        private List<EventSource> pendingEventSources = new List<EventSource>();
+
         /// <summary>
         /// Create an EventSourceListener to capture and log Durable EventSource
         /// data in Linux.
@@ -32,6 +36,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.disableVerbose = !enableVerbose; // We track the opposite value ro simplify logic later
             this.traceHelper = traceHelper;
             this.durabilityProviderEventSourceName = durabilityProviderEventSourceName;
+
+            // Check to see if any event sources were created before we knew the event source
+            //// name for the durability provider and enable that provider.
+            var eventSourcesToEnable = this.pendingEventSources.Where(eventSource => eventSource.Name == this.durabilityProviderEventSourceName);
+            foreach (var eventSource in eventSourcesToEnable)
+            {
+                this.EnableEvents(eventSource, EventLevel.LogAlways, EventKeywords.All);
+            }
+
+            this.pendingEventSources.Clear();
         }
 
         /// <summary>
@@ -50,6 +64,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 eventSource.Name == this.durabilityProviderEventSourceName)
             {
                 this.EnableEvents(eventSource, EventLevel.LogAlways, EventKeywords.All);
+            }
+
+            // OnEventSourceCreated is called as soon as EventListener constructor is called. In
+            // C#, base class constructors are called first, which means OnEventSourceCreated
+            // could be called before we know the durabilityProviderEventSourceName. In this case,
+            // we cache the event sources until we know the durability provider's event source name
+            // and we enable it then.
+            if (this.durabilityProviderEventSourceName == null)
+            {
+                // We may need to initialize this list as it will be null until the constructor is called.
+                this.pendingEventSources = this.pendingEventSources ?? new List<EventSource>();
+                this.pendingEventSources.Add(eventSource);
             }
         }
 
