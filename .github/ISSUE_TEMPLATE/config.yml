@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Ask a question about Durable Functions
+    url: https://github.com/Azure/azure-functions-durable-extension/discussions/new?category=q-a
+    about: Get advice/answers to questions from the community and the development team
+  - name: Suggest a feature idea
+    url: https://github.com/Azure/azure-functions-durable-extension/discussions/new?category=ideas
+    about: Have a loose idea for a feature without a concrete proposal? Start a discussion about the problem you are trying to solve and potential features that could fix those issues.

@@ -3083,6 +3083,12 @@
             </summary>
             <returns>True if running in Linux Consumption. Otherwise, False.</returns>
         </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IPlatformInformationService.IsPython">
+            <summary>
+            Determines is the language worker is for Python.
+            </summary>
+            <returns>True if the language worker is for Python. Otherwise, False.</returns>
+        </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IPlatformInformationService.InLinuxAppService">
             <summary>
             Determines if the application is running in a Linux AppService plan.
@@ -3188,6 +3194,34 @@
             Initializes a new instance of the <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationShim"/> class.
             </summary>
             <param name="context">The orchestration execution context.</param>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationShim.SchemaVersion">
+            <summary>
+            Identifiers for each OOProc Schema Version.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationShim.InvokeAPIFromAction(Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationShim.AsyncAction)">
+            <summary>
+            Invokes a DF API based on the input action object.
+            </summary>
+            <param name="action">An OOProc action object representing a DF task.</param>
+            <returns>If the API returns a task, the DF task corresponding to the input action. Else, null.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationShim.ProcessAsyncActionsV2(Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationShim.AsyncAction[])">
+            <summary>
+            Replays the orchestration execution from an OOProc SDK in .NET.
+            </summary>
+            <param name="actions">The OOProc actions payload.</param>
+            <returns>An awaitable Task that completes once replay completes.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationShim.ReplayOOProcOrchestration(Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationShim.AsyncAction[][],Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationShim.SchemaVersion)">
+            <summary>
+            Replays the OOProc orchestration based on the actions array. It uses the schema enum to
+            determine which replay implementation is most appropiate.
+            </summary>
+            <param name="actions">The OOProc actions payload.</param>
+            <param name="schema">The OOProc protocol schema version.</param>
+            <returns>An awaitable Task that completes once replay completes.</returns>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskActivityShim">
             <summary>
@@ -3928,6 +3962,34 @@
             instance is in a terminated, failed, or completed state.
             </summary>
         </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.ProviderUtils">
+            <summary>
+            Provides access to internal functionality for the purpose of implementing durability providers.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.ProviderUtils.GetSchedulerIdFromEntityId(Microsoft.Azure.WebJobs.Extensions.DurableTask.EntityId)">
+            <summary>
+            Returns the instance id of the entity scheduler for a given entity id.
+            </summary>
+            <param name="entityId">The entity id.</param>
+            <returns>The instance id of the scheduler.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.ProviderUtils.TryGetEntityStateFromSerializedSchedulerState(DurableTask.Core.OrchestrationState,Newtonsoft.Json.JsonSerializerSettings,System.String@)">
+            <summary>
+            Reads the state of an entity from the serialized entity scheduler state.
+            </summary>
+            <param name="state">The orchestration state of the scheduler.</param>
+            <param name="serializerSettings">The serializer settings.</param>
+            <param name="result">The serialized state of the entity.</param>
+            <returns>true if the entity exists, false otherwise.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.ProviderUtils.ConvertOrchestrationStateToStatus(DurableTask.Core.OrchestrationState)">
+            <summary>
+            Converts the DTFx representation of the orchestration state into the DF representation.
+            </summary>
+            <param name="orchestrationState">The orchestration state.</param>
+            <returns>The orchestration status.</returns>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.PurgeHistoryResult">
             <summary>
             Class to hold statistics about this execution of purge history.
@@ -4161,6 +4223,12 @@
             <value>
             The name of the orchestrator function or <c>null</c> to use the function name.
             </value>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.TypedDurableClientBindingProvider">
+            <summary>
+            Provides an input binding for the typed client experience that
+            is generated via the source-generator nuget package.
+            </summary>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.WebJobsConnectionStringProvider">
             <summary>
