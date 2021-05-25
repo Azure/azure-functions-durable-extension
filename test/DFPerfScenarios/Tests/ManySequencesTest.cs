@@ -18,7 +18,7 @@ namespace DFPerfScenarios.Tests
     public static class ManySequencesTest
     {
         [FunctionName(nameof(StartManySequences))]
-        public static IActionResult StartManySequences(
+        public static async Task<IActionResult> StartManySequences(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = null)] HttpRequest req,
             [DurableClient] IDurableClient starter,
             ILogger log)
@@ -30,7 +30,7 @@ namespace DFPerfScenarios.Tests
 
             string orchestratorName = nameof(ManySequencesOrchestrator);
             string instanceId = $"{orchestratorName}-{DateTime.UtcNow:yyyyMMdd-hhmmss}";
-            starter.StartNewAsync(orchestratorName, instanceId, count);
+            await starter.StartNewAsync(orchestratorName, instanceId, count);
 
             return starter.CreateCheckStatusResponse(req, instanceId);
         }

@@ -22,86 +22,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     {
         private const string ConsolePrefix = "MS_DURABLE_FUNCTION_EVENTS_LOGS";
 
-        // The ordered list of regex columns in our legacy logging strategy for linux dedicated.
-        private readonly string[] orderedRegexCol = new string[]
-        {
-            "Account",
-            "ActiveActivities",
-            "ActiveOrchestrators",
-            "Age",
-            "AppName",
-            "ContinuedAsNew",
-            "CreatedTimeFrom",
-            "CreatedTimeTo",
-            "DequeueCount",
-            "Details",
-            "Duration",
-            "ETag",
-            "Episode",
-            "EventCount",
-            "EventName",
-            "EventType",
-            "Exception",
-            "ExceptionMessage",
-            "ExecutionId",
-            "ExtensionVersion",
-            "FromWorkerName",
-            "FunctionName",
-            "FunctionState",
-            "FunctionType",
-            "Input",
-            "InstanceId",
-            "IsCheckpointComplete",
-            "IsExtendedSession",
-            "IsReplay",
-            "LastCheckpointTime",
-            "LatencyMs",
-            "MessageId",
-            "MessagesRead",
-            "MessagesSent",
-            "MessagesUpdated",
-            "NewEventCount",
-            "NewEvents",
-            "NextVisibleTime",
-            "OperationId",
-            "OperationName",
-            "Output*",
-            "PartitionId",
-            "PendingOrchestratorMessages",
-            "PendingOrchestrators",
-            "Reason",
-            "RelatedActivityId",
-            "RequestCount",
-            "RequestId",
-            "RequestingExecutionId",
-            "RequestingInstance",
-            "RequestingInstanceId",
-            "Result",
-            "RuntimeStatus",
-            "SequenceNumber",
-            "SizeInBytes",
-            "SlotName",
-            "StatusCode",
-            "StorageRequests",
-            "Success",
-            "TableEntitiesRead",
-            "TableEntitiesWritten",
-            "TargetExecutionId",
-            "TargetInstanceId",
-            "TaskEventId",
-            "TaskHub",
-            "Token",
-            "TotalEventCount",
-            "Version",
-            "VisibilityTimeoutSeconds",
-            "WorkerName",
-        };
-
         // variable below is internal static for testing and other convenient purposes
         // we need to be able to change the logging path for a windows-based CI
         // the logger being internal static is convenient for flushing it
 #pragma warning disable SA1401 // Fields should be private
-        internal static string LoggingPath = "/var/log/functionsLogs/durableevents.log";
+        internal static string LoggingPath = "/var/log/functionsLogs/durableeventsJSON.log";
         internal static LinuxAppServiceFileLogger Logger; // The File Logger
 #pragma warning restore SA1401 // Fields should be private
 
@@ -209,89 +134,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 json.Add(keys[i], JToken.FromObject(values[i]));
             }
 
-            // These are for ease of use in our linux-dedicated regex-compensation strategy
-            string activityId = "";
-            string relatedActivityId = "";
-
             // Add ActivityId and RelatedActivityId, if non-null
             if (!eventData.ActivityId.Equals(Guid.Empty))
             {
                 json.Add("ActivityId", eventData.ActivityId);
-                activityId = eventData.ActivityId.ToString();
             }
 
             if (!eventData.RelatedActivityId.Equals(Guid.Empty))
             {
                 json.Add("RelatedActivityId", eventData.RelatedActivityId);
-                relatedActivityId = eventData.RelatedActivityId.ToString();
             }
 
-            string logString;
-            if (!this.writeToConsole)
-            {
-                // This path supports the legacy regex-based parser in Linux Dedicated.
-                // In the future, we'll be able to remove this and use JSON logging only
-                List<string> regexValues = new List<string>();
-
-                foreach (string column in this.orderedRegexCol)
-                {
-                    string val = "";
-                    if (json.TryGetValue(column, out JToken valJToken))
-                    {
-                        // We escape a few special characters to avoid parsing problems:
-                        // (1) Escaping newline-like characters such as \n and \r to keep logs being 1 line
-                        // (2) Escaping double-quotes (") to be single-quotes (') because some fields in our regex string are
-                        //     deliniated by double-quotes. Note, this was a convention copied from the Functions Host regex
-                        //     which also uses double-quotes to capture columns that may contain commas inside them.
-                        // (3) Escaping commas (",") for ";;" because commas separate our columns and so they have the potential to
-                        //     disrupt parsing.
-                        // Note: In retrospective, perhaps the regex-string could have been designed to avoid these awkward
-                        // parsing problems, but it wasn't because (1) it followed conventions from other regex-strings in our system
-                        // and because we asssumed we'd have a JSON-based logger that would have avoided these problems.
-                        val = (string)valJToken;
-                        val = val.Replace("\n", "\\n").Replace("\r", "\\r").Replace("\"", "'").Replace(",", ";;");
-                    }
-
-                    if (column == "Details" || column == "ExceptionMessage")
-                    {
-                        // Since Details and Exceptions may include commas, our regex string
-                        // expects this field to be wrapped in double-quotes to avoid capturing an "inner comma",
-                        // a convention adopted by the Functions Host regex string.
-                        val = '"' + val + '"';
-                    }
-
-                    regexValues.Add(val);
-                }
-
-                logString = string.Join(",", regexValues);
-
-                // To compensate for the missing columns in our regex, we write extra columns to WorkerName while separated
-                // with a special delineator: ";;DURABLEFUNCTIONS;;"
-                string delineator = ";;DURABLEFUNCTIONS;;";
-                string[] extraCols =
-                {
-                    (string)json["TaskName"],
-                    (string)json["EventId"],
-                    (string)json["ProviderName"],
-                    (string)json["Level"],
-                    (string)json["Pid"],
-                    (string)json["Tid"],
-                    (string)json["EventTimestamp"],
-                    activityId,
-                    relatedActivityId,
-                };
-
-                logString += delineator + string.Join(delineator, extraCols);
-            }
-            else
-            {
-                // Generate string-representation of JSON.
-                // Newtonsoft should take care of removing newlines for us.
-                // It is also important to specify no formatting to avoid
-                // pretty printing.
-                logString = json.ToString(Newtonsoft.Json.Formatting.None);
-            }
-
+            // Generate string-representation of JSON.
+            // Newtonsoft should take care of removing newlines for us.
+            // It is also important to specify no formatting to avoid
+            // pretty printing.
+            string logString = json.ToString(Newtonsoft.Json.Formatting.None);
             return logString;
         }
 

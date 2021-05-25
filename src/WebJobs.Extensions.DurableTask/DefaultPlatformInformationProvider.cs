@@ -63,5 +63,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             return this.nameResolver.Resolve("CONTAINER_NAME");
         }
+
+        public bool IsPython()
+        {
+            return this.nameResolver.Resolve("FUNCTIONS_WORKER_RUNTIME") == "python";
+        }
     }
 }

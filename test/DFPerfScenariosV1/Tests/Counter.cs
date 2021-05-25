@@ -1,7 +1,5 @@
-// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the MIT License. See LICENSE in the project root for license information.
-
 using System;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -14,39 +12,41 @@ using Newtonsoft.Json;
 namespace DFPerfScenarios
 {
     public static class CounterTest
-    {
-        [FunctionName("StartCounter")]
-        public static async Task<HttpResponseMessage> Start(
+	{
+		[FunctionName("StartCounter")]
+		public static async Task<HttpResponseMessage> Start(
             [HttpTrigger(AuthorizationLevel.Function, methods: "post", Route = "StartCounter")] HttpRequestMessage req,
             [DurableClient] IDurableClient starter,
             ILogger log)
-        {
-            Input input = await req.Content.ReadAsAsync<Input>();
-            if (input == null || input.EventCount <= 0)
+		{
+            if (!int.TryParse(req.GetQueryNameValuePairs().First(q => q.Key == "count").Value, out int count) || count < 1)
             {
-                return req.CreateErrorResponse(HttpStatusCode.BadRequest, "Please send a JSON payload formatted like {\"EventCount\": X} where X is a positive integer.");
+                return new HttpResponseMessage
+                {
+                    StatusCode = HttpStatusCode.BadRequest,
+                    ReasonPhrase = "A 'count' query string parameter is required and it must contain a positive number."
+                };
             }
 
-            string entityKey = DateTime.UtcNow.ToString("yyyyMMdd-hhmmss") + "-" + Guid.NewGuid().ToString("N");
-            var entityId = new EntityId("Counter", entityKey);
+            var entityId = new EntityId("Counter", Guid.NewGuid().ToString("N"));
 
-            log.LogInformation($"Sending {input.EventCount} messages...");
+            log.LogInformation($"Sending {count} messages...");
             var parallelOptions = new ParallelOptions
             {
                 MaxDegreeOfParallelism = 200
             };
 
-            Parallel.For(0, input.EventCount, parallelOptions, delegate (int i)
+            Parallel.For(0, count, parallelOptions, delegate (int i)
             {
                 starter.SignalEntityAsync(entityId, "add", 1).GetAwaiter().GetResult();
             });
 
             return req.CreateResponse(HttpStatusCode.Accepted);
-        }
+		}
 
         private class Input
         {
-            public int EventCount { get; set; }
+            public int EventCount { get; set; } = 100;
 
             public int Instances { get; set; } = 1;
         }
