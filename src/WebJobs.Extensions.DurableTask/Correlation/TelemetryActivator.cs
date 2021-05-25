@@ -71,7 +71,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
                 {
                     requestTraceContext.Stop();
 
-                    var requestTelemetry = requestTraceContext.CreateRequestTelemetry();
+                    var requestTelemetry = requestTraceContext.CreateRequestTelemetry(this.nameResolver);
                     this.telemetryClient.TrackRequest(requestTelemetry);
                 },
                 (TraceContextBase dependencyTraceContext) =>

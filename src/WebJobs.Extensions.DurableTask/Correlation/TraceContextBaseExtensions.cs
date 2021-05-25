@@ -16,8 +16,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
         /// Create RequestTelemetry from the TraceContext.
         /// </summary>
         /// <param name="context">TraceContext.</param>
+        /// <param name="nameResolver">NameResolver.</param>
         /// <returns>RequestTelemetry.</returns>
-        public static RequestTelemetry CreateRequestTelemetry(this TraceContextBase context)
+        public static RequestTelemetry CreateRequestTelemetry(this TraceContextBase context, INameResolver nameResolver)
         {
             var telemetry = new RequestTelemetry { Name = context.OperationName };
             telemetry.Duration = context.Duration;
@@ -31,7 +32,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
             telemetry.Context.Operation.Name = isActivityRequest ? operationNameArray[1] : context.OperationName;
 
             telemetry.Context.Operation.ParentId = context.TelemetryContextOperationParentId;
-            telemetry.Context.Cloud.RoleName = EndToEndTraceHelper.LocalAppName.ToLower();
+
+            var resolvedSiteName = nameResolver?.Resolve("WEBSITE_SITE_NAME")?.ToLower();
+            telemetry.Context.Cloud.RoleName = resolvedSiteName != null ? resolvedSiteName : string.Empty;
 
             return telemetry;
         }

@@ -91,10 +91,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     extendedSessions,
                     protocol);
 
-            var actual = result.Item1;
+            var traceTelemetry = result.Item1;
 
             // Using actual.First() because there's only one Request Telemetry where the name is "DtActivity Hello"
-            RequestTelemetry dtActivityReqTelemetry = actual.First(x => x.GetType() == typeof(RequestTelemetry) && x.Name.Contains(TraceConstants.Activity)) as RequestTelemetry;
+            RequestTelemetry dtActivityReqTelemetry = traceTelemetry.First(x => x.GetType() == typeof(RequestTelemetry) && x.Name.Contains(TraceConstants.Activity)) as RequestTelemetry;
             Assert.Equal("Hello", dtActivityReqTelemetry.Context.Operation.Name);
         }
 
@@ -119,10 +119,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     extendedSessions,
                     protocol);
 
-            var actual = result.Item1;
+            var traceTelemetry = result.Item1;
 
             // Comparing cloud role name with testSiteName.toLower() to match the lowercase app name convention
-            List<OperationTelemetry> requestTelemetryWithCloudRoleNamesList = actual.Where(x => x.GetType() == typeof(RequestTelemetry) && x.Context.Cloud.RoleName.Equals(TestSiteName.ToLower())).ToList();
+            List<OperationTelemetry> requestTelemetryWithCloudRoleNamesList = traceTelemetry.Where(x => x.GetType() == typeof(RequestTelemetry) && x.Context.Cloud.RoleName.Equals(TestSiteName.ToLower())).ToList();
             Assert.NotEmpty(requestTelemetryWithCloudRoleNamesList);
         }
 
@@ -194,14 +194,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var sendAction = new Action<ITelemetry>(
                 delegate(ITelemetry telemetry) { sendItems.Enqueue(telemetry); });
 
-            string currSiteName = Environment.GetEnvironmentVariable("WEBSITE_SITE_NAME");
-            Environment.SetEnvironmentVariable("WEBSITE_SITE_NAME", TestSiteName);
+            string siteNameEnvironmentVarName = "WEBSITE_SITE_NAME";
+            string siteNameEnvironmentVarValue = TestSiteName;
+            var mockNameResolver = GetNameResolverMock(new[] { (siteNameEnvironmentVarName, siteNameEnvironmentVarValue) });
 
             using (var host = TestHelpers.GetJobHost(
                 this.loggerProvider,
                 testName,
                 extendedSessions,
                 options: options,
+                nameResolver: mockNameResolver.Object,
                 onSend: sendAction))
             {
                 await host.StartAsync();
@@ -209,8 +211,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(90));
                 await host.StopAsync();
             }
-
-            Environment.SetEnvironmentVariable("WEBSITE_SITE_NAME", currSiteName);
 
             var sendItemList = this.ConvertTo(sendItems);
             var operationTelemetryList = sendItemList.OfType<OperationTelemetry>();
