@@ -115,6 +115,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     convertedValue = orchestrationContext;
                 }
+                else if (this.config.TypedCodeProvider.IsInitialized &&
+                    destinationType.Name == TypedCodeProvider.ITypedDurableOrchestrationContext)
+                {
+                    convertedValue = this.config.TypedCodeProvider.InstantiateTypedDurableOrchestrationContext(orchestrationContext);
+                }
                 else if (destinationType == typeof(string))
                 {
                     convertedValue = OrchestrationContextToString(orchestrationContext);
