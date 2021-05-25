@@ -1742,11 +1742,12 @@
             TraceContextBase extension methods.
             </summary>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.TraceContextBaseExtensions.CreateRequestTelemetry(DurableTask.Core.TraceContextBase)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.TraceContextBaseExtensions.CreateRequestTelemetry(DurableTask.Core.TraceContextBase,System.String)">
             <summary>
             Create RequestTelemetry from the TraceContext.
             </summary>
             <param name="context">TraceContext.</param>
+            <param name="siteName">Site name.</param>
             <returns>RequestTelemetry.</returns>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.TraceContextBaseExtensions.CreateDependencyTelemetry(DurableTask.Core.TraceContextBase)">
