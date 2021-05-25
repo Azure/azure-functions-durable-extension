@@ -5,6 +5,7 @@
 
 ## Bug fixes
 - Fix issue with local RPC endpoint used by non-.NET languages on Windows apps (#1800)
-- Emit warning instead of blocking startup if Distributed Tracing is enabled, but `APPINSIGHTS_INSTRUMENTATIONKEY` isn't set (#1787)
+- Emit warning instead of blocking startup if Distributed Tracing is enabled, but `APPINSIGHTS_INSTRUMENTATIONKEY` isn't set (#1787),
+- Assign cloud_RoleName and operation_Name fields to RequestTelemetry to populate Activity Function's Invocations List when Distributed Tracing is enabled (#1808)
 
 ## Breaking Changes

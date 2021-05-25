@@ -66,12 +66,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
 
         private void SetUpTelemetryCallbacks()
         {
+            var resolvedSiteName = this.nameResolver?.Resolve("WEBSITE_SITE_NAME")?.ToLower() ?? string.Empty;
+
             CorrelationTraceClient.SetUp(
                 (TraceContextBase requestTraceContext) =>
                 {
                     requestTraceContext.Stop();
 
-                    var requestTelemetry = requestTraceContext.CreateRequestTelemetry();
+                    var requestTelemetry = requestTraceContext.CreateRequestTelemetry(resolvedSiteName);
                     this.telemetryClient.TrackRequest(requestTelemetry);
                 },
                 (TraceContextBase dependencyTraceContext) =>

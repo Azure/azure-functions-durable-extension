@@ -26,6 +26,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     [Collection("Non-Parallel Collection")]
     public class CorrelationEndToEndTests
     {
+        private const string TestSiteName = "TestSite";
         private readonly ITestOutputHelper output;
         private readonly TestLoggerProvider loggerProvider;
 
@@ -67,6 +68,62 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     (typeof(DependencyTelemetry), $"{TraceConstants.Orchestrator} Hello"),
                     (typeof(RequestTelemetry), $"{TraceConstants.Activity} Hello"),
                 }.ToList(), actual.Select(x => (x.GetType(), x.Name)).ToList());
+        }
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(false, "W3CTraceContext")]
+        [InlineData(true, "HttpCorrelationProtocol")]
+        [InlineData(true, "W3CTraceContext")]
+        [InlineData(false, "HttpCorrelationProtocol")]
+        public async Task CheckOperationName_RequestTelemetry_SingleOrchestration(bool extendedSessions, string protocol)
+        {
+            string[] orchestrationFunctionNames =
+            {
+                nameof(TestOrchestrations.SayHelloWithActivity),
+            };
+
+            var result = await
+                this.ExecuteOrchestrationWithExceptionAsync(
+                    orchestrationFunctionNames,
+                    "SingleOrchestration",
+                    "world",
+                    extendedSessions,
+                    protocol);
+
+            var traceTelemetry = result.Item1;
+
+            // Using actual.First() because there's only one Request Telemetry where the name is "DtActivity Hello"
+            RequestTelemetry dtActivityReqTelemetry = traceTelemetry.First(x => x.GetType() == typeof(RequestTelemetry) && x.Name.Contains(TraceConstants.Activity)) as RequestTelemetry;
+            Assert.Equal("Hello", dtActivityReqTelemetry.Context.Operation.Name);
+        }
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(false, "W3CTraceContext")]
+        [InlineData(true, "HttpCorrelationProtocol")]
+        [InlineData(true, "W3CTraceContext")]
+        [InlineData(false, "HttpCorrelationProtocol")]
+        public async Task CheckCloudRoleName_RequestTelemetry_SingleOrchestration(bool extendedSessions, string protocol)
+        {
+            string[] orchestrationFunctionNames =
+            {
+                nameof(TestOrchestrations.SayHelloWithActivity),
+            };
+
+            var result = await
+                this.ExecuteOrchestrationWithExceptionAsync(
+                    orchestrationFunctionNames,
+                    "SingleOrchestration",
+                    "world",
+                    extendedSessions,
+                    protocol);
+
+            var traceTelemetry = result.Item1;
+
+            // Comparing cloud role name with testSiteName.toLower() to match the lowercase app name convention
+            List<OperationTelemetry> requestTelemetryWithCloudRoleNamesList = traceTelemetry.Where(x => x.GetType() == typeof(RequestTelemetry) && x.Context.Cloud.RoleName.Equals(TestSiteName.ToLower())).ToList();
+            Assert.NotEmpty(requestTelemetryWithCloudRoleNamesList);
         }
 
         /*
@@ -136,11 +193,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             options.Tracing = traceOptions;
             var sendAction = new Action<ITelemetry>(
                 delegate(ITelemetry telemetry) { sendItems.Enqueue(telemetry); });
+
+            string siteNameEnvironmentVarName = "WEBSITE_SITE_NAME";
+            string siteNameEnvironmentVarValue = TestSiteName;
+            var mockNameResolver = GetNameResolverMock(new[] { (siteNameEnvironmentVarName, siteNameEnvironmentVarValue) });
+
             using (var host = TestHelpers.GetJobHost(
                 this.loggerProvider,
                 testName,
                 extendedSessions,
                 options: options,
+                nameResolver: mockNameResolver.Object,
                 onSend: sendAction))
             {
                 await host.StartAsync();
