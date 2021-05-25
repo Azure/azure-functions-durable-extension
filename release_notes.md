@@ -5,5 +5,6 @@
 
 ## Bug fixes
 - Fix issue with local RPC endpoint used by non-.NET languages on Windows apps (#1800)
+- Emit warning instead of blocking startup if Distributed Tracing is enabled, but `APPINSIGHTS_INSTRUMENTATIONKEY` isn't set (#1787)
 
 ## Breaking Changes
