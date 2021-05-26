@@ -106,8 +106,8 @@ namespace DFTestBot
                     throw new Exception(message);
                 }
 
-                string statusQueryGetUri = Environment.NewLine + $"StatusQueryGetUri: {managementUrls.StatusQueryGetUri}";
-                await context.CallActivityAsync(nameof(PatchGitHubComment), (testParameters.GitHubCommentIdApiUrl, statusQueryUri));
+                string statusQueryGetUriMessage = Environment.NewLine + $"StatusQueryGetUri: {managementUrls.StatusQueryGetUri}";
+                await context.CallActivityAsync(nameof(PatchGitHubComment), (testParameters.GitHubCommentIdApiUrl, statusQueryGetUriMessage));
 
                 await SleepAsync(context, TimeSpan.FromMinutes(1));
                 DurableOrchestrationStatus status = await WaitForStartAsync(context, log, managementUrls);
