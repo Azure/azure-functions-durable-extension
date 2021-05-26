@@ -91,7 +91,7 @@ namespace DFTestBot
                     throw new Exception(message);
                 }
 
-                if (testParameters.TestName.Equals("Counter"))
+                if (testParameters.TestName.Equals("StartCounter"))
                 {
                     string finalCounterMessage = GetFinalMessageWithAppLensLink(context, startTimeUtc, testParameters);
                     await context.CallActivityAsync(nameof(PatchGitHubComment), (testParameters.GitHubCommentIdApiUrl, finalCounterMessage));
@@ -105,9 +105,6 @@ namespace DFTestBot
                     await context.CallActivityAsync(nameof(PatchGitHubComment), (testParameters.GitHubCommentIdApiUrl, message));
                     throw new Exception(message);
                 }
-
-                string statusQueryGetUriMessage = Environment.NewLine + $"StatusQueryGetUri: {managementUrls.StatusQueryGetUri}";
-                await context.CallActivityAsync(nameof(PatchGitHubComment), (testParameters.GitHubCommentIdApiUrl, statusQueryGetUriMessage));
 
                 await SleepAsync(context, TimeSpan.FromMinutes(1));
                 DurableOrchestrationStatus status = await WaitForStartAsync(context, log, managementUrls);

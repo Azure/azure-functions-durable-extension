@@ -45,9 +45,9 @@ namespace DFTestBot
                 {
                     Description = "Runs the entity counter test. Example: `/DFTest run SingleCounterEntity end`.",
                     AppLensDetector = "DurableFunctions_SingleCounterEntityTest",
-                    StarterFunctionName = "Counter",
+                    StarterFunctionName = "StartCounter",
                     IsEnabled = true,
-                    HttpPath = "tests/Counter",
+                    HttpPath = "tests/StartCounter",
                     DirPath = null
                 },
                 ["SmokeTestV3"] = new TestDescription
