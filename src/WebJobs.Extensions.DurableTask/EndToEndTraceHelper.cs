@@ -239,6 +239,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
+        public void ProcessingOutOfProcPayload(
+            string functionName,
+            string taskHub,
+            string instanceId,
+            string details)
+        {
+            EtwEventSource.Instance.ProcessingOutOfProcPayload(
+                functionName,
+                taskHub,
+                LocalAppName,
+                LocalSlotName,
+                instanceId,
+                details,
+                ExtensionVersion);
+
+            this.logger.LogDebug(
+                "{instanceId}: Function '{functionName} ({functionType})' returned the following OOProc orchestration state: {details}. : {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
+                instanceId, functionName, FunctionType.Orchestrator, details, taskHub, LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++);
+        }
+
         public void FunctionTerminated(
             string hubName,
             string functionName,

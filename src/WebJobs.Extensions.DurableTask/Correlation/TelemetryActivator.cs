@@ -7,6 +7,7 @@ using DurableTask.Core.Settings;
 using Microsoft.ApplicationInsights;
 using Microsoft.ApplicationInsights.Channel;
 using Microsoft.ApplicationInsights.Extensibility;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
@@ -16,16 +17,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
     /// </summary>
     public class TelemetryActivator : ITelemetryActivator
     {
+        private readonly DurableTaskOptions options;
         private TelemetryClient telemetryClient;
-        private IOptions<DurableTaskOptions> options;
+        private EndToEndTraceHelper endToEndTraceHelper;
+        private INameResolver nameResolver;
 
         /// <summary>
         /// Constructor for initializing Distributed Tracing.
         /// </summary>
         /// <param name="options">DurableTask options.</param>
-        public TelemetryActivator(IOptions<DurableTaskOptions> options)
+        /// <param name="nameResolver">Name resolver used for environment variables.</param>
+        public TelemetryActivator(IOptions<DurableTaskOptions> options, INameResolver nameResolver)
         {
-            this.options = options;
+            this.options = options.Value;
+            this.nameResolver = nameResolver;
         }
 
         /// <summary>
@@ -37,11 +42,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
         /// <summary>
         /// Initialize is initialize the telemetry client.
         /// </summary>
-        public void Initialize()
+        public void Initialize(ILogger logger)
         {
             this.SetUpDistributedTracing();
             if (CorrelationSettings.Current.EnableDistributedTracing)
             {
+                this.endToEndTraceHelper = new EndToEndTraceHelper(logger, this.options.Tracing.TraceReplayEvents);
                 this.SetUpTelemetryClient();
                 this.SetUpTelemetryCallbacks();
             }
@@ -49,7 +55,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
 
         private void SetUpDistributedTracing()
         {
-            DurableTaskOptions durableTaskOptions = this.options.Value;
+            DurableTaskOptions durableTaskOptions = this.options;
             CorrelationSettings.Current.EnableDistributedTracing =
                 durableTaskOptions.Tracing.DistributedTracingEnabled;
             CorrelationSettings.Current.Protocol =
@@ -60,12 +66,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
 
         private void SetUpTelemetryCallbacks()
         {
+            var resolvedSiteName = this.nameResolver?.Resolve("WEBSITE_SITE_NAME")?.ToLower() ?? string.Empty;
+
             CorrelationTraceClient.SetUp(
                 (TraceContextBase requestTraceContext) =>
                 {
                     requestTraceContext.Stop();
 
-                    var requestTelemetry = requestTraceContext.CreateRequestTelemetry();
+                    var requestTelemetry = requestTraceContext.CreateRequestTelemetry(resolvedSiteName);
                     this.telemetryClient.TrackRequest(requestTelemetry);
                 },
                 (TraceContextBase dependencyTraceContext) =>
@@ -82,6 +90,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
 
         private void SetUpTelemetryClient()
         {
+            this.endToEndTraceHelper.ExtensionInformationalEvent(
+                    hubName: this.options.HubName,
+                    functionName: string.Empty,
+                    instanceId: string.Empty,
+                    message: "Setting up the telemetry client...",
+                    writeToUserLogs: true);
+
             TelemetryConfiguration config = TelemetryConfiguration.CreateDefault();
             if (this.OnSend != null)
             {
@@ -93,7 +108,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
             telemetryInitializer.ExcludeComponentCorrelationHttpHeadersOnDomains.Add("127.0.0.1");
             config.TelemetryInitializers.Add(telemetryInitializer);
 
-            config.InstrumentationKey = Environment.GetEnvironmentVariable("APPINSIGHTS_INSTRUMENTATIONKEY");
+            string resolvedInstrumentationKey = this.nameResolver.Resolve("APPINSIGHTS_INSTRUMENTATIONKEY");
+            if (!string.IsNullOrEmpty(resolvedInstrumentationKey))
+            {
+                this.endToEndTraceHelper.ExtensionInformationalEvent(
+                    hubName: this.options.HubName,
+                    functionName: string.Empty,
+                    instanceId: string.Empty,
+                    message: "Reading APPINSIGHTS_INSTRUMENTATIONKEY...",
+                    writeToUserLogs: true);
+
+                config.InstrumentationKey = resolvedInstrumentationKey;
+            }
+            else
+            {
+                this.endToEndTraceHelper.ExtensionWarningEvent(
+                    hubName: this.options.HubName,
+                    functionName: string.Empty,
+                    instanceId: string.Empty,
+                    message: "'APPINSIGHTS_INSTRUMENTATIONKEY' isn't defined in the current environment variables, but Distributed Tracing is enabled. Please set 'APPINSIGHTS_INSTRUMENTATIONKEY' to use Distributed Tracing.");
+            }
 
             this.telemetryClient = new TelemetryClient(config);
         }

@@ -165,6 +165,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.MessageDataConverter = CreateMessageDataConverter(messageSerializerSettingsFactory);
             this.ErrorDataConverter = this.CreateErrorDataConverter(errorSerializerSettingsFactory);
 
+            this.TypedCodeProvider = new TypedCodeProvider();
+            this.TypedCodeProvider.Initialize();
+
             this.HttpApiHandler = new HttpApiHandler(this, logger);
 #if !FUNCTIONS_V1
             // This line ensure every time we need the webhook URI, we get it directly from the
@@ -182,7 +185,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // The RPC server is stopped when the host has finished shutting down.
             this.hostLifetimeService.OnStopped.Register(this.StopLocalRcpServer);
             this.telemetryActivator = telemetryActivator;
-            this.telemetryActivator?.Initialize();
+            this.telemetryActivator?.Initialize(logger);
 #endif
         }
 
@@ -231,6 +234,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         internal MessagePayloadDataConverter MessageDataConverter { get; private set; }
 
         internal MessagePayloadDataConverter ErrorDataConverter { get; private set; }
+
+        internal TypedCodeProvider TypedCodeProvider { get; private set; }
 
         internal TimeSpan MessageReorderWindow
             => this.defaultDurabilityProvider.GuaranteesOrderedDelivery ? TimeSpan.Zero : TimeSpan.FromMinutes(this.Options.EntityMessageReorderWindowInMinutes);
@@ -353,6 +358,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             rule.BindToInput<IDurableEntityClient>(this.GetClient);
             rule.BindToInput<IDurableClient>(this.GetClient);
 
+            if (this.TypedCodeProvider.IsInitialized)
+            {
+                rule.Bind(new TypedDurableClientBindingProvider(this.TypedCodeProvider, this.GetClient));
+            }
+
             // We add a binding rule to support the now deprecated `orchestrationClient` binding
             // A cleaner solution would be to have the prior rule have an OR-style selector between
             // DurableClientAttribute and OrchestrationClientAttribute, but it's unclear if that's
@@ -368,6 +378,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             backwardsCompRule.BindToInput<IDurableOrchestrationClient>(this.GetClient);
             backwardsCompRule.BindToInput<IDurableEntityClient>(this.GetClient);
             backwardsCompRule.BindToInput<IDurableClient>(this.GetClient);
+
+            if (this.TypedCodeProvider.IsInitialized)
+            {
+                backwardsCompRule.Bind(new TypedDurableClientBindingProvider(this.TypedCodeProvider, this.GetClient));
+            }
 
             string storageConnectionString = null;
             var providerFactory = this.durabilityProviderFactory as AzureStorageDurabilityProviderFactory;
@@ -516,6 +531,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.MessageDataConverter = new MessagePayloadDataConverter(messageSerializerSettingsFactory.CreateJsonSerializerSettings(), true);
             this.ErrorDataConverter = new MessagePayloadDataConverter(errorSerializerSettingsFactory.CreateJsonSerializerSettings(), true);
             this.HttpApiHandler = new HttpApiHandler(this, logger);
+            this.TypedCodeProvider = new TypedCodeProvider();
+            this.TypedCodeProvider.Initialize();
 #endif
         }
 
