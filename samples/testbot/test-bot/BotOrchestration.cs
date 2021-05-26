@@ -91,6 +91,13 @@ namespace DFTestBot
                     throw new Exception(message);
                 }
 
+                if (testParameters.TestName.Equals("Counter"))
+                {
+                    string finalCounterMessage = GetFinalMessageWithAppLensLink(context, startTimeUtc, testParameters);
+                    await context.CallActivityAsync(nameof(PatchGitHubComment), (testParameters.GitHubCommentIdApiUrl, finalCounterMessage));
+                    return;
+                }
+
                 // Get the URL for doing status queries
                 if (managementUrls == null || string.IsNullOrEmpty(managementUrls.StatusQueryGetUri))
                 {
@@ -98,6 +105,9 @@ namespace DFTestBot
                     await context.CallActivityAsync(nameof(PatchGitHubComment), (testParameters.GitHubCommentIdApiUrl, message));
                     throw new Exception(message);
                 }
+
+                string statusQueryGetUri = Environment.NewLine + $"StatusQueryGetUri: {managementUrls.StatusQueryGetUri}";
+                await context.CallActivityAsync(nameof(PatchGitHubComment), (testParameters.GitHubCommentIdApiUrl, statusQueryUri));
 
                 await SleepAsync(context, TimeSpan.FromMinutes(1));
                 DurableOrchestrationStatus status = await WaitForStartAsync(context, log, managementUrls);
@@ -147,12 +157,7 @@ namespace DFTestBot
                 };
 
                 // Generate the AppLens link
-                DateTime endTimeUtc = context.CurrentUtcDateTime.AddMinutes(5);
-                string resultsAvailableTime = CalculateResultsAvailableTime(context, startTimeUtc, endTimeUtc);
-                string link = GenerateAppLensLink(context, testParameters, startTimeUtc, endTimeUtc);
-
-                string appLensLinkString = $"You can view more detailed results in [AppLens]({link}) (Microsoft internal). The results will be available at {resultsAvailableTime}🔗📈";
-                finalMessage += Environment.NewLine + Environment.NewLine + appLensLinkString;
+                finalMessage += GetFinalMessageWithAppLensLink(context, startTimeUtc, testParameters);
                 await context.CallActivityAsync(nameof(PatchGitHubComment), (testParameters.GitHubCommentIdApiUrl, finalMessage));
             }
             catch (Exception)
@@ -161,7 +166,17 @@ namespace DFTestBot
                 await context.CallActivityAsync(nameof(PatchGitHubComment), (testParameters.GitHubCommentIdApiUrl, message));
                 throw;
             }
+        }
 
+        private static string GetFinalMessageWithAppLensLink(IDurableOrchestrationContext context, DateTime startTimeUtc, TestParameters testParameters)
+        {
+            DateTime endTimeUtc = context.CurrentUtcDateTime.AddMinutes(5);
+            string resultsAvailableTime = CalculateResultsAvailableTime(context, startTimeUtc, endTimeUtc);
+            string link = GenerateAppLensLink(context, testParameters, startTimeUtc, endTimeUtc);
+
+            string appLensLinkString = $"You can view more detailed results in [AppLens]({link}) (Microsoft internal). The results will be available at {resultsAvailableTime}🔗📈";
+            string appLensLinkMessage = Environment.NewLine + Environment.NewLine + appLensLinkString;
+            return appLensLinkMessage;
         }
 
         static string CalculateResultsAvailableTime(IDurableOrchestrationContext context, DateTime startTimeUtc, DateTime endTimeUtc)
