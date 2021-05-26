@@ -38,7 +38,7 @@ namespace DFPerfScenarios
                 starter.SignalEntityAsync(entityId, "add", 1).GetAwaiter().GetResult();
             });
 
-            return new OkObjectResult("Added to entity");
+            return new AcceptedResult();
 		}
 
         private class Input
