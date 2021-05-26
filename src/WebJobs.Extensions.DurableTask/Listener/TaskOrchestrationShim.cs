@@ -230,11 +230,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private async Task TraceAndReplay(object result, Exception ex = null)
         {
             var invocationResult = new OrchestrationInvocationResult(result, ex);
-            this.Config.TraceHelper.ProcessingOutOfProcPayload(
+            /* this.Config.TraceHelper.ProcessingOutOfProcPayload(
                 functionName: this.Context.FunctionName,
                 taskHub: this.Context.HubName,
                 instanceId: this.Context.InstanceId,
                 details: invocationResult.JsonString);
+            */
             await this.outOfProcShim.HandleDurableTaskReplay(invocationResult);
         }
 
