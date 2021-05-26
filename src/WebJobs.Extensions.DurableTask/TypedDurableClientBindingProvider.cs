@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
+using System;
 using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Host.Bindings;
@@ -6,7 +9,11 @@ using Microsoft.Azure.WebJobs.Host.Protocols;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
-    public class TypedDurableClientBindingProvider : IBindingProvider
+    /// <summary>
+    /// Provides an input binding for the typed client experience that
+    /// is generated via the source-generator nuget package.
+    /// </summary>
+    internal class TypedDurableClientBindingProvider : IBindingProvider
     {
         private readonly Func<DurableClientAttribute, IDurableClient> clientGenerator;
         private readonly TypedCodeProvider typedCodeProvider;
