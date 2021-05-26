@@ -302,7 +302,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <summary>
         ///  Initiates the operation to steal the AppLease if this app doesn't already have it. Must be using the AppLease feature by setting UseAppLease to true in host.json.
         /// </summary>
-        /// <returns>A task that completes when the steal operation has started and the message has been written to storage.</returns>
+        /// <returns>A task that completes when the steal operation has started.</returns>
         Task InitiateStealAppLeaseOperationAsync();
     }
 }

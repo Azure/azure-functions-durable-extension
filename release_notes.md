@@ -1,4 +1,5 @@
 ## New Features
+- Added InitiateStealAppLeaseOperationAsync .Net Api and /stealapplease Http Api that will allow App Lease users to control when they want the App Lease to swap back to their primary app. The previous lease owner app will automatically reset its state once it's lost the lease and attempt to acquire the App Lease once again, removing the manual burden of the App Lease feature. (https://github.com/Azure/azure-functions-durable-extension/pull/1769 https://github.com/Azure/durabletask/pull/529)
 - Improved supportability logs on Linux Dedicated plans (https://github.com/Azure/azure-functions-durable-extension/pull/1721)
 - Improved concurrency defaults in Consumption plans for C# and JS (https://github.com/Azure/azure-functions-durable-extension/pull/1846)
 - Initial work to simplify out-of-process execution model (https://github.com/Azure/azure-functions-durable-extension/pull/1836)
