@@ -26,7 +26,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private const string InstancesControllerSegment = "instances/";
         private const string OrchestratorsControllerSegment = "orchestrators/";
         private const string EntitiesControllerSegment = "entities/";
-        private const string StealAppLeaseControllerSegment = "stealapplease/";
+        private const string AppLeaseMakePrimaryControllerSegment = "makeprimary/";
 
         // Route parameters
         private const string FunctionNameRouteParameter = "functionName";
@@ -167,10 +167,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return new TemplateMatcher(TemplateParser.Parse($"{InstancesControllerSegment}{{{InstanceIdRouteParameter}?}}/{RaiseEventOperation}/{{{EventNameRouteParameter}}}"), new RouteValueDictionary());
         }
 
-        // /stealapplease
+        // /makeprimary
         private static TemplateMatcher GetStealAppLeaseRoute()
         {
-            return new TemplateMatcher(TemplateParser.Parse($"{StealAppLeaseControllerSegment}"), new RouteValueDictionary());
+            return new TemplateMatcher(TemplateParser.Parse($"{AppLeaseMakePrimaryControllerSegment}"), new RouteValueDictionary());
         }
 
         internal HttpManagementPayload CreateHttpManagementPayload(
@@ -670,7 +670,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             IDurableOrchestrationClient client = this.GetClient(request);
 
-            await client.InitiateStealAppLeaseOperationAsync();
+            await client.MakeCurrentAppPrimaryAsync();
 
             return request.CreateResponse(HttpStatusCode.OK);
         }

@@ -976,7 +976,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc/>
-        Task IDurableOrchestrationClient.InitiateStealAppLeaseOperationAsync()
+        Task IDurableOrchestrationClient.MakeCurrentAppPrimaryAsync()
         {
             if (this.durableTaskOptions.UseAppLease == false)
             {
