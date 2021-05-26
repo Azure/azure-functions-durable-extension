@@ -2,6 +2,7 @@ using System;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
@@ -14,7 +15,7 @@ namespace DFPerfScenarios
     public static class CounterTest
 	{
 		[FunctionName("StartCounter")]
-		public static async Task<IActionResult> Start(
+		public static IActionResult Start(
             [HttpTrigger(AuthorizationLevel.Function, methods: "post", Route = "StartCounter")] HttpRequest req,
             [DurableClient] IDurableClient starter,
             ILogger log)
@@ -37,7 +38,7 @@ namespace DFPerfScenarios
                 starter.SignalEntityAsync(entityId, "add", 1).GetAwaiter().GetResult();
             });
 
-            return req.CreateResponse(HttpStatusCode.Accepted);
+            return new AcceptedResult();
 		}
 
         private class Input
