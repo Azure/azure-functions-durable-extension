@@ -10,7 +10,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 using WebJobs.Extensions.DurableTask.CodeGeneration.SourceGenerator.Generators;
 
-namespace WebJobs.Extensions.DurableTask.CodeGeneration.SourceGenerator
+namespace DurableFunctions.CodeGen
 {
     /// <summary>
     /// Source generator for creating helper classes based on DurableFunction usage within the project.

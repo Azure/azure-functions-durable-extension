@@ -7,7 +7,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
-using Microsoft.Azure.Webjobs.Extensions.DurableTask.Generated;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Generated;
 using WebJobs.Extensions.DurableTask.CodeGen.Example.Models;
 
 namespace WebJobs.Extensions.DurableTask.CodeGen.Example
@@ -85,7 +85,7 @@ namespace WebJobs.Extensions.DurableTask.CodeGen.Example
         // Don't add trigger attribute
         [FunctionName("Divide")]
         public Task Divide(
-            IDurableActivityContext context
+            [ActivityTrigger] IDurableActivityContext context
         )
         {
             return Task.FromResult(0);

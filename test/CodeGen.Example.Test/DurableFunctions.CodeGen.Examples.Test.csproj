@@ -23,7 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\WebJobs.Extensions.DurableTask.CodeGeneration\WebJobs.Extensions.DurableTask.CodeGen.Example\WebJobs.Extensions.DurableTask.Codegen.Example.csproj" />
+    <ProjectReference Include="..\..\src\DurableFunctions.CodeGeneration\Example\DurableFunctions.CodeGen.Example.csproj" />
   </ItemGroup>
   
   <ItemGroup>

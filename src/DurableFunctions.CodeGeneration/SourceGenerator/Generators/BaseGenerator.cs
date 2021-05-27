@@ -11,7 +11,7 @@ namespace WebJobs.Extensions.DurableTask.CodeGeneration.SourceGenerator.Generato
 {
     public abstract class BaseGenerator
     {
-        private const string Namespace = "Microsoft.Azure.Webjobs.Extensions.DurableTask.Generated";
+        private const string Namespace = "Microsoft.Azure.WebJobs.Extensions.DurableTask.Generated";
 
         protected static NamespaceDeclarationSyntax GenerateNamespace()
         {

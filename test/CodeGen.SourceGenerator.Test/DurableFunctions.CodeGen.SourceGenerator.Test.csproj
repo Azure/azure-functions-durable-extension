@@ -29,7 +29,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\WebJobs.Extensions.DurableTask.CodeGeneration\WebJobs.Extensions.DurableTask.CodeGen.SourceGenerator\WebJobs.Extensions.DurableTask.CodeGen.SourceGenerator.csproj" />
+    <ProjectReference Include="..\..\src\DurableFunctions.CodeGeneration\SourceGenerator\DurableFunctions.CodeGen.SourceGenerator.csproj" />
   </ItemGroup>
   
   <ItemGroup>

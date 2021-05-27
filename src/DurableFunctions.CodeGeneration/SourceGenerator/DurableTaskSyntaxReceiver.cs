@@ -9,7 +9,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using WebJobs.Extensions.DurableTask.CodeGeneration.SourceGenerator.Models;
 using WebJobs.Extensions.DurableTask.CodeGeneration.SourceGenerator.Utils;
 
-namespace WebJobs.Extensions.DurableTask.CodeGeneration.SourceGenerator
+namespace DurableFunctions.CodeGen
 {
     /// <summary>
     /// Syntax receiver for accumulating DurableFunctions during the compilation process.

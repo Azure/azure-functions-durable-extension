@@ -2,7 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
-using Microsoft.Azure.Webjobs.Extensions.DurableTask.Generated;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Generated;
 using Moq;
 using System.Threading.Tasks;
 using WebJobs.Extensions.DurableTask.CodeGen.Example;
@@ -25,7 +25,7 @@ namespace DurableTask.Example.Tests.Backup
             var activityCaller = mockActivityCaller.Object;
 
             var mockContext = new Mock<ITypedDurableOrchestrationContext>();
-            mockContext.Setup(c => c.Activity).Returns(activityCaller);
+            mockContext.Setup(c => c.Activities).Returns(activityCaller);
             mockContext.Setup(c => c.GetInput<(int, int)>()).Returns((5, 10));
             var context = mockContext.Object;
 
@@ -37,7 +37,7 @@ namespace DurableTask.Example.Tests.Backup
             // Assert
             Assert.Equal(answer, result);
             mockContext.Verify(c => c.GetInput<(int, int)>(), Times.Once);
-            mockContext.Verify(c => c.Activity, Times.Exactly(num2));
+            mockContext.Verify(c => c.Activities, Times.Exactly(num2));
             mockActivityCaller.Verify(c => c.Add(It.IsAny<int>(), It.IsAny<int>()), Times.Exactly(num2));
         }
     }
