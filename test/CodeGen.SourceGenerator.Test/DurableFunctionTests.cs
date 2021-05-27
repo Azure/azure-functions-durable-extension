@@ -2,11 +2,11 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System.Linq;
-using WebJobs.Extensions.DurableTask.CodeGeneration.SourceGenerator.Models;
-using WebJobs.Extensions.DurableTask.CodeGeneration.SourceGenerator.Tests.Models;
+using DurableFunctions.TypedInterfaces.SourceGenerator.Models;
+using DurableFunctions.TypedInterfaces.SourceGenerator.Tests.Models;
 using Xunit;
 
-namespace WebJobs.Extensions.DurableTask.CodeGeneration.SourceGenerator.Tests
+namespace DurableFunctions.TypedInterfaces.SourceGenerator.Tests
 {
     public class DurableFunctionTests
     {

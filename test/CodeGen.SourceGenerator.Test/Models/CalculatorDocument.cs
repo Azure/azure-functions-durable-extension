@@ -1,7 +1,7 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-namespace WebJobs.Extensions.DurableTask.CodeGeneration.SourceGenerator.Tests.Models
+namespace DurableFunctions.TypedInterfaces.SourceGenerator.Tests.Models
 {
     using System;
     using System.Linq;

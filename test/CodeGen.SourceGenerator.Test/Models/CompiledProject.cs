@@ -7,7 +7,7 @@ using Microsoft.Build.Locator;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.MSBuild;
 
-namespace WebJobs.Extensions.DurableTask.CodeGeneration.SourceGenerator.Tests.Models
+namespace DurableFunctions.TypedInterfaces.SourceGenerator.Tests.Models
 {
     public class CompiledProject
     {

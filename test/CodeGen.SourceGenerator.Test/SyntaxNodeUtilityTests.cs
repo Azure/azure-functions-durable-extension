@@ -4,12 +4,12 @@
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using WebJobs.Extensions.DurableTask.CodeGeneration.SourceGenerator.Models;
-using WebJobs.Extensions.DurableTask.CodeGeneration.SourceGenerator.Tests.Models;
-using WebJobs.Extensions.DurableTask.CodeGeneration.SourceGenerator.Utils;
+using DurableFunctions.TypedInterfaces.SourceGenerator.Models;
+using DurableFunctions.TypedInterfaces.SourceGenerator.Tests.Models;
+using DurableFunctions.TypedInterfaces.SourceGenerator.Utils;
 using Xunit;
 
-namespace WebJobs.Extensions.DurableTask.CodeGeneration.SourceGenerator.Tests
+namespace DurableFunctions.TypedInterfaces.SourceGenerator.Tests
 {
     public class SyntaxNodeUtilityTests
     {
