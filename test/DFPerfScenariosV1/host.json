@@ -10,7 +10,8 @@
     "storageProvider": {
       "partitionCount": 6,
       "controlQueueBufferThreshold": 1000
-    }
+    },
+    "MaxOrchestrationActions": 300000
   },
   "applicationInsights": {
     "sampling": {
