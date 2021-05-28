@@ -298,5 +298,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <returns>A task that completes when the orchestration is started. The task contains the instance id of the started
         /// orchestratation instance.</returns>
         Task<string> RestartAsync(string instanceId, bool restartWithNewInstanceId = true);
+
+        /// <summary>
+        ///  Makes the current app the primary app, if it isn't already. Must be using the AppLease feature by setting UseAppLease to true in host.json.
+        /// </summary>
+        /// <returns>A task that completes when the operation has started.</returns>
+        Task MakeCurrentAppPrimaryAsync();
     }
 }

@@ -38,6 +38,9 @@
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageDurabilityProvider.GetOrchestrationStateWithPagination(Microsoft.Azure.WebJobs.Extensions.DurableTask.OrchestrationStatusQueryCondition,System.Threading.CancellationToken)">
             <inheritdoc/>
         </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageDurabilityProvider.MakeCurrentAppPrimaryAsync">
+            <inheritdoc/>
+        </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageDurabilityProvider.TryGetScaleMonitor(System.String,System.String,System.String,System.String,Microsoft.Azure.WebJobs.Host.Scale.IScaleMonitor@)">
             <inheritdoc/>
         </member>
@@ -178,6 +181,9 @@
             <inheritdoc/>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient.Microsoft#Azure#WebJobs#Extensions#DurableTask#IDurableEntityClient#SignalEntityAsync``1(Microsoft.Azure.WebJobs.Extensions.DurableTask.EntityId,System.DateTime,System.Action{``0})">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient.Microsoft#Azure#WebJobs#Extensions#DurableTask#IDurableOrchestrationClient#MakeCurrentAppPrimaryAsync">
             <inheritdoc/>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations.DurableClientFactory">
@@ -997,6 +1003,12 @@
             reuse the old instanceId. Defauls to <c>true</c>.</param>
             <returns>A task that completes when the orchestration is started. The task contains the instance id of the started
             orchestratation instance.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient.MakeCurrentAppPrimaryAsync">
+            <summary>
+             Makes the current app the primary app, if it isn't already. Must be using the AppLease feature by setting UseAppLease to true in host.json.
+            </summary>
+            <returns>A task that completes when the operation has started.</returns>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationContext">
             <summary>
@@ -2000,6 +2012,12 @@
             <param name="instanceId">The ID of the orchestration instance to rewind.</param>
             <param name="reason">The reason for rewinding the orchestration instance.</param>
             <returns>A task that completes when the rewind message is enqueued.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.MakeCurrentAppPrimaryAsync">
+            <summary>
+             Makes the current app the primary app, if it isn't already. Must be using the AppLease feature.
+            </summary>
+            <returns>A task that completes when the operation has started.</returns>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.CreateTaskOrchestrationAsync(DurableTask.Core.TaskMessage)">
             <inheritdoc />

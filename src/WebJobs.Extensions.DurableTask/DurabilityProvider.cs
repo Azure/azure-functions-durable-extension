@@ -360,6 +360,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             throw this.GetNotImplementedException(nameof(this.RewindAsync));
         }
 
+        /// <summary>
+        ///  Makes the current app the primary app, if it isn't already. Must be using the AppLease feature.
+        /// </summary>
+        /// <returns>A task that completes when the operation has started.</returns>
+        public virtual Task MakeCurrentAppPrimaryAsync()
+        {
+            throw this.GetNotImplementedException(nameof(this.MakeCurrentAppPrimaryAsync));
+        }
+
         /// <inheritdoc />
         public Task CreateTaskOrchestrationAsync(TaskMessage creationMessage)
         {

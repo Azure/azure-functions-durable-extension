@@ -26,6 +26,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private const string InstancesControllerSegment = "instances/";
         private const string OrchestratorsControllerSegment = "orchestrators/";
         private const string EntitiesControllerSegment = "entities/";
+        private const string AppLeaseMakePrimaryControllerSegment = "makeprimary/";
 
         // Route parameters
         private const string FunctionNameRouteParameter = "functionName";
@@ -64,6 +65,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private static readonly TemplateMatcher EntityRoute = GetEntityRoute();
         private static readonly TemplateMatcher InstancesRoute = GetInstancesRoute();
         private static readonly TemplateMatcher InstanceRaiseEventRoute = GetInstanceRaiseEventRoute();
+        private static readonly TemplateMatcher AppLeaseMakePrimaryRoute = MakePrimaryRoute();
 
         private readonly ILogger logger;
         private readonly MessagePayloadDataConverter messageDataConverter;
@@ -163,6 +165,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private static TemplateMatcher GetInstanceRaiseEventRoute()
         {
             return new TemplateMatcher(TemplateParser.Parse($"{InstancesControllerSegment}{{{InstanceIdRouteParameter}?}}/{RaiseEventOperation}/{{{EventNameRouteParameter}}}"), new RouteValueDictionary());
+        }
+
+        // /makeprimary
+        private static TemplateMatcher MakePrimaryRoute()
+        {
+            return new TemplateMatcher(TemplateParser.Parse($"{AppLeaseMakePrimaryControllerSegment}"), new RouteValueDictionary());
         }
 
         internal HttpManagementPayload CreateHttpManagementPayload(
@@ -399,6 +407,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     {
                         return request.CreateResponse(HttpStatusCode.NotFound);
                     }
+                }
+
+                if (AppLeaseMakePrimaryRoute.TryMatch(path, routeValues))
+                {
+                    return await this.HandleMakePrimaryRequestAsync(request);
                 }
 
                 return request.CreateResponse(HttpStatusCode.NotFound);
@@ -651,6 +664,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             return response;
+        }
+
+        private async Task<HttpResponseMessage> HandleMakePrimaryRequestAsync(HttpRequestMessage request)
+        {
+            IDurableOrchestrationClient client = this.GetClient(request);
+
+            await client.MakeCurrentAppPrimaryAsync();
+
+            return request.CreateResponse(HttpStatusCode.OK);
         }
 
         private static StatusResponsePayload ConvertFrom(DurableOrchestrationStatus status)
