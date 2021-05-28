@@ -10,7 +10,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     internal class TypedCodeProvider
     {
-        public const string Namespace = "Microsoft.Azure.Webjobs.Extensions.DurableTask.Generated";
+        public const string Namespace = "Microsoft.Azure.WebJobs.Extensions.DurableTask.TypedInterfaces";
 
         public const string TypedDurableOrchestrationContext = "TypedDurableOrchestrationContext";
         public const string ITypedDurableOrchestrationContext = "ITypedDurableOrchestrationContext";
