@@ -65,7 +65,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private static readonly TemplateMatcher EntityRoute = GetEntityRoute();
         private static readonly TemplateMatcher InstancesRoute = GetInstancesRoute();
         private static readonly TemplateMatcher InstanceRaiseEventRoute = GetInstanceRaiseEventRoute();
-        private static readonly TemplateMatcher StealAppLeaseRoute = GetStealAppLeaseRoute();
+        private static readonly TemplateMatcher AppLeaseMakePrimaryRoute = MakePrimaryRoute();
 
         private readonly ILogger logger;
         private readonly MessagePayloadDataConverter messageDataConverter;
@@ -168,7 +168,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         // /makeprimary
-        private static TemplateMatcher GetStealAppLeaseRoute()
+        private static TemplateMatcher MakePrimaryRoute()
         {
             return new TemplateMatcher(TemplateParser.Parse($"{AppLeaseMakePrimaryControllerSegment}"), new RouteValueDictionary());
         }
@@ -409,9 +409,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     }
                 }
 
-                if (StealAppLeaseRoute.TryMatch(path, routeValues))
+                if (AppLeaseMakePrimaryRoute.TryMatch(path, routeValues))
                 {
-                    return await this.HandleStealAppLeaseRequestAsync(request);
+                    return await this.HandleMakePrimaryRequestAsync(request);
                 }
 
                 return request.CreateResponse(HttpStatusCode.NotFound);
@@ -666,7 +666,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return response;
         }
 
-        private async Task<HttpResponseMessage> HandleStealAppLeaseRequestAsync(HttpRequestMessage request)
+        private async Task<HttpResponseMessage> HandleMakePrimaryRequestAsync(HttpRequestMessage request)
         {
             IDurableOrchestrationClient client = this.GetClient(request);
 

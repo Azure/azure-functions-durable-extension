@@ -361,12 +361,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <summary>
-        ///  Steals AppLease if this app doesn't already have it. To use this, must be using the AppLease feature by setting UseAppLease to true in host.json.
+        ///  Makes the current app the primary app, if it isn't already. Must be using the AppLease feature.
         /// </summary>
-        /// <returns>A task that completes when the steal app message is written to storage.</returns>
-        public virtual Task InitiateStealAppLeaseOperationAsync()
+        /// <returns>A task that completes when the operation has started.</returns>
+        public virtual Task MakeCurrentAppPrimaryAsync()
         {
-            throw this.GetNotImplementedException(nameof(this.InitiateStealAppLeaseOperationAsync));
+            throw this.GetNotImplementedException(nameof(this.MakeCurrentAppPrimaryAsync));
         }
 
         /// <inheritdoc />

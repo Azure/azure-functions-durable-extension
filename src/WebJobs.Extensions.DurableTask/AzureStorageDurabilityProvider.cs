@@ -158,7 +158,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc/>
-        public async override Task InitiateStealAppLeaseOperationAsync()
+        public async override Task MakeCurrentAppPrimaryAsync()
         {
             await this.serviceClient.ForceChangeAppLeaseAsync();
         }
