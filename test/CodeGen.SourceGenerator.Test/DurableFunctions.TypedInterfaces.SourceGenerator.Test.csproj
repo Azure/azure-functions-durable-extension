@@ -27,10 +27,6 @@
     <PackageReference Include="xunit" Version="2.4.1" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.4.1" />
   </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\..\src\DurableFunctions.TypedInterfaces\SourceGenerator\DurableFunctions.TypedInterfaces.SourceGenerator.csproj" />
-  </ItemGroup>
   
   <ItemGroup>
     <None Update="xunit.runner.json">
@@ -41,6 +37,10 @@
   <ItemGroup>
     <AdditionalFiles Include="..\..\.stylecop\stylecop.json" />
     <Compile Include="..\..\.stylecop\GlobalSuppressions.cs" Link="GlobalSuppressions.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\DurableFunctions.TypedInterfaces\sourcegenerator\DurableFunctions.TypedInterfaces.csproj" />
   </ItemGroup>
 
 </Project>
