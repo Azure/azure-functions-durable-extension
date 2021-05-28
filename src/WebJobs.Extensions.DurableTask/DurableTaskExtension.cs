@@ -531,6 +531,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.MessageDataConverter = new MessagePayloadDataConverter(messageSerializerSettingsFactory.CreateJsonSerializerSettings(), true);
             this.ErrorDataConverter = new MessagePayloadDataConverter(errorSerializerSettingsFactory.CreateJsonSerializerSettings(), true);
             this.HttpApiHandler = new HttpApiHandler(this, logger);
+            this.TypedCodeProvider = new TypedCodeProvider();
+            this.TypedCodeProvider.Initialize();
 #endif
         }
 

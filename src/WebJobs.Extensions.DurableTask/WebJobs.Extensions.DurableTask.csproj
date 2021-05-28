@@ -69,6 +69,9 @@
     <PackageReference Include="Microsoft.AspNetCore.Server.Kestrel" Version="2.2.0" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="2.2.0" />
     <PackageReference Include="Microsoft.ApplicationInsights" Version="2.12.2" />
+    
+    <!-- Explicitly pinned transitive dependencies with CVE vulnerabilities.-->
+    <PackageReference Include="Microsoft.AspNetCore.Server.Kestrel.Transport.Sockets" Version="2.2.1" />
   </ItemGroup>
 
   <ItemGroup>
@@ -82,9 +85,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" Version="1.8.5" />
+    <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" Version="1.8.6" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers" Version="0.4.0" />
     <PackageReference Include="Azure.Identity" Version="1.1.1" />
+
+    <!-- Explicitly pinned transitive dependencies with CVE vulnerabilities.-->
+    <PackageReference Include="System.Text.Encodings.Web" Version="4.7.2" />
   </ItemGroup>
 
   <!-- NuGet Publishing Metadata -->
