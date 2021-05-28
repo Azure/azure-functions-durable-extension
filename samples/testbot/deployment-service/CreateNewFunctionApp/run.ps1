@@ -10,7 +10,7 @@ $resourceGroup = $Request.Body.resourceGroup
 $storageAccount = $Request.Body.storageAccount
 $runtime = $Request.Body.runtime
 $subscriptionId = $Request.Body.subscriptionId
-$location = "EastUS2EUAP"
+$location = "CentralUS"
 $functionsVersion = $Request.Body.functionsVersion
 $osType = $Request.Body.OSType
 

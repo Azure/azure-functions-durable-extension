@@ -7,7 +7,7 @@ $ErrorActionPreference = "Stop"
 # Parameters
 $appPlanName = $Request.Body.appPlanName
 $resourceGroup = $Request.Body.resourceGroup
-$location = "EastUS2EUAP"
+$location = "CentralUS"
 $subscriptionId = $Request.Body.subscriptionId
 
 $sku = $Request.Body.sku

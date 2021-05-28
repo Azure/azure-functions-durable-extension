@@ -17,7 +17,7 @@
   },
   "extensions": {
     "durableTask": {
-      "hubName": "DFDeploymentServiceHub3"
+      "hubName": "DFDeploymentServiceHub4"
     }
   }
 }
