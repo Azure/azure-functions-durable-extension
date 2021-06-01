@@ -4,8 +4,10 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Text;
 using System.Threading.Tasks;
 using DurableTask.AzureStorage;
 using Microsoft.ApplicationInsights.Channel;
@@ -17,6 +19,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.WindowsAzure.Storage;
 using Moq;
+using Newtonsoft.Json.Linq;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -31,9 +34,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         public const string LogCategory = "Host.Triggers.DurableTask";
         public const string EmptyStorageProviderType = "empty";
-
-        // The regex pattern that parses our Linux Dedicated logs
-        public static readonly string RegexPattern = "(?<Account>[^,]*),(?<ActiveActivities>[^,]*),(?<ActiveOrchestrators>[^,]*),(?<Age>[^,]*),(?<AppName>[^,]*),(?<ContinuedAsNew>[^,]*),(?<CreatedTimeFrom>[^,]*),(?<CreatedTimeTo>[^,]*),(?<DequeueCount>[^,]*),\"(?<Details>[^\"]*)\",(?<Duration>[^,]*),(?<ETag>[^,]*),(?<Episode>[^,]*),(?<EventCount>[^,]*),(?<EventName>[^,]*),(?<EventType>[^,]*),(?<Exception>[^,]*),\"(?<ExceptionMessage>[^\"]*)\",(?<ExecutionId>[^,]*),(?<ExtensionVersion>[^,]*),(?<FromWorkerName>[^,]*),(?<FunctionName>[^,]*),(?<FunctionState>[^,]*),(?<FunctionType>[^,]*),(?<Input>[^,]*),(?<InstanceId>[^,]*),(?<IsCheckpointComplete>[^,]*),(?<IsExtendedSession>[^,]*),(?<IsReplay>[^,]*),(?<LastCheckpointTime>[^,]*),(?<LatencyMs>[^,]*),(?<MessageId>[^,]*),(?<MessagesRead>[^,]*),(?<MessagesSent>[^,]*),(?<MessagesUpdated>[^,]*),(?<NewEventCount>[^,]*),(?<NewEvents>[^,]*),(?<NextVisibleTime>[^,]*),(?<OperationId>[^,]*),(?<OperationName>[^,]*),(?<Output>[^,]*),(?<PartitionId>[^,]*),(?<PendingOrchestratorMessages>[^,]*),(?<PendingOrchestrators>[^,]*),(?<Reason>[^,]*),(?<RelatedActivityId>[^,]*),(?<RequestCount>[^,]*),(?<RequestId>[^,]*),(?<RequestingExecutionId>[^,]*),(?<RequestingInstance>[^,]*),(?<RequestingInstanceId>[^,]*),(?<Result>[^,]*),(?<RuntimeStatus>[^,]*),(?<SequenceNumber>[^,]*),(?<SizeInBytes>[^,]*),(?<SlotName>[^,]*),(?<StatusCode>[^,]*),(?<StorageRequests>[^,]*),(?<Success>[^,]*),(?<TableEntitiesRead>[^,]*),(?<TableEntitiesWritten>[^,]*),(?<TargetExecutionId>[^,]*),(?<TargetInstanceId>[^,]*),(?<TaskEventId>[^,]*),(?<TaskHub>[^,]*),(?<Token>[^,]*),(?<TotalEventCount>[^,]*),(?<Version>[^,]*),(?<VisibilityTimeoutSeconds>[^,]*),(?<WorkerName>[^,]*)";
 
         public static ITestHost GetJobHost(
             ILoggerProvider loggerProvider,
@@ -232,6 +232,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             bool inLinuxConsumption = false,
             bool inWindowsConsumption = false,
             bool inLinuxAppsService = false,
+            bool isPython = false,
             string getLinuxStampName = "",
             string getContainerName = "")
 #pragma warning restore CS0612 // Type or member is obsolete
@@ -245,6 +246,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             mockPlatformProvider.Setup(x => x.InLinuxAppService()).Returns(inLinuxAppsService);
             mockPlatformProvider.Setup(x => x.GetLinuxStampName()).Returns(getLinuxStampName);
             mockPlatformProvider.Setup(x => x.GetContainerName()).Returns(getContainerName);
+            mockPlatformProvider.Setup(x => x.IsPython()).Returns(isPython);
             return mockPlatformProvider.Object;
         }
 
@@ -264,6 +266,63 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
+        /// Returns <c>true</c> if a JSON Durable log has all the minimum-required keys.
+        /// Else, returns <c>false</c>.
+        /// </summary>
+        /// <param name="json">The JSON log to validate.</param>
+        public static bool IsValidJSONLog(JObject json)
+        {
+            List<string> expectedKeys = new List<string>
+            {
+                "EventStampName",
+                "EventPrimaryStampName",
+                "ProviderName",
+                "TaskName",
+                "EventId",
+                "EventTimestamp",
+                "Tenant",
+                "Pid",
+                "Tid",
+            };
+
+            foreach (string expectedKey in expectedKeys)
+            {
+                if (!json.TryGetValue(expectedKey, out _))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Read a file's contents, line by line, even if another process is currently writing to it.
+        /// </summary>
+        /// <param name="path">The file's path.</param>
+        /// <returns>An array of each line in the file.</returns>
+        public static List<string> WriteSafeReadAllLines(string path)
+        {
+            /* A method like File.ReadAllLines cannot open a file that is open for writing by another process
+             * This is due to the File.ReadAllLines  not opening the process with ReadWrite permissions.
+             * As a result, we implement a variant ReadAllLines with the right permission mode.
+             *
+             * More info in: https://stackoverflow.com/questions/12744725/how-do-i-perform-file-readalllines-on-a-file-that-is-also-open-in-excel
+             */
+            using (var fileStream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            using (var streamReader = new StreamReader(fileStream, Encoding.Default))
+            {
+                List<string> file = new List<string>();
+                while (!streamReader.EndOfStream)
+                {
+                    file.Add(streamReader.ReadLine());
+                }
+
+                return file;
+            }
+        }
+
+        /// <summary>
         /// Helper function to regularly poll for some condition until it is true. If timeout hits, throw timeoutexception.
         /// </summary>
         /// <param name="predicate">Predicate to wait until it returns true.</param>
@@ -276,7 +335,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 retryInterval = TimeSpan.FromMilliseconds(100);
             }
 
-            Stopwatch sw = new Stopwatch();
+            Stopwatch sw = Stopwatch.StartNew();
+
             do
             {
                 if (predicate())

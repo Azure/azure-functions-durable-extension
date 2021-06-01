@@ -400,6 +400,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             this.WriteEvent(224, TaskHub, AppName, SlotName, FunctionName, InstanceId, Reason, FunctionType, ExtensionVersion, IsReplay);
         }
+
+        [Event(225, Level = EventLevel.Verbose)]
+        public void ProcessingOutOfProcPayload(
+            string FunctionName,
+            string TaskHub,
+            string AppName,
+            string SlotName,
+            string InstanceId,
+            string Details,
+            string ExtensionVersion)
+        {
+            this.WriteEvent(225, FunctionName, TaskHub, AppName, SlotName, InstanceId, Details, FunctionType.Orchestrator, ExtensionVersion);
+        }
 #pragma warning restore SA1313 // Parameter names should begin with lower-case letter
     }
 }

@@ -3,6 +3,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core.Exceptions;
@@ -29,6 +31,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
+        /// <summary>
+        /// Identifiers for each OOProc Schema Version.
+        /// </summary>
+        internal enum SchemaVersion
+        {
+            Original = 0,
+            V2 = 1,
+        }
+
         private enum AsyncActionType
         {
             CallActivity = 0,
@@ -42,6 +53,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             CallHttp = 8,
             SignalEntity = 9,
             ScheduledSignalEntity = 10,
+            WhenAny = 11,
+            WhenAll = 12,
         }
 
         // Handles replaying the Durable Task APIs that the out-of-proc function scheduled
@@ -60,31 +73,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal async Task<bool> ScheduleDurableTaskEvents(OrchestrationInvocationResult result)
         {
-            var jObj = result.ReturnValue as JObject;
-            if (jObj == null && result.ReturnValue is string jsonText)
-            {
-                try
-                {
-                    jObj = JObject.Parse(jsonText);
-                }
-                catch
-                {
-                    throw new ArgumentException("Out of proc orchestrators must return a valid JSON schema");
-                }
-            }
-
-            if (jObj == null)
-            {
-                throw new ArgumentException("The data returned by the out-of-process function execution was not valid json.");
-            }
-
-            var execution = JsonConvert.DeserializeObject<OutOfProcOrchestratorState>(jObj.ToString());
+            var execution = result.Json.ToObject<OutOfProcOrchestratorState>();
             if (execution.CustomStatus != null)
             {
                 this.context.SetCustomStatus(execution.CustomStatus);
             }
 
-            await this.ProcessAsyncActions(execution.Actions);
+            await this.ReplayOOProcOrchestration(execution.Actions, execution.SchemaVersion);
 
             if (!string.IsNullOrEmpty(execution.Error))
             {
@@ -104,7 +99,137 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return true;
         }
 
-        private async Task ProcessAsyncActions(AsyncAction[][] actions)
+        /// <summary>
+        /// Invokes a DF API based on the input action object.
+        /// </summary>
+        /// <param name="action">An OOProc action object representing a DF task.</param>
+        /// <returns>If the API returns a task, the DF task corresponding to the input action. Else, null.</returns>
+        private Task InvokeAPIFromAction(AsyncAction action)
+        {
+            Task fireAndForgetTask = Task.CompletedTask;
+            Task task = null;
+            switch (action.ActionType)
+            {
+                case AsyncActionType.CallActivity:
+                    task = this.context.CallActivityAsync(action.FunctionName, action.Input);
+                    break;
+                case AsyncActionType.CreateTimer:
+                    DurableOrchestrationContext ctx = this.context as DurableOrchestrationContext;
+                    using (var cts = new CancellationTokenSource())
+                    {
+                        if (ctx != null)
+                        {
+                            ctx.ThrowIfInvalidTimerLengthForStorageProvider(action.FireAt);
+                        }
+
+                        task = this.context.CreateTimer(action.FireAt, cts.Token);
+
+                        if (action.IsCanceled)
+                        {
+                            cts.Cancel();
+                        }
+                    }
+
+                    break;
+                case AsyncActionType.CallActivityWithRetry:
+                    task = this.context.CallActivityWithRetryAsync(action.FunctionName, action.RetryOptions, action.Input);
+                    break;
+                case AsyncActionType.CallSubOrchestrator:
+                    task = this.context.CallSubOrchestratorAsync(action.FunctionName, action.InstanceId, action.Input);
+                    break;
+                case AsyncActionType.CallSubOrchestratorWithRetry:
+                    task = this.context.CallSubOrchestratorWithRetryAsync(action.FunctionName, action.RetryOptions, action.InstanceId, action.Input);
+                    break;
+                case AsyncActionType.CallEntity:
+                    {
+                        var entityId = EntityId.GetEntityIdFromSchedulerId(action.InstanceId);
+                        task = this.context.CallEntityAsync(entityId, action.EntityOperation, action.Input);
+                        break;
+                    }
+
+                case AsyncActionType.SignalEntity:
+                    {
+                        // We do not add a task because this is 'fire and forget'
+                        var entityId = EntityId.GetEntityIdFromSchedulerId(action.InstanceId);
+                        this.context.SignalEntity(entityId, action.EntityOperation, action.Input);
+                        task = fireAndForgetTask;
+                        break;
+                    }
+
+                case AsyncActionType.ScheduledSignalEntity:
+                    {
+                        // We do not add a task because this is 'fire and forget'
+                        var entityId = EntityId.GetEntityIdFromSchedulerId(action.InstanceId);
+                        this.context.SignalEntity(entityId, action.FireAt, action.EntityOperation, action.Input);
+                        task = fireAndForgetTask;
+                        break;
+                    }
+
+                case AsyncActionType.ContinueAsNew:
+                    this.context.ContinueAsNew(action.Input);
+                    task = fireAndForgetTask;
+                    break;
+                case AsyncActionType.WaitForExternalEvent:
+                    task = this.context.WaitForExternalEvent<object>(action.ExternalEventName);
+                    break;
+                case AsyncActionType.CallHttp:
+                    task = this.context.CallHttpAsync(action.HttpRequest);
+                    break;
+                case AsyncActionType.WhenAll:
+                    task = Task.WhenAll(action.CompoundActions.Select(x => this.InvokeAPIFromAction(x)));
+                    break;
+                case AsyncActionType.WhenAny:
+                    task = Task.WhenAny(action.CompoundActions.Select(x => this.InvokeAPIFromAction(x)));
+                    break;
+                default:
+                    throw new Exception($"Received an unexpected action type from the out-of-proc function: '${action.ActionType}'.");
+            }
+
+            return task;
+        }
+
+        /// <summary>
+        /// Replays the orchestration execution from an OOProc SDK in .NET.
+        /// </summary>
+        /// <param name="actions">The OOProc actions payload.</param>
+        /// <returns>An awaitable Task that completes once replay completes.</returns>
+        private async Task ProcessAsyncActionsV2(AsyncAction[] actions)
+        {
+            foreach (AsyncAction action in actions)
+            {
+                await this.InvokeAPIFromAction(action);
+            }
+        }
+
+        /// <summary>
+        /// Replays the OOProc orchestration based on the actions array. It uses the schema enum to
+        /// determine which replay implementation is most appropiate.
+        /// </summary>
+        /// <param name="actions">The OOProc actions payload.</param>
+        /// <param name="schema">The OOProc protocol schema version.</param>
+        /// <returns>An awaitable Task that completes once replay completes.</returns>
+        private async Task ReplayOOProcOrchestration(AsyncAction[][] actions, SchemaVersion schema)
+        {
+            switch (schema)
+            {
+                case SchemaVersion.V2:
+                    // In this schema, action arrays should be 1 dimensional (1 action per yield), but due to legacy behavior they're nested within a 2-dimensional array.
+                    if (actions.Length != 1)
+                    {
+                        throw new ArgumentException($"With OOProc schema {schema}, expected actions array to be of length 1 in outer layer but got size: {actions.Length}");
+                    }
+
+                    await this.ProcessAsyncActionsV2(actions[0]);
+                    break;
+                case SchemaVersion.Original:
+                    await this.ProcessAsyncActionsV1(actions);
+                    break;
+                default:
+                    throw new ArgumentException($"The OOProc schema of of version \"{schema}\" is unsupported by this durable-extension version.");
+            }
+        }
+
+        private async Task ProcessAsyncActionsV1(AsyncAction[][] actions)
         {
             if (actions == null)
             {
@@ -118,73 +243,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 DurableOrchestrationContext ctx = this.context as DurableOrchestrationContext;
 
                 // An actionSet represents all actions that were scheduled within that execution.
+                Task newTask;
                 foreach (AsyncAction action in actionSet)
                 {
-                    switch (action.ActionType)
+                    newTask = this.InvokeAPIFromAction(action);
+                    if (newTask != Task.CompletedTask)
                     {
-                        case AsyncActionType.CallActivity:
-                            tasks.Add(this.context.CallActivityAsync(action.FunctionName, action.Input));
-                            break;
-                        case AsyncActionType.CreateTimer:
-                            using (var cts = new CancellationTokenSource())
-                            {
-                                if (ctx != null)
-                                {
-                                    ctx.ThrowIfInvalidTimerLengthForStorageProvider(action.FireAt);
-                                }
-
-                                tasks.Add(this.context.CreateTimer(action.FireAt, cts.Token));
-
-                                if (action.IsCanceled)
-                                {
-                                    cts.Cancel();
-                                }
-                            }
-
-                            break;
-                        case AsyncActionType.CallActivityWithRetry:
-                            tasks.Add(this.context.CallActivityWithRetryAsync(action.FunctionName, action.RetryOptions, action.Input));
-                            break;
-                        case AsyncActionType.CallSubOrchestrator:
-                            tasks.Add(this.context.CallSubOrchestratorAsync(action.FunctionName, action.InstanceId, action.Input));
-                            break;
-                        case AsyncActionType.CallSubOrchestratorWithRetry:
-                            tasks.Add(this.context.CallSubOrchestratorWithRetryAsync(action.FunctionName, action.RetryOptions, action.InstanceId, action.Input));
-                            break;
-                        case AsyncActionType.CallEntity:
-                            {
-                                var entityId = EntityId.GetEntityIdFromSchedulerId(action.InstanceId);
-                                tasks.Add(this.context.CallEntityAsync(entityId, action.EntityOperation, action.Input));
-                                break;
-                            }
-
-                        case AsyncActionType.SignalEntity:
-                            {
-                                // We do not add a task because this is 'fire and forget'
-                                var entityId = EntityId.GetEntityIdFromSchedulerId(action.InstanceId);
-                                this.context.SignalEntity(entityId, action.EntityOperation, action.Input);
-                                break;
-                            }
-
-                        case AsyncActionType.ScheduledSignalEntity:
-                            {
-                                // We do not add a task because this is 'fire and forget'
-                                var entityId = EntityId.GetEntityIdFromSchedulerId(action.InstanceId);
-                                this.context.SignalEntity(entityId, action.FireAt, action.EntityOperation, action.Input);
-                                break;
-                            }
-
-                        case AsyncActionType.ContinueAsNew:
-                            this.context.ContinueAsNew(action.Input);
-                            break;
-                        case AsyncActionType.WaitForExternalEvent:
-                            tasks.Add(this.context.WaitForExternalEvent<object>(action.ExternalEventName));
-                            break;
-                        case AsyncActionType.CallHttp:
-                            tasks.Add(this.context.CallHttpAsync(action.HttpRequest));
-                            break;
-                        default:
-                            break;
+                        tasks.Add(newTask);
                     }
                 }
 
@@ -211,6 +276,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             [JsonProperty("customStatus")]
             internal object CustomStatus { get; set; }
+
+            [DefaultValue(SchemaVersion.Original)]
+            [JsonConverter(typeof(StringEnumConverter))]
+            [JsonProperty("schemaVersion", DefaultValueHandling = DefaultValueHandling.Populate)]
+            internal SchemaVersion SchemaVersion { get; set; }
         }
 
         private class AsyncAction
@@ -224,6 +294,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             [JsonProperty("input")]
             internal object Input { get; set; }
+
+            [JsonProperty("compoundActions")]
+            internal AsyncAction[] CompoundActions { get; set; }
 
             [JsonProperty("fireAt")]
             internal DateTime FireAt { get; set; }

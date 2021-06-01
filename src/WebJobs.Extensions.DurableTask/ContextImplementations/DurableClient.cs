@@ -975,6 +975,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return proxyContext.SignalTask;
         }
 
+        /// <inheritdoc/>
+        Task IDurableOrchestrationClient.MakeCurrentAppPrimaryAsync()
+        {
+            if (this.durableTaskOptions.UseAppLease == false)
+            {
+                throw new InvalidOperationException("Cannot make current app primary. This app is not using the AppLease feature.");
+            }
+
+            return this.durabilityProvider.MakeCurrentAppPrimaryAsync();
+        }
+
         private class EventIndexDateMapping
         {
             public int Index { get; set; }
