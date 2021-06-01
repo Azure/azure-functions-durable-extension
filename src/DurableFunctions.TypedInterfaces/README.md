@@ -203,9 +203,9 @@ public async Task<int> Multiply(
 
 ### 1. Manually Adding Namespace
 
-For the moment, generated code will not show up intellisense unless the namespace containing the code is added to the file you are trying to use them in. Generated code is placed in the namespace ```Microsoft.Azure.Webjobs.Extensions.DurableTask.Generated```. 
+For the moment, generated code will not show up intellisense unless the namespace containing the code is added to the file you are trying to use them in. Generated code is placed in the namespace ```Microsoft.Azure.Webjobs.Extensions.DurableTask.TypedInterfaces```. 
 
-To use the generated interfaces, and have intellisense available for the generated types, you must manually include the using statement:
+In order to use the new typed interfaces, you must manually include the using statement:
 ```csharp
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.TypedInterfaces;
 ```
