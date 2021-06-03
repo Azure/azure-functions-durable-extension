@@ -10,7 +10,7 @@ Automatically generates method stubs that correspond to the contracts of Orchest
 
 ## How to use
 
-1. Add the project's nuget package as a dependency. Mark the reference with `OutputItemType="Analyzer"` and `ReferenceOutputAssembly="false"`.
+1. Add the project's nuget package as a dependency.
 
 For example: 
 
