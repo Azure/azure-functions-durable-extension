@@ -10,7 +10,7 @@ Automatically generates method stubs that correspond to the contracts of Orchest
 
 ## How to use
 
-1. Add the project's nuget package as a dependency. Mark the reference with `OutputItemType="Analyzer"` and `ReferenceOutputAssembly="false"`.
+1. Add the project's nuget package as a dependency.
 
 For example: 
 
@@ -20,9 +20,10 @@ For example:
 
 *The project should now automatically generate code for Orchestration/Activity functions.*
 
-2. *Optionally*, add the following statement to a property group in your project's csproj in order to see the generated files.
+2. *Optionally*, add the following statements to a property group in your project's csproj in order to see the generated files.
 
 ```xml
+<EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
 <CompilerGeneratedFilesOutputPath>$(BaseIntermediateOutputPath)Generated</CompilerGeneratedFilesOutputPath>
 ```
 
