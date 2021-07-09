@@ -15,6 +15,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         DurableActivityContextBase // for v1 legacy compatibility.
 #pragma warning restore 618
     {
+        private readonly string functionName;
+
         private readonly string serializedInput;
 
         private readonly string instanceId;
@@ -24,15 +26,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private JToken parsedJsonInput;
         private string serializedOutput;
 
-        internal DurableActivityContext(DurableTaskExtension config, string instanceId, string serializedInput)
+        internal DurableActivityContext(DurableTaskExtension config, string instanceId, string serializedInput, string functionName)
         {
             this.messageDataConverter = config.MessageDataConverter;
             this.instanceId = instanceId;
             this.serializedInput = serializedInput;
+            this.functionName = functionName;
         }
 
         /// <inheritdoc />
         string IDurableActivityContext.InstanceId => this.instanceId;
+
+        /// <inheritdoc />
+        string IDurableActivityContext.Name => this.functionName;
 
         /// <summary>
         /// Returns the input of the task activity in its raw JSON string value.

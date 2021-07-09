@@ -9,6 +9,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     public interface IDurableActivityContext
     {
         /// <summary>
+        /// Gets the name of the current activity function.
+        /// </summary>
+        string Name { get; }
+
+        /// <summary>
         /// Gets the instance ID of the currently executing orchestration.
         /// </summary>
         /// <remarks>
