@@ -64,6 +64,9 @@
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableActivityContext.Microsoft#Azure#WebJobs#Extensions#DurableTask#IDurableActivityContext#InstanceId">
             <inheritdoc />
         </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableActivityContext.Microsoft#Azure#WebJobs#Extensions#DurableTask#IDurableActivityContext#Name">
+            <inheritdoc />
+        </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableActivityContext.GetRawInput">
             <summary>
             Returns the input of the task activity in its raw JSON string value.
@@ -413,6 +416,11 @@
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableActivityContext">
             <summary>
             Provides functionality available to durable activities.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableActivityContext.Name">
+            <summary>
+            Gets the name of the current activity function.
             </summary>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableActivityContext.InstanceId">
