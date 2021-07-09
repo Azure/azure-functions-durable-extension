@@ -41,7 +41,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             serviceCollection.TryAddSingleton<INameResolver, DefaultNameResolver>();
-            serviceCollection.TryAddSingleton<IConnectionStringResolver, StandardConnectionStringProvider>();
+            serviceCollection.TryAddSingleton<IConnectionStringResolver, WebJobsConnectionStringProvider>();
             serviceCollection.TryAddSingleton<IDurabilityProviderFactory, AzureStorageDurabilityProviderFactory>();
             serviceCollection.TryAddSingleton<IDurableClientFactory, DurableClientFactory>();
             serviceCollection.TryAddSingleton<IMessageSerializerSettingsFactory, MessageSerializerSettingsFactory>();
