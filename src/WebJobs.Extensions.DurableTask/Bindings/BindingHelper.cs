@@ -11,6 +11,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     internal class BindingHelper
     {
+        internal const string SharedListenerIdForOrchestrations = "DurableTaskSharedListenerId_Orchestrations";
+        internal const string SharedListenerIdForActivities = "DurableTaskSharedListenerId_Activities";
+
         private const string InstanceIdPlaceholder = "INSTANCEID";
 
         private readonly DurableTaskExtension config;

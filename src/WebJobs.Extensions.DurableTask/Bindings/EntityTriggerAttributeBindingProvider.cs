@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Threading.Tasks;
+using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.Host.Bindings;
 using Microsoft.Azure.WebJobs.Host.Config;
 using Microsoft.Azure.WebJobs.Host.Listeners;
@@ -62,6 +63,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return Task.FromResult<ITriggerBinding>(binding);
         }
 
+#if !FUNCTIONS_V1
+        // Entities use the same DTFx dispatcher as orchestrations
+        [SharedListener(BindingHelper.SharedListenerIdForOrchestrations)]
+#endif
         private class EntityTriggerBinding : ITriggerBinding
         {
             private readonly DurableTaskExtension config;
