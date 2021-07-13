@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.Host.Bindings;
 using Microsoft.Azure.WebJobs.Host.Config;
 using Microsoft.Azure.WebJobs.Host.Listeners;
@@ -63,6 +64,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return Task.FromResult<ITriggerBinding>(binding);
         }
 
+#if !FUNCTIONS_V1
+        [SharedListener(BindingHelper.SharedListenerIdForActivities)]
+#endif
         private class ActivityTriggerBinding : ITriggerBinding
         {
             private const string InstanceIdBindingPropertyName = "instanceId";

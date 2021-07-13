@@ -70,6 +70,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #pragma warning disable CS0169
         private readonly ITelemetryActivator telemetryActivator;
 #pragma warning restore CS0169
+        private ConcurrencyManager concurrencyManager;
 #endif
         private readonly bool isOptionsConfigured;
         private readonly IApplicationLifetimeWrapper hostLifetimeService = HostLifecycleService.NoOp;
@@ -113,6 +114,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="errorSerializerSettingsFactory">The factory used to create <see cref="JsonSerializerSettings"/> for error settings.</param>
         /// <param name="webhookProvider">Provides webhook urls for HTTP management APIs.</param>
         /// <param name="telemetryActivator">The activator of DistributedTracing. .netstandard2.0 only.</param>
+        /// <param name="concurrencyManager">The Azure WebJobs concurrency manager service. This parameter only exists for .NET Standard 2.0 projects.</param>
         /// <param name="platformInformationService">The platform information provider to inspect the OS, app service plan, and other enviroment information.</param>
 #pragma warning restore CS1572
         public DurableTaskExtension(
@@ -132,9 +134,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #pragma warning disable CS0618 // Type or member is obsolete
             IWebHookProvider webhookProvider = null,
 #pragma warning restore CS0618 // Type or member is obsolete
-#pragma warning disable SA1113, SA1001, SA1115
-            ITelemetryActivator telemetryActivator = null)
-#pragma warning restore SA1113, SA1001, SA1115
+            ITelemetryActivator telemetryActivator = null,
+            ConcurrencyManager concurrencyManager = null)
 #else
             IErrorSerializerSettingsFactory errorSerializerSettingsFactory = null)
 #endif
@@ -186,6 +187,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.hostLifetimeService.OnStopped.Register(this.StopLocalRcpServer);
             this.telemetryActivator = telemetryActivator;
             this.telemetryActivator?.Initialize(logger);
+
+            this.concurrencyManager = concurrencyManager;
 #endif
         }
 
@@ -1225,6 +1228,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         // to the parent orchestration code.
                         this.taskHubWorker.TaskActivityDispatcher.IncludeDetails = true;
                         this.taskHubWorker.TaskOrchestrationDispatcher.IncludeDetails = true;
+
+#if !FUNCTIONS_V1
+                        if (this.concurrencyManager != null)
+                        {
+                            this.taskHubWorker.TaskOrchestrationDispatcher.SetWorkItemThrottler(
+                                new DurableFunctionsWorkItemThrottler(
+                                    this.concurrencyManager,
+                                    BindingHelper.SharedListenerIdForOrchestrations));
+
+                            this.taskHubWorker.TaskActivityDispatcher.SetWorkItemThrottler(
+                                new DurableFunctionsWorkItemThrottler(
+                                    this.concurrencyManager,
+                                    BindingHelper.SharedListenerIdForActivities));
+                        }
+#endif
+
                         this.isTaskHubWorkerStarted = true;
                         return true;
                     }
@@ -1396,6 +1415,49 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             ScaleStatus IScaleMonitor.GetScaleStatus(ScaleStatusContext context)
             {
                 throw new InvalidOperationException("The current DurableTask backend configuration does not support runtime scaling");
+            }
+        }
+
+        private sealed class DurableFunctionsWorkItemThrottler : WorkItemThrottler
+        {
+            private readonly ConcurrencyManager concurrencyManager;
+            private readonly string listenerId;
+
+            public DurableFunctionsWorkItemThrottler(ConcurrencyManager concurrencyManager, string listenerId)
+            {
+                this.concurrencyManager = concurrencyManager;
+                this.listenerId = listenerId;
+            }
+
+            public override async Task WaitIfThrottledAsync()
+            {
+                if (!this.concurrencyManager.Enabled)
+                {
+                    return;
+                }
+
+                ConcurrencyStatus status = this.GetConcurrencyStatus();
+                while (status.AvailableInvocationCount <= 0)
+                {
+                    TimeSpan delay = status.NextStatusDelay;
+                    if (delay <= TimeSpan.Zero)
+                    {
+                        // Not sure if the delay will ever be zero or less, but protect ourselves just in case.
+                        delay = TimeSpan.FromSeconds(1);
+                    }
+
+                    await Task.Delay(delay);
+
+                    status = this.GetConcurrencyStatus();
+                }
+            }
+
+            private ConcurrencyStatus GetConcurrencyStatus()
+            {
+                lock (this.concurrencyManager)
+                {
+                    return this.concurrencyManager.GetStatus(this.listenerId);
+                }
             }
         }
 #endif

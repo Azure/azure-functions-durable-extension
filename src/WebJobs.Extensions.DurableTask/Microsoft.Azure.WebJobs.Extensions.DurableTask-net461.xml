@@ -2155,6 +2155,7 @@
             <param name="errorSerializerSettingsFactory">The factory used to create <see cref="T:Newtonsoft.Json.JsonSerializerSettings"/> for error settings.</param>
             <param name="webhookProvider">Provides webhook urls for HTTP management APIs.</param>
             <param name="telemetryActivator">The activator of DistributedTracing. .netstandard2.0 only.</param>
+            <param name="concurrencyManager">The Azure WebJobs concurrency manager service. This parameter only exists for .NET Standard 2.0 projects.</param>
             <param name="platformInformationService">The platform information provider to inspect the OS, app service plan, and other enviroment information.</param>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.HubName">
