@@ -12,8 +12,10 @@ using System.Threading.Tasks;
 using DurableTask.AzureStorage;
 using Microsoft.ApplicationInsights.Channel;
 #if !FUNCTIONS_V1
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
+using Microsoft.Extensions.Hosting;
 #endif
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -200,6 +202,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
 #if !FUNCTIONS_V1
+        public static IHost GetJobHostExternalEnvironment(
+            IDurableClientFactory durableClientFactory = null,
+            DurableClientOptions durableClientOptions = null,
+            INameResolver nameResolver = null)
+        {
+            if (durableClientOptions == null)
+            {
+                durableClientOptions = new DurableClientOptions();
+            }
+
+            return GetJobHostWithOptionsForDurableClientFactoryExternal(durableClientFactory, durableClientOptions, nameResolver);
+        }
+
+        public static IHost GetJobHostWithOptionsForDurableClientFactoryExternal(
+            IDurableClientFactory durableClientFactory,
+            DurableClientOptions durableClientOptions,
+            INameResolver nameResolver = null)
+        {
+            var optionsWrapper = new OptionsWrapper<DurableClientOptions>(durableClientOptions);
+            var testNameResolver = new TestNameResolver(nameResolver);
+            return PlatformSpecificHelpers.CreateJobHostExternalEnvironment(optionsWrapper, testNameResolver);
+        }
+
         public static ITestHost GetJobHostWithMultipleDurabilityProviders(
             DurableTaskOptions options = null,
             IEnumerable<IDurabilityProviderFactory> durabilityProviderFactories = null)
