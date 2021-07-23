@@ -67,19 +67,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
 #if !FUNCTIONS_V1
         /// <summary>
-        /// Adds the Durable Task extension to the provided <see cref="IServiceCollection"/>.
-        /// </summary>
-        /// <param name="serviceCollection">The <see cref="IServiceCollection"/> to configure.</param>
-        /// <param name="durableClientOptions">Populate configurations of <see cref="DurableClientOptions"/> to create Durable Clients.</param>
-        /// <returns>Returns the provided <see cref="IServiceCollection"/>.</returns>
-        public static IServiceCollection AddDurableClientFactory(this IServiceCollection serviceCollection, IOptions<DurableClientOptions> durableClientOptions)
-        {
-            AddDurableClientFactory(serviceCollection);
-            serviceCollection.AddSingleton(durableClientOptions);
-            return serviceCollection;
-        }
-
-        /// <summary>
         /// Adds the Durable Task extension to the provided <see cref="IWebJobsBuilder"/>.
         /// </summary>
         /// <param name="builder">The <see cref="IWebJobsBuilder"/> to configure.</param>

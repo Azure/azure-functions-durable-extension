@@ -22,6 +22,7 @@ using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Microsoft.Diagnostics.Tracing;
 #if !FUNCTIONS_V1
 using Microsoft.Extensions.Hosting;
+using WebJobs.Extensions.DurableTask.Tests.V2;
 #endif
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Blob;
@@ -201,72 +202,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
-        /// End-to-end test which validates storage connection string name and task hub name configured via the <see cref="DurableClientAttribute"/> when
-        /// simple orchestrator function which that doesn't call any activity functions is executed.
-        /// </summary>
-        [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
-        public async Task HelloWorld_OrchestrationClientStorageAndTaskHub(string storageProviderType)
-        {
-            string taskHubName = TestHelpers.GetTaskHubNameFromTestName(
-                nameof(this.HelloWorld_OrchestrationClientStorageAndTaskHub),
-                enableExtendedSessions: false);
-
-            Dictionary<string, string> appSettings = new Dictionary<string, string>
-            {
-                { "TestStorageConnectionString", "test_storage_connection_string" },
-                { "TestTaskHub", taskHubName },
-            };
-
-            using (var clientHost = TestHelpers.GetJobHost(
-                this.loggerProvider,
-                nameof(this.HelloWorld_OrchestrationClientStorageAndTaskHub) + "_Unused",
-                enableExtendedSessions: false,
-                nameResolver: new SimpleNameResolver(appSettings),
-                storageProviderType: storageProviderType,
-                addDurableClientFactory: true))
-            using (var orchestrationHost = TestHelpers.GetJobHost(
-                this.loggerProvider,
-                nameof(this.HelloWorld_OrchestrationClientStorageAndTaskHub),
-                enableExtendedSessions: false,
-                storageProviderType: storageProviderType,
-                exactTaskHubName: taskHubName,
-                addDurableClientFactory: true))
-            {
-                await clientHost.StartAsync();
-                await orchestrationHost.StartAsync();
-
-                // First, start and complete an orchestration on the main orchestration host.
-                var client = await orchestrationHost.StartOrchestratorAsync(
-                    nameof(TestOrchestrations.SayHelloInline),
-                    "World",
-                    this.output,
-                    useTaskHubFromAppSettings: false);
-                var status = await client.WaitForCompletionAsync(this.output);
-
-                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
-                Assert.Equal("World", status?.Input);
-                Assert.Equal("Hello, World!", status?.Output);
-
-                // Next, start an orchestration from the client host and verify that it completes on the orchestration host.
-                client = await clientHost.StartOrchestratorAsync(
-                    nameof(TestOrchestrations.SayHelloInline),
-                    "World",
-                    this.output,
-                    useTaskHubFromAppSettings: true);
-                status = await client.WaitForCompletionAsync(this.output);
-
-                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
-                Assert.Equal("World", status?.Input);
-                Assert.Equal("Hello, World!", status?.Output);
-
-                await orchestrationHost.StopAsync();
-                await clientHost.StopAsync();
-            }
-        }
-
-        /// <summary>
         /// End to end test that ensures that DurableClientFactory is set up correctly
         /// (i.e. the correct services are injected through dependency injection
         /// and AzureStorageDurabilityProvider is created).
@@ -292,9 +227,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
 #if !FUNCTIONS_V1
         /// <summary>
-        /// End to end test that ensures that DurableClientFactory is set up correctly
-        /// (i.e. the correct services are injected through dependency injection
-        /// and AzureStorageDurabilityProvider is created).
+        /// End to end test that ensures that customers can configure custom connection string names 
+        /// using DurableClientOptions when they create a DurableClient from an external app (e.g. ASP.NET Core app).
+        /// The appSettings dictionary acts like appsettings.json and durableClientOptions are the
+        /// settings passed in during a call to DurableClient (IDurableClientFactory.CreateClient(durableClientOptions)).
         /// </summary>
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
@@ -306,41 +242,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             Dictionary<string, string> appSettings = new Dictionary<string, string>
             {
-                { "TestStorageConnectionString", "teststring" },
+                { "CustomStorageAccountName", TestHelpers.GetStorageConnectionString() },
                 { "TestTaskHub", taskHubName },
             };
 
-            // ConnectionName is used to look up the storage connection string in appsettings.json
+            // ConnectionName is used to look up the storage connection string in appsettings
             DurableClientOptions durableClientOptions = new DurableClientOptions
             {
                 ConnectionName = "CustomStorageAccountName",
                 TaskHub = taskHubName,
             };
 
-            string orchestratorName = nameof(TestOrchestrations.SayHelloInline);
+            var connectionStringResolver = new TestCustomConnectionsStringResolver(appSettings);
+
             using (IHost clientHost = TestHelpers.GetJobHostExternalEnvironment(
-                durableClientOptions: durableClientOptions,
-                nameResolver: new SimpleNameResolver(appSettings))) // loads appsettings.json to get storage and task hub name
+                connectionStringResolver: connectionStringResolver))
             {
-                DurableClientFactory durableClientFactory = clientHost.Services.GetService(typeof(DurableClientFactory)) as DurableClientFactory;
-                durableClientFactory.CreateClient(durableClientOptions);
-
-                using (var orchestrationHost = TestHelpers.GetJobHost(
-                    this.loggerProvider,
-                    nameof(this.DurableClient_AzureStorage__ReadsCustomStorageConnString),
-                    enableExtendedSessions: false,
-                    storageProviderType: "azure_storage",
-                    exactTaskHubName: taskHubName)) // hard coded task hub name
-                {
-                    await clientHost.StartAsync();
-                    await orchestrationHost.StartAsync();
-
-                    var client = await orchestrationHost.StartOrchestratorAsync(orchestratorName, input: "World", this.output);
-                    var status = await client.WaitForCompletionAsync(this.output);
-
-                    await orchestrationHost.StopAsync();
-                    await clientHost.StopAsync();
-                }
+                await clientHost.StartAsync();
+                IDurableClientFactory durableClientFactory = clientHost.Services.GetService(typeof(IDurableClientFactory)) as DurableClientFactory;
+                IDurableClient durableClient = durableClientFactory.CreateClient(durableClientOptions);
+                Assert.Equal(taskHubName, durableClient.TaskHubName);
+                await clientHost.StopAsync();
             }
         }
 #endif

@@ -15,24 +15,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             object input,
             ITestOutputHelper output,
             string instanceId = null,
-            bool useTaskHubFromAppSettings = false,
-            bool useStorageFromAppSettings = false)
+            bool useTaskHubFromAppSettings = false)
         {
-            /*
             var startFunction = useTaskHubFromAppSettings ?
                 typeof(ClientFunctions).GetMethod(nameof(ClientFunctions.StartFunctionWithTaskHub)) :
                 typeof(ClientFunctions).GetMethod(nameof(ClientFunctions.StartFunction));
-            */
-
-            var startFunction = typeof(ClientFunctions).GetMethod(nameof(ClientFunctions.StartFunction));
-
-            if (useTaskHubFromAppSettings)
-            {
-                startFunction = useStorageFromAppSettings ?
-                    typeof(ClientFunctions).GetMethod(nameof(ClientFunctions.StartFunctionWithStorageAndTaskHub)) :
-                    typeof(ClientFunctions).GetMethod(nameof(ClientFunctions.StartFunctionWithTaskHub));
-            }
-
 
             var clientRef = new TestDurableClient[1];
             var args = new Dictionary<string, object>

@@ -83,7 +83,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         // This method should not be called before the app settings are resolved into the options.
         // Because of this, we wait to validate the options until right before building a durability provider, rather
         // than in the Factory constructor.
-        private void EnsureInitialized(string connectionName = null, string taskHubNameOverride = null)
+        private void EnsureInitialized(bool isExternalClient = false)
         {
             if (!this.hasValidatedOptions)
             {
@@ -96,7 +96,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.options.SetDefaultHubName(sanitizedHubName);
                 }
 
-                this.defaultSettings = this.GetAzureStorageOrchestrationServiceSettings(connectionName, taskHubNameOverride);
+                if (!isExternalClient)
+                {
+                    this.defaultSettings = this.GetAzureStorageOrchestrationServiceSettings();
+                }
+
                 this.hasValidatedOptions = true;
             }
         }
@@ -120,7 +124,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public virtual DurabilityProvider GetDurabilityProvider(DurableClientAttribute attribute)
         {
-            this.EnsureInitialized(attribute.ConnectionName, attribute.TaskHub);
+            this.EnsureInitialized(attribute.ExternalClient);
             return this.GetAzureStorageStorageProvider(attribute);
         }
 
@@ -130,9 +134,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             AzureStorageOrchestrationServiceSettings settings = this.GetAzureStorageOrchestrationServiceSettings(connectionName, attribute.TaskHub);
 
             AzureStorageDurabilityProvider innerClient;
-            if (string.Equals(this.defaultSettings.TaskHubName, settings.TaskHubName, StringComparison.OrdinalIgnoreCase) &&
-                string.Equals(this.defaultSettings.StorageConnectionString, settings.StorageConnectionString, StringComparison.OrdinalIgnoreCase) &&
-                this.defaultStorageProvider != null)
+            if (!attribute.ExternalClient &&
+                string.Equals(this.defaultSettings?.TaskHubName, settings.TaskHubName, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(this.defaultSettings?.StorageConnectionString, settings.StorageConnectionString, StringComparison.OrdinalIgnoreCase))
             {
                 // It's important that clients use the same AzureStorageOrchestrationService instance
                 // as the host when possible to ensure we any send operations can be picked up

@@ -202,27 +202,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
 #if !FUNCTIONS_V1
-        public static IHost GetJobHostExternalEnvironment(
-            IDurableClientFactory durableClientFactory = null,
-            DurableClientOptions durableClientOptions = null,
-            INameResolver nameResolver = null)
+        public static IHost GetJobHostExternalEnvironment(IConnectionStringResolver connectionStringResolver = null)
         {
-            if (durableClientOptions == null)
+            if (connectionStringResolver == null)
             {
-                durableClientOptions = new DurableClientOptions();
+                connectionStringResolver = new TestConnectionStringResolver();
             }
 
-            return GetJobHostWithOptionsForDurableClientFactoryExternal(durableClientFactory, durableClientOptions, nameResolver);
+            return GetJobHostWithOptionsForDurableClientFactoryExternal(connectionStringResolver);
         }
 
-        public static IHost GetJobHostWithOptionsForDurableClientFactoryExternal(
-            IDurableClientFactory durableClientFactory,
-            DurableClientOptions durableClientOptions,
-            INameResolver nameResolver = null)
+        public static IHost GetJobHostWithOptionsForDurableClientFactoryExternal(IConnectionStringResolver connectionStringResolver)
         {
-            var optionsWrapper = new OptionsWrapper<DurableClientOptions>(durableClientOptions);
-            var testNameResolver = new TestNameResolver(nameResolver);
-            return PlatformSpecificHelpers.CreateJobHostExternalEnvironment(optionsWrapper, testNameResolver);
+            return PlatformSpecificHelpers.CreateJobHostExternalEnvironment(connectionStringResolver);
         }
 
         public static ITestHost GetJobHostWithMultipleDurabilityProviders(
