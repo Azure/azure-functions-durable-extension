@@ -45,26 +45,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 instanceCreationTime);
         }
 
-        // NOTE: The TestStorageConnectionString app setting adn TestTaskHub app setting name must exist
-        // in order for the job host to successfully index this function.
-        [NoAutomaticTrigger]
-        public static async Task StartFunctionWithStorageAndTaskHub(
-            [DurableClient(ConnectionName = "%TestStorageConnectionString%", TaskHub = "%TestTaskHub%")] IDurableClient client,
-            string functionName,
-            string instanceId,
-            object input,
-            TestDurableClient[] clientRef)
-        {
-            DateTime instanceCreationTime = DateTime.UtcNow;
-
-            instanceId = await client.StartNewAsync(functionName, instanceId, input);
-            clientRef[0] = new TestDurableClient(
-                client,
-                functionName,
-                instanceId,
-                instanceCreationTime);
-        }
-
         [NoAutomaticTrigger]
         public static void GetEntityClient(
             [DurableClient] IDurableClient client,
