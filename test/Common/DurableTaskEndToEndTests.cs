@@ -15,9 +15,15 @@ using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.AzureStorage;
 using DurableTask.Core;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Microsoft.Diagnostics.Tracing;
+#if !FUNCTIONS_V1
+using Microsoft.Extensions.Hosting;
+using WebJobs.Extensions.DurableTask.Tests.V2;
+#endif
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Blob;
 using Moq;
@@ -218,6 +224,48 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StopAsync();
             }
         }
+
+#if !FUNCTIONS_V1
+        /// <summary>
+        /// End to end test that ensures that customers can configure custom connection string names 
+        /// using DurableClientOptions when they create a DurableClient from an external app (e.g. ASP.NET Core app).
+        /// The appSettings dictionary acts like appsettings.json and durableClientOptions are the
+        /// settings passed in during a call to DurableClient (IDurableClientFactory.CreateClient(durableClientOptions)).
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task DurableClient_AzureStorage__ReadsCustomStorageConnString()
+        {
+            string taskHubName = TestHelpers.GetTaskHubNameFromTestName(
+                nameof(this.DurableClient_AzureStorage__ReadsCustomStorageConnString),
+                enableExtendedSessions: false);
+
+            Dictionary<string, string> appSettings = new Dictionary<string, string>
+            {
+                { "CustomStorageAccountName", TestHelpers.GetStorageConnectionString() },
+                { "TestTaskHub", taskHubName },
+            };
+
+            // ConnectionName is used to look up the storage connection string in appsettings
+            DurableClientOptions durableClientOptions = new DurableClientOptions
+            {
+                ConnectionName = "CustomStorageAccountName",
+                TaskHub = taskHubName,
+            };
+
+            var connectionStringResolver = new TestCustomConnectionsStringResolver(appSettings);
+
+            using (IHost clientHost = TestHelpers.GetJobHostExternalEnvironment(
+                connectionStringResolver: connectionStringResolver))
+            {
+                await clientHost.StartAsync();
+                IDurableClientFactory durableClientFactory = clientHost.Services.GetService(typeof(IDurableClientFactory)) as DurableClientFactory;
+                IDurableClient durableClient = durableClientFactory.CreateClient(durableClientOptions);
+                Assert.Equal(taskHubName, durableClient.TaskHubName);
+                await clientHost.StopAsync();
+            }
+        }
+#endif
 
         /// <summary>
         /// End-to-end test which validates a simple orchestrator function does not have assigned value for <see cref="DurableOrchestrationContext.ParentInstanceId"/>.

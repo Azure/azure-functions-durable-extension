@@ -12,8 +12,10 @@ using System.Threading.Tasks;
 using DurableTask.AzureStorage;
 using Microsoft.ApplicationInsights.Channel;
 #if !FUNCTIONS_V1
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
+using Microsoft.Extensions.Hosting;
 #endif
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -200,6 +202,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
 #if !FUNCTIONS_V1
+        public static IHost GetJobHostExternalEnvironment(IConnectionStringResolver connectionStringResolver = null)
+        {
+            if (connectionStringResolver == null)
+            {
+                connectionStringResolver = new TestConnectionStringResolver();
+            }
+
+            return GetJobHostWithOptionsForDurableClientFactoryExternal(connectionStringResolver);
+        }
+
+        public static IHost GetJobHostWithOptionsForDurableClientFactoryExternal(IConnectionStringResolver connectionStringResolver)
+        {
+            return PlatformSpecificHelpers.CreateJobHostExternalEnvironment(connectionStringResolver);
+        }
+
         public static ITestHost GetJobHostWithMultipleDurabilityProviders(
             DurableTaskOptions options = null,
             IEnumerable<IDurabilityProviderFactory> durabilityProviderFactories = null)

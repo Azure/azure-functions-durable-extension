@@ -20,6 +20,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var startFunction = useTaskHubFromAppSettings ?
                 typeof(ClientFunctions).GetMethod(nameof(ClientFunctions.StartFunctionWithTaskHub)) :
                 typeof(ClientFunctions).GetMethod(nameof(ClientFunctions.StartFunction));
+
             var clientRef = new TestDurableClient[1];
             var args = new Dictionary<string, object>
             {
