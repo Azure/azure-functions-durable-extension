@@ -167,7 +167,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             catch (Exception e)
             {
-                if (orchestratorInfo.IsOutOfProc
+                if (orchestratorInfo != null
+                    && orchestratorInfo.IsOutOfProc
                     && OutOfProcExceptionHelpers.TryExtractOutOfProcStateJson(e.InnerException, out string returnValue)
                     && !string.IsNullOrEmpty(returnValue))
                 {
