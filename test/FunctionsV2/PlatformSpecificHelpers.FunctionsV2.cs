@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.ApplicationInsights.Channel;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
@@ -100,6 +101,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 .Build();
 
             return new FunctionsV2HostWrapper(host, options, nameResolver);
+        }
+
+        public static IHost CreateJobHostExternalEnvironment(IConnectionStringResolver connectionStringResolver)
+        {
+            IHost host = new HostBuilder()
+                .ConfigureServices(
+                    serviceCollection =>
+                    {
+                        serviceCollection.AddSingleton(connectionStringResolver);
+                        serviceCollection.AddDurableClientFactory();
+                    })
+                .Build();
+
+            return host;
         }
 
         public static ITestHost CreateJobHostWithMultipleDurabilityProviders(
