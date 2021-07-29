@@ -2366,6 +2366,83 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
+        /// End-to-end test which runs a orchestrator function that calls a non-existent orchestrator function.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [MemberData(nameof(TestDataGenerator.GetBooleanAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        public async Task ExternalClient_CallsUnregisteredOrchestrator(bool extendedSessions, string storageProvider)
+        {
+            const string activityFunctionName = "UnregisteredOrchestrator";
+            string errorMessage = $"The function '{activityFunctionName}' doesn't exist, is disabled, or is not an orchestrator function";
+
+            using (ITestHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.ExternalClient_CallsUnregisteredOrchestrator),
+                extendedSessions,
+                storageProviderType: storageProvider))
+            {
+                await host.StartAsync();
+
+                Exception ex = await Assert.ThrowsAsync<FunctionInvocationException>(async () => await host.StartOrchestratorAsync("UnregisteredOrchestrator", "Unregistered", this.output));
+
+                Assert.NotNull(ex.InnerException);
+                Assert.Contains(errorMessage, ex.InnerException?.ToString());
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
+        /// End-to-end test which runs a orchestrator function that calls a non-existent orchestrator function.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [MemberData(nameof(TestDataGenerator.GetBooleanAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        public async Task NonexistentOrchestratorFunctionFails(bool extendedSessions, string storageProvider)
+        {
+            // const string activityFunctionName = "UnregisteredOrchestrator";
+            // string errorMessage = $"The function '{activityFunctionName}' doesn't exist, is disabled, or is not an orchestrator function";
+
+            var types = new Type[]
+            {
+                typeof(TestOrchestrations),
+                typeof(TestActivities),
+                typeof(ClientFunctions),
+            };
+
+            using (ITestHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.NonexistentOrchestratorFunctionFails),
+                extendedSessions,
+                storageProviderType: storageProvider,
+                types: types))
+            {
+                await host.StartAsync();
+
+                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.SayHelloInline), null, this.output);
+                await host.StopAsync();
+
+                using (ITestHost newHost = TestHelpers.GetJobHost(
+                    this.loggerProvider,
+                    nameof(this.NonexistentOrchestratorFunctionFails),
+                    extendedSessions,
+                    storageProviderType: storageProvider,
+                    types: new Type[] { }))
+                {
+                    // create a new client with instanceid from first host
+                    await newHost.StartAsync();
+                    var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(40));
+
+                    Assert.Equal(OrchestrationRuntimeStatus.Failed, status?.RuntimeStatus);
+
+                    string output = (string)status?.Output;
+                    await newHost.StopAsync();
+                }
+            }
+        }
+
+        /// <summary>
         /// End-to-end test which runs a orchestrator function that calls a non-existent activity function.
         /// </summary>
         [Theory]
