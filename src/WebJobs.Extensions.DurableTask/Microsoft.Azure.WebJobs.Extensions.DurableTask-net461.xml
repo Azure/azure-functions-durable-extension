@@ -1322,7 +1322,8 @@
             <remarks>
             All durable timers created using this method must either expire or be cancelled
             using the <paramref name="cancelToken"/> before the orchestrator function completes.
-            Otherwise the underlying framework will keep the instance alive until the timer expires.
+             Otherwise the underlying framework will keep the instance in the "Running" state
+             even after the orchestrator function has completed.
             </remarks>
             <typeparam name="T">The type of <paramref name="state"/>.</typeparam>
             <param name="fireAt">The time at which the timer should expire.</param>
@@ -1337,7 +1338,8 @@
             <remarks>
             All durable timers created using this method must either expire or be cancelled
             using the <paramref name="cancelToken"/> before the orchestrator function completes.
-            Otherwise the underlying framework will keep the instance alive until the timer expires.
+             Otherwise the underlying framework will keep the instance in the "Running" state
+             even after the orchestrator function has completed.
             </remarks>
             <param name="fireAt">The time at which the timer should expire.</param>
             <param name="cancelToken">The <c>CancellationToken</c> to use for cancelling the timer.</param>

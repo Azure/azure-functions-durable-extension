@@ -1330,7 +1330,8 @@
             <remarks>
             All durable timers created using this method must either expire or be cancelled
             using the <paramref name="cancelToken"/> before the orchestrator function completes.
-            Otherwise the underlying framework will keep the instance alive until the timer expires.
+             Otherwise the underlying framework will keep the instance in the "Running" state
+             even after the orchestrator function has completed.
             </remarks>
             <typeparam name="T">The type of <paramref name="state"/>.</typeparam>
             <param name="fireAt">The time at which the timer should expire.</param>
@@ -1345,7 +1346,8 @@
             <remarks>
             All durable timers created using this method must either expire or be cancelled
             using the <paramref name="cancelToken"/> before the orchestrator function completes.
-            Otherwise the underlying framework will keep the instance alive until the timer expires.
+             Otherwise the underlying framework will keep the instance in the "Running" state
+             even after the orchestrator function has completed.
             </remarks>
             <param name="fireAt">The time at which the timer should expire.</param>
             <param name="cancelToken">The <c>CancellationToken</c> to use for cancelling the timer.</param>
@@ -2506,14 +2508,6 @@
             </summary>
             <param name="serviceCollection">The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> to configure.</param>
             <param name="optionsBuilder">Populate default configurations of <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.DurableClientOptions"/> to create Durable Clients.</param>
-            <returns>Returns the provided <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/>.</returns>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskJobHostConfigurationExtensions.AddDurableClientFactory(Microsoft.Extensions.DependencyInjection.IServiceCollection,Microsoft.Extensions.Options.IOptions{Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.DurableClientOptions})">
-            <summary>
-            Adds the Durable Task extension to the provided <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/>.
-            </summary>
-            <param name="serviceCollection">The <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/> to configure.</param>
-            <param name="durableClientOptions">Populate configurations of <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.DurableClientOptions"/> to create Durable Clients.</param>
             <returns>Returns the provided <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/>.</returns>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskJobHostConfigurationExtensions.AddDurableTask(Microsoft.Azure.WebJobs.IWebJobsBuilder)">
