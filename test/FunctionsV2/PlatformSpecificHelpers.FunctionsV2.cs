@@ -36,7 +36,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             ILifeCycleNotificationHelper lifeCycleNotificationHelper,
             IMessageSerializerSettingsFactory serializerSettingsFactory,
             Action<ITelemetry> onSend,
-            bool addDurableClientFactory)
+            bool addDurableClientFactory,
+            ITypeLocator typeLocator)
         {
             // Unless otherwise specified, use legacy partition management for tests as it makes the task hubs start up faster.
             // These tests run on a single task hub workers, so they don't test partition management anyways, and that is tested
@@ -69,7 +70,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 .ConfigureServices(
                     serviceCollection =>
                     {
-                        ITypeLocator typeLocator = TestHelpers.GetTypeLocator();
                         serviceCollection.AddSingleton(typeLocator);
                         serviceCollection.AddSingleton(nameResolver);
                         serviceCollection.AddSingleton(durableHttpMessageHandler);
