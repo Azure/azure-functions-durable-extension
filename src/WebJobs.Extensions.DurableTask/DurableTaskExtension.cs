@@ -621,11 +621,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (!this.knownActivities.TryGetValue(activityFunction, out info))
             {
                 string message = $"Activity function '{activityFunction}' does not exist.";
-                this.TraceHelper.ExtensionWarningEvent(
-                    this.Options.HubName,
-                    activityFunction.Name,
-                    string.Empty /* TODO: Flow the instance id into this event */,
-                    message);
 
                 return new TaskNonexistentActivityShim(this, name, message);
             }

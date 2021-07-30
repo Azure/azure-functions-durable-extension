@@ -2413,82 +2413,61 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
+#if !FUNCTIONS_V1
         /// <summary>
-        /// End-to-end test which runs a orchestrator function that calls a non-existent orchestrator function.
+        /// End-to-end test which creates an external client that calls a non-existent orchestrator function.
         /// </summary>
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [MemberData(nameof(TestDataGenerator.GetBooleanAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
-        public async Task ExternalClient_CallsUnregisteredOrchestrator(bool extendedSessions, string storageProvider)
+        [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        public async Task ExternalClient_CallsNonexistentOrchestrator(string storageProvider)
         {
-            const string activityFunctionName = "UnregisteredOrchestrator";
-            string errorMessage = $"The function '{activityFunctionName}' doesn't exist, is disabled, or is not an orchestrator function";
+            string taskHubName = TestHelpers.GetTaskHubNameFromTestName(
+                nameof(this.ExternalClient_CallsNonexistentOrchestrator),
+                enableExtendedSessions: false);
 
-            using (ITestHost host = TestHelpers.GetJobHost(
-                this.loggerProvider,
-                nameof(this.ExternalClient_CallsUnregisteredOrchestrator),
-                extendedSessions,
-                storageProviderType: storageProvider))
+            Dictionary<string, string> appSettings = new Dictionary<string, string>
             {
-                await host.StartAsync();
-
-                Exception ex = await Assert.ThrowsAsync<FunctionInvocationException>(async () => await host.StartOrchestratorAsync("UnregisteredOrchestrator", "Unregistered", this.output));
-
-                Assert.NotNull(ex.InnerException);
-                Assert.Contains(errorMessage, ex.InnerException?.ToString());
-
-                await host.StopAsync();
-            }
-        }
-
-        /// <summary>
-        /// End-to-end test which runs a orchestrator function that calls a non-existent orchestrator function.
-        /// </summary>
-        [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [MemberData(nameof(TestDataGenerator.GetBooleanAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
-        public async Task NonexistentOrchestratorFunctionFails(bool extendedSessions, string storageProvider)
-        {
-            // const string activityFunctionName = "UnregisteredOrchestrator";
-            // string errorMessage = $"The function '{activityFunctionName}' doesn't exist, is disabled, or is not an orchestrator function";
-
-            var types = new Type[]
-            {
-                typeof(TestOrchestrations),
-                typeof(TestActivities),
-                typeof(ClientFunctions),
+                { "CustomStorageAccountName", TestHelpers.GetStorageConnectionString() },
+                { "TestTaskHub", taskHubName },
             };
 
-            using (ITestHost host = TestHelpers.GetJobHost(
-                this.loggerProvider,
-                nameof(this.NonexistentOrchestratorFunctionFails),
-                extendedSessions,
-                storageProviderType: storageProvider,
-                types: types))
+            // ConnectionName is used to look up the storage connection string in appsettings
+            DurableClientOptions durableClientOptions = new DurableClientOptions
             {
-                await host.StartAsync();
+                ConnectionName = "CustomStorageAccountName",
+                TaskHub = taskHubName,
+            };
 
-                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.SayHelloInline), null, this.output);
-                await host.StopAsync();
+            var connectionStringResolver = new TestCustomConnectionsStringResolver(appSettings);
 
-                using (ITestHost newHost = TestHelpers.GetJobHost(
-                    this.loggerProvider,
-                    nameof(this.NonexistentOrchestratorFunctionFails),
-                    extendedSessions,
-                    storageProviderType: storageProvider,
-                    types: new Type[] { }))
+            using (IHost clientHost = TestHelpers.GetJobHostExternalEnvironment(
+                connectionStringResolver: connectionStringResolver))
+            {
+                using (var orchestrationHost = TestHelpers.GetJobHost(
+                   this.loggerProvider,
+                   nameof(this.ExternalClient_CallsNonexistentOrchestrator),
+                   enableExtendedSessions: false,
+                   storageProviderType: storageProvider,
+                   exactTaskHubName: taskHubName))
                 {
-                    // create a new client with instanceid from first host
-                    await newHost.StartAsync();
-                    var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(40));
+                    await clientHost.StartAsync();
+                    await orchestrationHost.StartAsync();
 
-                    Assert.Equal(OrchestrationRuntimeStatus.Failed, status?.RuntimeStatus);
+                    IDurableClientFactory durableClientFactory = clientHost.Services.GetService(typeof(IDurableClientFactory)) as DurableClientFactory;
+                    IDurableClient durableClient = durableClientFactory.CreateClient(durableClientOptions);
 
-                    string output = (string)status?.Output;
-                    await newHost.StopAsync();
+                    string instanceId = await durableClient.StartNewAsync("NonexistentOrchestrator");
+                    await Task.Delay(10000);
+                    DurableOrchestrationStatus status = await durableClient.GetStatusAsync(instanceId);
+                    Assert.Equal(OrchestrationRuntimeStatus.Failed, status.RuntimeStatus);
+
+                    await orchestrationHost.StopAsync();
+                    await clientHost.StopAsync();
                 }
             }
         }
+#endif
 
         /// <summary>
         /// End-to-end test which runs a orchestrator function that calls a non-existent activity function.
