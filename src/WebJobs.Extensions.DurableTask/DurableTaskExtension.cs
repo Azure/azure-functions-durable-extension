@@ -22,7 +22,6 @@ using Microsoft.Azure.WebJobs.Description;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
 using Microsoft.Azure.WebJobs.Host.Scale;
 #endif
-using System.Runtime.ExceptionServices;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener;
 using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.Host.Config;
@@ -620,9 +619,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             RegisteredFunctionInfo info;
             if (!this.knownActivities.TryGetValue(activityFunction, out info))
             {
-                string message = $"Activity function '{activityFunction}' does not exist.";
-
-                return new TaskNonexistentActivityShim(this, name, message);
+                return new TaskNonexistentActivityShim(this, name);
             }
 
             return new TaskActivityShim(this, info.Executor, this.hostLifetimeService, name);

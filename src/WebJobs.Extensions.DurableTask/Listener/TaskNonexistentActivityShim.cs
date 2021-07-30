@@ -13,21 +13,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener
     {
         private readonly DurableTaskExtension config;
         private readonly string activityName;
-        private readonly string message;
 
         public TaskNonexistentActivityShim(
             DurableTaskExtension config,
-            string activityName,
-            string message)
+            string activityName)
         {
             this.config = config;
             this.activityName = activityName;
-            this.message = message;
         }
 
         public override string Run(TaskContext context, string input)
         {
-            Exception exceptionToReport = new FunctionFailedException(this.message);
+            string message = $"Activity function '{this.activityName}' does not exist.";
+            Exception exceptionToReport = new FunctionFailedException(message);
 
             throw new TaskFailureException(
                 $"Activity function '{this.activityName}' failed: {exceptionToReport.Message}",
