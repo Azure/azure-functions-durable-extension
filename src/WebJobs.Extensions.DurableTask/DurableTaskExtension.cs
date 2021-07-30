@@ -619,13 +619,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             RegisteredFunctionInfo info;
             if (!this.knownActivities.TryGetValue(activityFunction, out info))
             {
-                string message = $"Activity function '{activityFunction}' does not exist.";
-                this.TraceHelper.ExtensionWarningEvent(
-                    this.Options.HubName,
-                    activityFunction.Name,
-                    string.Empty /* TODO: Flow the instance id into this event */,
-                    message);
-                throw new InvalidOperationException(message);
+                return new TaskNonexistentActivityShim(this, name);
             }
 
             return new TaskActivityShim(this, info.Executor, this.hostLifetimeService, name);
@@ -684,55 +678,61 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (info == null)
             {
                 string message = this.GetInvalidOrchestratorFunctionMessage(context.FunctionName);
+
                 this.TraceHelper.ExtensionWarningEvent(
                     this.Options.HubName,
                     orchestrationRuntimeState.Name,
                     orchestrationRuntimeState.OrchestrationInstance.InstanceId,
                     message);
-                throw new InvalidOperationException(message);
-            }
 
-            // 1. Start the functions invocation pipeline (billing, logging, bindings, and timeout tracking).
-            WrappedFunctionResult result = await FunctionExecutionHelper.ExecuteFunctionInOrchestrationMiddleware(
-                info.Executor,
-                new TriggeredFunctionData
-                {
-                    TriggerValue = context,
+                Func<Task<OrchestrationFailureException>> nonExistentException = () => throw new OrchestrationFailureException(message);
+                shim.SetFunctionInvocationCallback(nonExistentException);
+                await next();
+            }
+            else
+            {
+                // 1. Start the functions invocation pipeline (billing, logging, bindings, and timeout tracking).
+                WrappedFunctionResult result = await FunctionExecutionHelper.ExecuteFunctionInOrchestrationMiddleware(
+                    info.Executor,
+                    new TriggeredFunctionData
+                    {
+                        TriggerValue = context,
 
 #pragma warning disable CS0618 // Approved for use by this extension
-                    InvokeHandler = async userCodeInvoker =>
-                    {
-                        context.ExecutorCalledBack = true;
-
-                        // 2. Configure the shim with the inner invoker to execute the user code.
-                        shim.SetFunctionInvocationCallback(userCodeInvoker);
-
-                        // 3. Move to the next stage of the DTFx pipeline to trigger the orchestrator shim.
-                        await next();
-
-                        // 4. If an activity failed, indicate to the functions Host that this execution failed via an exception
-                        if (context.IsCompleted && context.OrchestrationException != null)
+                        InvokeHandler = async userCodeInvoker =>
                         {
-                            context.OrchestrationException.Throw();
-                        }
-                    },
+                            context.ExecutorCalledBack = true;
+
+                            // 2. Configure the shim with the inner invoker to execute the user code.
+                            shim.SetFunctionInvocationCallback(userCodeInvoker);
+
+                            // 3. Move to the next stage of the DTFx pipeline to trigger the orchestrator shim.
+                            await next();
+
+                            // 4. If an activity failed, indicate to the functions Host that this execution failed via an exception
+                            if (context.IsCompleted && context.OrchestrationException != null)
+                            {
+                                context.OrchestrationException.Throw();
+                            }
+                        },
 #pragma warning restore CS0618
-                },
-                context,
-                this.hostLifetimeService.OnStopping);
+                    },
+                    context,
+                    this.hostLifetimeService.OnStopping);
 
-            if (result.ExecutionStatus == WrappedFunctionResult.FunctionResultStatus.FunctionsRuntimeError)
-            {
-                this.TraceHelper.FunctionAborted(
-                    this.Options.HubName,
-                    context.FunctionName,
-                    context.InstanceId,
-                    $"An internal error occurred while attempting to execute this function. The execution will be aborted and retried. Details: {result.Exception}",
-                    functionType: FunctionType.Orchestrator);
+                if (result.ExecutionStatus == WrappedFunctionResult.FunctionResultStatus.FunctionsRuntimeError)
+                {
+                    this.TraceHelper.FunctionAborted(
+                        this.Options.HubName,
+                        context.FunctionName,
+                        context.InstanceId,
+                        $"An internal error occurred while attempting to execute this function. The execution will be aborted and retried. Details: {result.Exception}",
+                        functionType: FunctionType.Orchestrator);
 
-                // This will abort the execution and cause the message to go back onto the queue for re-processing
-                throw new SessionAbortedException(
-                    $"An internal error occurred while attempting to execute '{context.FunctionName}'.", result.Exception);
+                    // This will abort the execution and cause the message to go back onto the queue for re-processing
+                    throw new SessionAbortedException(
+                        $"An internal error occurred while attempting to execute '{context.FunctionName}'.", result.Exception);
+                }
             }
 
             if (!context.IsCompleted && !context.IsLongRunningTimer)

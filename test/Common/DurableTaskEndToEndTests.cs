@@ -2413,6 +2413,140 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
+#if !FUNCTIONS_V1
+        /// <summary>
+        /// End-to-end test which creates an external client that calls a non-existent orchestrator function.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        public async Task ExternalClient_CallsNonexistentOrchestrator(string storageProvider)
+        {
+            string taskHubName = TestHelpers.GetTaskHubNameFromTestName(
+                nameof(this.ExternalClient_CallsNonexistentOrchestrator),
+                enableExtendedSessions: false);
+
+            Dictionary<string, string> appSettings = new Dictionary<string, string>
+            {
+                { "CustomStorageAccountName", TestHelpers.GetStorageConnectionString() },
+                { "TestTaskHub", taskHubName },
+            };
+
+            // ConnectionName is used to look up the storage connection string in appsettings
+            DurableClientOptions durableClientOptions = new DurableClientOptions
+            {
+                ConnectionName = "CustomStorageAccountName",
+                TaskHub = taskHubName,
+            };
+
+            var connectionStringResolver = new TestCustomConnectionsStringResolver(appSettings);
+
+            using (IHost clientHost = TestHelpers.GetJobHostExternalEnvironment(
+                connectionStringResolver: connectionStringResolver))
+            {
+                using (var orchestrationHost = TestHelpers.GetJobHost(
+                   this.loggerProvider,
+                   nameof(this.ExternalClient_CallsNonexistentOrchestrator),
+                   enableExtendedSessions: false,
+                   storageProviderType: storageProvider,
+                   exactTaskHubName: taskHubName))
+                {
+                    await clientHost.StartAsync();
+                    await orchestrationHost.StartAsync();
+
+                    IDurableClientFactory durableClientFactory = clientHost.Services.GetService(typeof(IDurableClientFactory)) as DurableClientFactory;
+                    IDurableClient durableClient = durableClientFactory.CreateClient(durableClientOptions);
+
+                    string instanceId = await durableClient.StartNewAsync("NonexistentOrchestrator");
+                    await Task.Delay(10000);
+                    DurableOrchestrationStatus status = await durableClient.GetStatusAsync(instanceId);
+                    Assert.Equal(OrchestrationRuntimeStatus.Failed, status.RuntimeStatus);
+
+                    await orchestrationHost.StopAsync();
+                    await clientHost.StopAsync();
+                }
+            }
+        }
+
+        /// <summary>
+        /// End-to-end test which tests renaming/disabling/deleting activity functions. An orchestrator function schedules activity functions
+        /// in the first host. The second host is created without any activity functions and an external client gets the status of the orchestrator
+        /// instance. The orchestrator instance should fail in this case.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [MemberData(nameof(TestDataGenerator.GetBooleanAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        public async Task NonexistentActivity_OrchestratorFunctionFails(bool extendedSessions, string storageProvider)
+        {
+            var modifiedTypeArray = new Type[]
+            {
+                typeof(TestOrchestrations),
+                typeof(ClientFunctions),
+            };
+
+            string instanceId = "";
+            string taskHub = "";
+            using (ITestHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.NonexistentActivity_OrchestratorFunctionFails),
+                extendedSessions,
+                storageProviderType: storageProvider))
+            {
+                await host.StartAsync();
+                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.CallActivityWithDelay), null, this.output);
+                instanceId = client.InstanceId;
+                taskHub = client.TaskHubName;
+
+                await client.WaitForStartupAsync(this.output, Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(20));
+                await Task.Delay(TimeSpan.FromSeconds(1));
+
+                await host.StopAsync();
+            }
+
+            Dictionary<string, string> taskHubAndStorageAppSetting = new Dictionary<string, string>
+            {
+                { "CustomStorageAccountName", TestHelpers.GetStorageConnectionString() },
+                { "TestTaskHub", taskHub },
+            };
+
+            var taskHubStorageConnectionStringResolver = new TestCustomConnectionsStringResolver(taskHubAndStorageAppSetting);
+
+            // create a new host without activity functions and see if the function fails
+            using (ITestHost newHost = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.NonexistentActivity_OrchestratorFunctionFails),
+                extendedSessions,
+                storageProviderType: storageProvider,
+                exactTaskHubName: taskHub,
+                types: modifiedTypeArray))
+            {
+                await newHost.StartAsync();
+                using (IHost clientHost = TestHelpers.GetJobHostExternalEnvironment(
+                    connectionStringResolver: taskHubStorageConnectionStringResolver))
+                {
+                    DurableClientOptions durableClientOptions = new DurableClientOptions
+                    {
+                        ConnectionName = "CustomStorageAccountName",
+                        TaskHub = taskHub,
+                    };
+
+                    // create a new client (external)
+                    await clientHost.StartAsync();
+                    IDurableClientFactory durableClientFactory = clientHost.Services.GetService(typeof(IDurableClientFactory)) as DurableClientFactory;
+                    IDurableClient durableClient = durableClientFactory.CreateClient(durableClientOptions);
+                    await Task.Delay(15000);
+                    DurableOrchestrationStatus newStatus = await durableClient.GetStatusAsync(instanceId);
+
+                    Assert.Equal(OrchestrationRuntimeStatus.Failed, newStatus?.RuntimeStatus);
+                    Assert.Contains("Non-Deterministic workflow detected", newStatus.Output.ToString());
+                    await clientHost.StopAsync();
+                }
+
+                await newHost.StopAsync();
+            }
+        }
+#endif
+
         /// <summary>
         /// End-to-end test which runs a orchestrator function that calls a non-existent activity function.
         /// </summary>
