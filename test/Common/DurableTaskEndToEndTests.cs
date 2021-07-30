@@ -2467,6 +2467,85 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 }
             }
         }
+
+        /// <summary>
+        /// End-to-end test which tests renaming/disabling/deleting activity functions. An orchestrator function schedules activity functions
+        /// in the first host. The second host is created without any activity functions and an external client gets the status of the orchestrator
+        /// instance. The orchestrator instance should fail in this case.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [MemberData(nameof(TestDataGenerator.GetBooleanAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        public async Task NonexistentActivity_OrchestratorFunctionFails(bool extendedSessions, string storageProvider)
+        {
+            var modifiedTypeArray = new Type[]
+            {
+                typeof(TestOrchestrations),
+                typeof(ClientFunctions),
+            };
+
+            using (ITestHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.NonexistentActivity_OrchestratorFunctionFails),
+                extendedSessions,
+                storageProviderType: storageProvider))
+            {
+                await host.StartAsync();
+                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.FanOutFanInWithDelay), 10, this.output);
+                string instanceId = client.InstanceId;
+                string taskHub = client.TaskHubName;
+
+                await client.WaitForStartupAsync(this.output, Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(20));
+                await Task.Delay(TimeSpan.FromSeconds(1));
+
+                await host.StopAsync();
+
+                await Task.Delay(30000);
+
+                Dictionary<string, string> taskHubAndStorageAppSetting = new Dictionary<string, string>
+                {
+                    { "CustomStorageAccountName", TestHelpers.GetStorageConnectionString() },
+                    { "TestTaskHub", taskHub },
+                };
+
+                var taskHubStorageConnectionStringResolver = new TestCustomConnectionsStringResolver(taskHubAndStorageAppSetting);
+
+                // create a new host without activity functions and see if the function fails
+                using (ITestHost newHost = TestHelpers.GetJobHost(
+                    this.loggerProvider,
+                    nameof(this.NonexistentActivity_OrchestratorFunctionFails),
+                    extendedSessions,
+                    storageProviderType: storageProvider,
+                    exactTaskHubName: taskHub,
+                    types: modifiedTypeArray))
+                {
+                    await newHost.StartAsync();
+
+                    using (IHost clientHost = TestHelpers.GetJobHostExternalEnvironment(
+                        connectionStringResolver: taskHubStorageConnectionStringResolver))
+                    {
+                        DurableClientOptions durableClientOptions = new DurableClientOptions
+                        {
+                            ConnectionName = "CustomStorageAccountName",
+                            TaskHub = taskHub,
+                        };
+
+                        // create a new client (external)
+                        await clientHost.StartAsync();
+                        IDurableClientFactory durableClientFactory = clientHost.Services.GetService(typeof(IDurableClientFactory)) as DurableClientFactory;
+                        IDurableClient durableClient = durableClientFactory.CreateClient(durableClientOptions);
+                        await Task.Delay(20000);
+                        DurableOrchestrationStatus newStatus = await durableClient.GetStatusAsync(instanceId);
+
+                        Assert.Equal(OrchestrationRuntimeStatus.Failed, newStatus?.RuntimeStatus);
+                        Assert.Contains("Non-Deterministic workflow detected", newStatus.Output.ToString());
+                        await clientHost.StopAsync();
+                    }
+
+                    await newHost.StopAsync();
+                }
+            }
+        }
 #endif
 
         /// <summary>

@@ -637,6 +637,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return "Done";
         }
 
+        public static async Task<string> FanOutFanInWithDelay(
+           [OrchestrationTrigger] IDurableOrchestrationContext context)
+        {
+            int parallelTasks = context.GetInput<int>();
+            var tasks = new Task[parallelTasks];
+            for (int i = 0; i < tasks.Length; i++)
+            {
+                tasks[i] = context.CallActivityAsync(nameof(TestActivities.TimeDelayActivity), null);
+            }
+
+            await Task.WhenAll(tasks);
+
+            return "Done";
+        }
+
+
         public static async Task<int> WaitForEventAndCallActivity(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
         {

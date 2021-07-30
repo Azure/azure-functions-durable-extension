@@ -63,6 +63,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             throw new InvalidOperationException(message);
         }
 
+        public static async Task TimeDelayActivity([ActivityTrigger] IDurableActivityContext ctx)
+        {
+            await Task.Delay(TimeSpan.FromSeconds(20));
+        }
+
         public static Task<string> LoadStringFromTextBlob(
             [ActivityTrigger] string blobName)
         {
