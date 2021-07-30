@@ -2500,8 +2500,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 await host.StopAsync();
 
-                await Task.Delay(30000);
-
                 Dictionary<string, string> taskHubAndStorageAppSetting = new Dictionary<string, string>
                 {
                     { "CustomStorageAccountName", TestHelpers.GetStorageConnectionString() },
@@ -2534,7 +2532,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                         await clientHost.StartAsync();
                         IDurableClientFactory durableClientFactory = clientHost.Services.GetService(typeof(IDurableClientFactory)) as DurableClientFactory;
                         IDurableClient durableClient = durableClientFactory.CreateClient(durableClientOptions);
-                        await Task.Delay(20000);
+                        await Task.Delay(15000);
                         DurableOrchestrationStatus newStatus = await durableClient.GetStatusAsync(instanceId);
 
                         Assert.Equal(OrchestrationRuntimeStatus.Failed, newStatus?.RuntimeStatus);

@@ -65,7 +65,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         public static async Task TimeDelayActivity([ActivityTrigger] IDurableActivityContext ctx)
         {
-            await Task.Delay(TimeSpan.FromSeconds(20));
+            await Task.Delay(TimeSpan.FromSeconds(10));
         }
 
         public static Task<string> LoadStringFromTextBlob(
