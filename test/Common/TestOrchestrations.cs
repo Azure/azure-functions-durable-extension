@@ -637,6 +637,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return "Done";
         }
 
+        public static async Task<string> CallActivityWithDelay(
+           [OrchestrationTrigger] IDurableOrchestrationContext context)
+        {
+            await context.CallActivityAsync(nameof(TestActivities.TimeDelayActivity), null);
+            return "Done";
+        }
+
         public static async Task<int> WaitForEventAndCallActivity(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
         {

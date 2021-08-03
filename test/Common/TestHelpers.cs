@@ -12,8 +12,10 @@ using System.Threading.Tasks;
 using DurableTask.AzureStorage;
 using Microsoft.ApplicationInsights.Channel;
 #if !FUNCTIONS_V1
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
+using Microsoft.Extensions.Hosting;
 #endif
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -64,7 +66,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             bool rollbackEntityOperationsOnExceptions = true,
             int entityMessageReorderWindowInMinutes = 30,
             string exactTaskHubName = null,
-            bool addDurableClientFactory = false)
+            bool addDurableClientFactory = false,
+            Type[] types = null)
         {
             switch (storageProviderType)
             {
@@ -156,6 +159,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 onSend: onSend,
 #if !FUNCTIONS_V1
                 addDurableClientFactory: addDurableClientFactory,
+                types: types,
 #endif
                 durabilityProviderFactoryType: durabilityProviderFactoryType);
         }
@@ -170,7 +174,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             IMessageSerializerSettingsFactory serializerSettings = null,
             Action<ITelemetry> onSend = null,
             Type durabilityProviderFactoryType = null,
-            bool addDurableClientFactory = false)
+            bool addDurableClientFactory = false,
+            Type[] types = null)
         {
             if (serializerSettings == null)
             {
@@ -184,12 +189,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 durableHttpMessageHandler = new DurableHttpMessageHandlerFactory();
             }
 
+            ITypeLocator typeLocator = types == null ? GetTypeLocator() : new ExplicitTypeLocator(types);
+
             return PlatformSpecificHelpers.CreateJobHost(
                 options: optionsWrapper,
                 storageProvider: storageProviderType,
 #if !FUNCTIONS_V1
                 durabilityProviderFactoryType: durabilityProviderFactoryType,
                 addDurableClientFactory: addDurableClientFactory,
+                typeLocator: typeLocator,
 #endif
                 loggerProvider: loggerProvider,
                 nameResolver: testNameResolver,
@@ -200,6 +208,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
 #if !FUNCTIONS_V1
+        public static IHost GetJobHostExternalEnvironment(IConnectionStringResolver connectionStringResolver = null)
+        {
+            if (connectionStringResolver == null)
+            {
+                connectionStringResolver = new TestConnectionStringResolver();
+            }
+
+            return GetJobHostWithOptionsForDurableClientFactoryExternal(connectionStringResolver);
+        }
+
+        public static IHost GetJobHostWithOptionsForDurableClientFactoryExternal(IConnectionStringResolver connectionStringResolver)
+        {
+            return PlatformSpecificHelpers.CreateJobHostExternalEnvironment(connectionStringResolver);
+        }
+
         public static ITestHost GetJobHostWithMultipleDurabilityProviders(
             DurableTaskOptions options = null,
             IEnumerable<IDurabilityProviderFactory> durabilityProviderFactories = null)

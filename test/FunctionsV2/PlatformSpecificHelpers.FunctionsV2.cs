@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.ApplicationInsights.Channel;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
@@ -35,7 +36,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             ILifeCycleNotificationHelper lifeCycleNotificationHelper,
             IMessageSerializerSettingsFactory serializerSettingsFactory,
             Action<ITelemetry> onSend,
-            bool addDurableClientFactory)
+            bool addDurableClientFactory,
+            ITypeLocator typeLocator)
         {
             // Unless otherwise specified, use legacy partition management for tests as it makes the task hubs start up faster.
             // These tests run on a single task hub workers, so they don't test partition management anyways, and that is tested
@@ -68,7 +70,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 .ConfigureServices(
                     serviceCollection =>
                     {
-                        ITypeLocator typeLocator = TestHelpers.GetTypeLocator();
                         serviceCollection.AddSingleton(typeLocator);
                         serviceCollection.AddSingleton(nameResolver);
                         serviceCollection.AddSingleton(durableHttpMessageHandler);
@@ -100,6 +101,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 .Build();
 
             return new FunctionsV2HostWrapper(host, options, nameResolver);
+        }
+
+        public static IHost CreateJobHostExternalEnvironment(IConnectionStringResolver connectionStringResolver)
+        {
+            IHost host = new HostBuilder()
+                .ConfigureServices(
+                    serviceCollection =>
+                    {
+                        serviceCollection.AddSingleton(connectionStringResolver);
+                        serviceCollection.AddDurableClientFactory();
+                    })
+                .Build();
+
+            return host;
         }
 
         public static ITestHost CreateJobHostWithMultipleDurabilityProviders(

@@ -83,7 +83,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         // This method should not be called before the app settings are resolved into the options.
         // Because of this, we wait to validate the options until right before building a durability provider, rather
         // than in the Factory constructor.
-        private void EnsureInitialized()
+        private void EnsureDefaultClientSettingsInitialized()
         {
             if (!this.hasValidatedOptions)
             {
@@ -103,7 +103,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public virtual DurabilityProvider GetDurabilityProvider()
         {
-            this.EnsureInitialized();
+            this.EnsureDefaultClientSettingsInitialized();
             if (this.defaultStorageProvider == null)
             {
                 var defaultService = new AzureStorageOrchestrationService(this.defaultSettings);
@@ -120,7 +120,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public virtual DurabilityProvider GetDurabilityProvider(DurableClientAttribute attribute)
         {
-            this.EnsureInitialized();
+            if (!attribute.ExternalClient)
+            {
+                this.EnsureDefaultClientSettingsInitialized();
+            }
+
             return this.GetAzureStorageStorageProvider(attribute);
         }
 
@@ -130,8 +134,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             AzureStorageOrchestrationServiceSettings settings = this.GetAzureStorageOrchestrationServiceSettings(connectionName, attribute.TaskHub);
 
             AzureStorageDurabilityProvider innerClient;
-            if (string.Equals(this.defaultSettings.TaskHubName, settings.TaskHubName, StringComparison.OrdinalIgnoreCase) &&
-                string.Equals(this.defaultSettings.StorageConnectionString, settings.StorageConnectionString, StringComparison.OrdinalIgnoreCase))
+
+            // Need to check this.defaultStorageProvider != null for external clients that call GetDurabilityProvider(attribute)
+            // which never initializes the defaultStorageProvider.
+            if (string.Equals(this.defaultSettings?.TaskHubName, settings.TaskHubName, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(this.defaultSettings?.StorageConnectionString, settings.StorageConnectionString, StringComparison.OrdinalIgnoreCase) &&
+                this.defaultStorageProvider != null)
             {
                 // It's important that clients use the same AzureStorageOrchestrationService instance
                 // as the host when possible to ensure we any send operations can be picked up

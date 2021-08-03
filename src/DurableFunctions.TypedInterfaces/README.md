@@ -10,19 +10,20 @@ Automatically generates method stubs that correspond to the contracts of Orchest
 
 ## How to use
 
-1. Add the project's nuget package as a dependency. Mark the reference with `OutputItemType="Analyzer"` and `ReferenceOutputAssembly="false"`.
+1. Add the project's nuget package as a dependency.
 
 For example: 
 
 ```xml
-<ProjectReference Include="..\WebJobs.Extensions.DurableTask.CodeGen.SourceGenerator\WebJobs.Extensions.DurableTask.CodeGen.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+<PackageReference Include="DurableFunctions.TypedInterfaces" Version="0.1.0-preview" />
 ```
 
 *The project should now automatically generate code for Orchestration/Activity functions.*
 
-2. *Optionally*, add the following statement to a property group in your project's csproj in order to see the generated files.
+2. *Optionally*, add the following statements to a property group in your project's csproj in order to see the generated files.
 
 ```xml
+<EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
 <CompilerGeneratedFilesOutputPath>$(BaseIntermediateOutputPath)Generated</CompilerGeneratedFilesOutputPath>
 ```
 
@@ -42,7 +43,7 @@ public static string SayHello([ActivityTrigger] IDurableActivityContext context,
 4. Manually add using statement to reference the generated code.
 
 ```
-using Microsoft.Azure.Webjobs.Extensions.DurableTask.Generated;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.TypedInterfaces;
 ```
 
 5. Replace ```IDurableClient``` / ```IDurableOrchestrationContext``` usage for their generated counterparts ```ITypedDurableClient``` / ```ITypedDurableOrchestrationContext```. The generated interfaces can perform all operations exposed by standard interfaces, in additional to performing typed calls to Orchestration/Activity Function.
@@ -203,11 +204,11 @@ public async Task<int> Multiply(
 
 ### 1. Manually Adding Namespace
 
-For the moment, generated code will not show up intellisense unless the namespace containing the code is added to the file you are trying to use them in. Generated code is placed in the namespace ```Microsoft.Azure.Webjobs.Extensions.DurableTask.Generated```. 
+For the moment, generated code will not show up intellisense unless the namespace containing the code is added to the file you are trying to use them in. Generated code is placed in the namespace ```Microsoft.Azure.Webjobs.Extensions.DurableTask.TypedInterfaces```. 
 
-To use the generated interfaces, and have intellisense available for the generated types, you must manually include the using statement:
+In order to use the new typed interfaces, you must manually include the using statement:
 ```csharp
-using Microsoft.Azure.Webjobs.Extensions.DurableTask.Generated;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.TypedInterfaces;
 ```
 
 ### 2. Scoped Code Generation
