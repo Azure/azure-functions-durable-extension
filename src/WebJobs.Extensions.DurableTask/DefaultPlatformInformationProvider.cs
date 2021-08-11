@@ -71,15 +71,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 return ProgLanguage.Python;
             }
-            else if (workerRuntime == "javascript")
+            else if (workerRuntime == "node")
             {
                 return ProgLanguage.JavaScript;
             }
-            else if (workerRuntime == "powershell")
+            else if (workerRuntime == "powerShell")
             {
                 return ProgLanguage.PowerShell;
             }
-            else if (workerRuntime == "csharp")
+            else if (workerRuntime == "dotnet")
             {
                 return ProgLanguage.Csharp;
             }
