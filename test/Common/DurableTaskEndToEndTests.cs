@@ -323,6 +323,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     { "CONTAINER_NAME", "val1" },
                     { "WEBSITE_STAMP_DEPLOYMENT_ID", "val3" },
                     { "WEBSITE_HOME_STAMPNAME", "val4" },
+                    { "FUNCTIONS_WORKER_RUNTIME", "python" },
                 });
 
                 // Run trivial orchestrator
@@ -372,6 +373,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     { "CONTAINER_NAME", "val1" },
                     { "WEBSITE_STAMP_DEPLOYMENT_ID", "val3" },
                     { "WEBSITE_HOME_STAMPNAME", "val4" },
+                    { "FUNCTIONS_WORKER_RUNTIME", "python" },
                 });
 
                 // Run trivial orchestrator
@@ -422,6 +424,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     { "CONTAINER_NAME", "val1" },
                     { "WEBSITE_STAMP_DEPLOYMENT_ID", "val3" },
                     { "WEBSITE_HOME_STAMPNAME", "val4" },
+                    { "FUNCTIONS_WORKER_RUNTIME", "python" },
                 });
 
                 // Run trivial orchestrator
@@ -479,6 +482,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 { "WEBSITE_INSTANCE_ID", "val1" },
                 { "FUNCTIONS_LOGS_MOUNT_PATH", "val2" },
+                { "FUNCTIONS_WORKER_RUNTIME", "python" },
+
             });
 
             // Run trivial orchestrator
@@ -524,6 +529,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     { "CONTAINER_NAME", "val1" },
                     { "WEBSITE_STAMP_DEPLOYMENT_ID", "val3" },
                     { "WEBSITE_HOME_STAMPNAME", "val4" },
+                    { "FUNCTIONS_WORKER_RUNTIME", "python" },
                 });
 
                 // Run trivial orchestrator
@@ -590,6 +596,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     { "CONTAINER_NAME", "val1" },
                     { "WEBSITE_STAMP_DEPLOYMENT_ID", "val3" },
                     { "WEBSITE_HOME_STAMPNAME", "val4" },
+                    { "FUNCTIONS_WORKER_RUNTIME", "python" },
                 });
 
                 // Run trivial orchestrator
@@ -657,6 +664,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 { "WEBSITE_INSTANCE_ID", "val1" },
                 { "FUNCTIONS_LOGS_MOUNT_PATH", "val2" },
+                { "FUNCTIONS_WORKER_RUNTIME", "python" },
             });
 
             // Run trivial orchestrator
@@ -716,6 +724,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 { "FUNCTIONS_LOGS_MOUNT_PATH", "val2" },
                 { "WEBSITE_STAMP_DEPLOYMENT_ID", "val3" },
                 { "WEBSITE_HOME_STAMPNAME", "val4" },
+                { "FUNCTIONS_WORKER_RUNTIME", "python" },
             });
 
             // Run trivial orchestrator
