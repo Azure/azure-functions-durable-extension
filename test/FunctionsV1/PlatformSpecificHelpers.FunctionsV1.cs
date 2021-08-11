@@ -52,7 +52,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 options.Value.StorageProvider.Add(nameof(AzureStorageOptions.UseLegacyPartitionManagement), true);
             }
 
-            platformInformationService = platformInformationService ?? TestHelpers.GetMockPlatformInformationService();
+            platformInformationService = platformInformationService ?? new DefaultPlatformInformationProvider(nameResolver);
 
             IDurabilityProviderFactory orchestrationServiceFactory = new AzureStorageDurabilityProviderFactory(
                 options,

@@ -90,7 +90,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
                 connectionStringResolver,
                 nameResolver,
                 NullLoggerFactory.Instance,
-                TestHelpers.GetMockPlatformInformationService(appServicePlan: AppServicePlan.Consumption));
+                TestHelpers.GetMockPlatformInformationService(appServicePlan: AppServicePlan.AppService));
 
             var settings = factory.GetAzureStorageOrchestrationServiceSettings();
 

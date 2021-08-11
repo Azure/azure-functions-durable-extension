@@ -483,7 +483,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 { "WEBSITE_INSTANCE_ID", "val1" },
                 { "FUNCTIONS_LOGS_MOUNT_PATH", "val2" },
                 { "FUNCTIONS_WORKER_RUNTIME", "python" },
-
             });
 
             // Run trivial orchestrator
