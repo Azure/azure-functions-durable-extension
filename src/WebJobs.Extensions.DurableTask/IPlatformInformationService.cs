@@ -6,6 +6,64 @@ using System;
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     /// <summary>
+    /// Representation of the Consumption and the AppService (Dedicated or Premium) plans.
+    /// </summary>
+    public enum AppServicePlan
+    {
+        /// <summary>
+        /// Consumption App Service plan.
+        /// </summary>
+        Consumption,
+
+        /// <summary>
+        /// Non-consumption App Service plans: Dedicated, EP, etc.
+        /// </summary>
+        AppService,
+    }
+
+    /// <summary>
+    /// Representation of the supported Operating Systems.
+    /// </summary>
+    public enum OperatingSystem
+    {
+        /// <summary>
+        /// Linux OS.
+        /// </summary>
+        Linux,
+
+        /// <summary>
+        /// Windows OS
+        /// </summary>
+        Windows,
+    }
+
+    /// <summary>
+    /// Representation of supported Programming Languages.
+    /// </summary>
+    public enum ProgLanguage
+    {
+        /// <summary>
+        /// C-Sharp.
+        /// </summary>
+        Csharp,
+
+        /// <summary>
+        /// Python.
+        /// </summary>
+        Python,
+
+        /// <summary>
+        /// JavaScript.
+        /// </summary>
+        JavaScript,
+
+        /// <summary>
+        /// PowerShell.
+        /// </summary>
+        PowerShell,
+    }
+
+    /// <summary>
     /// Interface for accessing the AppService plan information,
     /// the OS, and user-facing PL.
     ///
@@ -16,35 +74,28 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     public interface IPlatformInformationService
     {
         /// <summary>
-        /// Determines if the application is running on a Consumption plan,
-        /// irrespective of OS.
+        /// Determine the App Service Plan of this application.
         /// </summary>
-        /// <returns>True if running in Consumption. Otherwise, False.</returns>
-        bool InConsumption();
+        /// <returns>An AppServicePlan enum.</returns>
+        AppServicePlan GetAppSevicePlan();
 
         /// <summary>
-        /// Determines if the application is running in a Linux Consumption plan.
+        /// Determine the underlying operating system.
         /// </summary>
-        /// <returns>True if running in Linux Consumption. Otherwise, False.</returns>
-        bool InLinuxConsumption();
+        /// <returns>An OperatingSystem enum.</returns>
+        OperatingSystem GetOperatingSystem();
 
         /// <summary>
-        /// Determines if the application is running in a Windows Consumption plan.
+        /// Determine the underlying programming language.
         /// </summary>
-        /// <returns>True if running in Linux Consumption. Otherwise, False.</returns>
-        bool InWindowsConsumption();
+        /// <returns>A ProgLanguage enum.</returns>
+        ProgLanguage GetProgLanguage();
 
         /// <summary>
-        /// Determines is the language worker is for Python.
+        /// Determines is the language worker is OOProc.
         /// </summary>
         /// <returns>True if the language worker is for Python. Otherwise, False.</returns>
-        bool IsPython();
-
-        /// <summary>
-        /// Determines if the application is running in a Linux AppService plan.
-        /// </summary>
-        /// <returns>True if running in Linux AppService. Otherwise, False.</returns>
-        bool InLinuxAppService();
+        bool IsOutOfProc();
 
         /// <summary>
         /// Returns the application tenant when running on linux.

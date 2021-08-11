@@ -227,7 +227,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
 #if !FUNCTIONS_V1
         /// <summary>
-        /// End to end test that ensures that customers can configure custom connection string names 
+        /// End to end test that ensures that customers can configure custom connection string names
         /// using DurableClientOptions when they create a DurableClient from an external app (e.g. ASP.NET Core app).
         /// The appSettings dictionary acts like appsettings.json and durableClientOptions are the
         /// settings passed in during a call to DurableClient (IDurableClientFactory.CreateClient(durableClientOptions)).

@@ -46,7 +46,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
                 connectionStringResolver,
                 nameResolver,
                 NullLoggerFactory.Instance,
-                TestHelpers.GetMockPlatformInformationService(inConsumption: true));
+                TestHelpers.GetMockPlatformInformationService(appServicePlan: AppServicePlan.Consumption));
 
             var settings = factory.GetAzureStorageOrchestrationServiceSettings();
 
@@ -68,7 +68,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
                 connectionStringResolver,
                 nameResolver,
                 NullLoggerFactory.Instance,
-                TestHelpers.GetMockPlatformInformationService(inConsumption: true, isPython: true));
+                TestHelpers.GetMockPlatformInformationService(appServicePlan: AppServicePlan.Consumption, language: ProgLanguage.Python));
 
             var settings = factory.GetAzureStorageOrchestrationServiceSettings();
 
@@ -90,7 +90,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
                 connectionStringResolver,
                 nameResolver,
                 NullLoggerFactory.Instance,
-                TestHelpers.GetMockPlatformInformationService(inConsumption: false));
+                TestHelpers.GetMockPlatformInformationService(appServicePlan: AppServicePlan.Consumption));
 
             var settings = factory.GetAzureStorageOrchestrationServiceSettings();
 
@@ -120,7 +120,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
                 connectionStringResolver,
                 nameResolver,
                 NullLoggerFactory.Instance,
-                TestHelpers.GetMockPlatformInformationService(inConsumption: true));
+                TestHelpers.GetMockPlatformInformationService(appServicePlan: AppServicePlan.Consumption));
 
             var settings = factory.GetAzureStorageOrchestrationServiceSettings();
 

@@ -251,11 +251,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
 #pragma warning disable CS0612 // Type or member is obsolete
         public static IPlatformInformationService GetMockPlatformInformationService(
-            bool inConsumption = false,
-            bool inLinuxConsumption = false,
-            bool inWindowsConsumption = false,
-            bool inLinuxAppsService = false,
-            bool isPython = false,
+            AppServicePlan appServicePlan = AppServicePlan.AppService,
+            OperatingSystem operatingSystem = OperatingSystem.Windows,
+            ProgLanguage language = ProgLanguage.Csharp,
             string getLinuxStampName = "",
             string getContainerName = "")
 #pragma warning restore CS0612 // Type or member is obsolete
@@ -263,13 +261,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 #pragma warning disable CS0612 // Type or member is obsolete
             var mockPlatformProvider = new Mock<IPlatformInformationService>();
 #pragma warning restore CS0612 // Type or member is obsolete
-            mockPlatformProvider.Setup(x => x.InConsumption()).Returns(inConsumption);
-            mockPlatformProvider.Setup(x => x.InLinuxConsumption()).Returns(inLinuxConsumption);
-            mockPlatformProvider.Setup(x => x.InWindowsConsumption()).Returns(inWindowsConsumption);
-            mockPlatformProvider.Setup(x => x.InLinuxAppService()).Returns(inLinuxAppsService);
+            mockPlatformProvider.Setup(x => x.GetOperatingSystem()).Returns(operatingSystem);
+            mockPlatformProvider.Setup(x => x.GetAppSevicePlan()).Returns(appServicePlan);
             mockPlatformProvider.Setup(x => x.GetLinuxStampName()).Returns(getLinuxStampName);
             mockPlatformProvider.Setup(x => x.GetContainerName()).Returns(getContainerName);
-            mockPlatformProvider.Setup(x => x.IsPython()).Returns(isPython);
+            mockPlatformProvider.Setup(x => x.GetProgLanguage()).Returns(language);
             return mockPlatformProvider.Object;
         }
 

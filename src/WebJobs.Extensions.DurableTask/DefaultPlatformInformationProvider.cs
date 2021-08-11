@@ -20,18 +20,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.nameResolver = nameResolver;
         }
 
-        public bool InConsumption()
-        {
-            return this.InLinuxConsumption() | this.InWindowsConsumption();
-        }
-
-        public bool InWindowsConsumption()
+        private bool InWindowsConsumption()
         {
             string value = this.nameResolver.Resolve("WEBSITE_SKU");
             return string.Equals(value, "Dynamic", StringComparison.OrdinalIgnoreCase);
         }
 
-        public bool InLinuxConsumption()
+        private bool InLinuxConsumption()
         {
             string containerName = this.GetContainerName();
             string azureWebsiteInstanceId = this.nameResolver.Resolve("WEBSITE_INSTANCE_ID");
@@ -40,13 +35,67 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return inLinuxConsumption;
         }
 
-        public bool InLinuxAppService()
+        private bool InLinuxAppService()
         {
             string azureWebsiteInstanceId = this.nameResolver.Resolve("WEBSITE_INSTANCE_ID");
             string functionsLogsMountPath = this.nameResolver.Resolve("FUNCTIONS_LOGS_MOUNT_PATH");
             bool inAppService = !string.IsNullOrEmpty(azureWebsiteInstanceId);
             bool inLinuxDedicated = inAppService && !string.IsNullOrEmpty(functionsLogsMountPath);
             return inLinuxDedicated;
+        }
+
+        public OperatingSystem GetOperatingSystem()
+        {
+            if (this.InLinuxConsumption() || this.InLinuxAppService())
+            {
+                return OperatingSystem.Linux;
+            }
+
+            return OperatingSystem.Windows;
+        }
+
+        public AppServicePlan GetAppSevicePlan()
+        {
+            if (this.InLinuxConsumption() | this.InWindowsConsumption())
+            {
+                return AppServicePlan.Consumption;
+            }
+
+            return AppServicePlan.AppService;
+        }
+
+        public ProgLanguage GetProgLanguage()
+        {
+            string workerRuntime = this.nameResolver.Resolve("FUNCTIONS_WORKER_RUNTIME");
+            if (workerRuntime == "python")
+            {
+                return ProgLanguage.Python;
+            }
+            else if (workerRuntime == "javascript")
+            {
+                return ProgLanguage.JavaScript;
+            }
+            else if (workerRuntime == "powershell")
+            {
+                return ProgLanguage.PowerShell;
+            }
+            else if (workerRuntime == "csharp")
+            {
+                return ProgLanguage.Csharp;
+            }
+
+            throw new Exception("Could not determine user-level programming language.");
+        }
+
+        public bool IsOutOfProc()
+        {
+            ProgLanguage progLanguage = this.GetProgLanguage();
+            if (progLanguage != ProgLanguage.Csharp)
+            {
+                return true;
+            }
+
+            return false;
         }
 
         public string GetLinuxTenant()
@@ -62,11 +111,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public string GetContainerName()
         {
             return this.nameResolver.Resolve("CONTAINER_NAME");
-        }
-
-        public bool IsPython()
-        {
-            return this.nameResolver.Resolve("FUNCTIONS_WORKER_RUNTIME") == "python";
         }
     }
 }

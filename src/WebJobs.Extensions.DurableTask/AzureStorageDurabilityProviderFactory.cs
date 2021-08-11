@@ -40,7 +40,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.nameResolver = nameResolver;
             this.loggerFactory = loggerFactory;
             this.azureStorageOptions = new AzureStorageOptions();
-            this.inConsumption = platformInfo.InConsumption();
+            this.inConsumption = platformInfo.GetAppSevicePlan() == AppServicePlan.Consumption;
 
             // The consumption plan has different performance characteristics so we provide
             // different defaults for key configuration values.
@@ -49,7 +49,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             if (this.inConsumption)
             {
-                if (platformInfo.IsPython())
+                ProgLanguage language = platformInfo.GetProgLanguage();
+                if (language == ProgLanguage.Python)
                 {
                     this.azureStorageOptions.ControlQueueBufferThreshold = 32;
                 }
