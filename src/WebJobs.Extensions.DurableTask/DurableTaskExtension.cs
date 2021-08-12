@@ -427,7 +427,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private void InitializeLinuxLogging()
         {
             // Determine host platform
-            AppServicePlan plan = this.PlatformInformationService.GetAppSevicePlan();
+            PlanType plan = this.PlatformInformationService.GetPlanType();
 
             string tenant = this.PlatformInformationService.GetLinuxTenant();
             string stampName = this.PlatformInformationService.GetLinuxStampName();
@@ -435,11 +435,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             // If running in linux, initialize the EventSource listener with the appropiate logger.
             LinuxAppServiceLogger linuxLogger = null;
-            if (plan == AppServicePlan.AppService)
+            if (plan == PlanType.AppService)
             {
                 linuxLogger = new LinuxAppServiceLogger(writeToConsole: false, containerName, tenant, stampName);
             }
-            else if (plan == AppServicePlan.Consumption)
+            else if (plan == PlanType.Consumption)
             {
                 linuxLogger = new LinuxAppServiceLogger(writeToConsole: true, containerName, tenant, stampName);
             }
