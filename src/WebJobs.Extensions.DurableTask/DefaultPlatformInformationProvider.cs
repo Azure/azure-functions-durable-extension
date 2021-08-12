@@ -54,34 +54,34 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return OperatingSystem.Windows;
         }
 
-        public AppServicePlan GetAppSevicePlan()
+        public PlanType GetPlanType()
         {
             if (this.InLinuxConsumption() || this.InWindowsConsumption())
             {
-                return AppServicePlan.Consumption;
+                return PlanType.Consumption;
             }
 
-            return AppServicePlan.AppService;
+            return PlanType.AppService;
         }
 
-        public ProgLanguage GetProgLanguage()
+        public WorkerRuntimeType GetWorkerRuntimeType()
         {
             string workerRuntime = this.nameResolver.Resolve("FUNCTIONS_WORKER_RUNTIME");
-            if (workerRuntime == "python")
+            if (string.Compare(workerRuntime, "python", ignoreCase: true) == 0)
             {
-                return ProgLanguage.Python;
+                return WorkerRuntimeType.Python;
             }
-            else if (workerRuntime == "node")
+            else if (string.Compare(workerRuntime, "node", ignoreCase: true) == 0)
             {
-                return ProgLanguage.JavaScript;
+                return WorkerRuntimeType.JavaScript;
             }
-            else if (workerRuntime == "powerShell")
+            else if (string.Compare(workerRuntime, "powerShell", ignoreCase: true) == 0)
             {
-                return ProgLanguage.PowerShell;
+                return WorkerRuntimeType.PowerShell;
             }
-            else if (workerRuntime == "dotnet")
+            else if (string.Compare(workerRuntime, "dotnet", ignoreCase: true) == 0)
             {
-                return ProgLanguage.Csharp;
+                return WorkerRuntimeType.Csharp;
             }
 
             throw new Exception("Could not determine user-level programming language.");
@@ -89,8 +89,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public bool IsOutOfProc()
         {
-            ProgLanguage progLanguage = this.GetProgLanguage();
-            if (progLanguage != ProgLanguage.Csharp)
+            WorkerRuntimeType progLanguage = this.GetWorkerRuntimeType();
+            if (progLanguage != WorkerRuntimeType.Csharp)
             {
                 return true;
             }
