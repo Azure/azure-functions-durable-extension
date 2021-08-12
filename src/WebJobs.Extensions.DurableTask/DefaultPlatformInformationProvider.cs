@@ -87,17 +87,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             throw new Exception("Could not determine worker runtime type.");
         }
 
-        public bool IsOutOfProc()
-        {
-            WorkerRuntimeType progLanguage = this.GetWorkerRuntimeType();
-            if (progLanguage != WorkerRuntimeType.Csharp)
-            {
-                return true;
-            }
-
-            return false;
-        }
-
         public string GetLinuxTenant()
         {
             return this.nameResolver.Resolve("WEBSITE_STAMP_DEPLOYMENT_ID");

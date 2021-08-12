@@ -92,12 +92,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         WorkerRuntimeType GetWorkerRuntimeType();
 
         /// <summary>
-        /// Determines is the language worker is OOProc.
-        /// </summary>
-        /// <returns>True if the language worker is for Python. Otherwise, False.</returns>
-        bool IsOutOfProc();
-
-        /// <summary>
         /// Returns the application tenant when running on linux.
         /// </summary>
         /// <returns>The application tenant.</returns>
