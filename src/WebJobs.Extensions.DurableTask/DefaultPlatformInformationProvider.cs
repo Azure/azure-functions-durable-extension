@@ -56,7 +56,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public AppServicePlan GetAppSevicePlan()
         {
-            if (this.InLinuxConsumption() | this.InWindowsConsumption())
+            if (this.InLinuxConsumption() || this.InWindowsConsumption())
             {
                 return AppServicePlan.Consumption;
             }
