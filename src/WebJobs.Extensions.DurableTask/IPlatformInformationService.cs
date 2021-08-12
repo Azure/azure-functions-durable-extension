@@ -8,7 +8,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// <summary>
     /// Representation of the Consumption and the AppService (Dedicated or Premium) plans.
     /// </summary>
-    public enum AppServicePlan
+    public enum PlanType
     {
         /// <summary>
         /// Consumption App Service plan.
@@ -40,7 +40,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// <summary>
     /// Representation of supported Programming Languages.
     /// </summary>
-    public enum ProgLanguage
+    public enum WorkerRuntimeType
     {
         /// <summary>
         /// C-Sharp.
@@ -77,7 +77,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// Determine the App Service Plan of this application.
         /// </summary>
         /// <returns>An AppServicePlan enum.</returns>
-        AppServicePlan GetAppSevicePlan();
+        PlanType GetPlanType();
 
         /// <summary>
         /// Determine the underlying operating system.
@@ -89,7 +89,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// Determine the underlying programming language.
         /// </summary>
         /// <returns>A ProgLanguage enum.</returns>
-        ProgLanguage GetProgLanguage();
+        WorkerRuntimeType GetWorkerRuntimeType();
 
         /// <summary>
         /// Determines is the language worker is OOProc.

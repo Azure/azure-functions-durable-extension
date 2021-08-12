@@ -84,7 +84,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return WorkerRuntimeType.Csharp;
             }
 
-            throw new Exception("Could not determine user-level programming language.");
+            throw new Exception("Could not determine worker runtime type.");
         }
 
         public bool IsOutOfProc()
