@@ -1117,6 +1117,14 @@
             <param name="req">The DurableHttpRequest used to make the HTTP call.</param>
             <returns>A <see cref="T:System.Threading.Tasks.Task`1"/>Result of the HTTP call.</returns>
         </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationContext.CallHttpAsync(Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableHttpRequest,Microsoft.Azure.WebJobs.Extensions.DurableTask.RetryOptions)">
+            <summary>
+            Makes an HTTP call using the information in the DurableHttpRequest.
+            </summary>
+            <param name="req">The DurableHttpRequest used to make the HTTP call.</param>
+            <param name="retryOptions">The retry option for the orchestrator function.</param>
+            <returns>A <see cref="T:System.Threading.Tasks.Task`1"/>Result of the HTTP call.</returns>
+        </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationContext.CallEntityAsync``1(Microsoft.Azure.WebJobs.Extensions.DurableTask.EntityId,System.String)">
             <summary>
             Calls an operation on an entity and returns the result asynchronously.
