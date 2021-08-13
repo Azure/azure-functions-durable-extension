@@ -47,7 +47,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// Gets or sets the max retry interval.
         /// </summary>
         /// <value>
-        /// The TimeSpan of the max retry interval, defaults to <see cref="TimeSpan.MaxValue"/>.
+        /// The TimeSpan of the max retry interval, defaults to 6 days.
         /// </value>
         public TimeSpan MaxRetryInterval
         {

@@ -4340,7 +4340,7 @@
             Gets or sets the max retry interval.
             </summary>
             <value>
-            The TimeSpan of the max retry interval, defaults to <see cref="F:System.TimeSpan.MaxValue"/>.
+            The TimeSpan of the max retry interval, defaults to 6 days.
             </value>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.RetryOptions.BackoffCoefficient">
