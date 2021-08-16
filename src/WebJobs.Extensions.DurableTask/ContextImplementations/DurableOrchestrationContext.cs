@@ -248,19 +248,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         async Task<DurableHttpResponse> IDurableOrchestrationContext.CallHttpAsync(DurableHttpRequest req, RetryOptions retryOptions)
         {
-            if (retryOptions != null)
-            {
-                if (!this.durabilityProvider.ValidateDelayTime(retryOptions.MaxRetryInterval, out string errorMessage))
-                {
-                    throw new ArgumentException(errorMessage, nameof(retryOptions.MaxRetryInterval));
-                }
-
-                if (!this.durabilityProvider.ValidateDelayTime(retryOptions.FirstRetryInterval, out errorMessage))
-                {
-                    throw new ArgumentException(errorMessage, nameof(retryOptions.FirstRetryInterval));
-                }
-            }
-
             DurableHttpResponse durableHttpResponse = await this.ScheduleDurableHttpActivityAsync(req, retryOptions);
 
             HttpStatusCode currStatusCode = durableHttpResponse.StatusCode;
