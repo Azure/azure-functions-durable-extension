@@ -6,22 +6,6 @@ using System;
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     /// <summary>
-    /// Representation of the Consumption and the AppService (Dedicated or Premium) plans.
-    /// </summary>
-    public enum PlanType
-    {
-        /// <summary>
-        /// Consumption App Service plan.
-        /// </summary>
-        Consumption,
-
-        /// <summary>
-        /// Non-consumption App Service plans: Dedicated, EP, etc.
-        /// </summary>
-        AppService,
-    }
-
-    /// <summary>
     /// Representation of the supported Operating Systems.
     /// </summary>
     public enum OperatingSystem
@@ -71,13 +55,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// along with the pursuit of more platform-specific defaults.
     /// </summary>
     [Obsolete]
-    public interface IPlatformInformationService
+    public interface IPlatformInformation
     {
         /// <summary>
-        /// Determine the App Service Plan of this application.
+        /// Determine the underlying plan is Consumption or not.
         /// </summary>
-        /// <returns>An AppServicePlan enum.</returns>
-        PlanType GetPlanType();
+        /// <returns> True if the plan is Consumption. Otherwise, False.</returns>
+        bool IsInConsumptionPlan();
 
         /// <summary>
         /// Determine the underlying operating system.

@@ -33,14 +33,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             INameResolver nameResolver,
             ILoggerFactory loggerFactory,
 #pragma warning disable CS0612 // Type or member is obsolete
-            IPlatformInformationService platformInfo)
+            IPlatformInformation platformInfo)
 #pragma warning restore CS0612 // Type or member is obsolete
         {
             this.options = options.Value;
             this.nameResolver = nameResolver;
             this.loggerFactory = loggerFactory;
             this.azureStorageOptions = new AzureStorageOptions();
-            this.inConsumption = platformInfo.GetPlanType() == PlanType.Consumption;
+            this.inConsumption = platformInfo.IsInConsumptionPlan();
 
             // The consumption plan has different performance characteristics so we provide
             // different defaults for key configuration values.

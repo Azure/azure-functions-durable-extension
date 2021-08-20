@@ -10,12 +10,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// using the DI-injected INameResolver.
     /// </summary>
 #pragma warning disable CS0612 // Type or member is obsolete
-    internal class DefaultPlatformInformationProvider : IPlatformInformationService
+    internal class DefaultPlatformInformation : IPlatformInformation
 #pragma warning restore CS0612 // Type or member is obsolete
     {
         private readonly INameResolver nameResolver;
 
-        public DefaultPlatformInformationProvider(INameResolver nameResolver)
+        public DefaultPlatformInformation(INameResolver nameResolver)
         {
             this.nameResolver = nameResolver;
         }
@@ -54,14 +54,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return OperatingSystem.Windows;
         }
 
-        public PlanType GetPlanType()
+        public bool IsInConsumptionPlan()
         {
-            if (this.InLinuxConsumption() || this.InWindowsConsumption())
-            {
-                return PlanType.Consumption;
-            }
-
-            return PlanType.AppService;
+            return this.InLinuxConsumption() || this.InWindowsConsumption();
         }
 
         public WorkerRuntimeType GetWorkerRuntimeType()

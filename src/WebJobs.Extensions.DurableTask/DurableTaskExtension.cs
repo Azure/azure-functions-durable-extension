@@ -75,7 +75,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly IApplicationLifetimeWrapper hostLifetimeService = HostLifecycleService.NoOp;
 #pragma warning disable CS0612 // Type or member is obsolete
 #pragma warning disable SA1401 // Fields should be private
-        internal IPlatformInformationService PlatformInformationService;
+        internal IPlatformInformation PlatformInformationService;
 #pragma warning restore SA1401 // Fields should be private
 #pragma warning restore CS0612 // Type or member is obsolete
         private IDurabilityProviderFactory durabilityProviderFactory;
@@ -127,7 +127,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             ILifeCycleNotificationHelper lifeCycleNotificationHelper = null,
             IMessageSerializerSettingsFactory messageSerializerSettingsFactory = null,
 #pragma warning disable CS0612 // Type or member is obsolete
-            IPlatformInformationService platformInformationService = null,
+            IPlatformInformation platformInformationService = null,
 #pragma warning restore CS0612 // Type or member is obsolete
 #if !FUNCTIONS_V1
             IErrorSerializerSettingsFactory errorSerializerSettingsFactory = null,
@@ -201,7 +201,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             IApplicationLifetimeWrapper shutdownNotification,
             IDurableHttpMessageHandlerFactory durableHttpMessageHandlerFactory,
 #pragma warning disable CS0612 // Type or member is obsolete
-            IPlatformInformationService platformInformationService)
+            IPlatformInformation platformInformationService)
 #pragma warning restore CS0612 // Type or member is obsolete
 
             : this(options, loggerFactory, nameResolver, orchestrationServiceFactories, shutdownNotification, durableHttpMessageHandlerFactory)
@@ -427,7 +427,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private void InitializeLinuxLogging()
         {
             // Determine host platform
-            PlanType plan = this.PlatformInformationService.GetPlanType();
+            bool inConsumption = this.PlatformInformationService.IsInConsumptionPlan();
 
             string tenant = this.PlatformInformationService.GetLinuxTenant();
             string stampName = this.PlatformInformationService.GetLinuxStampName();
@@ -435,11 +435,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             // If running in linux, initialize the EventSource listener with the appropiate logger.
             LinuxAppServiceLogger linuxLogger = null;
-            if (plan == PlanType.AppService)
+            if (!inConsumption)
             {
                 linuxLogger = new LinuxAppServiceLogger(writeToConsole: false, containerName, tenant, stampName);
             }
-            else if (plan == PlanType.Consumption)
+            else if (inConsumption)
             {
                 linuxLogger = new LinuxAppServiceLogger(writeToConsole: true, containerName, tenant, stampName);
             }
@@ -521,7 +521,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             ILogger logger = this.loggerFactory.CreateLogger(LoggerCategoryName);
             this.TraceHelper = new EndToEndTraceHelper(logger, this.Options.Tracing.TraceReplayEvents);
             this.connectionStringResolver = new WebJobsConnectionStringProvider();
-            this.PlatformInformationService = new DefaultPlatformInformationProvider(this.nameResolver);
+            this.PlatformInformationService = new DefaultPlatformInformation(this.nameResolver);
             this.durabilityProviderFactory = new AzureStorageDurabilityProviderFactory(
                 new OptionsWrapper<DurableTaskOptions>(this.Options),
                 this.connectionStringResolver,

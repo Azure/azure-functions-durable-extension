@@ -250,8 +250,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 #endif
 
 #pragma warning disable CS0612 // Type or member is obsolete
-        public static IPlatformInformationService GetMockPlatformInformationService(
-            PlanType appServicePlan = PlanType.AppService,
+        public static IPlatformInformation GetMockPlatformInformationService(
+            bool inConsumption = false,
             OperatingSystem operatingSystem = OperatingSystem.Windows,
             WorkerRuntimeType language = WorkerRuntimeType.Csharp,
             string getLinuxStampName = "",
@@ -259,10 +259,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 #pragma warning restore CS0612 // Type or member is obsolete
         {
 #pragma warning disable CS0612 // Type or member is obsolete
-            var mockPlatformProvider = new Mock<IPlatformInformationService>();
+            var mockPlatformProvider = new Mock<IPlatformInformation>();
 #pragma warning restore CS0612 // Type or member is obsolete
             mockPlatformProvider.Setup(x => x.GetOperatingSystem()).Returns(operatingSystem);
-            mockPlatformProvider.Setup(x => x.GetPlanType()).Returns(appServicePlan);
+            mockPlatformProvider.Setup(x => x.IsInConsumptionPlan()).Returns(inConsumption);
             mockPlatformProvider.Setup(x => x.GetLinuxStampName()).Returns(getLinuxStampName);
             mockPlatformProvider.Setup(x => x.GetContainerName()).Returns(getContainerName);
             mockPlatformProvider.Setup(x => x.GetWorkerRuntimeType()).Returns(language);
