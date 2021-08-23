@@ -15,5 +15,5 @@ resolves #issue_for_this_pr
 * [ ] My changes **do not** need to be backported to a previous version
     * [ ] Otherwise: Backport tracked by issue/PR #issue_or_pr
 * [ ] I have added all required tests (Unit tests, E2E tests)
-
-
+* [ ] My changes **do not** require any extra work to be leveraged by OutOfProc SDKs
+    * [ ] Otherwise: That work is being tracked here: #issue_or_pr_in_each_sdk
