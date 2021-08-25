@@ -253,7 +253,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public static IPlatformInformation GetMockPlatformInformationService(
             bool inConsumption = false,
             OperatingSystem operatingSystem = OperatingSystem.Windows,
-            WorkerRuntimeType language = WorkerRuntimeType.Csharp,
+            WorkerRuntimeType language = WorkerRuntimeType.DotNetInProcess,
             string getLinuxStampName = "",
             string getContainerName = "")
 #pragma warning restore CS0612 // Type or member is obsolete

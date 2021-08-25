@@ -27,9 +27,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     public enum WorkerRuntimeType
     {
         /// <summary>
-        /// C-Sharp.
+        /// DotNetInProcess.
         /// </summary>
-        Csharp,
+        DotNetInProcess,
 
         /// <summary>
         /// Python.
@@ -70,9 +70,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         OperatingSystem GetOperatingSystem();
 
         /// <summary>
-        /// Determine the underlying programming language.
+        /// Determine the underlying worker runtime.
         /// </summary>
-        /// <returns>A ProgLanguage enum.</returns>
+        /// <returns>A WorkerRuntimeType enum.</returns>
         WorkerRuntimeType GetWorkerRuntimeType();
 
         /// <summary>

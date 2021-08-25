@@ -1803,7 +1803,7 @@
             <param name="traceparent">string representations of traceParent.</param>
             <returns>TraceParent object.</returns>
         </member>
-        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DefaultPlatformInformationProvider">
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DefaultPlatformInformation">
             <summary>
             Provides information about the enviroment (OS, app service plan, user-facing PL)
             using the DI-injected INameResolver.
@@ -2360,7 +2360,7 @@
             Configuration for the Durable Functions extension.
             </summary>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.#ctor(Microsoft.Extensions.Options.IOptions{Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions},Microsoft.Extensions.Logging.ILoggerFactory,Microsoft.Azure.WebJobs.INameResolver,System.Collections.Generic.IEnumerable{Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurabilityProviderFactory},Microsoft.Azure.WebJobs.Extensions.DurableTask.IApplicationLifetimeWrapper,Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableHttpMessageHandlerFactory,Microsoft.Azure.WebJobs.Extensions.DurableTask.ILifeCycleNotificationHelper,Microsoft.Azure.WebJobs.Extensions.DurableTask.IMessageSerializerSettingsFactory,Microsoft.Azure.WebJobs.Extensions.DurableTask.IPlatformInformationService,Microsoft.Azure.WebJobs.Extensions.DurableTask.IErrorSerializerSettingsFactory,Microsoft.Azure.WebJobs.Host.Config.IWebHookProvider,Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.ITelemetryActivator)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.#ctor(Microsoft.Extensions.Options.IOptions{Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions},Microsoft.Extensions.Logging.ILoggerFactory,Microsoft.Azure.WebJobs.INameResolver,System.Collections.Generic.IEnumerable{Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurabilityProviderFactory},Microsoft.Azure.WebJobs.Extensions.DurableTask.IApplicationLifetimeWrapper,Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableHttpMessageHandlerFactory,Microsoft.Azure.WebJobs.Extensions.DurableTask.ILifeCycleNotificationHelper,Microsoft.Azure.WebJobs.Extensions.DurableTask.IMessageSerializerSettingsFactory,Microsoft.Azure.WebJobs.Extensions.DurableTask.IPlatformInformation,Microsoft.Azure.WebJobs.Extensions.DurableTask.IErrorSerializerSettingsFactory,Microsoft.Azure.WebJobs.Host.Config.IWebHookProvider,Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.ITelemetryActivator)">
             <summary>
             Initializes a new instance of the <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension"/>.
             </summary>
@@ -3310,7 +3310,47 @@
             </summary>
             <returns><see cref="T:Newtonsoft.Json.JsonSerializerSettings"/> to be used by the Durable Task Extension for message serialization.</returns>
         </member>
-        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IPlatformInformationService">
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.OperatingSystem">
+            <summary>
+            Representation of the supported Operating Systems.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.OperatingSystem.Linux">
+            <summary>
+            Linux OS.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.OperatingSystem.Windows">
+            <summary>
+            Windows OS
+            </summary>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.WorkerRuntimeType">
+            <summary>
+            Representation of supported Programming Languages.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.WorkerRuntimeType.DotNetInProcess">
+            <summary>
+            DotNetInProcess.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.WorkerRuntimeType.Python">
+            <summary>
+            Python.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.WorkerRuntimeType.JavaScript">
+            <summary>
+            JavaScript.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.WorkerRuntimeType.PowerShell">
+            <summary>
+            PowerShell.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IPlatformInformation">
              <summary>
              Interface for accessing the AppService plan information,
              the OS, and user-facing PL.
@@ -3319,50 +3359,37 @@
              along with the pursuit of more platform-specific defaults.
              </summary>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IPlatformInformationService.InConsumption">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IPlatformInformation.IsInConsumptionPlan">
             <summary>
-            Determines if the application is running on a Consumption plan,
-            irrespective of OS.
+            Determine the underlying plan is Consumption or not.
             </summary>
-            <returns>True if running in Consumption. Otherwise, False.</returns>
+            <returns> True if the plan is Consumption. Otherwise, False.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IPlatformInformationService.InLinuxConsumption">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IPlatformInformation.GetOperatingSystem">
             <summary>
-            Determines if the application is running in a Linux Consumption plan.
+            Determine the underlying operating system.
             </summary>
-            <returns>True if running in Linux Consumption. Otherwise, False.</returns>
+            <returns>An OperatingSystem enum.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IPlatformInformationService.InWindowsConsumption">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IPlatformInformation.GetWorkerRuntimeType">
             <summary>
-            Determines if the application is running in a Windows Consumption plan.
+            Determine the underlying worker runtime.
             </summary>
-            <returns>True if running in Linux Consumption. Otherwise, False.</returns>
+            <returns>A WorkerRuntimeType enum.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IPlatformInformationService.IsPython">
-            <summary>
-            Determines is the language worker is for Python.
-            </summary>
-            <returns>True if the language worker is for Python. Otherwise, False.</returns>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IPlatformInformationService.InLinuxAppService">
-            <summary>
-            Determines if the application is running in a Linux AppService plan.
-            </summary>
-            <returns>True if running in Linux AppService. Otherwise, False.</returns>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IPlatformInformationService.GetLinuxTenant">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IPlatformInformation.GetLinuxTenant">
             <summary>
             Returns the application tenant when running on linux.
             </summary>
             <returns>The application tenant.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IPlatformInformationService.GetLinuxStampName">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IPlatformInformation.GetLinuxStampName">
             <summary>
             Returns the application stamp name when running on linux.
             </summary>
             <returns>The application stamp name.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IPlatformInformationService.GetContainerName">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IPlatformInformation.GetContainerName">
             <summary>
             Returns the application container name when running on linux.
             </summary>

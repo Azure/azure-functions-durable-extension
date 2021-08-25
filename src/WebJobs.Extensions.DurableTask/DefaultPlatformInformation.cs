@@ -20,33 +20,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.nameResolver = nameResolver;
         }
 
-        private bool InWindowsConsumption()
-        {
-            string value = this.nameResolver.Resolve("WEBSITE_SKU");
-            return string.Equals(value, "Dynamic", StringComparison.OrdinalIgnoreCase);
-        }
-
-        private bool InLinuxConsumption()
+        private bool IsInLinuxConsumption()
         {
             string containerName = this.GetContainerName();
-            string azureWebsiteInstanceId = this.nameResolver.Resolve("WEBSITE_INSTANCE_ID");
-            bool inAppService = !string.IsNullOrEmpty(azureWebsiteInstanceId);
-            bool inLinuxConsumption = !inAppService && !string.IsNullOrEmpty(containerName);
+            bool inLinuxConsumption = this.IsInAppService() && !string.IsNullOrEmpty(containerName);
             return inLinuxConsumption;
         }
 
-        private bool InLinuxAppService()
+        private bool IsInAppService()
         {
             string azureWebsiteInstanceId = this.nameResolver.Resolve("WEBSITE_INSTANCE_ID");
+            return !string.IsNullOrEmpty(azureWebsiteInstanceId);
+        }
+
+        private bool IsInLinuxAppService()
+        {
             string functionsLogsMountPath = this.nameResolver.Resolve("FUNCTIONS_LOGS_MOUNT_PATH");
-            bool inAppService = !string.IsNullOrEmpty(azureWebsiteInstanceId);
-            bool inLinuxDedicated = inAppService && !string.IsNullOrEmpty(functionsLogsMountPath);
+            bool inLinuxDedicated = this.IsInAppService() && !string.IsNullOrEmpty(functionsLogsMountPath);
             return inLinuxDedicated;
         }
 
         public OperatingSystem GetOperatingSystem()
         {
-            if (this.InLinuxConsumption() || this.InLinuxAppService())
+            if (this.IsInLinuxConsumption() || this.IsInLinuxAppService())
             {
                 return OperatingSystem.Linux;
             }
@@ -54,29 +50,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return OperatingSystem.Windows;
         }
 
+        private bool IsInWindowsConsumption()
+        {
+            string value = this.nameResolver.Resolve("WEBSITE_SKU");
+            return string.Equals(value, "Dynamic", StringComparison.OrdinalIgnoreCase);
+        }
+
         public bool IsInConsumptionPlan()
         {
-            return this.InLinuxConsumption() || this.InWindowsConsumption();
+            return this.IsInLinuxConsumption() || this.IsInWindowsConsumption();
         }
 
         public WorkerRuntimeType GetWorkerRuntimeType()
         {
             string workerRuntime = this.nameResolver.Resolve("FUNCTIONS_WORKER_RUNTIME");
-            if (string.Compare(workerRuntime, "python", ignoreCase: true) == 0)
+            WorkerRuntimeType workerRuntimeType;
+            if (Enum.TryParse(workerRuntime, ignoreCase: true, out workerRuntimeType))
             {
-                return WorkerRuntimeType.Python;
-            }
-            else if (string.Compare(workerRuntime, "node", ignoreCase: true) == 0)
-            {
-                return WorkerRuntimeType.JavaScript;
-            }
-            else if (string.Compare(workerRuntime, "powerShell", ignoreCase: true) == 0)
-            {
-                return WorkerRuntimeType.PowerShell;
-            }
-            else if (string.Compare(workerRuntime, "dotnet", ignoreCase: true) == 0)
-            {
-                return WorkerRuntimeType.Csharp;
+                return workerRuntimeType;
             }
 
             throw new Exception("Could not determine worker runtime type.");
