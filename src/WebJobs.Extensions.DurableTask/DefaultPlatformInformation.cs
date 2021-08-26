@@ -38,7 +38,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private bool IsInLinuxConsumption()
         {
             string containerName = this.GetContainerName();
-            bool inLinuxConsumption = this.IsInAppService() && !string.IsNullOrEmpty(containerName);
+            bool inLinuxConsumption = !this.IsInAppService() && !string.IsNullOrEmpty(containerName);
             return inLinuxConsumption;
         }
 
