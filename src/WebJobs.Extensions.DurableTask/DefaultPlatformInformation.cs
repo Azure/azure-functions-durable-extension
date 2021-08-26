@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Collections.Generic;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
@@ -14,10 +15,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #pragma warning restore CS0612 // Type or member is obsolete
     {
         private readonly INameResolver nameResolver;
+        private readonly Dictionary<string, string> cachedEnviromentVariables;
 
         public DefaultPlatformInformation(INameResolver nameResolver)
         {
             this.nameResolver = nameResolver;
+            this.cachedEnviromentVariables = new Dictionary<string, string>();
+        }
+
+        private string ReadEnviromentVariable(string variableName)
+        {
+            string value;
+            if (!this.cachedEnviromentVariables.TryGetValue(variableName, out value))
+            {
+                value = this.nameResolver.Resolve(variableName);
+                this.cachedEnviromentVariables.Add(variableName, value);
+            }
+
+            return value;
         }
 
         private bool IsInLinuxConsumption()
@@ -29,13 +44,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private bool IsInAppService()
         {
-            string azureWebsiteInstanceId = this.nameResolver.Resolve("WEBSITE_INSTANCE_ID");
+            string azureWebsiteInstanceId = this.ReadEnviromentVariable("WEBSITE_INSTANCE_ID");
             return !string.IsNullOrEmpty(azureWebsiteInstanceId);
         }
 
         private bool IsInLinuxAppService()
         {
-            string functionsLogsMountPath = this.nameResolver.Resolve("FUNCTIONS_LOGS_MOUNT_PATH");
+            string functionsLogsMountPath = this.ReadEnviromentVariable("FUNCTIONS_LOGS_MOUNT_PATH");
             bool inLinuxDedicated = this.IsInAppService() && !string.IsNullOrEmpty(functionsLogsMountPath);
             return inLinuxDedicated;
         }
@@ -52,7 +67,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private bool IsInWindowsConsumption()
         {
-            string value = this.nameResolver.Resolve("WEBSITE_SKU");
+            string value = this.ReadEnviromentVariable("WEBSITE_SKU");
             return string.Equals(value, "Dynamic", StringComparison.OrdinalIgnoreCase);
         }
 
@@ -63,7 +78,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public WorkerRuntimeType GetWorkerRuntimeType()
         {
-            string workerRuntime = this.nameResolver.Resolve("FUNCTIONS_WORKER_RUNTIME");
+            string workerRuntime = this.ReadEnviromentVariable("FUNCTIONS_WORKER_RUNTIME");
             WorkerRuntimeType workerRuntimeType;
             if (Enum.TryParse(workerRuntime, ignoreCase: true, out workerRuntimeType))
             {
@@ -75,17 +90,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public string GetLinuxTenant()
         {
-            return this.nameResolver.Resolve("WEBSITE_STAMP_DEPLOYMENT_ID");
+            return this.ReadEnviromentVariable("WEBSITE_STAMP_DEPLOYMENT_ID");
         }
 
         public string GetLinuxStampName()
         {
-            return this.nameResolver.Resolve("WEBSITE_HOME_STAMPNAME");
+            return this.ReadEnviromentVariable("WEBSITE_HOME_STAMPNAME");
         }
 
         public string GetContainerName()
         {
-            return this.nameResolver.Resolve("CONTAINER_NAME");
+            return this.ReadEnviromentVariable("CONTAINER_NAME");
         }
     }
 }
