@@ -116,6 +116,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private MessageSorter MessageSorter => this.messageSorter ?? (this.messageSorter = new MessageSorter());
 
+        internal TimeSpan LongRunningTimerIntervalDuration
+        {
+            get
+            {
+                return this.durabilityProvider.LongRunningTimerIntervalLength;
+            }
+        }
+
+
+        internal TimeSpan MaximumShortTimerDuration
+        {
+            get
+            {
+                return this.durabilityProvider.MaximumDelayTime;
+            }
+        }
+
         /// <summary>
         /// Returns the orchestrator function input as a raw JSON string value.
         /// </summary>
