@@ -95,7 +95,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// Gets or sets a delegate to call on exception to determine if retries should proceed.
         /// </summary>
         /// <value>
-        /// The delegate to handle exception to determie if retries should proceed.
+        /// The delegate to handle exception to determine if retries should proceed.
         /// </value>
         public Func<Exception, bool> Handle
         {
