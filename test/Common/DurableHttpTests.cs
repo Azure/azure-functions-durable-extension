@@ -29,6 +29,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         private readonly TestLoggerProvider loggerProvider;
 
+        private static int mockSynchronousHttpMessageHandlerWithHttpRequestExceptionCount;
+
         public DurableHttpTests(ITestOutputHelper output)
         {
             this.output = output;
@@ -395,7 +397,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(400));
 
                 var output = status?.Output;
-                Assert.Equal(3, _mockSynchronousHttpMessageHandlerWithHttpRequestExceptionCount);
+                Assert.Equal(3, mockSynchronousHttpMessageHandlerWithHttpRequestExceptionCount);
                 Assert.Contains("No such host is known.", output.ToString());
                 Assert.Equal(OrchestrationRuntimeStatus.Failed, status?.RuntimeStatus);
 
@@ -434,7 +436,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var status = await client.WaitForCompletionAsync(this.output);
 
                 var output = status?.Output;
-                Assert.Equal(1, _mockSynchronousHttpMessageHandlerWithHttpRequestExceptionCount);
+                Assert.Equal(1, mockSynchronousHttpMessageHandlerWithHttpRequestExceptionCount);
                 Assert.Contains("No such host is known.", output.ToString());
                 Assert.Equal(OrchestrationRuntimeStatus.Failed, status?.RuntimeStatus);
 
@@ -1589,10 +1591,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return handlerMock.Object;
         }
 
-        private static int _mockSynchronousHttpMessageHandlerWithHttpRequestExceptionCount;
         private static HttpMessageHandler MockSynchronousHttpMessageHandlerWithHttpRequestException()
         {
-            _mockSynchronousHttpMessageHandlerWithHttpRequestExceptionCount = 0;
+            mockSynchronousHttpMessageHandlerWithHttpRequestExceptionCount = 0;
             var handlerMock = new Mock<HttpMessageHandler>(MockBehavior.Strict);
             handlerMock
                .Protected()
@@ -1601,7 +1602,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                {
                    // We create a new response every time because by the virtue of completing, the response object gets disposed
                    // so if we reused the same object in our ReturnsAsync() an ObjectDisposedException gets thrown
-                   _mockSynchronousHttpMessageHandlerWithHttpRequestExceptionCount++;
+                   mockSynchronousHttpMessageHandlerWithHttpRequestExceptionCount++;
 
                    HttpResponseMessage httpResponseMessage = CreateTestHttpResponseMessage(HttpStatusCode.NotFound);
 
