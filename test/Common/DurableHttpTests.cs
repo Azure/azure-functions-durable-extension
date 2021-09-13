@@ -114,7 +114,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     }
   },
   ""AsynchronousPatternEnabled"": true,
-  ""Timeout"": null
+  ""Timeout"": null,
+  ""FirstRetryInterval"": null,
+  ""MaxNumberOfAttempts"": null
 }";
 
             Dictionary<string, string> headers = new Dictionary<string, string>();
@@ -153,6 +155,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     }
    },
   ""asynchronousPatternEnabled"": true,
+  ""failedRequestRetryOptions"": null,
   ""timeout"": null
 }";
             ManagedIdentityTokenSource managedIdentityTokenSource = new ManagedIdentityTokenSource("dummy url", options);
@@ -184,6 +187,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     ""resource"": ""dummy url""
   },
   ""asynchronousPatternEnabled"": true,
+  ""failedRequestRetryOptions"": null,
   ""timeout"": null
 }";
 
