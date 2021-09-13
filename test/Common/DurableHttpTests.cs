@@ -443,7 +443,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 var output = status?.Output;
                 Assert.Equal(3, mockSynchronousHttpMessageHandlerWithHttp404Count);
-                //Assert.Contains("No such host is known.", output.ToString());
                 Assert.Equal(OrchestrationRuntimeStatus.Failed, status?.RuntimeStatus);
 
                 await host.StopAsync();

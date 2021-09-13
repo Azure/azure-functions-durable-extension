@@ -2186,7 +2186,7 @@
             <param name="tokenSource">AAD authentication attached to the HTTP request.</param>
             <param name="asynchronousPatternEnabled">Specifies whether the DurableHttpRequest should handle the asynchronous pattern.</param>
             <param name="timeout">TimeSpan used for HTTP request timeout.</param>
-            <param name="retryOptions">Retry options used for the HTTP request.</param>
+            <param name="failedRequestRetryOptions">Retry options used for the HTTP request.</param>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableHttpRequest.Method">
             <summary>
@@ -4365,6 +4365,14 @@
             </summary>
             <value>
             The maximum number of retry attempts.
+            </value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.RetryOptions.Handle">
+            <summary>
+            Gets or sets a delegate to call on exception to determine if retries should proceed.
+            </summary>
+            <value>
+            The delegate to handle exception to determine if retries should proceed.
             </value>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.StandardConnectionStringProvider">

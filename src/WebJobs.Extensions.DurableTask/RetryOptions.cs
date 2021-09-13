@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using Newtonsoft.Json;
 using DurableTaskCore = DurableTask.Core;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
@@ -89,6 +90,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             get { return this.retryOptions.MaxNumberOfAttempts; }
             set { this.retryOptions.MaxNumberOfAttempts = value; }
+        }
+
+        /// <summary>
+        /// Gets or sets a delegate to call on exception to determine if retries should proceed.
+        /// </summary>
+        /// <value>
+        /// The delegate to handle exception to determine if retries should proceed.
+        /// </value>
+        [JsonIgnore]
+        public Func<Exception, bool> Handle
+        {
+            get { return this.retryOptions.Handle; }
+            set { this.retryOptions.Handle = value; }
         }
 
         internal DurableTaskCore.RetryOptions GetRetryOptions()

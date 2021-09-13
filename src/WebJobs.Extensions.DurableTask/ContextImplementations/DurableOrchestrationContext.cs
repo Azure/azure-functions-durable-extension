@@ -238,7 +238,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 method: method,
                 uri: uri,
                 content: content,
-                retryOptions: retryOptions);
+                failedRequestRetryOptions: retryOptions);
             return ((IDurableOrchestrationContext)this).CallHttpAsync(req);
         }
 
