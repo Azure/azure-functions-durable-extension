@@ -42,12 +42,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <returns>A new <see cref="RetryOptions"/> instance based off the given parameter.</returns>
         public static RetryOptions FromSerializable(SerializableRetryOptions serializableOptions)
         {
-            return new RetryOptions(serializableOptions.FirstRetryInterval, serializableOptions.MaxNumberOfAttempts)
-            {
-                BackoffCoefficient = serializableOptions.BackoffCoefficient,
-                MaxRetryInterval = serializableOptions.MaxRetryInterval,
-                RetryTimeout = serializableOptions.RetryTimeout,
-            };
+            return serializableOptions is null
+                ? null
+                : new RetryOptions(serializableOptions.FirstRetryInterval, serializableOptions.MaxNumberOfAttempts)
+                {
+                    BackoffCoefficient = serializableOptions.BackoffCoefficient,
+                    MaxRetryInterval = serializableOptions.MaxRetryInterval,
+                    RetryTimeout = serializableOptions.RetryTimeout,
+                };
         }
     }
 }
