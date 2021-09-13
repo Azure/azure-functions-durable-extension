@@ -498,13 +498,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             TestDurableHttpRequest testRequest = ctx.GetInput<TestDurableHttpRequest>();
             DurableHttpRequest durableHttpRequest = ConvertTestRequestToDurableHttpRequest(testRequest);
 
-            RetryOptions retryOptions = null;
-            if (testRequest.FirstRetryInterval.HasValue && testRequest.MaxNumberOfAttempts.HasValue)
-            {
-                retryOptions = new RetryOptions(testRequest.FirstRetryInterval.Value, testRequest.MaxNumberOfAttempts.Value);
-            }
-
-            DurableHttpResponse response = await ctx.CallHttpAsync(durableHttpRequest, retryOptions);
+            DurableHttpResponse response = await ctx.CallHttpAsync(durableHttpRequest);
             return response;
         }
 
@@ -515,8 +509,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 foreach (KeyValuePair<string, string> header in testRequest.Headers)
                 {
-                    StringValues stringValues;
-                    if (testHeaders.TryGetValue(header.Key, out stringValues))
+                    if (testHeaders.TryGetValue(header.Key, out var stringValues))
                     {
                         stringValues = StringValues.Concat(stringValues, header.Value);
                         testHeaders[header.Key] = stringValues;
@@ -529,6 +522,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 }
             }
 
+            RetryOptions retryOptions = null;
+            if (testRequest.FirstRetryInterval.HasValue && testRequest.MaxNumberOfAttempts.HasValue)
+            {
+                retryOptions = new RetryOptions(testRequest.FirstRetryInterval.Value, testRequest.MaxNumberOfAttempts.Value);
+            }
+
             DurableHttpRequest durableHttpRequest = new DurableHttpRequest(
                 method: testRequest.HttpMethod,
                 uri: new Uri(testRequest.Uri),
@@ -536,7 +535,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 content: testRequest.Content,
                 tokenSource: testRequest.TokenSource,
                 asynchronousPatternEnabled: testRequest.AsynchronousPatternEnabled,
-                timeout: testRequest.Timeout);
+                timeout: testRequest.Timeout,
+                retryOptions: retryOptions);
 
             return durableHttpRequest;
         }

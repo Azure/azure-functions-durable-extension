@@ -232,23 +232,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return this.CallDurableTaskFunctionAsync<TResult>(functionName, FunctionType.Orchestrator, false, instanceId, null, retryOptions, input, null);
         }
 
-        Task<DurableHttpResponse> IDurableOrchestrationContext.CallHttpAsync(HttpMethod method, Uri uri, string content)
+        Task<DurableHttpResponse> IDurableOrchestrationContext.CallHttpAsync(HttpMethod method, Uri uri, string content, RetryOptions retryOptions)
         {
             DurableHttpRequest req = new DurableHttpRequest(
                 method: method,
                 uri: uri,
-                content: content);
+                content: content,
+                retryOptions: retryOptions);
             return ((IDurableOrchestrationContext)this).CallHttpAsync(req);
         }
 
-        Task<DurableHttpResponse> IDurableOrchestrationContext.CallHttpAsync(DurableHttpRequest req)
+        async Task<DurableHttpResponse> IDurableOrchestrationContext.CallHttpAsync(DurableHttpRequest req)
         {
-            return ((IDurableOrchestrationContext)this).CallHttpAsync(req, null);
-        }
-
-        async Task<DurableHttpResponse> IDurableOrchestrationContext.CallHttpAsync(DurableHttpRequest req, RetryOptions retryOptions)
-        {
-            DurableHttpResponse durableHttpResponse = await this.ScheduleDurableHttpActivityAsync(req, retryOptions);
+            DurableHttpResponse durableHttpResponse = await this.ScheduleDurableHttpActivityAsync(req);
 
             HttpStatusCode currStatusCode = durableHttpResponse.StatusCode;
 
@@ -276,14 +272,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 DurableHttpRequest durableAsyncHttpRequest = this.CreateLocationPollRequest(
                     req,
                     durableHttpResponse.Headers["Location"]);
-                durableHttpResponse = await this.ScheduleDurableHttpActivityAsync(durableAsyncHttpRequest, retryOptions);
+                durableHttpResponse = await this.ScheduleDurableHttpActivityAsync(durableAsyncHttpRequest);
                 currStatusCode = durableHttpResponse.StatusCode;
             }
 
             return durableHttpResponse;
         }
 
-        private async Task<DurableHttpResponse> ScheduleDurableHttpActivityAsync(DurableHttpRequest req, RetryOptions retryOptions = null)
+        private async Task<DurableHttpResponse> ScheduleDurableHttpActivityAsync(DurableHttpRequest req)
         {
             DurableHttpResponse durableHttpResponse = await this.CallDurableTaskFunctionAsync<DurableHttpResponse>(
                 functionName: HttpOptions.HttpTaskActivityReservedName,
@@ -291,7 +287,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 oneWay: false,
                 instanceId: null,
                 operation: null,
-                retryOptions: retryOptions,
+                retryOptions: req.FailedRequestRetryOptions,
                 input: req,
                 scheduledTimeUtc: null);
 

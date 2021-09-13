@@ -67,6 +67,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     }
                 }
 
+                if (durableHttpRequest.FailedRequestRetryOptions != null)
+                {
+                    // Ensuring Success will cause the Activity to throw if not successful, then RetryOptions specified on the DurableHttpRequest will take effect
+                    // and retry accordingly per DTFx retry logic
+                    response.EnsureSuccessStatusCode();
+                }
+
                 DurableHttpResponse durableHttpResponse = await DurableHttpResponse.CreateDurableHttpResponseWithHttpResponseMessage(response);
 
                 return JsonConvert.SerializeObject(durableHttpResponse);

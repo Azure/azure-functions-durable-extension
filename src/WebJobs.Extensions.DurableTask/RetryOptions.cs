@@ -91,18 +91,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             set { this.retryOptions.MaxNumberOfAttempts = value; }
         }
 
-        /// <summary>
-        /// Gets or sets a delegate to call on exception to determine if retries should proceed.
-        /// </summary>
-        /// <value>
-        /// The delegate to handle exception to determine if retries should proceed.
-        /// </value>
-        public Func<Exception, bool> Handle
-        {
-            get { return this.retryOptions.Handle; }
-            set { this.retryOptions.Handle = value; }
-        }
-
         internal DurableTaskCore.RetryOptions GetRetryOptions()
         {
             return this.retryOptions;

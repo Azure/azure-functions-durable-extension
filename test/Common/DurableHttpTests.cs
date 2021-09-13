@@ -30,6 +30,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         private readonly TestLoggerProvider loggerProvider;
 
         private static int mockSynchronousHttpMessageHandlerWithHttpRequestExceptionCount;
+        private static int mockSynchronousHttpMessageHandlerWithHttp404Count;
 
         public DurableHttpTests(ITestOutputHelper output)
         {
@@ -368,14 +369,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
-        public async Task DurableHttpAsync_Synchronous_RetryExceeded(string storageProvider)
+        public async Task DurableHttpAsync_Synchronous_RetryExceededWithHttpException(string storageProvider)
         {
             HttpResponseMessage testHttpResponseMessage = CreateTestHttpResponseMessage(HttpStatusCode.OK);
             HttpMessageHandler httpMessageHandler = MockSynchronousHttpMessageHandlerWithHttpRequestException();
 
             using (ITestHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.DurableHttpAsync_Synchronous_RetryExceeded),
+                nameof(this.DurableHttpAsync_Synchronous_RetryExceededWithHttpException),
                 enableExtendedSessions: false,
                 storageProviderType: storageProvider,
                 durableHttpMessageHandler: new DurableHttpMessageHandlerFactory(httpMessageHandler)))
@@ -399,6 +400,50 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var output = status?.Output;
                 Assert.Equal(3, mockSynchronousHttpMessageHandlerWithHttpRequestExceptionCount);
                 Assert.Contains("No such host is known.", output.ToString());
+                Assert.Equal(OrchestrationRuntimeStatus.Failed, status?.RuntimeStatus);
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
+        /// End-to-end test which checks if the CallHttpAsync Orchestrator retries when the
+        /// HTTP request times out and the CallHttpAsync API throws a TimeoutException.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        public async Task DurableHttpAsync_Synchronous_RetryExceededWithHttpNotFound(string storageProvider)
+        {
+            HttpResponseMessage testHttpResponseMessage = CreateTestHttpResponseMessage(HttpStatusCode.OK);
+            HttpMessageHandler httpMessageHandler = MockSynchronousHttpMessageHandlerWithHttp404();
+
+            using (ITestHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.DurableHttpAsync_Synchronous_RetryExceededWithHttpNotFound),
+                enableExtendedSessions: false,
+                storageProviderType: storageProvider,
+                durableHttpMessageHandler: new DurableHttpMessageHandlerFactory(httpMessageHandler)))
+            {
+                await host.StartAsync();
+
+                Dictionary<string, string> headers = new Dictionary<string, string>
+                {
+                    { "Accept", "application/json" },
+                };
+                TestDurableHttpRequest testRequest = new TestDurableHttpRequest(
+                    httpMethod: HttpMethod.Get,
+                    headers: headers,
+                    firstRetryInterval: TimeSpan.FromSeconds(1),
+                    maxNumberOfAttempts: 3);
+
+                string functionName = nameof(TestOrchestrations.CallHttpAsyncOrchestrator);
+                var client = await host.StartOrchestratorAsync(functionName, testRequest, this.output);
+                var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(400));
+
+                var output = status?.Output;
+                Assert.Equal(3, mockSynchronousHttpMessageHandlerWithHttp404Count);
+                //Assert.Contains("No such host is known.", output.ToString());
                 Assert.Equal(OrchestrationRuntimeStatus.Failed, status?.RuntimeStatus);
 
                 await host.StopAsync();
@@ -1607,6 +1652,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                    HttpResponseMessage httpResponseMessage = CreateTestHttpResponseMessage(HttpStatusCode.NotFound);
 
                    httpResponseMessage.Content = new ExceptionThrowingContent(new HttpRequestException("No such host is known."));
+
+                   return httpResponseMessage;
+               });
+
+            return handlerMock.Object;
+        }
+
+        private static HttpMessageHandler MockSynchronousHttpMessageHandlerWithHttp404()
+        {
+            mockSynchronousHttpMessageHandlerWithHttpRequestExceptionCount = 0;
+            var handlerMock = new Mock<HttpMessageHandler>(MockBehavior.Strict);
+            handlerMock
+               .Protected()
+               .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+               .ReturnsAsync(() =>
+               {
+                   // We create a new response every time because by the virtue of completing, the response object gets disposed
+                   // so if we reused the same object in our ReturnsAsync() an ObjectDisposedException gets thrown
+                   mockSynchronousHttpMessageHandlerWithHttp404Count++;
+
+                   HttpResponseMessage httpResponseMessage = CreateTestHttpResponseMessage(HttpStatusCode.NotFound);
 
                    return httpResponseMessage;
                });
