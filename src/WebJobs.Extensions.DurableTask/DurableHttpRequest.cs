@@ -34,7 +34,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             ITokenSource tokenSource = null,
             bool asynchronousPatternEnabled = true,
             TimeSpan? timeout = null,
-            RetryOptions failedRequestRetryOptions = null)
+            SerializableRetryOptions failedRequestRetryOptions = null)
         {
             this.Method = method;
             this.Uri = uri;
@@ -87,11 +87,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public bool AsynchronousPatternEnabled { get; }
 
         /// <summary>
-        /// Defines retry policy for handling of failures in making the Http Request. These could be non-successful HTTP Status Codes
+        /// Defines retry policy for handling of failures in making the HTTP Request. These could be non-successful HTTP Status Codes
         /// in the response, a timeout in making the HTTP call, or an exception raised from the HTTP Client library.
         /// </summary>
         [JsonProperty("failedRequestRetryOptions")]
-        public RetryOptions FailedRequestRetryOptions { get; }
+        public SerializableRetryOptions FailedRequestRetryOptions { get; }
 
         /// <summary>
         /// The total timeout for the original HTTP request and any

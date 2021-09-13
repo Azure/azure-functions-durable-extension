@@ -232,7 +232,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return this.CallDurableTaskFunctionAsync<TResult>(functionName, FunctionType.Orchestrator, false, instanceId, null, retryOptions, input, null);
         }
 
-        Task<DurableHttpResponse> IDurableOrchestrationContext.CallHttpAsync(HttpMethod method, Uri uri, string content, RetryOptions retryOptions)
+        Task<DurableHttpResponse> IDurableOrchestrationContext.CallHttpAsync(HttpMethod method, Uri uri, string content, SerializableRetryOptions retryOptions)
         {
             DurableHttpRequest req = new DurableHttpRequest(
                 method: method,
@@ -287,7 +287,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 oneWay: false,
                 instanceId: null,
                 operation: null,
-                retryOptions: req.FailedRequestRetryOptions,
+                retryOptions: RetryOptions.FromSerializable(req.FailedRequestRetryOptions),
                 input: req,
                 scheduledTimeUtc: null);
 

@@ -522,10 +522,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 }
             }
 
-            RetryOptions retryOptions = null;
+            SerializableRetryOptions retryOptions = null;
             if (testRequest.FirstRetryInterval.HasValue && testRequest.MaxNumberOfAttempts.HasValue)
             {
-                retryOptions = new RetryOptions(testRequest.FirstRetryInterval.Value, testRequest.MaxNumberOfAttempts.Value);
+                retryOptions = new SerializableRetryOptions(testRequest.FirstRetryInterval.Value, testRequest.MaxNumberOfAttempts.Value);
             }
 
             DurableHttpRequest durableHttpRequest = new DurableHttpRequest(
