@@ -51,13 +51,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [DataMember]
         public bool AsynchronousPatternEnabled { get; set; } = true;
 
-        [DataMember]
+        [DataMember(EmitDefaultValue = false)]
         public TimeSpan? Timeout { get; set; }
 
-        [DataMember]
+        [DataMember(EmitDefaultValue = false)]
         public TimeSpan? FirstRetryInterval { get; set; }
 
-        [DataMember]
+        [DataMember(EmitDefaultValue = false)]
         public int? MaxNumberOfAttempts { get; set; }
     }
 }
