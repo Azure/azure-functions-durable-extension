@@ -2,6 +2,8 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Collections.Generic;
+using System.Net;
 using DurableTaskCore = DurableTask.Core;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
@@ -9,8 +11,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// <summary>
     /// Defines retry policies that can be passed as parameters to various operations.
     /// </summary>
-    public class SerializableRetryOptions
+    public class HttpRetryOptions
     {
+        private readonly DurableTaskCore.RetryOptions coreRetryOptions;
+
         // Would like to make this durability provider specific, but since this is a customer
         // facing type, that is difficult.
         private static readonly TimeSpan DefaultMaxRetryinterval = TimeSpan.FromDays(6);
@@ -23,19 +27,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <exception cref="ArgumentException">
         /// The <paramref name="firstRetryInterval"/> value must be greater than <see cref="TimeSpan.Zero"/>.
         /// </exception>
-        public SerializableRetryOptions(TimeSpan firstRetryInterval, int maxNumberOfAttempts)
+        public HttpRetryOptions(TimeSpan firstRetryInterval, int maxNumberOfAttempts)
         {
-            this.CoreRetryOptions = new DurableTaskCore.RetryOptions(firstRetryInterval, maxNumberOfAttempts);
+            this.coreRetryOptions = new DurableTaskCore.RetryOptions(firstRetryInterval, maxNumberOfAttempts);
             this.MaxRetryInterval = DefaultMaxRetryinterval;
         }
-
-        /// <summary>
-        /// Gets the core retry options.
-        /// </summary>
-        /// <value>
-        /// The core retry options.
-        /// </value>
-        protected DurableTaskCore.RetryOptions CoreRetryOptions { get; }
 
         /// <summary>
         /// Gets or sets the first retry interval.
@@ -45,8 +41,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </value>
         public TimeSpan FirstRetryInterval
         {
-            get { return this.CoreRetryOptions.FirstRetryInterval; }
-            set { this.CoreRetryOptions.FirstRetryInterval = value; }
+            get { return this.coreRetryOptions.FirstRetryInterval; }
+            set { this.coreRetryOptions.FirstRetryInterval = value; }
         }
 
         /// <summary>
@@ -57,8 +53,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </value>
         public TimeSpan MaxRetryInterval
         {
-            get { return this.CoreRetryOptions.MaxRetryInterval; }
-            set { this.CoreRetryOptions.MaxRetryInterval = value; }
+            get { return this.coreRetryOptions.MaxRetryInterval; }
+            set { this.coreRetryOptions.MaxRetryInterval = value; }
         }
 
         /// <summary>
@@ -69,8 +65,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </value>
         public double BackoffCoefficient
         {
-            get { return this.CoreRetryOptions.BackoffCoefficient; }
-            set { this.CoreRetryOptions.BackoffCoefficient = value; }
+            get { return this.coreRetryOptions.BackoffCoefficient; }
+            set { this.coreRetryOptions.BackoffCoefficient = value; }
         }
 
         /// <summary>
@@ -81,8 +77,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </value>
         public TimeSpan RetryTimeout
         {
-            get { return this.CoreRetryOptions.RetryTimeout; }
-            set { this.CoreRetryOptions.RetryTimeout = value; }
+            get { return this.coreRetryOptions.RetryTimeout; }
+            set { this.coreRetryOptions.RetryTimeout = value; }
         }
 
         /// <summary>
@@ -93,13 +89,35 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </value>
         public int MaxNumberOfAttempts
         {
-            get { return this.CoreRetryOptions.MaxNumberOfAttempts; }
-            set { this.CoreRetryOptions.MaxNumberOfAttempts = value; }
+            get { return this.coreRetryOptions.MaxNumberOfAttempts; }
+            set { this.coreRetryOptions.MaxNumberOfAttempts = value; }
+        }
+
+        /// <summary>
+        /// Gets or sets the list of status codes upon which the
+        /// retry logic specified by this object shall be triggered.
+        /// </summary>
+        public IList<HttpStatusCode> StatusCodesToRetry { get; set; } = new List<HttpStatusCode>();
+
+        /// <summary>
+        /// Converts a <see cref="HttpRetryOptions"/> instance to <see cref="RetryOptions"/>.
+        /// </summary>
+        /// <param name="httpOptions">The <see cref="HttpRetryOptions"/> instance to convert.</param>
+        public static explicit operator RetryOptions(HttpRetryOptions httpOptions)
+        {
+            return httpOptions is null
+                ? null
+                : new RetryOptions(httpOptions.FirstRetryInterval, httpOptions.MaxNumberOfAttempts)
+                {
+                    BackoffCoefficient = httpOptions.BackoffCoefficient,
+                    MaxRetryInterval = httpOptions.MaxRetryInterval,
+                    RetryTimeout = httpOptions.RetryTimeout,
+                };
         }
 
         internal DurableTaskCore.RetryOptions GetRetryOptions()
         {
-            return this.CoreRetryOptions;
+            return this.coreRetryOptions;
         }
     }
 }

@@ -25,7 +25,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="tokenSource">AAD authentication attached to the HTTP request.</param>
         /// <param name="asynchronousPatternEnabled">Specifies whether the DurableHttpRequest should handle the asynchronous pattern.</param>
         /// <param name="timeout">TimeSpan used for HTTP request timeout.</param>
-        /// <param name="failedRequestRetryOptions">Retry options used for the HTTP request.</param>
+        /// <param name="httpRetryOptions">Retry options used for the HTTP request.</param>
         public DurableHttpRequest(
             HttpMethod method,
             Uri uri,
@@ -34,7 +34,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             ITokenSource tokenSource = null,
             bool asynchronousPatternEnabled = true,
             TimeSpan? timeout = null,
-            SerializableRetryOptions failedRequestRetryOptions = null)
+            HttpRetryOptions httpRetryOptions = null)
         {
             this.Method = method;
             this.Uri = uri;
@@ -43,7 +43,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.TokenSource = tokenSource;
             this.AsynchronousPatternEnabled = asynchronousPatternEnabled;
             this.Timeout = timeout;
-            this.FailedRequestRetryOptions = failedRequestRetryOptions;
+            this.HttpRetryOptions = httpRetryOptions;
         }
 
         /// <summary>
@@ -90,8 +90,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// Defines retry policy for handling of failures in making the HTTP Request. These could be non-successful HTTP Status Codes
         /// in the response, a timeout in making the HTTP call, or an exception raised from the HTTP Client library.
         /// </summary>
-        [JsonProperty("failedRequestRetryOptions")]
-        public SerializableRetryOptions FailedRequestRetryOptions { get; }
+        [JsonProperty("httpRetryOptions")]
+        public HttpRetryOptions HttpRetryOptions { get; }
 
         /// <summary>
         /// The total timeout for the original HTTP request and any

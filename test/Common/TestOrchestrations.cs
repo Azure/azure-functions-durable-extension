@@ -522,10 +522,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 }
             }
 
-            SerializableRetryOptions retryOptions = null;
+            HttpRetryOptions retryOptions = null;
             if (testRequest.FirstRetryInterval.HasValue && testRequest.MaxNumberOfAttempts.HasValue)
             {
-                retryOptions = new SerializableRetryOptions(testRequest.FirstRetryInterval.Value, testRequest.MaxNumberOfAttempts.Value);
+                retryOptions = new HttpRetryOptions(testRequest.FirstRetryInterval.Value, testRequest.MaxNumberOfAttempts.Value)
+                {
+                    StatusCodesToRetry = testRequest.StatusCodesToRetry,
+                };
             }
 
             DurableHttpRequest durableHttpRequest = new DurableHttpRequest(
@@ -536,7 +539,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 tokenSource: testRequest.TokenSource,
                 asynchronousPatternEnabled: testRequest.AsynchronousPatternEnabled,
                 timeout: testRequest.Timeout,
-                failedRequestRetryOptions: retryOptions);
+                httpRetryOptions: retryOptions);
 
             return durableHttpRequest;
         }

@@ -67,11 +67,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     }
                 }
 
-                if (durableHttpRequest.FailedRequestRetryOptions != null)
+                if (durableHttpRequest.HttpRetryOptions?.StatusCodesToRetry?.Contains(response.StatusCode) == true)
                 {
-                    // Ensuring Success will cause the Activity to throw if not successful, then RetryOptions specified on the DurableHttpRequest will take effect
-                    // and retry accordingly per DTFx retry logic
-                    response.EnsureSuccessStatusCode();
+                    throw new HttpRequestException($@"Status code {response.StatusCode} received, retry requested.");
+                }
+                else if (durableHttpRequest.HttpRetryOptions != null)
+                {
+                    if (durableHttpRequest.HttpRetryOptions.StatusCodesToRetry == null
+                        || durableHttpRequest.HttpRetryOptions?.StatusCodesToRetry?.Count == 0)
+                    {
+                        // Ensuring Success will cause the Activity to throw if not successful, then RetryOptions
+                        // specified on the DurableHttpRequest will take effect and retry accordingly per DTFx retry logic
+                        response.EnsureSuccessStatusCode();
+                    }
+
+                    // Otherwise, we have some StatusCodes specified and the one we got back isn't in the list; so don't throw/retry
                 }
 
                 DurableHttpResponse durableHttpResponse = await DurableHttpResponse.CreateDurableHttpResponseWithHttpResponseMessage(response);

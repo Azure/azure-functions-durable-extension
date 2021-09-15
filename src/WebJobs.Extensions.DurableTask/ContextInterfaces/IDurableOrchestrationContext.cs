@@ -116,7 +116,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="content">Content passed in the HTTP request.</param>
         /// <param name="retryOptions">The retry option for the HTTP task.</param>
         /// <returns>A <see cref="Task{DurableHttpResponse}"/>Result of the HTTP call.</returns>
-        Task<DurableHttpResponse> CallHttpAsync(HttpMethod method, Uri uri, string content = null, SerializableRetryOptions retryOptions = null);
+        Task<DurableHttpResponse> CallHttpAsync(HttpMethod method, Uri uri, string content = null, HttpRetryOptions retryOptions = null);
 
         /// <summary>
         /// Makes an HTTP call using the information in the DurableHttpRequest.
