@@ -809,7 +809,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             lock (this.pendingExternalEvents)
             {
-                // We use a stack (a custom implementation using a single-linked list) 
+                // We use a stack (a custom implementation using a single-linked list)
                 // to make it easier for users to abandon external events
                 // that they no longer care about. The common case is a Task.WhenAny in a loop.
                 IEventTaskCompletionSource taskCompletionSources;
