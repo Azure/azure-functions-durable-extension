@@ -197,7 +197,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             foreach (AsyncAction action in actions)
             {
-                await this.InvokeAPIFromAction(action);
+                await Task.WhenAny(this.InvokeAPIFromAction(action));
             }
         }
 

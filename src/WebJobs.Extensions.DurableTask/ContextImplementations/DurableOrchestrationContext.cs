@@ -54,6 +54,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private MessageSorter messageSorter;
 
+        private int actionCounter = 0;
+
         internal DurableOrchestrationContext(DurableTaskExtension config, DurabilityProvider durabilityProvider, string functionName)
             : base(config, functionName)
         {
@@ -333,7 +335,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (!this.IsLongRunningTimer)
             {
                 this.IncrementActionsOrThrowException();
-                Task<T> timerTask = this.InnerContext.CreateTimer(fireAt, state, cancelToken);
+                Task<T> timerTask = this.InnerContext.CreateTimer(fireAt, state, cancelToken, "CreateTimer", this.actionCounter++);
 
                 this.Config.TraceHelper.FunctionListening(
                     this.Config.Options.HubName,
@@ -540,7 +542,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     if (retryOptions == null)
                     {
                         this.IncrementActionsOrThrowException();
-                        callTask = this.InnerContext.ScheduleTask<TResult>(functionName, version, input);
+                        callTask = this.InnerContext.ScheduleTask<TResult>(functionName, version, "CallActivity", this.actionCounter++, input);
                     }
                     else
                     {
@@ -548,6 +550,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         callTask = this.InnerContext.ScheduleWithRetry<TResult>(
                             functionName,
                             version,
+                            "CallActivityWithRetry",
+                            this.actionCounter++,
                             retryOptions.GetRetryOptions(),
                             input);
                     }

@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Threading.Tasks;
+using DurableTask.Core.History;
 using Microsoft.Azure.WebJobs.Host.Bindings;
 using Microsoft.Azure.WebJobs.Host.Config;
 using Microsoft.Azure.WebJobs.Host.Listeners;
@@ -171,10 +172,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return Task.FromResult<IListener>(listener);
             }
 
+            private static IList<HistoryEvent> GetTasksFromHistory(IList<HistoryEvent> history)
+            {
+                // can I hijack the algo in DTFx, or do I need to re-implement it here again?
+                var pendingTasks = new Dictionary<int, string>();
+                foreach (var ev in history)
+                {
+                    var actionId = ev.ActionId;
+                    if (actionId != -1)
+                    {
+                        if (tasks.TryGetValue(actionId, out var val))
+                        {
+
+                        }
+                    }
+                }
+            }
+
             private static string OrchestrationContextToString(DurableOrchestrationContext arg)
             {
                 var history = JArray.FromObject(arg.History);
-                var input = arg.GetInputAsJson();
+                var input = GetTasksFromHistory(arg.History);
 
                 var contextObject = new JObject(
                     new JProperty("history", history),
