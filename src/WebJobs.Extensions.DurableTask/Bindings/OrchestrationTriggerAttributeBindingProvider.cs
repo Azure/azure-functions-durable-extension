@@ -107,7 +107,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return contract;
             }
 
-            public async Task<object> GetConvertedValue(object value, ValueBindingContext context)
+            public Task<ITriggerData> BindAsync(object value, ValueBindingContext context)
             {
                 var orchestrationContext = (DurableOrchestrationContext)value;
                 Type destinationType = this.parameterInfo.ParameterType;
@@ -127,29 +127,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     convertedValue = OrchestrationContextToString(orchestrationContext);
                 }
 
-                return convertedValue;
-            }
+                var inputValueProvider = new ObjectValueProvider(
+                    convertedValue ?? value,
+                    this.parameterInfo.ParameterType);
 
-            public Task<ITriggerData> BindAsync(object value, ValueBindingContext context)
-            {
-                var task = this.GetConvertedValue(value, context).ContinueWith((t) => {
-                    var convertedValue = t.Result;
-                    var inputValueProvider = new ObjectValueProvider(
-                        convertedValue ?? value,
-                        this.parameterInfo.ParameterType);
+                var bindingData = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase)
+                {
+                    [this.parameterInfo.Name] = convertedValue,
+                };
 
-                    var bindingData = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase)
-                    {
-                        [this.parameterInfo.Name] = convertedValue,
-                    };
-
-                    // We don't specify any return value binding because we process the return value
-                    // earlier in the pipeline via the InvokeHandler extensibility.
-                    var triggerData = new TriggerData(inputValueProvider, bindingData);
-                    return Task.FromResult<ITriggerData>(triggerData);
-                });
-
-                return task.Result;
+                // We don't specify any return value binding because we process the return value
+                // earlier in the pipeline via the InvokeHandler extensibility.
+                var triggerData = new TriggerData(inputValueProvider, bindingData);
+                return Task.FromResult<ITriggerData>(triggerData);
             }
 
             public ParameterDescriptor ToParameterDescriptor()

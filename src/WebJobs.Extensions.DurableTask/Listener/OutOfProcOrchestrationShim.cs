@@ -72,6 +72,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
+        // Gets dictionary in the format <TaskID-(<result>, <isExceptionBoolean>)> for each
+        // task that has a result.
         public Dictionary<int, (string, bool)> GetTaskStates()
         {
             DurableOrchestrationContext ctx = this.context as DurableOrchestrationContext;
@@ -80,9 +82,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 return new Dictionary<int, (string, bool)>();
             }
+
             var results = this.GetTaskStates(actions, groupedEvents);
             return results;
-
         }
 
         private (AsyncAction[] actions, Dictionary<int, List<HistoryEvent>>) GetActionsAndGroupedEvents(IList<HistoryEvent> history)
@@ -127,6 +129,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return (actions, groupedEvents);
         }
 
+        // Helper to getsdictionary in the format <TaskID-(<result>, <isExceptionBoolean>)> for each
+        // task that has a result. Internal-use only.
+        // This of this as the "Process History" algorithm,
+        // or the equivalent to the OOProc SDK's TaskOrchestrationExectutor.
         private (Dictionary<int, (string, bool)>, int) GetTaskStates(AsyncAction[] actions, Dictionary<int, List<HistoryEvent>> groupedEvents, int actionId)
         {
             DurableOrchestrationContext ctx = this.context as DurableOrchestrationContext;
@@ -139,6 +145,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     {
                         if (events.Count == 2)
                         {
+                            // this assumes CallActivity always succeeds, but
+                            // a simple conditional check can be done to differentiate
+                            // failures from successes. Simplifying here for hackathon :)
+
+                            // I ended up implementing that logic in the CallActivityWithRetry
+                            // case, so please see it there.
                             var resultEvent = (TaskCompletedEvent)events.Last();
                             results.Add(actionId, (resultEvent.Result, false));
                         }
@@ -150,9 +162,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     {
                         if (events.Count % 2 == 0)
                         {
+                            // this logic should successfully handle long timers :)
                             var resultEvent = (TimerFiredEvent)events.Last();
                             if (resultEvent.FireAt >= action.FireAt)
                             {
+                                // I'm unsure what result should be given to
+                                // timer-fired events, so entering "TBD." for now.
                                 results.Add(actionId, ("TBD.", false));
                             }
                         }
@@ -171,12 +186,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             });
                         var numAttempts = action.RetryOptions.MaxNumberOfAttempts;
                         var maxNumEvents = (numAttempts * 2) + ((numAttempts - 1) * 2);
+
+                        // this is the kind of logic we can re-use in the CallActivity case
+                        // to differentiate between TaskFailed and TaskCompleted.
                         if (lastNonTimerEvent.EventType is EventType.TaskFailed)
                         {
                             if (events.Count >= maxNumEvents)
                             {
                                 var resultEvent = (TaskFailedEvent)lastNonTimerEvent;
-                                results.Add(actionId, (resultEvent.Reason, true)); // "add details"
+                                results.Add(actionId, (resultEvent.Reason, true));
                             }
                         }
 
@@ -191,6 +209,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     if (groupedEvents.TryGetValue(actionId, out var events))
                     {
+                        // this allows us to handle the polling pattern, ignore
+                        // timer events
                         var lastNonTimerEvent = events.FindLast(
                             (e) =>
                             {
@@ -205,6 +225,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             var response = JObject.Parse(resultEvent.Result);
                             if (response.TryGetValue("statusCode", out var status))
                             {
+                                // handling polling case
                                 if (status.ToString() == "200")
                                 {
                                     results.Add(actionId, (resultEvent.Result, false));
@@ -216,7 +237,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 else if (action.ActionType is AsyncActionType.WhenAll)
                 {
                     (var compoundResults, var newActionId) = this.GetTaskStates(action.CompoundActions, groupedEvents, actionId);
-                    actionId = newActionId - 1;
+                    actionId = newActionId - 1; // compensating for every-increasing actionId at end of loop
                     compoundResults.ToList().ForEach(x => results.Add(x.Key, x.Value));
                 }
 
@@ -241,6 +262,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.context.SetCustomStatus(execution.CustomStatus);
             }
 
+            // store Actions payload in OrchestrationInstance so that it gets serialized
+            // into OrchestrationCompleted event once this replay is over.
             DurableOrchestrationContext ctx = this.context as DurableOrchestrationContext;
             ctx.InnerContext.OrchestrationInstance.Actions = result.Json.ToString();
             await this.ReplayOOProcOrchestration(execution.Actions, execution.SchemaVersion);
@@ -357,16 +380,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </summary>
         /// <param name="actions">The OOProc actions payload.</param>
         /// <returns>An awaitable Task that completes once replay completes.</returns>
-        private async Task<List<object>> ProcessAsyncActionsV2(AsyncAction[] actions)
+        private async Task ProcessAsyncActionsV2(AsyncAction[] actions)
         {
-            List<object> results = new List<object>();
             foreach (AsyncAction action in actions)
             {
                 Task t = this.InvokeAPIFromAction(action);
-                await Task.WhenAny(t);
+                await Task.WhenAny(t); // roundabout try-catch
             }
-
-            return results;
         }
 
         /// <summary>
@@ -376,9 +396,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="actions">The OOProc actions payload.</param>
         /// <param name="schema">The OOProc protocol schema version.</param>
         /// <returns>An awaitable Task that completes once replay completes.</returns>
-        private async Task<List<object>> ReplayOOProcOrchestration(AsyncAction[][] actions, SchemaVersion schema)
+        private async Task ReplayOOProcOrchestration(AsyncAction[][] actions, SchemaVersion schema)
         {
-            List<object> results = new List<object>();
             switch (schema)
             {
                 case SchemaVersion.V2:
@@ -388,7 +407,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         throw new ArgumentException($"With OOProc schema {schema}, expected actions array to be of length 1 in outer layer but got size: {actions.Length}");
                     }
 
-                    results = await this.ProcessAsyncActionsV2(actions[0]);
                     break;
                 case SchemaVersion.Original:
                     await this.ProcessAsyncActionsV1(actions);
@@ -396,8 +414,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 default:
                     throw new ArgumentException($"The OOProc schema of of version \"{schema}\" is unsupported by this durable-extension version.");
             }
-
-            return results;
         }
 
         private async Task ProcessAsyncActionsV1(AsyncAction[][] actions)

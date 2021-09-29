@@ -41,10 +41,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly MessagePayloadDataConverter messageDataConverter;
         private readonly MessagePayloadDataConverter errorDataConverter;
 
-#pragma warning disable SA1401 // Fields should be private
-        public IList<string> Tasks = new List<string>();
-#pragma warning restore SA1401 // Fields should be private
-
         private int actionCount;
 
         private string serializedOutput;
@@ -278,11 +274,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                                 .AddMilliseconds(this.Config.Options.HttpSettings.DefaultAsyncRequestSleepTimeMilliseconds);
                 }
 
+
                 this.IncrementActionsOrThrowException();
-                // this.actionCounter--; // hack - in the future, just propagate actionCounter forward
                 await this.InnerContext.CreateTimer<object>(fireAt, null, CancellationToken.None, "CallHttp", apiID);
 
-                // this.actionCounter--; // hack - in the future, just propagate actionCounter forward
                 DurableHttpRequest durableAsyncHttpRequest = this.CreateLocationPollRequest(
                     req,
                     durableHttpResponse.Headers["Location"]);
@@ -533,6 +528,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             if (retryOptions != null)
             {
+                // Just commenting out all this validation logic as it interferes with testing, in conjunction,
+                // long timers and -WithRetry activities in OOProc.
+
                 /*if (!this.durabilityProvider.ValidateDelayTime(retryOptions.MaxRetryInterval, out string errorMessage))
                 {
                     throw new ArgumentException(errorMessage, nameof(retryOptions.MaxRetryInterval));
@@ -553,6 +551,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string operationId = string.Empty;
             string operationName = string.Empty;
 
+            // when this activity is called from `CallActivity` or `CallActivityWithRetry`, then its apiID is -1
+            // however, when called from CallHttp, its apiID will be set by the CallHttp method.
+            // This allows us to differentiate the two cases, and make sure the apiID does not over-increase.
             if (apiID == -1)
             {
                 apiID = this.actionCounter;
@@ -720,7 +721,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             try
             {
                 output = await callTask;
-                this.Tasks.Add(output.ToString());
             }
             catch (TaskFailedException e)
             {
@@ -734,7 +734,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         throw new HttpRequestException(e.Message);
                     }
 
-                    this.Tasks.Add(e.InnerException.ToString());
                     throw e.InnerException;
                 }
 
@@ -758,7 +757,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             catch (Exception e)
             {
-                this.Tasks.Add(e.ToString());
                 exception = e;
                 throw;
             }
