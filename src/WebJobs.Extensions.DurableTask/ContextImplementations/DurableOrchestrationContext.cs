@@ -54,7 +54,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private MessageSorter messageSorter;
 
-        private int actionCounter = 0;
+        private int actionCounter = 0; // Corresponds to a Task ID
 
         internal DurableOrchestrationContext(DurableTaskExtension config, DurabilityProvider durabilityProvider, string functionName)
             : base(config, functionName)
@@ -68,6 +68,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal string ParentInstanceId { get; set; }
 
+        // I don't think changing this to public is needed anymore (it was for a previous impl.).
+        // but I'm leaving it here just in case
         public OrchestrationContext InnerContext { get; set; }
 
         internal bool IsReplaying
@@ -256,6 +258,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             HttpStatusCode currStatusCode = durableHttpResponse.StatusCode;
 
+            // To make things easy to test, I'll always enable polling
             while (currStatusCode == HttpStatusCode.Accepted) // && req.AsynchronousPatternEnabled)
             {
                 var headersDictionary = new Dictionary<string, StringValues>(

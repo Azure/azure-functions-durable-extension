@@ -178,16 +178,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 var history = JArray.FromObject(arg.History);
                 var input = arg.GetInputAsJson();
 
-                // You could say this is starts the main "driver" of this hackathon's
+                // You could say this starts the main "driver" of this hackathon's
                 // contributions. Before sending data to OOProc, we determine the
-                // "Task States" of each Task the user scheduled as per their Actions array.
+                // "Task State" of each Task that the user scheduled as per their Actions array.
                 OutOfProcOrchestrationShim shim = new OutOfProcOrchestrationShim(arg);
                 var taskStates = shim.GetTaskStates();
 
-                // A Task State is a the format: <TaskID: int>-<(result: string, isException: bool)>
+                // A Task State is of the format: <TaskID: int>-<(result: string, isException: bool)>
                 // We represent this with a dictionary and turn it, very inefficiently for now,
                 // into a list. I'm sure there's more efficient ways of doing this, but JToken
-                // was giving me a difficult time without these lines below.
+                // was giving me a difficult time without the lines below.
                 List<(int, (object, bool))> tasksRepr = new List<(int, (object, bool))>();
                 foreach (var entry in taskStates)
                 {
