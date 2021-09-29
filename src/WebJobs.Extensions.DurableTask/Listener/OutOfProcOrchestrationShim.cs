@@ -131,8 +131,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         // Helper to getsdictionary in the format <TaskID-(<result>, <isExceptionBoolean>)> for each
         // task that has a result. Internal-use only.
-        // This of this as the "Process History" algorithm,
-        // or the equivalent to the OOProc SDK's TaskOrchestrationExectutor.
+        // Think of this as the "Process History" algorithm,
+        // or the equivalent to the OOProc SDK's TaskOrchestrationExecutor.
         private (Dictionary<int, (string, bool)>, int) GetTaskStates(AsyncAction[] actions, Dictionary<int, List<HistoryEvent>> groupedEvents, int actionId)
         {
             DurableOrchestrationContext ctx = this.context as DurableOrchestrationContext;
@@ -237,7 +237,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 else if (action.ActionType is AsyncActionType.WhenAll)
                 {
                     (var compoundResults, var newActionId) = this.GetTaskStates(action.CompoundActions, groupedEvents, actionId);
-                    actionId = newActionId - 1; // compensating for every-increasing actionId at end of loop
+                    actionId = newActionId - 1; // compensating for the ever-increasing actionId at end of loop
                     compoundResults.ToList().ForEach(x => results.Add(x.Key, x.Value));
                 }
 
