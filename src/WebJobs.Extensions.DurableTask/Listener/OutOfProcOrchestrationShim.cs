@@ -8,6 +8,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core.Exceptions;
+using DurableTask.Core.History;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
@@ -71,14 +72,177 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
+        public Dictionary<int, (string, bool)> GetTaskStates()
+        {
+            DurableOrchestrationContext ctx = this.context as DurableOrchestrationContext;
+            (var actions, var groupedEvents) = this.GetActionsAndGroupedEvents(ctx.History);
+            if (actions is null)
+            {
+                return new Dictionary<int, (string, bool)>();
+            }
+            var results = this.GetTaskStates(actions, groupedEvents);
+            return results;
+
+        }
+
+        private (AsyncAction[] actions, Dictionary<int, List<HistoryEvent>>) GetActionsAndGroupedEvents(IList<HistoryEvent> history)
+        {
+            var groupedEvents = new Dictionary<int, List<HistoryEvent>>();
+            string actionString = "";
+            foreach (var historyEvent in history)
+            {
+                // Obtain lastest instance of serialized actions
+                if (historyEvent.EventType is EventType.OrchestratorCompleted)
+                {
+                    var orchCompletedEvent = (OrchestratorCompletedEvent)historyEvent;
+                    actionString = orchCompletedEvent.ActionString;
+                }
+                else // group history events by their Action ID
+                {
+                    // if event corresponds to an API
+                    var actionId = historyEvent.ActionId;
+                    if (actionId != -1)
+                    {
+                        // add event to the group
+                        if (!groupedEvents.ContainsKey(actionId))
+                        {
+                            // initialize field
+                            groupedEvents.Add(actionId, new List<HistoryEvent>());
+                        }
+
+                        groupedEvents[actionId].Add(historyEvent);
+                    }
+                }
+            }
+
+            // obtain actions from OOProcOrchState
+            if (actionString.Length == 0)
+            {
+                return (null, groupedEvents);
+            }
+
+            var jsonOrchState = JObject.Parse(actionString);
+            var orchState = jsonOrchState.ToObject<OutOfProcOrchestratorState>();
+            AsyncAction[] actions = orchState.Actions[0];
+            return (actions, groupedEvents);
+        }
+
+        private (Dictionary<int, (string, bool)>, int) GetTaskStates(AsyncAction[] actions, Dictionary<int, List<HistoryEvent>> groupedEvents, int actionId)
+        {
+            DurableOrchestrationContext ctx = this.context as DurableOrchestrationContext;
+            Dictionary<int, (string, bool)> results = new Dictionary<int, (string, bool)>();
+            foreach (var action in actions)
+            {
+                if (action.ActionType is AsyncActionType.CallActivity)
+                {
+                    if (groupedEvents.TryGetValue(actionId, out var events))
+                    {
+                        if (events.Count == 2)
+                        {
+                            var resultEvent = (TaskCompletedEvent)events.Last();
+                            results.Add(actionId, (resultEvent.Result, false));
+                        }
+                    }
+                }
+                else if (action.ActionType is AsyncActionType.CreateTimer)
+                {
+                    if (groupedEvents.TryGetValue(actionId, out var events))
+                    {
+                        if (events.Count % 2 == 0)
+                        {
+                            var resultEvent = (TimerFiredEvent)events.Last();
+                            if (resultEvent.FireAt >= action.FireAt)
+                            {
+                                results.Add(actionId, ("TBD.", false));
+                            }
+                        }
+                    }
+                }
+                else if (action.ActionType is AsyncActionType.CallActivityWithRetry)
+                {
+                    if (groupedEvents.TryGetValue(actionId, out var events))
+                    {
+                        var lastNonTimerEvent = events.FindLast(
+                            (e) =>
+                            {
+                                var notCreateTimer = e.EventType != EventType.TimerCreated;
+                                var notTimerFired = e.EventType != EventType.TimerFired;
+                                return notCreateTimer && notTimerFired;
+                            });
+                        var numAttempts = action.RetryOptions.MaxNumberOfAttempts;
+                        var maxNumEvents = (numAttempts * 2) + ((numAttempts - 1) * 2);
+                        if (lastNonTimerEvent.EventType is EventType.TaskFailed)
+                        {
+                            if (events.Count >= maxNumEvents)
+                            {
+                                var resultEvent = (TaskFailedEvent)lastNonTimerEvent;
+                                results.Add(actionId, (resultEvent.Reason, true)); // "add details"
+                            }
+                        }
+
+                        if (lastNonTimerEvent.EventType is EventType.TaskCompleted)
+                        {
+                            var resultEvent = (TaskCompletedEvent)lastNonTimerEvent;
+                            results.Add(actionId, (resultEvent.Result, false));
+                        }
+                    }
+                }
+                else if (action.ActionType is AsyncActionType.CallHttp)
+                {
+                    if (groupedEvents.TryGetValue(actionId, out var events))
+                    {
+                        var lastNonTimerEvent = events.FindLast(
+                            (e) =>
+                            {
+                                var notCreateTimer = e.EventType != EventType.TimerCreated;
+                                var notTimerFired = e.EventType != EventType.TimerFired;
+                                return notCreateTimer && notTimerFired;
+                            });
+
+                        if (lastNonTimerEvent.EventType is EventType.TaskCompleted)
+                        {
+                            var resultEvent = (TaskCompletedEvent)lastNonTimerEvent;
+                            var response = JObject.Parse(resultEvent.Result);
+                            if (response.TryGetValue("statusCode", out var status))
+                            {
+                                if (status.ToString() == "200")
+                                {
+                                    results.Add(actionId, (resultEvent.Result, false));
+                                }
+                            }
+                        }
+                    }
+                }
+                else if (action.ActionType is AsyncActionType.WhenAll)
+                {
+                    (var compoundResults, var newActionId) = this.GetTaskStates(action.CompoundActions, groupedEvents, actionId);
+                    actionId = newActionId - 1;
+                    compoundResults.ToList().ForEach(x => results.Add(x.Key, x.Value));
+                }
+
+                actionId += 1;
+            }
+
+            return (results, actionId);
+        }
+
+        private Dictionary<int, (string, bool)> GetTaskStates(AsyncAction[] actions, Dictionary<int, List<HistoryEvent>> groupedEvents)
+        {
+            (var results, var _) = this.GetTaskStates(actions, groupedEvents, 0);
+            return results;
+        }
+
         internal async Task<bool> ScheduleDurableTaskEvents(OrchestrationInvocationResult result)
         {
             var execution = result.Json.ToObject<OutOfProcOrchestratorState>();
+
             if (execution.CustomStatus != null)
             {
                 this.context.SetCustomStatus(execution.CustomStatus);
             }
 
+            DurableOrchestrationContext ctx = this.context as DurableOrchestrationContext;
+            ctx.InnerContext.OrchestrationInstance.Actions = result.Json.ToString();
             await this.ReplayOOProcOrchestration(execution.Actions, execution.SchemaVersion);
 
             if (!string.IsNullOrEmpty(execution.Error))
@@ -119,7 +283,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     {
                         if (ctx != null)
                         {
-                            ctx.ThrowIfInvalidTimerLengthForStorageProvider(action.FireAt);
+                            // ctx.ThrowIfInvalidTimerLengthForStorageProvider(action.FireAt);
                         }
 
                         task = this.context.CreateTimer(action.FireAt, cts.Token);
@@ -193,12 +357,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </summary>
         /// <param name="actions">The OOProc actions payload.</param>
         /// <returns>An awaitable Task that completes once replay completes.</returns>
-        private async Task ProcessAsyncActionsV2(AsyncAction[] actions)
+        private async Task<List<object>> ProcessAsyncActionsV2(AsyncAction[] actions)
         {
+            List<object> results = new List<object>();
             foreach (AsyncAction action in actions)
             {
-                await Task.WhenAny(this.InvokeAPIFromAction(action));
+                Task t = this.InvokeAPIFromAction(action);
+                await Task.WhenAny(t);
             }
+
+            return results;
         }
 
         /// <summary>
@@ -208,8 +376,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="actions">The OOProc actions payload.</param>
         /// <param name="schema">The OOProc protocol schema version.</param>
         /// <returns>An awaitable Task that completes once replay completes.</returns>
-        private async Task ReplayOOProcOrchestration(AsyncAction[][] actions, SchemaVersion schema)
+        private async Task<List<object>> ReplayOOProcOrchestration(AsyncAction[][] actions, SchemaVersion schema)
         {
+            List<object> results = new List<object>();
             switch (schema)
             {
                 case SchemaVersion.V2:
@@ -219,7 +388,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         throw new ArgumentException($"With OOProc schema {schema}, expected actions array to be of length 1 in outer layer but got size: {actions.Length}");
                     }
 
-                    await this.ProcessAsyncActionsV2(actions[0]);
+                    results = await this.ProcessAsyncActionsV2(actions[0]);
                     break;
                 case SchemaVersion.Original:
                     await this.ProcessAsyncActionsV1(actions);
@@ -227,6 +396,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 default:
                     throw new ArgumentException($"The OOProc schema of of version \"{schema}\" is unsupported by this durable-extension version.");
             }
+
+            return results;
         }
 
         private async Task ProcessAsyncActionsV1(AsyncAction[][] actions)

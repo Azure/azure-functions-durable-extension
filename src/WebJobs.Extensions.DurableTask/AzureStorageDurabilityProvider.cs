@@ -59,9 +59,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public override JObject ConfigurationJson => this.storageOptionsJson;
 
-        public override TimeSpan MaximumDelayTime { get; set; } = TimeSpan.FromDays(6);
+        public override TimeSpan MaximumDelayTime { get; set; } = TimeSpan.FromMinutes(1); // TimeSpan.FromDays(6);
 
-        public override TimeSpan LongRunningTimerIntervalLength { get; set; } = TimeSpan.FromDays(3);
+        public override TimeSpan LongRunningTimerIntervalLength { get; set; } = TimeSpan.FromSeconds(20); // TimeSpan.FromDays(3);
 
         public override string EventSourceName { get; set; } = "DurableTask-AzureStorage";
 

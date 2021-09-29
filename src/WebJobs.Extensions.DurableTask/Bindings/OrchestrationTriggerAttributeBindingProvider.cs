@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using DurableTask.Core.History;
@@ -106,7 +107,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return contract;
             }
 
-            public Task<ITriggerData> BindAsync(object value, ValueBindingContext context)
+            public async Task<object> GetConvertedValue(object value, ValueBindingContext context)
             {
                 var orchestrationContext = (DurableOrchestrationContext)value;
                 Type destinationType = this.parameterInfo.ParameterType;
@@ -126,19 +127,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     convertedValue = OrchestrationContextToString(orchestrationContext);
                 }
 
-                var inputValueProvider = new ObjectValueProvider(
-                    convertedValue ?? value,
-                    this.parameterInfo.ParameterType);
+                return convertedValue;
+            }
 
-                var bindingData = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase)
-                {
-                    [this.parameterInfo.Name] = convertedValue,
-                };
+            public Task<ITriggerData> BindAsync(object value, ValueBindingContext context)
+            {
+                var task = this.GetConvertedValue(value, context).ContinueWith((t) => {
+                    var convertedValue = t.Result;
+                    var inputValueProvider = new ObjectValueProvider(
+                        convertedValue ?? value,
+                        this.parameterInfo.ParameterType);
 
-                // We don't specify any return value binding because we process the return value
-                // earlier in the pipeline via the InvokeHandler extensibility.
-                var triggerData = new TriggerData(inputValueProvider, bindingData);
-                return Task.FromResult<ITriggerData>(triggerData);
+                    var bindingData = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase)
+                    {
+                        [this.parameterInfo.Name] = convertedValue,
+                    };
+
+                    // We don't specify any return value binding because we process the return value
+                    // earlier in the pipeline via the InvokeHandler extensibility.
+                    var triggerData = new TriggerData(inputValueProvider, bindingData);
+                    return Task.FromResult<ITriggerData>(triggerData);
+                });
+
+                return task.Result;
             }
 
             public ParameterDescriptor ToParameterDescriptor()
@@ -172,29 +183,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return Task.FromResult<IListener>(listener);
             }
 
-            private static IList<HistoryEvent> GetTasksFromHistory(IList<HistoryEvent> history)
-            {
-                // can I hijack the algo in DTFx, or do I need to re-implement it here again?
-                var pendingTasks = new Dictionary<int, string>();
-                foreach (var ev in history)
-                {
-                    var actionId = ev.ActionId;
-                    if (actionId != -1)
-                    {
-                        if (tasks.TryGetValue(actionId, out var val))
-                        {
-
-                        }
-                    }
-                }
-            }
-
             private static string OrchestrationContextToString(DurableOrchestrationContext arg)
             {
                 var history = JArray.FromObject(arg.History);
-                var input = GetTasksFromHistory(arg.History);
+                var input = arg.GetInputAsJson();
+
+                OutOfProcOrchestrationShim shim = new OutOfProcOrchestrationShim(arg);
+                var taskStates = shim.GetTaskStates();
+
+                List<(int, (object, bool))> tasksRepr = new List<(int, (object, bool))>();
+                foreach (var entry in taskStates)
+                {
+                    tasksRepr.Add((entry.Key, entry.Value));
+                }
 
                 var contextObject = new JObject(
+                    new JProperty("tasks", JToken.FromObject(tasksRepr)),
                     new JProperty("history", history),
                     new JProperty("input", input),
                     new JProperty("instanceId", arg.InstanceId),
