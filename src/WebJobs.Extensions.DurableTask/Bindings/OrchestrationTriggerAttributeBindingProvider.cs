@@ -3,8 +3,10 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using DurableTask.Core.History;
 using Microsoft.Azure.WebJobs.Host.Bindings;
 using Microsoft.Azure.WebJobs.Host.Config;
 using Microsoft.Azure.WebJobs.Host.Listeners;
@@ -176,7 +178,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 var history = JArray.FromObject(arg.History);
                 var input = arg.GetInputAsJson();
 
+                // You could say this starts the main "driver" of this hackathon's
+                // contributions. Before sending data to OOProc, we determine the
+                // "Task State" of each Task that the user scheduled as per their Actions array.
+                OutOfProcOrchestrationShim shim = new OutOfProcOrchestrationShim(arg);
+                var taskStates = shim.GetTaskStates();
+
+                // A Task State is of the format: <TaskID: int>-<(result: string, isException: bool)>
+                // We represent this with a dictionary and turn it, very inefficiently for now,
+                // into a list. I'm sure there's more efficient ways of doing this, but JToken
+                // was giving me a difficult time without the lines below.
+                List<(int, (object, bool))> tasksRepr = new List<(int, (object, bool))>();
+                foreach (var entry in taskStates)
+                {
+                    tasksRepr.Add((entry.Key, entry.Value));
+                }
+
+                // Technically, we don't even have to send the "history" at this point,
+                // as any SDK working with this can just read the task states and proceed
+                // from there in replaying user-code.
                 var contextObject = new JObject(
+                    new JProperty("tasks", JToken.FromObject(tasksRepr)),
                     new JProperty("history", history),
                     new JProperty("input", input),
                     new JProperty("instanceId", arg.InstanceId),

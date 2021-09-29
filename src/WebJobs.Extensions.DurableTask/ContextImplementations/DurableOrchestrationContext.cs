@@ -54,6 +54,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private MessageSorter messageSorter;
 
+        private int actionCounter = 0; // Corresponds to a Task ID
+
         internal DurableOrchestrationContext(DurableTaskExtension config, DurabilityProvider durabilityProvider, string functionName)
             : base(config, functionName)
         {
@@ -66,7 +68,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal string ParentInstanceId { get; set; }
 
-        internal OrchestrationContext InnerContext { get; set; }
+        // I don't think changing this to public is needed anymore (it was for a previous impl.).
+        // but I'm leaving it here just in case
+        public OrchestrationContext InnerContext { get; set; }
 
         internal bool IsReplaying
         {
@@ -248,11 +252,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         async Task<DurableHttpResponse> IDurableOrchestrationContext.CallHttpAsync(DurableHttpRequest req, RetryOptions retryOptions)
         {
-            DurableHttpResponse durableHttpResponse = await this.ScheduleDurableHttpActivityAsync(req, retryOptions);
+            var apiID = this.actionCounter;
+            this.actionCounter++;
+            DurableHttpResponse durableHttpResponse = await this.ScheduleDurableHttpActivityAsync(req, retryOptions, apiID);
 
             HttpStatusCode currStatusCode = durableHttpResponse.StatusCode;
 
-            while (currStatusCode == HttpStatusCode.Accepted && req.AsynchronousPatternEnabled)
+            // To make things easy to test, I'll always enable polling
+            while (currStatusCode == HttpStatusCode.Accepted) // && req.AsynchronousPatternEnabled)
             {
                 var headersDictionary = new Dictionary<string, StringValues>(
                         durableHttpResponse.Headers,
@@ -270,20 +277,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                                 .AddMilliseconds(this.Config.Options.HttpSettings.DefaultAsyncRequestSleepTimeMilliseconds);
                 }
 
+
                 this.IncrementActionsOrThrowException();
-                await this.InnerContext.CreateTimer(fireAt, CancellationToken.None);
+                await this.InnerContext.CreateTimer<object>(fireAt, null, CancellationToken.None, "CallHttp", apiID);
 
                 DurableHttpRequest durableAsyncHttpRequest = this.CreateLocationPollRequest(
                     req,
                     durableHttpResponse.Headers["Location"]);
-                durableHttpResponse = await this.ScheduleDurableHttpActivityAsync(durableAsyncHttpRequest, retryOptions);
+                durableHttpResponse = await this.ScheduleDurableHttpActivityAsync(durableAsyncHttpRequest, retryOptions, apiID);
                 currStatusCode = durableHttpResponse.StatusCode;
             }
 
             return durableHttpResponse;
         }
 
-        private async Task<DurableHttpResponse> ScheduleDurableHttpActivityAsync(DurableHttpRequest req, RetryOptions retryOptions = null)
+        private async Task<DurableHttpResponse> ScheduleDurableHttpActivityAsync(DurableHttpRequest req, RetryOptions retryOptions = null, int apiID = -1)
         {
             DurableHttpResponse durableHttpResponse = await this.CallDurableTaskFunctionAsync<DurableHttpResponse>(
                 functionName: HttpOptions.HttpTaskActivityReservedName,
@@ -293,7 +301,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 operation: null,
                 retryOptions: retryOptions,
                 input: req,
-                scheduledTimeUtc: null);
+                scheduledTimeUtc: null,
+                apiID: apiID);
 
             return durableHttpResponse;
         }
@@ -318,6 +327,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <inheritdoc />
         async Task<T> IDurableOrchestrationContext.CreateTimer<T>(DateTime fireAt, T state, CancellationToken cancelToken)
         {
+            return await this.CreateTimer<T>(fireAt, state, cancelToken, -1);
+        }
+
+        private async Task<T> CreateTimer<T>(DateTime fireAt, T state, CancellationToken cancelToken, int apiID = -1)
+        {
+            if (apiID == -1)
+            {
+                apiID = this.actionCounter++;
+            }
+
             this.ThrowIfInvalidAccess();
 
             DateTime intervalFireAt = fireAt;
@@ -333,7 +352,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (!this.IsLongRunningTimer)
             {
                 this.IncrementActionsOrThrowException();
-                Task<T> timerTask = this.InnerContext.CreateTimer(fireAt, state, cancelToken);
+                Task<T> timerTask = this.InnerContext.CreateTimer(fireAt, state, cancelToken, "CreateTimer", apiID);
 
                 this.Config.TraceHelper.FunctionListening(
                     this.Config.Options.HubName,
@@ -356,7 +375,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 while (this.InnerContext.CurrentUtcDateTime < fireAt && !cancelToken.IsCancellationRequested)
                 {
                     this.IncrementActionsOrThrowException();
-                    Task<T> timerTask = this.InnerContext.CreateTimer(intervalFireAt, state, cancelToken);
+                    Task<T> timerTask = this.InnerContext.CreateTimer(intervalFireAt, state, cancelToken, "CreateTimer", apiID);
 
                     result = await timerTask;
 
@@ -505,13 +524,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string operation,
             RetryOptions retryOptions,
             object input,
-            DateTime? scheduledTimeUtc)
+            DateTime? scheduledTimeUtc,
+            int apiID = -1)
         {
             this.ThrowIfInvalidAccess();
 
             if (retryOptions != null)
             {
-                if (!this.durabilityProvider.ValidateDelayTime(retryOptions.MaxRetryInterval, out string errorMessage))
+                // Just commenting out all this validation logic as it interferes with testing, in conjunction,
+                // long timers and -WithRetry activities in OOProc.
+
+                /*if (!this.durabilityProvider.ValidateDelayTime(retryOptions.MaxRetryInterval, out string errorMessage))
                 {
                     throw new ArgumentException(errorMessage, nameof(retryOptions.MaxRetryInterval));
                 }
@@ -519,7 +542,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 if (!this.durabilityProvider.ValidateDelayTime(retryOptions.FirstRetryInterval, out errorMessage))
                 {
                     throw new ArgumentException(errorMessage, nameof(retryOptions.FirstRetryInterval));
-                }
+                } */
             }
 
             // TODO: Support for versioning
@@ -531,6 +554,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string operationId = string.Empty;
             string operationName = string.Empty;
 
+            // when this activity is called from `CallActivity` or `CallActivityWithRetry`, then its apiID is -1
+            // however, when called from CallHttp, its apiID will be set by the CallHttp method.
+            // This allows us to differentiate the two cases, and make sure the apiID does not over-increase.
+            if (apiID == -1)
+            {
+                apiID = this.actionCounter;
+                this.actionCounter++;
+            }
+
             switch (functionType)
             {
                 case FunctionType.Activity:
@@ -540,7 +572,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     if (retryOptions == null)
                     {
                         this.IncrementActionsOrThrowException();
-                        callTask = this.InnerContext.ScheduleTask<TResult>(functionName, version, input);
+                        callTask = this.InnerContext.ScheduleTask<TResult>(functionName, version, "CallActivity", apiID, input);
                     }
                     else
                     {
@@ -548,6 +580,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         callTask = this.InnerContext.ScheduleWithRetry<TResult>(
                             functionName,
                             version,
+                            "CallActivityWithRetry",
+                            apiID,
                             retryOptions.GetRetryOptions(),
                             input);
                     }
