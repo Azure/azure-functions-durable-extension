@@ -85,7 +85,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" Version="9.9.3" />
+    <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" Version="2.5.150" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers" Version="0.4.0" />
     <PackageReference Include="Azure.Identity" Version="1.1.1" />
 
