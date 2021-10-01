@@ -10,6 +10,7 @@ using System.Net.NetworkInformation;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
 using Microsoft.VisualBasic;
 using Moq;
@@ -369,6 +370,42 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 }
 
                 await host.StopAsync();
+            }
+        }
+
+        [Theory]
+        [InlineData("dotnet")]
+        [InlineData("DotNet")]
+        [InlineData("node")]
+        [InlineData("Node")]
+        [InlineData("python")]
+        [InlineData("Python")]
+        [InlineData("powershell")]
+        [InlineData("PowerShell")]
+        [InlineData("haskell")]
+        public void WorkerRuntimeTypeFollowsSpec(string workerRuntime)
+        {
+            INameResolver nameResolver = new SimpleNameResolver(
+                new Dictionary<string, string>
+                {
+                    { "FUNCTIONS_WORKER_RUNTIME", workerRuntime },
+                });
+
+            ILoggerFactory loggerFactory = new LoggerFactory();
+            var platformInformation = new DefaultPlatformInformation(nameResolver, loggerFactory);
+
+            var runtimeType = platformInformation.GetWorkerRuntimeType();
+
+            if (workerRuntime == "haskell")
+            {
+                // Unknown runtimes should return Unknown
+                Assert.Equal(WorkerRuntimeType.Unknown, runtimeType);
+            }
+            else
+            {
+                // Known runtimes should be parseable regardless of capitalization
+                Assert.NotEqual(WorkerRuntimeType.Unknown, runtimeType);
+                runtimeType.ToString().Equals(workerRuntime, StringComparison.OrdinalIgnoreCase);
             }
         }
     }
