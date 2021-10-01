@@ -47,7 +47,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// Gets or sets the max retry interval.
         /// </summary>
         /// <value>
-        /// The TimeSpan of the max retry interval, defaults to <see cref="TimeSpan.MaxValue"/>.
+        /// The TimeSpan of the max retry interval, defaults to 6 days.
         /// </value>
         public TimeSpan MaxRetryInterval
         {
@@ -95,7 +95,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// Gets or sets a delegate to call on exception to determine if retries should proceed.
         /// </summary>
         /// <value>
-        /// The delegate to handle exception to determie if retries should proceed.
+        /// The delegate to handle exception to determine if retries should proceed.
         /// </value>
         public Func<Exception, bool> Handle
         {
