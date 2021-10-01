@@ -27,9 +27,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     public enum WorkerRuntimeType
     {
         /// <summary>
-        /// DotNetInProcess.
+        /// dotnet: either in-proc or ooproc.
         /// </summary>
-        DotNetInProcess,
+        Dotnet,
 
         /// <summary>
         /// Python.
@@ -37,14 +37,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         Python,
 
         /// <summary>
-        /// JavaScript.
+        /// Node: either JavaScript and TypeScript.
         /// </summary>
-        JavaScript,
+        Node,
 
         /// <summary>
         /// PowerShell.
         /// </summary>
         PowerShell,
+
+        /// <summary>
+        /// Unknown worker runtime.
+        /// </summary>
+        Unknown,
     }
 
     /// <summary>

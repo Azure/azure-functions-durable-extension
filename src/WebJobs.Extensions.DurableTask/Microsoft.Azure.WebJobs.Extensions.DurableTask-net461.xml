@@ -3077,9 +3077,9 @@
             Representation of supported Programming Languages.
             </summary>
         </member>
-        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.WorkerRuntimeType.DotNetInProcess">
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.WorkerRuntimeType.Dotnet">
             <summary>
-            DotNetInProcess.
+            dotnet: either in-proc or ooproc.
             </summary>
         </member>
         <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.WorkerRuntimeType.Python">
@@ -3087,14 +3087,19 @@
             Python.
             </summary>
         </member>
-        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.WorkerRuntimeType.JavaScript">
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.WorkerRuntimeType.Node">
             <summary>
-            JavaScript.
+            Node: either JavaScript and TypeScript.
             </summary>
         </member>
         <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.WorkerRuntimeType.PowerShell">
             <summary>
             PowerShell.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.WorkerRuntimeType.Unknown">
+            <summary>
+            Unknown worker runtime.
             </summary>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IPlatformInformation">

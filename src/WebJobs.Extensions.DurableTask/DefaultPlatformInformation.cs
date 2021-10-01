@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
@@ -16,10 +17,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     {
         private readonly INameResolver nameResolver;
         private readonly Dictionary<string, string> cachedEnviromentVariables;
+        private EndToEndTraceHelper traceHelper;
 
-        public DefaultPlatformInformation(INameResolver nameResolver)
+        public DefaultPlatformInformation(INameResolver nameResolver, ILoggerFactory loggerFactory)
         {
             this.nameResolver = nameResolver;
+
+            ILogger logger = loggerFactory.CreateLogger(DurableTaskExtension.LoggerCategoryName);
+            this.traceHelper = new EndToEndTraceHelper(logger, traceReplayEvents: false);
+
             this.cachedEnviromentVariables = new Dictionary<string, string>();
         }
 
@@ -85,7 +91,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return workerRuntimeType;
             }
 
-            throw new Exception("Could not determine worker runtime type.");
+            var message = $"Failed to parse worker runtime value: {workerRuntime}." +
+                "This could lead to performance and correctness problems";
+            this.traceHelper.ExtensionWarningEvent(hubName: "", functionName: "", instanceId: "", message);
+            return WorkerRuntimeType.Unknown;
         }
 
         public string GetLinuxTenant()
