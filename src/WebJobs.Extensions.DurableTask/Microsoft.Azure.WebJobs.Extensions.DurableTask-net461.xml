@@ -396,6 +396,27 @@
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationContext.Microsoft#Azure#WebJobs#Extensions#DurableTask#IDurableOrchestrationContext#CreateEntityProxy``1(Microsoft.Azure.WebJobs.Extensions.DurableTask.EntityId)">
             <inheritdoc/>
         </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationContext.IEventTaskCompletionSource">
+            <summary>
+            A non-generic tcs interface.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationContext.IEventTaskCompletionSource.EventType">
+            <summary>
+            The type of the event stored in the completion source.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationContext.IEventTaskCompletionSource.Next">
+            <summary>
+            The next task completion source in the stack.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationContext.IEventTaskCompletionSource.TrySetResult(System.Object)">
+            <summary>
+            Tries to set the result on tcs.
+            </summary>
+            <param name="result">The result.</param>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableContextExtensions">
             <summary>
             Defines convenient overloads for calling the context methods, for all the contexts.
@@ -1115,6 +1136,14 @@
             Makes an HTTP call using the information in the DurableHttpRequest.
             </summary>
             <param name="req">The DurableHttpRequest used to make the HTTP call.</param>
+            <returns>A <see cref="T:System.Threading.Tasks.Task`1"/>Result of the HTTP call.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationContext.CallHttpAsync(Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableHttpRequest,Microsoft.Azure.WebJobs.Extensions.DurableTask.RetryOptions)">
+            <summary>
+            Makes an HTTP call using the information in the DurableHttpRequest.
+            </summary>
+            <param name="req">The DurableHttpRequest used to make the HTTP call.</param>
+            <param name="retryOptions">The retry option for the HTTP task.</param>
             <returns>A <see cref="T:System.Threading.Tasks.Task`1"/>Result of the HTTP call.</returns>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationContext.CallEntityAsync``1(Microsoft.Azure.WebJobs.Extensions.DurableTask.EntityId,System.String)">
@@ -4069,7 +4098,7 @@
             Gets or sets the max retry interval.
             </summary>
             <value>
-            The TimeSpan of the max retry interval, defaults to <see cref="F:System.TimeSpan.MaxValue"/>.
+            The TimeSpan of the max retry interval, defaults to 6 days.
             </value>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.RetryOptions.BackoffCoefficient">
@@ -4101,7 +4130,7 @@
             Gets or sets a delegate to call on exception to determine if retries should proceed.
             </summary>
             <value>
-            The delegate to handle exception to determie if retries should proceed.
+            The delegate to handle exception to determine if retries should proceed.
             </value>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.StandardConnectionStringProvider">
