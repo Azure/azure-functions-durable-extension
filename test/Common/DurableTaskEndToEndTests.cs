@@ -400,51 +400,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
-        /// Tests that an unrecognized FUNCTIONS_WORKER_RUNTIME value logs a warning.
-        /// </summary>
-        [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task UnrecognizedWorkerRuntimeLogsWarning()
-        {
-            string orchestratorName = nameof(TestOrchestrations.SayHelloInline);
-
-            // To capture console output in a StringWritter
-            using (StringWriter sw = new StringWriter())
-            {
-                // Set console to write to StringWritter
-                Console.SetOut(sw);
-
-                // Simulate enviroment variables indicating linux consumption
-                var nameResolver = new SimpleNameResolver(new Dictionary<string, string>()
-                {
-                    { "CONTAINER_NAME", "val1" },
-                    { "WEBSITE_STAMP_DEPLOYMENT_ID", "val3" },
-                    { "WEBSITE_HOME_STAMPNAME", "val4" },
-                    { "FUNCTIONS_WORKER_RUNTIME", "haskell" },
-                });
-
-                // Run trivial orchestrator
-                using (var host = TestHelpers.GetJobHost(
-                    this.loggerProvider,
-                    nameResolver: nameResolver,
-                    testName: "CanWriteToConsole",
-                    enableExtendedSessions: false,
-                    storageProviderType: "azure_storage"))
-                {
-                    await host.StartAsync();
-                    var client = await host.StartOrchestratorAsync(orchestratorName, input: "World", this.output);
-                    var status = await client.WaitForCompletionAsync(this.output);
-                    await host.StopAsync();
-                }
-
-                string consoleOutput = sw.ToString();
-
-                // Ensure warning is generated
-                Assert.Contains("Failed to parse worker runtime value:", consoleOutput);
-            }
-        }
-
-        /// <summary>
         /// By simulating the appropiate enviorment variables for Linux Consumption,
         /// this test checks that we are writing our JSON logs to the console. It does not
         /// verify the contents of the JSON logs themselves (expensive) but instead checks that,
