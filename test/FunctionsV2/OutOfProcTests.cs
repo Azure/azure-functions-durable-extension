@@ -383,6 +383,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [InlineData("powershell")]
         [InlineData("PowerShell")]
         [InlineData("haskell")]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void WorkerRuntimeTypeFollowsSpec(string workerRuntime)
         {
             INameResolver nameResolver = new SimpleNameResolver(
