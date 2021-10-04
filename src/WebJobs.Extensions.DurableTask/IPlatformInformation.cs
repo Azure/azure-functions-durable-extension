@@ -27,7 +27,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     public enum WorkerRuntimeType
     {
         /// <summary>
-        /// dotnet: either in-proc or ooproc.
+        /// dotnet
         /// </summary>
         Dotnet,
 
