@@ -35,10 +35,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.EntityIn
             }
         }
 
-        public interface IEntityExample
+        public interface IEntityExample : IEntityMultipleInterfaces
         {
             public static void methodTest();
         }
+
+        public interface IEntityMultipleInterfaces
+        {
+        }
+
     }";
 
             VerifyCSharpDiagnostic(test);
