@@ -7,5 +7,6 @@
 * * Fix fetching of large inputs for pending orchestrations on Azure Storage
 * * Updated TableQuery filter condition string generation to resolve invalid character issues
 * * Fixed stuck orchestration with duplicate message warning issue
+* * Fixed null reference exceptions thrown in DurableClient
 
 ## Breaking Changes
