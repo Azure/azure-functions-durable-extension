@@ -1,6 +1,7 @@
 ## New Features
 * Ability to pass `RetryOptions` object to `CallHttpAsync()` invocations to add & customize retry behavior
 * This required a breaking change to `IDurableOrchestrationContext` adding an overload to `CallHttpAsync` which takes the parameter
+* log trace events whenever entities are created or deleted
 
 ## Bug fixes
 * Updated DurableTask.AzureStorage dependency to v1.9.2, which includes the following fixes:
