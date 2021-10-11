@@ -7,5 +7,6 @@
 * * Fix fetching of large inputs for pending orchestrations on Azure Storage
 * * Updated TableQuery filter condition string generation to resolve invalid character issues
 * * Fixed stuck orchestration with duplicate message warning issue
+* * Throw meaningful exceptions inside orchestrations when they try to call, signal, or lock a non-existing entity
 
 ## Breaking Changes
