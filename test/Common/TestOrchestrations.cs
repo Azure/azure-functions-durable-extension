@@ -790,6 +790,40 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return "ok";
         }
 
+        public static async Task<string> NonexistentEntity([OrchestrationTrigger] IDurableOrchestrationContext ctx)
+        {
+            var entityId = new EntityId("ThisEntityDoesNotExist", "33");
+
+            try
+            {
+                await ctx.CallEntityAsync(entityId, "hi");
+                return $"test failed: expected error message because CallEntityAsync refers to a non-existing entity";
+            }
+            catch (ArgumentException e)
+            {
+            }
+
+            try
+            {
+                ctx.SignalEntity(entityId, "hi");
+                return $"test failed: expected error message because SignalEntity refers to a non-existing entity";
+            }
+            catch (ArgumentException e)
+            {
+            }
+
+            try
+            {
+                await ctx.LockAsync(entityId);
+                return $"test failed: expected error message because LockAsync refers to a non-existing entity";
+            }
+            catch (ArgumentException e)
+            {
+            }
+
+            return "ok";
+        }
+
         public static async Task<string> CallFaultyEntity([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
             var (entityId, rollbackOnException) = ctx.GetInput<(EntityId, bool)>();
