@@ -5,6 +5,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
+using System;
 using System.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
@@ -43,16 +44,35 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     if (identifierText == "Run" || identifierText == "Factory.StartNew")
                     {
                         var memberAccessExpression = identifierName.Parent;
-                        if (SyntaxNodeUtils.TryGetISymbol(semanticModel, memberAccessExpression, out ISymbol memberSymbol))
+
+                        try
                         {
-                            if (memberSymbol.ToString().StartsWith("System.Threading.Tasks.Task"))
+                            if (SyntaxNodeUtils.TryGetISymbol(semanticModel, memberAccessExpression, out ISymbol memberSymbol))
                             {
-                                var diagnostic = Diagnostic.Create(Rule, memberAccessExpression.GetLocation(), memberAccessExpression);
+                                if (memberSymbol.ToString().StartsWith("System.Threading.Tasks.Task"))
+                                {
+                                    var diagnostic = Diagnostic.Create(Rule, memberAccessExpression.GetLocation(), memberAccessExpression);
 
-                                context.ReportDiagnostic(diagnostic);
+                                    context.ReportDiagnostic(diagnostic);
 
-                                diagnosedIssue = true;
+                                    diagnosedIssue = true;
+                                }
                             }
+                        }
+                        catch (Exception e)
+                        {
+                            var diagnostic = Diagnostic.Create(
+                                ExceptionDiagnostic.Rule,
+                                identifierName.Identifier.GetLocation(),
+                                nameof(ThreadTaskAnalyzer),
+                                semanticModel.Compilation.AssemblyName,
+                                semanticModel.SyntaxTree.FilePath,
+                                $"MemberAccessExpression node '{memberAccessExpression}'",
+                                e.ToString());
+
+                            context.ReportDiagnostic(diagnostic);
+
+                            return false;
                         }
                     }
                 }

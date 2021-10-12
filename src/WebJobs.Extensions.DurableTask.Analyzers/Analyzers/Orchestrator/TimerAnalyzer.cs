@@ -1,6 +1,7 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using System;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -46,21 +47,40 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     if (identifierText == "Delay")
                     {
                         var memberAccessExpression = identifierName.Parent;
-                        if (SyntaxNodeUtils.TryGetISymbol(semanticModel, memberAccessExpression, out ISymbol memberSymbol))
+
+                        try
                         {
-                            if (memberSymbol != null && memberSymbol.ToString().StartsWith("System.Threading.Tasks.Task"))
+                            if (SyntaxNodeUtils.TryGetISymbol(semanticModel, memberAccessExpression, out ISymbol memberSymbol))
                             {
-                                if (TryGetRuleFromVersion(out DiagnosticDescriptor rule))
+                                if (memberSymbol != null && memberSymbol.ToString().StartsWith("System.Threading.Tasks.Task"))
                                 {
-                                    var expression = GetAwaitOrInvocationExpression(memberAccessExpression);
+                                    if (TryGetRuleFromVersion(out DiagnosticDescriptor rule))
+                                    {
+                                        var expression = GetAwaitOrInvocationExpression(memberAccessExpression);
 
-                                    var diagnostic = Diagnostic.Create(rule, expression.GetLocation(), expression);
+                                        var diagnostic = Diagnostic.Create(rule, expression.GetLocation(), expression);
 
-                                    context.ReportDiagnostic(diagnostic);
+                                        context.ReportDiagnostic(diagnostic);
 
-                                    diagnosedIssue = true;
+                                        diagnosedIssue = true;
+                                    }
                                 }
                             }
+                        }
+                        catch (Exception e)
+                        {
+                            var diagnostic = Diagnostic.Create(
+                                ExceptionDiagnostic.Rule,
+                                identifierName.Identifier.GetLocation(),
+                                nameof(TimerAnalyzer),
+                                semanticModel.Compilation.AssemblyName,
+                                semanticModel.SyntaxTree.FilePath,
+                                $"MemberAccessExpression node '{memberAccessExpression}'",
+                                e.ToString());
+
+                            context.ReportDiagnostic(diagnostic);
+
+                            return false;
                         }
                     }
                 }
