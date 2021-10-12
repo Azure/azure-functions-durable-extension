@@ -799,7 +799,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await ctx.CallEntityAsync(entityId, "hi");
                 return $"test failed: expected error message because CallEntityAsync refers to a non-existing entity";
             }
-            catch (ArgumentException e)
+            catch (ArgumentException)
             {
             }
 
@@ -808,7 +808,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 ctx.SignalEntity(entityId, "hi");
                 return $"test failed: expected error message because SignalEntity refers to a non-existing entity";
             }
-            catch (ArgumentException e)
+            catch (ArgumentException)
             {
             }
 
@@ -817,7 +817,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await ctx.LockAsync(entityId);
                 return $"test failed: expected error message because LockAsync refers to a non-existing entity";
             }
-            catch (ArgumentException e)
+            catch (ArgumentException)
             {
             }
 
