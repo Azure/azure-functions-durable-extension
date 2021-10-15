@@ -67,9 +67,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     }
                     else
                     {
+                        SemanticModel invocationModel = semanticModel;
+                        if (SyntaxNodeUtils.TryGetSemanticModelForSyntaxTree(semanticModel, invocation, out SemanticModel newModel))
+                        {
+                            invocationModel = newModel;
+                        }
+
                         var invokedMethodInformation = new MethodInformation()
                         {
-                            SemanticModel = semanticModel,
+                            SemanticModel = invocationModel,
                             Declaration = invokedMethodDeclaration,
                             DeclarationSymbol = invokedSymbol,
                             Invocations = new List<InvocationExpressionSyntax>() { invocation },
