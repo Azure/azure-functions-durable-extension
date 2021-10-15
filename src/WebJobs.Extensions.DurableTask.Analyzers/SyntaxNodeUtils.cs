@@ -34,10 +34,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                 newModel = null;
                 return false;
             }
-            
-            newModel = model.SyntaxTree == node.SyntaxTree
+
+            var compilation = model.Compilation;
+            if (!compilation.ContainsSyntaxTree(node.SyntaxTree))
+            {
+                var newComplilation = model.Compilation.AddSyntaxTrees(node.SyntaxTree);
+                newModel = newComplilation.GetSemanticModel(node.SyntaxTree);
+            }
+            else
+            {
+                newModel = model.SyntaxTree == node.SyntaxTree
                 ? model
                 : model.Compilation.GetSemanticModel(node.SyntaxTree);
+            }
+
             return newModel != null;
         }
 
