@@ -1,7 +1,6 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using System;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
@@ -29,34 +28,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             {
                 if (descendant is IdentifierNameSyntax identifierName)
                 {
-                    try
+                    if (SyntaxNodeUtils.TryGetITypeSymbol(semanticModel, identifierName, out ITypeSymbol type))
                     {
-                        if (SyntaxNodeUtils.TryGetITypeSymbol(semanticModel, identifierName, out ITypeSymbol type))
+                        if (IsIOClass(type.ToString()))
                         {
-                            if (IsIOClass(type.ToString()))
-                            {
-                                var diagnostic = Diagnostic.Create(Rule, identifierName.Identifier.GetLocation(), type);
+                            var diagnostic = Diagnostic.Create(Rule, identifierName.Identifier.GetLocation(), type);
 
-                                context.ReportDiagnostic(diagnostic);
+                            context.ReportDiagnostic(diagnostic);
 
-                                diagnosedIssue = true;
-                            }
+                            diagnosedIssue = true;
                         }
-                    }
-                    catch (Exception e)
-                    {
-                        var diagnostic = Diagnostic.Create(
-                            ExceptionDiagnostic.Rule,
-                            identifierName.Identifier.GetLocation(),
-                            nameof(IOTypesAnalyzer),
-                            semanticModel.Compilation.AssemblyName,
-                            semanticModel.SyntaxTree.FilePath,
-                            $"IdentifierNameSyntax node '{identifierName.Identifier}'",
-                            e.ToString());
-
-                        context.ReportDiagnostic(diagnostic);
-
-                        return false;
                     }
                 }
             }

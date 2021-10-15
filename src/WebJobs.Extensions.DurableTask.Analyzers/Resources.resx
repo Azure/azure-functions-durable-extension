@@ -254,26 +254,6 @@ https://docs.microsoft.com/azure/azure-functions/durable/durable-functions-check
   <data name="EnvironmentVariableAnalyzerTitle" xml:space="preserve">
     <value>Environment variables must be accessed in a deterministic way inside an orchestrator function.</value>
   </data>
-  <data name="ExceptionDiagnosticDescription" xml:space="preserve">
-    <value>Exception thrown in analyzer. Please report this to https://github.com/Azure/azure-functions-durable-extension.
-
-Please open a bug report including this diagnostic's details along with all relevant code relating to the file or place in code where this diagnostic was produced.</value>
-  </data>
-  <data name="ExceptionDiagnosticMessageFormat" xml:space="preserve">
-    <value>Exception thrown in analyzer. Please see diagnostic details for instructions on how to report this.
-
-Exception was thrown in analyzer {0}.
-
-Compilation assembly: {1}
-SyntaxTree source FilePath: {2}
-
-Node being analyzed: {3}
-
-{4}</value>
-  </data>
-  <data name="ExceptionDiagnosticTitle" xml:space="preserve">
-    <value>Exception thrown in analyzer.</value>
-  </data>
   <data name="FixDateTimeInOrchestrator" xml:space="preserve">
     <value>Replace with (DurableOrchestrationContext).CurrentUtcDateTime</value>
   </data>

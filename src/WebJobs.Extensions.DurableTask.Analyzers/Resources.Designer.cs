@@ -468,44 +468,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Exception thrown in analyzer. Please report this to https://github.com/Azure/azure-functions-durable-extension.
-        ///
-        ///Please open a bug report including this diagnostic&apos;s details along with all relevant code relating to the file or place in code where this diagnostic was produced..
-        /// </summary>
-        public static string ExceptionDiagnosticDescription {
-            get {
-                return ResourceManager.GetString("ExceptionDiagnosticDescription", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Exception thrown in analyzer. Please see diagnostic details for instructions on how to report this.
-        ///
-        ///Exception was thrown in analyzer {0}.
-        ///
-        ///Compilation assembly: {1}
-        ///SyntaxTree source FilePath: {2}
-        ///
-        ///Node being analyzed: {3}
-        ///
-        ///{4}.
-        /// </summary>
-        public static string ExceptionDiagnosticMessageFormat {
-            get {
-                return ResourceManager.GetString("ExceptionDiagnosticMessageFormat", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Exception thrown in analyzer..
-        /// </summary>
-        public static string ExceptionDiagnosticTitle {
-            get {
-                return ResourceManager.GetString("ExceptionDiagnosticTitle", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to Replace with (DurableOrchestrationContext).CurrentUtcDateTime.
         /// </summary>
         public static string FixDateTimeInOrchestrator {

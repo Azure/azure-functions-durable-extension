@@ -31,8 +31,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     TimerAnalyzer.V2Rule,
                     CancellationTokenAnalyzer.Rule,
                     BindingAnalyzer.Rule,
-                    MethodInvocationAnalyzer.Rule,
-                    ExceptionDiagnostic.Rule);
+                    MethodInvocationAnalyzer.Rule);
             }
         }
 

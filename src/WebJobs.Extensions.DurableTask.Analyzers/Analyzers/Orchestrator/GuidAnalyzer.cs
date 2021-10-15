@@ -1,7 +1,6 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using System;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
@@ -33,35 +32,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     {
                         var memberAccessExpression = identifierName.Parent;
                         var invocationExpression = memberAccessExpression.Parent;
-
-                        try
+                        if (SyntaxNodeUtils.TryGetISymbol(semanticModel, memberAccessExpression, out ISymbol memberSymbol))
                         {
-                            if (SyntaxNodeUtils.TryGetISymbol(semanticModel, memberAccessExpression, out ISymbol memberSymbol))
+                            if (memberSymbol.ToString().StartsWith("System.Guid"))
                             {
-                                if (memberSymbol.ToString().StartsWith("System.Guid"))
-                                {
-                                    var diagnostic = Diagnostic.Create(Rule, invocationExpression.GetLocation(), memberAccessExpression);
+                                var diagnostic = Diagnostic.Create(Rule, invocationExpression.GetLocation(), memberAccessExpression);
 
-                                    context.ReportDiagnostic(diagnostic);
+                                context.ReportDiagnostic(diagnostic);
 
-                                    diagnosedIssue = true;
-                                }
+                                diagnosedIssue = true;
                             }
-                        }
-                        catch (Exception e)
-                        {
-                            var diagnostic = Diagnostic.Create(
-                                ExceptionDiagnostic.Rule,
-                                identifierName.Identifier.GetLocation(),
-                                nameof(GuidAnalyzer),
-                                semanticModel.Compilation.AssemblyName,
-                                semanticModel.SyntaxTree.FilePath,
-                                $"MemberAccessExpression node '{memberAccessExpression}'",
-                                e.ToString());
-
-                            context.ReportDiagnostic(diagnostic);
-
-                            return false;
                         }
                     }
                 }
