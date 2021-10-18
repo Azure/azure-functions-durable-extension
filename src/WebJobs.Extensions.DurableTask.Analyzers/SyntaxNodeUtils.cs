@@ -29,26 +29,34 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         public static bool TryGetSemanticModelForSyntaxTree(SemanticModel model, SyntaxNode node, out SemanticModel newModel)
         {
-            if (model?.SyntaxTree == null || node?.SyntaxTree == null)
+            try
+            {
+                if (model?.SyntaxTree == null || node?.SyntaxTree == null)
+                {
+                    newModel = null;
+                    return false;
+                }
+
+                var compilation = model.Compilation;
+                if (!compilation.ContainsSyntaxTree(node.SyntaxTree))
+                {
+                    var newComplilation = model.Compilation.AddSyntaxTrees(node.SyntaxTree);
+                    newModel = newComplilation.GetSemanticModel(node.SyntaxTree);
+                }
+                else
+                {
+                    newModel = model.SyntaxTree == node.SyntaxTree
+                    ? model
+                    : model.Compilation.GetSemanticModel(node.SyntaxTree);
+                }
+
+                return newModel != null;
+            }
+            catch( ArgumentException e) when (e.Message == "Inconsistent language versions")
             {
                 newModel = null;
                 return false;
             }
-
-            var compilation = model.Compilation;
-            if (!compilation.ContainsSyntaxTree(node.SyntaxTree))
-            {
-                var newComplilation = model.Compilation.AddSyntaxTrees(node.SyntaxTree);
-                newModel = newComplilation.GetSemanticModel(node.SyntaxTree);
-            }
-            else
-            {
-                newModel = model.SyntaxTree == node.SyntaxTree
-                ? model
-                : model.Compilation.GetSemanticModel(node.SyntaxTree);
-            }
-
-            return newModel != null;
         }
 
         public static bool TryGetITypeSymbol(SemanticModel semanticModel, SyntaxNode node, out ITypeSymbol typeSymbol)
