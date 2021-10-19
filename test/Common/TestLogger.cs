@@ -8,7 +8,7 @@ using Xunit.Abstractions;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
-    internal class TestLogger : ILogger
+    public class TestLogger : ILogger
     {
         private readonly ITestOutputHelper testOutput;
         private readonly Func<string, LogLevel, bool> filter;

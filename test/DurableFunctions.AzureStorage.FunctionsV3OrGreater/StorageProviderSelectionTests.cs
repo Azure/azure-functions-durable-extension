@@ -9,12 +9,23 @@ using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests;
 using Moq;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace WebJobs.Extensions.DurableTask.Tests.V2
 {
-    public class StorageProviderSelectionTests
+    public class StorageProviderSelectionTests : IDisposable
     {
-        public StorageProviderSelectionTests() { }
+        private readonly TestHelpers testHelper;
+
+        public StorageProviderSelectionTests(ITestOutputHelper output)
+        {
+            this.testHelper = new TestHelpers(output);
+        }
+
+        public void Dispose()
+        {
+            this.testHelper.Dispose();
+        }
 
         private static IEnumerable<IDurabilityProviderFactory> MicrosoftSQLAndNetheriteProviderFactoriesList =>
             new List<IDurabilityProviderFactory>
@@ -31,7 +42,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
             };
 
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         [InlineData("AzureStorage")]
         [InlineData("MicrosoftSQL")]
         [InlineData("Netherite")]
@@ -47,7 +58,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
             DurableTaskOptions options = new DurableTaskOptions();
             options.StorageProvider["type"] = storageProvider;
 
-            using (ITestHost host = TestHelpers.GetJobHostWithMultipleDurabilityProviders(
+            using (ITestHost host = this.testHelper.GetJobHostWithMultipleDurabilityProviders(
                 options: options,
                 durabilityProviderFactories: durabilityProviderFactories))
             {
@@ -58,19 +69,19 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         }
 
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         [MemberData(nameof(DurabilityProviderFactoriesListsWithoutAzureStorage))]
         public void NoProviderSpecified_AzureStorageFactoryNotRegistered(IEnumerable<IDurabilityProviderFactory> durabilityProviderFactories)
         {
             var ex = Assert.Throws<InvalidOperationException>(() =>
-                TestHelpers.GetJobHostWithMultipleDurabilityProviders(
+                this.testHelper.GetJobHostWithMultipleDurabilityProviders(
                     durabilityProviderFactories: durabilityProviderFactories));
 
             Assert.Equal($"Couldn't find the default storage provider: AzureStorage.", ex.Message);
         }
 
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         [InlineData("storage")]
         public void SelectingUnavailableStorageProviderThrowsException(string storageProvider)
         {
@@ -85,7 +96,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
             options.StorageProvider["type"] = storageProvider;
 
             var ex = Assert.Throws<InvalidOperationException>(() =>
-                TestHelpers.GetJobHostWithMultipleDurabilityProviders(
+                this.testHelper.GetJobHostWithMultipleDurabilityProviders(
                     options: options,
                     durabilityProviderFactories: durabilityProviderFactories));
 
@@ -95,7 +106,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         }
 
         [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public void SelectingDefaultStorageProviderWhenNoTypeIsProvided()
         {
             var orchestrationServiceClientMock = new Mock<IOrchestrationServiceClient>();
@@ -105,7 +116,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
 
             IEnumerable<IDurabilityProviderFactory> durabilityProviderFactories = new[] { azureStorageMock.Object, microsoftSQLMock.Object, netheriteMock.Object };
 
-            using (ITestHost host = TestHelpers.GetJobHostWithMultipleDurabilityProviders(
+            using (ITestHost host = this.testHelper.GetJobHostWithMultipleDurabilityProviders(
                 durabilityProviderFactories: durabilityProviderFactories))
             {
                 netheriteMock.Verify(n => n.GetDurabilityProvider(), Times.Never());

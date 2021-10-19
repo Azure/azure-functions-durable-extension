@@ -11,7 +11,7 @@ using Xunit.Abstractions;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
-    internal class TestDurableClient
+    public class TestDurableClient
     {
         private readonly IDurableClient innerClient;
         private readonly string functionName;

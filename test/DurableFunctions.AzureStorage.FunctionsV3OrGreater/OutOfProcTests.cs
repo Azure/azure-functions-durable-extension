@@ -6,12 +6,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Net.NetworkInformation;
 using System.Threading.Tasks;
-using Microsoft.Azure.WebJobs.Host;
-using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Microsoft.Extensions.Primitives;
-using Microsoft.VisualBasic;
 using Moq;
 using Newtonsoft.Json.Linq;
 using Xunit;
@@ -20,19 +16,24 @@ using static Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskOrchestrationShi
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
-    public class OutOfProcTests
+    public class OutOfProcTests : IDisposable
     {
         private readonly ITestOutputHelper output;
-        private readonly TestLoggerProvider loggerProvider;
+        private readonly TestHelpers testHelper;
 
         public OutOfProcTests(ITestOutputHelper output)
         {
             this.output = output;
-            this.loggerProvider = new TestLoggerProvider(output);
+            this.testHelper = new TestHelpers(output);
+        }
+
+        public void Dispose()
+        {
+            this.testHelper.Dispose();
         }
 
         [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public async Task CallHttpActionOrchestration()
         {
             DurableHttpRequest request = null;
@@ -96,7 +97,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public async Task CallHttpActionOrchestrationWithManagedIdentity()
         {
             DurableHttpRequest request = null;
@@ -144,7 +145,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public async Task CallHttpActionOrchestrationWithManagedIdentityOptions()
         {
             DurableHttpRequest request = null;
@@ -198,15 +199,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task BindToDurableClientAsString(bool localRcpEnabled)
         {
             Uri testNotificationUrl = new Uri("https://durable.edu/runtime/webhooks/durabletask?code=abcdefg");
 
-            using (ITestHost host = TestHelpers.GetJobHost(
-                this.loggerProvider,
+            using (ITestHost host = this.testHelper.GetJobHost(
                 nameof(this.BindToDurableClientAsString) + localRcpEnabled.ToString(),
                 enableExtendedSessions: false,
                 localRpcEndpointEnabled: localRcpEnabled,
@@ -312,7 +312,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         [InlineData(null, true)]
         [InlineData("node", true)]
         [InlineData("java", true)]
@@ -327,8 +327,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     { "FUNCTIONS_WORKER_RUNTIME", runtimeVersion },
                 });
 
-            using (ITestHost host = TestHelpers.GetJobHost(
-                this.loggerProvider,
+            using (ITestHost host = this.testHelper.GetJobHost(
                 nameof(this.TestLocalRcpEndpointRuntimeVersion),
                 enableExtendedSessions: false,
                 localRpcEndpointEnabled: null /* use FUNCTIONS_WORKER_RUNTIME to decide */,
@@ -337,7 +336,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StartAsync();
 
                 // Validate if we opened local RPC endpoint by looking at log statements.
-                var logger = this.loggerProvider.CreatedLoggers.Single(l => l.Category == TestHelpers.LogCategory);
+                var logger = this.testHelper.GetLogger(TestHelpers.LogCategory);
                 var logMessages = logger.LogMessages.ToList();
                 bool enabledRpcEndpoint = logMessages.Any(msg => msg.Level == Microsoft.Extensions.Logging.LogLevel.Information && msg.FormattedMessage.StartsWith("Opened local RPC endpoint:"));
 
@@ -348,11 +347,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public async Task InvokeLocalRpcEndpoint()
         {
-            using (ITestHost host = TestHelpers.GetJobHost(
-                this.loggerProvider,
+            using (ITestHost host = this.testHelper.GetJobHost(
                 nameof(this.InvokeLocalRpcEndpoint),
                 enableExtendedSessions: false,
                 localRpcEndpointEnabled: true,

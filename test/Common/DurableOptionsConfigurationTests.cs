@@ -15,6 +15,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     {
         private readonly ITestOutputHelper output;
         private readonly TestLoggerProvider loggerProvider;
+        private readonly TestHelpers testHelper;
 
         public DurableOptionsConfigurationTests(ITestOutputHelper output)
         {
@@ -23,7 +24,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public async Task EmptyStorageProviderUsesAzureStorageDefaults()
         {
             string testName = nameof(this.EmptyStorageProviderUsesAzureStorageDefaults).ToLowerInvariant();
@@ -33,8 +34,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 nameof(TestOrchestrations.SayHelloInline),
             };
 
-            using (var host = TestHelpers.GetJobHost(
-                this.loggerProvider,
+            using (var host = this.testHelper.GetJobHost(
                 testName,
                 false,
                 storageProviderType: "empty_storage_provider"))
@@ -52,11 +52,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
 
             // Ensure blobs touched in the last 30 seconds
-            await AssertTestUsedAzureStorageAsync(testName);
+            await this.AssertTestUsedAzureStorageAsync(testName);
         }
 
         [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public async Task NullStorageProviderUsesAzureStorageDefaults()
         {
             string testName = nameof(this.NullStorageProviderUsesAzureStorageDefaults).ToLowerInvariant();
@@ -66,8 +66,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 nameof(TestOrchestrations.SayHelloInline),
             };
 
-            using (var host = TestHelpers.GetJobHost(
-                this.loggerProvider,
+            using (var host = this.testHelper.GetJobHost(
                 testName,
                 false,
                 storageProviderType: null))
@@ -84,18 +83,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StopAsync();
             }
 
-            await AssertTestUsedAzureStorageAsync(testName);
+            await this.AssertTestUsedAzureStorageAsync(testName);
         }
 
-        private static async Task AssertTestUsedAzureStorageAsync(string testName)
+        private async Task AssertTestUsedAzureStorageAsync(string testName)
         {
             // Ensure blobs touched in the last 30 seconds
             string defaultConnectionString = TestHelpers.GetStorageConnectionString();
-            string blobLeaseContainerName = $"{testName}{PlatformSpecificHelpers.VersionSuffix.ToLower()}-leases";
+            string blobLeaseContainerName = $"{testName}{this.testHelper.GetTaskHubSuffix().ToLower()}-leases";
             CloudStorageAccount account = CloudStorageAccount.Parse(defaultConnectionString);
             CloudBlobClient blobClient = account.CreateCloudBlobClient();
             CloudBlobContainer blobContainer = blobClient.GetContainerReference(blobLeaseContainerName);
-            CloudBlockBlob blob = blobContainer.GetBlockBlobReference($"default/{testName}{PlatformSpecificHelpers.VersionSuffix.ToLower()}-control-00");
+            CloudBlockBlob blob = blobContainer.GetBlockBlobReference($"default/{testName}{this.testHelper.GetTaskHubSuffix().ToLower()}-control-00");
             await blob.FetchAttributesAsync();
             DateTimeOffset lastModified = blob.Properties.LastModified.Value;
             DateTimeOffset expectedLastModifiedTimeThreshold = DateTimeOffset.UtcNow.AddSeconds(-30);

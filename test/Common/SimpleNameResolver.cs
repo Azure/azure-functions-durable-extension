@@ -9,7 +9,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     /// <summary>
     /// Test helper implementation of INameResolver interface.
     /// </summary>
-    internal class SimpleNameResolver : INameResolver
+    public class SimpleNameResolver : INameResolver
     {
         private readonly Dictionary<string, string> values;
 

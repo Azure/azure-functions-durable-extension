@@ -20,20 +20,24 @@ using Xunit.Abstractions;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
-    public class DurableTaskLifeCycleNotificationTest
+    public abstract class DurableTaskLifeCycleNotificationTest
     {
         private readonly ITestOutputHelper output;
         private readonly TestLoggerProvider loggerProvider;
         private readonly bool useTestLogger = true;
+        private readonly TestHelpers testHelper;
 
         public DurableTaskLifeCycleNotificationTest(ITestOutputHelper output)
         {
             this.output = output;
             this.loggerProvider = new TestLoggerProvider(output);
+            this.testHelper = this.GetTestHelpers();
         }
 
+        public abstract TestHelpers GetTestHelpers();
+
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory + "_BVT")]
+        [Trait("Category", TestHelpers.DefaultTestCategory + "_BVT")]
         [InlineData(true)]
         [InlineData(false)]
         public async Task OrchestrationStartAndCompleted(bool extendedSessionsEnabled)
@@ -50,7 +54,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Func<HttpRequestMessage, HttpResponseMessage> responseGenerator =
                 (HttpRequestMessage req) => req.CreateResponse(HttpStatusCode.OK, "{\"message\":\"OK!\"}");
 
-            string taskHub = TestHelpers.GetTaskHubNameFromTestName(testName, extendedSessionsEnabled);
+            string taskHub = this.testHelper.GetTaskHubNameFromTestName(testName, extendedSessionsEnabled);
             int callCount = 0;
             HttpMessageHandler httpMessageHandler = this.ConfigureEventGridMockHandler(
                 taskHub,
@@ -83,8 +87,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 },
                 asserts: out List<Action> eventGridRequestValidators);
 
-            using (ITestHost host = TestHelpers.GetJobHost(
-                this.loggerProvider,
+            using (ITestHost host = this.testHelper.GetJobHost(
                 testName,
                 extendedSessionsEnabled,
                 eventGridKeySettingName,
@@ -121,14 +124,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task OrchestrationFailed(bool extendedSessionsEnabled)
         {
             var testName = nameof(this.OrchestrationFailed);
             var functionName = nameof(TestOrchestrations.ThrowOrchestrator);
-            var taskHub = TestHelpers.GetTaskHubNameFromTestName(testName, extendedSessionsEnabled);
+            var taskHub = this.testHelper.GetTaskHubNameFromTestName(testName, extendedSessionsEnabled);
             var eventGridKeyValue = "testEventGridKey";
             var eventGridKeySettingName = "eventGridKeySettingName";
             var eventGridEndpoint = "http://dymmy.com/";
@@ -171,8 +174,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 },
                 asserts: out List<Action> eventGridRequestValidators);
 
-            using (ITestHost host = TestHelpers.GetJobHost(
-                this.loggerProvider,
+            using (ITestHost host = this.testHelper.GetJobHost(
                 testName,
                 extendedSessionsEnabled,
                 eventGridKeySettingName,
@@ -208,13 +210,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task OrchestrationTerminate(bool extendedSessionsEnabled)
         {
             var testName = nameof(this.OrchestrationTerminate);
-            var taskHub = TestHelpers.GetTaskHubNameFromTestName(testName, extendedSessionsEnabled);
+            var taskHub = this.testHelper.GetTaskHubNameFromTestName(testName, extendedSessionsEnabled);
 
             // Using the counter orchestration because it will wait indefinitely for input.
             var functionName = nameof(TestOrchestrations.Counter);
@@ -260,8 +262,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 },
                 asserts: out List<Action> eventGridRequestValidators);
 
-            using (ITestHost host = TestHelpers.GetJobHost(
-                this.loggerProvider,
+            using (ITestHost host = this.testHelper.GetJobHost(
                 testName,
                 extendedSessionsEnabled,
                 eventGridKeySettingName,
@@ -302,7 +303,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task OrchestrationStartedOptOutOfEvent(bool extendedSessionsEnabled)
@@ -319,7 +320,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Func<HttpRequestMessage, HttpResponseMessage> responseGenerator =
                 (HttpRequestMessage req) => req.CreateResponse(HttpStatusCode.OK, "{\"message\":\"OK!\"}");
 
-            var taskHub = TestHelpers.GetTaskHubNameFromTestName(testName, extendedSessionsEnabled);
+            var taskHub = this.testHelper.GetTaskHubNameFromTestName(testName, extendedSessionsEnabled);
             HttpMessageHandler httpMessageHandler = this.ConfigureEventGridMockHandler(
                 taskHub,
                 functionName,
@@ -335,8 +336,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 },
                 asserts: out List<Action> eventGridRequestValidators);
 
-            using (ITestHost host = TestHelpers.GetJobHost(
-                this.loggerProvider,
+            using (ITestHost host = this.testHelper.GetJobHost(
                 testName,
                 extendedSessionsEnabled,
                 eventGridKeySettingName,
@@ -362,14 +362,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task OrchestrationCompletedOptOutOfEvent(bool extendedSessionsEnabled)
         {
             var testName = nameof(this.OrchestrationCompletedOptOutOfEvent);
             var functionName = nameof(TestOrchestrations.SayHelloInline);
-            var taskHub = TestHelpers.GetTaskHubNameFromTestName(testName, extendedSessionsEnabled);
+            var taskHub = this.testHelper.GetTaskHubNameFromTestName(testName, extendedSessionsEnabled);
             var eventGridKeyValue = "testEventGridKey";
             var eventGridKeySettingName = "eventGridKeySettingName";
             var eventGridEndpoint = "http://dymmy.com/";
@@ -395,8 +395,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 },
                 asserts: out List<Action> eventGridRequestValidators);
 
-            using (ITestHost host = TestHelpers.GetJobHost(
-                this.loggerProvider,
+            using (ITestHost host = this.testHelper.GetJobHost(
                 testName,
                 extendedSessionsEnabled,
                 eventGridKeySettingName,
@@ -422,13 +421,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task OrchestrationFailedOptOutOfEvent(bool extendedSessionsEnabled)
         {
             var testName = nameof(this.OrchestrationFailedOptOutOfEvent);
-            var taskHub = TestHelpers.GetTaskHubNameFromTestName(testName, extendedSessionsEnabled);
+            var taskHub = this.testHelper.GetTaskHubNameFromTestName(testName, extendedSessionsEnabled);
             var functionName = nameof(TestOrchestrations.ThrowOrchestrator);
             var eventGridKeyValue = "testEventGridKey";
             var eventGridKeySettingName = "eventGridKeySettingName";
@@ -455,8 +454,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 },
                 asserts: out List<Action> eventGridRequestValidators);
 
-            using (ITestHost host = TestHelpers.GetJobHost(
-                this.loggerProvider,
+            using (ITestHost host = this.testHelper.GetJobHost(
                 testName,
                 extendedSessionsEnabled,
                 eventGridKeySettingName,
@@ -483,13 +481,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task OrchestrationTerminatedOptOutOfEvent(bool extendedSessionsEnabled)
         {
             var testName = nameof(this.OrchestrationTerminate);
-            var taskHub = TestHelpers.GetTaskHubNameFromTestName(testName, extendedSessionsEnabled);
+            var taskHub = this.testHelper.GetTaskHubNameFromTestName(testName, extendedSessionsEnabled);
 
             // Using the counter orchestration because it will wait indefinitely for input.
             var functionName = nameof(TestOrchestrations.Counter);
@@ -518,8 +516,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 },
                 asserts: out List<Action> eventGridRequestValidators);
 
-            using (ITestHost host = TestHelpers.GetJobHost(
-                this.loggerProvider,
+            using (ITestHost host = this.testHelper.GetJobHost(
                 testName,
                 extendedSessionsEnabled,
                 eventGridKeySettingName,
@@ -549,7 +546,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task EventGridApiReturnBadStatus(bool extendedSessionsEnabled)
@@ -566,7 +563,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     HttpStatusCode.InternalServerError,
                     new { message = "Exception has been thrown" });
 
-            string taskHubName = TestHelpers.GetTaskHubNameFromTestName(testName, extendedSessionsEnabled);
+            string taskHubName = this.testHelper.GetTaskHubNameFromTestName(testName, extendedSessionsEnabled);
             string createdInstanceId = Guid.NewGuid().ToString("N");
             int callCount = 0;
             HttpMessageHandler httpMessageHandler = this.ConfigureEventGridMockHandler(
@@ -600,8 +597,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 },
                 asserts: out List<Action> eventGridRequestValidators);
 
-            using (ITestHost host = TestHelpers.GetJobHost(
-                this.loggerProvider,
+            using (ITestHost host = this.testHelper.GetJobHost(
                 testName,
                 extendedSessionsEnabled,
                 eventGridKeySettingName,
@@ -635,9 +631,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 if (this.useTestLogger)
                 {
-                    TestHelpers.AssertLogMessageSequence(
+                    this.testHelper.AssertLogMessageSequence(
                         this.output,
-                        this.loggerProvider,
                         "OrchestrationEventGridApiReturnBadStatus",
                         client.InstanceId,
                         extendedSessionsEnabled,
@@ -649,7 +644,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public async Task ConfigurationWithoutEventGridKeySettingName()
         {
             var eventGridKeySettingName = "";
@@ -659,8 +654,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var ex = await Assert.ThrowsAsync<ArgumentException>(
                 async () =>
                 {
-                    using (ITestHost host = TestHelpers.GetJobHost(
-                        this.loggerProvider,
+                    using (ITestHost host = this.testHelper.GetJobHost(
                         nameof(this.OrchestrationTerminate),
                         false /* extendedSessionsEnabled */,
                         eventGridKeySettingName,
@@ -676,7 +670,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public async Task ConfigurationWithoutEventGridKeyValue()
         {
             var eventGridKeySettingName = "eventGridKeySettingName";
@@ -686,8 +680,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var ex = await Assert.ThrowsAsync<ArgumentException>(
                 async () =>
                 {
-                    using (ITestHost host = TestHelpers.GetJobHost(
-                        this.loggerProvider,
+                    using (ITestHost host = this.testHelper.GetJobHost(
                         nameof(this.OrchestrationTerminate),
                         false /* extendedSessionsEnabled */,
                         eventGridKeySettingName,
@@ -703,7 +696,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public async Task ConfigurationWithMalformedEventGridTypes()
         {
             var eventGridKeyValue = "testEventGridKey";
@@ -714,8 +707,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var ex = await Assert.ThrowsAsync<ArgumentException>(
                 async () =>
                 {
-                    using (ITestHost host = TestHelpers.GetJobHost(
-                        this.loggerProvider,
+                    using (ITestHost host = this.testHelper.GetJobHost(
                         nameof(this.OrchestrationTerminate),
                         false /* extendedSessionsEnabled */,
                         eventGridKeySettingName,
@@ -732,7 +724,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public async Task ConfigurationWithUnsupportedEventGridTypes()
         {
             var eventGridKeyValue = "testEventGridKey";
@@ -743,8 +735,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var ex = await Assert.ThrowsAsync<ArgumentException>(
                 async () =>
                 {
-                    using (ITestHost host = TestHelpers.GetJobHost(
-                        this.loggerProvider,
+                    using (ITestHost host = this.testHelper.GetJobHost(
                         nameof(this.OrchestrationTerminate),
                         false /* extendedSessionsEnabled */,
                         eventGridKeySettingName,
@@ -817,7 +808,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task EventGridApiServiceUnavailableRetry(bool extendedSessionsEnabled)
@@ -874,8 +865,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 TimeSpan.FromMilliseconds(1000),
                 Array.Empty<HttpStatusCode>());
 
-            using (ITestHost host = TestHelpers.GetJobHost(
-                this.loggerProvider,
+            using (ITestHost host = this.testHelper.GetJobHost(
                 nameof(this.EventGridApiServiceUnavailableRetry),
                 extendedSessionsEnabled,
                 eventGridKeySettingName,
@@ -897,7 +887,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task EventGridApiExceptionRetry(bool extendedSessionsEnabled)
@@ -953,8 +943,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 TimeSpan.FromMilliseconds(1000),
                 Array.Empty<HttpStatusCode>());
 
-            using (ITestHost host = TestHelpers.GetJobHost(
-                this.loggerProvider,
+            using (ITestHost host = this.testHelper.GetJobHost(
                 nameof(this.EventGridApiExceptionRetry),
                 extendedSessionsEnabled,
                 eventGridKeySettingName,
@@ -976,7 +965,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task EventGridApiExceptionNoRetry(bool extendedSessionsEnabled)
@@ -1023,8 +1012,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 TimeSpan.FromMilliseconds(1000),
                 Array.Empty<HttpStatusCode>());
 
-            using (ITestHost host = TestHelpers.GetJobHost(
-                this.loggerProvider,
+            using (ITestHost host = this.testHelper.GetJobHost(
                 nameof(this.EventGridApiExceptionNoRetry),
                 extendedSessionsEnabled,
                 eventGridKeySettingName,
@@ -1046,7 +1034,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task EventGridApiExceptionRetryCountOver(bool extendedSessionsEnabled)
@@ -1093,8 +1081,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 TimeSpan.FromMilliseconds(1000),
                 Array.Empty<HttpStatusCode>());
 
-            using (ITestHost host = TestHelpers.GetJobHost(
-                this.loggerProvider,
+            using (ITestHost host = this.testHelper.GetJobHost(
                 nameof(this.EventGridApiExceptionRetryCountOver),
                 extendedSessionsEnabled,
                 eventGridKeySettingName,
@@ -1116,7 +1103,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task EventGridApiRetryStatus(bool extendedSessionsEnabled)
@@ -1187,8 +1174,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 TimeSpan.FromMilliseconds(1000),
                 new[] { (HttpStatusCode)400, (HttpStatusCode)401, (HttpStatusCode)404 });
 
-            using (ITestHost host = TestHelpers.GetJobHost(
-                this.loggerProvider,
+            using (ITestHost host = this.testHelper.GetJobHost(
                 nameof(this.EventGridApiRetryStatus),
                 extendedSessionsEnabled,
                 eventGridKeySettingName,
@@ -1210,7 +1196,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public void EventGridApiConfigureCheck()
         {
             var eventGridKeyValue = "testEventGridKey";
@@ -1275,7 +1261,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public void CustomHelperTypeActivationFailed()
         {
             var options = new DurableTaskOptions
@@ -1319,7 +1305,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public async Task CustomHelperTypeDependencyInjection()
         {
             var options = new DurableTaskOptions
@@ -1348,8 +1334,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             int callCount = 0;
             Action<string> handler = eventName => { callCount++; };
 
-            using (ITestHost host = TestHelpers.GetJobHostWithOptions(
-                this.loggerProvider,
+            using (ITestHost host = this.testHelper.GetJobHostWithOptions(
                 wrappedOptions.Value,
                 lifeCycleNotificationHelper: new MockLifeCycleNotificationHelper(handler)))
             {

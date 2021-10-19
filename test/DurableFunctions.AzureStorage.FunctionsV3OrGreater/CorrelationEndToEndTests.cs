@@ -5,18 +5,11 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
-using DurableTask.AzureStorage;
 using DurableTask.Core;
-using DurableTask.Core.Settings;
-using FluentAssertions.Collections;
 using Microsoft.ApplicationInsights.Channel;
 using Microsoft.ApplicationInsights.DataContracts;
 using Microsoft.ApplicationInsights.Extensibility.Implementation;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests;
-using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Moq;
 using Xunit;
 using Xunit.Abstractions;
@@ -24,20 +17,25 @@ using Xunit.Abstractions;
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
     [Collection("Non-Parallel Collection")]
-    public class CorrelationEndToEndTests
+    public class CorrelationEndToEndTests : IDisposable
     {
         private const string TestSiteName = "TestSite";
         private readonly ITestOutputHelper output;
-        private readonly TestLoggerProvider loggerProvider;
+        private readonly TestHelpers testHelper;
 
         public CorrelationEndToEndTests(ITestOutputHelper output)
         {
             this.output = output;
-            this.loggerProvider = new TestLoggerProvider(output);
+            this.testHelper = new TestHelpers(output);
+        }
+
+        public void Dispose()
+        {
+            this.testHelper.Dispose();
         }
 
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         [InlineData(false, "W3CTraceContext")]
         [InlineData(true, "HttpCorrelationProtocol")]
         [InlineData(true, "W3CTraceContext")]
@@ -71,7 +69,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         [InlineData(false, "W3CTraceContext")]
         [InlineData(true, "HttpCorrelationProtocol")]
         [InlineData(true, "W3CTraceContext")]
@@ -99,7 +97,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         [InlineData(false, "W3CTraceContext")]
         [InlineData(true, "HttpCorrelationProtocol")]
         [InlineData(true, "W3CTraceContext")]
@@ -128,7 +126,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         /*
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         [InlineData(false, "W3CTraceContext")]
         [InlineData(true, "HttpCorrelationProtocol")]
         [InlineData(true, "W3CTraceContext")]
@@ -198,8 +196,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             string siteNameEnvironmentVarValue = TestSiteName;
             var mockNameResolver = GetNameResolverMock(new[] { (siteNameEnvironmentVarName, siteNameEnvironmentVarValue) });
 
-            using (var host = TestHelpers.GetJobHost(
-                this.loggerProvider,
+            using (var host = this.testHelper.GetJobHost(
                 testName,
                 extendedSessions,
                 options: options,
@@ -225,7 +222,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
          * that the warning isn't logged when the environment variable is set.
          */
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         [InlineData(false, false)]
         [InlineData(false, true)]
         [InlineData(true, false)]
@@ -247,21 +244,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 ? GetNameResolverMock(new[] { (environmentVariableName, environmentVariableValue) })
                 : GetNameResolverMock(new[] { (environmentVariableName, string.Empty) });
 
-            using (var host = TestHelpers.GetJobHost(
-                this.loggerProvider,
+            using (var host = this.testHelper.GetJobHost(
                 "SingleOrchestration",
                 extendedSessions,
                 nameResolver: mockNameResolver.Object,
                 options: options))
             {
                 string warningMessage = "'APPINSIGHTS_INSTRUMENTATIONKEY' isn't defined in the current environment variables, but Distributed Tracing is enabled. Please set 'APPINSIGHTS_INSTRUMENTATIONKEY' to use Distributed Tracing.";
-                var warningLogMessage = this.loggerProvider.GetAllLogMessages().Where(l => l.FormattedMessage.StartsWith(warningMessage));
+                var warningLogMessage = this.testHelper.GetAllLogMessages().Where(l => l.FormattedMessage.StartsWith(warningMessage));
 
                 string settingUpTelemetryClientMessage = "Setting up the telemetry client...";
-                var settingUpTelemetryClientLogMessage = this.loggerProvider.GetAllLogMessages().Where(l => l.FormattedMessage.StartsWith(settingUpTelemetryClientMessage));
+                var settingUpTelemetryClientLogMessage = this.testHelper.GetAllLogMessages().Where(l => l.FormattedMessage.StartsWith(settingUpTelemetryClientMessage));
 
                 string readingInstrumentationKeyMessage = "Reading APPINSIGHTS_INSTRUMENTATIONKEY...";
-                var readingInstrumentationKeyLogMessage = this.loggerProvider.GetAllLogMessages().Where(l => l.FormattedMessage.StartsWith(readingInstrumentationKeyMessage));
+                var readingInstrumentationKeyLogMessage = this.testHelper.GetAllLogMessages().Where(l => l.FormattedMessage.StartsWith(readingInstrumentationKeyMessage));
 
                 if (keyIsSet)
                 {

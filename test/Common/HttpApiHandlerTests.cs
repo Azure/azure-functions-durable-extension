@@ -26,7 +26,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         private const string EmptyEntityKeySymbol = "$";
 
         [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public void CreateCheckStatusResponse_Throws_Exception_When_NotificationUrl_Missing()
         {
             var options = new DurableTaskOptions()
@@ -45,7 +45,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public async Task WaitForCompletionOrCreateCheckStatusResponseAsync_Throws_Exception_When_Bad_Timeout_Request()
         {
             var httpApiHandler = new HttpApiHandler(GetTestExtension(), null);
@@ -66,7 +66,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public void OutOfProcEndpoints_UpdateWithNewWebhookUri()
         {
             var httpApiHandler = new HttpApiHandler(GetTestExtension(), null);
@@ -105,7 +105,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public async Task CreateCheckStatusResponse_Returns_Correct_HTTP_202_Response()
         {
             var httpApiHandler = new HttpApiHandler(GetTestExtension(), null);
@@ -143,7 +143,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public void CreateCheckStatus_Returns_Correct_HttpManagementPayload_based_on_default_values()
         {
             var httpApiHandler = new HttpApiHandler(GetTestExtension(), null);
@@ -168,7 +168,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public void CreateCheckStatus_Returns_Correct_HttpManagementPayload_based_on_custom_taskhub_value()
         {
             var httpApiHandler = new HttpApiHandler(GetTestExtension(), null);
@@ -193,7 +193,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public void CreateCheckStatus_Returns_Correct_HttpManagementPayload_based_on_custom_connection_value()
         {
             var httpApiHandler = new HttpApiHandler(GetTestExtension(), null);
@@ -218,7 +218,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public void CreateCheckStatus_Returns_Correct_HttpManagementPayload_based_on_custom_values()
         {
             var httpApiHandler = new HttpApiHandler(GetTestExtension(), null);
@@ -243,7 +243,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public async Task WaitForCompletionOrCreateCheckStatusResponseAsync_Returns_Custom_HttpManagementPayload_After_Timeout()
         {
             var httpApiHandler = new HttpApiHandler(GetTestExtension(), null);
@@ -283,7 +283,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public async Task WaitForCompletionOrCreateCheckStatusResponseAsync_Returns_HTTP_202_Response_After_Timeout()
         {
             var httpApiHandler = new HttpApiHandler(GetTestExtension(), null);
@@ -325,7 +325,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public async Task WaitForCompletionOrCreateCheckStatusResponseAsync_Returns_HTTP_200_Response()
         {
             var httpApiHandler = new HttpApiHandler(GetTestExtension(), null);
@@ -349,7 +349,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public async Task WaitForCompletionOrCreateCheckStatusResponseAsync_Returns_HTTP_200_Response_After_Few_Iterations()
         {
             var httpApiHandler = new HttpApiHandler(GetTestExtension(), null);
@@ -376,14 +376,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public async Task WaitForCompletionOrCreateCheckStatusResponseAsync_Returns_Defaults_When_Runtime_Status_is_Terminated()
         {
             await this.CheckRuntimeStatus(TestConstants.InstanceIdTerminated, OrchestrationRuntimeStatus.Terminated);
         }
 
         [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public async Task WaitForCompletionOrCreateCheckStatusResponseAsync_Returns_Defaults_When_Runtime_Status_is_Canceled()
         {
             await this.CheckRuntimeStatus(TestConstants.InstanceIdCanceled, OrchestrationRuntimeStatus.Canceled);
@@ -414,7 +414,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Theory]
         [InlineData(true, HttpStatusCode.InternalServerError)]
         [InlineData(false, HttpStatusCode.OK)]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public async Task HandleGetStatusRequestAsync_Failed_Orchestration_Config_Response_Code(bool returnInternalServerErrorOnFailure, HttpStatusCode statusCode)
         {
             var list = (IList<DurableOrchestrationStatus>)new List<DurableOrchestrationStatus>
@@ -449,7 +449,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public async Task GetAllStatus_is_Success()
         {
             var result = new OrchestrationStatusQueryResult
@@ -499,7 +499,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public async Task GetQueryStatus_is_Success()
         {
             // Build mock
@@ -561,7 +561,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public async Task GetQueryStatusWithPaging_is_Success()
         {
             // Build mock
@@ -636,7 +636,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public async Task GetQueryMultipleRuntimeStatus_is_Success()
         {
             // Build Mock
@@ -701,7 +701,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public async Task GetQueryWithoutRuntimeStatus_is_Success()
         {
             // Build mock
@@ -759,7 +759,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public async Task TerminateInstanceWebhook()
         {
             string testInstanceId = Guid.NewGuid().ToString("N");
@@ -806,7 +806,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public async Task RestartInstance_Is_Success(bool restartWithNewInstanceId)
         {
             string testInstanceId = Guid.NewGuid().ToString();
@@ -865,7 +865,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public async Task RestartInstanceAndWaitToComplete_Is_Success(bool restartWithNewInstanceId)
         {
             string testInstanceId = Guid.NewGuid().ToString();
@@ -922,7 +922,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public async Task RestartInstance_Returns_HTTP_400_On_Invalid_InstanceId()
         {
             string testBadInstanceId = Guid.NewGuid().ToString("N");
@@ -955,7 +955,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [InlineData(null, true)]
         [InlineData(TestConstants.RandomInstanceId, false)]
         [InlineData(TestConstants.RandomInstanceId, true)]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public async Task StartNewInstance_Is_Success(string instanceId, bool hasContentHeader)
         {
             string testInstanceId = string.IsNullOrEmpty(instanceId) ? Guid.NewGuid().ToString("N") : instanceId;
@@ -1018,7 +1018,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [InlineData(null, true)]
         [InlineData(TestConstants.RandomInstanceId, false)]
         [InlineData(TestConstants.RandomInstanceId, true)]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public async Task StartNewInstanceAndWaitToComplete_Is_Success(string instanceId, bool hasContentHeader)
         {
             string testInstanceId = string.IsNullOrEmpty(instanceId) ? Guid.NewGuid().ToString("N") : instanceId;
@@ -1078,7 +1078,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public async Task StartNewInstance_Returns_HTTP_400_On_Bad_JSON()
         {
             string testInstanceId = Guid.NewGuid().ToString("N");
@@ -1113,7 +1113,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public async Task StartNewInstance_Returns_HTTP_400_On_Missing_Function()
         {
             string testInstanceId = Guid.NewGuid().ToString("N");
@@ -1150,7 +1150,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [InlineData(false, false)]
         [InlineData(true, true)]
         [InlineData(true, false)]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public async Task GetEntity_Returns_State_Or_HTTP_404(bool hasKey, bool exists)
         {
             string entity = "SomeEntity";
@@ -1203,7 +1203,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [InlineData(true, false, true)]
         [InlineData(true, true, false)]
         [InlineData(true, true, true)]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public async Task Entities_Query_Calls_ListEntitiesAsync(bool useNameFilter, bool fetchState, bool useContinuationToken)
         {
             // Build mock
@@ -1321,7 +1321,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [InlineData(true, true, false)]
         [InlineData(true, true, true, true)]
         [InlineData(true, true, true, false)]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public async Task SignalEntity_Is_Success(bool hasKey, bool hasOp, bool hasContent, bool hasJsonContent = false)
         {
             string entity = "SomeEntity";

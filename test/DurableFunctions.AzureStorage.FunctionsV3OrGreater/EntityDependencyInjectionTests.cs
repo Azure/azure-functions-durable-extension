@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Blob;
 using Xunit;
@@ -12,29 +11,27 @@ using Xunit.Abstractions;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
-    public class EntityDependencyInjectionTests
+    public class EntityDependencyInjectionTests : IDisposable
     {
         private readonly ITestOutputHelper output;
-
-        private readonly TestLoggerProvider loggerProvider;
+        private readonly TestHelpers testHelper;
 
         public EntityDependencyInjectionTests(ITestOutputHelper output)
         {
             this.output = output;
-            this.loggerProvider = new TestLoggerProvider(output);
+            this.testHelper = new TestHelpers(output);
         }
 
-#pragma warning disable xUnit1013 // Public method should be marked as test
         public void Dispose()
-#pragma warning restore xUnit1013 // Public method should be marked as test
         {
+            this.testHelper.Dispose();
         }
 
         /// <summary>
         /// End-to-end test which validates basic use of the object dispatch feature with dependency injection.
         /// </summary>
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task DurableEntity_EntityWithDependencyInjection(bool extendedSessions)
@@ -44,11 +41,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 nameof(TestEntityWithDependencyInjectionHelpers.EnvironmentOrchestration),
             };
 
-            using (var host = TestHelpers.GetJobHost(
-                this.loggerProvider,
+            using (var host = this.testHelper.GetJobHost(
                 nameof(this.DurableEntity_EntityWithDependencyInjection),
                 extendedSessions,
-                nameResolver: new TestEntityWithDependencyInjectionHelpers.DummyEnvironmentVariableResolver()))
+                nameResolver: new TestEntityWithDependencyInjectionHelpers.DummyEnvironmentVariableResolver(),
+                types: new Type[] { typeof(TestEntityWithDependencyInjectionHelpers), typeof(ClientFunctions) }))
             {
                 await host.StartAsync();
 
@@ -69,7 +66,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// End-to-end test which validates basic use of the object dispatch feature with dependency injection.
         /// </summary>
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task DurableEntity_DependencyInjectionAndBindings(bool extendedSessions)
@@ -86,11 +83,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             CloudBlobContainer cloudBlobContainer = cloudBlobClient.GetContainerReference(TestEntityWithDependencyInjectionHelpers.BlobContainerPath);
             await cloudBlobContainer.CreateIfNotExistsAsync();
 
-            using (var host = TestHelpers.GetJobHost(
-                this.loggerProvider,
+            using (var host = this.testHelper.GetJobHost(
                 nameof(this.DurableEntity_DependencyInjectionAndBindings),
                 extendedSessions,
-                nameResolver: new TestEntityWithDependencyInjectionHelpers.DummyEnvironmentVariableResolver()))
+                nameResolver: new TestEntityWithDependencyInjectionHelpers.DummyEnvironmentVariableResolver(),
+                types: new Type[] { typeof(TestEntityWithDependencyInjectionHelpers), typeof(ClientFunctions) }))
             {
                 await host.StartAsync();
 

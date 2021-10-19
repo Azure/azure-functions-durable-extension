@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
-    internal class LogMessage
+    public class LogMessage
     {
         public LogLevel Level { get; set; }
 

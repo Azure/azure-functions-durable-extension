@@ -9,7 +9,7 @@ using Xunit.Abstractions;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
-    internal class TestEntityClient
+    public class TestEntityClient
     {
         private readonly EntityId entityId;
 

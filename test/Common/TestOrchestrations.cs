@@ -15,7 +15,7 @@ using static Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests.DurableTaskEnd
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
-    internal static class TestOrchestrations
+    public static class TestOrchestrations
     {
         public const char BigValueChar = '*';
 

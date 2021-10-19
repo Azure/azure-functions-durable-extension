@@ -7,7 +7,7 @@ using Xunit.Abstractions;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
-    internal static class DurableTaskHostExtensions
+    public static class DurableTaskHostExtensions
     {
         public static async Task<TestDurableClient> StartOrchestratorAsync(
             this ITestHost host,

@@ -16,7 +16,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
     public class AzureStorageDurabilityProviderFactoryTests
     {
         [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public void DefaultWorkerId_IsMachineName()
         {
             var connectionStringResolver = new TestConnectionStringResolver();
@@ -35,7 +35,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         }
 
         [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public void ConsumptionDefaultsAreApplied()
         {
             var connectionStringResolver = new TestConnectionStringResolver();
@@ -57,7 +57,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         }
 
         [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public void ConsumptionDefaultsForPythonAreApplied()
         {
             var connectionStringResolver = new TestConnectionStringResolver();
@@ -79,7 +79,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         }
 
         [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public void ConsumptionDefaultsAreNotAlwaysApplied()
         {
             var connectionStringResolver = new TestConnectionStringResolver();
@@ -103,7 +103,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         }
 
         [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public void ConsumptionDefaulstDoNotOverrideCustomerOptions()
         {
             var connectionStringResolver = new TestConnectionStringResolver();
@@ -132,7 +132,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         }
 
         [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public void EnvironmentIsVMSS_WorkerIdFromEnvironmentVariables()
         {
             var connectionStringResolver = new TestConnectionStringResolver();

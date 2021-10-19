@@ -12,26 +12,30 @@ using Xunit.Abstractions;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
-    public class BindingTests
+    public class BindingTests : IDisposable
     {
         private readonly ITestOutputHelper output;
-        private readonly TestLoggerProvider loggerProvider;
+        private readonly TestHelpers testHelper;
 
         public BindingTests(ITestOutputHelper output)
         {
             this.output = output;
-            this.loggerProvider = new TestLoggerProvider(output);
+            this.testHelper = new TestHelpers(output);
+        }
+
+        public void Dispose()
+        {
+            this.testHelper.Dispose();
         }
 
         /// <summary>
         /// Tests DurableClient attribute binds a client instance with the IDurableOrchestrationClient interface.
         /// </summary>
         [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public async Task IDurableOrchestrationClientBinding()
         {
-            using (var host = TestHelpers.GetJobHost(
-                this.loggerProvider,
+            using (var host = this.testHelper.GetJobHost(
                 nameof(this.IDurableOrchestrationClientBinding),
                 enableExtendedSessions: false))
             {
@@ -47,11 +51,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// Tests DurableClient attribute binds a client instance with the IDurableEntityClient interface.
         /// </summary>
         [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public async Task IDurableEntityClientBinding()
         {
-            using (var host = TestHelpers.GetJobHost(
-                this.loggerProvider,
+            using (var host = this.testHelper.GetJobHost(
                 nameof(this.IDurableEntityClientBinding),
                 enableExtendedSessions: false))
             {
@@ -67,11 +70,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// Tests OrchestrationClient attribute binds a client instance with the IDurableOrchestrationClient interface.
         /// </summary>
         [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public async Task IDurableOrchestrationClientBindingBackComp()
         {
-            using (var host = TestHelpers.GetJobHost(
-                this.loggerProvider,
+            using (var host = this.testHelper.GetJobHost(
                 nameof(this.IDurableOrchestrationClientBinding),
                 enableExtendedSessions: false))
             {
@@ -97,11 +99,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// Tests OrchestrationClient attribute binds a client instance with the IDurableEntityClient interface.
         /// </summary>
         [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public async Task IDurableEntityClientBindingBackComp()
         {
-            using (var host = TestHelpers.GetJobHost(
-                this.loggerProvider,
+            using (var host = this.testHelper.GetJobHost(
                 nameof(this.IDurableEntityClientBindingBackComp),
                 enableExtendedSessions: false))
             {
@@ -122,12 +123,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory + "_BVT")]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory + "_BVT")]
         [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         private async Task ActivityTriggerAsJObject(string storageProviderType)
         {
-            using (ITestHost host = TestHelpers.GetJobHost(this.loggerProvider, nameof(this.ActivityTriggerAsJObject), false, storageProviderType))
+            using (ITestHost host = this.testHelper.GetJobHost(nameof(this.ActivityTriggerAsJObject), false, storageProviderType))
             {
                 await host.StartAsync();
 
@@ -149,11 +150,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task ActivityTriggerAsPOCO(string storageProviderType)
         {
-            using (ITestHost host = TestHelpers.GetJobHost(this.loggerProvider, nameof(this.ActivityTriggerAsPOCO), false, storageProviderType))
+            using (ITestHost host = this.testHelper.GetJobHost(nameof(this.ActivityTriggerAsPOCO), false, storageProviderType))
             {
                 await host.StartAsync();
 
@@ -176,11 +177,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task ActivityTriggerAsNumber(string storageProviderType)
         {
-            using (ITestHost host = TestHelpers.GetJobHost(this.loggerProvider, nameof(this.ActivityTriggerAsNumber), false, storageProviderType))
+            using (ITestHost host = this.testHelper.GetJobHost(nameof(this.ActivityTriggerAsNumber), false, storageProviderType))
             {
                 await host.StartAsync();
 
@@ -201,11 +202,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task BindToBlobViaParameterName(string storageProviderType)
         {
-            using (ITestHost host = TestHelpers.GetJobHost(this.loggerProvider, nameof(this.BindToBlobViaParameterName), false, storageProviderType))
+            using (ITestHost host = this.testHelper.GetJobHost(nameof(this.BindToBlobViaParameterName), false, storageProviderType))
             {
                 await host.StartAsync();
 
@@ -252,11 +253,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task BindToBlobViaPOCO(string storageProviderType)
         {
-            using (ITestHost host = TestHelpers.GetJobHost(this.loggerProvider, nameof(this.BindToBlobViaPOCO), false, storageProviderType))
+            using (ITestHost host = this.testHelper.GetJobHost(nameof(this.BindToBlobViaPOCO), false, storageProviderType))
             {
                 await host.StartAsync();
 

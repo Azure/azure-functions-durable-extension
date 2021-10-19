@@ -7,16 +7,18 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using DurableFunctions.Tests.Common;
 using DurableTask.AzureStorage;
 using Microsoft.ApplicationInsights.Channel;
+using Microsoft.Azure.WebJobs.Host.TestCommon;
+using Microsoft.Diagnostics.Tracing;
+using Microsoft.Extensions.DependencyInjection;
 #if !FUNCTIONS_V1
 using Microsoft.Extensions.Hosting;
 #endif
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
-using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.WindowsAzure.Storage;
@@ -27,8 +29,22 @@ using Xunit.Abstractions;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
-    internal static class TestHelpers
+    public class TestHelpers : IDisposable
     {
+#if FUNCTIONSV1
+        public const string DefaultTestCategory = "FunctionsV1";
+#else
+        public const string DefaultTestCategory = "Functions";
+#endif
+        private readonly ITestOutputHelper output;
+
+        private readonly TestLoggerProvider loggerProvider;
+        private readonly bool useTestLogger;
+        private readonly LogEventTraceListener eventSourceListener;
+
+        public const string BVTTestCategory = DefaultTestCategory + "_BVT";
+        public const string FlakeyTestCategory = DefaultTestCategory + "_Flakey";
+
         // Friendly strings for provider types so easier to read in enumerated test output
         public const string AzureStorageProviderType = "azure_storage";
         public const string EmulatorProviderType = "emulator";
@@ -37,8 +53,144 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public const string LogCategory = "Host.Triggers.DurableTask";
         public const string EmptyStorageProviderType = "empty";
 
-        public static ITestHost GetJobHost(
+        protected Dictionary<DurableTaskOptions, TestNameResolver> nameResolvers;
+
+        public TestHelpers(ITestOutputHelper outputHelper)
+        {
+            this.output = outputHelper;
+            this.loggerProvider = new TestLoggerProvider(outputHelper);
+            this.eventSourceListener = new LogEventTraceListener();
+            this.useTestLogger = this.IsLogFriendlyPlatform();
+            this.StartLogCapture();
+            this.nameResolvers = new Dictionary<DurableTaskOptions, TestNameResolver>();
+        }
+
+#if !FUNCTIONS_V1
+        public virtual void RegisterDurabilityFactory(IWebJobsBuilder builder, IOptions<DurableTaskOptions> options, Type durableProviderFactoryType = null)
+        {
+            builder.AddTestDurableTask(options, durableProviderFactoryType);
+        }
+
+        public virtual Task PreHostStartupOp(IOptions<DurableTaskOptions> options)
+        {
+            return Task.CompletedTask;
+        }
+
+        public virtual Task PostHostShutdownOp(IOptions<DurableTaskOptions> options)
+        {
+            return Task.CompletedTask;
+        }
+
+        public virtual void AddSettings(DurableTaskOptions options, TestNameResolver testNameResolver)
+        {
+            this.nameResolvers[options] = testNameResolver;
+        }
+#endif
+
+        private void StartLogCapture()
+        {
+            if (this.useTestLogger)
+            {
+                // Use GUID for eventsource, as TraceEventProviders.GetProviderGuidByName() is causing
+                // the CI to abort runs.
+                var traceConfig = new Dictionary<string, TraceEventLevel>
+                {
+                    { "4c4ad4a2-f396-5e18-01b6-618c12a10433", TraceEventLevel.Informational }, // DurableTask.AzureStorage
+                    { "7DA4779A-152E-44A2-A6F2-F80D991A5BEE", TraceEventLevel.Warning }, // DurableTask.Core
+                };
+
+                this.eventSourceListener.OnTraceLog += this.OnEventSourceListenerTraceLog;
+
+                string sessionName = "DTFxTrace" + Guid.NewGuid().ToString("N");
+                this.eventSourceListener.CaptureLogs(sessionName, traceConfig);
+            }
+        }
+
+        private void OnEventSourceListenerTraceLog(object sender, LogEventTraceListener.TraceLogEventArgs e)
+        {
+            this.output.WriteLine($"      ETW: {e.ProviderName} [{e.Level}] : {e.Message}");
+        }
+
+        // Testing on Linux currently throws exception in LogEventTraceListener.
+        // May also need to limit on OSX.
+        private bool IsLogFriendlyPlatform()
+        {
+            return !RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
+        }
+
+        public ITestHost CreateJobHost(
+#if !FUNCTIONS_V1
+            IOptions<DurableTaskOptions> options,
+            string storageProvider,
+            Type durabilityProviderFactoryType,
             ILoggerProvider loggerProvider,
+            TestNameResolver nameResolver,
+            IDurableHttpMessageHandlerFactory durableHttpMessageHandler,
+            ILifeCycleNotificationHelper lifeCycleNotificationHelper,
+            IMessageSerializerSettingsFactory serializerSettingsFactory,
+            Action<ITelemetry> onSend,
+            bool addDurableClientFactory,
+            ITypeLocator typeLocator)
+        {
+            this.AddSettings(options.Value, nameResolver);
+            return PlatformSpecificHelpers.CreateJobHost(
+                options,
+                (builder) => this.RegisterDurabilityFactory(builder, options, durabilityProviderFactoryType),
+                loggerProvider,
+                nameResolver,
+                durableHttpMessageHandler,
+                lifeCycleNotificationHelper,
+                serializerSettingsFactory,
+                onSend,
+                addDurableClientFactory,
+                typeLocator,
+                () => this.PreHostStartupOp(options),
+                () => this.PostHostShutdownOp(options));
+        }
+#else
+            IOptions<DurableTaskOptions> options,
+            string storageProvider,
+            ILoggerProvider loggerProvider,
+            INameResolver nameResolver,
+            IDurableHttpMessageHandlerFactory durableHttpMessageHandler,
+            ILifeCycleNotificationHelper lifeCycleNotificationHelper,
+            IMessageSerializerSettingsFactory serializerSettingsFactory,
+            IApplicationLifetimeWrapper shutdownNotificationService = null,
+#pragma warning disable CS0612 // Type or member is obsolete
+            Action<ITelemetry> onSend = null,
+            IPlatformInformationService platformInformationService = null)
+        {
+            return PlatformSpecificHelpers.CreateJobHost(
+                options,
+                storageProvider,
+                loggerProvider,
+                nameResolver,
+                durableHttpMessageHandler,
+                lifeCycleNotificationHelper,
+                serializerSettingsFactory,
+                shutdownNotificationService,
+                onSend,
+                platformInformationService);
+        }
+#endif
+
+        public string GetTaskHubSuffix()
+        {
+#if FUNCTIONS_V1
+            return "V1";
+#else
+            return string.Empty;
+#endif
+        }
+
+#if !FUNCTIONS_V1
+        public IHost CreateJobHostExternalEnvironment(IConnectionStringResolver connectionStringResolver)
+        {
+            return PlatformSpecificHelpers.CreateJobHostExternalEnvironment(connectionStringResolver);
+        }
+#endif
+
+        public ITestHost GetJobHost(
             string testName,
             bool enableExtendedSessions,
             string eventGridKeySettingName = null,
@@ -89,7 +241,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             // Some tests require knowing the task hub that the provider uses. Because of that, they will instantiate the exact
             // task hub name and require the usage of that task hub. Otherwise, generate a partially random task hub from the
             // test name and properties of the test.
-            options.HubName = exactTaskHubName ?? GetTaskHubNameFromTestName(testName, enableExtendedSessions);
+            options.HubName = exactTaskHubName ?? this.GetTaskHubNameFromTestName(testName, enableExtendedSessions);
 
             options.Tracing.TraceInputsAndOutputs = true;
             options.Tracing.TraceReplayEvents = traceReplayEvents;
@@ -148,24 +300,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 options.StorageProvider["maxQueuePollingInterval"] = maxQueuePollingInterval.Value;
             }
 
-            return GetJobHostWithOptions(
-                loggerProvider: loggerProvider,
+            return this.GetJobHostWithOptions(
                 durableTaskOptions: options,
                 storageProviderType: storageProviderType,
                 nameResolver: nameResolver,
                 durableHttpMessageHandler: durableHttpMessageHandler,
                 lifeCycleNotificationHelper: lifeCycleNotificationHelper,
                 serializerSettings: serializerSettings,
-                onSend: onSend,
 #if !FUNCTIONS_V1
+                onSend: onSend,
                 addDurableClientFactory: addDurableClientFactory,
                 types: types,
 #endif
                 durabilityProviderFactoryType: durabilityProviderFactoryType);
         }
 
-        public static ITestHost GetJobHostWithOptions(
-            ILoggerProvider loggerProvider,
+        public ITestHost GetJobHostWithOptions(
             DurableTaskOptions durableTaskOptions,
             string storageProviderType = AzureStorageProviderType,
             INameResolver nameResolver = null,
@@ -191,7 +341,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             ITypeLocator typeLocator = types == null ? GetTypeLocator() : new ExplicitTypeLocator(types);
 
-            return PlatformSpecificHelpers.CreateJobHost(
+            return this.CreateJobHost(
                 options: optionsWrapper,
                 storageProvider: storageProviderType,
 #if !FUNCTIONS_V1
@@ -199,31 +349,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 addDurableClientFactory: addDurableClientFactory,
                 typeLocator: typeLocator,
 #endif
-                loggerProvider: loggerProvider,
+                onSend: onSend,
+                loggerProvider: this.loggerProvider,
                 nameResolver: testNameResolver,
                 durableHttpMessageHandler: durableHttpMessageHandler,
                 lifeCycleNotificationHelper: lifeCycleNotificationHelper,
-                serializerSettingsFactory: serializerSettings,
-                onSend: onSend);
+                serializerSettingsFactory: serializerSettings);
         }
 
 #if !FUNCTIONS_V1
-        public static IHost GetJobHostExternalEnvironment(IConnectionStringResolver connectionStringResolver = null)
+        public IHost GetJobHostExternalEnvironment(IConnectionStringResolver connectionStringResolver = null)
         {
             if (connectionStringResolver == null)
             {
                 connectionStringResolver = new TestConnectionStringResolver();
             }
 
-            return GetJobHostWithOptionsForDurableClientFactoryExternal(connectionStringResolver);
+            return this.GetJobHostWithOptionsForDurableClientFactoryExternal(connectionStringResolver);
         }
 
-        public static IHost GetJobHostWithOptionsForDurableClientFactoryExternal(IConnectionStringResolver connectionStringResolver)
+        public IHost GetJobHostWithOptionsForDurableClientFactoryExternal(IConnectionStringResolver connectionStringResolver)
         {
-            return PlatformSpecificHelpers.CreateJobHostExternalEnvironment(connectionStringResolver);
+            return this.CreateJobHostExternalEnvironment(connectionStringResolver);
         }
 
-        public static ITestHost GetJobHostWithMultipleDurabilityProviders(
+        public ITestHost GetJobHostWithMultipleDurabilityProviders(
             DurableTaskOptions options = null,
             IEnumerable<IDurabilityProviderFactory> durabilityProviderFactories = null)
         {
@@ -232,12 +382,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 options = new DurableTaskOptions();
             }
 
-            return GetJobHostWithOptionsWithMultipleDurabilityProviders(
+            return this.GetJobHostWithOptionsWithMultipleDurabilityProviders(
                 options,
                 durabilityProviderFactories);
         }
 
-        public static ITestHost GetJobHostWithOptionsWithMultipleDurabilityProviders(
+        public ITestHost GetJobHostWithOptionsWithMultipleDurabilityProviders(
             DurableTaskOptions durableTaskOptions,
             IEnumerable<IDurabilityProviderFactory> durabilityProviderFactories = null)
         {
@@ -349,6 +499,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// Helper function to regularly poll for some condition until it is true. If timeout hits, throw timeoutexception.
         /// </summary>
         /// <param name="predicate">Predicate to wait until it returns true.</param>
+        /// <param name="conditionDescription">Condition description in exception if condition not met.</param>
         /// <param name="timeout">Time to wait until predicate is true.</param>
         /// <param name="retryInterval">How frequently to test predicate. Defaults to 100 ms.</param>
         public static async Task WaitUntilTrue(Func<bool> predicate, string conditionDescription, TimeSpan timeout, TimeSpan? retryInterval = null)
@@ -375,11 +526,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         // Create a valid task hub from the test name, and add a random suffix to avoid conflicts
-        public static string GetTaskHubNameFromTestName(string testName, bool enableExtendedSessions)
+        public string GetTaskHubNameFromTestName(string testName, bool enableExtendedSessions)
         {
             string strippedTestName = testName.Replace("_", "");
             string truncatedTestName = strippedTestName.Substring(0, Math.Min(35, strippedTestName.Length));
-            string testPropertiesSuffix = (enableExtendedSessions ? "EX" : "") + PlatformSpecificHelpers.VersionSuffix;
+            string testPropertiesSuffix = (enableExtendedSessions ? "EX" : "") + this.GetTaskHubSuffix();
             string randomSuffix = Guid.NewGuid().ToString().Substring(0, 4);
             return truncatedTestName + testPropertiesSuffix + randomSuffix;
         }
@@ -394,9 +545,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 typeof(TestEntityClasses),
                 typeof(ClientFunctions),
                 typeof(UnconstructibleClass),
-#if !FUNCTIONS_V1
-                typeof(TestEntityWithDependencyInjectionHelpers),
-#endif
             };
 
             ITypeLocator typeLocator = new ExplicitTypeLocator(types);
@@ -408,9 +556,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return Environment.GetEnvironmentVariable("AzureWebJobsStorage");
         }
 
-        public static Task DeleteTaskHubResources(string testName, bool enableExtendedSessions)
+        public Task DeleteTaskHubResources(string testName, bool enableExtendedSessions)
         {
-            string hubName = GetTaskHubNameFromTestName(testName, enableExtendedSessions);
+            string hubName = this.GetTaskHubNameFromTestName(testName, enableExtendedSessions);
             var settings = new AzureStorageOrchestrationServiceSettings
             {
                 TaskHubName = hubName,
@@ -421,59 +569,72 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return service.DeleteAsync();
         }
 
-        public static void AssertLogMessageSequence(
+        public TestLogger GetLogger(string categoryName)
+        {
+            return this.loggerProvider.CreatedLoggers.FirstOrDefault(logger => string.Equals(categoryName, logger.Category, StringComparison.OrdinalIgnoreCase));
+        }
+
+        public IEnumerable<LogMessage> GetAllLogMessages()
+        {
+            return this.loggerProvider.GetAllLogMessages();
+        }
+
+        public void AssertLogMessageSequence(
             ITestOutputHelper testOutput,
-            TestLoggerProvider loggerProvider,
             string testName,
             string instanceId,
             bool filterOutReplayLogs,
             string[] orchestratorFunctionNames,
             string activityFunctionName = null)
         {
-            List<string> messageIds;
-            string timeStamp;
-            var logMessages = GetLogMessages(loggerProvider, testName, instanceId, out messageIds, out timeStamp);
+            if (this.useTestLogger)
+            {
+                List<string> messageIds;
+                string timeStamp;
+                var logMessages = this.GetLogMessages(testName, instanceId, out messageIds, out timeStamp);
 
-            var expectedLogMessages = GetExpectedLogMessages(
-                testName,
-                messageIds,
-                orchestratorFunctionNames,
-                filterOutReplayLogs,
-                activityFunctionName,
-                timeStamp);
-            var actualLogMessages = logMessages.Select(m => m.FormattedMessage).ToList();
+                var expectedLogMessages = ExpectedTestLogs.GetExpectedLogMessages(
+                    testName,
+                    messageIds,
+                    orchestratorFunctionNames,
+                    filterOutReplayLogs,
+                    activityFunctionName,
+                    timeStamp);
+                var actualLogMessages = logMessages.Select(m => m.FormattedMessage).ToList();
 
-            AssertLogMessages(expectedLogMessages, actualLogMessages, testOutput);
+                AssertLogMessages(expectedLogMessages, actualLogMessages, testOutput);
+            }
         }
 
-        public static void UnhandledOrchesterationExceptionWithRetry_AssertLogMessageSequence(
+        public void UnhandledOrchesterationExceptionWithRetry_AssertLogMessageSequence(
             ITestOutputHelper testOutput,
-            TestLoggerProvider loggerProvider,
             string testName,
             string subOrchestrationInstanceId,
             string[] orchestratorFunctionNames,
             string activityFunctionName = null)
         {
-            List<string> messageIds;
-            string timeStamp;
-            var logMessages = GetLogMessages(loggerProvider, testName, subOrchestrationInstanceId, out messageIds, out timeStamp);
+            if (this.useTestLogger)
+            {
+                List<string> messageIds;
+                string timeStamp;
+                var logMessages = this.GetLogMessages(testName, subOrchestrationInstanceId, out messageIds, out timeStamp);
 
-            var actualLogMessages = logMessages.Select(m => m.FormattedMessage).ToList();
-            var exceptionCount =
-                actualLogMessages.FindAll(m => m.Contains("failed with an error")).Count;
+                var actualLogMessages = logMessages.Select(m => m.FormattedMessage).ToList();
+                var exceptionCount =
+                    actualLogMessages.FindAll(m => m.Contains("failed with an error")).Count;
 
-            // The sub-orchestration call is configured to make at most 3 attempts.
-            Assert.Equal(3, exceptionCount);
+                // The sub-orchestration call is configured to make at most 3 attempts.
+                Assert.Equal(3, exceptionCount);
+            }
         }
 
-        private static List<LogMessage> GetLogMessages(
-            TestLoggerProvider loggerProvider,
+        private List<LogMessage> GetLogMessages(
             string testName,
             string instanceId,
             out List<string> instanceIds,
             out string timeStamp)
         {
-            var logger = loggerProvider.CreatedLoggers.Single(l => l.Category == LogCategory);
+            var logger = this.loggerProvider.CreatedLoggers.Single(l => l.Category == LogCategory);
             var logMessages = logger.LogMessages.ToList();
 
             // Remove any logs which may have been generated by concurrently executing orchestrations.
@@ -503,79 +664,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return logMessages;
         }
 
-        private static IList<string> GetExpectedLogMessages(
-            string testName,
-            List<string> instanceIds,
-            string[] orchestratorFunctionNames,
-            bool extendedSessions,
-            string activityFunctionName = null,
-            string timeStamp = null,
-            string[] latencyMs = null)
-        {
-            var messages = new List<string>();
-            switch (testName)
-            {
-                case "HelloWorldOrchestration_Inline":
-                    messages = GetLogs_HelloWorldOrchestration_Inline(instanceIds[0], orchestratorFunctionNames);
-                    break;
-                case "HelloWorldOrchestration_Activity":
-                    messages = GetLogs_HelloWorldOrchestration_Activity(instanceIds[0], orchestratorFunctionNames, activityFunctionName);
-                    break;
-                case "TerminateOrchestration":
-                    messages = GetLogs_TerminateOrchestration(instanceIds[0], orchestratorFunctionNames);
-                    break;
-                case "TimerCancellation":
-                    messages = GetLogs_TimerCancellation(instanceIds[0], orchestratorFunctionNames, timeStamp);
-                    break;
-                case "TimerExpiration":
-                    messages = GetLogs_TimerExpiration(instanceIds[0], orchestratorFunctionNames, timeStamp);
-                    break;
-                case "UnhandledOrchestrationException":
-                    messages = GetLogs_UnhandledOrchestrationException(instanceIds[0], orchestratorFunctionNames);
-                    break;
-                case "UnhandledActivityException":
-                    messages = GetLogs_UnhandledActivityException(instanceIds[0], orchestratorFunctionNames, activityFunctionName);
-                    break;
-                case "UnhandledActivityExceptionWithRetry":
-                    messages = GetLogs_UnhandledActivityExceptionWithRetry(instanceIds[0], orchestratorFunctionNames, activityFunctionName);
-                    break;
-                case "Orchestration_OnUnregisteredActivity":
-                    messages = GetLogs_Orchestration_OnUnregisteredActivity(instanceIds[0], orchestratorFunctionNames);
-                    break;
-                case "Orchestration_OnUnregisteredOrchestrator":
-                    messages = GetLogs_Orchestration_OnUnregisteredOrchestrator(instanceIds[0], orchestratorFunctionNames);
-                    break;
-                case "Orchestration_OnValidOrchestrator":
-                    messages = GetLogs_Orchestration_OnValidOrchestrator(instanceIds.ToArray(), orchestratorFunctionNames, activityFunctionName);
-                    break;
-                case "Orchestration_Activity":
-                    messages = GetLogs_Orchestration_Activity(instanceIds.ToArray(), orchestratorFunctionNames, activityFunctionName);
-                    break;
-                case "OrchestrationEventGridApiReturnBadStatus":
-                    messages = GetLogs_OrchestrationEventGridApiReturnBadStatus(instanceIds[0], orchestratorFunctionNames, latencyMs);
-                    break;
-                case "RewindOrchestration":
-                    messages = GetLogs_Rewind_Orchestration(instanceIds[0], orchestratorFunctionNames, activityFunctionName);
-                    break;
-                case nameof(DurableTaskEndToEndTests.ActorOrchestration):
-                    messages = GetLogs_ActorOrchestration(instanceIds[0]).ToList();
-                    break;
-                default:
-                    break;
-            }
-
-            // Remove any logs which may have been generated by concurrently executing orchestrations
-            messages.RemoveAll(str => !instanceIds.Any(id => str.Contains(id)));
-
-            if (extendedSessions)
-            {
-                // Remove replay logs - those are never expected for these tests.
-                messages.RemoveAll(str => str.Contains("IsReplay: True"));
-            }
-
-            return messages;
-        }
-
         private static void AssertLogMessages(IList<string> expected, IList<string> actual, ITestOutputHelper testOutput)
         {
             TraceExpectedLogMessages(testOutput, expected);
@@ -596,323 +684,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             testOutput.WriteLine(prefix + allExpectedTraces);
         }
 
-        private static List<string> GetLogs_HelloWorldOrchestration_Inline(string instanceId, string[] functionNames)
-        {
-            var list = new List<string>()
-            {
-                $"{instanceId}: Function '{functionNames[0]} ({FunctionType.Orchestrator})' scheduled. Reason: NewInstance. IsReplay: False.",
-                $"{instanceId}: Function '{functionNames[0]} ({FunctionType.Orchestrator})' started. IsReplay: False. Input: \"World\"",
-                $"{instanceId}: Function '{functionNames[0]} ({FunctionType.Orchestrator})' completed. ContinuedAsNew: False. IsReplay: False. Output: \"Hello, World!\"",
-            };
-
-            return list;
-        }
-
-        private static List<string> GetLogs_OrchestrationEventGridApiReturnBadStatus(string messageId, string[] functionNames, string[] latencyMs)
-        {
-            var list = new List<string>()
-            {
-                $"{messageId}: Function '{functionNames[0]} ({FunctionType.Orchestrator})' scheduled. Reason: NewInstance. IsReplay: False. State: Scheduled.",
-                $"{messageId}: Function '{functionNames[0]} ({FunctionType.Orchestrator})' started. IsReplay: False. Input: \"World\". State: Started.",
-                $"{messageId}: Function '{functionNames[0]} ({FunctionType.Orchestrator})' completed. ContinuedAsNew: False. IsReplay: False. Output: \"Hello, World!\". State: Completed.",
-                $"{messageId}: Function '{functionNames[0]} ({FunctionType.Orchestrator})' failed to send a 'Started' notification event to Azure Event Grid. Status code: 500. Details: {{\"message\":\"Exception has been thrown\"}}. ",
-                $"{messageId}: Function '{functionNames[0]} ({FunctionType.Orchestrator})' failed to send a 'Completed' notification event to Azure Event Grid. Status code: 500. Details: {{\"message\":\"Exception has been thrown\"}}. ",
-            };
-            return list;
-        }
-
-        private static List<string> GetLogs_HelloWorldOrchestration_Activity(string messageId, string[] orchestratorFunctionNames, string activityFunctionName)
-        {
-            var list = new List<string>
-            {
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' scheduled. Reason: NewInstance. IsReplay: False.",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' started. IsReplay: False. Input: \"World\"",
-                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})' scheduled. Reason: {orchestratorFunctionNames[0]}. IsReplay: False.",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' awaited. IsReplay: False.",
-                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})' started. IsReplay: False. Input: [\"World\"]",
-                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})' completed. ContinuedAsNew: False. IsReplay: False. Output: \"Hello, World!\"",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' started. IsReplay: True. Input: \"World\"",
-                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})' scheduled. Reason: {orchestratorFunctionNames[0]}. IsReplay: True.",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' completed. ContinuedAsNew: False. IsReplay: False. Output: \"Hello, World!\"",
-            };
-
-            return list;
-        }
-
-        private static List<string> GetLogs_TerminateOrchestration(string messageId, string[] orchestratorFunctionNames)
-        {
-            var list = new List<string>()
-            {
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' scheduled. Reason: NewInstance. IsReplay: False.",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' started. IsReplay: False. Input: 0",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' is waiting for input. Reason: WaitForExternalEvent:operation. IsReplay: False.",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' awaited. IsReplay: False.",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' was terminated. Reason: sayōnara",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' started. IsReplay: True. Input: 0",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' is waiting for input. Reason: WaitForExternalEvent:operation. IsReplay: True.",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' awaited. IsReplay: False.",
-            };
-
-            return list;
-        }
-
-        private static List<string> GetLogs_TimerCancellation(string messageId, string[] orchestratorFunctionNames, string timerTimestamp)
-        {
-            var list = new List<string>()
-            {
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' scheduled. Reason: NewInstance. IsReplay: False.",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' started. IsReplay: False. Input: \"00:00:10\"",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' is waiting for input. Reason: WaitForExternalEvent:approval. IsReplay: False.",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' is waiting for input. Reason: CreateTimer:{timerTimestamp}. IsReplay: False.",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' awaited. IsReplay: False.",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' scheduled. Reason: RaiseEvent:approval. IsReplay: False.",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' started. IsReplay: True. Input: \"00:00:10\"",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' is waiting for input. Reason: WaitForExternalEvent:approval. IsReplay: True.",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' is waiting for input. Reason: CreateTimer:{timerTimestamp}. IsReplay: True.",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' received a 'approval' event.",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' completed. ContinuedAsNew: False. IsReplay: False. Output: \"Approved\"",
-            };
-
-            return list;
-        }
-
-        private static List<string> GetLogs_TimerExpiration(string messageId, string[] orchestratorFunctionNames, string timerTimestamp)
-        {
-            var list = new List<string>()
-            {
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' scheduled. Reason: NewInstance. IsReplay: False.",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' started. IsReplay: False. Input: \"00:00:02\"",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' is waiting for input. Reason: WaitForExternalEvent:approval. IsReplay: False.",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' is waiting for input. Reason: CreateTimer:{timerTimestamp}. IsReplay: False.",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' awaited. IsReplay: False.",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' started. IsReplay: True. Input: \"00:00:02\"",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' is waiting for input. Reason: WaitForExternalEvent:approval. IsReplay: True.",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' is waiting for input. Reason: CreateTimer:{timerTimestamp}. IsReplay: True.",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' was resumed by a timer scheduled for '{timerTimestamp}'. IsReplay: False. State: TimerExpired",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' completed. ContinuedAsNew: False. IsReplay: False. Output: \"Expired\"",
-            };
-
-            return list;
-        }
-
-        private static List<string> GetLogs_UnhandledOrchestrationException(string messageId, string[] orchestratorFunctionNames)
-        {
-            var list = new List<string>()
-            {
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' scheduled. Reason: NewInstance. IsReplay: False.",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' started. IsReplay: False. Input: (null)",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' failed with an error. Reason: System.ArgumentNullException: Value cannot be null.",
-            };
-
-            return list;
-        }
-
-        private static List<string> GetLogs_UnhandledActivityException(string messageId, string[] orchestratorFunctionNames, string activityFunctionName)
-        {
-            var list = new List<string>()
-            {
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' scheduled. Reason: NewInstance. IsReplay: False.",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' started. IsReplay: False. Input: \"Kah-BOOOOM!!!\"",
-                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})' scheduled. Reason: ThrowOrchestrator. IsReplay: False.",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' awaited. IsReplay: False.",
-                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})' started. IsReplay: False. Input: [\"Kah-BOOOOM!!!\"]",
-                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})' failed with an error. Reason: System.InvalidOperationException: Kah-BOOOOM!!!",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' started. IsReplay: True. Input: \"Kah-BOOOOM!!!\"",
-                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})' scheduled. Reason: ThrowOrchestrator. IsReplay: True.",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' failed with an error. Reason: Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionFailedException: The activity function 'ThrowActivity' failed: \"Kah-BOOOOM!!!\"",
-            };
-
-            return list;
-        }
-
-        private static List<string> GetLogs_UnhandledActivityExceptionWithRetry(string messageId, string[] orchestratorFunctionNames, string activityFunctionName)
-        {
-            var list = new List<string>()
-            {
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' scheduled. Reason: NewInstance. IsReplay: False.",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' started. IsReplay: False. Input: \"Kah-BOOOOM!!!\"",
-                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})' scheduled. Reason: ActivityThrowWithRetry. IsReplay: False.",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' awaited. IsReplay: False.",
-                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})' started. IsReplay: False. Input: [\"Kah-BOOOOM!!!\"]",
-                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})' failed with an error. Reason: System.InvalidOperationException: Kah-BOOOOM!!!",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' started. IsReplay: True. Input: \"Kah-BOOOOM!!!\"",
-                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})' scheduled. Reason: ActivityThrowWithRetry. IsReplay: True.",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' awaited. IsReplay: False.",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' started. IsReplay: True. Input: \"Kah-BOOOOM!!!\"",
-                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})' scheduled. Reason: ActivityThrowWithRetry. IsReplay: True.",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' awaited. IsReplay: False.",
-                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})' started. IsReplay: False. Input: [\"Kah-BOOOOM!!!\"]",
-                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})' failed with an error. Reason: System.InvalidOperationException: Kah-BOOOOM!!!",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' started. IsReplay: True. Input: \"Kah-BOOOOM!!!\"",
-                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})' scheduled. Reason: ActivityThrowWithRetry. IsReplay: True.",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' awaited. IsReplay: False.",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' started. IsReplay: True.",
-                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})' scheduled. Reason: ActivityThrowWithRetry. IsReplay: True.",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' awaited. IsReplay: False.",
-                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})' started. IsReplay: False. Input: [\"Kah-BOOOOM!!!\"]",
-                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})' failed with an error. Reason: System.InvalidOperationException: Kah-BOOOOM!!!",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' started. IsReplay: True. Input: \"Kah-BOOOOM!!!\"",
-                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})' scheduled. Reason: ActivityThrowWithRetry. IsReplay: True.",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' awaited. IsReplay: False.",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' started. IsReplay: True. Input: \"Kah-BOOOOM!!!\"",
-                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})' scheduled. Reason: ActivityThrowWithRetry. IsReplay: True.",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' failed with an error. Reason: Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionFailedException: The activity function 'ThrowActivity' failed: \"Kah-BOOOOM!!!\"",
-            };
-
-            return list;
-        }
-
-        private static List<string> GetLogs_Orchestration_OnUnregisteredActivity(string messageId, string[] orchestratorFunctionNames)
-        {
-            var list = new List<string>()
-            {
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' scheduled. Reason: NewInstance. IsReplay: False.",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' started. IsReplay: False.",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' failed with an error. Reason: System.ArgumentException: The function 'UnregisteredActivity' doesn't exist, is disabled, or is not an activity function.",
-            };
-
-            return list;
-        }
-
-        private static List<string> GetLogs_Orchestration_OnUnregisteredOrchestrator(string messageId, string[] orchestratorFunctionNames)
-        {
-            var list = new List<string>()
-            {
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' scheduled. Reason: NewInstance. IsReplay: False.",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' started. IsReplay: False.",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' failed with an error. Reason: System.ArgumentException: The function 'UnregisteredOrchestrator' doesn't exist, is disabled, or is not an orchestrator function.",
-            };
-
-            return list;
-        }
-
-        private static List<string> GetLogs_Orchestration_OnValidOrchestrator(string[] messageIds, string[] orchestratorFunctionNames, string activityFunctionName)
-        {
-            var list = new List<string>()
-            {
-                $"{messageIds[0]}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' scheduled. Reason: NewInstance. IsReplay: False.",
-                $"{messageIds[0]}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' started. IsReplay: False.",
-                $"{messageIds[0]}: Function '{orchestratorFunctionNames[1]} ({FunctionType.Orchestrator})' scheduled. Reason: CallOrchestrator. IsReplay: False.",
-                $"{messageIds[0]}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' awaited. IsReplay: False.",
-                $"{messageIds[1]}:0: Function '{orchestratorFunctionNames[1]} ({FunctionType.Orchestrator})' started. IsReplay: False.",
-                $"{messageIds[1]}:0: Function '{activityFunctionName} ({FunctionType.Activity})' scheduled. Reason: SayHelloWithActivity. IsReplay: False.",
-                $"{messageIds[1]}:0: Function '{orchestratorFunctionNames[1]} ({FunctionType.Orchestrator})' awaited. IsReplay: False.",
-                $"{messageIds[1]}:0: Function '{activityFunctionName} ({FunctionType.Activity})' started. IsReplay: False.",
-                $"{messageIds[1]}:0: Function '{activityFunctionName} ({FunctionType.Activity})' completed. ContinuedAsNew: False. IsReplay: False. Output: \"Hello, ",
-                $"{messageIds[1]}:0: Function '{orchestratorFunctionNames[1]} ({FunctionType.Orchestrator})' started. IsReplay: True.",
-                $"{messageIds[1]}:0: Function '{activityFunctionName} ({FunctionType.Activity})' scheduled. Reason: SayHelloWithActivity. IsReplay: True.",
-                $"{messageIds[1]}:0: Function '{orchestratorFunctionNames[1]} ({FunctionType.Orchestrator})' completed. ContinuedAsNew: False. IsReplay: False. Output: \"Hello,",
-                $"{messageIds[0]}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' started. IsReplay: True.",
-                $"{messageIds[0]}: Function '{orchestratorFunctionNames[1]} ({FunctionType.Orchestrator})' scheduled. Reason: CallOrchestrator. IsReplay: True.",
-                $"{messageIds[0]}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' completed. ContinuedAsNew: False. IsReplay: False. Output: \"Hello,",
-            };
-
-            return list;
-        }
-
-        private static List<string> GetLogs_Orchestration_Activity(string[] messageIds, string[] orchestratorFunctionNames, string activityFunctionName)
-        {
-            var list = new List<string>()
-            {
-                $"{messageIds[0]}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' scheduled. Reason: NewInstance. IsReplay: False.",
-                $"{messageIds[0]}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' started. IsReplay: False.",
-                $"{messageIds[0]}: Function '{orchestratorFunctionNames[1]} ({FunctionType.Orchestrator})' scheduled. Reason: OrchestratorGreeting. IsReplay: False.",
-                $"{messageIds[0]}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' awaited. IsReplay: False.",
-                $"{messageIds[1]}:0: Function '{orchestratorFunctionNames[1]} ({FunctionType.Orchestrator})' started. IsReplay: False.",
-                $"{messageIds[1]}:0: Function '{activityFunctionName} ({FunctionType.Activity})' scheduled. Reason: SayHelloWithActivity. IsReplay: False.",
-                $"{messageIds[1]}:0: Function '{orchestratorFunctionNames[1]} ({FunctionType.Orchestrator})' awaited. IsReplay: False.",
-                $"{messageIds[1]}:0: Function '{activityFunctionName} ({FunctionType.Activity})' started. IsReplay: False.",
-                $"{messageIds[1]}:0: Function '{activityFunctionName} ({FunctionType.Activity})' completed. ContinuedAsNew: False. IsReplay: False. Output: \"Hello, ",
-                $"{messageIds[1]}:0: Function '{orchestratorFunctionNames[1]} ({FunctionType.Orchestrator})' started. IsReplay: True.",
-                $"{messageIds[1]}:0: Function '{activityFunctionName} ({FunctionType.Activity})' scheduled. Reason: SayHelloWithActivity. IsReplay: True.",
-                $"{messageIds[1]}:0: Function '{orchestratorFunctionNames[1]} ({FunctionType.Orchestrator})' completed. ContinuedAsNew: False. IsReplay: False. Output: \"Hello,",
-                $"{messageIds[0]}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' started. IsReplay: True.",
-                $"{messageIds[0]}: Function '{orchestratorFunctionNames[1]} ({FunctionType.Orchestrator})' scheduled. Reason: OrchestratorGreeting. IsReplay: True.",
-                $"{messageIds[0]}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' completed. ContinuedAsNew: False. IsReplay: False. Output: (null)",
-            };
-
-            return list;
-        }
-
-        private static List<string> GetLogs_Rewind_Orchestration(string messageId, string[] orchestratorFunctionNames, string activityFunctionName)
-        {
-            var list = new List<string>()
-            {
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' scheduled. Reason: NewInstance. IsReplay: False.",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' started. IsReplay: False.",
-                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})' scheduled. Reason: SayHelloWithActivityForRewind. IsReplay: False.",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' awaited. IsReplay: False.",
-                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})' started. IsReplay: False.",
-                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})' completed. ContinuedAsNew: False. IsReplay: False.",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' started. IsReplay: True.",
-                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})' scheduled. Reason: SayHelloWithActivityForRewind. IsReplay: True.",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' failed with an error. Reason: System.Exception: Simulating Orchestration failure.",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' was rewound. Reason: rewind!. State: Rewound.",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' started. IsReplay: True.",
-                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})' scheduled. Reason: SayHelloWithActivityForRewind. IsReplay: True.",
-                $"{messageId}: Function '{activityFunctionName} ({FunctionType.Activity})' completed. ContinuedAsNew: False. IsReplay: True. Output: (replayed).",
-                $"{messageId}: Function '{orchestratorFunctionNames[0]} ({FunctionType.Orchestrator})' completed. ContinuedAsNew: False. IsReplay: True. Output: \"Hello, Catherine!\". State: Completed.",
-            };
-
-            return list;
-        }
-
-        private static string[] GetLogs_ActorOrchestration(string instanceId)
-        {
-            return new[]
-            {
-                $"{instanceId}: Function 'Counter (Orchestrator)' scheduled. Reason: NewInstance. IsReplay: False. State: Scheduled.",
-                $"{instanceId}: Function 'Counter (Orchestrator)' started. IsReplay: False. Input: 0. State: Started.",
-                $"{instanceId}: Function 'Counter (Orchestrator)' is waiting for input. Reason: WaitForExternalEvent:operation. IsReplay: False. State: Listening.",
-                $"{instanceId}: Function 'Counter (Orchestrator)' awaited. IsReplay: False. State: Awaited.",
-                $"{instanceId}: Function 'Counter (Orchestrator)' scheduled. Reason: RaiseEvent:operation. IsReplay: False. State: Scheduled.",
-                $"{instanceId}: Function 'Counter (Orchestrator)' started. IsReplay: True. Input: 0. State: Started.",
-                $"{instanceId}: Function 'Counter (Orchestrator)' is waiting for input. Reason: WaitForExternalEvent:operation. IsReplay: True. State: Listening.",
-                $"{instanceId}: Function 'Counter (Orchestrator)' received a 'operation' event. State: ExternalEventRaised.",
-                $"{instanceId}: Function 'Counter (Orchestrator)' completed. ContinuedAsNew: True. IsReplay: False. Output: 1. State: Completed.",
-                $"{instanceId}: Function 'Counter (Orchestrator)' started. IsReplay: False. Input: 1. State: Started.",
-                $"{instanceId}: Function 'Counter (Orchestrator)' is waiting for input. Reason: WaitForExternalEvent:operation. IsReplay: False. State: Listening.",
-                $"{instanceId}: Function 'Counter (Orchestrator)' awaited. IsReplay: False. State: Awaited.",
-                $"{instanceId}: Function 'Counter (Orchestrator)' scheduled. Reason: RaiseEvent:operation. IsReplay: False. State: Scheduled.",
-                $"{instanceId}: Function 'Counter (Orchestrator)' started. IsReplay: True. Input: 1. State: Started.",
-                $"{instanceId}: Function 'Counter (Orchestrator)' is waiting for input. Reason: WaitForExternalEvent:operation. IsReplay: True. State: Listening.",
-                $"{instanceId}: Function 'Counter (Orchestrator)' received a 'operation' event. State: ExternalEventRaised.",
-                $"{instanceId}: Function 'Counter (Orchestrator)' completed. ContinuedAsNew: True. IsReplay: False. Output: 2. State: Completed.",
-                $"{instanceId}: Function 'Counter (Orchestrator)' started. IsReplay: False. Input: 2. State: Started.",
-                $"{instanceId}: Function 'Counter (Orchestrator)' is waiting for input. Reason: WaitForExternalEvent:operation. IsReplay: False. State: Listening.",
-                $"{instanceId}: Function 'Counter (Orchestrator)' awaited. IsReplay: False. State: Awaited.",
-                $"{instanceId}: Function 'Counter (Orchestrator)' scheduled. Reason: RaiseEvent:operation. IsReplay: False. State: Scheduled.",
-                $"{instanceId}: Function 'Counter (Orchestrator)' started. IsReplay: True. Input: 2. State: Started.",
-                $"{instanceId}: Function 'Counter (Orchestrator)' is waiting for input. Reason: WaitForExternalEvent:operation. IsReplay: True. State: Listening.",
-                $"{instanceId}: Function 'Counter (Orchestrator)' received a 'operation' event. State: ExternalEventRaised.",
-                $"{instanceId}: Function 'Counter (Orchestrator)' completed. ContinuedAsNew: True. IsReplay: False. Output: 3. State: Completed.",
-                $"{instanceId}: Function 'Counter (Orchestrator)' started. IsReplay: False. Input: 3. State: Started.",
-                $"{instanceId}: Function 'Counter (Orchestrator)' is waiting for input. Reason: WaitForExternalEvent:operation. IsReplay: False. State: Listening.",
-                $"{instanceId}: Function 'Counter (Orchestrator)' awaited. IsReplay: False. State: Awaited.",
-                $"{instanceId}: Function 'Counter (Orchestrator)' scheduled. Reason: RaiseEvent:operation. IsReplay: False. State: Scheduled.",
-                $"{instanceId}: Function 'Counter (Orchestrator)' started. IsReplay: True. Input: 3. State: Started.",
-                $"{instanceId}: Function 'Counter (Orchestrator)' is waiting for input. Reason: WaitForExternalEvent:operation. IsReplay: True. State: Listening.",
-                $"{instanceId}: Function 'Counter (Orchestrator)' received a 'operation' event. State: ExternalEventRaised.",
-                $"{instanceId}: Function 'Counter (Orchestrator)' completed. ContinuedAsNew: True. IsReplay: False. Output: 2. State: Completed.",
-                $"{instanceId}: Function 'Counter (Orchestrator)' started. IsReplay: False. Input: 2. State: Started.",
-                $"{instanceId}: Function 'Counter (Orchestrator)' is waiting for input. Reason: WaitForExternalEvent:operation. IsReplay: False. State: Listening.",
-                $"{instanceId}: Function 'Counter (Orchestrator)' awaited. IsReplay: False. State: Awaited.",
-                $"{instanceId}: Function 'Counter (Orchestrator)' scheduled. Reason: RaiseEvent:operation. IsReplay: False. State: Scheduled.",
-                $"{instanceId}: Function 'Counter (Orchestrator)' started. IsReplay: True. Input: 2. State: Started.",
-                $"{instanceId}: Function 'Counter (Orchestrator)' is waiting for input. Reason: WaitForExternalEvent:operation. IsReplay: True. State: Listening.",
-                $"{instanceId}: Function 'Counter (Orchestrator)' received a 'operation' event. State: ExternalEventRaised.",
-                $"{instanceId}: Function 'Counter (Orchestrator)' completed. ContinuedAsNew: True. IsReplay: False. Output: 3. State: Completed.",
-                $"{instanceId}: Function 'Counter (Orchestrator)' started. IsReplay: False. Input: 3. State: Started.",
-                $"{instanceId}: Function 'Counter (Orchestrator)' is waiting for input. Reason: WaitForExternalEvent:operation. IsReplay: False. State: Listening.",
-                $"{instanceId}: Function 'Counter (Orchestrator)' awaited. IsReplay: False. State: Awaited.",
-                $"{instanceId}: Function 'Counter (Orchestrator)' scheduled. Reason: RaiseEvent:operation. IsReplay: False. State: Scheduled.",
-                $"{instanceId}: Function 'Counter (Orchestrator)' started. IsReplay: True. Input: 3. State: Started.",
-                $"{instanceId}: Function 'Counter (Orchestrator)' is waiting for input. Reason: WaitForExternalEvent:operation. IsReplay: True. State: Listening.",
-                $"{instanceId}: Function 'Counter (Orchestrator)' received a 'operation' event. State: ExternalEventRaised.",
-                $"{instanceId}: Function 'Counter (Orchestrator)' completed. ContinuedAsNew: False. IsReplay: False. Output: 3. State: Completed.",
-            };
-        }
-
         private static string GetInstanceId(string message)
         {
             return message.Substring(0, message.IndexOf(':'));
@@ -926,7 +697,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return message.Substring(start, end - start);
         }
 
-        internal static INameResolver GetTestNameResolver()
+        public static INameResolver GetTestNameResolver()
         {
             return new TestNameResolver(null);
         }
@@ -960,6 +731,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             await blob.UploadTextAsync(content);
         }
 
+        public void Dispose()
+        {
+            this.eventSourceListener.Dispose();
+        }
+
         private class ExplicitTypeLocator : ITypeLocator
         {
             private readonly IReadOnlyList<Type> types;
@@ -969,19 +745,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 this.types = types.ToList().AsReadOnly();
             }
 
+            public ExplicitTypeLocator(List<Type> types)
+            {
+                this.types = types.AsReadOnly();
+            }
+
             public IReadOnlyList<Type> GetTypes()
             {
                 return this.types;
             }
         }
 
-        private class TestNameResolver : INameResolver
+        public class TestNameResolver : INameResolver
         {
-            private static readonly Dictionary<string, string> DefaultAppSettings = new Dictionary<string, string>(
-                StringComparer.OrdinalIgnoreCase)
-            {
-                { "TestTaskHub", string.Empty },
-            };
+            private readonly Dictionary<string, string> DefaultAppSettings =
+                new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    { "TestTaskHub", string.Empty },
+                };
 
             private readonly INameResolver innerResolver;
 
@@ -989,6 +770,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 // null is okay
                 this.innerResolver = innerResolver;
+            }
+
+            public void AddSetting(string settingName, string settingValue)
+            {
+                this.DefaultAppSettings.Add(settingName, settingValue);
             }
 
             public string Resolve(string name)
@@ -1001,7 +787,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 string value = this.innerResolver?.Resolve(name);
                 if (value == null)
                 {
-                    DefaultAppSettings.TryGetValue(name, out value);
+                    this.DefaultAppSettings.TryGetValue(name, out value);
                 }
 
                 if (value == null)

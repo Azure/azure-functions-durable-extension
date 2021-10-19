@@ -3,11 +3,19 @@
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
-    internal class TestConnectionStringResolver : IConnectionStringResolver
+    public class TestConnectionStringResolver : IConnectionStringResolver
     {
+        private INameResolver nameResolver;
+
+        public TestConnectionStringResolver(INameResolver resolver = null)
+        {
+            this.nameResolver = resolver;
+        }
+
         public string Resolve(string connectionStringName)
         {
-            return TestHelpers.GetStorageConnectionString();
+            string result = this.nameResolver?.Resolve(connectionStringName);
+            return result ?? TestHelpers.GetStorageConnectionString();
         }
     }
 }

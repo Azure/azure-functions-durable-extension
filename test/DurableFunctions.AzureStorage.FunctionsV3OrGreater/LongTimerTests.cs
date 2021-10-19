@@ -5,31 +5,29 @@ using System;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests;
-using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace WebJobs.Extensions.DurableTask.Tests.V2
 {
-    public class LongTimerTests
+    public class LongTimerTests : IDisposable
     {
         private readonly ITestOutputHelper output;
-        private readonly TestLoggerProvider loggerProvider;
+        private readonly TestHelpers testHelper;
 
         public LongTimerTests(ITestOutputHelper output)
         {
             this.output = output;
-            this.loggerProvider = new TestLoggerProvider(output);
+            this.testHelper = new TestHelpers(output);
         }
 
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task LongRunningTimer(bool extendedSessions)
         {
-            using (ITestHost host = TestHelpers.GetJobHost(
-                this.loggerProvider,
+            using (ITestHost host = this.testHelper.GetJobHost(
                 nameof(this.LongRunningTimer),
                 extendedSessions,
                 storageProviderType: "azure_storage",
@@ -47,13 +45,12 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         }
 
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task TimerLengthLessThanMaxTime(bool extendedSessions)
         {
-            using (ITestHost host = TestHelpers.GetJobHost(
-                this.loggerProvider,
+            using (ITestHost host = this.testHelper.GetJobHost(
                 nameof(this.TimerLengthLessThanMaxTime),
                 extendedSessions,
                 storageProviderType: "azure_storage",
@@ -71,13 +68,12 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         }
 
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task EntitySignalWithLongDelay(bool extendedSessions)
         {
-            using (var host = TestHelpers.GetJobHost(
-                this.loggerProvider,
+            using (var host = this.testHelper.GetJobHost(
                 nameof(this.EntitySignalWithLongDelay),
                 extendedSessions,
                 storageProviderType: "azure_storage",
@@ -105,11 +101,10 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         }
 
         [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public async Task WaitForExternalEventAboveMaximumTimerLength()
         {
-            using (ITestHost host = TestHelpers.GetJobHost(
-                this.loggerProvider,
+            using (ITestHost host = this.testHelper.GetJobHost(
                 nameof(this.WaitForExternalEventAboveMaximumTimerLength),
                 enableExtendedSessions: false,
                 storageProviderType: "azure_storage",
@@ -126,6 +121,11 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
 
                 await host.StopAsync();
             }
+        }
+
+        public void Dispose()
+        {
+            this.testHelper.Dispose();
         }
     }
 }

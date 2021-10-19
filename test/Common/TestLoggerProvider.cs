@@ -10,7 +10,7 @@ using Xunit.Abstractions;
 
 namespace Microsoft.Azure.WebJobs.Host.TestCommon
 {
-    internal class TestLoggerProvider : ILoggerProvider
+    public class TestLoggerProvider : ILoggerProvider
     {
         private readonly ITestOutputHelper testOutput;
         private readonly Func<string, LogLevel, bool> filter;

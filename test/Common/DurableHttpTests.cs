@@ -26,24 +26,31 @@ using Xunit.Abstractions;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
-    public class DurableHttpTests : IDisposable
+    public abstract class DurableHttpTests : IDisposable
     {
         private readonly ITestOutputHelper output;
 
         private readonly TestLoggerProvider loggerProvider;
+        private readonly TestHelpers testHelper;
 
         public DurableHttpTests(ITestOutputHelper output)
         {
             this.output = output;
-            this.loggerProvider = new TestLoggerProvider(output);
+            this.testHelper = this.GetTestHelper(output);
+        }
+
+        public virtual TestHelpers GetTestHelper(ITestOutputHelper output)
+        {
+            return new TestHelpers(output);
         }
 
         public void Dispose()
         {
+            this.testHelper.Dispose();
         }
 
         [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public void DeserializeCallActivity()
         {
             // {
@@ -91,7 +98,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public void SerializeManagedIdentityOptions()
         {
             // Part 1: Check if ManagedIdentityOptions is correctly serialized with TestDurableHttpRequest
@@ -106,7 +113,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
   },
   ""Content"": null,
   ""TokenSource"": {
-    ""$type"": ""Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests.DurableHttpTests+MockTokenSource, WebJobs.Extensions.DurableTask.Tests." + PlatformSpecificHelpers.VersionSuffix + @""",
+    ""$type"": ""Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests.DurableHttpTests+MockTokenSource, WebJobs.Extensions.DurableTask.Tests." + this.testHelper.GetTaskHubSuffix() + @""",
     ""testToken"": ""dummy token"",
     ""options"": {
       ""authorityhost"": ""https://dummy.login.microsoftonline.com/"",
@@ -168,7 +175,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public void SerializeDurableHttpRequestWithoutManagedIdentityOptions()
         {
             var expectedDurableHttpRequestJson = @"
@@ -203,7 +210,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public void DeserializeManagedIdentityOptions()
         {
             // Part 1: Check if ManagedIdentityOptions is correctly serialized with TestDurableHttpRequest
@@ -248,15 +255,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// End-to-end test which checks if the CallHttpAsync Orchestrator returns an OK (200) status code.
         /// </summary>
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task DurableHttpAsync_SynchronousAPI_Returns200(string storageProvider)
         {
             HttpResponseMessage testHttpResponseMessage = CreateTestHttpResponseMessage(HttpStatusCode.OK);
             HttpMessageHandler httpMessageHandler = MockSynchronousHttpMessageHandler(testHttpResponseMessage);
 
-            using (ITestHost host = TestHelpers.GetJobHost(
-                this.loggerProvider,
+            using (ITestHost host = this.testHelper.GetJobHost(
                 nameof(this.DurableHttpAsync_SynchronousAPI_Returns200),
                 enableExtendedSessions: false,
                 storageProviderType: storageProvider,
@@ -287,15 +293,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// when a DurableHttpRequest timeout value is set and the request completes within the timeout.
         /// </summary>
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task DurableHttpAsync_Synchronous_TimeoutNotReached(string storageProvider)
         {
             HttpResponseMessage testHttpResponseMessage = CreateTestHttpResponseMessage(HttpStatusCode.OK);
             HttpMessageHandler httpMessageHandler = MockSynchronousHttpMessageHandlerWithTimeout(testHttpResponseMessage, TimeSpan.FromMilliseconds(2000));
 
-            using (ITestHost host = TestHelpers.GetJobHost(
-                this.loggerProvider,
+            using (ITestHost host = this.testHelper.GetJobHost(
                 nameof(this.DurableHttpAsync_Synchronous_TimeoutNotReached),
                 enableExtendedSessions: false,
                 storageProviderType: storageProvider,
@@ -327,15 +332,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// HTTP request times out and the CallHttpAsync API throws a TimeoutException.
         /// </summary>
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task DurableHttpAsync_Synchronous_TimeoutException(string storageProvider)
         {
             HttpResponseMessage testHttpResponseMessage = CreateTestHttpResponseMessage(HttpStatusCode.OK);
             HttpMessageHandler httpMessageHandler = MockSynchronousHttpMessageHandlerWithTimeoutException(TimeSpan.FromMilliseconds(10000));
 
-            using (ITestHost host = TestHelpers.GetJobHost(
-                this.loggerProvider,
+            using (ITestHost host = this.testHelper.GetJobHost(
                 nameof(this.DurableHttpAsync_Synchronous_TimeoutException),
                 enableExtendedSessions: false,
                 storageProviderType: storageProvider,
@@ -367,14 +371,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// target url doesn't exist and throws an HttpRequestException.
         /// </summary>
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task DurableHttpAsync_Synchronous_HttpRequestException(string storageProvider)
         {
             HttpMessageHandler httpMessageHandler = MockSynchronousHttpMessageHandlerWithHttpRequestException();
 
-            using (ITestHost host = TestHelpers.GetJobHost(
-                this.loggerProvider,
+            using (ITestHost host = this.testHelper.GetJobHost(
                 nameof(this.DurableHttpAsync_Synchronous_HttpRequestException),
                 enableExtendedSessions: false,
                 storageProviderType: storageProvider,
@@ -404,14 +407,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// End-to-end test which checks if the UserAgent header is set in the HttpResponseMessage.
         /// </summary>
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task DurableHttpAsync_CheckUserAgentHeader(string storageProvider)
         {
             HttpMessageHandler httpMessageHandler = MockHttpMessageHandlerCheckUserAgent();
 
-            using (ITestHost host = TestHelpers.GetJobHost(
-                this.loggerProvider,
+            using (ITestHost host = this.testHelper.GetJobHost(
                 nameof(this.DurableHttpAsync_CheckUserAgentHeader),
                 enableExtendedSessions: false,
                 storageProviderType: storageProvider,
@@ -441,14 +443,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// End-to-end test which checks if the UserAgent header is set in the HttpResponseMessage.
         /// </summary>
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task DurableHttpAsync_CheckRequestAcceptHeaders(string storageProvider)
         {
             HttpMessageHandler httpMessageHandler = MockHttpMessageHandlerCheckAcceptHeader();
 
-            using (ITestHost host = TestHelpers.GetJobHost(
-                this.loggerProvider,
+            using (ITestHost host = this.testHelper.GetJobHost(
                 nameof(this.DurableHttpAsync_CheckRequestAcceptHeaders),
                 enableExtendedSessions: false,
                 storageProviderType: storageProvider,
@@ -479,15 +480,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// when the asynchronous pattern is disabled.
         /// </summary>
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task DurableHttpAsync_AsynchronousPatternDisabled(string storageProvider)
         {
             HttpResponseMessage testHttpResponseMessage = CreateTestHttpResponseMessage(HttpStatusCode.Accepted);
             HttpMessageHandler httpMessageHandler = MockSynchronousHttpMessageHandler(testHttpResponseMessage);
 
-            using (ITestHost host = TestHelpers.GetJobHost(
-                this.loggerProvider,
+            using (ITestHost host = this.testHelper.GetJobHost(
                 nameof(this.DurableHttpAsync_AsynchronousPatternDisabled),
                 enableExtendedSessions: false,
                 storageProviderType: storageProvider,
@@ -518,15 +518,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// End-to-end test which checks if the CallHttpAsync Orchestrator returns a Not Found (404) status code.
         /// </summary>
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task DurableHttpAsync_SynchronousAPI_ReturnsNotFound(string storageProvider)
         {
             HttpResponseMessage testHttpResponseMessage = CreateTestHttpResponseMessage(HttpStatusCode.NotFound);
             HttpMessageHandler httpMessageHandler = MockSynchronousHttpMessageHandler(testHttpResponseMessage);
 
-            using (ITestHost host = TestHelpers.GetJobHost(
-                this.loggerProvider,
+            using (ITestHost host = this.testHelper.GetJobHost(
                 nameof(this.DurableHttpAsync_SynchronousAPI_ReturnsNotFound),
                 enableExtendedSessions: false,
                 storageProviderType: storageProvider,
@@ -558,7 +557,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// header values.
         /// </summary>
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task DurableHttpAsync_MultipleHeadersAndContentTest(string storageProvider)
         {
@@ -574,8 +573,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             HttpMessageHandler httpMessageHandler = MockSynchronousHttpMessageHandler(testHttpResponseMessage);
 
-            using (ITestHost host = TestHelpers.GetJobHost(
-                this.loggerProvider,
+            using (ITestHost host = this.testHelper.GetJobHost(
                 nameof(this.DurableHttpAsync_MultipleHeadersAndContentTest),
                 enableExtendedSessions: false,
                 storageProviderType: storageProvider,
@@ -620,7 +618,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// headers with varying amount of header values.
         /// </summary>
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task DurableHttpAsync_MultipleHeaderValuesTest(string storageProvider)
         {
@@ -645,8 +643,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             HttpMessageHandler httpMessageHandler = MockSynchronousHttpMessageHandler(testHttpResponseMessage);
 
-            using (ITestHost host = TestHelpers.GetJobHost(
-                this.loggerProvider,
+            using (ITestHost host = this.testHelper.GetJobHost(
                 nameof(this.DurableHttpAsync_MultipleHeaderValuesTest),
                 enableExtendedSessions: false,
                 storageProviderType: storageProvider,
@@ -702,7 +699,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// with one response header value.
         /// </summary>
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task DurableHttpAsync_OneHeaderAndContentTest(string storageProvider)
         {
@@ -718,8 +715,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             HttpMessageHandler httpMessageHandler = MockSynchronousHttpMessageHandler(testHttpResponseMessage);
 
-            using (ITestHost host = TestHelpers.GetJobHost(
-                this.loggerProvider,
+            using (ITestHost host = this.testHelper.GetJobHost(
                 nameof(this.DurableHttpAsync_OneHeaderAndContentTest),
                 enableExtendedSessions: false,
                 storageProviderType: storageProvider,
@@ -762,7 +758,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// Retry-After header.
         /// </summary>
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task DurableHttpAsync_AsynchronousAPI_RetryAfterTest(string storageProvider)
         {
@@ -775,8 +771,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                                                                                         headers: testHeaders);
             HttpMessageHandler httpMessageHandler = MockAsynchronousHttpMessageHandlerWithRetryAfter(acceptedHttpResponseMessage);
 
-            using (ITestHost host = TestHelpers.GetJobHost(
-                this.loggerProvider,
+            using (ITestHost host = this.testHelper.GetJobHost(
                 nameof(this.DurableHttpAsync_AsynchronousAPI_RetryAfterTest),
                 enableExtendedSessions: false,
                 storageProviderType: storageProvider,
@@ -807,7 +802,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// waits until an OK response is returned.
         /// </summary>
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task DurableHttpAsync_AsynchronousAPI_ReturnsOK200(string storageProvider)
         {
@@ -820,8 +815,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             HttpMessageHandler httpMessageHandler = MockAsynchronousHttpMessageHandler(acceptedHttpResponseMessage);
 
-            using (ITestHost host = TestHelpers.GetJobHost(
-                this.loggerProvider,
+            using (ITestHost host = this.testHelper.GetJobHost(
                 nameof(this.DurableHttpAsync_AsynchronousAPI_ReturnsOK200),
                 enableExtendedSessions: false,
                 storageProviderType: storageProvider,
@@ -852,14 +846,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// works with Content-Type of application/json.
         /// </summary>
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task CallHttpAsync_SynchronousAPI_ReqContentTest(string storageProvider)
         {
             HttpMessageHandler httpMessageHandler = MockHttpMessageHandlerContentType();
 
-            using (ITestHost host = TestHelpers.GetJobHost(
-                this.loggerProvider,
+            using (ITestHost host = this.testHelper.GetJobHost(
                 nameof(this.CallHttpAsync_SynchronousAPI_ReqContentTest),
                 enableExtendedSessions: false,
                 storageProviderType: storageProvider,
@@ -894,14 +887,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// Content-Type is not specified.
         /// </summary>
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task DurableHttpAsync_SynchronousAPI_NoContentTypeTest(string storageProvider)
         {
             HttpMessageHandler httpMessageHandler = MockHttpMessageHandlerContentType();
 
-            using (ITestHost host = TestHelpers.GetJobHost(
-                this.loggerProvider,
+            using (ITestHost host = this.testHelper.GetJobHost(
                 nameof(this.DurableHttpAsync_SynchronousAPI_NoContentTypeTest),
                 enableExtendedSessions: false,
                 storageProviderType: storageProvider,
@@ -934,14 +926,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// works when the Content-Type is "application/x-www-form-urlencoded".
         /// </summary>
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task DurableHttpAsync_SynchronousAPI_UrlEncodedTest(string storageProvider)
         {
             HttpMessageHandler httpMessageHandler = MockHttpMessageHandlerContentType();
 
-            using (ITestHost host = TestHelpers.GetJobHost(
-                this.loggerProvider,
+            using (ITestHost host = this.testHelper.GetJobHost(
                 nameof(this.DurableHttpAsync_SynchronousAPI_UrlEncodedTest),
                 enableExtendedSessions: false,
                 storageProviderType: storageProvider,
@@ -979,7 +970,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// waits until an OK response is returned with a long running process.
         /// </summary>
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task DurableHttpAsync_AsynchronousAPI_LongRunning(string storageProvider)
         {
@@ -991,8 +982,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                                                                                                headers: asyncTestHeaders);
             HttpMessageHandler httpMessageHandler = MockAsynchronousHttpMessageHandlerLongRunning(acceptedHttpResponseMessage);
 
-            using (ITestHost host = TestHelpers.GetJobHost(
-                this.loggerProvider,
+            using (ITestHost host = this.testHelper.GetJobHost(
                 nameof(this.DurableHttpAsync_AsynchronousAPI_LongRunning),
                 enableExtendedSessions: false,
                 storageProviderType: storageProvider,
@@ -1024,14 +1014,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// all return an OK response status code.
         /// </summary>
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task DurableHttp_AsyncAPI_MultipleCalls(string storageProvider)
         {
             HttpMessageHandler httpMessageHandler = MockAsynchronousHttpMessageHandlerForMultipleRequestsTwo();
 
-            using (ITestHost host = TestHelpers.GetJobHost(
-                this.loggerProvider,
+            using (ITestHost host = this.testHelper.GetJobHost(
                 nameof(this.DurableHttp_AsyncAPI_MultipleCalls),
                 enableExtendedSessions: false,
                 storageProviderType: storageProvider,
@@ -1135,14 +1124,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// when a Bearer Token is added to the DurableHttpRequest object.
         /// </summary>
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task DurableHttpAsync_Synchronous_AddsBearerToken(string storageProvider)
         {
             HttpMessageHandler httpMessageHandler = MockSynchronousHttpMessageHandlerForTestingTokenSource();
 
-            using (ITestHost host = TestHelpers.GetJobHost(
-                this.loggerProvider,
+            using (ITestHost host = this.testHelper.GetJobHost(
                 nameof(this.DurableHttpAsync_Synchronous_AddsBearerToken),
                 enableExtendedSessions: false,
                 storageProviderType: storageProvider,
@@ -1176,14 +1164,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// a Bearer Token is added to the DurableHttpRequest object.
         /// </summary>
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task DurableHttpAsync_Synchronous_TokenWithOptions(string storageProvider)
         {
             HttpMessageHandler httpMessageHandler = MockSynchronousHttpMessageHandlerForTestingTokenSource();
 
-            using (ITestHost host = TestHelpers.GetJobHost(
-                this.loggerProvider,
+            using (ITestHost host = this.testHelper.GetJobHost(
                 nameof(this.DurableHttpAsync_Synchronous_TokenWithOptions),
                 enableExtendedSessions: false,
                 storageProviderType: storageProvider,
@@ -1222,14 +1209,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// asynchronous pattern.
         /// </summary>
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task DurableHttpAsync_Asynchronous_TokenWithOptions(string storageProvider)
         {
             HttpMessageHandler httpMessageHandler = MockAsynchronousHttpMessageHandlerForTestingTokenSource();
 
-            using (ITestHost host = TestHelpers.GetJobHost(
-                this.loggerProvider,
+            using (ITestHost host = this.testHelper.GetJobHost(
                 nameof(this.DurableHttpAsync_Asynchronous_TokenWithOptions),
                 enableExtendedSessions: false,
                 storageProviderType: storageProvider,
@@ -1266,14 +1252,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// when a Bearer Token is added to the DurableHttpRequest object.
         /// </summary>
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task DurableHttp_AsyncAPI_PollIgnoresFunctionsKey(string storageProvider)
         {
             HttpMessageHandler httpMessageHandler = MockHttpMessageHandlerWithFunctionHeaderVerification();
 
-            using (ITestHost host = TestHelpers.GetJobHost(
-                this.loggerProvider,
+            using (ITestHost host = this.testHelper.GetJobHost(
                 nameof(this.DurableHttp_AsyncAPI_PollIgnoresFunctionsKey),
                 enableExtendedSessions: false,
                 storageProviderType: storageProvider,
@@ -1334,14 +1319,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// asynchronous pattern.
         /// </summary>
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task DurableHttpAsync_Asynchronous_AddsBearerToken(string storageProvider)
         {
             HttpMessageHandler httpMessageHandler = MockAsynchronousHttpMessageHandlerForTestingTokenSource();
 
-            using (ITestHost host = TestHelpers.GetJobHost(
-                this.loggerProvider,
+            using (ITestHost host = this.testHelper.GetJobHost(
                 nameof(this.DurableHttpAsync_Asynchronous_AddsBearerToken),
                 enableExtendedSessions: false,
                 storageProviderType: storageProvider,

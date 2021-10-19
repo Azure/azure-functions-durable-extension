@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
-    internal static class ClientFunctions
+    public static class ClientFunctions
     {
         [NoAutomaticTrigger]
         public static async Task StartFunction(

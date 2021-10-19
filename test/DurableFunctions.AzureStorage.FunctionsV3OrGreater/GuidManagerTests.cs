@@ -13,7 +13,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [InlineData(GuidManager.DnsNamespaceValue)]
         [InlineData(GuidManager.UrlNamespaceValue)]
         [InlineData(GuidManager.IsoOidNamespaceValue)]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public void Guid_With_Same_Namespace_And_Name_Are_Equal(string namespaceValue)
         {
             string name = "dccf029b5c4b4031a3b943f9f745e35b";
@@ -28,7 +28,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [InlineData(GuidManager.DnsNamespaceValue)]
         [InlineData(GuidManager.UrlNamespaceValue)]
         [InlineData(GuidManager.IsoOidNamespaceValue)]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public void Guid_With_Same_Namespace_And_Different_Name_Are_Not_Equal(string namespaceValue)
         {
             string firstName = "dccf029b5c4b4031a3b943f9f745e35b";
@@ -41,7 +41,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Theory]
         [InlineData(GuidManager.DnsNamespaceValue, GuidManager.UrlNamespaceValue)]
         [InlineData(GuidManager.DnsNamespaceValue, GuidManager.IsoOidNamespaceValue)]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public void Guid_With_Same_Name_And_Different_Namespace_Are_Not_Equal(string firstNamespaceValue, string secondNamespaceValue)
         {
             string name = "dccf029b5c4b4031a3b943f9f745e35b";

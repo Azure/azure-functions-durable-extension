@@ -27,7 +27,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     public class DurableClientBaseTests
     {
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         [InlineData("@invalid")]
         [InlineData("/invalid")]
         [InlineData("invalid\\")]
@@ -47,7 +47,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         [InlineData("@invalid")]
         [InlineData("/invalid")]
         [InlineData("invalid\\")]
@@ -68,7 +68,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public async Task RaiseEventAsync_InvalidInstanceId_ThrowsException()
         {
             var instanceId = Guid.NewGuid().ToString();
@@ -81,7 +81,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public async Task RaiseEventAsync_NonRunningFunction_ThrowsException()
         {
             var instanceId = Guid.NewGuid().ToString();
@@ -96,7 +96,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public async Task TerminateAsync_InvalidInstanceId_ThrowsException()
         {
             var instanceId = Guid.NewGuid().ToString();
@@ -112,7 +112,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public async Task TerminateAsync_RunningOrchestrator_TerminateEventPlaced()
         {
             var instanceId = Guid.NewGuid().ToString();
@@ -128,7 +128,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public async Task TerminateAsync_NonRunningOrchestrator_ThrowsException()
         {
             var instanceId = Guid.NewGuid().ToString();
@@ -145,7 +145,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
 #if !FUNCTIONS_V1
         [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public async Task DurableClient_ExternalApp_StartNewAsync_ReturnsInstanceId()
         {
             var orchestrationServiceClientMock = new Mock<IOrchestrationServiceClient>();
@@ -159,7 +159,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public async void DurableClient_ExternalApp_GetStatusAsync_ReturnsStatus()
         {
             var orchestrationServiceClientMock = new Mock<IOrchestrationServiceClient>();
@@ -172,7 +172,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public async void DurableClient_ExternalApp_TerminateAsync_TerminateEventPlaced()
         {
             var orchestrationServiceClientMock = new Mock<IOrchestrationServiceClient>();
@@ -185,7 +185,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public void DurableClient_ExternalApp_CreateCheckStatusResponse_ThrowsException()
         {
             var instanceId = Guid.NewGuid().ToString();
@@ -199,7 +199,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public void DurableClient_ExternalApp_CreateHttpManagementPayload_ThrowsException()
         {
             var instanceId = Guid.NewGuid().ToString();
@@ -230,7 +230,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public async Task HttpRequest_HttpRequestMessage_ClientMethods_Identical()
         {
             var instanceId = Guid.NewGuid().ToString();

@@ -14,7 +14,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
     public class TraceParentTest
     {
         [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public void FromString_NormalCase()
         {
             var expectedVersion = "00";
@@ -29,7 +29,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         }
 
         [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public void FromString_Exception()
         {
             var ex = Assert.Throws<ArgumentException>(() => { TraceParent.FromString("foobar"); });

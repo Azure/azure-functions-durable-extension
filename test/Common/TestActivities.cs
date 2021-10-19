@@ -9,7 +9,7 @@ using static Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests.DurableTaskEnd
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
-    internal static class TestActivities
+    public static class TestActivities
     {
         public const char BigValueChar = '*';
 

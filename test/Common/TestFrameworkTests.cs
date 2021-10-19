@@ -12,7 +12,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     public class TestFrameworkTests
     {
         [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public void AllTestsHaveContinuousIntegrationFriendlyCategories()
         {
             Assembly currentAssembly = Assembly.GetExecutingAssembly();
@@ -41,10 +41,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         private static bool TraitIsValidCategory(KeyValuePair<string, string> trait)
         {
             return trait.Key.Equals("Category") &&
-                (trait.Value.Equals(PlatformSpecificHelpers.TestCategory) ||
-                trait.Value.Equals(PlatformSpecificHelpers.TestCategory + "_BVT") ||
-                trait.Value.Equals(PlatformSpecificHelpers.TestCategory + "_UnpublishedDependencies") ||
-                trait.Value.Equals(PlatformSpecificHelpers.FlakeyTestCategory));
+                (trait.Value.Equals(TestHelpers.DefaultTestCategory) ||
+                trait.Value.Equals(TestHelpers.DefaultTestCategory + "_BVT") ||
+                trait.Value.Equals(TestHelpers.DefaultTestCategory + "_UnpublishedDependencies") ||
+                trait.Value.Equals(TestHelpers.FlakeyTestCategory));
         }
     }
 }

@@ -11,7 +11,7 @@ using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
-    internal static class TestEntities
+    public static class TestEntities
     {
         private static readonly HttpClient SharedHttpClient = new HttpClient();
 

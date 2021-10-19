@@ -16,7 +16,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     public class InterfaceOverloadTests
     {
         [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public async Task IDurableOrchestrationClient_RaiseEventAsync_StringEventData()
         {
             var mockClient = new Mock<IDurableOrchestrationClient>();

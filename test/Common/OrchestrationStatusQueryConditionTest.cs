@@ -12,7 +12,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     public class OrchestrationStatusQueryConditionTest
     {
         [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
         public void Parse_OrchestrationStatusQueryCondition()
         {
             var runtimeStatus = new List<OrchestrationRuntimeStatus>()
