@@ -29,8 +29,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     {
         public const string DefaultVersion = "";
 
-        private readonly Dictionary<string, Stack> pendingExternalEvents =
-            new Dictionary<string, Stack>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, IEventTaskCompletionSource> pendingExternalEvents =
+            new Dictionary<string, IEventTaskCompletionSource>(StringComparer.OrdinalIgnoreCase);
 
         private readonly Dictionary<string, Queue<string>> bufferedExternalEvents =
             new Dictionary<string, Queue<string>>(StringComparer.OrdinalIgnoreCase);
@@ -241,9 +241,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return ((IDurableOrchestrationContext)this).CallHttpAsync(req);
         }
 
-        async Task<DurableHttpResponse> IDurableOrchestrationContext.CallHttpAsync(DurableHttpRequest req)
+        Task<DurableHttpResponse> IDurableOrchestrationContext.CallHttpAsync(DurableHttpRequest req)
         {
-            DurableHttpResponse durableHttpResponse = await this.ScheduleDurableHttpActivityAsync(req);
+            return ((IDurableOrchestrationContext)this).CallHttpAsync(req, null);
+        }
+
+        async Task<DurableHttpResponse> IDurableOrchestrationContext.CallHttpAsync(DurableHttpRequest req, RetryOptions retryOptions)
+        {
+            DurableHttpResponse durableHttpResponse = await this.ScheduleDurableHttpActivityAsync(req, retryOptions);
 
             HttpStatusCode currStatusCode = durableHttpResponse.StatusCode;
 
@@ -271,14 +276,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 DurableHttpRequest durableAsyncHttpRequest = this.CreateLocationPollRequest(
                     req,
                     durableHttpResponse.Headers["Location"]);
-                durableHttpResponse = await this.ScheduleDurableHttpActivityAsync(durableAsyncHttpRequest);
+                durableHttpResponse = await this.ScheduleDurableHttpActivityAsync(durableAsyncHttpRequest, retryOptions);
                 currStatusCode = durableHttpResponse.StatusCode;
             }
 
             return durableHttpResponse;
         }
 
-        private async Task<DurableHttpResponse> ScheduleDurableHttpActivityAsync(DurableHttpRequest req)
+        private async Task<DurableHttpResponse> ScheduleDurableHttpActivityAsync(DurableHttpRequest req, RetryOptions retryOptions = null)
         {
             DurableHttpResponse durableHttpResponse = await this.CallDurableTaskFunctionAsync<DurableHttpResponse>(
                 functionName: HttpOptions.HttpTaskActivityReservedName,
@@ -286,7 +291,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 oneWay: false,
                 instanceId: null,
                 operation: null,
-                retryOptions: null,
+                retryOptions: retryOptions,
                 input: req,
                 scheduledTimeUtc: null);
 
@@ -809,30 +814,28 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             lock (this.pendingExternalEvents)
             {
-                // We use a stack to make it easier for users to abandon external events
+                // We use a stack (a custom implementation using a single-linked list)
+                // to make it easier for users to abandon external events
                 // that they no longer care about. The common case is a Task.WhenAny in a loop.
-                Stack taskCompletionSources;
-                TaskCompletionSource<T> tcs;
+                IEventTaskCompletionSource taskCompletionSources;
+                EventTaskCompletionSource<T> tcs;
 
                 // Set up the stack for listening to external events
                 if (!this.pendingExternalEvents.TryGetValue(name, out taskCompletionSources))
                 {
-                    tcs = new TaskCompletionSource<T>();
-                    taskCompletionSources = new Stack();
-                    taskCompletionSources.Push(tcs);
-                    this.pendingExternalEvents[name] = taskCompletionSources;
+                    tcs = new EventTaskCompletionSource<T>();
+                    this.pendingExternalEvents[name] = tcs;
                 }
                 else
                 {
-                    if (taskCompletionSources.Count > 0 &&
-                        taskCompletionSources.Peek().GetType() != typeof(TaskCompletionSource<T>))
+                    if (taskCompletionSources.EventType != typeof(T))
                     {
                         throw new ArgumentException("Events with the same name should have the same type argument.");
                     }
                     else
                     {
-                        tcs = new TaskCompletionSource<T>();
-                        taskCompletionSources.Push(tcs);
+                        tcs = new EventTaskCompletionSource<T> { Next = taskCompletionSources };
+                        this.pendingExternalEvents[name] = tcs;
                     }
                 }
 
@@ -867,21 +870,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             lock (this.pendingExternalEvents)
             {
-                Stack taskCompletionSources;
+                IEventTaskCompletionSource taskCompletionSources;
                 if (this.pendingExternalEvents.TryGetValue(name, out taskCompletionSources))
                 {
-                    object tcs = taskCompletionSources.Pop();
-                    Type tcsType = tcs.GetType();
-                    Type genericTypeArgument = tcsType.GetGenericArguments()[0];
+                    IEventTaskCompletionSource tcs = taskCompletionSources;
 
                     // If we're going to raise an event we should remove it from the pending collection
                     // because otherwise WaitForExternalEventAsync() will always find one with this key and run infinitely.
-                    if (taskCompletionSources.Count == 0)
+                    IEventTaskCompletionSource next = tcs.Next;
+                    if (next == null)
                     {
                         this.pendingExternalEvents.Remove(name);
                     }
+                    else
+                    {
+                        this.pendingExternalEvents[name] = next;
+                    }
 
-                    object deserializedObject = this.messageDataConverter.Deserialize(input, genericTypeArgument);
+                    object deserializedObject = this.messageDataConverter.Deserialize(input, tcs.EventType);
 
                     if (deserializedObject is ResponseMessage responseMessage)
                     {
@@ -905,8 +911,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                              this.IsReplaying);
                     }
 
-                    MethodInfo trySetResult = tcsType.GetMethod("TrySetResult");
-                    trySetResult.Invoke(tcs, new[] { deserializedObject });
+                    tcs.TrySetResult(deserializedObject);
                 }
                 else
                 {
@@ -1286,6 +1291,39 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.context.ReleaseLocks();
                 }
             }
+        }
+
+        private class EventTaskCompletionSource<T> : TaskCompletionSource<T>, IEventTaskCompletionSource
+        {
+            public Type EventType => typeof(T);
+
+            public IEventTaskCompletionSource Next { get; set; }
+
+            void IEventTaskCompletionSource.TrySetResult(object result) => this.TrySetResult((T)result);
+        }
+
+        /// <summary>
+        /// A non-generic tcs interface.
+        /// </summary>
+#pragma warning disable SA1201 // Elements should appear in the correct order
+        private interface IEventTaskCompletionSource
+#pragma warning restore SA1201 // Elements should appear in the correct order
+        {
+            /// <summary>
+            /// The type of the event stored in the completion source.
+            /// </summary>
+            Type EventType { get; }
+
+            /// <summary>
+            /// The next task completion source in the stack.
+            /// </summary>
+            IEventTaskCompletionSource Next { get; set; }
+
+            /// <summary>
+            /// Tries to set the result on tcs.
+            /// </summary>
+            /// <param name="result">The result.</param>
+            void TrySetResult(object result);
         }
     }
 }

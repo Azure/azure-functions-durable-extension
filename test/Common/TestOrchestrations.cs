@@ -7,7 +7,6 @@ using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
 using Xunit;
@@ -498,7 +497,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             TestDurableHttpRequest testRequest = ctx.GetInput<TestDurableHttpRequest>();
             DurableHttpRequest durableHttpRequest = ConvertTestRequestToDurableHttpRequest(testRequest);
-            DurableHttpResponse response = await ctx.CallHttpAsync(durableHttpRequest);
+
+            RetryOptions retryOptions = null;
+            if (testRequest.FirstRetryInterval.HasValue && testRequest.MaxNumberOfAttempts.HasValue)
+            {
+                retryOptions = new RetryOptions(testRequest.FirstRetryInterval.Value, testRequest.MaxNumberOfAttempts.Value);
+            }
+
+            DurableHttpResponse response = await ctx.CallHttpAsync(durableHttpRequest, retryOptions);
             return response;
         }
 
@@ -586,11 +592,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         public static async Task ParallelBatchActor([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
-           Task item1 = ctx.WaitForExternalEvent<string>("newItem");
-           Task item2 = ctx.WaitForExternalEvent<string>("newItem");
-           Task item3 = ctx.WaitForExternalEvent<string>("newItem");
-           Task item4 = ctx.WaitForExternalEvent<string>("newItem");
-           await Task.WhenAll(item1, item2, item3, item4);
+            Task item1 = ctx.WaitForExternalEvent<string>("newItem");
+            Task item2 = ctx.WaitForExternalEvent<string>("newItem");
+            Task item3 = ctx.WaitForExternalEvent<string>("newItem");
+            Task item4 = ctx.WaitForExternalEvent<string>("newItem");
+            await Task.WhenAll(item1, item2, item3, item4);
         }
 
         public static async Task<int> Counter2([OrchestrationTrigger] IDurableOrchestrationContext ctx)
@@ -634,6 +640,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             await Task.WhenAll(tasks);
 
+            return "Done";
+        }
+
+        public static async Task<string> CallActivityWithDelay(
+           [OrchestrationTrigger] IDurableOrchestrationContext context)
+        {
+            await context.CallActivityAsync(nameof(TestActivities.TimeDelayActivity), null);
             return "Done";
         }
 
