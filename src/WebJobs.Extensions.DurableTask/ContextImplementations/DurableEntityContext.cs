@@ -313,12 +313,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.CurrentStateAccess = StateAccess.Accessed;
         }
 
-        internal bool TryWriteback(out ResponseMessage serializationErrorMessage, string operation = null)
+        internal bool TryWriteback(out ResponseMessage serializationErrorMessage, string operationName = null, string operationId = null)
         {
             serializationErrorMessage = null;
 
             if (this.CurrentStateAccess == StateAccess.Deleted)
             {
+                this.Config.TraceHelper.EntityStateDeleted(
+                    this.Config.Options.HubName,
+                    this.Name,
+                    this.InstanceId,
+                    operationName ?? "",
+                    operationId ?? "",
+                    isReplay: false);
+
                 this.State.EntityState = null;
                 this.State.EntityExists = false;
                 this.CurrentStateAccess = StateAccess.NotAccessed;
@@ -328,6 +336,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 try
                 {
                     this.State.EntityState = this.messageDataConverter.Serialize(this.CurrentState);
+
+                    if (!this.State.EntityExists)
+                    {
+                        this.Config.TraceHelper.EntityStateCreated(
+                            this.Config.Options.HubName,
+                            this.Name,
+                            this.InstanceId,
+                            operationName ?? "",
+                            operationId ?? "",
+                            isReplay: false);
+                    }
+
                     this.State.EntityExists = true;
                     this.CurrentStateAccess = StateAccess.Clean;
                 }
@@ -340,7 +360,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.CaptureApplicationError(serializationException);
 
                     serializationErrorMessage = new ResponseMessage();
-                    serializationErrorMessage.SetExceptionResult(serializationException, operation, this.errorDataConverter);
+                    serializationErrorMessage.SetExceptionResult(serializationException, operationName, this.errorDataConverter);
 
                     this.CurrentStateAccess = StateAccess.NotAccessed;
                     this.CurrentState = null;
