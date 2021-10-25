@@ -112,8 +112,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
       ""tenantid"": ""tenant_id""
     }
   },
-  ""AsynchronousPatternEnabled"": true,
-  ""Timeout"": null
+  ""AsynchronousPatternEnabled"": true
 }";
 
             Dictionary<string, string> headers = new Dictionary<string, string>();
