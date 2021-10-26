@@ -81,7 +81,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations
                 attr =>
                 {
                     DurabilityProvider innerClient = this.durabilityProviderFactory.GetDurabilityProvider(attribute);
-                    return new DurableClient(innerClient, null, attribute, this.MessageDataConverter, this.TraceHelper, this.durableTaskOptions);
+                    return new DurableClient(innerClient, null, attribute, this.MessageDataConverter, this.TraceHelper, this.durableTaskOptions, this);
                 });
 
             return client;

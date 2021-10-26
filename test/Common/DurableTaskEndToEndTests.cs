@@ -227,7 +227,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
 #if !FUNCTIONS_V1
         /// <summary>
-        /// End to end test that ensures that customers can configure custom connection string names 
+        /// End to end test that ensures that customers can configure custom connection string names
         /// using DurableClientOptions when they create a DurableClient from an external app (e.g. ASP.NET Core app).
         /// The appSettings dictionary acts like appsettings.json and durableClientOptions are the
         /// settings passed in during a call to DurableClient (IDurableClientFactory.CreateClient(durableClientOptions)).
@@ -323,6 +323,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     { "CONTAINER_NAME", "val1" },
                     { "WEBSITE_STAMP_DEPLOYMENT_ID", "val3" },
                     { "WEBSITE_HOME_STAMPNAME", "val4" },
+                    { "FUNCTIONS_WORKER_RUNTIME", "python" },
                 });
 
                 // Run trivial orchestrator
@@ -372,6 +373,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     { "CONTAINER_NAME", "val1" },
                     { "WEBSITE_STAMP_DEPLOYMENT_ID", "val3" },
                     { "WEBSITE_HOME_STAMPNAME", "val4" },
+                    { "FUNCTIONS_WORKER_RUNTIME", "node" },
                 });
 
                 // Run trivial orchestrator
@@ -422,6 +424,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     { "CONTAINER_NAME", "val1" },
                     { "WEBSITE_STAMP_DEPLOYMENT_ID", "val3" },
                     { "WEBSITE_HOME_STAMPNAME", "val4" },
+                    { "FUNCTIONS_WORKER_RUNTIME", "powershell" },
                 });
 
                 // Run trivial orchestrator
@@ -479,6 +482,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 { "WEBSITE_INSTANCE_ID", "val1" },
                 { "FUNCTIONS_LOGS_MOUNT_PATH", "val2" },
+                { "FUNCTIONS_WORKER_RUNTIME", "python" },
             });
 
             // Run trivial orchestrator
@@ -524,6 +528,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     { "CONTAINER_NAME", "val1" },
                     { "WEBSITE_STAMP_DEPLOYMENT_ID", "val3" },
                     { "WEBSITE_HOME_STAMPNAME", "val4" },
+                    { "FUNCTIONS_WORKER_RUNTIME", "python" },
                 });
 
                 // Run trivial orchestrator
@@ -590,6 +595,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     { "CONTAINER_NAME", "val1" },
                     { "WEBSITE_STAMP_DEPLOYMENT_ID", "val3" },
                     { "WEBSITE_HOME_STAMPNAME", "val4" },
+                    { "FUNCTIONS_WORKER_RUNTIME", "python" },
                 });
 
                 // Run trivial orchestrator
@@ -657,6 +663,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 { "WEBSITE_INSTANCE_ID", "val1" },
                 { "FUNCTIONS_LOGS_MOUNT_PATH", "val2" },
+                { "FUNCTIONS_WORKER_RUNTIME", "python" },
             });
 
             // Run trivial orchestrator
@@ -716,6 +723,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 { "FUNCTIONS_LOGS_MOUNT_PATH", "val2" },
                 { "WEBSITE_STAMP_DEPLOYMENT_ID", "val3" },
                 { "WEBSITE_HOME_STAMPNAME", "val4" },
+                { "FUNCTIONS_WORKER_RUNTIME", "python" },
             });
 
             // Run trivial orchestrator

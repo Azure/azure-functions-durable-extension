@@ -126,7 +126,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     // Durable functions expects input as a JArray with one element.
                     serializedInput = $"[{serializedInput}]";
 
-                    activityContext = new DurableActivityContext(this.durableTaskConfig, Guid.NewGuid().ToString(), serializedInput);
+                    activityContext = new DurableActivityContext(this.durableTaskConfig, Guid.NewGuid().ToString(), serializedInput, this.activityName.Name);
                 }
 
                 Type destinationType = this.parameterInfo.ParameterType;
