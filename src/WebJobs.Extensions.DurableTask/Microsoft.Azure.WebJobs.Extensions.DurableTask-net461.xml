@@ -3106,7 +3106,7 @@
             Representation of supported Programming Languages.
             </summary>
         </member>
-        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.WorkerRuntimeType.Dotnet">
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.WorkerRuntimeType.DotNet">
             <summary>
             dotnet
             </summary>

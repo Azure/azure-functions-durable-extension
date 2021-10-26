@@ -439,22 +439,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 linuxLogger = new LinuxAppServiceLogger(writeToConsole: false, containerName, tenant, stampName);
             }
-            else if (inConsumption)
+            else
             {
                 linuxLogger = new LinuxAppServiceLogger(writeToConsole: true, containerName, tenant, stampName);
             }
 
-            if (linuxLogger != null)
-            {
-                // The logging service for linux works by capturing EventSource messages,
-                // which our linux platform does not recognize, and logging them via a
-                // different strategy such as writing to console or to a file.
+            // The logging service for linux works by capturing EventSource messages,
+            // which our linux platform does not recognize, and logging them via a
+            // different strategy such as writing to console or to a file.
 
-                // Since our logging payload can be quite large, linux telemetry by default
-                // disables verbose-level telemetry to avoid a performance hit.
-                bool enableVerbose = this.Options.Tracing.AllowVerboseLinuxTelemetry;
-                this.eventSourceListener = new EventSourceListener(linuxLogger, enableVerbose, this.TraceHelper, this.defaultDurabilityProvider.EventSourceName);
-            }
+            // Since our logging payload can be quite large, linux telemetry by default
+            // disables verbose-level telemetry to avoid a performance hit.
+            bool enableVerbose = this.Options.Tracing.AllowVerboseLinuxTelemetry;
+            this.eventSourceListener = new EventSourceListener(linuxLogger, enableVerbose, this.TraceHelper, this.defaultDurabilityProvider.EventSourceName);
         }
 
         /// <inheritdoc />

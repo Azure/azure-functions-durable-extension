@@ -397,7 +397,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             var runtimeType = platformInformation.GetWorkerRuntimeType();
 
-            if (workerRuntime == "haskell")
+            var supportedPLs = (IEnumerable<string>)Enum.GetNames(typeof(WorkerRuntimeType));
+            if (!supportedPLs.Contains(workerRuntime, StringComparer.OrdinalIgnoreCase))
             {
                 // Unknown runtimes should return Unknown
                 Assert.Equal(WorkerRuntimeType.Unknown, runtimeType);

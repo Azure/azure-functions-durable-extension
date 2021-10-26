@@ -29,7 +29,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <summary>
         /// dotnet
         /// </summary>
-        Dotnet,
+        DotNet,
 
         /// <summary>
         /// Python.
