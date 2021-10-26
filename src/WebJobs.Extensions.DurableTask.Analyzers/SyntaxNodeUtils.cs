@@ -34,10 +34,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                 newModel = null;
                 return false;
             }
-            
-            newModel = model.SyntaxTree == node.SyntaxTree
-                ? model
-                : model.Compilation.GetSemanticModel(node.SyntaxTree);
+
+            try
+            {
+                var compilation = model.Compilation;
+                if (!compilation.ContainsSyntaxTree(node.SyntaxTree))
+                {
+                    var newComplilation = model.Compilation.AddSyntaxTrees(node.SyntaxTree);
+                    newModel = newComplilation.GetSemanticModel(node.SyntaxTree);
+                }
+                else
+                {
+                    newModel = model.SyntaxTree == node.SyntaxTree
+                    ? model
+                    : model.Compilation.GetSemanticModel(node.SyntaxTree);
+                }
+            }
+            catch( ArgumentException e) when (e.Message.Contains("Inconsistent language versions"))
+            {
+                // model.Compilation.AddSyntaxTrees(node.SyntaxTree) can sometimes throw an ArgumentException with this message if the SyntaxTree
+                // that is being added has an inconsistent language version with the compilation.
+                newModel = null;
+                return false;
+            }
+
             return newModel != null;
         }
 

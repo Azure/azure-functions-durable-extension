@@ -36,7 +36,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
             foreach (var node in interfaceChildNodes)
             {
-                if (!node.IsKind(SyntaxKind.MethodDeclaration))
+                // Only methods and implemented interfaces are allowed in an entity interface.
+                if (!node.IsKind(SyntaxKind.MethodDeclaration) && !node.IsKind(SyntaxKind.BaseList))
                 {
                     var diagnostic = Diagnostic.Create(NotAMethodRule, node.GetLocation(), node);
 
