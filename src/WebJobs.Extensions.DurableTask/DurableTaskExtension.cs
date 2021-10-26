@@ -74,7 +74,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly bool isOptionsConfigured;
         private readonly IApplicationLifetimeWrapper hostLifetimeService = HostLifecycleService.NoOp;
 #pragma warning disable CS0612 // Type or member is obsolete
-        private IPlatformInformationService platformInformationService;
+#pragma warning disable SA1401 // Fields should be private
+        internal IPlatformInformation PlatformInformationService;
+#pragma warning restore SA1401 // Fields should be private
 #pragma warning restore CS0612 // Type or member is obsolete
         private IDurabilityProviderFactory durabilityProviderFactory;
         private INameResolver nameResolver;
@@ -125,7 +127,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             ILifeCycleNotificationHelper lifeCycleNotificationHelper = null,
             IMessageSerializerSettingsFactory messageSerializerSettingsFactory = null,
 #pragma warning disable CS0612 // Type or member is obsolete
-            IPlatformInformationService platformInformationService = null,
+            IPlatformInformation platformInformationService = null,
 #pragma warning restore CS0612 // Type or member is obsolete
 #if !FUNCTIONS_V1
             IErrorSerializerSettingsFactory errorSerializerSettingsFactory = null,
@@ -143,7 +145,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.Options = options?.Value ?? new DurableTaskOptions();
             this.nameResolver = nameResolver ?? throw new ArgumentNullException(nameof(nameResolver));
             this.loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
-            this.platformInformationService = platformInformationService ?? throw new ArgumentNullException(nameof(platformInformationService));
+            this.PlatformInformationService = platformInformationService ?? throw new ArgumentNullException(nameof(platformInformationService));
             this.ResolveAppSettingOptions();
 
             ILogger logger = loggerFactory.CreateLogger(LoggerCategoryName);
@@ -199,7 +201,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             IApplicationLifetimeWrapper shutdownNotification,
             IDurableHttpMessageHandlerFactory durableHttpMessageHandlerFactory,
 #pragma warning disable CS0612 // Type or member is obsolete
-            IPlatformInformationService platformInformationService)
+            IPlatformInformation platformInformationService)
 #pragma warning restore CS0612 // Type or member is obsolete
 
             : this(options, loggerFactory, nameResolver, orchestrationServiceFactories, shutdownNotification, durableHttpMessageHandlerFactory)
@@ -311,7 +313,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #if !FUNCTIONS_V1
             // .NET461 is not supported in linux, so this is conditionally compiled
             // We initialize linux logging early on in case any initialization steps below were to trigger a log event.
-            this.InitializeLinuxLogging();
+            if (this.PlatformInformationService.GetOperatingSystem() == OperatingSystem.Linux)
+            {
+                this.InitializeLinuxLogging();
+            }
 #endif
 
             ConfigureLoaderHooks();
@@ -422,35 +427,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private void InitializeLinuxLogging()
         {
             // Determine host platform
-            bool inLinuxDedicated = this.platformInformationService.InLinuxAppService();
-            bool inLinuxConsumption = this.platformInformationService.InLinuxConsumption();
+            bool inConsumption = this.PlatformInformationService.IsInConsumptionPlan();
 
-            string tenant = this.platformInformationService.GetLinuxTenant();
-            string stampName = this.platformInformationService.GetLinuxStampName();
-            string containerName = this.platformInformationService.GetContainerName();
+            string tenant = this.PlatformInformationService.GetLinuxTenant();
+            string stampName = this.PlatformInformationService.GetLinuxStampName();
+            string containerName = this.PlatformInformationService.GetContainerName();
 
             // If running in linux, initialize the EventSource listener with the appropiate logger.
             LinuxAppServiceLogger linuxLogger = null;
-            if (inLinuxDedicated)
+            if (!inConsumption)
             {
                 linuxLogger = new LinuxAppServiceLogger(writeToConsole: false, containerName, tenant, stampName);
             }
-            else if (inLinuxConsumption)
+            else
             {
                 linuxLogger = new LinuxAppServiceLogger(writeToConsole: true, containerName, tenant, stampName);
             }
 
-            if (linuxLogger != null)
-            {
-                // The logging service for linux works by capturing EventSource messages,
-                // which our linux platform does not recognize, and logging them via a
-                // different strategy such as writing to console or to a file.
+            // The logging service for linux works by capturing EventSource messages,
+            // which our linux platform does not recognize, and logging them via a
+            // different strategy such as writing to console or to a file.
 
-                // Since our logging payload can be quite large, linux telemetry by default
-                // disables verbose-level telemetry to avoid a performance hit.
-                bool enableVerbose = this.Options.Tracing.AllowVerboseLinuxTelemetry;
-                this.eventSourceListener = new EventSourceListener(linuxLogger, enableVerbose, this.TraceHelper, this.defaultDurabilityProvider.EventSourceName);
-            }
+            // Since our logging payload can be quite large, linux telemetry by default
+            // disables verbose-level telemetry to avoid a performance hit.
+            bool enableVerbose = this.Options.Tracing.AllowVerboseLinuxTelemetry;
+            this.eventSourceListener = new EventSourceListener(linuxLogger, enableVerbose, this.TraceHelper, this.defaultDurabilityProvider.EventSourceName);
         }
 
         /// <inheritdoc />
@@ -517,13 +518,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             ILogger logger = this.loggerFactory.CreateLogger(LoggerCategoryName);
             this.TraceHelper = new EndToEndTraceHelper(logger, this.Options.Tracing.TraceReplayEvents);
             this.connectionStringResolver = new WebJobsConnectionStringProvider();
-            this.platformInformationService = new DefaultPlatformInformationProvider(this.nameResolver);
+            this.PlatformInformationService = new DefaultPlatformInformation(this.nameResolver, this.loggerFactory);
             this.durabilityProviderFactory = new AzureStorageDurabilityProviderFactory(
                 new OptionsWrapper<DurableTaskOptions>(this.Options),
                 this.connectionStringResolver,
                 this.nameResolver,
                 this.loggerFactory,
-                this.platformInformationService);
+                this.PlatformInformationService);
             this.defaultDurabilityProvider = this.durabilityProviderFactory.GetDurabilityProvider();
             this.LifeCycleNotificationHelper = this.CreateLifeCycleNotificationHelper();
             var messageSerializerSettingsFactory = new MessageSerializerSettingsFactory();

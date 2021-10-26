@@ -46,7 +46,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             serviceCollection.TryAddSingleton<IDurableClientFactory, DurableClientFactory>();
             serviceCollection.TryAddSingleton<IMessageSerializerSettingsFactory, MessageSerializerSettingsFactory>();
 #pragma warning disable CS0612 // Type or member is obsolete
-            serviceCollection.TryAddSingleton<IPlatformInformationService, DefaultPlatformInformationProvider>();
+            serviceCollection.TryAddSingleton<IPlatformInformation, DefaultPlatformInformation>();
 #pragma warning restore CS0612 // Type or member is obsolete
 
             return serviceCollection;
@@ -90,7 +90,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             serviceCollection.AddSingleton<ITelemetryActivator, TelemetryActivator>();
             serviceCollection.TryAddSingleton<IDurableClientFactory, DurableClientFactory>();
 #pragma warning disable CS0612 // Type or member is obsolete
-            serviceCollection.AddSingleton<IPlatformInformationService, DefaultPlatformInformationProvider>();
+            serviceCollection.AddSingleton<IPlatformInformation, DefaultPlatformInformation>();
 #pragma warning restore CS0612 // Type or member is obsolete
 
             return builder;
