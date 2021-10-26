@@ -402,6 +402,27 @@
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationContext.Microsoft#Azure#WebJobs#Extensions#DurableTask#IDurableOrchestrationContext#CreateEntityProxy``1(Microsoft.Azure.WebJobs.Extensions.DurableTask.EntityId)">
             <inheritdoc/>
         </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationContext.IEventTaskCompletionSource">
+            <summary>
+            A non-generic tcs interface.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationContext.IEventTaskCompletionSource.EventType">
+            <summary>
+            The type of the event stored in the completion source.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationContext.IEventTaskCompletionSource.Next">
+            <summary>
+            The next task completion source in the stack.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationContext.IEventTaskCompletionSource.TrySetResult(System.Object)">
+            <summary>
+            Tries to set the result on tcs.
+            </summary>
+            <param name="result">The result.</param>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableContextExtensions">
             <summary>
             Defines convenient overloads for calling the context methods, for all the contexts.
@@ -1117,13 +1138,14 @@
             </remarks>
             <param name="customStatusObject">The JSON-serializeable value to use as the orchestrator function's custom status.</param>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationContext.CallHttpAsync(System.Net.Http.HttpMethod,System.Uri,System.String)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationContext.CallHttpAsync(System.Net.Http.HttpMethod,System.Uri,System.String,Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpRetryOptions)">
             <summary>
             Makes an HTTP call to the specified uri.
             </summary>
             <param name="method">HttpMethod used for api call.</param>
             <param name="uri">uri used to make the HTTP call.</param>
             <param name="content">Content passed in the HTTP request.</param>
+            <param name="retryOptions">The retry option for the HTTP task.</param>
             <returns>A <see cref="T:System.Threading.Tasks.Task`1"/>Result of the HTTP call.</returns>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationContext.CallHttpAsync(Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableHttpRequest)">
@@ -1338,7 +1360,8 @@
             <remarks>
             All durable timers created using this method must either expire or be cancelled
             using the <paramref name="cancelToken"/> before the orchestrator function completes.
-            Otherwise the underlying framework will keep the instance alive until the timer expires.
+             Otherwise the underlying framework will keep the instance in the "Running" state
+             even after the orchestrator function has completed.
             </remarks>
             <typeparam name="T">The type of <paramref name="state"/>.</typeparam>
             <param name="fireAt">The time at which the timer should expire.</param>
@@ -1353,7 +1376,8 @@
             <remarks>
             All durable timers created using this method must either expire or be cancelled
             using the <paramref name="cancelToken"/> before the orchestrator function completes.
-            Otherwise the underlying framework will keep the instance alive until the timer expires.
+             Otherwise the underlying framework will keep the instance in the "Running" state
+             even after the orchestrator function has completed.
             </remarks>
             <param name="fireAt">The time at which the timer should expire.</param>
             <param name="cancelToken">The <c>CancellationToken</c> to use for cancelling the timer.</param>
@@ -2180,7 +2204,7 @@
             Request used to make an HTTP call through Durable Functions.
             </summary>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableHttpRequest.#ctor(System.Net.Http.HttpMethod,System.Uri,System.Collections.Generic.IDictionary{System.String,Microsoft.Extensions.Primitives.StringValues},System.String,Microsoft.Azure.WebJobs.Extensions.DurableTask.ITokenSource,System.Boolean,System.Nullable{System.TimeSpan})">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableHttpRequest.#ctor(System.Net.Http.HttpMethod,System.Uri,System.Collections.Generic.IDictionary{System.String,Microsoft.Extensions.Primitives.StringValues},System.String,Microsoft.Azure.WebJobs.Extensions.DurableTask.ITokenSource,System.Boolean,System.Nullable{System.TimeSpan},Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpRetryOptions)">
             <summary>
             Initializes a new instance of the <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableHttpRequest"/> class.
             </summary>
@@ -2191,6 +2215,7 @@
             <param name="tokenSource">AAD authentication attached to the HTTP request.</param>
             <param name="asynchronousPatternEnabled">Specifies whether the DurableHttpRequest should handle the asynchronous pattern.</param>
             <param name="timeout">TimeSpan used for HTTP request timeout.</param>
+            <param name="httpRetryOptions">Retry options used for the HTTP request.</param>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableHttpRequest.Method">
             <summary>
@@ -2221,6 +2246,12 @@
             <summary>
             Specifies whether the Durable HTTP APIs should automatically
             handle the asynchronous HTTP pattern.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableHttpRequest.HttpRetryOptions">
+            <summary>
+            Defines retry policy for handling of failures in making the HTTP Request. These could be non-successful HTTP Status Codes
+            in the response, a timeout in making the HTTP call, or an exception raised from the HTTP Client library.
             </summary>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableHttpRequest.Timeout">
@@ -3166,6 +3197,73 @@
             <value>
             The HTTP URL for restarting an orchestration instance.
             </value>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpRetryOptions">
+            <summary>
+            Defines retry policies that can be passed as parameters to various operations.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpRetryOptions.#ctor(System.TimeSpan,System.Int32)">
+            <summary>
+            Creates a new instance SerializableRetryOptions with the supplied first retry and max attempts.
+            </summary>
+            <param name="firstRetryInterval">Timespan to wait for the first retry.</param>
+            <param name="maxNumberOfAttempts">Max number of attempts to retry.</param>
+            <exception cref="T:System.ArgumentException">
+            The <paramref name="firstRetryInterval"/> value must be greater than <see cref="F:System.TimeSpan.Zero"/>.
+            </exception>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpRetryOptions.FirstRetryInterval">
+            <summary>
+            Gets or sets the first retry interval.
+            </summary>
+            <value>
+            The TimeSpan to wait for the first retries.
+            </value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpRetryOptions.MaxRetryInterval">
+            <summary>
+            Gets or sets the max retry interval.
+            </summary>
+            <value>
+            The TimeSpan of the max retry interval, defaults to 6 days.
+            </value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpRetryOptions.BackoffCoefficient">
+            <summary>
+            Gets or sets the backoff coefficient.
+            </summary>
+            <value>
+            The backoff coefficient used to determine rate of increase of backoff. Defaults to 1.
+            </value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpRetryOptions.RetryTimeout">
+            <summary>
+            Gets or sets the timeout for retries.
+            </summary>
+            <value>
+            The TimeSpan timeout for retries, defaults to <see cref="F:System.TimeSpan.MaxValue"/>.
+            </value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpRetryOptions.MaxNumberOfAttempts">
+            <summary>
+            Gets or sets the max number of attempts.
+            </summary>
+            <value>
+            The maximum number of retry attempts.
+            </value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpRetryOptions.StatusCodesToRetry">
+            <summary>
+            Gets or sets the list of status codes upon which the
+            retry logic specified by this object shall be triggered.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpRetryOptions.op_Explicit(Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpRetryOptions)~Microsoft.Azure.WebJobs.Extensions.DurableTask.RetryOptions">
+            <summary>
+            Converts a <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpRetryOptions"/> instance to <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.RetryOptions"/>.
+            </summary>
+            <param name="httpOptions">The <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpRetryOptions"/> instance to convert.</param>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IApplicationLifetimeWrapper">
             <summary>
@@ -4370,7 +4468,7 @@
             Gets or sets a delegate to call on exception to determine if retries should proceed.
             </summary>
             <value>
-            The delegate to handle exception to determie if retries should proceed.
+            The delegate to handle exception to determine if retries should proceed.
             </value>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.StandardConnectionStringProvider">

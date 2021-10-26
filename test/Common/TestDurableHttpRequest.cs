@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Net.Http;
 using System.Runtime.Serialization;
 using Newtonsoft.Json;
@@ -59,5 +60,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [DataMember(EmitDefaultValue = false)]
         public int? MaxNumberOfAttempts { get; set; }
+
+        [DataMember(EmitDefaultValue = false)]
+        public IList<HttpStatusCode> StatusCodesToRetry { get; set; }
     }
 }
