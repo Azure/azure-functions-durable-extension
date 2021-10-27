@@ -151,7 +151,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     }
    },
   ""asynchronousPatternEnabled"": true,
-  ""httpRetryOptions"": null,
+  ""retryOptions"": null,
   ""timeout"": null
 }";
             ManagedIdentityTokenSource managedIdentityTokenSource = new ManagedIdentityTokenSource("dummy url", options);
@@ -183,7 +183,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     ""resource"": ""dummy url""
   },
   ""asynchronousPatternEnabled"": true,
-  ""httpRetryOptions"": null,
+  ""retryOptions"": null,
   ""timeout"": null
 }";
 

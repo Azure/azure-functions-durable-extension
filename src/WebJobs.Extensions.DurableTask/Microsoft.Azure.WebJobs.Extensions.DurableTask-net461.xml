@@ -2027,7 +2027,7 @@
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableHttpRequest.HttpRetryOptions">
             <summary>
-            Defines retry policy for handling of failures in making the HTTP Request. These could be non-successful HTTP Status Codes
+            Defines retry policy for handling of failures in making the HTTP Request. These could be non-successful HTTP status codes
             in the response, a timeout in making the HTTP call, or an exception raised from the HTTP Client library.
             </summary>
         </member>
@@ -3004,6 +3004,8 @@
             <summary>
             Gets or sets the list of status codes upon which the
             retry logic specified by this object shall be triggered.
+            If none are provided, all 4xx and 5xx status codes
+            will be retried.
             </summary>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IApplicationLifetimeWrapper">
