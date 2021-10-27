@@ -15,7 +15,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     {
         private readonly DurableTaskCore.RetryOptions coreRetryOptions;
 
-        // Would like to make this durability provider specific, but since this is a customer
+        // Would like to make this durability provider specific, but since this is a developer
         // facing type, that is difficult.
         private static readonly TimeSpan DefaultMaxRetryinterval = TimeSpan.FromDays(6);
 
