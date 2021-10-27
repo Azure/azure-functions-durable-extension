@@ -72,7 +72,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     // Based on what status codes are configured to retry, we throw an exception
                     // to fail the activity so that the DTFx retry options are respected.
                     if (durableHttpRequest.HttpRetryOptions.StatusCodesToRetry == null
-                        || durableHttpRequest.HttpRetryOptions.StatusCodesToRetry?.Count == 0)
+                        || durableHttpRequest.HttpRetryOptions.StatusCodesToRetry.Count == 0)
                     {
                         // If HttpRetryOptions are provided, but no specific status codes are specified,
                         // we will throw an exception on any 4xx or 5xx error to trigger retries.
