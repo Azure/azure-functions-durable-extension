@@ -87,10 +87,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public bool AsynchronousPatternEnabled { get; }
 
         /// <summary>
-        /// Defines retry policy for handling of failures in making the HTTP Request. These could be non-successful HTTP Status Codes
+        /// Defines retry policy for handling of failures in making the HTTP Request. These could be non-successful HTTP status codes
         /// in the response, a timeout in making the HTTP call, or an exception raised from the HTTP Client library.
         /// </summary>
-        [JsonProperty("httpRetryOptions")]
+        [JsonProperty("retryOptions")]
         public HttpRetryOptions HttpRetryOptions { get; }
 
         /// <summary>
