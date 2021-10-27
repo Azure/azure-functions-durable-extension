@@ -69,7 +69,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 if (durableHttpRequest.HttpRetryOptions?.StatusCodesToRetry?.Contains(response.StatusCode) == true)
                 {
-                    throw new HttpRequestException($@"Status code {response.StatusCode} received, retry requested.");
+                    throw new HttpRequestException($"Status code {response.StatusCode} received, retry requested.");
                 }
                 else if (durableHttpRequest.HttpRetryOptions != null)
                 {
