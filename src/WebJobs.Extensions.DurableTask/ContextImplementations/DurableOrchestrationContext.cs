@@ -287,7 +287,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 oneWay: false,
                 instanceId: null,
                 operation: null,
-                retryOptions: (RetryOptions)req.HttpRetryOptions,
+                retryOptions: req.HttpRetryOptions?.GetRetryOptions(),
                 input: req,
                 scheduledTimeUtc: null);
 

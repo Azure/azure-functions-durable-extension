@@ -509,7 +509,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 foreach (KeyValuePair<string, string> header in testRequest.Headers)
                 {
-                    if (testHeaders.TryGetValue(header.Key, out var stringValues))
+                    if (testHeaders.TryGetValue(header.Key, out StringValues stringValues))
                     {
                         stringValues = StringValues.Concat(stringValues, header.Value);
                         testHeaders[header.Key] = stringValues;

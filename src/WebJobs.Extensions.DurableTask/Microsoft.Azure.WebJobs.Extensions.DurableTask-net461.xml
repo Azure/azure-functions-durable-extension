@@ -1147,14 +1147,6 @@
             <param name="req">The DurableHttpRequest used to make the HTTP call.</param>
             <returns>A <see cref="T:System.Threading.Tasks.Task`1"/>Result of the HTTP call.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationContext.CallHttpAsync(Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableHttpRequest,Microsoft.Azure.WebJobs.Extensions.DurableTask.RetryOptions)">
-            <summary>
-            Makes an HTTP call using the information in the DurableHttpRequest.
-            </summary>
-            <param name="req">The DurableHttpRequest used to make the HTTP call.</param>
-            <param name="retryOptions">The retry option for the HTTP task.</param>
-            <returns>A <see cref="T:System.Threading.Tasks.Task`1"/>Result of the HTTP call.</returns>
-        </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationContext.CallEntityAsync``1(Microsoft.Azure.WebJobs.Extensions.DurableTask.EntityId,System.String)">
             <summary>
             Calls an operation on an entity and returns the result asynchronously.
@@ -3014,12 +3006,6 @@
             retry logic specified by this object shall be triggered.
             </summary>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpRetryOptions.op_Explicit(Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpRetryOptions)~Microsoft.Azure.WebJobs.Extensions.DurableTask.RetryOptions">
-            <summary>
-            Converts a <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpRetryOptions"/> instance to <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.RetryOptions"/>.
-            </summary>
-            <param name="httpOptions">The <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpRetryOptions"/> instance to convert.</param>
-        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IApplicationLifetimeWrapper">
             <summary>
             Custom service interface for signaling the extension when the function app is starting up or shutting down.
@@ -4181,7 +4167,7 @@
             Gets or sets the max retry interval.
             </summary>
             <value>
-            The TimeSpan of the max retry interval, defaults to 6 days.
+            The TimeSpan of the max retry interval, defaults to <see cref="F:System.TimeSpan.MaxValue"/>.
             </value>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.RetryOptions.BackoffCoefficient">

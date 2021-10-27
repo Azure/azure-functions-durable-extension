@@ -417,7 +417,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task DurableHttpAsync_Synchronous_RetryExceededWithHttpNotFoundStatusCode(string storageProvider)
         {
-            HttpResponseMessage testHttpResponseMessage = CreateTestHttpResponseMessage(HttpStatusCode.OK);
             HttpMessageHandler httpMessageHandler = MockSynchronousHttpMessageHandlerWithHttp404();
 
             using (ITestHost host = TestHelpers.GetJobHost(
@@ -463,7 +462,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task DurableHttpAsync_Synchronous_RetryExceededWithHttpNotFoundViaEnsureSuccessException(string storageProvider)
         {
-            HttpResponseMessage testHttpResponseMessage = CreateTestHttpResponseMessage(HttpStatusCode.OK);
             HttpMessageHandler httpMessageHandler = MockSynchronousHttpMessageHandlerWithHttp404();
 
             using (ITestHost host = TestHelpers.GetJobHost(
@@ -509,7 +507,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task DurableHttpAsync_Synchronous_SuccessWithNoRetryWithHttpNotFoundIfNotSpecified(string storageProvider)
         {
-            HttpResponseMessage testHttpResponseMessage = CreateTestHttpResponseMessage(HttpStatusCode.OK);
             HttpMessageHandler httpMessageHandler = MockSynchronousHttpMessageHandlerWithHttp404();
 
             using (ITestHost host = TestHelpers.GetJobHost(

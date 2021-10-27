@@ -96,28 +96,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <summary>
         /// Gets or sets the list of status codes upon which the
         /// retry logic specified by this object shall be triggered.
+        /// If none are provided, all 4xx and 5xx status codes
+        /// will be retried.
         /// </summary>
         public IList<HttpStatusCode> StatusCodesToRetry { get; set; } = new List<HttpStatusCode>();
 
-        /// <summary>
-        /// Converts a <see cref="HttpRetryOptions"/> instance to <see cref="RetryOptions"/>.
-        /// </summary>
-        /// <param name="httpOptions">The <see cref="HttpRetryOptions"/> instance to convert.</param>
-        public static explicit operator RetryOptions(HttpRetryOptions httpOptions)
+        internal RetryOptions GetRetryOptions()
         {
-            return httpOptions is null
-                ? null
-                : new RetryOptions(httpOptions.FirstRetryInterval, httpOptions.MaxNumberOfAttempts)
+            return new RetryOptions(this.FirstRetryInterval, this.MaxNumberOfAttempts)
                 {
-                    BackoffCoefficient = httpOptions.BackoffCoefficient,
-                    MaxRetryInterval = httpOptions.MaxRetryInterval,
-                    RetryTimeout = httpOptions.RetryTimeout,
+                    BackoffCoefficient = this.BackoffCoefficient,
+                    MaxRetryInterval = this.MaxRetryInterval,
+                    RetryTimeout = this.RetryTimeout,
                 };
-        }
-
-        internal DurableTaskCore.RetryOptions GetRetryOptions()
-        {
-            return this.coreRetryOptions;
         }
     }
 }
