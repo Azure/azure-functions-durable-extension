@@ -1147,6 +1147,14 @@
             <param name="req">The DurableHttpRequest used to make the HTTP call.</param>
             <returns>A <see cref="T:System.Threading.Tasks.Task`1"/>Result of the HTTP call.</returns>
         </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationContext.CallHttpAsync(Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableHttpRequest,Microsoft.Azure.WebJobs.Extensions.DurableTask.RetryOptions)">
+            <summary>
+            Makes an HTTP call using the information in the DurableHttpRequest.
+            </summary>
+            <param name="req">The DurableHttpRequest used to make the HTTP call.</param>
+            <param name="retryOptions">The retry option for the HTTP task.</param>
+            <returns>A <see cref="T:System.Threading.Tasks.Task`1"/>Result of the HTTP call.</returns>
+        </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationContext.CallEntityAsync``1(Microsoft.Azure.WebJobs.Extensions.DurableTask.EntityId,System.String)">
             <summary>
             Calls an operation on an entity and returns the result asynchronously.
@@ -1621,7 +1629,7 @@
             Now obsolete: use <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient"/> instead.
             </summary>
         </member>
-        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DefaultPlatformInformationProvider">
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DefaultPlatformInformation">
             <summary>
             Provides information about the enviroment (OS, app service plan, user-facing PL)
             using the DI-injected INameResolver.
@@ -2179,7 +2187,7 @@
             Obsolete. Please use an alternate constructor overload.
             </summary>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.#ctor(Microsoft.Extensions.Options.IOptions{Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions},Microsoft.Extensions.Logging.ILoggerFactory,Microsoft.Azure.WebJobs.INameResolver,System.Collections.Generic.IEnumerable{Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurabilityProviderFactory},Microsoft.Azure.WebJobs.Extensions.DurableTask.IApplicationLifetimeWrapper,Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableHttpMessageHandlerFactory,Microsoft.Azure.WebJobs.Extensions.DurableTask.ILifeCycleNotificationHelper,Microsoft.Azure.WebJobs.Extensions.DurableTask.IMessageSerializerSettingsFactory,Microsoft.Azure.WebJobs.Extensions.DurableTask.IPlatformInformationService,Microsoft.Azure.WebJobs.Extensions.DurableTask.IErrorSerializerSettingsFactory)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.#ctor(Microsoft.Extensions.Options.IOptions{Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions},Microsoft.Extensions.Logging.ILoggerFactory,Microsoft.Azure.WebJobs.INameResolver,System.Collections.Generic.IEnumerable{Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurabilityProviderFactory},Microsoft.Azure.WebJobs.Extensions.DurableTask.IApplicationLifetimeWrapper,Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableHttpMessageHandlerFactory,Microsoft.Azure.WebJobs.Extensions.DurableTask.ILifeCycleNotificationHelper,Microsoft.Azure.WebJobs.Extensions.DurableTask.IMessageSerializerSettingsFactory,Microsoft.Azure.WebJobs.Extensions.DurableTask.IPlatformInformation,Microsoft.Azure.WebJobs.Extensions.DurableTask.IErrorSerializerSettingsFactory)">
             <summary>
             Initializes a new instance of the <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension"/>.
             </summary>
@@ -3161,7 +3169,52 @@
             </summary>
             <returns><see cref="T:Newtonsoft.Json.JsonSerializerSettings"/> to be used by the Durable Task Extension for message serialization.</returns>
         </member>
-        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IPlatformInformationService">
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.OperatingSystem">
+            <summary>
+            Representation of the supported Operating Systems.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.OperatingSystem.Linux">
+            <summary>
+            Linux OS.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.OperatingSystem.Windows">
+            <summary>
+            Windows OS
+            </summary>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.WorkerRuntimeType">
+            <summary>
+            Representation of supported Programming Languages.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.WorkerRuntimeType.DotNet">
+            <summary>
+            dotnet
+            </summary>
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.WorkerRuntimeType.Python">
+            <summary>
+            Python.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.WorkerRuntimeType.Node">
+            <summary>
+            Node: either JavaScript and TypeScript.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.WorkerRuntimeType.PowerShell">
+            <summary>
+            PowerShell.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.WorkerRuntimeType.Unknown">
+            <summary>
+            Unknown worker runtime.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IPlatformInformation">
              <summary>
              Interface for accessing the AppService plan information,
              the OS, and user-facing PL.
@@ -3170,50 +3223,37 @@
              along with the pursuit of more platform-specific defaults.
              </summary>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IPlatformInformationService.InConsumption">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IPlatformInformation.IsInConsumptionPlan">
             <summary>
-            Determines if the application is running on a Consumption plan,
-            irrespective of OS.
+            Determine the underlying plan is Consumption or not.
             </summary>
-            <returns>True if running in Consumption. Otherwise, False.</returns>
+            <returns> True if the plan is Consumption. Otherwise, False.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IPlatformInformationService.InLinuxConsumption">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IPlatformInformation.GetOperatingSystem">
             <summary>
-            Determines if the application is running in a Linux Consumption plan.
+            Determine the underlying operating system.
             </summary>
-            <returns>True if running in Linux Consumption. Otherwise, False.</returns>
+            <returns>An OperatingSystem enum.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IPlatformInformationService.InWindowsConsumption">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IPlatformInformation.GetWorkerRuntimeType">
             <summary>
-            Determines if the application is running in a Windows Consumption plan.
+            Determine the underlying worker runtime.
             </summary>
-            <returns>True if running in Linux Consumption. Otherwise, False.</returns>
+            <returns>A WorkerRuntimeType enum.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IPlatformInformationService.IsPython">
-            <summary>
-            Determines is the language worker is for Python.
-            </summary>
-            <returns>True if the language worker is for Python. Otherwise, False.</returns>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IPlatformInformationService.InLinuxAppService">
-            <summary>
-            Determines if the application is running in a Linux AppService plan.
-            </summary>
-            <returns>True if running in Linux AppService. Otherwise, False.</returns>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IPlatformInformationService.GetLinuxTenant">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IPlatformInformation.GetLinuxTenant">
             <summary>
             Returns the application tenant when running on linux.
             </summary>
             <returns>The application tenant.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IPlatformInformationService.GetLinuxStampName">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IPlatformInformation.GetLinuxStampName">
             <summary>
             Returns the application stamp name when running on linux.
             </summary>
             <returns>The application stamp name.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IPlatformInformationService.GetContainerName">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IPlatformInformation.GetContainerName">
             <summary>
             Returns the application container name when running on linux.
             </summary>
@@ -4141,7 +4181,7 @@
             Gets or sets the max retry interval.
             </summary>
             <value>
-            The TimeSpan of the max retry interval, defaults to <see cref="F:System.TimeSpan.MaxValue"/>.
+            The TimeSpan of the max retry interval, defaults to 6 days.
             </value>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.RetryOptions.BackoffCoefficient">

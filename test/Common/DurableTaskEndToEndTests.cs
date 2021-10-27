@@ -323,6 +323,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     { "CONTAINER_NAME", "val1" },
                     { "WEBSITE_STAMP_DEPLOYMENT_ID", "val3" },
                     { "WEBSITE_HOME_STAMPNAME", "val4" },
+                    { "FUNCTIONS_WORKER_RUNTIME", "python" },
                 });
 
                 // Run trivial orchestrator
@@ -372,6 +373,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     { "CONTAINER_NAME", "val1" },
                     { "WEBSITE_STAMP_DEPLOYMENT_ID", "val3" },
                     { "WEBSITE_HOME_STAMPNAME", "val4" },
+                    { "FUNCTIONS_WORKER_RUNTIME", "node" },
                 });
 
                 // Run trivial orchestrator
@@ -422,6 +424,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     { "CONTAINER_NAME", "val1" },
                     { "WEBSITE_STAMP_DEPLOYMENT_ID", "val3" },
                     { "WEBSITE_HOME_STAMPNAME", "val4" },
+                    { "FUNCTIONS_WORKER_RUNTIME", "powershell" },
                 });
 
                 // Run trivial orchestrator
@@ -479,6 +482,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 { "WEBSITE_INSTANCE_ID", "val1" },
                 { "FUNCTIONS_LOGS_MOUNT_PATH", "val2" },
+                { "FUNCTIONS_WORKER_RUNTIME", "python" },
             });
 
             // Run trivial orchestrator
@@ -524,6 +528,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     { "CONTAINER_NAME", "val1" },
                     { "WEBSITE_STAMP_DEPLOYMENT_ID", "val3" },
                     { "WEBSITE_HOME_STAMPNAME", "val4" },
+                    { "FUNCTIONS_WORKER_RUNTIME", "python" },
                 });
 
                 // Run trivial orchestrator
@@ -590,6 +595,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     { "CONTAINER_NAME", "val1" },
                     { "WEBSITE_STAMP_DEPLOYMENT_ID", "val3" },
                     { "WEBSITE_HOME_STAMPNAME", "val4" },
+                    { "FUNCTIONS_WORKER_RUNTIME", "python" },
                 });
 
                 // Run trivial orchestrator
@@ -657,6 +663,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 { "WEBSITE_INSTANCE_ID", "val1" },
                 { "FUNCTIONS_LOGS_MOUNT_PATH", "val2" },
+                { "FUNCTIONS_WORKER_RUNTIME", "python" },
             });
 
             // Run trivial orchestrator
@@ -716,6 +723,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 { "FUNCTIONS_LOGS_MOUNT_PATH", "val2" },
                 { "WEBSITE_STAMP_DEPLOYMENT_ID", "val3" },
                 { "WEBSITE_HOME_STAMPNAME", "val4" },
+                { "FUNCTIONS_WORKER_RUNTIME", "python" },
             });
 
             // Run trivial orchestrator
@@ -3294,6 +3302,37 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 // there should always be some batching going on
                 Assert.True(numBatches < numIterations);
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
+        /// End-to-end test which validates batching of entity signals.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task DurableEntity_NonexistentEntity(bool extendedSessions)
+        {
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.NonexistentEntity),
+            };
+
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.DurableEntity_NonexistentEntity),
+                extendedSessions))
+            {
+                await host.StartAsync();
+
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], null, this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
+
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal("ok", status?.Output);
 
                 await host.StopAsync();
             }

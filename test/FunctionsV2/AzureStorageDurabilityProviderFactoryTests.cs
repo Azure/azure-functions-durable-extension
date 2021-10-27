@@ -68,7 +68,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
                 connectionStringResolver,
                 nameResolver,
                 NullLoggerFactory.Instance,
-                TestHelpers.GetMockPlatformInformationService(inConsumption: true, isPython: true));
+                TestHelpers.GetMockPlatformInformationService(inConsumption: true, language: WorkerRuntimeType.Python));
 
             var settings = factory.GetAzureStorageOrchestrationServiceSettings();
 

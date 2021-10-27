@@ -462,7 +462,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             var alreadyCompletedTask = this.CallDurableTaskFunctionAsync<object>(entity.EntityName, FunctionType.Entity, true, EntityId.GetSchedulerIdFromEntityId(entity), operationName, null, operationInput, null);
             System.Diagnostics.Debug.Assert(alreadyCompletedTask.IsCompleted, "signaling entities is synchronous");
-            alreadyCompletedTask.Wait(); // just so we see exceptions during testing
+
+            try
+            {
+                alreadyCompletedTask.Wait();
+            }
+            catch (AggregateException e)
+            {
+                throw e.InnerException;
+            }
         }
 
         /// <inheritdoc/>
@@ -476,7 +484,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             var alreadyCompletedTask = this.CallDurableTaskFunctionAsync<object>(entity.EntityName, FunctionType.Entity, true, EntityId.GetSchedulerIdFromEntityId(entity), operationName, null, operationInput, startTime);
             System.Diagnostics.Debug.Assert(alreadyCompletedTask.IsCompleted, "scheduling operations on entities is synchronous");
-            alreadyCompletedTask.Wait(); // just so we see exceptions during testing
+
+            try
+            {
+                alreadyCompletedTask.Wait();
+            }
+            catch (AggregateException e)
+            {
+                throw e.InnerException;
+            }
         }
 
         /// <inheritdoc/>
@@ -1027,6 +1043,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         async Task<IDisposable> IDurableOrchestrationContext.LockAsync(params EntityId[] entities)
         {
             this.ThrowIfInvalidAccess();
+
+            foreach (var entityId in entities)
+            {
+                this.Config.ThrowIfFunctionDoesNotExist(entityId.EntityName, FunctionType.Entity);
+            }
+
             if (this.ContextLocks != null)
             {
                 throw new LockingRulesViolationException("Cannot acquire more locks when already holding some locks.");
