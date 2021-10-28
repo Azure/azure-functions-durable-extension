@@ -14,3 +14,8 @@
 ## Breaking Changes
 * `IDurableOrchestrationContext`'s `CallHttpAsync(HttpMethod, Uri, string)` overload now has a `HttpRetryOptions` parameter
 * `IDurableActivityContext` now has a Name property.
+
+## Dependency Updates
+Microsoft.Azure.DurableTask.AzureStorage --> 1.9.4
+Microsoft.Azure.DurableTask.Core --> 2.6.0
+Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers --> 0.4.1
