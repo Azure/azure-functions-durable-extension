@@ -5,13 +5,13 @@
     <AssemblyName>Microsoft.Azure.WebJobs.Extensions.DurableTask</AssemblyName>
     <RootNamespace>Microsoft.Azure.WebJobs.Extensions.DurableTask</RootNamespace>
     <MajorVersion>2</MajorVersion>
-    <MinorVersion>5</MinorVersion>
-    <PatchVersion>2</PatchVersion>
+    <MinorVersion>7</MinorVersion>
+    <PatchVersion>0</PatchVersion>
     <Version>$(MajorVersion).$(MinorVersion).$(PatchVersion)</Version>
     <FileVersion>$(MajorVersion).$(MinorVersion).$(PatchVersion)</FileVersion>
     <AssemblyVersion>$(MajorVersion).0.0.0</AssemblyVersion>
     <Company>Microsoft Corporation</Company>
-    <LangVersion>7.3</LangVersion>
+    <LangVersion>9.0</LangVersion>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>..\..\sign.snk</AssemblyOriginatorKeyFile>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
@@ -85,8 +85,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" Version="1.9.4" />
-    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers" Version="0.4.1" />
+    <PackageReference Include="Microsoft.Azure.DurableTask.Core" Version="2.7.0-private" />
+    <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" Version="1.9.*" />
+    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers" Version="0.4.*" />
     <PackageReference Include="Azure.Identity" Version="1.1.1" />
 
     <!-- Explicitly pinned transitive dependencies with CVE vulnerabilities.-->

@@ -3432,7 +3432,12 @@
         </member>
         <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.WorkerRuntimeType.DotNet">
             <summary>
-            dotnet
+            .NET in-process.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.WorkerRuntimeType.DotNetIsolated">
+            <summary>
+            .NET out-of-process.
             </summary>
         </member>
         <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.WorkerRuntimeType.Python">
@@ -3448,6 +3453,11 @@
         <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.WorkerRuntimeType.PowerShell">
             <summary>
             PowerShell.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.WorkerRuntimeType.Java">
+            <summary>
+            Java.
             </summary>
         </member>
         <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.WorkerRuntimeType.Unknown">
@@ -3911,6 +3921,21 @@
             of scale out performance.
             </summary>
             <value>A boolean indicating whether we use the legacy partition strategy. Defaults to false.</value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageOptions.EnableOrchestrationStartDeduplication">
+            <summary>
+            Gets or sets whether to enable the orchestration-start de-duplication feature
+            of the Durable Task Framework's Azure Storage provider.
+            </summary>
+            <remarks>
+            When enabled, this feature will try to detect and discard orchestration-start
+            messages for the same instance ID that are scheduled around the same time. There
+            is a slight performance impact when this feature is enabled due to additional
+            storage account queries that occur for every received orchestration start message.
+            It's generally recommended to enable this feature unless the performance impact
+            is too burdensome for an important workload.
+            </remarks>
+            <value>A boolean value indicating whether to enable orchestration-start de-duplication.</value>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageOptions.ValidateHubName(System.String)">
             <summary>

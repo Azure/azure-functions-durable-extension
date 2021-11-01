@@ -86,7 +86,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             string workerRuntime = this.ReadEnviromentVariable("FUNCTIONS_WORKER_RUNTIME");
             WorkerRuntimeType workerRuntimeType;
-            if (Enum.TryParse(workerRuntime, ignoreCase: true, out workerRuntimeType))
+            if (Enum.TryParse(workerRuntime.Replace("-", ""), ignoreCase: true, out workerRuntimeType))
             {
                 return workerRuntimeType;
             }

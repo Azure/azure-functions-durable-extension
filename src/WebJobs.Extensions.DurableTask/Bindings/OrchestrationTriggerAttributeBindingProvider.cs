@@ -1,15 +1,15 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Host.Bindings;
-using Microsoft.Azure.WebJobs.Host.Config;
 using Microsoft.Azure.WebJobs.Host.Listeners;
 using Microsoft.Azure.WebJobs.Host.Protocols;
 using Microsoft.Azure.WebJobs.Host.Triggers;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using static Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationShim;
 
@@ -18,23 +18,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     internal class OrchestrationTriggerAttributeBindingProvider : ITriggerBindingProvider
     {
         private readonly DurableTaskExtension config;
-        private readonly ExtensionConfigContext extensionContext;
         private readonly string storageConnectionString;
-        private readonly EndToEndTraceHelper traceHelper;
 
         public OrchestrationTriggerAttributeBindingProvider(
             DurableTaskExtension config,
-            ExtensionConfigContext extensionContext,
-            string storageConnectionString,
-            EndToEndTraceHelper traceHelper)
+            string storageConnectionString)
         {
             this.config = config;
-            this.extensionContext = extensionContext;
             this.storageConnectionString = storageConnectionString;
-            this.traceHelper = traceHelper;
         }
 
-        public Task<ITriggerBinding> TryCreateAsync(TriggerBindingProviderContext context)
+        public Task<ITriggerBinding?> TryCreateAsync(TriggerBindingProviderContext context)
         {
             if (context == null)
             {
@@ -45,7 +39,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             OrchestrationTriggerAttribute trigger = parameter.GetCustomAttribute<OrchestrationTriggerAttribute>(inherit: false);
             if (trigger == null)
             {
-                return Task.FromResult<ITriggerBinding>(null);
+                return Task.FromResult<ITriggerBinding?>(null);
             }
 
             // Priority for getting the name is [OrchestrationTrigger], [FunctionName], method name
@@ -64,11 +58,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             this.config.RegisterOrchestrator(orchestratorName, null);
             var binding = new OrchestrationTriggerBinding(this.config, parameter, orchestratorName, this.storageConnectionString);
-            return Task.FromResult<ITriggerBinding>(binding);
+            return Task.FromResult<ITriggerBinding?>(binding);
         }
 
         private class OrchestrationTriggerBinding : ITriggerBinding
         {
+            static readonly IReadOnlyDictionary<string, object?> EmptyBindingData = new Dictionary<string, object?>(capacity: 0);
+
             private readonly DurableTaskExtension config;
             private readonly ParameterInfo parameterInfo;
             private readonly FunctionName orchestratorName;
@@ -87,7 +83,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.BindingDataContract = GetBindingDataContract(parameterInfo);
             }
 
-            public Type TriggerValueType => typeof(IDurableOrchestrationContext);
+            // Out-of-proc V2 uses a different trigger value type
+            public Type TriggerValueType => this.config.IsOutOfProcV2 ?
+                typeof(RemoteOrchestratorContext) :
+                typeof(IDurableOrchestrationContext);
 
             public IReadOnlyDictionary<string, Type> BindingDataContract { get; }
 
@@ -105,39 +104,55 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return contract;
             }
 
-            public Task<ITriggerData> BindAsync(object value, ValueBindingContext context)
+            public Task<ITriggerData> BindAsync(object? value, ValueBindingContext context)
             {
-                var orchestrationContext = (DurableOrchestrationContext)value;
-                Type destinationType = this.parameterInfo.ParameterType;
-
-                object convertedValue = null;
-                if (destinationType == typeof(IDurableOrchestrationContext))
+                if (value is DurableOrchestrationContext orchestrationContext)
                 {
-                    convertedValue = orchestrationContext;
+                    Type destinationType = this.parameterInfo.ParameterType;
+
+                    object? convertedValue = null;
+                    if (destinationType == typeof(IDurableOrchestrationContext))
+                    {
+                        convertedValue = orchestrationContext;
+                    }
+                    else if (this.config.TypedCodeProvider.IsInitialized &&
+                        destinationType.Name == TypedCodeProvider.ITypedDurableOrchestrationContext)
+                    {
+                        convertedValue = this.config.TypedCodeProvider.InstantiateTypedDurableOrchestrationContext(orchestrationContext);
+                    }
+                    else if (destinationType == typeof(string))
+                    {
+                        convertedValue = OrchestrationContextToString(orchestrationContext);
+                    }
+
+                    var inputValueProvider = new ObjectValueProvider(
+                        convertedValue ?? value,
+                        this.parameterInfo.ParameterType);
+
+                    var bindingData = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
+                    {
+                        [this.parameterInfo.Name] = convertedValue,
+                    };
+
+                    // We don't specify any return value binding because we process the return value
+                    // earlier in the pipeline via the InvokeHandler extensibility.
+                    var triggerData = new TriggerData(inputValueProvider, bindingData);
+                    return Task.FromResult<ITriggerData>(triggerData);
                 }
-                else if (this.config.TypedCodeProvider.IsInitialized &&
-                    destinationType.Name == TypedCodeProvider.ITypedDurableOrchestrationContext)
+                else if (value is RemoteOrchestratorContext remoteContext)
                 {
-                    convertedValue = this.config.TypedCodeProvider.InstantiateTypedDurableOrchestrationContext(orchestrationContext);
+                    // Remote context is only for modern out-of-process function execution and
+                    // contains a lighter payload.
+                    // TODO: Cache the serializer settings
+                    string serializedContext = JsonConvert.SerializeObject(remoteContext, new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.Auto });
+                    var valueProvider = new ObjectValueProvider(serializedContext, typeof(string));
+                    var triggerData = new TriggerData(valueProvider, EmptyBindingData);
+                    return Task.FromResult<ITriggerData>(triggerData);
                 }
-                else if (destinationType == typeof(string))
+                else
                 {
-                    convertedValue = OrchestrationContextToString(orchestrationContext);
+                    throw new ArgumentException($"Don't know how to bind to {value?.GetType().Name ?? "null"}.", nameof(value));
                 }
-
-                var inputValueProvider = new ObjectValueProvider(
-                    convertedValue ?? value,
-                    this.parameterInfo.ParameterType);
-
-                var bindingData = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase)
-                {
-                    [this.parameterInfo.Name] = convertedValue,
-                };
-
-                // We don't specify any return value binding because we process the return value
-                // earlier in the pipeline via the InvokeHandler extensibility.
-                var triggerData = new TriggerData(inputValueProvider, bindingData);
-                return Task.FromResult<ITriggerData>(triggerData);
             }
 
             public ParameterDescriptor ToParameterDescriptor()
@@ -145,7 +160,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return new ParameterDescriptor { Name = this.parameterInfo.Name };
             }
 
-            [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope", Justification = "The caller is responsible for disposing")]
             public Task<IListener> CreateListenerAsync(ListenerFactoryContext context)
             {
                 if (context == null)
@@ -165,7 +179,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.config,
                     context.Descriptor.Id,
                     this.orchestratorName,
-                    context.Executor,
                     FunctionType.Orchestrator,
                     this.storageConnectionString);
                 return Task.FromResult<IListener>(listener);
