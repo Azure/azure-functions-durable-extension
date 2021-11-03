@@ -53,7 +53,7 @@ Durable Functions is also available in supported [extension bundles](https://doc
 
 ## Contributing
 
-Many features of Durable functions have been voluntarily contributed by the community, and we always welcome such contributions. If you are interested in contributing, please take a look at our [CONTRIBUTING](./CONTRIBUTING.md) guide.
+Many features of Durable Functions have been voluntarily contributed by the community, and we always welcome such contributions. If you are interested in contributing, please take a look at our [CONTRIBUTING](./CONTRIBUTING.md) guide.
 
 ## License
 
