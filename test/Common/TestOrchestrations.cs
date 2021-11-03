@@ -136,10 +136,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             var input = context.GetInput<(EntityId entityId, bool createNondeterminismFailure)>();
 
-            await context.LockAsync(input.entityId);
-
             if (!(input.createNondeterminismFailure && context.IsReplaying))
             {
+                await context.LockAsync(input.entityId);
+
                 await context.CallActivityAsync<string>(nameof(TestActivities.Hello), "Tokyo");
             }
         }
