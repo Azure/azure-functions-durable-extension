@@ -187,6 +187,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Using binding &apos;{0}&apos; with an OrchestrationTrigger method violates deterministic code constraints..
+        /// </summary>
+        public static string BindingAnalyzerMessageFormat {
+            get {
+                return ResourceManager.GetString("BindingAnalyzerMessageFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to OrchestrationTrigger methods must not use any other binding..
+        /// </summary>
+        public static string BindingAnalyzerTitle {
+            get {
+                return ResourceManager.GetString("BindingAnalyzerTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to CancellationToken should not be used as an orchestrator function parameter..
         /// </summary>
         public static string CancellationTokenAnalyzerMessageFormat {
