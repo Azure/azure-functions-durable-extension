@@ -3995,7 +3995,82 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Empty(result.Entities);
         }
 
-        private async Task<EntityQueryResult> DurableEntity_ListEntitiesAsync(string taskHub, string storageProvider, EntityQuery query, IList<EntityId> entitiyIds)
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [MemberData(nameof(TestDataGenerator.GetBooleanAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        public async Task DurableEntity_ListEntities_Deleted(bool includeDeleted, string storageProvider)
+        {
+            var yesterday = DateTime.UtcNow.Subtract(TimeSpan.FromDays(1));
+            var tomorrow = DateTime.UtcNow.Add(TimeSpan.FromDays(1));
+
+            var query = new EntityQuery()
+            {
+                IncludeDeleted = includeDeleted,
+                LastOperationFrom = yesterday,
+                LastOperationTo = tomorrow,
+            };
+
+            List<EntityId> entityIds = new List<EntityId>()
+            {
+                new EntityId("StringStore", "foo"),
+                new EntityId("StringStore2", "bar"),
+                new EntityId("StringStore2", "baz"),
+                new EntityId("StringStore2", "foo"),
+            };
+
+            List<string> orchestrations = new List<string>()
+            {
+                nameof(TestOrchestrations.EntityId_SignalAndCallStringStore),
+                nameof(TestOrchestrations.EntityId_CallAndDeleteStringStore),
+                nameof(TestOrchestrations.EntityId_SignalAndCallStringStore),
+                nameof(TestOrchestrations.EntityId_CallAndDeleteStringStore),
+            };
+
+            var result = await this.DurableEntity_ListEntitiesAsync(nameof(this.DurableEntity_ListEntities_Deleted), storageProvider, query, entityIds, orchestrations);
+
+            Assert.Equal(includeDeleted ? 4 : 2, result.Entities.Count());
+        }
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        public async Task DurableEntity_ListEntities_DeletedPaged(string storageProvider)
+        {
+            var yesterday = DateTime.UtcNow.Subtract(TimeSpan.FromDays(1));
+            var tomorrow = DateTime.UtcNow.Add(TimeSpan.FromDays(1));
+
+            var query = new EntityQuery()
+            {
+                IncludeDeleted = false,
+                LastOperationFrom = yesterday,
+                LastOperationTo = tomorrow,
+                PageSize = 2,
+            };
+
+            List<EntityId> entityIds = new List<EntityId>()
+            {
+                new EntityId("StringStore2", "bar"),
+                new EntityId("StringStore2", "baz"),
+                new EntityId("StringStore2", "foo"),
+                new EntityId("StringStore2", "ffo"),
+                new EntityId("StringStore2", "zzz"),
+            };
+
+            List<string> orchestrations = new List<string>()
+            {
+                nameof(TestOrchestrations.EntityId_CallAndDeleteStringStore),
+                nameof(TestOrchestrations.EntityId_CallAndDeleteStringStore),
+                nameof(TestOrchestrations.EntityId_CallAndDeleteStringStore),
+                nameof(TestOrchestrations.EntityId_CallAndDeleteStringStore),
+                nameof(TestOrchestrations.EntityId_SignalAndCallStringStore),
+            };
+
+            var result = await this.DurableEntity_ListEntitiesAsync(nameof(this.DurableEntity_ListEntities_DeletedPaged), storageProvider, query, entityIds, orchestrations);
+
+            Assert.Single(result.Entities);
+        }
+
+        private async Task<EntityQueryResult> DurableEntity_ListEntitiesAsync(string taskHub, string storageProvider, EntityQuery query, IList<EntityId> entitiyIds, IList<string> orchestrations = null)
         {
             using (ITestHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
@@ -4007,9 +4082,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 TestDurableClient client = null;
 
-                foreach (EntityId id in entitiyIds)
+                for (int i = 0; i < entitiyIds.Count; i++)
                 {
-                    client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.EntityId_SignalAndCallStringStore), id, this.output);
+                    EntityId id = entitiyIds[i];
+                    string orchestrationName = orchestrations == null ? nameof(TestOrchestrations.EntityId_SignalAndCallStringStore) : orchestrations[i];
+                    client = await host.StartOrchestratorAsync(orchestrationName, id, this.output);
 
                     await client.WaitForCompletionAsync(this.output);
                 }

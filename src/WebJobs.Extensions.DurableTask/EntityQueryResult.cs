@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
@@ -15,9 +16,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     {
         internal EntityQueryResult() { }
 
-        internal EntityQueryResult(OrchestrationStatusQueryResult orchestrationResult)
+        internal EntityQueryResult(OrchestrationStatusQueryResult orchestrationResult, bool includeDeleted)
         {
-            this.Entities = orchestrationResult.DurableOrchestrationState.Select(status => new DurableEntityStatus(status));
+            if (includeDeleted)
+            {
+                this.Entities = orchestrationResult.DurableOrchestrationState
+                    .Select(status => new DurableEntityStatus(status));
+            }
+            else
+            {
+                this.Entities = orchestrationResult.DurableOrchestrationState
+                    .Where(status => status?.CustomStatus is JObject jobject
+                            && jobject != null
+                            && jobject.TryGetValue("entityExists", out var s)
+                            && s.Type == JTokenType.Boolean
+                            && (bool)s)
+                    .Select(status => new DurableEntityStatus(status))
+                    .ToList();
+            }
+
             this.ContinuationToken = orchestrationResult.ContinuationToken;
         }
 

@@ -503,32 +503,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <inheritdoc />
         async Task<EntityQueryResult> IDurableEntityClient.ListEntitiesAsync(EntityQuery query, CancellationToken cancellationToken)
         {
-            if (!query.IncludeDeleted)
-            {
-                query.FetchState = true;
-            }
-
             var condition = new OrchestrationStatusQueryCondition(query);
-            var result = await ((IDurableClient)this).ListInstancesAsync(condition, cancellationToken);
-            var entityResult = new EntityQueryResult(result);
+            EntityQueryResult entityResult;
 
-            if (!query.IncludeDeleted)
+            do // make sure that the returned page contains at least one element, if there is at least one element
             {
-                var statefulEntities = entityResult.Entities.Where(e => e.State != null);
-                var statefulEntityResult = ConvertToEntityQueryResult(statefulEntities, entityResult.ContinuationToken);
-
-                while (statefulEntities.ToList().Count < query.PageSize && !string.IsNullOrEmpty(entityResult.ContinuationToken))
-                {
-                    query.ContinuationToken = entityResult.ContinuationToken;
-                    condition = new OrchestrationStatusQueryCondition(query);
-                    result = await ((IDurableClient)this).ListInstancesAsync(condition, cancellationToken);
-                    entityResult = new EntityQueryResult(result);
-                    statefulEntities = entityResult.Entities.Where(e => e.State != null);
-
-                    statefulEntityResult = ConvertToEntityQueryResult(statefulEntities, entityResult.ContinuationToken);
-                }
-                return statefulEntityResult;
+                var result = await ((IDurableClient)this).ListInstancesAsync(condition, cancellationToken);
+                entityResult = new EntityQueryResult(result, query.IncludeDeleted);
+                condition.ContinuationToken = entityResult.ContinuationToken;
             }
+            while (entityResult.ContinuationToken != null && !entityResult.Entities.Any());
 
             return entityResult;
         }
