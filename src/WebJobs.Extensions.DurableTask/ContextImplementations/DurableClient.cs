@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
 using System.Threading;
@@ -505,14 +506,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             var condition = new OrchestrationStatusQueryCondition(query);
             EntityQueryResult entityResult;
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
 
-            do // make sure that the returned page contains at least one element, if there is at least one element
+            do
             {
                 var result = await ((IDurableClient)this).ListInstancesAsync(condition, cancellationToken);
                 entityResult = new EntityQueryResult(result, query.IncludeDeleted);
                 condition.ContinuationToken = entityResult.ContinuationToken;
             }
-            while (entityResult.ContinuationToken != null && !entityResult.Entities.Any());
+            while ( // run multiple queries if no records are found, but never in excess of 100ms
+                entityResult.ContinuationToken != null
+                && !entityResult.Entities.Any()
+                && stopwatch.ElapsedMilliseconds <= 100);
 
             return entityResult;
         }

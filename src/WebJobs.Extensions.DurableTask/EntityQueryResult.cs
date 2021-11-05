@@ -21,7 +21,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (includeDeleted)
             {
                 this.Entities = orchestrationResult.DurableOrchestrationState
-                    .Select(status => new DurableEntityStatus(status));
+                    .Select(status => new DurableEntityStatus(status))
+                    .ToList();
             }
             else
             {
