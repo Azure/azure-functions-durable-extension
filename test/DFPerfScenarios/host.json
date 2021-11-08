@@ -9,6 +9,7 @@
       "maxConcurrentOrchestratorFunctions": 400,
       "extendedSessionsEnabled": true,
       "extendedSessionIdleTimeoutInSeconds": 30,
+      "maxOrchestrationActions": 200000,
       "storageProvider": {
         "partitionCount": 6,
         "controlQueueBufferThreshold": 1000
