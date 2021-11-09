@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Serialization;
+using Microsoft.Extensions.Logging;
 using Microsoft.WindowsAzure.Storage;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
@@ -121,6 +122,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public TimeSpan MaxQueuePollingInterval { get; set; } = TimeSpan.FromSeconds(30);
 
         /// <summary>
+        /// Determines whether or not to use the old partition management strategy, or the new
+        /// strategy that is more resilient to split brain problems, at the potential expense
+        /// of scale out performance.
+        /// </summary>
+        /// <value>A boolean indicating whether we use the legacy partition strategy. Defaults to false.</value>
+        public bool UseLegacyPartitionManagement { get; set; } = false;
+
+        /// <summary>
         /// Throws an exception if the provided hub name violates any naming conventions for the storage provider.
         /// </summary>
         public void ValidateHubName(string hubName)
@@ -187,7 +196,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <summary>
         /// Throws an exception if any of the settings of the storage provider are invalid.
         /// </summary>
-        public void Validate()
+        public void Validate(ILogger logger)
         {
             if (this.ControlQueueBatchSize <= 0)
             {
@@ -213,6 +222,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (this.ControlQueueBufferThreshold < 1 || this.ControlQueueBufferThreshold > 1000)
             {
                 throw new InvalidOperationException($"{nameof(this.ControlQueueBufferThreshold)} must be between 1 and 1000.");
+            }
+
+            if (this.ControlQueueBatchSize > this.ControlQueueBufferThreshold)
+            {
+                logger.LogWarning($"{nameof(this.ControlQueueBatchSize)} cannot be larger than {nameof(this.ControlQueueBufferThreshold)}. Please adjust these values in your `host.json` settings for predictable performance");
             }
         }
     }

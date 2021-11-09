@@ -78,12 +78,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="instanceId">The unique ID of the instance to check.</param>
         /// <param name="timeout">Total allowed timeout for output from the durable function. The default value is 10 seconds.</param>
         /// <param name="retryInterval">The timeout between checks for output from the durable function. The default value is 1 second.</param>
+        /// <param name="returnInternalServerErrorOnFailure">Optional parameter that configures the http response code returned. Defaults to <c>false</c>.
+        /// If <c>true</c>, the returned http response code will be a 500 when the orchestrator is in a failed state, when <c>false</c> it will
+        /// return 200.</param>
         /// <returns>An HTTP response which may include a 202 and location header or a 200 with the durable function output in the response body.</returns>
         Task<HttpResponseMessage> WaitForCompletionOrCreateCheckStatusResponseAsync(
             HttpRequestMessage request,
             string instanceId,
-            TimeSpan timeout,
-            TimeSpan retryInterval);
+            TimeSpan? timeout = null,
+            TimeSpan? retryInterval = null,
+            bool returnInternalServerErrorOnFailure = false);
 
         /// <summary>
         /// Creates an HTTP response which either contains a payload of management URLs for a non-completed instance
@@ -99,12 +103,46 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="instanceId">The unique ID of the instance to check.</param>
         /// <param name="timeout">Total allowed timeout for output from the durable function. The default value is 10 seconds.</param>
         /// <param name="retryInterval">The timeout between checks for output from the durable function. The default value is 1 second.</param>
+        /// <param name="returnInternalServerErrorOnFailure">Optional parameter that configures the http response code returned. Defaults to <c>false</c>.
+        /// If <c>true</c>, the returned http response code will be a 500 when the orchestrator is in a failed state, when <c>false</c> it will
+        /// return 200.</param>
         /// <returns>An HTTP response which may include a 202 and location header or a 200 with the durable function output in the response body.</returns>
         Task<IActionResult> WaitForCompletionOrCreateCheckStatusResponseAsync(
             HttpRequest request,
             string instanceId,
-            TimeSpan timeout,
-            TimeSpan retryInterval);
+            TimeSpan? timeout = null,
+            TimeSpan? retryInterval = null,
+            bool returnInternalServerErrorOnFailure = false);
+
+        /// <summary>
+        /// Starts a new execution of the specified orchestrator function.
+        /// </summary>
+        /// <param name="orchestratorFunctionName">The name of the orchestrator function to start.</param>
+        /// <param name="instanceId">The ID to use for the new orchestration instance.</param>
+        /// <returns>A task that completes when the orchestration is started. The task contains the instance id of the started
+        /// orchestratation instance.</returns>
+        /// <exception cref="ArgumentException">
+        /// The specified function does not exist, is disabled, or is not an orchestrator function.
+        /// </exception>
+        Task<string> StartNewAsync(
+            string orchestratorFunctionName,
+            string instanceId = null);
+
+        /// <summary>
+        /// Starts a new execution of the specified orchestrator function.
+        /// </summary>
+        /// <param name="orchestratorFunctionName">The name of the orchestrator function to start.</param>
+        /// <param name="input">JSON-serializeable input value for the orchestrator function.</param>
+        /// <typeparam name="T">The type of the input value for the orchestrator function.</typeparam>
+        /// <returns>A task that completes when the orchestration is started. The task contains the instance id of the started
+        /// orchestratation instance.</returns>
+        /// <exception cref="ArgumentException">
+        /// The specified function does not exist, is disabled, or is not an orchestrator function.
+        /// </exception>
+        Task<string> StartNewAsync<T>(
+            string orchestratorFunctionName,
+            T input)
+            where T : class;
 
         /// <summary>
         /// Starts a new instance of the specified orchestrator function.
@@ -141,7 +179,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="eventData">The JSON-serializeable data associated with the event.</param>
         /// <returns>A task that completes when the event notification message has been enqueued.</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1030:UseEventsWhereAppropriate", Justification = "This method does not work with the .NET Framework event model.")]
-        Task RaiseEventAsync(string instanceId, string eventName, object eventData);
+        Task RaiseEventAsync(string instanceId, string eventName, object eventData = null);
 
         /// <summary>
         /// Sends an event notification message to a waiting orchestration instance.
@@ -205,26 +243,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="showHistoryOutput">Boolean marker for including input and output in the execution history response.</param>
         /// <param name="showInput">If set, fetch and return the input for the orchestration instance.</param>
         /// <returns>Returns a task which completes when the status has been fetched.</returns>
-        Task<DurableOrchestrationStatus> GetStatusAsync(string instanceId, bool showHistory, bool showHistoryOutput, bool showInput);
-
-        /// <summary>
-        /// Gets all the status of the orchestration instances.
-        /// </summary>
-        /// <param name="cancellationToken">Cancellation token that can be used to cancel the status query operation.</param>
-        /// <returns>Returns orchestration status for all instances.</returns>
-        [Obsolete]
-        Task<IList<DurableOrchestrationStatus>> GetStatusAsync(CancellationToken cancellationToken = default(CancellationToken));
+        Task<DurableOrchestrationStatus> GetStatusAsync(string instanceId, bool showHistory = false, bool showHistoryOutput = false, bool showInput = true);
 
         /// <summary>
         /// Gets the status of all orchestration instances that match the specified conditions.
         /// </summary>
-        /// <param name="createdTimeFrom">Return orchestration instances which were created after this DateTime.</param>
-        /// <param name="createdTimeTo">Return orchestration instances which were created before this DateTime.</param>
-        /// <param name="runtimeStatus">Return orchestration instances which matches the runtimeStatus.</param>
-        /// <param name="cancellationToken">Cancellation token that can be used to cancel the status query operation.</param>
+        /// <param name="createdTimeFrom">If specified, return orchestration instances which were created after this DateTime.</param>
+        /// <param name="createdTimeTo">If specified, return orchestration instances which were created before this DateTime.</param>
+        /// <param name="runtimeStatus">If specified, return orchestration instances which matches the runtimeStatus.</param>
+        /// <param name="cancellationToken">If specified, this ancellation token can be used to cancel the status query operation.</param>
         /// <returns>Returns orchestration status for all instances.</returns>
         [Obsolete]
-        Task<IList<DurableOrchestrationStatus>> GetStatusAsync(DateTime createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationRuntimeStatus> runtimeStatus, CancellationToken cancellationToken = default(CancellationToken));
+        Task<IList<DurableOrchestrationStatus>> GetStatusAsync(DateTime? createdTimeFrom = null, DateTime? createdTimeTo = null, IEnumerable<OrchestrationRuntimeStatus> runtimeStatus = null, CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// Purge the history for a concrete instance.
@@ -258,5 +288,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="cancellationToken">Cancellation token that can be used to cancel the status query operation.</param>
         /// <returns>Returns each page of orchestration status for all instances and continuation token of next page.</returns>
         Task<OrchestrationStatusQueryResult> ListInstancesAsync(OrchestrationStatusQueryCondition condition, CancellationToken cancellationToken);
+
+        /// <summary>
+        ///  Restarts an existing orchestrator with the original input.
+        /// </summary>
+        /// <param name="instanceId">InstanceId of a previously run orchestrator to restart.</param>
+        /// <param name="restartWithNewInstanceId">Optional parameter that configures if restarting an orchestration will use a new instanceId or if it will
+        /// reuse the old instanceId. Defauls to <c>true</c>.</param>
+        /// <returns>A task that completes when the orchestration is started. The task contains the instance id of the started
+        /// orchestratation instance.</returns>
+        Task<string> RestartAsync(string instanceId, bool restartWithNewInstanceId = true);
+
+        /// <summary>
+        ///  Makes the current app the primary app, if it isn't already. Must be using the AppLease feature by setting UseAppLease to true in host.json.
+        /// </summary>
+        /// <returns>A task that completes when the operation has started.</returns>
+        Task MakeCurrentAppPrimaryAsync();
     }
 }

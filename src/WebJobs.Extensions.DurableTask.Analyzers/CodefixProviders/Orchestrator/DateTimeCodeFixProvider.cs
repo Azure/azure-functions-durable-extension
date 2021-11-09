@@ -36,7 +36,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
             var expression = root.FindNode(diagnosticSpan);
 
-            if (SyntaxNodeUtils.IsInsideOrchestrator(expression))
+            if (SyntaxNodeUtils.IsInsideOrchestrationTrigger(expression))
             {
                 if (CodeFixProviderUtils.TryGetDurableOrchestrationContextVariableName(expression, out string variableName))
                 {

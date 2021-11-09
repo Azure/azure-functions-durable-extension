@@ -19,7 +19,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers {
     // class via a tool like ResGen or Visual Studio.
     // To add or remove a member, edit your .ResX file then rerun ResGen
     // with the /str option, or rebuild your VS project.
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "15.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "16.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     public class Resources {
@@ -70,7 +70,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Activity function named &apos;{0}&apos; takes &apos;{1}&apos; but was given &apos;{2}&apos;..
+        ///   Looks up a localized string similar to Activity function named &apos;{0}&apos; takes a parameter of type &apos;{1}&apos; but was given &apos;{2}&apos;..
         /// </summary>
         public static string ActivityArgumentAnalyzerMessageFormat {
             get {
@@ -79,7 +79,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Activity function named &apos;{0}&apos; doesn&apos;t use its input. Pass null for the input parameter instead..
+        ///   Looks up a localized string similar to Activity function named &apos;{0}&apos; takes a parameter of type &apos;{1}&apos; but was given null. Cannot pass null on a value type..
+        /// </summary>
+        public static string ActivityArgumentAnalyzerMessageFormatInvalidNull {
+            get {
+                return ResourceManager.GetString("ActivityArgumentAnalyzerMessageFormatInvalidNull", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Activity function named &apos;{0}&apos; doesn&apos;t have an input. Pass null for the input parameter instead..
         /// </summary>
         public static string ActivityArgumentAnalyzerMessageFormatNotUsed {
             get {
@@ -156,6 +165,60 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers {
         public static string ActivityReturnTypeAnalyzerTitle {
             get {
                 return ResourceManager.GetString("ActivityReturnTypeAnalyzerTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Code used in an orchestrator must not use await on non-Durable Functions methods..
+        /// </summary>
+        public static string AwaitAnalyzerMessageFormat {
+            get {
+                return ResourceManager.GetString("AwaitAnalyzerMessageFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Code used in an orchestrator must not use await on non-Durable Functions methods..
+        /// </summary>
+        public static string AwaitAnalyzerTitle {
+            get {
+                return ResourceManager.GetString("AwaitAnalyzerTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Using binding &apos;{0}&apos; with an OrchestrationTrigger method violates deterministic code constraints..
+        /// </summary>
+        public static string BindingAnalyzerMessageFormat {
+            get {
+                return ResourceManager.GetString("BindingAnalyzerMessageFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to OrchestrationTrigger methods must not use any other binding..
+        /// </summary>
+        public static string BindingAnalyzerTitle {
+            get {
+                return ResourceManager.GetString("BindingAnalyzerTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to CancellationToken should not be used as an orchestrator function parameter..
+        /// </summary>
+        public static string CancellationTokenAnalyzerMessageFormat {
+            get {
+                return ResourceManager.GetString("CancellationTokenAnalyzerMessageFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to CancellationToken should not be used as an orchestrator function parameter..
+        /// </summary>
+        public static string CancellationTokenAnalyzerTitle {
+            get {
+                return ResourceManager.GetString("CancellationTokenAnalyzerTitle", resourceCulture);
             }
         }
         

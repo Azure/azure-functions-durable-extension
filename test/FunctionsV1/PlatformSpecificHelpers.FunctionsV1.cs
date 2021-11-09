@@ -3,8 +3,10 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using Microsoft.ApplicationInsights.Channel;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -27,8 +29,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             INameResolver nameResolver,
             IDurableHttpMessageHandlerFactory durableHttpMessageHandler,
             ILifeCycleNotificationHelper lifeCycleNotificationHelper,
-            IMessageSerializerSettingsFactory serializerSettings,
-            IApplicationLifetimeWrapper shutdownNotificationService = null)
+            IMessageSerializerSettingsFactory serializerSettingsFactory,
+            IApplicationLifetimeWrapper shutdownNotificationService = null,
+            Action<ITelemetry> onSend = null,
+#pragma warning disable CS0612 // Type or member is obsolete
+            IPlatformInformation platformInformationService = null)
+#pragma warning restore CS0612 // Type or member is obsolete
         {
             var config = new JobHostConfiguration { HostId = "durable-task-host" };
             config.TypeLocator = TestHelpers.GetTypeLocator();
@@ -38,17 +44,33 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var loggerFactory = new LoggerFactory();
             loggerFactory.AddProvider(loggerProvider);
 
-            IDurabilityProviderFactory orchestrationServiceFactory = new AzureStorageDurabilityProviderFactory(options, connectionResolver, nameResolver);
+            // Unless otherwise specified, use legacy partition management for tests as it makes the task hubs start up faster.
+            // These tests run on a single task hub workers, so they don't test partition management anyways, and that is tested
+            // in the DTFx repo.
+            if (!options.Value.StorageProvider.ContainsKey(nameof(AzureStorageOptions.UseLegacyPartitionManagement)))
+            {
+                options.Value.StorageProvider.Add(nameof(AzureStorageOptions.UseLegacyPartitionManagement), true);
+            }
+
+            platformInformationService = platformInformationService ?? new DefaultPlatformInformation(nameResolver, loggerFactory);
+
+            IDurabilityProviderFactory orchestrationServiceFactory = new AzureStorageDurabilityProviderFactory(
+                options,
+                connectionResolver,
+                nameResolver,
+                loggerFactory,
+                platformInformationService);
 
             var extension = new DurableTaskExtension(
                 options,
                 loggerFactory,
                 nameResolver,
-                orchestrationServiceFactory,
+                new[] { orchestrationServiceFactory },
                 shutdownNotificationService ?? new TestHostShutdownNotificationService(),
                 durableHttpMessageHandler,
                 lifeCycleNotificationHelper,
-                serializerSettings);
+                serializerSettingsFactory,
+                platformInformationService);
             config.UseDurableTask(extension);
 
             // Mock INameResolver for not setting EnvironmentVariables.
@@ -65,16 +87,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             config.LoggerFactory = loggerFactory;
 
             var host = new JobHost(config);
-            return new FunctionsV1HostWrapper(host);
+            return new FunctionsV1HostWrapper(host, options, connectionResolver);
         }
 
         private class FunctionsV1HostWrapper : ITestHost
         {
             private readonly JobHost innerHost;
+            private readonly DurableTaskOptions options;
+            private readonly IConnectionStringResolver connectionResolver;
 
-            public FunctionsV1HostWrapper(JobHost innerHost)
+            public FunctionsV1HostWrapper(
+                JobHost innerHost,
+                IOptions<DurableTaskOptions> options,
+                IConnectionStringResolver connectionResolver)
             {
                 this.innerHost = innerHost ?? throw new ArgumentNullException(nameof(innerHost));
+                this.options = options.Value;
+                this.connectionResolver = connectionResolver;
             }
 
             public Task CallAsync(string methodName, IDictionary<string, object> args)
@@ -83,7 +112,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             public Task CallAsync(MethodInfo method, IDictionary<string, object> args)
                 => this.innerHost.CallAsync(method, args);
 
-            public void Dispose() => this.innerHost.Dispose();
+            public void Dispose()
+            {
+                this.innerHost.Dispose();
+            }
 
             public Task StartAsync() => this.innerHost.StartAsync();
 

@@ -1,7 +1,9 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Net.Http;
 using System.Runtime.Serialization;
 using Newtonsoft.Json;
@@ -17,13 +19,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     [DataContract]
     public class TestDurableHttpRequest
     {
-        public TestDurableHttpRequest(HttpMethod httpMethod, string uri = "https://www.dummy-url.com", IDictionary<string, string> headers = null, string content = null, ITokenSource tokenSource = null)
+        public TestDurableHttpRequest(HttpMethod httpMethod, string uri = "https://www.dummy-url.com", IDictionary<string, string> headers = null, string content = null, ITokenSource tokenSource = null, TimeSpan? timeout = null, TimeSpan? firstRetryInterval = null, int? maxNumberOfAttempts = null)
         {
             this.HttpMethod = httpMethod;
             this.Uri = uri;
             this.Headers = headers;
             this.Content = content;
             this.TokenSource = tokenSource;
+            this.Timeout = timeout;
+            this.FirstRetryInterval = firstRetryInterval;
+            this.MaxNumberOfAttempts = maxNumberOfAttempts;
         }
 
         [DataMember]
@@ -46,5 +51,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [DataMember]
         public bool AsynchronousPatternEnabled { get; set; } = true;
+
+        [DataMember(EmitDefaultValue = false)]
+        public TimeSpan? Timeout { get; set; }
+
+        [DataMember(EmitDefaultValue = false)]
+        public TimeSpan? FirstRetryInterval { get; set; }
+
+        [DataMember(EmitDefaultValue = false)]
+        public int? MaxNumberOfAttempts { get; set; }
+
+        [DataMember(EmitDefaultValue = false)]
+        public IList<HttpStatusCode> StatusCodesToRetry { get; set; }
     }
 }

@@ -7,7 +7,6 @@ using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
 using Xunit;
@@ -59,7 +58,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             ctx.SignalEntity(input, "count");
 
             ctx.SetCustomStatus("AllAPICallsUsed");
-            await ctx.CallHttpAsync(null);
+
+            // next call shouldn't run because MaxOrchestrationCount is reached
+            await ctx.CallActivityAsync<string>(nameof(TestActivities.Hello), stringInput);
 
             return "TestCompleted";
         }
@@ -129,6 +130,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             ctx.SetCustomStatus(customStatus);
             string output = await ctx.CallActivityAsync<string>(nameof(TestActivities.Hello), input);
             return output;
+        }
+
+        public static async Task LockThenFailReplay([OrchestrationTrigger] IDurableOrchestrationContext context)
+        {
+            var input = context.GetInput<(EntityId entityId, bool createNondeterminismFailure)>();
+
+            if (!(input.createNondeterminismFailure && context.IsReplaying))
+            {
+                await context.LockAsync(input.entityId);
+
+                await context.CallActivityAsync<string>(nameof(TestActivities.Hello), "Tokyo");
+            }
+        }
+
+        public static async Task CreateEmptyEntities([OrchestrationTrigger] IDurableOrchestrationContext context)
+        {
+            var entityIds = context.GetInput<EntityId[]>();
+            var tasks = new List<Task>();
+            for (int i = 0; i < entityIds.Length; i++)
+            {
+                tasks.Add(context.CallEntityAsync(entityIds[i], "delete"));
+            }
+
+            await Task.WhenAll(tasks);
         }
 
         public static async Task<long> Factorial([OrchestrationTrigger] IDurableOrchestrationContext ctx)
@@ -352,7 +377,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             string message = ctx.GetInput<string>();
 
-            RetryOptions options = new RetryOptions(TimeSpan.FromSeconds(5), 3);
+            RetryOptions options = new RetryOptions(TimeSpan.FromSeconds(2), 3);
 
             // Specify an explicit sub-orchestration ID that can be queried by the test driver.
             Guid subInstanceId = await ctx.CallActivityAsync<Guid>(nameof(TestActivities.NewGuid), null);
@@ -385,7 +410,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 throw new ArgumentNullException(nameof(message));
             }
 
-            RetryOptions options = new RetryOptions(TimeSpan.FromSeconds(5), 3);
+            RetryOptions options = new RetryOptions(TimeSpan.FromSeconds(1), 3);
 
             // This throw happens in the implementation of an activity.
             await ctx.CallActivityWithRetryAsync(nameof(TestActivities.ThrowActivity), options, message);
@@ -472,6 +497,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             TestDurableHttpRequest testRequest = ctx.GetInput<TestDurableHttpRequest>();
             DurableHttpRequest durableHttpRequest = ConvertTestRequestToDurableHttpRequest(testRequest);
+
             DurableHttpResponse response = await ctx.CallHttpAsync(durableHttpRequest);
             return response;
         }
@@ -483,8 +509,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 foreach (KeyValuePair<string, string> header in testRequest.Headers)
                 {
-                    StringValues stringValues;
-                    if (testHeaders.TryGetValue(header.Key, out stringValues))
+                    if (testHeaders.TryGetValue(header.Key, out StringValues stringValues))
                     {
                         stringValues = StringValues.Concat(stringValues, header.Value);
                         testHeaders[header.Key] = stringValues;
@@ -497,13 +522,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 }
             }
 
+            HttpRetryOptions retryOptions = null;
+            if (testRequest.FirstRetryInterval.HasValue && testRequest.MaxNumberOfAttempts.HasValue)
+            {
+                retryOptions = new HttpRetryOptions(testRequest.FirstRetryInterval.Value, testRequest.MaxNumberOfAttempts.Value)
+                {
+                    StatusCodesToRetry = testRequest.StatusCodesToRetry,
+                };
+            }
+
             DurableHttpRequest durableHttpRequest = new DurableHttpRequest(
                 method: testRequest.HttpMethod,
                 uri: new Uri(testRequest.Uri),
                 headers: testHeaders,
                 content: testRequest.Content,
                 tokenSource: testRequest.TokenSource,
-                asynchronousPatternEnabled: testRequest.AsynchronousPatternEnabled);
+                asynchronousPatternEnabled: testRequest.AsynchronousPatternEnabled,
+                timeout: testRequest.Timeout,
+                httpRetryOptions: retryOptions);
 
             return durableHttpRequest;
         }
@@ -559,11 +595,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         public static async Task ParallelBatchActor([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
-           Task item1 = ctx.WaitForExternalEvent<string>("newItem");
-           Task item2 = ctx.WaitForExternalEvent<string>("newItem");
-           Task item3 = ctx.WaitForExternalEvent<string>("newItem");
-           Task item4 = ctx.WaitForExternalEvent<string>("newItem");
-           await Task.WhenAll(item1, item2, item3, item4);
+            Task item1 = ctx.WaitForExternalEvent<string>("newItem");
+            Task item2 = ctx.WaitForExternalEvent<string>("newItem");
+            Task item3 = ctx.WaitForExternalEvent<string>("newItem");
+            Task item4 = ctx.WaitForExternalEvent<string>("newItem");
+            await Task.WhenAll(item1, item2, item3, item4);
         }
 
         public static async Task<int> Counter2([OrchestrationTrigger] IDurableOrchestrationContext ctx)
@@ -607,6 +643,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             await Task.WhenAll(tasks);
 
+            return "Done";
+        }
+
+        public static async Task<string> CallActivityWithDelay(
+           [OrchestrationTrigger] IDurableOrchestrationContext context)
+        {
+            await context.CallActivityAsync(nameof(TestActivities.TimeDelayActivity), null);
             return "Done";
         }
 
@@ -761,6 +804,40 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return "ok";
         }
 
+        public static async Task<string> NonexistentEntity([OrchestrationTrigger] IDurableOrchestrationContext ctx)
+        {
+            var entityId = new EntityId("ThisEntityDoesNotExist", "33");
+
+            try
+            {
+                await ctx.CallEntityAsync(entityId, "hi");
+                return $"test failed: expected error message because CallEntityAsync refers to a non-existing entity";
+            }
+            catch (ArgumentException)
+            {
+            }
+
+            try
+            {
+                ctx.SignalEntity(entityId, "hi");
+                return $"test failed: expected error message because SignalEntity refers to a non-existing entity";
+            }
+            catch (ArgumentException)
+            {
+            }
+
+            try
+            {
+                await ctx.LockAsync(entityId);
+                return $"test failed: expected error message because LockAsync refers to a non-existing entity";
+            }
+            catch (ArgumentException)
+            {
+            }
+
+            return "ok";
+        }
+
         public static async Task<string> CallFaultyEntity([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
             var (entityId, rollbackOnException) = ctx.GetInput<(EntityId, bool)>();
@@ -901,11 +978,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 ctx.SignalEntity(entityId, "Set", 56);
                 ctx.SignalEntity(entityId, "SetToUnDeserializable");
                 ctx.SignalEntity(entityId, "Set", 12);
-                ctx.SignalEntity(entityId, "SetAndThrow", 999);
+                ctx.SignalEntity(entityId, "SetThenThrow", 999);
 
                 if (rollbackOnException)
                 {
+                    // we rolled back to an un-deserializable state
                     await Assert.ThrowsAsync<EntitySchedulerException>(() => entity.Get());
+                }
+                else
+                {
+                    Assert.Equal(999, await entity.Get());
                 }
 
                 await ctx.CallEntityAsync<bool>(entityId, "deletewithoutreading");

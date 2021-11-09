@@ -24,13 +24,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="content">Content added to the body of the HTTP request.</param>
         /// <param name="tokenSource">AAD authentication attached to the HTTP request.</param>
         /// <param name="asynchronousPatternEnabled">Specifies whether the DurableHttpRequest should handle the asynchronous pattern.</param>
+        /// <param name="timeout">TimeSpan used for HTTP request timeout.</param>
+        /// <param name="httpRetryOptions">Retry options used for the HTTP request.</param>
         public DurableHttpRequest(
             HttpMethod method,
             Uri uri,
             IDictionary<string, StringValues> headers = null,
             string content = null,
             ITokenSource tokenSource = null,
-            bool asynchronousPatternEnabled = true)
+            bool asynchronousPatternEnabled = true,
+            TimeSpan? timeout = null,
+            HttpRetryOptions httpRetryOptions = null)
         {
             this.Method = method;
             this.Uri = uri;
@@ -38,6 +42,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.Content = content;
             this.TokenSource = tokenSource;
             this.AsynchronousPatternEnabled = asynchronousPatternEnabled;
+            this.Timeout = timeout;
+            this.HttpRetryOptions = httpRetryOptions;
         }
 
         /// <summary>
@@ -79,6 +85,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </summary>
         [JsonProperty("asynchronousPatternEnabled")]
         public bool AsynchronousPatternEnabled { get; }
+
+        /// <summary>
+        /// Defines retry policy for handling of failures in making the HTTP Request. These could be non-successful HTTP status codes
+        /// in the response, a timeout in making the HTTP call, or an exception raised from the HTTP Client library.
+        /// </summary>
+        [JsonProperty("retryOptions")]
+        public HttpRetryOptions HttpRetryOptions { get; }
+
+        /// <summary>
+        /// The total timeout for the original HTTP request and any
+        /// asynchronous polling.
+        /// </summary>
+        [JsonProperty("timeout")]
+        public TimeSpan? Timeout { get; }
 
         private class HttpMethodConverter : JsonConverter
         {
@@ -143,7 +163,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     if (Enum.TryParse((string)kindValue, out TokenSourceType tokenSourceKind) &&
                         tokenSourceKind == TokenSourceType.AzureManagedIdentity)
                     {
-                        return new ManagedIdentityTokenSource((string)jsonObject.GetValue("resource", StringComparison.Ordinal));
+                        string resourceString = (string)jsonObject.GetValue("resource", StringComparison.Ordinal);
+
+                        if (jsonObject.TryGetValue("options", out JToken optionsToken))
+                        {
+                            ManagedIdentityOptions managedIdentityOptions = optionsToken.ToObject<JObject>().ToObject<ManagedIdentityOptions>();
+                            return new ManagedIdentityTokenSource(resourceString, managedIdentityOptions);
+                        }
+
+                        return new ManagedIdentityTokenSource(resourceString);
                     }
 
                     throw new NotSupportedException($"The token source kind '{kindValue.ToString(Formatting.None)}' is not supported.");
@@ -169,6 +197,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     writer.WriteValue(TokenSourceType.AzureManagedIdentity.ToString());
                     writer.WritePropertyName("resource");
                     writer.WriteValue(tokenSource.Resource);
+
+                    if (tokenSource.Options != null)
+                    {
+                        writer.WritePropertyName("options");
+                        writer.WriteRawValue(JsonConvert.SerializeObject(tokenSource.Options));
+                    }
+
                     writer.WriteEndObject();
                 }
                 else

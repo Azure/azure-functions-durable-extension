@@ -126,6 +126,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
+        public DateTime GetAdjustedDeliveryTime(DurabilityProvider durabilityProvider)
+        {
+            if (this.ScheduledTime.HasValue)
+            {
+                var now = DateTime.UtcNow;
+                if ((this.ScheduledTime.Value - now) <= durabilityProvider.MaximumDelayTime)
+                {
+                    return this.ScheduledTime.Value;
+                }
+                else
+                {
+                    return now + durabilityProvider.LongRunningTimerIntervalLength;
+                }
+            }
+            else
+            {
+                throw new InvalidOperationException("this is not a delayed message");
+            }
+        }
+
         public override string ToString()
         {
             if (this.IsLockRequest)

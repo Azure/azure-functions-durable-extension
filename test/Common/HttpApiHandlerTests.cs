@@ -12,6 +12,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Moq;
 using Newtonsoft.Json;
@@ -32,7 +33,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 Notifications = new NotificationOptions(),
             };
-            options.NotificationUrl = null;
+
+            // With a null override, and the production code path returning null webhook path,
+            // this simulates a non-configured webhook url.
+            options.WebhookUriProviderOverride = null;
             options.HubName = "DurableTaskHub";
 
             var httpApiHandler = new HttpApiHandler(GetTestExtension(options), null);
@@ -59,6 +63,45 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 TimeSpan.FromSeconds(0),
                 TimeSpan.FromSeconds(100)));
             Assert.Equal($"Total timeout 0 should be bigger than retry timeout 100", ex.Message);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void OutOfProcEndpoints_UpdateWithNewWebhookUri()
+        {
+            var httpApiHandler = new HttpApiHandler(GetTestExtension(), null);
+            var webhookProvider = new ChangingWebhookProvider() { WebhookUri = new Uri(TestConstants.NotificationUrl) };
+            httpApiHandler.RegisterWebhookProvider(() => webhookProvider.WebhookUri);
+
+            AssertApisUsingCorrectWebhookUri(httpApiHandler, TestConstants.NotificationUrlBase);
+
+            string newWebhookUri = TestConstants.NotificationUrl.Replace("localhost:7071", "localhost:5050");
+            string newBaseUri = TestConstants.NotificationUrlBase.Replace("localhost:7071", "localhost:5050");
+            webhookProvider.WebhookUri = new Uri(newWebhookUri);
+
+            AssertApisUsingCorrectWebhookUri(httpApiHandler, newBaseUri);
+        }
+
+        // Validate the expected uris are used for CreateHttpManagementPayload(), GetBaseUrl(), and GetInstanceCreationLinks()
+        private static void AssertApisUsingCorrectWebhookUri(HttpApiHandler httpApiHandler, string expectedBaseUri)
+        {
+            HttpManagementPayload managementPayload = httpApiHandler.CreateHttpManagementPayload(
+                 TestConstants.InstanceId,
+                 null,
+                 null);
+
+            Assert.StartsWith(expectedBaseUri, managementPayload.StatusQueryGetUri);
+            Assert.StartsWith(expectedBaseUri, managementPayload.SendEventPostUri);
+            Assert.StartsWith(expectedBaseUri, managementPayload.PurgeHistoryDeleteUri);
+            Assert.StartsWith(expectedBaseUri, managementPayload.RestartPostUri);
+            Assert.StartsWith(expectedBaseUri, managementPayload.TerminatePostUri);
+
+            string baseUri = httpApiHandler.GetBaseUrl();
+            Assert.Equal(expectedBaseUri, baseUri);
+
+            HttpCreationPayload creationPayload = httpApiHandler.GetInstanceCreationLinks();
+            Assert.StartsWith(expectedBaseUri, creationPayload.CreateNewInstancePostUri);
+            Assert.StartsWith(expectedBaseUri, creationPayload.CreateAndWaitOnNewInstancePostUri);
         }
 
         [Fact]
@@ -94,6 +137,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(
                 $"{TestConstants.NotificationUrlBase}/instances/7b59154ae666471993659902ed0ba742?taskHub=SampleHubVS&connection=Storage&code=mykey",
                 (string)status["purgeHistoryDeleteUri"]);
+            Assert.Equal(
+                $"{TestConstants.NotificationUrlBase}/instances/7b59154ae666471993659902ed0ba742/restart?taskHub=SampleHubVS&connection=Storage&code=mykey",
+                (string)status["restartPostUri"]);
         }
 
         [Fact]
@@ -116,6 +162,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(
                 $"{TestConstants.NotificationUrlBase}/instances/7b59154ae666471993659902ed0ba742?taskHub=DurableFunctionsHub&connection=Storage&code=mykey",
                 httpManagementPayload.PurgeHistoryDeleteUri);
+            Assert.Equal(
+               $"{TestConstants.NotificationUrlBase}/instances/7b59154ae666471993659902ed0ba742/restart?taskHub=DurableFunctionsHub&connection=Storage&code=mykey",
+               httpManagementPayload.RestartPostUri);
         }
 
         [Fact]
@@ -138,6 +187,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(
                 $"{TestConstants.NotificationUrlBase}/instances/7b59154ae666471993659902ed0ba742?taskHub=SampleHubVS&connection=Storage&code=mykey",
                 httpManagementPayload.PurgeHistoryDeleteUri);
+            Assert.Equal(
+                $"{TestConstants.NotificationUrlBase}/instances/7b59154ae666471993659902ed0ba742/restart?taskHub=SampleHubVS&connection=Storage&code=mykey",
+                httpManagementPayload.RestartPostUri);
         }
 
         [Fact]
@@ -160,6 +212,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(
                 $"{TestConstants.NotificationUrlBase}/instances/7b59154ae666471993659902ed0ba742?taskHub=DurableFunctionsHub&connection=TestConnection&code=mykey",
                 httpManagementPayload.PurgeHistoryDeleteUri);
+            Assert.Equal(
+                $"{TestConstants.NotificationUrlBase}/instances/7b59154ae666471993659902ed0ba742/restart?taskHub=DurableFunctionsHub&connection=TestConnection&code=mykey",
+                httpManagementPayload.RestartPostUri);
         }
 
         [Fact]
@@ -167,11 +222,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public void CreateCheckStatus_Returns_Correct_HttpManagementPayload_based_on_custom_values()
         {
             var httpApiHandler = new HttpApiHandler(GetTestExtension(), null);
-            HttpManagementPayload httpManagementPayload = httpApiHandler.CreateHttpManagementPayload(TestConstants.InstanceId, TestConstants.TaskHub, TestConstants.CustomConnectionName);
+            HttpManagementPayload httpManagementPayload = httpApiHandler.CreateHttpManagementPayload(TestConstants.InstanceId, TestConstants.TaskHub, TestConstants.CustomConnectionName, returnInternalServerErrorOnFailure: true, restartWithNewInstanceId: false);
             Assert.NotNull(httpManagementPayload);
             Assert.Equal(httpManagementPayload.Id, TestConstants.InstanceId);
             Assert.Equal(
-                $"{TestConstants.NotificationUrlBase}/instances/7b59154ae666471993659902ed0ba742?taskHub=SampleHubVS&connection=TestConnection&code=mykey",
+                $"{TestConstants.NotificationUrlBase}/instances/7b59154ae666471993659902ed0ba742?taskHub=SampleHubVS&connection=TestConnection&code=mykey&returnInternalServerErrorOnFailure=true",
                 httpManagementPayload.StatusQueryGetUri);
             Assert.Equal(
                 $"{TestConstants.NotificationUrlBase}/instances/7b59154ae666471993659902ed0ba742/raiseEvent/{{eventName}}?taskHub=SampleHubVS&connection=TestConnection&code=mykey",
@@ -182,6 +237,49 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(
                 $"{TestConstants.NotificationUrlBase}/instances/7b59154ae666471993659902ed0ba742?taskHub=SampleHubVS&connection=TestConnection&code=mykey",
                 httpManagementPayload.PurgeHistoryDeleteUri);
+            Assert.Equal(
+                $"{TestConstants.NotificationUrlBase}/instances/7b59154ae666471993659902ed0ba742/restart?taskHub=SampleHubVS&connection=TestConnection&code=mykey",
+                httpManagementPayload.RestartPostUri);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task WaitForCompletionOrCreateCheckStatusResponseAsync_Returns_Custom_HttpManagementPayload_After_Timeout()
+        {
+            var httpApiHandler = new HttpApiHandler(GetTestExtension(), null);
+            var stopWatch = Stopwatch.StartNew();
+            var httpResponseMessage = await httpApiHandler.WaitForCompletionOrCreateCheckStatusResponseAsync(
+                new HttpRequestMessage
+                {
+                    RequestUri = new Uri(TestConstants.RequestUri),
+                },
+                TestConstants.RandomInstanceId,
+                new DurableClientAttribute
+                {
+                    TaskHub = TestConstants.TaskHub,
+                    ConnectionName = TestConstants.ConnectionName,
+                },
+                TimeSpan.FromSeconds(10),
+                TimeSpan.FromSeconds(3),
+                true);
+            stopWatch.Stop();
+            Assert.Equal(HttpStatusCode.Accepted, httpResponseMessage.StatusCode);
+            var content = await httpResponseMessage.Content.ReadAsStringAsync();
+            var status = JsonConvert.DeserializeObject<JObject>(content);
+            Assert.Equal(status["id"], TestConstants.RandomInstanceId);
+            Assert.Equal(
+                $"{TestConstants.NotificationUrlBase}/instances/9b59154ae666471993659902ed0ba749?taskHub=SampleHubVS&connection=Storage&code=mykey&returnInternalServerErrorOnFailure=true",
+                (string)status["statusQueryGetUri"]);
+            Assert.Equal(
+                $"{TestConstants.NotificationUrlBase}/instances/9b59154ae666471993659902ed0ba749/raiseEvent/{{eventName}}?taskHub=SampleHubVS&connection=Storage&code=mykey",
+                (string)status["sendEventPostUri"]);
+            Assert.Equal(
+                $"{TestConstants.NotificationUrlBase}/instances/9b59154ae666471993659902ed0ba749/terminate?reason={{text}}&taskHub=SampleHubVS&connection=Storage&code=mykey",
+                (string)status["terminatePostUri"]);
+            Assert.Equal(
+                $"{TestConstants.NotificationUrlBase}/instances/9b59154ae666471993659902ed0ba749?taskHub=SampleHubVS&connection=Storage&code=mykey",
+                (string)status["purgeHistoryDeleteUri"]);
+            Assert.True(stopWatch.Elapsed > TimeSpan.FromSeconds(10));
         }
 
         [Fact]
@@ -201,8 +299,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     TaskHub = TestConstants.TaskHub,
                     ConnectionName = TestConstants.ConnectionName,
                 },
-                TimeSpan.FromSeconds(100),
-                TimeSpan.FromSeconds(10));
+                TimeSpan.FromSeconds(10),
+                TimeSpan.FromSeconds(3));
             stopWatch.Stop();
             Assert.Equal(HttpStatusCode.Accepted, httpResponseMessage.StatusCode);
             var content = await httpResponseMessage.Content.ReadAsStringAsync();
@@ -220,7 +318,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(
                 $"{TestConstants.NotificationUrlBase}/instances/9b59154ae666471993659902ed0ba749?taskHub=SampleHubVS&connection=Storage&code=mykey",
                 (string)status["purgeHistoryDeleteUri"]);
-            Assert.True(stopWatch.Elapsed > TimeSpan.FromSeconds(30));
+            Assert.Equal(
+                $"{TestConstants.NotificationUrlBase}/instances/9b59154ae666471993659902ed0ba749/restart?taskHub=SampleHubVS&connection=Storage&code=mykey",
+                (string)status["restartPostUri"]);
+            Assert.True(stopWatch.Elapsed > TimeSpan.FromSeconds(10));
         }
 
         [Fact]
@@ -264,14 +365,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     TaskHub = TestConstants.TaskHub,
                     ConnectionName = TestConstants.ConnectionName,
                 },
-                TimeSpan.FromSeconds(30),
-                TimeSpan.FromSeconds(8));
+                TimeSpan.FromSeconds(10),
+                TimeSpan.FromSeconds(3));
             stopwatch.Stop();
             Assert.Equal(HttpStatusCode.OK, httpResponseMessage.StatusCode);
             var content = await httpResponseMessage.Content.ReadAsStringAsync();
             var value = JsonConvert.DeserializeObject<string>(content);
             Assert.Equal("Hello Tokyo!", value);
-            Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(30));
+            Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10));
         }
 
         [Fact]
@@ -703,6 +804,153 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task RestartInstance_Is_Success(bool restartWithNewInstanceId)
+        {
+            string testInstanceId = Guid.NewGuid().ToString();
+            string restartedInstanceId = restartWithNewInstanceId ? Guid.NewGuid().ToString() : testInstanceId;
+
+            var restartUriBuilder = new UriBuilder(TestConstants.NotificationUrl);
+            restartUriBuilder.Path += $"/Instances/{testInstanceId}/restart";
+            restartUriBuilder.Query = $"restartWithNewInstanceId={restartWithNewInstanceId}&{restartUriBuilder.Query.TrimStart('?')}";
+
+            var testRequest = new HttpRequestMessage
+            {
+                Method = HttpMethod.Post,
+                RequestUri = restartUriBuilder.Uri,
+            };
+
+            var testStatusQueryGetUri = $"{TestConstants.NotificationUrlBase}/instances/{restartedInstanceId}?taskhub=SampleHubVS&connection=Storage&code=mykey";
+            var testSendEventPostUri = $"{TestConstants.NotificationUrlBase}/instances/{restartedInstanceId}/raiseEvent/{{eventName}}?taskHub=SampleHubVS&connection=Storage&code=mykey";
+            var testTerminatePostUri = $"{TestConstants.NotificationUrlBase}/instances/{restartedInstanceId}/terminate?reason={{text}}&taskHub=SampleHubVS&connection=Storage&code=mykey";
+            var testRewindPostUri = $"{TestConstants.NotificationUrlBase}/instances/{restartedInstanceId}/rewind?reason={{text}}&taskHub=SampleHubVS&connection=Storage&code=mykey";
+            var testRestartPostUri = $"{TestConstants.NotificationUrlBase}/instances/{restartedInstanceId}/restart?taskHub=SampleHubVS&connection=Storage&code=mykey&restartWithNewInstanceId={restartWithNewInstanceId}";
+            var testResponse = testRequest.CreateResponse(
+                HttpStatusCode.Accepted,
+                new
+                {
+                    id = restartedInstanceId,
+                    statusQueryGetUri = testStatusQueryGetUri,
+                    sendEventPostUri = testSendEventPostUri,
+                    terminatePostUri = testTerminatePostUri,
+                    rewindPostUri = testRewindPostUri,
+                    restartPostUri = testRestartPostUri,
+                });
+
+            var clientMock = new Mock<IDurableClient>();
+            clientMock
+                .Setup(x => x.RestartAsync(testInstanceId, restartWithNewInstanceId))
+                .Returns(Task.FromResult(restartedInstanceId));
+
+            clientMock
+                .Setup(x => x.CreateCheckStatusResponse(It.IsAny<HttpRequestMessage>(), It.IsAny<string>(), It.IsAny<bool>()))
+                .Returns(testResponse);
+
+            var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);
+            var actualResponse = await httpApiHandler.HandleRequestAsync(testRequest);
+
+            Assert.Equal(HttpStatusCode.Accepted, actualResponse.StatusCode);
+            var content = await actualResponse.Content.ReadAsStringAsync();
+            var status = JsonConvert.DeserializeObject<JObject>(content);
+            Assert.Equal(status["id"], restartedInstanceId);
+            Assert.Equal(status["statusQueryGetUri"], testStatusQueryGetUri);
+            Assert.Equal(status["sendEventPostUri"], testSendEventPostUri);
+            Assert.Equal(status["terminatePostUri"], testTerminatePostUri);
+            Assert.Equal(status["rewindPostUri"], testRewindPostUri);
+            Assert.Equal(status["restartPostUri"], testRestartPostUri);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task RestartInstanceAndWaitToComplete_Is_Success(bool restartWithNewInstanceId)
+        {
+            string testInstanceId = Guid.NewGuid().ToString();
+            string restartedInstanceId = restartWithNewInstanceId ? Guid.NewGuid().ToString() : testInstanceId;
+
+            var restartUriBuilder = new UriBuilder(TestConstants.NotificationUrl);
+            restartUriBuilder.Path += $"/Instances/{testInstanceId}/restart";
+            restartUriBuilder.Query = $"timeout=90&pollingInterval=10&restartWithNewInstanceId={restartWithNewInstanceId}&{restartUriBuilder.Query.TrimStart('?')}";
+
+            var testRequest = new HttpRequestMessage
+            {
+                Method = HttpMethod.Post,
+                RequestUri = restartUriBuilder.Uri,
+            };
+
+            var testStatusQueryGetUri = $"{TestConstants.NotificationUrlBase}/instances/{restartedInstanceId}?taskhub=SampleHubVS&connection=Storage&code=mykey";
+            var testSendEventPostUri = $"{TestConstants.NotificationUrlBase}/instances/{restartedInstanceId}/raiseEvent/{{eventName}}?taskHub=SampleHubVS&connection=Storage&code=mykey";
+            var testTerminatePostUri = $"{TestConstants.NotificationUrlBase}/instances/{restartedInstanceId}/terminate?reason={{text}}&taskHub=SampleHubVS&connection=Storage&code=mykey";
+            var testRewindPostUri = $"{TestConstants.NotificationUrlBase}/instances/{restartedInstanceId}/rewind?reason={{text}}&taskHub=SampleHubVS&connection=Storage&code=mykey";
+            var testRestartPostUri = $"{TestConstants.NotificationUrlBase}/instances/{restartedInstanceId}/restart?taskHub=SampleHubVS&connection=Storage&code=mykey&restartWithNewInstanceId={restartWithNewInstanceId}";
+            var testResponse = testRequest.CreateResponse(
+                HttpStatusCode.Accepted,
+                new
+                {
+                    id = restartedInstanceId,
+                    statusQueryGetUri = testStatusQueryGetUri,
+                    sendEventPostUri = testSendEventPostUri,
+                    terminatePostUri = testTerminatePostUri,
+                    rewindPostUri = testRewindPostUri,
+                    restartPostUri = testRestartPostUri,
+                });
+
+            var clientMock = new Mock<IDurableClient>();
+            clientMock
+                .Setup(x => x.RestartAsync(testInstanceId, restartWithNewInstanceId))
+                .Returns(Task.FromResult(restartedInstanceId));
+
+            clientMock
+                .Setup(x => x.WaitForCompletionOrCreateCheckStatusResponseAsync(It.IsAny<HttpRequestMessage>(), It.IsAny<string>(), It.IsAny<TimeSpan>(), It.IsAny<TimeSpan>(), It.IsAny<bool>()))
+                .Returns(Task.FromResult(testResponse));
+
+            var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);
+            var actualResponse = await httpApiHandler.HandleRequestAsync(testRequest);
+
+            Assert.Equal(HttpStatusCode.Accepted, actualResponse.StatusCode);
+            var content = await actualResponse.Content.ReadAsStringAsync();
+            var status = JsonConvert.DeserializeObject<JObject>(content);
+            Assert.Equal(status["id"], restartedInstanceId);
+            Assert.Equal(status["statusQueryGetUri"], testStatusQueryGetUri);
+            Assert.Equal(status["sendEventPostUri"], testSendEventPostUri);
+            Assert.Equal(status["terminatePostUri"], testTerminatePostUri);
+            Assert.Equal(status["rewindPostUri"], testRewindPostUri);
+            Assert.Equal(status["restartPostUri"], testRestartPostUri);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task RestartInstance_Returns_HTTP_400_On_Invalid_InstanceId()
+        {
+            string testBadInstanceId = Guid.NewGuid().ToString("N");
+
+            var startRequestUriBuilder = new UriBuilder(TestConstants.NotificationUrl);
+            startRequestUriBuilder.Path += $"/Instances/{testBadInstanceId}/restart";
+
+            var testRequest = new HttpRequestMessage
+            {
+                Method = HttpMethod.Post,
+                RequestUri = startRequestUriBuilder.Uri,
+            };
+
+            var clientMock = new Mock<IDurableClient>();
+            clientMock
+                .Setup(x => x.RestartAsync(It.IsAny<string>(), It.IsAny<bool>()))
+                .Throws(new ArgumentException());
+
+            var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);
+            var actualResponse = await httpApiHandler.HandleRequestAsync(testRequest);
+
+            Assert.Equal(HttpStatusCode.BadRequest, actualResponse.StatusCode);
+            var content = await actualResponse.Content.ReadAsStringAsync();
+            var error = JsonConvert.DeserializeObject<JObject>(content);
+            Assert.Equal("InstanceId does not match a valid orchestration instance.", error["Message"].ToString());
+        }
+
+        [Theory]
         [InlineData(null, false)]
         [InlineData(null, true)]
         [InlineData(TestConstants.RandomInstanceId, false)]
@@ -725,10 +973,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     : new StringContent("\"TestContent\""),
             };
 
-            var testStatusQueryGetUri = $"{TestConstants.NotificationUrlBase}/instances/{testInstanceId}?taskhub=SampleHubVS&connection=Storage&code=mykey&returnInternalServerErrorOnFailure=False";
+            var testStatusQueryGetUri = $"{TestConstants.NotificationUrlBase}/instances/{testInstanceId}?taskhub=SampleHubVS&connection=Storage&code=mykey";
             var testSendEventPostUri = $"{TestConstants.NotificationUrlBase}/instances/{testInstanceId}/raiseEvent/{{eventName}}?taskHub=SampleHubVS&connection=Storage&code=mykey";
             var testTerminatePostUri = $"{TestConstants.NotificationUrlBase}/instances/{testInstanceId}/terminate?reason={{text}}&taskHub=SampleHubVS&connection=Storage&code=mykey";
             var testRewindPostUri = $"{TestConstants.NotificationUrlBase}/instances/{testInstanceId}/rewind?reason={{text}}&taskHub=SampleHubVS&connection=Storage&code=mykey";
+            var testRestartPostUri = $"{TestConstants.NotificationUrlBase}/instances/{testInstanceId}/restart?taskHub=SampleHubVS&connection=Storage&code=mykey";
             var testResponse = testRequest.CreateResponse(
                 HttpStatusCode.Accepted,
                 new
@@ -738,6 +987,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     sendEventPostUri = testSendEventPostUri,
                     terminatePostUri = testTerminatePostUri,
                     rewindPostUri = testRewindPostUri,
+                    restartPostUri = testRestartPostUri,
                 });
 
             var clientMock = new Mock<IDurableClient>();
@@ -760,6 +1010,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(status["sendEventPostUri"], testSendEventPostUri);
             Assert.Equal(status["terminatePostUri"], testTerminatePostUri);
             Assert.Equal(status["rewindPostUri"], testRewindPostUri);
+            Assert.Equal(status["restartPostUri"], testRestartPostUri);
         }
 
         [Theory]
@@ -786,10 +1037,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     : new StringContent("\"TestContent\""),
             };
 
-            var testStatusQueryGetUri = $"{TestConstants.NotificationUrlBase}/instances/{testInstanceId}?taskhub=SampleHubVS&connection=Storage&code=mykey&returnInternalServerErrorOnFailure=False";
+            var testStatusQueryGetUri = $"{TestConstants.NotificationUrlBase}/instances/{testInstanceId}?taskhub=SampleHubVS&connection=Storage&code=mykey";
             var testSendEventPostUri = $"{TestConstants.NotificationUrlBase}/instances/{testInstanceId}/raiseEvent/{{eventName}}?taskHub=SampleHubVS&connection=Storage&code=mykey";
             var testTerminatePostUri = $"{TestConstants.NotificationUrlBase}/instances/{testInstanceId}/terminate?reason={{text}}&taskHub=SampleHubVS&connection=Storage&code=mykey";
             var testRewindPostUri = $"{TestConstants.NotificationUrlBase}/instances/{testInstanceId}/rewind?reason={{text}}&taskHub=SampleHubVS&connection=Storage&code=mykey";
+            var testRestartPostUri = $"{TestConstants.NotificationUrlBase}/instances/{testInstanceId}/restart?taskHub=SampleHubVS&connection=Storage&code=mykey";
             var testResponse = testRequest.CreateResponse(
                 HttpStatusCode.Accepted,
                 new
@@ -799,6 +1051,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     sendEventPostUri = testSendEventPostUri,
                     terminatePostUri = testTerminatePostUri,
                     rewindPostUri = testRewindPostUri,
+                    restartPostUri = testRestartPostUri,
                 });
 
             var clientMock = new Mock<IDurableClient>();
@@ -807,7 +1060,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 .Returns(Task.FromResult(testInstanceId));
 
             clientMock
-                .Setup(x => x.WaitForCompletionOrCreateCheckStatusResponseAsync(It.IsAny<HttpRequestMessage>(), It.IsAny<string>(), It.IsAny<TimeSpan>(), It.IsAny<TimeSpan>()))
+                .Setup(x => x.WaitForCompletionOrCreateCheckStatusResponseAsync(It.IsAny<HttpRequestMessage>(), It.IsAny<string>(), It.IsAny<TimeSpan>(), It.IsAny<TimeSpan>(), It.IsAny<bool>()))
                 .Returns(Task.FromResult(testResponse));
 
             var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);
@@ -821,6 +1074,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(status["sendEventPostUri"], testSendEventPostUri);
             Assert.Equal(status["terminatePostUri"], testTerminatePostUri);
             Assert.Equal(status["rewindPostUri"], testRewindPostUri);
+            Assert.Equal(status["restartPostUri"], testRestartPostUri);
         }
 
         [Fact]
@@ -1142,7 +1396,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         private static DurableTaskExtension GetTestExtension()
         {
             var options = new DurableTaskOptions();
-            options.NotificationUrl = new Uri(TestConstants.NotificationUrl);
+            options.WebhookUriProviderOverride = () => new Uri(TestConstants.NotificationUrl);
             options.HubName = "DurableFunctionsHub";
 
             return GetTestExtension(options);
@@ -1170,6 +1424,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
+        private class ChangingWebhookProvider
+        {
+            public Uri WebhookUri { get; set; }
+        }
+
         private class MockDurableTaskExtension : DurableTaskExtension
         {
             public MockDurableTaskExtension(DurableTaskOptions options)
@@ -1177,9 +1436,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     new OptionsWrapper<DurableTaskOptions>(options),
                     new LoggerFactory(),
                     TestHelpers.GetTestNameResolver(),
-                    new AzureStorageDurabilityProviderFactory(new OptionsWrapper<DurableTaskOptions>(options), new TestConnectionStringResolver(), TestHelpers.GetTestNameResolver()),
+                    new[]
+                    {
+                        new AzureStorageDurabilityProviderFactory(
+                        new OptionsWrapper<DurableTaskOptions>(options),
+                        new TestConnectionStringResolver(),
+                        TestHelpers.GetTestNameResolver(),
+                        NullLoggerFactory.Instance,
+                        TestHelpers.GetMockPlatformInformationService()),
+                    },
                     new TestHostShutdownNotificationService(),
-                    new DurableHttpMessageHandlerFactory())
+                    new DurableHttpMessageHandlerFactory(),
+                    platformInformationService: TestHelpers.GetMockPlatformInformationService())
             {
             }
 

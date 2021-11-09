@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
+using DurableTask.AzureStorage.Partitioning;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
@@ -16,6 +17,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// </summary>
     public class DurableTaskOptions
     {
+        internal const string DefaultHubName = "TestHubName";
         private string originalHubName;
         private string resolvedHubName;
         private string defaultHubName;
@@ -42,7 +44,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     // "WEBSITE_SITE_NAME" is an environment variable used in Azure functions infrastructure. When running locally, this can be
                     // specified in local.settings.json file to avoid being defaulted to "TestHubName"
-                    this.resolvedHubName = Environment.GetEnvironmentVariable("WEBSITE_SITE_NAME") ?? "TestHubName";
+                    this.resolvedHubName = Environment.GetEnvironmentVariable("WEBSITE_SITE_NAME") ?? DefaultHubName;
                     this.defaultHubName = this.resolvedHubName;
                 }
 
@@ -84,28 +86,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// also increase the total CPU and memory usage on a single worker instance.
         /// </remarks>
         /// <value>
-        /// A positive integer configured by the host. The default value is 10X the number of processors on the current machine.
+        /// A positive integer configured by the host.
         /// </value>
-        public int MaxConcurrentActivityFunctions { get; set; } = 10 * Environment.ProcessorCount;
+        public int? MaxConcurrentActivityFunctions { get; set; } = null;
 
         /// <summary>
         /// Gets or sets the maximum number of orchestrator functions that can be processed concurrently on a single host instance.
         /// </summary>
         /// <value>
-        /// A positive integer configured by the host. The default value is 10X the number of processors on the current machine.
+        /// A positive integer configured by the host.
         /// </value>
-        public int MaxConcurrentOrchestratorFunctions { get; set; } = 10 * Environment.ProcessorCount;
-
-        /// <summary>
-        /// Gets or sets the base URL for the HTTP APIs managed by this extension.
-        /// </summary>
-        /// <remarks>
-        /// This property is intended for use only by runtime hosts.
-        /// </remarks>
-        /// <value>
-        /// A URL pointing to the hosted function app that responds to status polling requests.
-        /// </value>
-        public Uri NotificationUrl { get; set; }
+        public int? MaxConcurrentOrchestratorFunctions { get; set; } = null;
 
         /// <summary>
         /// Gets or sets a value indicating whether to enable the local RPC endpoint managed by this extension.
@@ -195,8 +186,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </remarks>
         public bool RollbackEntityOperationsOnExceptions { get; set; } = true;
 
+        /// <summary>
+        /// If true, takes a lease on the task hub container, allowing for only one app to process messages in a task hub at a time.
+        /// </summary>
+        public bool UseAppLease { get; set; } = true;
+
+        /// <summary>
+        /// If UseAppLease is true, gets or sets the AppLeaaseOptions used for acquiring the lease to start the application.
+        /// </summary>
+        public AppLeaseOptions AppLeaseOptions { get; set; } = AppLeaseOptions.DefaultOptions;
+
         // Used for mocking the lifecycle notification helper.
         internal HttpMessageHandler NotificationHandler { get; set; }
+
+        // This is just a way for tests to overwrite the webhook url, since there is no easy way
+        // to mock the value from ExtensionConfigContext. It should not be used in production code paths.
+        internal Func<Uri> WebhookUriProviderOverride { get; set; }
 
         /// <summary>
         /// Sets HubName to a value that is considered a default value.
@@ -213,14 +218,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // Clone the options to avoid making changes to the original.
             // We make updates to the clone rather than to JSON to ensure we're updating what we think we're updating.
             DurableTaskOptions clone = JObject.FromObject(this).ToObject<DurableTaskOptions>();
-
-            // Don't trace the notification URL query string since it may contain secrets.
-            // This is the only property which we expect to contain secrets. Everything else should be *names*
-            // of secrets that are resolved later from environment variables, etc.
-            if (clone.NotificationUrl != null)
-            {
-                clone.NotificationUrl = new Uri(clone.NotificationUrl.GetLeftPart(UriPartial.Path));
-            }
 
             // At this stage the task hub name is expected to have been resolved. However, we want to know
             // what the original value was in addition to the resolved value, so we're updating the JSON
@@ -247,7 +244,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             traceHelper.TraceConfiguration(this.HubName, configurationJson.ToString(Formatting.None));
         }
 
-        internal void Validate()
+        internal void Validate(INameResolver environmentVariableResolver, EndToEndTraceHelper traceHelper)
         {
             if (string.IsNullOrEmpty(this.HubName))
             {
@@ -258,6 +255,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 throw new InvalidOperationException($"Task Hub name must be specified in host.json when using slots. Specified name must not equal the default HubName ({this.defaultHubName})." +
                     "See documentation on Task Hubs for information on how to set this: https://docs.microsoft.com/azure/azure-functions/durable/durable-functions-task-hubs");
+            }
+
+            string runtimeLanguage = environmentVariableResolver.Resolve("FUNCTIONS_WORKER_RUNTIME");
+            if (this.ExtendedSessionsEnabled &&
+                runtimeLanguage != null && // If we don't know from the environment variable, don't assume customer isn't .NET
+                !string.Equals(runtimeLanguage, "dotnet", StringComparison.OrdinalIgnoreCase))
+            {
+                traceHelper.ExtensionWarningEvent(
+                    hubName: this.HubName,
+                    functionName: string.Empty,
+                    instanceId: string.Empty,
+                    message: "Durable Functions does not work with extendedSessions = true for non-.NET languages. This value is being set to false instead. See https://docs.microsoft.com/en-us/azure/azure-functions/durable/durable-functions-perf-and-scale#extended-sessions for more details.");
+                this.ExtendedSessionsEnabled = false;
             }
 
             this.Notifications.Validate();

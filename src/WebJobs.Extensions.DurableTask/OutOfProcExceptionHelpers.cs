@@ -52,6 +52,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
          */
         public static bool TryExtractOutOfProcStateJson(Exception ex, out string stateJson)
         {
+            if (ex == null)
+            {
+                stateJson = null;
+                return false;
+            }
+
             if (!TryGetFullOutOfProcMessage(ex, out string outOfProcMessage))
             {
                 stateJson = null;

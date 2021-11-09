@@ -29,8 +29,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     {
         public const string DefaultVersion = "";
 
-        private readonly Dictionary<string, Stack> pendingExternalEvents =
-            new Dictionary<string, Stack>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, IEventTaskCompletionSource> pendingExternalEvents =
+            new Dictionary<string, IEventTaskCompletionSource>(StringComparer.OrdinalIgnoreCase);
 
         private readonly Dictionary<string, Queue<string>> bufferedExternalEvents =
             new Dictionary<string, Queue<string>>(StringComparer.OrdinalIgnoreCase);
@@ -85,6 +85,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal bool IsCompleted { get; set; }
 
+        internal bool IsLongRunningTimer { get; private set; }
+
         internal ExceptionDispatchInfo OrchestrationException { get; set; }
 
         internal bool IsOutputSet => this.serializedOutput != null;
@@ -134,7 +136,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </returns>
         internal JToken GetInputAsJson()
         {
-            return this.RawInput != null ? JToken.Parse(this.RawInput) : null;
+            return MessagePayloadDataConverter.ConvertToJToken(this.RawInput);
         }
 
         /// <inheritdoc />
@@ -208,6 +210,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return this.serializedCustomStatus;
         }
 
+        Task<TResult> IDurableOrchestrationContext.CallSubOrchestratorAsync<TResult>(string functionName, object input)
+        {
+            return ((IDurableOrchestrationContext)this).CallSubOrchestratorAsync<TResult>(functionName, string.Empty, input);
+        }
+
         /// <inheritdoc />
         Task<TResult> IDurableOrchestrationContext.CallSubOrchestratorAsync<TResult>(string functionName, string instanceId, object input)
         {
@@ -225,12 +232,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return this.CallDurableTaskFunctionAsync<TResult>(functionName, FunctionType.Orchestrator, false, instanceId, null, retryOptions, input, null);
         }
 
-        Task<DurableHttpResponse> IDurableOrchestrationContext.CallHttpAsync(HttpMethod method, Uri uri, string content)
+        Task<DurableHttpResponse> IDurableOrchestrationContext.CallHttpAsync(HttpMethod method, Uri uri, string content, HttpRetryOptions retryOptions)
         {
             DurableHttpRequest req = new DurableHttpRequest(
                 method: method,
                 uri: uri,
-                content: content);
+                content: content,
+                httpRetryOptions: retryOptions);
             return ((IDurableOrchestrationContext)this).CallHttpAsync(req);
         }
 
@@ -279,7 +287,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 oneWay: false,
                 instanceId: null,
                 operation: null,
-                retryOptions: null,
+                retryOptions: req.HttpRetryOptions?.GetRetryOptions(),
                 input: req,
                 scheduledTimeUtc: null);
 
@@ -292,7 +300,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 method: HttpMethod.Get,
                 uri: new Uri(locationUri),
                 headers: durableHttpRequest.Headers,
-                tokenSource: durableHttpRequest.TokenSource);
+                tokenSource: durableHttpRequest.TokenSource,
+                timeout: durableHttpRequest.Timeout);
 
             // Do not copy over the x-functions-key header, as in many cases, the
             // functions key used for the initial request will be a Function-level key
@@ -307,22 +316,62 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             this.ThrowIfInvalidAccess();
 
-            if (!this.durabilityProvider.ValidateDelayTime(fireAt.Subtract(this.InnerContext.CurrentUtcDateTime), out string errorMessage))
+            DateTime intervalFireAt = fireAt;
+
+            if (fireAt.Subtract(this.InnerContext.CurrentUtcDateTime) > this.durabilityProvider.MaximumDelayTime)
             {
-                throw new ArgumentException(errorMessage, nameof(fireAt));
+                this.IsLongRunningTimer = true;
+                intervalFireAt = this.InnerContext.CurrentUtcDateTime.Add(this.durabilityProvider.LongRunningTimerIntervalLength);
             }
 
-            this.IncrementActionsOrThrowException();
-            Task<T> timerTask = this.InnerContext.CreateTimer(fireAt, state, cancelToken);
+            T result = default;
 
-            this.Config.TraceHelper.FunctionListening(
-                this.Config.Options.HubName,
-                this.OrchestrationName,
-                this.InstanceId,
-                reason: $"CreateTimer:{fireAt:o}",
-                isReplay: this.InnerContext.IsReplaying);
+            if (!this.IsLongRunningTimer)
+            {
+                this.IncrementActionsOrThrowException();
+                Task<T> timerTask = this.InnerContext.CreateTimer(fireAt, state, cancelToken);
 
-            T result = await timerTask;
+                this.Config.TraceHelper.FunctionListening(
+                    this.Config.Options.HubName,
+                    this.OrchestrationName,
+                    this.InstanceId,
+                    reason: $"CreateTimer:{fireAt:o}",
+                    isReplay: this.InnerContext.IsReplaying);
+
+                result = await timerTask;
+            }
+            else
+            {
+                this.Config.TraceHelper.FunctionListening(
+                    this.Config.Options.HubName,
+                    this.OrchestrationName,
+                    this.InstanceId,
+                    reason: $"CreateTimer:{fireAt:o}",
+                    isReplay: this.InnerContext.IsReplaying);
+
+                while (this.InnerContext.CurrentUtcDateTime < fireAt && !cancelToken.IsCancellationRequested)
+                {
+                    this.IncrementActionsOrThrowException();
+                    Task<T> timerTask = this.InnerContext.CreateTimer(intervalFireAt, state, cancelToken);
+
+                    result = await timerTask;
+
+                    TimeSpan remainingTime = fireAt.Subtract(this.InnerContext.CurrentUtcDateTime);
+
+                    if (remainingTime <= TimeSpan.Zero)
+                    {
+                        break;
+                    }
+                    else if (remainingTime < this.durabilityProvider.LongRunningTimerIntervalLength)
+                    {
+                        intervalFireAt = this.InnerContext.CurrentUtcDateTime.Add(remainingTime);
+                    }
+                    else
+                    {
+                        intervalFireAt = this.InnerContext.CurrentUtcDateTime.Add(this.durabilityProvider.LongRunningTimerIntervalLength);
+                    }
+                }
+            }
 
             this.Config.TraceHelper.TimerExpired(
                 this.Config.Options.HubName,
@@ -331,7 +380,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 expirationTime: fireAt,
                 isReplay: this.InnerContext.IsReplaying);
 
+            this.IsLongRunningTimer = false;
+
             return result;
+        }
+
+        // We now have built in long-timer support for C#, but in some scenarios, such as out-of-proc,
+        // we may still need to enforce this limitations until the solution works there as well.
+        internal void ThrowIfInvalidTimerLengthForStorageProvider(DateTime fireAt)
+        {
+            this.ThrowIfInvalidAccess();
+
+            if (!this.durabilityProvider.ValidateDelayTime(fireAt.Subtract(this.InnerContext.CurrentUtcDateTime), out string errorMessage))
+            {
+                throw new ArgumentException(errorMessage, nameof(fireAt));
+            }
         }
 
         /// <inheritdoc />
@@ -399,7 +462,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             var alreadyCompletedTask = this.CallDurableTaskFunctionAsync<object>(entity.EntityName, FunctionType.Entity, true, EntityId.GetSchedulerIdFromEntityId(entity), operationName, null, operationInput, null);
             System.Diagnostics.Debug.Assert(alreadyCompletedTask.IsCompleted, "signaling entities is synchronous");
-            alreadyCompletedTask.Wait(); // just so we see exceptions during testing
+
+            try
+            {
+                alreadyCompletedTask.Wait();
+            }
+            catch (AggregateException e)
+            {
+                throw e.InnerException;
+            }
         }
 
         /// <inheritdoc/>
@@ -413,12 +484,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             var alreadyCompletedTask = this.CallDurableTaskFunctionAsync<object>(entity.EntityName, FunctionType.Entity, true, EntityId.GetSchedulerIdFromEntityId(entity), operationName, null, operationInput, startTime);
             System.Diagnostics.Debug.Assert(alreadyCompletedTask.IsCompleted, "scheduling operations on entities is synchronous");
-            alreadyCompletedTask.Wait(); // just so we see exceptions during testing
+
+            try
+            {
+                alreadyCompletedTask.Wait();
+            }
+            catch (AggregateException e)
+            {
+                throw e.InnerException;
+            }
         }
 
         /// <inheritdoc/>
         string IDurableOrchestrationContext.StartNewOrchestration(string functionName, object input, string instanceId)
         {
+            // correlation
+#if NETSTANDARD2_0
+            var context = CorrelationTraceContext.Current;
+#endif
             this.ThrowIfInvalidAccess();
             var actualInstanceId = string.IsNullOrEmpty(instanceId) ? this.NewGuid().ToString() : instanceId;
             var alreadyCompletedTask = this.CallDurableTaskFunctionAsync<string>(functionName, FunctionType.Orchestrator, true, actualInstanceId, null, null, input, null);
@@ -622,6 +705,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             catch (TaskFailedException e)
             {
+                // Check to see if CallHttpAsync() threw a TimeoutException
+                // In this case, we want to throw a TimeoutException instead of a FunctionFailedException
+                if (functionName.Equals(HttpOptions.HttpTaskActivityReservedName) &&
+                    (e.InnerException is TimeoutException || e.InnerException is HttpRequestException))
+                {
+                    if (e.InnerException is HttpRequestException)
+                    {
+                        throw new HttpRequestException(e.Message);
+                    }
+
+                    throw e.InnerException;
+                }
+
                 exception = e;
                 string message = string.Format(
                     "The {0} function '{1}' failed: \"{2}\". See the function execution logs for additional details.",
@@ -730,30 +826,28 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             lock (this.pendingExternalEvents)
             {
-                // We use a stack to make it easier for users to abandon external events
+                // We use a stack (a custom implementation using a single-linked list)
+                // to make it easier for users to abandon external events
                 // that they no longer care about. The common case is a Task.WhenAny in a loop.
-                Stack taskCompletionSources;
-                TaskCompletionSource<T> tcs;
+                IEventTaskCompletionSource taskCompletionSources;
+                EventTaskCompletionSource<T> tcs;
 
                 // Set up the stack for listening to external events
                 if (!this.pendingExternalEvents.TryGetValue(name, out taskCompletionSources))
                 {
-                    tcs = new TaskCompletionSource<T>();
-                    taskCompletionSources = new Stack();
-                    taskCompletionSources.Push(tcs);
-                    this.pendingExternalEvents[name] = taskCompletionSources;
+                    tcs = new EventTaskCompletionSource<T>();
+                    this.pendingExternalEvents[name] = tcs;
                 }
                 else
                 {
-                    if (taskCompletionSources.Count > 0 &&
-                        taskCompletionSources.Peek().GetType() != typeof(TaskCompletionSource<T>))
+                    if (taskCompletionSources.EventType != typeof(T))
                     {
                         throw new ArgumentException("Events with the same name should have the same type argument.");
                     }
                     else
                     {
-                        tcs = new TaskCompletionSource<T>();
-                        taskCompletionSources.Push(tcs);
+                        tcs = new EventTaskCompletionSource<T> { Next = taskCompletionSources };
+                        this.pendingExternalEvents[name] = tcs;
                     }
                 }
 
@@ -788,21 +882,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             lock (this.pendingExternalEvents)
             {
-                Stack taskCompletionSources;
+                IEventTaskCompletionSource taskCompletionSources;
                 if (this.pendingExternalEvents.TryGetValue(name, out taskCompletionSources))
                 {
-                    object tcs = taskCompletionSources.Pop();
-                    Type tcsType = tcs.GetType();
-                    Type genericTypeArgument = tcsType.GetGenericArguments()[0];
+                    IEventTaskCompletionSource tcs = taskCompletionSources;
 
                     // If we're going to raise an event we should remove it from the pending collection
                     // because otherwise WaitForExternalEventAsync() will always find one with this key and run infinitely.
-                    if (taskCompletionSources.Count == 0)
+                    IEventTaskCompletionSource next = tcs.Next;
+                    if (next == null)
                     {
                         this.pendingExternalEvents.Remove(name);
                     }
+                    else
+                    {
+                        this.pendingExternalEvents[name] = next;
+                    }
 
-                    object deserializedObject = this.messageDataConverter.Deserialize(input, genericTypeArgument);
+                    object deserializedObject = this.messageDataConverter.Deserialize(input, tcs.EventType);
 
                     if (deserializedObject is ResponseMessage responseMessage)
                     {
@@ -826,8 +923,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                              this.IsReplaying);
                     }
 
-                    MethodInfo trySetResult = tcsType.GetMethod("TrySetResult");
-                    trySetResult.Invoke(tcs, new[] { deserializedObject });
+                    tcs.TrySetResult(deserializedObject);
                 }
                 else
                 {
@@ -864,7 +960,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     // Need to round-trip serialization since SendEvent always tries to serialize.
                     string rawInput = events.Dequeue();
-                    JToken jsonData = JToken.Parse(rawInput);
+                    JToken jsonData = MessagePayloadDataConverter.ConvertToJToken(rawInput);
                     this.InnerContext.SendEvent(instance, eventName, jsonData);
                 }
             }
@@ -872,16 +968,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private Task<T> WaitForExternalEvent<T>(string name, TimeSpan timeout, Action<TaskCompletionSource<T>> timeoutAction, CancellationToken cancelToken)
         {
-            if (!this.durabilityProvider.ValidateDelayTime(timeout, out string errorMessage))
-            {
-                throw new ArgumentException(errorMessage, nameof(timeout));
-            }
-
             var tcs = new TaskCompletionSource<T>();
             var cts = CancellationTokenSource.CreateLinkedTokenSource(cancelToken);
 
             var timeoutAt = this.InnerContext.CurrentUtcDateTime + timeout;
-            var timeoutTask = this.CreateTimer(timeoutAt, cts.Token);
+            var timeoutTask = ((IDurableOrchestrationContext)this).CreateTimer(timeoutAt, cts.Token);
             var waitForEventTask = this.WaitForExternalEvent<T>(name, "ExternalEvent");
 
             waitForEventTask.ContinueWith(
@@ -952,6 +1043,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         async Task<IDisposable> IDurableOrchestrationContext.LockAsync(params EntityId[] entities)
         {
             this.ThrowIfInvalidAccess();
+
+            foreach (var entityId in entities)
+            {
+                this.Config.ThrowIfFunctionDoesNotExist(entityId.EntityName, FunctionType.Entity);
+            }
+
             if (this.ContextLocks != null)
             {
                 throw new LockingRulesViolationException("Cannot acquire more locks when already holding some locks.");
@@ -1052,7 +1149,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 if (requestMessage.ScheduledTime.HasValue)
                 {
-                    eventName = EntityMessageEventNames.ScheduledRequestMessageEventName(requestMessage.ScheduledTime.Value);
+                    DateTime adjustedDeliveryTime = requestMessage.GetAdjustedDeliveryTime(this.durabilityProvider);
+                    eventName = EntityMessageEventNames.ScheduledRequestMessageEventName(adjustedDeliveryTime);
                 }
                 else
                 {
@@ -1060,7 +1158,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         requestMessage,
                         target.InstanceId,
                         this.InnerContext.CurrentUtcDateTime,
-                        TimeSpan.FromMinutes(this.Config.Options.EntityMessageReorderWindowInMinutes));
+                        this.Config.MessageReorderWindow);
 
                     eventName = EntityMessageEventNames.RequestMessageEventName;
                 }
@@ -1111,6 +1209,90 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return GuidManager.CreateDeterministicGuid(GuidManager.UrlNamespaceValue, guidNameValue);
         }
 
+        /// <inheritdoc/>
+        Task<TResult> IDurableOrchestrationContext.CallEntityAsync<TResult>(EntityId entityId, string operationName)
+        {
+            return ((IDurableOrchestrationContext)this).CallEntityAsync<TResult>(entityId, operationName, null);
+        }
+
+        /// <inheritdoc/>
+        Task IDurableOrchestrationContext.CallEntityAsync(EntityId entityId, string operationName)
+        {
+            return ((IDurableOrchestrationContext)this).CallEntityAsync<object>(entityId, operationName, null);
+        }
+
+        /// <inheritdoc/>
+        Task IDurableOrchestrationContext.CallSubOrchestratorAsync(string functionName, object input)
+        {
+            return ((IDurableOrchestrationContext)this).CallSubOrchestratorAsync<object>(functionName, input);
+        }
+
+        /// <inheritdoc/>
+        Task IDurableOrchestrationContext.CallSubOrchestratorAsync(string functionName, string instanceId, object input)
+        {
+            return ((IDurableOrchestrationContext)this).CallSubOrchestratorAsync<object>(functionName, instanceId, input);
+        }
+
+        /// <inheritdoc/>
+        Task IDurableOrchestrationContext.CallSubOrchestratorWithRetryAsync(string functionName, RetryOptions retryOptions, object input)
+        {
+            return ((IDurableOrchestrationContext)this).CallSubOrchestratorWithRetryAsync<object>(functionName, retryOptions, input);
+        }
+
+        /// <inheritdoc/>
+        Task IDurableOrchestrationContext.CallSubOrchestratorWithRetryAsync(string functionName, RetryOptions retryOptions, string instanceId, object input)
+        {
+            return ((IDurableOrchestrationContext)this).CallSubOrchestratorWithRetryAsync<object>(functionName, retryOptions, instanceId, input);
+        }
+
+        /// <inheritdoc/>
+        Task<TResult> IDurableOrchestrationContext.CallSubOrchestratorWithRetryAsync<TResult>(string functionName, RetryOptions retryOptions, object input)
+        {
+            return ((IDurableOrchestrationContext)this).CallSubOrchestratorWithRetryAsync<TResult>(functionName, retryOptions, null, input);
+        }
+
+        /// <inheritdoc/>
+        Task IDurableOrchestrationContext.CreateTimer(DateTime fireAt, CancellationToken cancelToken)
+        {
+            return ((IDurableOrchestrationContext)this).CreateTimer<object>(fireAt, null, cancelToken);
+        }
+
+        /// <inheritdoc/>
+        Task IDurableOrchestrationContext.WaitForExternalEvent(string name)
+        {
+            return ((IDurableOrchestrationContext)this).WaitForExternalEvent<object>(name);
+        }
+
+        /// <inheritdoc/>
+        Task IDurableOrchestrationContext.WaitForExternalEvent(string name, TimeSpan timeout, CancellationToken cancelToken)
+        {
+            return ((IDurableOrchestrationContext)this).WaitForExternalEvent<object>(name, timeout, cancelToken);
+        }
+
+        /// <inheritdoc/>
+        Task IDurableOrchestrationContext.CallActivityAsync(string functionName, object input)
+        {
+            return ((IDurableOrchestrationContext)this).CallActivityAsync<object>(functionName, input);
+        }
+
+        /// <inheritdoc/>
+        Task IDurableOrchestrationContext.CallActivityWithRetryAsync(string functionName, RetryOptions retryOptions, object input)
+        {
+            return ((IDurableOrchestrationContext)this).CallActivityWithRetryAsync<object>(functionName, retryOptions, input);
+        }
+
+        /// <inheritdoc/>
+        TEntityInterface IDurableOrchestrationContext.CreateEntityProxy<TEntityInterface>(string entityKey)
+        {
+            return ((IDurableOrchestrationContext)this).CreateEntityProxy<TEntityInterface>(new EntityId(DurableEntityProxyHelpers.ResolveEntityName<TEntityInterface>(), entityKey));
+        }
+
+        /// <inheritdoc/>
+        TEntityInterface IDurableOrchestrationContext.CreateEntityProxy<TEntityInterface>(EntityId entityId)
+        {
+            return EntityProxyFactory.Create<TEntityInterface>(new OrchestrationContextProxy(this), entityId);
+        }
+
         private class LockReleaser : IDisposable
         {
             private readonly DurableOrchestrationContext context;
@@ -1127,6 +1309,39 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.context.ReleaseLocks();
                 }
             }
+        }
+
+        private class EventTaskCompletionSource<T> : TaskCompletionSource<T>, IEventTaskCompletionSource
+        {
+            public Type EventType => typeof(T);
+
+            public IEventTaskCompletionSource Next { get; set; }
+
+            void IEventTaskCompletionSource.TrySetResult(object result) => this.TrySetResult((T)result);
+        }
+
+        /// <summary>
+        /// A non-generic tcs interface.
+        /// </summary>
+#pragma warning disable SA1201 // Elements should appear in the correct order
+        private interface IEventTaskCompletionSource
+#pragma warning restore SA1201 // Elements should appear in the correct order
+        {
+            /// <summary>
+            /// The type of the event stored in the completion source.
+            /// </summary>
+            Type EventType { get; }
+
+            /// <summary>
+            /// The next task completion source in the stack.
+            /// </summary>
+            IEventTaskCompletionSource Next { get; set; }
+
+            /// <summary>
+            /// Tries to set the result on tcs.
+            /// </summary>
+            /// <param name="result">The result.</param>
+            void TrySetResult(object result);
         }
     }
 }

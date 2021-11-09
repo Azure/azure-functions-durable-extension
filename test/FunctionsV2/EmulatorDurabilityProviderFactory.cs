@@ -18,12 +18,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public bool SupportsEntities => false;
 
-        public DurabilityProvider GetDurabilityProvider(DurableClientAttribute attribute)
+        public virtual string Name => "Emulator";
+
+        public virtual DurabilityProvider GetDurabilityProvider(DurableClientAttribute attribute)
         {
             return this.provider;
         }
 
-        public DurabilityProvider GetDurabilityProvider()
+        public virtual DurabilityProvider GetDurabilityProvider()
         {
             return this.provider;
         }

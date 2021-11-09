@@ -400,6 +400,52 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             this.WriteEvent(224, TaskHub, AppName, SlotName, FunctionName, InstanceId, Reason, FunctionType, ExtensionVersion, IsReplay);
         }
+
+        [Event(225, Level = EventLevel.Verbose)]
+        public void ProcessingOutOfProcPayload(
+            string FunctionName,
+            string TaskHub,
+            string AppName,
+            string SlotName,
+            string InstanceId,
+            string Details,
+            string ExtensionVersion)
+        {
+            this.WriteEvent(225, FunctionName, TaskHub, AppName, SlotName, InstanceId, Details, FunctionType.Orchestrator, ExtensionVersion);
+        }
+
+        [Event(226, Level = EventLevel.Informational)]
+        public void EntityStateCreated(
+            string TaskHub,
+            string AppName,
+            string SlotName,
+            string FunctionName,
+            string InstanceId,
+            string OperationName,
+            string OperationId,
+            string FunctionType,
+            string ExtensionVersion,
+            bool IsReplay)
+        {
+            this.WriteEvent(226, TaskHub, AppName, SlotName, FunctionName, InstanceId, OperationName, OperationId, FunctionType, ExtensionVersion, IsReplay);
+        }
+
+        [Event(227, Level = EventLevel.Informational)]
+        public void EntityStateDeleted(
+            string TaskHub,
+            string AppName,
+            string SlotName,
+            string FunctionName,
+            string InstanceId,
+            string OperationName,
+            string OperationId,
+            string FunctionType,
+            string ExtensionVersion,
+            bool IsReplay)
+        {
+            this.WriteEvent(227, TaskHub, AppName, SlotName, FunctionName, InstanceId, OperationName, OperationId, FunctionType, ExtensionVersion, IsReplay);
+        }
+
 #pragma warning restore SA1313 // Parameter names should begin with lower-case letter
     }
 }

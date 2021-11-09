@@ -10,7 +10,9 @@ using System.Net.NetworkInformation;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
+using Microsoft.VisualBasic;
 using Moq;
 using Newtonsoft.Json.Linq;
 using Xunit;
@@ -68,10 +70,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             // Feed the out-of-proc execution result JSON to the out-of-proc shim.
             var jsonObject = JObject.Parse(executionJson);
-            OrchestrationInvocationResult result = new OrchestrationInvocationResult()
-            {
-                ReturnValue = jsonObject,
-            };
+            OrchestrationInvocationResult result = new OrchestrationInvocationResult(jsonObject);
             bool moreWork = await shim.ScheduleDurableTaskEvents(result);
 
             // The request should not have completed because one additional replay is needed
@@ -123,7 +122,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 ""uri"": ""https://example.com"",
                 ""tokenSource"": {
                     ""kind"": ""AzureManagedIdentity"",
-                    ""resource"": ""https://management.core.windows.net""
+                    ""resource"": ""https://management.core.windows.net/.default""
                 }
             }
         }]
@@ -132,10 +131,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             // Feed the out-of-proc execution result JSON to the out-of-proc shim.
             var jsonObject = JObject.Parse(executionJson);
-            OrchestrationInvocationResult result = new OrchestrationInvocationResult()
-            {
-                ReturnValue = jsonObject,
-            };
+            OrchestrationInvocationResult result = new OrchestrationInvocationResult(jsonObject);
             bool moreWork = await shim.ScheduleDurableTaskEvents(result);
 
             Assert.NotNull(request);
@@ -145,7 +141,61 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             Assert.NotNull(request.TokenSource);
             ManagedIdentityTokenSource tokenSource = Assert.IsType<ManagedIdentityTokenSource>(request.TokenSource);
-            Assert.Equal("https://management.core.windows.net", tokenSource.Resource);
+            Assert.Equal("https://management.core.windows.net/.default", tokenSource.Resource);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task CallHttpActionOrchestrationWithManagedIdentityOptions()
+        {
+            DurableHttpRequest request = null;
+
+            // Mock the CallHttpAsync API so we can capture the request and return a fixed response.
+            var contextMock = new Mock<IDurableOrchestrationContext>();
+            contextMock
+                .Setup(ctx => ctx.CallHttpAsync(It.IsAny<DurableHttpRequest>()))
+                .Callback<DurableHttpRequest>(req => request = req)
+                .Returns(Task.FromResult(new DurableHttpResponse(System.Net.HttpStatusCode.OK)));
+
+            var shim = new OutOfProcOrchestrationShim(contextMock.Object);
+
+            var executionJson = @"
+{
+    ""isDone"": false,
+    ""actions"": [
+        [{
+            ""actionType"": ""CallHttp"",
+            ""httpRequest"": {
+                ""method"": ""GET"",
+                ""uri"": ""https://example.com"",
+                ""tokenSource"": {
+                    ""kind"": ""AzureManagedIdentity"",
+                    ""resource"": ""https://management.core.windows.net/.default"",
+                    ""options"": {
+                        ""authorityhost"": ""https://login.microsoftonline.com/"",
+                        ""tenantid"": ""example_tenant_id""
+                    }
+                }
+            }
+        }]
+    ]
+}";
+
+            // Feed the out-of-proc execution result JSON to the out-of-proc shim.
+            var jsonObject = JObject.Parse(executionJson);
+            OrchestrationInvocationResult result = new OrchestrationInvocationResult(jsonObject);
+            bool moreWork = await shim.ScheduleDurableTaskEvents(result);
+
+            Assert.NotNull(request);
+            Assert.Equal(HttpMethod.Get, request.Method);
+            Assert.Equal(new Uri("https://example.com"), request.Uri);
+            Assert.Null(request.Content);
+
+            Assert.NotNull(request.TokenSource);
+            ManagedIdentityTokenSource tokenSource = Assert.IsType<ManagedIdentityTokenSource>(request.TokenSource);
+            Assert.Equal("https://management.core.windows.net/.default", tokenSource.Resource);
+            Assert.Equal("https://login.microsoftonline.com/", tokenSource.Options.AuthorityHost.ToString());
+            Assert.Equal("example_tenant_id", tokenSource.Options.TenantId);
         }
 
         [Theory]
@@ -287,19 +337,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 await host.StartAsync();
 
-                // Check to see whether the local RPC endpoint has been opened
-                IPGlobalProperties ipGlobalProperties = IPGlobalProperties.GetIPGlobalProperties();
-                IPEndPoint[] endpoints = ipGlobalProperties.GetActiveTcpListeners();
+                // Validate if we opened local RPC endpoint by looking at log statements.
+                var logger = this.loggerProvider.CreatedLoggers.Single(l => l.Category == TestHelpers.LogCategory);
+                var logMessages = logger.LogMessages.ToList();
+                bool enabledRpcEndpoint = logMessages.Any(msg => msg.Level == Microsoft.Extensions.Logging.LogLevel.Information && msg.FormattedMessage.StartsWith("Opened local RPC endpoint:"));
 
-                const string LocalRcpAddress = "127.0.0.1:17071";
-                if (enabledExpected)
-                {
-                    Assert.Contains(LocalRcpAddress, endpoints.Select(ep => ep.ToString()));
-                }
-                else
-                {
-                    Assert.DoesNotContain(LocalRcpAddress, endpoints.Select(ep => ep.ToString()));
-                }
+                Assert.Equal(enabledExpected, enabledRpcEndpoint);
 
                 await host.StopAsync();
             }
@@ -327,6 +370,44 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 }
 
                 await host.StopAsync();
+            }
+        }
+
+        [Theory]
+        [InlineData("dotnet")]
+        [InlineData("DotNet")]
+        [InlineData("node")]
+        [InlineData("Node")]
+        [InlineData("python")]
+        [InlineData("Python")]
+        [InlineData("powershell")]
+        [InlineData("PowerShell")]
+        [InlineData("haskell")]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void WorkerRuntimeTypeFollowsSpec(string workerRuntime)
+        {
+            INameResolver nameResolver = new SimpleNameResolver(
+                new Dictionary<string, string>
+                {
+                    { "FUNCTIONS_WORKER_RUNTIME", workerRuntime },
+                });
+
+            ILoggerFactory loggerFactory = new LoggerFactory();
+            var platformInformation = new DefaultPlatformInformation(nameResolver, loggerFactory);
+
+            var runtimeType = platformInformation.GetWorkerRuntimeType();
+
+            var supportedPLs = (IEnumerable<string>)Enum.GetNames(typeof(WorkerRuntimeType));
+            if (!supportedPLs.Contains(workerRuntime, StringComparer.OrdinalIgnoreCase))
+            {
+                // Unknown runtimes should return Unknown
+                Assert.Equal(WorkerRuntimeType.Unknown, runtimeType);
+            }
+            else
+            {
+                // Known runtimes should be parseable regardless of capitalization
+                Assert.NotEqual(WorkerRuntimeType.Unknown, runtimeType);
+                runtimeType.ToString().Equals(workerRuntime, StringComparison.OrdinalIgnoreCase);
             }
         }
     }

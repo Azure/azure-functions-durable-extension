@@ -3,6 +3,7 @@
 
 using System;
 using DurableTask.AzureStorage;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 
@@ -10,11 +11,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     internal class AzureStorageDurabilityProviderFactory : IDurabilityProviderFactory
     {
+        private const string LoggerName = "Host.Triggers.DurableTask.AzureStorage";
+        internal const string ProviderName = "AzureStorage";
+
         private readonly DurableTaskOptions options;
         private readonly AzureStorageOptions azureStorageOptions;
         private readonly IConnectionStringResolver connectionStringResolver;
         private readonly string defaultConnectionName;
         private readonly INameResolver nameResolver;
+        private readonly ILoggerFactory loggerFactory;
+        private readonly bool inConsumption; // If true, optimize defaults for consumption
         private AzureStorageDurabilityProvider defaultStorageProvider;
 
         // Must wait to get settings until we have validated taskhub name.
@@ -24,18 +30,51 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public AzureStorageDurabilityProviderFactory(
             IOptions<DurableTaskOptions> options,
             IConnectionStringResolver connectionStringResolver,
-            INameResolver nameResolver)
+            INameResolver nameResolver,
+            ILoggerFactory loggerFactory,
+#pragma warning disable CS0612 // Type or member is obsolete
+            IPlatformInformation platformInfo)
+#pragma warning restore CS0612 // Type or member is obsolete
         {
             this.options = options.Value;
             this.nameResolver = nameResolver;
+            this.loggerFactory = loggerFactory;
             this.azureStorageOptions = new AzureStorageOptions();
+            this.inConsumption = platformInfo.IsInConsumptionPlan();
+
+            // The consumption plan has different performance characteristics so we provide
+            // different defaults for key configuration values.
+            int maxConcurrentOrchestratorsDefault = this.inConsumption ? 5 : 10 * Environment.ProcessorCount;
+            int maxConcurrentActivitiesDefault = this.inConsumption ? 10 : 10 * Environment.ProcessorCount;
+
+            if (this.inConsumption)
+            {
+                WorkerRuntimeType language = platformInfo.GetWorkerRuntimeType();
+                if (language == WorkerRuntimeType.Python)
+                {
+                    this.azureStorageOptions.ControlQueueBufferThreshold = 32;
+                }
+                else
+                {
+                    this.azureStorageOptions.ControlQueueBufferThreshold = 128;
+                }
+            }
+
+            // The following defaults are only applied if the customer did not explicitely set them on `host.json`
+            this.options.MaxConcurrentOrchestratorFunctions = this.options.MaxConcurrentOrchestratorFunctions ?? maxConcurrentOrchestratorsDefault;
+            this.options.MaxConcurrentActivityFunctions = this.options.MaxConcurrentActivityFunctions ?? maxConcurrentActivitiesDefault;
+
+            // Override the configuration defaults with user-provided values in host.json, if any.
             JsonConvert.PopulateObject(JsonConvert.SerializeObject(this.options.StorageProvider), this.azureStorageOptions);
 
-            this.azureStorageOptions.Validate();
+            var logger = loggerFactory.CreateLogger(nameof(this.azureStorageOptions));
+            this.azureStorageOptions.Validate(logger);
 
             this.connectionStringResolver = connectionStringResolver ?? throw new ArgumentNullException(nameof(connectionStringResolver));
             this.defaultConnectionName = this.azureStorageOptions.ConnectionStringName ?? ConnectionStringNames.Storage;
         }
+
+        public virtual string Name => ProviderName;
 
         internal string GetDefaultStorageConnectionString()
         {
@@ -45,7 +84,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         // This method should not be called before the app settings are resolved into the options.
         // Because of this, we wait to validate the options until right before building a durability provider, rather
         // than in the Factory constructor.
-        private void EnsureInitialized()
+        private void EnsureDefaultClientSettingsInitialized()
         {
             if (!this.hasValidatedOptions)
             {
@@ -63,24 +102,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        public DurabilityProvider GetDurabilityProvider()
+        public virtual DurabilityProvider GetDurabilityProvider()
         {
-            this.EnsureInitialized();
+            this.EnsureDefaultClientSettingsInitialized();
             if (this.defaultStorageProvider == null)
             {
                 var defaultService = new AzureStorageOrchestrationService(this.defaultSettings);
+                ILogger logger = this.loggerFactory.CreateLogger(LoggerName);
                 this.defaultStorageProvider = new AzureStorageDurabilityProvider(
                     defaultService,
                     this.defaultConnectionName,
-                    this.azureStorageOptions);
+                    this.azureStorageOptions,
+                    logger);
             }
 
             return this.defaultStorageProvider;
         }
 
-        public DurabilityProvider GetDurabilityProvider(DurableClientAttribute attribute)
+        public virtual DurabilityProvider GetDurabilityProvider(DurableClientAttribute attribute)
         {
-            this.EnsureInitialized();
+            if (!attribute.ExternalClient)
+            {
+                this.EnsureDefaultClientSettingsInitialized();
+            }
+
             return this.GetAzureStorageStorageProvider(attribute);
         }
 
@@ -90,8 +135,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             AzureStorageOrchestrationServiceSettings settings = this.GetAzureStorageOrchestrationServiceSettings(connectionName, attribute.TaskHub);
 
             AzureStorageDurabilityProvider innerClient;
-            if (string.Equals(this.defaultSettings.TaskHubName, settings.TaskHubName, StringComparison.OrdinalIgnoreCase) &&
-                string.Equals(this.defaultSettings.StorageConnectionString, settings.StorageConnectionString, StringComparison.OrdinalIgnoreCase))
+
+            // Need to check this.defaultStorageProvider != null for external clients that call GetDurabilityProvider(attribute)
+            // which never initializes the defaultStorageProvider.
+            if (string.Equals(this.defaultSettings?.TaskHubName, settings.TaskHubName, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(this.defaultSettings?.StorageConnectionString, settings.StorageConnectionString, StringComparison.OrdinalIgnoreCase) &&
+                this.defaultStorageProvider != null)
             {
                 // It's important that clients use the same AzureStorageOrchestrationService instance
                 // as the host when possible to ensure we any send operations can be picked up
@@ -100,10 +149,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             else
             {
+                ILogger logger = this.loggerFactory.CreateLogger(LoggerName);
                 innerClient = new AzureStorageDurabilityProvider(
                     new AzureStorageOrchestrationService(settings),
                     connectionName,
-                    this.azureStorageOptions);
+                    this.azureStorageOptions,
+                    logger);
             }
 
             return innerClient;
@@ -134,8 +185,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 ControlQueueBufferThreshold = this.azureStorageOptions.ControlQueueBufferThreshold,
                 ControlQueueVisibilityTimeout = this.azureStorageOptions.ControlQueueVisibilityTimeout,
                 WorkItemQueueVisibilityTimeout = this.azureStorageOptions.WorkItemQueueVisibilityTimeout,
-                MaxConcurrentTaskOrchestrationWorkItems = this.options.MaxConcurrentOrchestratorFunctions,
-                MaxConcurrentTaskActivityWorkItems = this.options.MaxConcurrentActivityFunctions,
+                MaxConcurrentTaskOrchestrationWorkItems = this.options.MaxConcurrentOrchestratorFunctions ?? throw new InvalidOperationException($"{nameof(this.options.MaxConcurrentOrchestratorFunctions)} needs a default value"),
+                MaxConcurrentTaskActivityWorkItems = this.options.MaxConcurrentActivityFunctions ?? throw new InvalidOperationException($"{nameof(this.options.MaxConcurrentOrchestratorFunctions)} needs a default value"),
                 ExtendedSessionsEnabled = this.options.ExtendedSessionsEnabled,
                 ExtendedSessionIdleTimeout = extendedSessionTimeout,
                 MaxQueuePollingInterval = this.azureStorageOptions.MaxQueuePollingInterval,
@@ -144,7 +195,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.azureStorageOptions.TrackingStoreConnectionStringName),
                 FetchLargeMessageDataEnabled = this.azureStorageOptions.FetchLargeMessagesAutomatically,
                 ThrowExceptionOnInvalidDedupeStatus = true,
+                UseAppLease = this.options.UseAppLease,
+                AppLeaseOptions = this.options.AppLeaseOptions,
+                AppName = EndToEndTraceHelper.LocalAppName,
+                LoggerFactory = this.loggerFactory,
+                UseLegacyPartitionManagement = this.azureStorageOptions.UseLegacyPartitionManagement,
             };
+
+            if (this.inConsumption)
+            {
+                settings.MaxStorageOperationConcurrency = 25;
+            }
 
             // When running on App Service VMSS stamps, these environment variables are the best way
             // to enure unqique worker names

@@ -4,16 +4,15 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
-using Microsoft.Diagnostics.Tracing;
 using Microsoft.Extensions.Primitives;
 using Moq;
 using Moq.Protected;
@@ -29,47 +28,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         private readonly ITestOutputHelper output;
 
         private readonly TestLoggerProvider loggerProvider;
-        private readonly bool useTestLogger = IsLogFriendlyPlatform();
-        private readonly LogEventTraceListener eventSourceListener;
+
+        private static int mockSynchronousHttpMessageHandlerCount;
 
         public DurableHttpTests(ITestOutputHelper output)
         {
             this.output = output;
             this.loggerProvider = new TestLoggerProvider(output);
-            this.eventSourceListener = new LogEventTraceListener();
-            this.StartLogCapture();
         }
 
         public void Dispose()
         {
-            this.eventSourceListener.Dispose();
-        }
-
-        private void OnEventSourceListenerTraceLog(object sender, LogEventTraceListener.TraceLogEventArgs e)
-        {
-            this.output.WriteLine($"      ETW: {e.ProviderName} [{e.Level}] : {e.Message}");
-        }
-
-        private void StartLogCapture()
-        {
-            if (this.useTestLogger)
-            {
-                var traceConfig = new Dictionary<string, TraceEventLevel>
-                {
-                    { "DurableTask-AzureStorage", TraceEventLevel.Informational },
-                    { "7DA4779A-152E-44A2-A6F2-F80D991A5BEE", TraceEventLevel.Warning }, // DurableTask.Core
-                };
-
-                this.eventSourceListener.OnTraceLog += this.OnEventSourceListenerTraceLog;
-
-                string sessionName = "DTFxTrace" + Guid.NewGuid().ToString("N");
-                this.eventSourceListener.CaptureLogs(sessionName, traceConfig);
-            }
-        }
-
-        private static bool IsLogFriendlyPlatform()
-        {
-            return !RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
         }
 
         [Fact]
@@ -120,6 +89,161 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Empty(customHeaderValues);
         }
 
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void SerializeManagedIdentityOptions()
+        {
+            // Part 1: Check if ManagedIdentityOptions is correctly serialized with TestDurableHttpRequest
+            var expectedTestDurableHttpRequestJson = @"
+{
+  ""HttpMethod"": {
+    ""Method"": ""GET""
+  },
+  ""Uri"": ""https://www.dummy-url.com"",
+  ""Headers"": {
+    ""Accept"": ""application/json""
+  },
+  ""Content"": null,
+  ""TokenSource"": {
+    ""$type"": ""Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests.DurableHttpTests+MockTokenSource, WebJobs.Extensions.DurableTask.Tests." + PlatformSpecificHelpers.VersionSuffix + @""",
+    ""testToken"": ""dummy token"",
+    ""options"": {
+      ""authorityhost"": ""https://dummy.login.microsoftonline.com/"",
+      ""tenantid"": ""tenant_id""
+    }
+  },
+  ""AsynchronousPatternEnabled"": true
+}";
+
+            Dictionary<string, string> headers = new Dictionary<string, string>();
+            headers.Add("Accept", "application/json");
+
+            ManagedIdentityOptions options = new ManagedIdentityOptions();
+            options.AuthorityHost = new Uri("https://dummy.login.microsoftonline.com/");
+            options.TenantId = "tenant_id";
+
+            MockTokenSource mockTokenSource = new MockTokenSource("dummy token", options);
+
+            TestDurableHttpRequest request = new TestDurableHttpRequest(
+                httpMethod: HttpMethod.Get,
+                headers: headers,
+                tokenSource: mockTokenSource);
+
+            string serializedTestDurableHttpRequest = JsonConvert.SerializeObject(request);
+
+            Assert.True(JToken.DeepEquals(JObject.Parse(expectedTestDurableHttpRequestJson), JObject.Parse(serializedTestDurableHttpRequest)));
+
+            // Part 2: Check if ManagedIdentityOptions is correctly serialized with DurableHttpRequest
+            var expectedDurableHttpRequestJson = @"
+{
+  ""method"": ""GET"",
+  ""uri"": ""https://www.dummy-url.com"",
+  ""headers"": {
+    ""Accept"": ""application/json""
+  },
+  ""content"": null,
+  ""tokenSource"": {
+    ""kind"": ""AzureManagedIdentity"",
+    ""resource"": ""dummy url"",
+    ""options"": {
+      ""authorityhost"": ""https://dummy.login.microsoftonline.com/"",
+      ""tenantid"": ""tenant_id""
+    }
+   },
+  ""asynchronousPatternEnabled"": true,
+  ""retryOptions"": null,
+  ""timeout"": null
+}";
+            ManagedIdentityTokenSource managedIdentityTokenSource = new ManagedIdentityTokenSource("dummy url", options);
+            TestDurableHttpRequest testDurableHttpRequest = new TestDurableHttpRequest(
+                httpMethod: HttpMethod.Get,
+                headers: headers,
+                tokenSource: managedIdentityTokenSource);
+
+            DurableHttpRequest durableHttpRequest = TestOrchestrations.ConvertTestRequestToDurableHttpRequest(testDurableHttpRequest);
+            string serializedDurableHttpRequest = JsonConvert.SerializeObject(durableHttpRequest);
+
+            Assert.True(JToken.DeepEquals(JObject.Parse(expectedDurableHttpRequestJson), JObject.Parse(serializedDurableHttpRequest)));
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void SerializeDurableHttpRequestWithoutManagedIdentityOptions()
+        {
+            var expectedDurableHttpRequestJson = @"
+{
+  ""method"": ""GET"",
+  ""uri"": ""https://www.dummy-url.com"",
+  ""headers"": {
+    ""Accept"": ""application/json""
+  },
+  ""content"": null,
+  ""tokenSource"": {
+    ""kind"": ""AzureManagedIdentity"",
+    ""resource"": ""dummy url""
+  },
+  ""asynchronousPatternEnabled"": true,
+  ""retryOptions"": null,
+  ""timeout"": null
+}";
+
+            Dictionary<string, string> headers = new Dictionary<string, string>();
+            headers.Add("Accept", "application/json");
+
+            ManagedIdentityTokenSource managedIdentityTokenSource = new ManagedIdentityTokenSource("dummy url");
+            TestDurableHttpRequest testDurableHttpRequest = new TestDurableHttpRequest(
+                httpMethod: HttpMethod.Get,
+                headers: headers,
+                tokenSource: managedIdentityTokenSource);
+
+            DurableHttpRequest durableHttpRequest = TestOrchestrations.ConvertTestRequestToDurableHttpRequest(testDurableHttpRequest);
+            string serializedDurableHttpRequest = JsonConvert.SerializeObject(durableHttpRequest);
+
+            Assert.True(JToken.DeepEquals(JObject.Parse(expectedDurableHttpRequestJson), JObject.Parse(serializedDurableHttpRequest)));
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void DeserializeManagedIdentityOptions()
+        {
+            // Part 1: Check if ManagedIdentityOptions is correctly serialized with TestDurableHttpRequest
+            Dictionary<string, string> headers = new Dictionary<string, string>();
+            headers.Add("Accept", "application/json");
+
+            ManagedIdentityOptions options = new ManagedIdentityOptions();
+            options.AuthorityHost = new Uri("https://dummy.login.microsoftonline.com/");
+            options.TenantId = "tenant_id";
+
+            MockTokenSource mockTokenSource = new MockTokenSource("dummy token", options);
+
+            TestDurableHttpRequest request = new TestDurableHttpRequest(
+                httpMethod: HttpMethod.Get,
+                headers: headers,
+                tokenSource: mockTokenSource);
+
+            string serializedTestDurableHttpRequest = JsonConvert.SerializeObject(request);
+            TestDurableHttpRequest deserializedTestDurableHttpRequest = JsonConvert.DeserializeObject<TestDurableHttpRequest>(serializedTestDurableHttpRequest);
+
+            MockTokenSource deserializedMockTokenSource = deserializedTestDurableHttpRequest.TokenSource as MockTokenSource;
+            Assert.Equal("https://dummy.login.microsoftonline.com/", deserializedMockTokenSource.GetOptions().AuthorityHost.ToString());
+            Assert.Equal("tenant_id", deserializedMockTokenSource.GetOptions().TenantId);
+
+            // Part 2: Check if ManagedIdentityOptions is correctly serialized with DurableHttpRequest
+            ManagedIdentityTokenSource managedIdentityTokenSource = new ManagedIdentityTokenSource("dummy url", options);
+            TestDurableHttpRequest testDurableHttpRequest = new TestDurableHttpRequest(
+                httpMethod: HttpMethod.Get,
+                headers: headers,
+                tokenSource: managedIdentityTokenSource);
+
+            DurableHttpRequest durableHttpRequest = TestOrchestrations.ConvertTestRequestToDurableHttpRequest(testDurableHttpRequest);
+            string serializedDurableHttpRequest = JsonConvert.SerializeObject(durableHttpRequest);
+            DurableHttpRequest deserializedDurableHttpRequest = JsonConvert.DeserializeObject<DurableHttpRequest>(serializedDurableHttpRequest);
+
+            ManagedIdentityTokenSource deserializedManagedIdentityTokenSource = deserializedDurableHttpRequest.TokenSource as ManagedIdentityTokenSource;
+            Assert.Equal("https://dummy.login.microsoftonline.com/", deserializedManagedIdentityTokenSource.Options.AuthorityHost.ToString());
+            Assert.Equal("tenant_id", deserializedManagedIdentityTokenSource.Options.TenantId);
+        }
+
         /// <summary>
         /// End-to-end test which checks if the CallHttpAsync Orchestrator returns an OK (200) status code.
         /// </summary>
@@ -153,6 +277,308 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var output = status?.Output;
                 DurableHttpResponse response = output.ToObject<DurableHttpResponse>();
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
+        /// End-to-end test which checks if the CallHttpAsync Orchestrator returns an OK (200) status code
+        /// when a DurableHttpRequest timeout value is set and the request completes within the timeout.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        public async Task DurableHttpAsync_Synchronous_TimeoutNotReached(string storageProvider)
+        {
+            HttpResponseMessage testHttpResponseMessage = CreateTestHttpResponseMessage(HttpStatusCode.OK);
+            HttpMessageHandler httpMessageHandler = MockSynchronousHttpMessageHandlerWithTimeout(testHttpResponseMessage, TimeSpan.FromMilliseconds(2000));
+
+            using (ITestHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.DurableHttpAsync_Synchronous_TimeoutNotReached),
+                enableExtendedSessions: false,
+                storageProviderType: storageProvider,
+                durableHttpMessageHandler: new DurableHttpMessageHandlerFactory(httpMessageHandler)))
+            {
+                await host.StartAsync();
+
+                Dictionary<string, string> headers = new Dictionary<string, string>();
+                headers.Add("Accept", "application/json");
+                TestDurableHttpRequest testRequest = new TestDurableHttpRequest(
+                    httpMethod: HttpMethod.Get,
+                    headers: headers,
+                    timeout: TimeSpan.FromMilliseconds(5000));
+
+                string functionName = nameof(TestOrchestrations.CallHttpAsyncOrchestrator);
+                var client = await host.StartOrchestratorAsync(functionName, testRequest, this.output);
+                var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(400));
+
+                var output = status?.Output;
+                DurableHttpResponse response = output.ToObject<DurableHttpResponse>();
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
+        /// End-to-end test which checks if the CallHttpAsync Orchestrator fails  when the
+        /// HTTP request times out and the CallHttpAsync API throws a TimeoutException.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        public async Task DurableHttpAsync_Synchronous_TimeoutException(string storageProvider)
+        {
+            HttpResponseMessage testHttpResponseMessage = CreateTestHttpResponseMessage(HttpStatusCode.OK);
+            HttpMessageHandler httpMessageHandler = MockSynchronousHttpMessageHandlerWithTimeoutException(TimeSpan.FromMilliseconds(10000));
+
+            using (ITestHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.DurableHttpAsync_Synchronous_TimeoutException),
+                enableExtendedSessions: false,
+                storageProviderType: storageProvider,
+                durableHttpMessageHandler: new DurableHttpMessageHandlerFactory(httpMessageHandler)))
+            {
+                await host.StartAsync();
+
+                Dictionary<string, string> headers = new Dictionary<string, string>();
+                headers.Add("Accept", "application/json");
+                TestDurableHttpRequest testRequest = new TestDurableHttpRequest(
+                    httpMethod: HttpMethod.Get,
+                    headers: headers,
+                    timeout: TimeSpan.FromMilliseconds(5000));
+
+                string functionName = nameof(TestOrchestrations.CallHttpAsyncOrchestrator);
+                var client = await host.StartOrchestratorAsync(functionName, testRequest, this.output);
+                var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(400));
+
+                var output = status?.Output;
+                Assert.Contains("Orchestrator function 'CallHttpAsyncOrchestrator' failed: The operation was canceled. Reached user specified timeout: 00:00:05", output.ToString());
+                Assert.Equal(OrchestrationRuntimeStatus.Failed, status?.RuntimeStatus);
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
+        /// End-to-end test which checks if the CallHttpAsync Orchestrator retries when the
+        /// HTTP request times out and the CallHttpAsync API throws a TimeoutException.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        public async Task DurableHttpAsync_Synchronous_RetryExceededWithHttpException(string storageProvider)
+        {
+            mockSynchronousHttpMessageHandlerCount = 0;
+
+            HttpResponseMessage testHttpResponseMessage = CreateTestHttpResponseMessage(HttpStatusCode.OK);
+            HttpMessageHandler httpMessageHandler = MockSynchronousHttpMessageHandlerWithHttpRequestException();
+
+            using (ITestHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.DurableHttpAsync_Synchronous_RetryExceededWithHttpException),
+                enableExtendedSessions: false,
+                storageProviderType: storageProvider,
+                durableHttpMessageHandler: new DurableHttpMessageHandlerFactory(httpMessageHandler)))
+            {
+                await host.StartAsync();
+
+                Dictionary<string, string> headers = new Dictionary<string, string>
+                {
+                    { "Accept", "application/json" },
+                };
+                TestDurableHttpRequest testRequest = new TestDurableHttpRequest(
+                    httpMethod: HttpMethod.Get,
+                    headers: headers,
+                    firstRetryInterval: TimeSpan.FromSeconds(1),
+                    maxNumberOfAttempts: 3);
+
+                string functionName = nameof(TestOrchestrations.CallHttpAsyncOrchestrator);
+                var client = await host.StartOrchestratorAsync(functionName, testRequest, this.output);
+                var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(400));
+
+                var output = status?.Output;
+                Assert.Equal(3, mockSynchronousHttpMessageHandlerCount);
+                Assert.Contains("No such host is known.", output.ToString());
+                Assert.Equal(OrchestrationRuntimeStatus.Failed, status?.RuntimeStatus);
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
+        /// End-to-end test which checks if the CallHttpAsync Orchestrator retries when the
+        /// HTTP request times out and the CallHttpAsync API throws a TimeoutException.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        public async Task DurableHttpAsync_Synchronous_RetryExceededWithHttpNotFoundStatusCode(string storageProvider)
+        {
+            HttpMessageHandler httpMessageHandler = MockSynchronousHttpMessageHandlerWithHttp404();
+
+            using (ITestHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.DurableHttpAsync_Synchronous_RetryExceededWithHttpNotFoundStatusCode),
+                enableExtendedSessions: false,
+                storageProviderType: storageProvider,
+                durableHttpMessageHandler: new DurableHttpMessageHandlerFactory(httpMessageHandler)))
+            {
+                await host.StartAsync();
+
+                Dictionary<string, string> headers = new Dictionary<string, string>
+                {
+                    { "Accept", "application/json" },
+                };
+                TestDurableHttpRequest testRequest = new TestDurableHttpRequest(
+                    httpMethod: HttpMethod.Get,
+                    headers: headers,
+                    firstRetryInterval: TimeSpan.FromSeconds(1),
+                    maxNumberOfAttempts: 3)
+                {
+                    StatusCodesToRetry = new List<HttpStatusCode> { HttpStatusCode.NotFound },
+                };
+
+                string functionName = nameof(TestOrchestrations.CallHttpAsyncOrchestrator);
+                var client = await host.StartOrchestratorAsync(functionName, testRequest, this.output);
+                var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(400));
+
+                var output = status?.Output;
+                Assert.Equal(3, mockSynchronousHttpMessageHandlerCount);
+                Assert.Equal(OrchestrationRuntimeStatus.Failed, status?.RuntimeStatus);
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
+        /// End-to-end test which checks if the CallHttpAsync Orchestrator retries when the
+        /// HTTP request times out and the CallHttpAsync API throws a TimeoutException.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        public async Task DurableHttpAsync_Synchronous_RetryExceededWithHttpNotFoundViaEnsureSuccessException(string storageProvider)
+        {
+            HttpMessageHandler httpMessageHandler = MockSynchronousHttpMessageHandlerWithHttp404();
+
+            using (ITestHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.DurableHttpAsync_Synchronous_RetryExceededWithHttpNotFoundViaEnsureSuccessException),
+                enableExtendedSessions: false,
+                storageProviderType: storageProvider,
+                durableHttpMessageHandler: new DurableHttpMessageHandlerFactory(httpMessageHandler)))
+            {
+                await host.StartAsync();
+
+                Dictionary<string, string> headers = new Dictionary<string, string>
+                {
+                    { "Accept", "application/json" },
+                };
+                TestDurableHttpRequest testRequest = new TestDurableHttpRequest(
+                    httpMethod: HttpMethod.Get,
+                    headers: headers,
+                    firstRetryInterval: TimeSpan.FromSeconds(1),
+                    maxNumberOfAttempts: 3)
+                {
+                    StatusCodesToRetry = new List<HttpStatusCode> { HttpStatusCode.NotFound },
+                };
+
+                string functionName = nameof(TestOrchestrations.CallHttpAsyncOrchestrator);
+                var client = await host.StartOrchestratorAsync(functionName, testRequest, this.output);
+                var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(400));
+
+                var output = status?.Output;
+                Assert.Equal(3, mockSynchronousHttpMessageHandlerCount);
+                Assert.Equal(OrchestrationRuntimeStatus.Failed, status?.RuntimeStatus);
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
+        /// End-to-end test which checks if the CallHttpAsync Orchestrator retries when the
+        /// HTTP request times out and the CallHttpAsync API throws a TimeoutException.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        public async Task DurableHttpAsync_Synchronous_SuccessWithNoRetryWithHttpNotFoundIfNotSpecified(string storageProvider)
+        {
+            HttpMessageHandler httpMessageHandler = MockSynchronousHttpMessageHandlerWithHttp404();
+
+            using (ITestHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.DurableHttpAsync_Synchronous_SuccessWithNoRetryWithHttpNotFoundIfNotSpecified),
+                enableExtendedSessions: false,
+                storageProviderType: storageProvider,
+                durableHttpMessageHandler: new DurableHttpMessageHandlerFactory(httpMessageHandler)))
+            {
+                await host.StartAsync();
+
+                Dictionary<string, string> headers = new Dictionary<string, string>
+                {
+                    { "Accept", "application/json" },
+                };
+                TestDurableHttpRequest testRequest = new TestDurableHttpRequest(
+                    httpMethod: HttpMethod.Get,
+                    headers: headers,
+                    firstRetryInterval: TimeSpan.FromSeconds(1),
+                    maxNumberOfAttempts: 3)
+                {
+                    StatusCodesToRetry = new List<HttpStatusCode> { HttpStatusCode.Forbidden },
+                };
+
+                string functionName = nameof(TestOrchestrations.CallHttpAsyncOrchestrator);
+                var client = await host.StartOrchestratorAsync(functionName, testRequest, this.output);
+                var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(400));
+
+                Assert.Equal(1, mockSynchronousHttpMessageHandlerCount);
+
+                var output = status?.Output;
+                DurableHttpResponse response = output.ToObject<DurableHttpResponse>();
+                Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
+        /// End-to-end test which checks if the CallHttpAsync Orchestrator fails  when the
+        /// target url doesn't exist and throws an HttpRequestException.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        public async Task DurableHttpAsync_Synchronous_HttpRequestException(string storageProvider)
+        {
+            HttpMessageHandler httpMessageHandler = MockSynchronousHttpMessageHandlerWithHttpRequestException();
+
+            using (ITestHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.DurableHttpAsync_Synchronous_HttpRequestException),
+                enableExtendedSessions: false,
+                storageProviderType: storageProvider,
+                durableHttpMessageHandler: new DurableHttpMessageHandlerFactory(httpMessageHandler)))
+            {
+                await host.StartAsync();
+
+                Dictionary<string, string> headers = new Dictionary<string, string>();
+                headers.Add("Accept", "application/json");
+                TestDurableHttpRequest testRequest = new TestDurableHttpRequest(
+                    httpMethod: HttpMethod.Get,
+                    headers: headers);
+
+                string functionName = nameof(TestOrchestrations.CallHttpAsyncOrchestrator);
+                var client = await host.StartOrchestratorAsync(functionName, testRequest, this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
+
+                var output = status?.Output;
+                Assert.Equal(1, mockSynchronousHttpMessageHandlerCount);
+                Assert.Contains("No such host is known.", output.ToString());
+                Assert.Equal(OrchestrationRuntimeStatus.Failed, status?.RuntimeStatus);
 
                 await host.StopAsync();
             }
@@ -573,8 +999,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             asyncTestHeaders.Add("Location", "https://www.dummy-location-url.com");
 
             HttpResponseMessage acceptedHttpResponseMessage = CreateTestHttpResponseMessage(
-                                                                                               statusCode: HttpStatusCode.Accepted,
-                                                                                               headers: asyncTestHeaders);
+                statusCode: HttpStatusCode.Accepted,
+                headers: asyncTestHeaders);
 
             HttpMessageHandler httpMessageHandler = MockAsynchronousHttpMessageHandler(acceptedHttpResponseMessage);
 
@@ -930,6 +1356,97 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         /// <summary>
         /// End-to-end test which checks if the CallHttpAsync Orchestrator returns an OK (200) status code
+        /// when the MockTokenSource object takes in a ManagedIdentityOptions object and
+        /// a Bearer Token is added to the DurableHttpRequest object.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        public async Task DurableHttpAsync_Synchronous_TokenWithOptions(string storageProvider)
+        {
+            HttpMessageHandler httpMessageHandler = MockSynchronousHttpMessageHandlerForTestingTokenSource();
+
+            using (ITestHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.DurableHttpAsync_Synchronous_TokenWithOptions),
+                enableExtendedSessions: false,
+                storageProviderType: storageProvider,
+                durableHttpMessageHandler: new DurableHttpMessageHandlerFactory(httpMessageHandler)))
+            {
+                await host.StartAsync();
+
+                ManagedIdentityOptions credentialOptions = new ManagedIdentityOptions();
+                credentialOptions.AuthorityHost = new Uri("https://dummy.login.microsoftonline.com/");
+                credentialOptions.TenantId = "tenant_id";
+
+                Dictionary<string, string> headers = new Dictionary<string, string>();
+                headers.Add("Accept", "application/json");
+                MockTokenSource mockTokenSource = new MockTokenSource("dummy test token", credentialOptions);
+
+                TestDurableHttpRequest testRequest = new TestDurableHttpRequest(
+                    httpMethod: HttpMethod.Get,
+                    headers: headers,
+                    tokenSource: mockTokenSource);
+
+                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.CallHttpAsyncOrchestrator), testRequest, this.output);
+                var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(Debugger.IsAttached ? 3000 : 90));
+                var output = status?.Output;
+                DurableHttpResponse response = output.ToObject<DurableHttpResponse>();
+
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
+        /// End-to-end test which checks if the CallHttpAsync Orchestrator returns an OK (200) status code
+        /// when the MockTokenSource object takes in a ManagedIdentityOptions object,
+        /// a Bearer Token is added to the DurableHttpRequest object, and follows the
+        /// asynchronous pattern.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        public async Task DurableHttpAsync_Asynchronous_TokenWithOptions(string storageProvider)
+        {
+            HttpMessageHandler httpMessageHandler = MockAsynchronousHttpMessageHandlerForTestingTokenSource();
+
+            using (ITestHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.DurableHttpAsync_Asynchronous_TokenWithOptions),
+                enableExtendedSessions: false,
+                storageProviderType: storageProvider,
+                durableHttpMessageHandler: new DurableHttpMessageHandlerFactory(httpMessageHandler)))
+            {
+                await host.StartAsync();
+
+                ManagedIdentityOptions credentialOptions = new ManagedIdentityOptions();
+                credentialOptions.AuthorityHost = new Uri("https://dummy.login.microsoftonline.com/");
+                credentialOptions.TenantId = "tenant_id";
+
+                Dictionary<string, string> headers = new Dictionary<string, string>();
+                headers.Add("Accept", "application/json");
+                MockTokenSource mockTokenSource = new MockTokenSource("dummy test token", credentialOptions);
+
+                TestDurableHttpRequest testRequest = new TestDurableHttpRequest(
+                    httpMethod: HttpMethod.Get,
+                    headers: headers,
+                    tokenSource: mockTokenSource);
+
+                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.CallHttpAsyncOrchestrator), testRequest, this.output);
+                var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(Debugger.IsAttached ? 3000 : 90));
+                var output = status?.Output;
+                DurableHttpResponse response = output.ToObject<DurableHttpResponse>();
+
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
+        /// End-to-end test which checks if the CallHttpAsync Orchestrator returns an OK (200) status code
         /// when a Bearer Token is added to the DurableHttpRequest object.
         /// </summary>
         [Theory]
@@ -1180,6 +1697,84 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return handlerMock.Object;
         }
 
+        private static HttpMessageHandler MockSynchronousHttpMessageHandlerWithTimeout(HttpResponseMessage httpResponseMessage, TimeSpan timeoutTimespan)
+        {
+            var handlerMock = new Mock<HttpMessageHandler>(MockBehavior.Strict);
+            handlerMock
+               .Protected()
+               .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+               .Returns(async () =>
+               {
+                   await Task.Delay(timeoutTimespan);
+                   return httpResponseMessage;
+               });
+
+            return handlerMock.Object;
+        }
+
+        private static HttpMessageHandler MockSynchronousHttpMessageHandlerWithTimeoutException(TimeSpan timeoutTimespan)
+        {
+            HttpResponseMessage httpResponseMessage = CreateTestHttpResponseMessage(HttpStatusCode.OK);
+
+            httpResponseMessage.Content = new ExceptionThrowingContent(new OperationCanceledException());
+
+            var handlerMock = new Mock<HttpMessageHandler>(MockBehavior.Strict);
+            handlerMock
+               .Protected()
+               .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+               .Returns(async () =>
+               {
+                   await Task.Delay(timeoutTimespan);
+                   return httpResponseMessage;
+               });
+
+            return handlerMock.Object;
+        }
+
+        private static HttpMessageHandler MockSynchronousHttpMessageHandlerWithHttpRequestException()
+        {
+            mockSynchronousHttpMessageHandlerCount = 0;
+            var handlerMock = new Mock<HttpMessageHandler>(MockBehavior.Strict);
+            handlerMock
+               .Protected()
+               .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+               .ReturnsAsync(() =>
+               {
+                   // We create a new response every time because by the virtue of completing, the response object gets disposed
+                   // so if we reused the same object in our ReturnsAsync() an ObjectDisposedException gets thrown
+                   mockSynchronousHttpMessageHandlerCount++;
+
+                   HttpResponseMessage httpResponseMessage = CreateTestHttpResponseMessage(HttpStatusCode.NotFound);
+
+                   httpResponseMessage.Content = new ExceptionThrowingContent(new HttpRequestException("No such host is known."));
+
+                   return httpResponseMessage;
+               });
+
+            return handlerMock.Object;
+        }
+
+        private static HttpMessageHandler MockSynchronousHttpMessageHandlerWithHttp404()
+        {
+            mockSynchronousHttpMessageHandlerCount = 0;
+            var handlerMock = new Mock<HttpMessageHandler>(MockBehavior.Strict);
+            handlerMock
+               .Protected()
+               .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+               .ReturnsAsync(() =>
+               {
+                   // We create a new response every time because by the virtue of completing, the response object gets disposed
+                   // so if we reused the same object in our ReturnsAsync() an ObjectDisposedException gets thrown
+                   mockSynchronousHttpMessageHandlerCount++;
+
+                   HttpResponseMessage httpResponseMessage = CreateTestHttpResponseMessage(HttpStatusCode.NotFound);
+
+                   return httpResponseMessage;
+               });
+
+            return handlerMock.Object;
+        }
+
         private static HttpMessageHandler MockHttpMessageHandlerCheckUserAgent()
         {
             HttpResponseMessage okHttpResponseMessage = CreateTestHttpResponseMessage(HttpStatusCode.OK);
@@ -1348,16 +1943,46 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         private class MockTokenSource : ITokenSource
         {
             [DataMember]
-            private readonly string token;
+            private readonly string testToken;
 
-            public MockTokenSource(string token)
+            [DataMember]
+            private readonly ManagedIdentityOptions options;
+
+            public MockTokenSource(string token, ManagedIdentityOptions options = null)
             {
-                this.token = token;
+                this.testToken = token;
+                this.options = options;
             }
 
             public Task<string> GetTokenAsync()
             {
-                return Task.FromResult(this.token);
+                return Task.FromResult(this.testToken);
+            }
+
+            public ManagedIdentityOptions GetOptions()
+            {
+                return this.options;
+            }
+        }
+
+        private class ExceptionThrowingContent : HttpContent
+        {
+            private readonly Exception exception;
+
+            public ExceptionThrowingContent(Exception exception)
+            {
+                this.exception = exception;
+            }
+
+            protected override Task SerializeToStreamAsync(Stream stream, TransportContext context)
+            {
+                return Task.FromException(this.exception);
+            }
+
+            protected override bool TryComputeLength(out long length)
+            {
+                length = 0L;
+                return false;
             }
         }
     }

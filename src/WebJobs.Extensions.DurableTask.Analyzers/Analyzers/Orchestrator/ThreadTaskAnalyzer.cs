@@ -22,7 +22,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         public static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, Severity, isEnabledByDefault: true, description: Description);
 
-        internal static bool RegisterDiagnostic(SyntaxNode method, CompilationAnalysisContext context, SemanticModel semanticModel)
+        internal static bool RegisterDiagnostic(CompilationAnalysisContext context, SemanticModel semanticModel, SyntaxNode method)
         {
             // | is the non short circuit or; this is important so that each method analyzes the code and reports all needed diagnostics.
             return (AnalyzeIdentifierTask(method, context, semanticModel) |
@@ -43,15 +43,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     if (identifierText == "Run" || identifierText == "Factory.StartNew")
                     {
                         var memberAccessExpression = identifierName.Parent;
-                        var memberSymbol = SyntaxNodeUtils.GetSyntaxTreeSemanticModel(semanticModel, memberAccessExpression).GetSymbolInfo(memberAccessExpression).Symbol;
-
-                        if (memberSymbol != null && memberSymbol.ToString().StartsWith("System.Threading.Tasks.Task"))
+                        if (SyntaxNodeUtils.TryGetISymbol(semanticModel, memberAccessExpression, out ISymbol memberSymbol))
                         {
-                            var diagnostic = Diagnostic.Create(Rule, memberAccessExpression.GetLocation(), memberAccessExpression);
+                            if (memberSymbol.ToString().StartsWith("System.Threading.Tasks.Task"))
+                            {
+                                var diagnostic = Diagnostic.Create(Rule, memberAccessExpression.GetLocation(), memberAccessExpression);
 
-                            context.ReportDiagnostic(diagnostic);
+                                context.ReportDiagnostic(diagnostic);
 
-                            diagnosedIssue = true;
+                                diagnosedIssue = true;
+                            }
                         }
                     }
                 }
@@ -72,15 +73,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     if (identifierText == "StartNew")
                     {
                         var memberAccessExpression = identifierName.Parent;
-                        var memberSymbol = SyntaxNodeUtils.GetSyntaxTreeSemanticModel(semanticModel, memberAccessExpression).GetSymbolInfo(memberAccessExpression).Symbol;
-
-                        if (memberSymbol != null && memberSymbol.ToString().StartsWith("System.Threading.Tasks.TaskFactory"))
+                        if (SyntaxNodeUtils.TryGetISymbol(semanticModel, memberAccessExpression, out ISymbol memberSymbol))
                         {
-                            var diagnostic = Diagnostic.Create(Rule, memberAccessExpression.GetLocation(), memberAccessExpression);
+                            if (memberSymbol.ToString().StartsWith("System.Threading.Tasks.TaskFactory"))
+                            {
+                                var diagnostic = Diagnostic.Create(Rule, memberAccessExpression.GetLocation(), memberAccessExpression);
 
-                            context.ReportDiagnostic(diagnostic);
+                                context.ReportDiagnostic(diagnostic);
 
-                            diagnosedIssue = true;
+                                diagnosedIssue = true;
+                            }
                         }
                     }
                 }
@@ -101,15 +103,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     if (identifierText == "Start")
                     {
                         var memberAccessExpression = identifierName.Parent;
-                        var memberSymbol = SyntaxNodeUtils.GetSyntaxTreeSemanticModel(semanticModel, memberAccessExpression).GetSymbolInfo(memberAccessExpression).Symbol;
-
-                        if (memberSymbol != null && memberSymbol.ToString().StartsWith("System.Threading.Thread"))
+                        if (SyntaxNodeUtils.TryGetISymbol(semanticModel, memberAccessExpression, out ISymbol memberSymbol))
                         {
-                            var diagnostic = Diagnostic.Create(Rule, memberAccessExpression.GetLocation(), memberAccessExpression);
+                            if (memberSymbol != null && memberSymbol.ToString().StartsWith("System.Threading.Thread"))
+                            {
+                                var diagnostic = Diagnostic.Create(Rule, memberAccessExpression.GetLocation(), "Thread.Start");
 
-                            context.ReportDiagnostic(diagnostic);
+                                context.ReportDiagnostic(diagnostic);
 
-                            diagnosedIssue = true;
+                                diagnosedIssue = true;
+                            }
                         }
                     }
                 }
@@ -129,19 +132,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     var identifierText = identifierName.Identifier.ValueText;
                     if (identifierText == "ContinueWith")
                     {
-                        var memberAccessExpression = identifierName.Parent;
-                        var memberSymbol = SyntaxNodeUtils.GetSyntaxTreeSemanticModel(semanticModel, memberAccessExpression).GetSymbolInfo(memberAccessExpression).Symbol;
-
-                        if (memberSymbol != null && memberSymbol.ToString().StartsWith("System.Threading.Tasks.Task"))
+                        if (!HasExecuteSynchronously(identifierName))
                         {
-                            if (!HasExecuteSynchronously(identifierName))
-                            {
-                                var diagnostic = Diagnostic.Create(Rule, memberAccessExpression.GetLocation(), memberAccessExpression);
+                            var memberAccessExpression = identifierName.Parent;
 
-                                context.ReportDiagnostic(diagnostic);
+                            var diagnostic = Diagnostic.Create(Rule, memberAccessExpression.GetLocation(), "Task.ContinueWith");
 
-                                diagnosedIssue = true;
-                            }
+                            context.ReportDiagnostic(diagnostic);
+                            
+                            diagnosedIssue = true;
                         }
                     }
                 }
@@ -157,18 +156,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                 return false;
             }
 
-            var argumentList = invocationExpression.ChildNodes().Where(x => x.IsKind(SyntaxKind.ArgumentList)).FirstOrDefault();
+            var argumentList = invocationExpression.ChildNodes().FirstOrDefault(x => x.IsKind(SyntaxKind.ArgumentList));
 
             if (argumentList != null)
             {
                 foreach (SyntaxNode argument in argumentList.ChildNodes())
                 {
-                    var simpleMemberAccessExpression = argument.ChildNodes().Where(x => x.IsKind(SyntaxKind.SimpleMemberAccessExpression)).FirstOrDefault();
+                    var simpleMemberAccessExpression = argument.ChildNodes().FirstOrDefault(x => x.IsKind(SyntaxKind.SimpleMemberAccessExpression));
 
                     if (simpleMemberAccessExpression != null)
                     {
                         var identifierNames = simpleMemberAccessExpression.ChildNodes().Where(x => x.IsKind(SyntaxKind.IdentifierName));
-
                         foreach (SyntaxNode identifier in identifierNames)
                         {
                             if (identifier.ToString().Equals("ExecuteSynchronously"))

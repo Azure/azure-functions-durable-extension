@@ -2,6 +2,8 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Reflection;
+using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Host.Bindings;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
@@ -46,6 +48,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// Whether this entity has a state.
         /// </summary>
         bool HasState { get; }
+
+        /// <summary>
+        /// The size of the current batch of operations.
+        /// </summary>
+        int BatchSize { get; }
+
+        /// <summary>
+        /// The position of the currently executing operation within the current batch of operations.
+        /// </summary>
+        int BatchPosition { get; }
 
         /// <summary>
         /// Gets the current state of this entity, for reading and/or updating.
@@ -114,7 +126,41 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         void SignalEntity(EntityId entity, DateTime scheduledTimeUtc, string operationName, object operationInput = null);
 
         /// <summary>
-        /// Schedules a orchestration function named <paramref name="functionName"/> for execution./>.
+        /// Signals an entity to perform an operation.
+        /// </summary>
+        /// <param name="entityKey">The target entity key.</param>
+        /// <param name="operation">A delegate that performs the desired operation on the entity.</param>
+        /// <typeparam name="TEntityInterface">Entity interface.</typeparam>
+        void SignalEntity<TEntityInterface>(string entityKey, Action<TEntityInterface> operation);
+
+        /// <summary>
+        /// Signals an entity to perform an operation, at a specified time.
+        /// </summary>
+        /// <param name="entityKey">The target entity key.</param>
+        /// <param name="scheduledTimeUtc">The time at which to start the operation.</param>
+        /// <param name="operation">A delegate that performs the desired operation on the entity.</param>
+        /// <typeparam name="TEntityInterface">Entity interface.</typeparam>
+        void SignalEntity<TEntityInterface>(string entityKey, DateTime scheduledTimeUtc, Action<TEntityInterface> operation);
+
+        /// <summary>
+        /// Signals an entity to perform an operation.
+        /// </summary>
+        /// <param name="entityId">The target entity.</param>
+        /// <param name="operation">A delegate that performs the desired operation on the entity.</param>
+        /// <typeparam name="TEntityInterface">Entity interface.</typeparam>
+        void SignalEntity<TEntityInterface>(EntityId entityId, Action<TEntityInterface> operation);
+
+        /// <summary>
+        /// Signals an entity to perform an operation, at a specified time.
+        /// </summary>
+        /// <param name="entityId">The target entity.</param>
+        /// <param name="scheduledTimeUtc">The time at which to start the operation.</param>
+        /// <param name="operation">A delegate that performs the desired operation on the entity.</param>
+        /// <typeparam name="TEntityInterface">Entity interface.</typeparam>
+        void SignalEntity<TEntityInterface>(EntityId entityId, DateTime scheduledTimeUtc, Action<TEntityInterface> operation);
+
+        /// <summary>
+        /// Schedules an orchestration function named <paramref name="functionName"/> for execution./>.
         /// Any result or exception is ignored (fire and forget).
         /// </summary>
         /// <param name="functionName">The name of the orchestrator function to call.</param>
@@ -125,5 +171,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </exception>
         /// <returns>The instance id of the new orchestration.</returns>
         string StartNewOrchestration(string functionName, object input, string instanceId = null);
+
+        /// <summary>
+        /// Dynamically dispatches the incoming entity operation using reflection.
+        /// </summary>
+        /// <typeparam name="T">The class to use for entity instances.</typeparam>
+        /// <returns>A task that completes when the dispatched operation has finished.</returns>
+        /// <exception cref="AmbiguousMatchException">If there is more than one method with the given operation name.</exception>
+        /// <exception cref="MissingMethodException">If there is no method with the given operation name.</exception>
+        /// <exception cref="InvalidOperationException">If the method has more than one argument.</exception>
+        /// <remarks>
+        /// If the entity's state is null, an object of type <typeparamref name="T"/> is created first. Then, reflection
+        /// is used to try to find a matching method. This match is based on the method name
+        /// (which is the operation name) and the argument list (which is the operation content, deserialized into
+        /// an object array).
+        /// </remarks>
+        /// <param name="constructorParameters">Parameters to feed to the entity constructor. Should be primarily used for
+        /// output bindings. Parameters must match the order in the constructor after ignoring parameters populated on
+        /// constructor via dependency injection.</param>
+        Task DispatchAsync<T>(params object[] constructorParameters)
+            where T : class;
     }
 }

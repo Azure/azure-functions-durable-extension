@@ -259,6 +259,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             state.Add(context.OperationName);
         }
 
+        //-------------- An entity that records all batch positions and batch sizes -----------------
+
+        public static void BatchEntity(
+            [EntityTrigger(EntityName = "BatchEntity")] IDurableEntityContext context,
+            ILogger logger)
+        {
+            var state = context.GetState(() => new List<(int, int)>());
+            state.Add((context.BatchPosition, context.BatchSize));
+        }
+
         //-------------- an entity that stores text, and whose state is
         //                  saved/restored to/from storage when the entity is deactivated/activated -----------------
         //

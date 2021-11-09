@@ -49,11 +49,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 throw new InvalidOperationException("A trace session is already running.");
             }
 
+            this.currentSession = new TraceEventSession(sessionName);
+            foreach (KeyValuePair<string, TraceEventLevel> provider in providers)
+            {
+                this.currentSession.EnableProvider(provider.Key, provider.Value);
+            }
+
             this.backgroundTraceThread = new Thread(_ =>
             {
                 Thread.CurrentThread.Name = $"ListenForEventTraceLogs: {sessionName}";
 
-                this.currentSession = new TraceEventSession(sessionName);
                 this.currentSession.Source.Dynamic.All += data =>
                 {
                     EventHandler<TraceLogEventArgs> handler = this.OnTraceLog;
@@ -95,11 +100,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     handler(this, eventArgs);
                 };
 
-                foreach (KeyValuePair<string, TraceEventLevel> provider in providers)
-                {
-                    this.currentSession.EnableProvider(provider.Key, provider.Value);
-                }
-
                 // This is a blocking call.
                 this.currentSession.Source.Process();
             });
@@ -129,7 +129,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public void Stop()
         {
             this.currentSession?.Source.StopProcessing();
-            this.backgroundTraceThread?.Join(TimeSpan.FromSeconds(10));
+            this.backgroundTraceThread?.Join(TimeSpan.FromMilliseconds(200));
             this.currentSession?.Dispose();
             this.currentSession = null;
         }

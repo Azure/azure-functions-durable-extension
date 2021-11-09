@@ -15,6 +15,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         DurableActivityContextBase // for v1 legacy compatibility.
 #pragma warning restore 618
     {
+        private readonly string functionName;
+
         private readonly string serializedInput;
 
         private readonly string instanceId;
@@ -24,15 +26,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private JToken parsedJsonInput;
         private string serializedOutput;
 
-        internal DurableActivityContext(DurableTaskExtension config, string instanceId, string serializedInput)
+        internal DurableActivityContext(DurableTaskExtension config, string instanceId, string serializedInput, string functionName)
         {
             this.messageDataConverter = config.MessageDataConverter;
             this.instanceId = instanceId;
             this.serializedInput = serializedInput;
+            this.functionName = functionName;
         }
 
         /// <inheritdoc />
         string IDurableActivityContext.InstanceId => this.instanceId;
+
+        /// <inheritdoc />
+        string IDurableActivityContext.Name => this.functionName;
 
         /// <summary>
         /// Returns the input of the task activity in its raw JSON string value.
@@ -55,13 +61,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             if (this.serializedInput != null && this.parsedJsonInput == null)
             {
-                JArray array = JArray.Parse(this.serializedInput);
-                if (array?.Count != 1)
+                var objectArray = this.messageDataConverter.Deserialize<object[]>(this.serializedInput);
+
+                if (objectArray?.Length != 1)
                 {
-                    throw new ArgumentException("The serialized input is expected to be a JSON array with one element.");
+                    throw new ArgumentException("The serialized input is expected to be an object array with one element.");
                 }
 
-                this.parsedJsonInput = array[0];
+                this.parsedJsonInput = MessagePayloadDataConverter.ConvertToJToken(this.messageDataConverter.Serialize(objectArray[0]));
             }
 
             return this.parsedJsonInput;
@@ -88,6 +95,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             JToken jToken = this.GetInputAsJson();
+            if (jToken == null)
+            {
+                return null;
+            }
+
             var value = jToken as JValue;
             if (value != null)
             {

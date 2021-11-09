@@ -25,7 +25,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         private static DurableVersion version;
 
-        internal static bool RegisterDiagnostic(SyntaxNode method, CompilationAnalysisContext context, SemanticModel semanticModel)
+        internal static bool RegisterDiagnostic(CompilationAnalysisContext context, SemanticModel semanticModel, SyntaxNode method)
         {
             // | is the non short circuit or; this is important so that each method analyzes the code and reports all needed diagnostics.
             return (AnalyzeIdentifierTask(method, context, semanticModel) |
@@ -46,19 +46,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     if (identifierText == "Delay")
                     {
                         var memberAccessExpression = identifierName.Parent;
-                        var memberSymbol = SyntaxNodeUtils.GetSyntaxTreeSemanticModel(semanticModel, memberAccessExpression).GetSymbolInfo(memberAccessExpression).Symbol;
-
-                        if (memberSymbol != null && memberSymbol.ToString().StartsWith("System.Threading.Tasks.Task"))
+                        if (SyntaxNodeUtils.TryGetISymbol(semanticModel, memberAccessExpression, out ISymbol memberSymbol))
                         {
-                            if (TryGetRuleFromVersion(out DiagnosticDescriptor rule))
+                            if (memberSymbol != null && memberSymbol.ToString().StartsWith("System.Threading.Tasks.Task"))
                             {
-                                var expression = GetAwaitOrInvocationExpression(memberAccessExpression);
+                                if (TryGetRuleFromVersion(out DiagnosticDescriptor rule))
+                                {
+                                    var expression = GetAwaitOrInvocationExpression(memberAccessExpression);
 
-                                var diagnostic = Diagnostic.Create(rule, expression.GetLocation(), expression);
+                                    var diagnostic = Diagnostic.Create(rule, expression.GetLocation(), expression);
 
-                                context.ReportDiagnostic(diagnostic);
+                                    context.ReportDiagnostic(diagnostic);
 
-                                diagnosedIssue = true;
+                                    diagnosedIssue = true;
+                                }
                             }
                         }
                     }
@@ -94,19 +95,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     if (identifierText == "Sleep")
                     {
                         var memberAccessExpression = identifierName.Parent;
-                        var memberSymbol = SyntaxNodeUtils.GetSyntaxTreeSemanticModel(semanticModel, memberAccessExpression).GetSymbolInfo(memberAccessExpression).Symbol;
-
-                        if (memberSymbol != null && memberSymbol.ToString().StartsWith("System.Threading.Thread"))
+                        if (SyntaxNodeUtils.TryGetISymbol(semanticModel, memberAccessExpression, out ISymbol memberSymbol))
                         {
-                            if (TryGetRuleFromVersion(out DiagnosticDescriptor rule))
+                            if (memberSymbol != null && memberSymbol.ToString().StartsWith("System.Threading.Thread"))
                             {
-                                var expression = GetAwaitOrInvocationExpression(memberAccessExpression);
+                                if (TryGetRuleFromVersion(out DiagnosticDescriptor rule))
+                                {
+                                    var expression = GetAwaitOrInvocationExpression(memberAccessExpression);
 
-                                var diagnostic = Diagnostic.Create(rule, expression.GetLocation(), expression);
+                                    var diagnostic = Diagnostic.Create(rule, expression.GetLocation(), expression);
 
-                                context.ReportDiagnostic(diagnostic);
+                                    context.ReportDiagnostic(diagnostic);
 
-                                diagnosedIssue = true;
+                                    diagnosedIssue = true;
+                                }
                             }
                         }
                     }

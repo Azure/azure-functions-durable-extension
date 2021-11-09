@@ -4,9 +4,9 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis.Diagnostics;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
@@ -27,11 +27,84 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             return (DurableVersion)version;
         }
 
-        public static SemanticModel GetSyntaxTreeSemanticModel(SemanticModel model, SyntaxNode node)
+        public static bool TryGetSemanticModelForSyntaxTree(SemanticModel model, SyntaxNode node, out SemanticModel newModel)
         {
-            return model.SyntaxTree == node.SyntaxTree
-                ? model
-                : model.Compilation.GetSemanticModel(node.SyntaxTree);
+            if (model?.SyntaxTree == null || node?.SyntaxTree == null)
+            {
+                newModel = null;
+                return false;
+            }
+
+            try
+            {
+                var compilation = model.Compilation;
+                if (!compilation.ContainsSyntaxTree(node.SyntaxTree))
+                {
+                    var newComplilation = model.Compilation.AddSyntaxTrees(node.SyntaxTree);
+                    newModel = newComplilation.GetSemanticModel(node.SyntaxTree);
+                }
+                else
+                {
+                    newModel = model.SyntaxTree == node.SyntaxTree
+                    ? model
+                    : model.Compilation.GetSemanticModel(node.SyntaxTree);
+                }
+            }
+            catch( ArgumentException e) when (e.Message.Contains("Inconsistent language versions"))
+            {
+                // model.Compilation.AddSyntaxTrees(node.SyntaxTree) can sometimes throw an ArgumentException with this message if the SyntaxTree
+                // that is being added has an inconsistent language version with the compilation.
+                newModel = null;
+                return false;
+            }
+
+            return newModel != null;
+        }
+
+        public static bool TryGetITypeSymbol(SemanticModel semanticModel, SyntaxNode node, out ITypeSymbol typeSymbol)
+        {
+            if (node != null && TryGetSemanticModelForSyntaxTree(semanticModel, node, out SemanticModel newModel))
+            {
+                typeSymbol = newModel.GetTypeInfo(node).Type;
+                return typeSymbol != null;
+            }
+
+            typeSymbol = null;
+            return false;
+        }
+
+        public static bool TryGetISymbol(SemanticModel semanticModel, SyntaxNode node, out ISymbol symbol)
+        {
+            if (node != null && TryGetSemanticModelForSyntaxTree(semanticModel, node, out SemanticModel newModel))
+            {
+                symbol = newModel.GetSymbolInfo(node).Symbol;
+                return symbol != null;
+            }
+
+            symbol = null;
+            return false;
+        }
+
+        public static bool TryGetDeclaredSyntaxNode(SemanticModel semanticModel, SyntaxNode node, out SyntaxNode declaredNode)
+        {
+            if (TryGetISymbol(semanticModel, node, out ISymbol symbol))
+            {
+                var syntaxReference = symbol.DeclaringSyntaxReferences.FirstOrDefault();
+                if (syntaxReference != null)
+                {
+                    var declaration = syntaxReference.GetSyntax();
+                    if (declaration != null)
+                    {
+                        declaredNode = declaration;
+                        return true;
+                    }
+
+                }
+
+            }
+
+            declaredNode = null;
+            return false;
         }
 
         public static bool TryGetClosestString(string name, IEnumerable<string> availableNames, out string closestString)
@@ -40,11 +113,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             return closestString != null;
         }
 
-        internal static bool IsInsideOrchestrator(SyntaxNode node)
+        public static bool IsInsideOrchestratorFunction(SemanticModel semanticModel, SyntaxNode node)
+        {
+            return IsInsideOrchestrationTrigger(node) && IsInsideFunction(semanticModel, node);
+        }
+
+        public static bool IsInsideOrchestrationTrigger(SyntaxNode node)
         {
             if (TryGetMethodDeclaration(node, out SyntaxNode methodDeclaration))
             {
-                var parameterList = methodDeclaration.ChildNodes().Where(x => x.IsKind(SyntaxKind.ParameterList)).First();
+                var parameterList = methodDeclaration.ChildNodes().First(x => x.IsKind(SyntaxKind.ParameterList));
 
                 foreach (SyntaxNode parameter in parameterList.ChildNodes())
                 {
@@ -63,6 +141,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             return false;
         }
 
+        public static bool IsInsideFunction(SemanticModel semanticModel, SyntaxNode node)
+        {
+            return TryGetFunctionName(semanticModel, node, out _);
+        }
+
         internal static bool TryGetMethodReturnTypeNode(SyntaxNode node, out SyntaxNode returnTypeNode)
         {
             if (TryGetMethodDeclaration(node, out SyntaxNode methodDeclaration))
@@ -76,7 +159,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         private static bool TryGetChildTypeNode(SyntaxNode node, out SyntaxNode childTypeNode)
         {
-            childTypeNode = node.ChildNodes().Where(x => x.IsKind(SyntaxKind.IdentifierName) || x.IsKind(SyntaxKind.PredefinedType) || x.IsKind(SyntaxKind.GenericName) || x.IsKind(SyntaxKind.ArrayType) || x.IsKind(SyntaxKind.TupleType)).FirstOrDefault();
+            childTypeNode = node.ChildNodes().FirstOrDefault(
+                x => x.IsKind(SyntaxKind.IdentifierName)
+                || x.IsKind(SyntaxKind.PredefinedType)
+                || x.IsKind(SyntaxKind.GenericName)
+                || x.IsKind(SyntaxKind.ArrayType)
+                || x.IsKind(SyntaxKind.TupleType)
+                || x.IsKind(SyntaxKind.NullableType));
+
             return childTypeNode != null;
         }
 
@@ -89,7 +179,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                 {
                     //An AttributeList will always have a child node Attribute
                     attribute = attributeList.ChildNodes().First();
-                    if (attribute.ChildNodes().First().ToString().Equals(attributeName))
+
+                    if (attribute.ChildNodes().Any() && attribute.ChildNodes().First().ToString().Equals(attributeName))
                     {
                         return true;
                     }
@@ -120,11 +211,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
             kindNode = currNode;
             return true;
-        }
-
-        internal static bool IsInsideFunction(SemanticModel semanticModel, SyntaxNode node)
-        {
-            return TryGetFunctionName(semanticModel, node, out string functionName);
         }
 
         internal static bool TryGetClassName(SyntaxNode node, out string className)
@@ -180,9 +266,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                 return true;
             }
 
-            var newSemanticModel = GetSyntaxTreeSemanticModel(semanticModel, node);
-            if (TryGetFunctionNameInConstant(newSemanticModel, node, out functionName))
-            {
+            if (TryGetFunctionNameInConstant(semanticModel, node, out functionName))
+            { 
                 return true;
             }
             
@@ -190,15 +275,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             return false;
         }
 
-        private static bool TryGetFunctionNameInConstant(SemanticModel semanticModel, SyntaxNode node, out string functionName)
+        public static bool TryGetFunctionNameInConstant(SemanticModel semanticModel, SyntaxNode node, out string functionName)
         {
             if (node != null && (node.IsKind(SyntaxKind.IdentifierName) || node.IsKind(SyntaxKind.SimpleMemberAccessExpression)))
             {
-                var constValue = semanticModel.GetConstantValue(node);
-                if (constValue.HasValue && constValue.Value is string constString)
+                if (TryGetSemanticModelForSyntaxTree(semanticModel, node, out SemanticModel newModel))
                 {
-                    functionName = constString;
-                    return true;
+                    var constValue = newModel.GetConstantValue(node);
+                    if (constValue.HasValue && constValue.Value is string constString)
+                    {
+                        functionName = constString;
+                        return true;
+                    }
                 }
             }
 
@@ -210,13 +298,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         {
             if (node != null && node.IsKind(SyntaxKind.InvocationExpression))
             {
-                var argumentList = node.ChildNodes().Where(x => x.IsKind(SyntaxKind.ArgumentList)).FirstOrDefault();
+                var argumentList = node.ChildNodes().FirstOrDefault(x => x.IsKind(SyntaxKind.ArgumentList));
                 if (argumentList != null)
                 {
-                    var argument = argumentList.ChildNodes().Where(x => x.IsKind(SyntaxKind.Argument)).FirstOrDefault();
+                    var argument = argumentList.ChildNodes().FirstOrDefault(x => x.IsKind(SyntaxKind.Argument));
                     if (argument != null)
                     {
-                        var identifierName = argument.ChildNodes().Where(x => x.IsKind(SyntaxKind.IdentifierName)).FirstOrDefault();
+                        var identifierName = argument.ChildNodes().FirstOrDefault(x => x.IsKind(SyntaxKind.IdentifierName));
                         if (identifierName != null)
                         {
                             functionName = identifierName.ToString();
@@ -240,7 +328,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         {
             if (node != null && node.IsKind(SyntaxKind.StringLiteralExpression))
             {
-                var stringLiteralToken = node.ChildTokens().Where(x => x.IsKind(SyntaxKind.StringLiteralToken)).FirstOrDefault();
+                var stringLiteralToken = node.ChildTokens().FirstOrDefault(x => x.IsKind(SyntaxKind.StringLiteralToken));
                 if (stringLiteralToken != null)
                 {
                     functionName = stringLiteralToken.ValueText;
@@ -271,27 +359,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         private static bool TryGetFunctionAttribute(SyntaxNode attributeExpression, out SyntaxNode functionAttribute) => TryGetAttribute(attributeExpression, "FunctionName", out functionAttribute);
 
-        internal static bool TryGetParameterNodeNextToAttribute(SyntaxNodeAnalysisContext context, AttributeSyntax attributeExpression, out SyntaxNode inputType)
+        internal static bool TryGetParameterNodeNextToAttribute(AttributeSyntax attributeExpression, out SyntaxNode inputType)
         {
             var parameter = attributeExpression.Parent.Parent;
             return TryGetChildTypeNode(parameter, out inputType);
         }
 
-        internal static bool TryGetTypeArgumentNode(MemberAccessExpressionSyntax expression, out SyntaxNode identifierNode)
+        internal static bool TryGetTypeArgumentIdentifier(MemberAccessExpressionSyntax expression, out SyntaxNode identifierNode)
         {
-            var genericName = expression.ChildNodes().Where(x => x.IsKind(SyntaxKind.GenericName)).FirstOrDefault();
+            var genericName = expression.ChildNodes().FirstOrDefault(x => x.IsKind(SyntaxKind.GenericName));
             if (genericName != null)
             {
-                //GenericName will always have a TypeArgumentList
-                var typeArgumentList = genericName.ChildNodes().Where(x => x.IsKind(SyntaxKind.TypeArgumentList)).First();
-
-                //TypeArgumentList will always have a child node
-                identifierNode = typeArgumentList.ChildNodes().First();
-                return true;
+                return TryGetTypeArgumentIdentifier((GenericNameSyntax)genericName, out identifierNode);
             }
 
             identifierNode = null;
             return false;
+        }
+
+        internal static bool TryGetTypeArgumentIdentifier(GenericNameSyntax node, out SyntaxNode identifierNode)
+        {
+            //GenericName will always have a TypeArgumentList
+            identifierNode = node.TypeArgumentList.ChildNodes().First();
+            return (identifierNode != null && !identifierNode.IsKind(SyntaxKind.OmittedTypeArgument));
         }
 
         internal static bool IsActivityTriggerAttribute(AttributeSyntax attribute) => IsSpecifiedAttribute(attribute, "ActivityTrigger");
@@ -308,81 +398,189 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             return false;
         }
 
-        internal static string GetQualifiedTypeName(ITypeSymbol typeInfo)
+        public static bool IsDurableActivityContext(ITypeSymbol type)
         {
-            if (typeInfo != null)
-            {
-                if (typeInfo is INamedTypeSymbol namedTypeInfo)
-                {
-                    var tupleUnderlyingType = namedTypeInfo.TupleUnderlyingType;
-                    if (tupleUnderlyingType != null)
-                    {
-                        return $"({string.Join(", ", tupleUnderlyingType.TypeArguments.Select(x => x.ToString()))})";
-                    }
-
-                    return typeInfo.ToString();
-                }
-
-                var arrayString = "";
-                if (typeInfo.Kind.Equals(SymbolKind.ArrayType))
-                {
-                    arrayString = "[]";
-                    typeInfo = ((IArrayTypeSymbol)typeInfo).ElementType;
-                }
-
-                if (!string.IsNullOrEmpty(typeInfo.Name))
-                {
-                    return typeInfo.ContainingNamespace?.ToString() + "." + typeInfo.Name.ToString() + arrayString;
-                }
-            }
-
-            return "Unknown Type";
-        }
-
-        internal static bool InputMatchesOrCompatibleType(ITypeSymbol invocationType, ITypeSymbol definitionType)
-        {
-            if (invocationType == null || definitionType == null)
+            if (type == null)
             {
                 return false;
             }
 
-            return invocationType.Equals(definitionType)
-                || AreCompatibleIEnumerableTypes(invocationType, definitionType)
-                || AreEqualQualifiedTypeNames(invocationType, definitionType);
+            return (type.ToString().Equals("Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableActivityContext")
+                || type.ToString().Equals("Microsoft.Azure.WebJobs.DurableActivityContext")
+                || type.ToString().Equals("Microsoft.Azure.WebJobs.DurableActivityContextBase"));
         }
 
-        private static bool AreEqualQualifiedTypeNames(ITypeSymbol invocationType, ITypeSymbol definitionType)
+        public static bool IsMatchingDerivedOrCompatibleType(ITypeSymbol subclassOrMatching, ITypeSymbol superOrMatching)
         {
-            var invocationQualifiedName = GetQualifiedTypeName(invocationType);
-            var definitionQualifiedName = GetQualifiedTypeName(definitionType);
-
-            return invocationQualifiedName.Equals(definitionQualifiedName);
-        }
-
-        private static bool AreCompatibleIEnumerableTypes(ITypeSymbol invocationType, ITypeSymbol functionType)
-        {
-            if (AreArrayOrNamedTypes(invocationType, functionType) && UnderlyingTypesMatch(invocationType, functionType))
+            if (subclassOrMatching == null || superOrMatching == null)
             {
-                return TypeNodeImplementsOrExtendsType(invocationType, "IEnumerable")
-                    && TypeNodeImplementsOrExtendsType(functionType, "IEnumerable");
+                return false;
+            }
+
+            return (subclassOrMatching.Equals(superOrMatching)
+                || AreMatchingValueTuples(subclassOrMatching, superOrMatching)
+                || AreMatchingGenericTypes(subclassOrMatching, superOrMatching)
+                || IsSubclassOrImplementation(subclassOrMatching, superOrMatching)
+                || AreCompatibleIEnumerableTypes(subclassOrMatching, superOrMatching));
+        }
+
+        private static bool AreMatchingValueTuples(ITypeSymbol subclassOrMatching, ITypeSymbol superOrMatching)
+        {
+            if (subclassOrMatching == null || superOrMatching == null)
+            {
+                return false;
+            }
+
+            if (subclassOrMatching.IsTupleType && superOrMatching.IsTupleType)
+            {
+                return HaveMatchingOrCompatibeTypeArguments(subclassOrMatching, superOrMatching);
             }
 
             return false;
         }
 
-        public static bool TypeNodeImplementsOrExtendsType(ITypeSymbol node, string interfaceOrBase)
+        private static bool HaveMatchingOrCompatibeTypeArguments(ITypeSymbol subclassOrMatching, ITypeSymbol superOrMatching)
         {
-            if (string.IsNullOrEmpty(interfaceOrBase))
+            if (subclassOrMatching == null || superOrMatching == null
+                || !(subclassOrMatching is INamedTypeSymbol subclassNamedType
+                    && superOrMatching is INamedTypeSymbol superNamedType))
             {
                 return false;
             }
 
-            return node.AllInterfaces.Any(i => i.Name.Equals(interfaceOrBase))
-                || TypeNodeIsSubclass(node, interfaceOrBase);
+            var subclassTypeArguments = subclassNamedType.TypeArguments;
+            var superTypeArguments = superNamedType.TypeArguments;
+
+            if (NotNullAndMatchingLength(subclassTypeArguments, superTypeArguments))
+            {
+                for (int i = 0; i < subclassTypeArguments.Length; i++)
+                {
+                    if (!IsMatchingDerivedOrCompatibleType(subclassTypeArguments[i], superTypeArguments[i]))
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
+            return false;
+        }
+
+        private static bool NotNullAndMatchingLength(ImmutableArray<ITypeSymbol> immutableArrayOne, ImmutableArray<ITypeSymbol> immutableArrayTwo)
+        {
+            if (immutableArrayOne != null && immutableArrayOne != null)
+            {
+                return immutableArrayOne.Length == immutableArrayTwo.Length;
+            }
+
+            return false;
+        }
+
+        private static bool AreMatchingGenericTypes(ITypeSymbol subclassOrMatching, ITypeSymbol superOrMatching)
+        {
+            if (subclassOrMatching == null || superOrMatching == null)
+            {
+                return false;
+            }
+
+            if (subclassOrMatching.Name == superOrMatching.Name)
+            {
+                return HaveMatchingOrCompatibeTypeArguments(subclassOrMatching, superOrMatching);
+            }
+
+            return false;
+        }
+
+        private static bool IsSubclassOrImplementation(ITypeSymbol subclassOrImplementation, ITypeSymbol superOrInterface)
+        {
+            if (subclassOrImplementation == null || superOrInterface == null)
+            {
+                return false;
+            }
+
+            var superOrInterfaceName = superOrInterface is IArrayTypeSymbol arrayType ? arrayType.ElementType.Name : superOrInterface.Name;
+
+            if (TypeSymbolImplementsOrExtendsType(subclassOrImplementation, superOrInterfaceName))
+            {
+                return HaveMatchingOrCompatibeTypeArguments(subclassOrImplementation, superOrInterface);
+            }
+
+            return false;
+        }
+
+        private static bool AreCompatibleIEnumerableTypes(ITypeSymbol typeOne, ITypeSymbol typeTwo)
+        {
+            if (typeOne == null || typeTwo == null)
+            {
+                return false;
+            }
+
+            if (CollectionTypesMatch(typeOne, typeTwo))
+            {
+                return TypeSymbolImplementsOrExtendsType(typeOne, "IEnumerable")
+                    && TypeSymbolImplementsOrExtendsType(typeTwo, "IEnumerable");
+            }
+
+            return false;
+        }
+
+        private static bool CollectionTypesMatch(ITypeSymbol typeOne, ITypeSymbol typeTwo)
+        {
+            if (typeOne == null || typeTwo == null)
+            {
+                return false;
+            }
+
+            return (TryGetCollectionType(typeOne, out ITypeSymbol invocationCollectionType)
+                && TryGetCollectionType(typeTwo, out ITypeSymbol functionCollectionType)
+                && IsMatchingDerivedOrCompatibleType(invocationCollectionType, functionCollectionType));
+        }
+
+        private static bool TryGetCollectionType(ITypeSymbol type, out ITypeSymbol collectionType)
+        {
+            if (type != null)
+            {
+                if (type.Kind.Equals(SymbolKind.ArrayType))
+                {
+                    collectionType = ((IArrayTypeSymbol)type).ElementType;
+                    return true;
+                }
+
+                if (type.Kind.Equals(SymbolKind.NamedType))
+                {
+                    collectionType = ((INamedTypeSymbol)type).TypeArguments.FirstOrDefault();
+                    return collectionType != null;
+                }
+            }
+
+            collectionType = null;
+            return false;
+        }
+
+        public static bool TypeSymbolImplementsOrExtendsType(ITypeSymbol node, string interfaceOrBase)
+        {
+            if (node == null || string.IsNullOrEmpty(interfaceOrBase))
+            {
+                return false;
+            }
+
+            return TypeSymbolImplementsInterface(node, interfaceOrBase)
+                || TypeSymbolIsSubclass(node, interfaceOrBase);
 
         }
 
-        private static bool TypeNodeIsSubclass(ITypeSymbol node, string baseClass)
+        private static bool TypeSymbolImplementsInterface(ITypeSymbol node, string interfaceName)
+        {
+            if (node == null || string.IsNullOrEmpty(interfaceName))
+            {
+                return false;
+            }
+
+            return node.AllInterfaces.Any(i => i.Name.Equals(interfaceName));
+        }
+
+        private static bool TypeSymbolIsSubclass(ITypeSymbol node, string baseClass)
         {
             if (node == null || string.IsNullOrEmpty(baseClass))
             {
@@ -392,7 +590,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             var curr = node.BaseType;
             while (curr != null)
             {
-                if (curr.ToString().Equals(baseClass))
+                if (curr.Name.Equals(baseClass))
                 {
                     return true;
                 }
@@ -402,39 +600,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
             return false;
 
-        }
-
-        private static bool AreArrayOrNamedTypes(ITypeSymbol invocationType, ITypeSymbol functionType)
-        {
-            return (invocationType.Kind.Equals(SymbolKind.ArrayType) || invocationType.Kind.Equals(SymbolKind.NamedType))
-                && (functionType.Kind.Equals(SymbolKind.ArrayType) || functionType.Kind.Equals(SymbolKind.NamedType));
-        }
-
-        private static bool UnderlyingTypesMatch(ITypeSymbol invocationType, ITypeSymbol functionType)
-        {
-            return (TryGetUnderlyingType(invocationType, out ITypeSymbol invocationUnderlyingType)
-                && TryGetUnderlyingType(functionType, out ITypeSymbol functionUnderlyingType)
-                && invocationUnderlyingType.Name.Equals(functionUnderlyingType.Name));
-        }
-
-        private static bool TryGetUnderlyingType(ITypeSymbol type, out ITypeSymbol underlyingType)
-        {
-            if (type.Kind.Equals(SymbolKind.ArrayType))
-            {
-                underlyingType = ((IArrayTypeSymbol)type).ElementType;
-                return true;
-            }
-
-            if (type.Kind.Equals(SymbolKind.NamedType))
-            {
-                underlyingType = ((INamedTypeSymbol)type).TypeArguments.FirstOrDefault();
-                return underlyingType != null;
-            }
-            else
-            {
-                underlyingType = null;
-                return false;
-            }
         }
     }
 }

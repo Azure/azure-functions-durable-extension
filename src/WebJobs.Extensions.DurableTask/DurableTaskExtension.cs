@@ -18,6 +18,10 @@ using DurableTask.Core.Exceptions;
 using DurableTask.Core.History;
 using DurableTask.Core.Middleware;
 using Microsoft.Azure.WebJobs.Description;
+#if !FUNCTIONS_V1
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
+using Microsoft.Azure.WebJobs.Host.Scale;
+#endif
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener;
 using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.Host.Config;
@@ -43,7 +47,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         INameVersionObjectManager<TaskOrchestration>,
         INameVersionObjectManager<TaskActivity>
     {
-        private static readonly string LoggerCategoryName = LogCategories.CreateTriggerCategory("DurableTask");
+        private const string DefaultProvider = AzureStorageDurabilityProviderFactory.ProviderName;
+
+        internal static readonly string LoggerCategoryName = LogCategories.CreateTriggerCategory("DurableTask");
 
         // Creating client objects is expensive, so we cache them when the attributes match.
         // Note that DurableClientAttribute defines a custom equality comparer.
@@ -60,17 +66,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             new ConcurrentDictionary<FunctionName, RegisteredFunctionInfo>();
 
         private readonly AsyncLock taskHubLock = new AsyncLock();
-
+#if !FUNCTIONS_V1
+#pragma warning disable CS0169
+        private readonly ITelemetryActivator telemetryActivator;
+#pragma warning restore CS0169
+#endif
         private readonly bool isOptionsConfigured;
         private readonly IApplicationLifetimeWrapper hostLifetimeService = HostLifecycleService.NoOp;
-
+#pragma warning disable CS0612 // Type or member is obsolete
+#pragma warning disable SA1401 // Fields should be private
+        internal IPlatformInformation PlatformInformationService;
+#pragma warning restore SA1401 // Fields should be private
+#pragma warning restore CS0612 // Type or member is obsolete
         private IDurabilityProviderFactory durabilityProviderFactory;
         private INameResolver nameResolver;
+        private ILoggerFactory loggerFactory;
         private DurabilityProvider defaultDurabilityProvider;
         private TaskHubWorker taskHubWorker;
         private bool isTaskHubWorkerStarted;
         private HttpClient durableHttpClient;
-
+        private EventSourceListener eventSourceListener;
 #if FUNCTIONS_V1
         private IConnectionStringResolver connectionStringResolver;
 
@@ -85,45 +100,59 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.isOptionsConfigured = false;
         }
 #endif
-
+#pragma warning disable CS1572
         /// <summary>
         /// Initializes a new instance of the <see cref="DurableTaskExtension"/>.
         /// </summary>
         /// <param name="options">The configuration options for this extension.</param>
         /// <param name="loggerFactory">The logger factory used for extension-specific logging and orchestration tracking.</param>
         /// <param name="nameResolver">The name resolver to use for looking up application settings.</param>
-        /// <param name="orchestrationServiceFactory">The factory used to create orchestration service based on the configured storage provider.</param>
+        /// <param name="orchestrationServiceFactories">The factories used to create orchestration service based on the configured storage provider.</param>
         /// <param name="durableHttpMessageHandlerFactory">The HTTP message handler that handles HTTP requests and HTTP responses.</param>
         /// <param name="hostLifetimeService">The host shutdown notification service for detecting and reacting to host shutdowns.</param>
         /// <param name="lifeCycleNotificationHelper">The lifecycle notification helper used for custom orchestration tracking.</param>
         /// <param name="messageSerializerSettingsFactory">The factory used to create <see cref="JsonSerializerSettings"/> for message settings.</param>
         /// <param name="errorSerializerSettingsFactory">The factory used to create <see cref="JsonSerializerSettings"/> for error settings.</param>
+        /// <param name="webhookProvider">Provides webhook urls for HTTP management APIs.</param>
+        /// <param name="telemetryActivator">The activator of DistributedTracing. .netstandard2.0 only.</param>
+        /// <param name="platformInformationService">The platform information provider to inspect the OS, app service plan, and other enviroment information.</param>
+#pragma warning restore CS1572
         public DurableTaskExtension(
             IOptions<DurableTaskOptions> options,
             ILoggerFactory loggerFactory,
             INameResolver nameResolver,
-            IDurabilityProviderFactory orchestrationServiceFactory,
+            IEnumerable<IDurabilityProviderFactory> orchestrationServiceFactories,
             IApplicationLifetimeWrapper hostLifetimeService,
             IDurableHttpMessageHandlerFactory durableHttpMessageHandlerFactory = null,
             ILifeCycleNotificationHelper lifeCycleNotificationHelper = null,
             IMessageSerializerSettingsFactory messageSerializerSettingsFactory = null,
+#pragma warning disable CS0612 // Type or member is obsolete
+            IPlatformInformation platformInformationService = null,
+#pragma warning restore CS0612 // Type or member is obsolete
+#if !FUNCTIONS_V1
+            IErrorSerializerSettingsFactory errorSerializerSettingsFactory = null,
+#pragma warning disable CS0618 // Type or member is obsolete
+            IWebHookProvider webhookProvider = null,
+#pragma warning restore CS0618 // Type or member is obsolete
+#pragma warning disable SA1113, SA1001, SA1115
+            ITelemetryActivator telemetryActivator = null)
+#pragma warning restore SA1113, SA1001, SA1115
+#else
             IErrorSerializerSettingsFactory errorSerializerSettingsFactory = null)
+#endif
         {
             // Options will be null in Functions v1 runtime - populated later.
             this.Options = options?.Value ?? new DurableTaskOptions();
             this.nameResolver = nameResolver ?? throw new ArgumentNullException(nameof(nameResolver));
+            this.loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
+            this.PlatformInformationService = platformInformationService ?? throw new ArgumentNullException(nameof(platformInformationService));
             this.ResolveAppSettingOptions();
-
-            if (loggerFactory == null)
-            {
-                throw new ArgumentNullException(nameof(loggerFactory));
-            }
 
             ILogger logger = loggerFactory.CreateLogger(LoggerCategoryName);
 
             this.TraceHelper = new EndToEndTraceHelper(logger, this.Options.Tracing.TraceReplayEvents);
             this.LifeCycleNotificationHelper = lifeCycleNotificationHelper ?? this.CreateLifeCycleNotificationHelper();
-            this.durabilityProviderFactory = orchestrationServiceFactory;
+            this.durabilityProviderFactory = this.GetDurabilityProviderFactory(this.Options, logger, orchestrationServiceFactories);
             this.defaultDurabilityProvider = this.durabilityProviderFactory.GetDurabilityProvider();
             this.isOptionsConfigured = true;
 
@@ -135,10 +164,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             DurableHttpClientFactory durableHttpClientFactory = new DurableHttpClientFactory();
             this.durableHttpClient = durableHttpClientFactory.GetClient(durableHttpMessageHandlerFactory);
 
-            this.MessageDataConverter = this.CreateMessageDataConverter(messageSerializerSettingsFactory);
+            this.MessageDataConverter = CreateMessageDataConverter(messageSerializerSettingsFactory);
             this.ErrorDataConverter = this.CreateErrorDataConverter(errorSerializerSettingsFactory);
 
+            this.TypedCodeProvider = new TypedCodeProvider();
+            this.TypedCodeProvider.Initialize();
+
             this.HttpApiHandler = new HttpApiHandler(this, logger);
+#if !FUNCTIONS_V1
+            // This line ensure every time we need the webhook URI, we get it directly from the
+            // function runtime, which has the most up-to-date knowledge about the site hostname.
+            Func<Uri> webhookDelegate = () => webhookProvider.GetUrl(this);
+            this.HttpApiHandler.RegisterWebhookProvider(
+                this.Options.WebhookUriProviderOverride ??
+                webhookDelegate);
+#endif
 
             this.hostLifetimeService = hostLifetimeService;
 
@@ -146,6 +186,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // The RPC server is started when the extension is initialized.
             // The RPC server is stopped when the host has finished shutting down.
             this.hostLifetimeService.OnStopped.Register(this.StopLocalRcpServer);
+            this.telemetryActivator = telemetryActivator;
+            this.telemetryActivator?.Initialize(logger);
 #endif
         }
 
@@ -154,11 +196,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             IOptions<DurableTaskOptions> options,
             ILoggerFactory loggerFactory,
             INameResolver nameResolver,
-            IDurabilityProviderFactory orchestrationServiceFactory,
+            IEnumerable<IDurabilityProviderFactory> orchestrationServiceFactories,
             IConnectionStringResolver connectionStringResolver,
             IApplicationLifetimeWrapper shutdownNotification,
-            IDurableHttpMessageHandlerFactory durableHttpMessageHandlerFactory)
-            : this(options, loggerFactory, nameResolver, orchestrationServiceFactory, shutdownNotification, durableHttpMessageHandlerFactory)
+            IDurableHttpMessageHandlerFactory durableHttpMessageHandlerFactory,
+#pragma warning disable CS0612 // Type or member is obsolete
+            IPlatformInformation platformInformationService)
+#pragma warning restore CS0612 // Type or member is obsolete
+
+            : this(options, loggerFactory, nameResolver, orchestrationServiceFactories, shutdownNotification, durableHttpMessageHandlerFactory)
         {
             this.connectionStringResolver = connectionStringResolver;
         }
@@ -191,7 +237,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal MessagePayloadDataConverter ErrorDataConverter { get; private set; }
 
-        private MessagePayloadDataConverter CreateMessageDataConverter(IMessageSerializerSettingsFactory messageSerializerSettingsFactory)
+        internal TypedCodeProvider TypedCodeProvider { get; private set; }
+
+        internal TimeSpan MessageReorderWindow
+            => this.defaultDurabilityProvider.GuaranteesOrderedDelivery ? TimeSpan.Zero : TimeSpan.FromMinutes(this.Options.EntityMessageReorderWindowInMinutes);
+
+        internal static MessagePayloadDataConverter CreateMessageDataConverter(IMessageSerializerSettingsFactory messageSerializerSettingsFactory)
         {
             bool isDefault;
             if (messageSerializerSettingsFactory == null)
@@ -217,12 +268,57 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return new MessagePayloadDataConverter(errorSerializerSettingsFactory.CreateJsonSerializerSettings(), isDefault);
         }
 
+        private IDurabilityProviderFactory GetDurabilityProviderFactory(DurableTaskOptions options, ILogger logger, IEnumerable<IDurabilityProviderFactory> orchestrationServiceFactories)
+        {
+            bool storageTypeIsConfigured = options.StorageProvider.TryGetValue("type", out object storageType);
+
+            if (!storageTypeIsConfigured)
+            {
+                try
+                {
+                    IDurabilityProviderFactory defaultFactory = orchestrationServiceFactories.First(f => f.Name.Equals(DefaultProvider));
+                    logger.LogInformation($"Using the default storage provider: {DefaultProvider}.");
+                    return defaultFactory;
+                }
+                catch (InvalidOperationException e)
+                {
+                    throw new InvalidOperationException($"Couldn't find the default storage provider: {DefaultProvider}.", e);
+                }
+            }
+
+            try
+            {
+                IDurabilityProviderFactory selectedFactory = orchestrationServiceFactories.First(f => string.Equals(f.Name, storageType.ToString(), StringComparison.OrdinalIgnoreCase));
+                logger.LogInformation($"Using the {storageType} storage provider.");
+                return selectedFactory;
+            }
+            catch (InvalidOperationException e)
+            {
+                IList<string> factoryNames = orchestrationServiceFactories.Select(f => f.Name).ToList();
+                throw new InvalidOperationException($"Storage provider type ({storageType}) was not found. Available storage providers: {string.Join(", ", factoryNames)}.", e);
+            }
+        }
+
+        internal string GetBackendInfo()
+        {
+            return this.defaultDurabilityProvider.GetBackendInfo();
+        }
+
         /// <summary>
         /// Internal initialization call from the WebJobs host.
         /// </summary>
         /// <param name="context">Extension context provided by WebJobs.</param>
         void IExtensionConfigProvider.Initialize(ExtensionConfigContext context)
         {
+#if !FUNCTIONS_V1
+            // .NET461 is not supported in linux, so this is conditionally compiled
+            // We initialize linux logging early on in case any initialization steps below were to trigger a log event.
+            if (this.PlatformInformationService.GetOperatingSystem() == OperatingSystem.Linux)
+            {
+                this.InitializeLinuxLogging();
+            }
+#endif
+
             ConfigureLoaderHooks();
 
             // Functions V1 has it's configuration initialized at startup time (now).
@@ -233,15 +329,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             // Throw if any of the configured options are invalid
-            this.Options.Validate();
+            this.Options.Validate(this.nameResolver, this.TraceHelper);
 
-            // For 202 support
-            if (this.Options.NotificationUrl == null)
-            {
 #pragma warning disable CS0618 // Type or member is obsolete
-                this.Options.NotificationUrl = context.GetWebhookHandler();
+
+            // Invoke webhook handler to make functions runtime register extension endpoints.
+            var initialWebhookUri = context.GetWebhookHandler();
+
+#if FUNCTIONS_V1
+            // In Functions V1, there is no notion of an IWebhookProvider that
+            // we can dynamically call to fetch the webhook URI, and since context.GetWebhookHandler()
+            // only works in the scope of the Initialize() function, we just have to live with the static URI
+            // we grab now.
+            Func<Uri> staticWebhookHandler = () => initialWebhookUri;
+            this.HttpApiHandler.RegisterWebhookProvider(
+                this.Options.WebhookUriProviderOverride ??
+                staticWebhookHandler);
+#endif
 #pragma warning restore CS0618 // Type or member is obsolete
-            }
 
             this.TraceConfigurationSettings();
 
@@ -257,6 +362,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             rule.BindToInput<IDurableOrchestrationClient>(this.GetClient);
             rule.BindToInput<IDurableEntityClient>(this.GetClient);
             rule.BindToInput<IDurableClient>(this.GetClient);
+
+            if (this.TypedCodeProvider.IsInitialized)
+            {
+                rule.Bind(new TypedDurableClientBindingProvider(this.TypedCodeProvider, this.GetClient));
+            }
 
             // We add a binding rule to support the now deprecated `orchestrationClient` binding
             // A cleaner solution would be to have the prior rule have an OR-style selector between
@@ -274,6 +384,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             backwardsCompRule.BindToInput<IDurableEntityClient>(this.GetClient);
             backwardsCompRule.BindToInput<IDurableClient>(this.GetClient);
 
+            if (this.TypedCodeProvider.IsInitialized)
+            {
+                backwardsCompRule.Bind(new TypedDurableClientBindingProvider(this.TypedCodeProvider, this.GetClient));
+            }
+
             string storageConnectionString = null;
             var providerFactory = this.durabilityProviderFactory as AzureStorageDurabilityProviderFactory;
             if (providerFactory != null)
@@ -290,7 +405,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             context.AddBindingRule<EntityTriggerAttribute>()
                 .BindToTrigger(new EntityTriggerAttributeBindingProvider(this, context, storageConnectionString, this.TraceHelper));
 
-            this.taskHubWorker = new TaskHubWorker(this.defaultDurabilityProvider, this, this);
+            this.taskHubWorker = new TaskHubWorker(this.defaultDurabilityProvider, this, this, this.loggerFactory);
 
             // Add middleware to the DTFx dispatcher so that we can inject our own logic
             // into and customize the orchestration execution pipeline.
@@ -305,10 +420,49 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #endif
         }
 
+        /// <summary>
+        /// Initializes the logging service for App Service if it detects that we are running in
+        /// the linux platform.
+        /// </summary>
+        private void InitializeLinuxLogging()
+        {
+            // Determine host platform
+            bool inConsumption = this.PlatformInformationService.IsInConsumptionPlan();
+
+            string tenant = this.PlatformInformationService.GetLinuxTenant();
+            string stampName = this.PlatformInformationService.GetLinuxStampName();
+            string containerName = this.PlatformInformationService.GetContainerName();
+
+            // If running in linux, initialize the EventSource listener with the appropiate logger.
+            LinuxAppServiceLogger linuxLogger = null;
+            if (!inConsumption)
+            {
+                linuxLogger = new LinuxAppServiceLogger(writeToConsole: false, containerName, tenant, stampName);
+            }
+            else
+            {
+                linuxLogger = new LinuxAppServiceLogger(writeToConsole: true, containerName, tenant, stampName);
+            }
+
+            // The logging service for linux works by capturing EventSource messages,
+            // which our linux platform does not recognize, and logging them via a
+            // different strategy such as writing to console or to a file.
+
+            // Since our logging payload can be quite large, linux telemetry by default
+            // disables verbose-level telemetry to avoid a performance hit.
+            bool enableVerbose = this.Options.Tracing.AllowVerboseLinuxTelemetry;
+            this.eventSourceListener = new EventSourceListener(linuxLogger, enableVerbose, this.TraceHelper, this.defaultDurabilityProvider.EventSourceName);
+        }
+
         /// <inheritdoc />
         public void Dispose()
         {
+            // Not flushing the linux logger may lead to lost logs
+            // 40 seconds timeout because we write normally every 30 seconds, so we're just
+            // adding an extra 10 seconds to flush.
+            LinuxAppServiceLogger.Logger?.Stop(TimeSpan.FromSeconds(40));
             this.HttpApiHandler?.Dispose();
+            this.eventSourceListener?.Dispose();
         }
 
 #if !FUNCTIONS_V1
@@ -359,11 +513,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #if FUNCTIONS_V1
             context.ApplyConfig(this.Options, "DurableTask");
             this.nameResolver = context.Config.NameResolver;
+            this.loggerFactory = context.Config.LoggerFactory;
             this.ResolveAppSettingOptions();
-            ILogger logger = context.Config.LoggerFactory.CreateLogger(LoggerCategoryName);
+            ILogger logger = this.loggerFactory.CreateLogger(LoggerCategoryName);
             this.TraceHelper = new EndToEndTraceHelper(logger, this.Options.Tracing.TraceReplayEvents);
             this.connectionStringResolver = new WebJobsConnectionStringProvider();
-            this.durabilityProviderFactory = new AzureStorageDurabilityProviderFactory(new OptionsWrapper<DurableTaskOptions>(this.Options), this.connectionStringResolver, this.nameResolver);
+            this.PlatformInformationService = new DefaultPlatformInformation(this.nameResolver, this.loggerFactory);
+            this.durabilityProviderFactory = new AzureStorageDurabilityProviderFactory(
+                new OptionsWrapper<DurableTaskOptions>(this.Options),
+                this.connectionStringResolver,
+                this.nameResolver,
+                this.loggerFactory,
+                this.PlatformInformationService);
             this.defaultDurabilityProvider = this.durabilityProviderFactory.GetDurabilityProvider();
             this.LifeCycleNotificationHelper = this.CreateLifeCycleNotificationHelper();
             var messageSerializerSettingsFactory = new MessageSerializerSettingsFactory();
@@ -371,6 +532,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.MessageDataConverter = new MessagePayloadDataConverter(messageSerializerSettingsFactory.CreateJsonSerializerSettings(), true);
             this.ErrorDataConverter = new MessagePayloadDataConverter(errorSerializerSettingsFactory.CreateJsonSerializerSettings(), true);
             this.HttpApiHandler = new HttpApiHandler(this, logger);
+            this.TypedCodeProvider = new TypedCodeProvider();
+            this.TypedCodeProvider.Initialize();
 #endif
         }
 
@@ -422,7 +585,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             if (name.StartsWith("@"))
             {
-                return new TaskEntityShim(this, name);
+                return new TaskEntityShim(this, this.defaultDurabilityProvider, name);
             }
             else
             {
@@ -457,13 +620,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             RegisteredFunctionInfo info;
             if (!this.knownActivities.TryGetValue(activityFunction, out info))
             {
-                string message = $"Activity function '{activityFunction}' does not exist.";
-                this.TraceHelper.ExtensionWarningEvent(
-                    this.Options.HubName,
-                    activityFunction.Name,
-                    string.Empty /* TODO: Flow the instance id into this event */,
-                    message);
-                throw new InvalidOperationException(message);
+                return new TaskNonexistentActivityShim(this, name);
             }
 
             return new TaskActivityShim(this, info.Executor, this.hostLifetimeService, name);
@@ -522,58 +679,64 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (info == null)
             {
                 string message = this.GetInvalidOrchestratorFunctionMessage(context.FunctionName);
+
                 this.TraceHelper.ExtensionWarningEvent(
                     this.Options.HubName,
                     orchestrationRuntimeState.Name,
                     orchestrationRuntimeState.OrchestrationInstance.InstanceId,
                     message);
-                throw new InvalidOperationException(message);
-            }
 
-            // 1. Start the functions invocation pipeline (billing, logging, bindings, and timeout tracking).
-            WrappedFunctionResult result = await FunctionExecutionHelper.ExecuteFunctionInOrchestrationMiddleware(
-                info.Executor,
-                new TriggeredFunctionData
-                {
-                    TriggerValue = context,
+                Func<Task<OrchestrationFailureException>> nonExistentException = () => throw new OrchestrationFailureException(message);
+                shim.SetFunctionInvocationCallback(nonExistentException);
+                await next();
+            }
+            else
+            {
+                // 1. Start the functions invocation pipeline (billing, logging, bindings, and timeout tracking).
+                WrappedFunctionResult result = await FunctionExecutionHelper.ExecuteFunctionInOrchestrationMiddleware(
+                    info.Executor,
+                    new TriggeredFunctionData
+                    {
+                        TriggerValue = context,
 
 #pragma warning disable CS0618 // Approved for use by this extension
-                    InvokeHandler = async userCodeInvoker =>
-                    {
-                        context.ExecutorCalledBack = true;
-
-                        // 2. Configure the shim with the inner invoker to execute the user code.
-                        shim.SetFunctionInvocationCallback(userCodeInvoker);
-
-                        // 3. Move to the next stage of the DTFx pipeline to trigger the orchestrator shim.
-                        await next();
-
-                        // 4. If an activity failed, indicate to the functions Host that this execution failed via an exception
-                        if (context.IsCompleted && context.OrchestrationException != null)
+                        InvokeHandler = async userCodeInvoker =>
                         {
-                            context.OrchestrationException.Throw();
-                        }
-                    },
+                            context.ExecutorCalledBack = true;
+
+                            // 2. Configure the shim with the inner invoker to execute the user code.
+                            shim.SetFunctionInvocationCallback(userCodeInvoker);
+
+                            // 3. Move to the next stage of the DTFx pipeline to trigger the orchestrator shim.
+                            await next();
+
+                            // 4. If an activity failed, indicate to the functions Host that this execution failed via an exception
+                            if (context.IsCompleted && context.OrchestrationException != null)
+                            {
+                                context.OrchestrationException.Throw();
+                            }
+                        },
 #pragma warning restore CS0618
-                },
-                context,
-                this.hostLifetimeService.OnStopping);
+                    },
+                    context,
+                    this.hostLifetimeService.OnStopping);
 
-            if (result.ExecutionStatus == WrappedFunctionResult.FunctionResultStatus.FunctionsRuntimeError)
-            {
-                this.TraceHelper.FunctionAborted(
-                    this.Options.HubName,
-                    context.FunctionName,
-                    context.InstanceId,
-                    $"An internal error occurred while attempting to execute this function. The execution will be aborted and retried. Details: {result.Exception}",
-                    functionType: FunctionType.Orchestrator);
+                if (result.ExecutionStatus == WrappedFunctionResult.FunctionResultStatus.FunctionsRuntimeError)
+                {
+                    this.TraceHelper.FunctionAborted(
+                        this.Options.HubName,
+                        context.FunctionName,
+                        context.InstanceId,
+                        $"An internal error occurred while attempting to execute this function. The execution will be aborted and retried. Details: {result.Exception}",
+                        functionType: FunctionType.Orchestrator);
 
-                // This will abort the execution and cause the message to go back onto the queue for re-processing
-                throw new SessionAbortedException(
-                    $"An internal error occurred while attempting to execute '{context.FunctionName}'.", result.Exception);
+                    // This will abort the execution and cause the message to go back onto the queue for re-processing
+                    throw new SessionAbortedException(
+                        $"An internal error occurred while attempting to execute '{context.FunctionName}'.", result.Exception);
+                }
             }
 
-            if (!context.IsCompleted)
+            if (!context.IsCompleted && !context.IsLongRunningTimer)
             {
                 this.TraceHelper.FunctionAwaited(
                     context.HubName,
@@ -650,13 +813,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                                 if (requestMessage.ScheduledTime.HasValue)
                                 {
-                                    // messages with a scheduled time are always delivered immediately
-                                    deliverNow = new RequestMessage[] { requestMessage };
+                                    if ((requestMessage.ScheduledTime.Value - DateTime.UtcNow) > TimeSpan.FromMilliseconds(100))
+                                    {
+                                        // message was delivered too early. This can happen if the durability provider imposes
+                                        // a limit on the delay. We handle this by rescheduling the message instead of processing it.
+                                        deliverNow = Array.Empty<RequestMessage>();
+                                        entityShim.AddMessageToBeRescheduled(requestMessage);
+                                    }
+                                    else
+                                    {
+                                        // the message is scheduled to be delivered immediately.
+                                        // There are no FIFO guarantees for scheduled messages, so we skip the message sorter.
+                                        deliverNow = new RequestMessage[] { requestMessage };
+                                    }
                                 }
                                 else
                                 {
                                     // run this through the message sorter to help with reordering and duplicate filtering
-                                    deliverNow = entityContext.State.MessageSorter.ReceiveInOrder(requestMessage, entityContext.EntityMessageReorderWindow);
+                                    deliverNow = entityContext.State.MessageSorter.ReceiveInOrder(requestMessage, this.MessageReorderWindow);
                                 }
 
                                 foreach (var message in deliverNow)
@@ -1065,11 +1239,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             using (await this.taskHubLock.AcquireAsync())
             {
+                bool HasActiveListeners(RegisteredFunctionInfo info)
+                    => info?.HasActiveListener ?? false; // info can be null if function is disabled via attribute
+
                 // Wait to shut down the task hub worker until all function listeners have been shut down.
                 if (this.isTaskHubWorkerStarted &&
-                    !this.knownOrchestrators.Values.Any(info => info.HasActiveListener) &&
-                    !this.knownActivities.Values.Any(info => info.HasActiveListener) &&
-                    !this.knownEntities.Values.Any(info => info.HasActiveListener))
+                    !this.knownOrchestrators.Values.Any(HasActiveListeners) &&
+                    !this.knownActivities.Values.Any(HasActiveListeners) &&
+                    !this.knownEntities.Values.Any(HasActiveListeners))
                 {
                     bool isGracefulStop = this.Options.UseGracefulShutdown;
 
@@ -1167,6 +1344,59 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 activity.AddTag("DurableFunctionsType", functionsType);
                 activity.AddTag("DurableFunctionsInstanceId", instanceId);
                 activity.AddTag("DurableFunctionsRuntimeStatus", statusStr);
+            }
+        }
+
+        internal IScaleMonitor GetScaleMonitor(string functionId, FunctionName functionName, string storageConnectionString)
+        {
+            if (this.defaultDurabilityProvider.TryGetScaleMonitor(
+                    functionId,
+                    functionName.Name,
+                    this.Options.HubName,
+                    storageConnectionString,
+                    out IScaleMonitor scaleMonitor))
+            {
+                return scaleMonitor;
+            }
+            else
+            {
+                // the durability provider does not support runtime scaling.
+                // Create an empty scale monitor to avoid exceptions (unless runtime scaling is actually turned on).
+                return new NoOpScaleMonitor($"{functionId}-DurableTaskTrigger-{this.Options.HubName}".ToLower());
+            }
+        }
+
+        /// <summary>
+        /// A placeholder scale monitor, can be used by durability providers that do not support runtime scaling.
+        /// This is required to allow operation of those providers even if runtime scaling is turned off
+        /// see discussion https://github.com/Azure/azure-functions-durable-extension/pull/1009/files#r341767018.
+        /// </summary>
+        private sealed class NoOpScaleMonitor : IScaleMonitor
+        {
+            /// <summary>
+            /// Construct a placeholder scale monitor.
+            /// </summary>
+            /// <param name="name">A descriptive name.</param>
+            public NoOpScaleMonitor(string name)
+            {
+                this.Descriptor = new ScaleMonitorDescriptor(name);
+            }
+
+            /// <summary>
+            /// A descriptive name.
+            /// </summary>
+            public ScaleMonitorDescriptor Descriptor { get; private set; }
+
+            /// <inheritdoc/>
+            Task<ScaleMetrics> IScaleMonitor.GetMetricsAsync()
+            {
+                throw new InvalidOperationException("The current DurableTask backend configuration does not support runtime scaling");
+            }
+
+            /// <inheritdoc/>
+            ScaleStatus IScaleMonitor.GetScaleStatus(ScaleStatusContext context)
+            {
+                throw new InvalidOperationException("The current DurableTask backend configuration does not support runtime scaling");
             }
         }
 #endif

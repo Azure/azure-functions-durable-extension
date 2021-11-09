@@ -4,7 +4,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.ExceptionServices;
+using System.Threading.Tasks;
 using DurableTask.Core;
 using Microsoft.Azure.WebJobs.Host.Bindings;
 using Newtonsoft.Json;
@@ -24,13 +26,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private readonly MessagePayloadDataConverter errorDataConverter;
 
+        private readonly DurabilityProvider durabilityProvider;
+
         private List<OutgoingMessage> outbox = new List<OutgoingMessage>();
 
-        public DurableEntityContext(DurableTaskExtension config, EntityId entity, TaskEntityShim shim)
+        public DurableEntityContext(DurableTaskExtension config, DurabilityProvider durabilityProvider, EntityId entity, TaskEntityShim shim)
             : base(config, entity.EntityName)
         {
             this.messageDataConverter = config.MessageDataConverter;
             this.errorDataConverter = config.ErrorDataConverter;
+            this.durabilityProvider = durabilityProvider;
             this.self = entity;
             this.shim = shim;
         }
@@ -40,8 +45,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         // The current state is determined by this.CurrentStateAccess and this.CurrentState.
         internal enum StateAccess
         {
-            NotAccessed, // current state is same as last checkpoint in this.State
-            Accessed, // current state is stored in this.CurrentState
+            NotAccessed, // current state is stored in this.State (serialized)
+            Accessed, // current state is stored in this.CurrentState (deserialized)
+            Clean, // current state is stored in both this.CurrentState (deserialized) and in this.State (serialized)
             Deleted, // current state is deleted
         }
 
@@ -64,6 +70,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         string IDurableEntityContext.EntityKey => this.self.EntityKey;
 
         EntityId IDurableEntityContext.EntityId => this.self;
+
+        int IDurableEntityContext.BatchPosition => this.shim.BatchPosition;
+
+        int IDurableEntityContext.BatchSize => this.shim.OperationBatch.Count;
 
         internal List<RequestMessage> OperationBatch => this.shim.OperationBatch;
 
@@ -89,8 +99,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.ThrowIfInvalidAccess();
                 switch (this.CurrentStateAccess)
                 {
-                    case StateAccess.Accessed: return true;
-                    case StateAccess.Deleted: return false;
+                    case StateAccess.Accessed:
+                    case StateAccess.Clean:
+                        return true;
+
+                    case StateAccess.Deleted:
+                        return false;
+
                     default: return this.State.EntityExists;
                 }
             }
@@ -203,6 +218,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 return (TState)this.CurrentState;
             }
+            else if (this.CurrentStateAccess == StateAccess.Clean)
+            {
+                this.CurrentStateAccess = StateAccess.Accessed;
+                return (TState)this.CurrentState;
+            }
 
             TState result;
 
@@ -250,6 +270,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 return (TState)this.CurrentState;
             }
+            else if (this.CurrentStateAccess == StateAccess.Clean)
+            {
+                this.CurrentStateAccess = StateAccess.Accessed;
+                return (TState)this.CurrentState;
+            }
 
             TState result;
 
@@ -288,12 +313,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.CurrentStateAccess = StateAccess.Accessed;
         }
 
-        internal bool TryWriteback(out ResponseMessage serializationErrorMessage, string operation = null)
+        internal bool TryWriteback(out ResponseMessage serializationErrorMessage, string operationName = null, string operationId = null)
         {
             serializationErrorMessage = null;
 
             if (this.CurrentStateAccess == StateAccess.Deleted)
             {
+                this.Config.TraceHelper.EntityStateDeleted(
+                    this.Config.Options.HubName,
+                    this.Name,
+                    this.InstanceId,
+                    operationName ?? "",
+                    operationId ?? "",
+                    isReplay: false);
+
                 this.State.EntityState = null;
                 this.State.EntityExists = false;
                 this.CurrentStateAccess = StateAccess.NotAccessed;
@@ -303,7 +336,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 try
                 {
                     this.State.EntityState = this.messageDataConverter.Serialize(this.CurrentState);
+
+                    if (!this.State.EntityExists)
+                    {
+                        this.Config.TraceHelper.EntityStateCreated(
+                            this.Config.Options.HubName,
+                            this.Name,
+                            this.InstanceId,
+                            operationName ?? "",
+                            operationId ?? "",
+                            isReplay: false);
+                    }
+
                     this.State.EntityExists = true;
+                    this.CurrentStateAccess = StateAccess.Clean;
                 }
                 catch (Exception e)
                 {
@@ -314,11 +360,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.CaptureApplicationError(serializationException);
 
                     serializationErrorMessage = new ResponseMessage();
-                    serializationErrorMessage.SetExceptionResult(serializationException, operation, this.errorDataConverter);
-                }
+                    serializationErrorMessage.SetExceptionResult(serializationException, operationName, this.errorDataConverter);
 
-                this.CurrentState = null;
-                this.CurrentStateAccess = StateAccess.NotAccessed;
+                    this.CurrentStateAccess = StateAccess.NotAccessed;
+                    this.CurrentState = null;
+                }
+            }
+            else
+            {
+                // the state was not accessed, or is clean, so we don't need to write anything back
             }
 
             return serializationErrorMessage == null;
@@ -408,10 +458,93 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return instanceId;
         }
 
+        async Task IDurableEntityContext.DispatchAsync<T>(params object[] constructorParameters)
+        {
+            IDurableEntityContext context = (IDurableEntityContext)this;
+            MethodInfo method = FindMethodForContext<T>(context);
+
+            if (method == null)
+            {
+                // We support a default delete operation even if the interface does not explicitly have a Delete method.
+                if (string.Equals("delete", context.OperationName, StringComparison.InvariantCultureIgnoreCase))
+                {
+                    Entity.Current.DeleteState();
+                    return;
+                }
+                else
+                {
+                    throw new InvalidOperationException($"No operation named '{context.OperationName}' was found.");
+                }
+            }
+
+            // check that the number of arguments is zero or one
+            ParameterInfo[] parameters = method.GetParameters();
+            if (parameters.Length > 1)
+            {
+                throw new InvalidOperationException("Only a single argument can be used for operation input.");
+            }
+
+            object[] args;
+            if (parameters.Length == 1)
+            {
+                // determine the expected type of the operation input and deserialize
+                Type inputType = method.GetParameters()[0].ParameterType;
+                object input = context.GetInput(inputType);
+                args = new object[1] { input };
+            }
+            else
+            {
+                args = Array.Empty<object>();
+            }
+
+#if !FUNCTIONS_V1
+            T Constructor() => (T)context.FunctionBindingContext.CreateObjectInstance(typeof(T), constructorParameters);
+#else
+            T Constructor() => (T)Activator.CreateInstance(typeof(T), constructorParameters);
+#endif
+
+            var state = ((Extensions.DurableTask.DurableEntityContext)context).GetStateWithInjectedDependencies(Constructor);
+
+            object result = method.Invoke(state, args);
+
+            if (method.ReturnType != typeof(void))
+            {
+                if (result is Task task)
+                {
+                    await task;
+
+                    if (task.GetType().IsGenericType)
+                    {
+                        context.Return(task.GetType().GetProperty("Result").GetValue(task));
+                    }
+                }
+                else
+                {
+                    context.Return(result);
+                }
+            }
+        }
+
         void IDurableEntityContext.Return(object result)
         {
             this.ThrowIfInvalidAccess();
             this.CurrentOperationResponse.SetResult(result, this.messageDataConverter);
+        }
+
+        internal static MethodInfo FindMethodForContext<T>(IDurableEntityContext context)
+        {
+            var type = typeof(T);
+
+            var interfaces = type.GetInterfaces();
+            const BindingFlags bindingFlags = BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
+
+            var method = type.GetMethod(context.OperationName, bindingFlags);
+            if (interfaces.Length == 0 || method != null)
+            {
+                return method;
+            }
+
+            return interfaces.Select(i => i.GetMethod(context.OperationName, bindingFlags)).FirstOrDefault(m => m != null);
         }
 
         private void ThrowIfInvalidAccess()
@@ -430,7 +563,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 if (requestMessage.ScheduledTime.HasValue)
                 {
-                    eventName = EntityMessageEventNames.ScheduledRequestMessageEventName(requestMessage.ScheduledTime.Value);
+                    DateTime adjustedDeliveryTime = requestMessage.GetAdjustedDeliveryTime(this.durabilityProvider);
+                    eventName = EntityMessageEventNames.ScheduledRequestMessageEventName(adjustedDeliveryTime);
                 }
                 else
                 {
@@ -535,7 +669,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     {
                         if (!operationMessage.EventContent.ScheduledTime.HasValue)
                         {
-                            this.State.MessageSorter.LabelOutgoingMessage(operationMessage.EventContent, operationMessage.Target.InstanceId, DateTime.UtcNow, this.EntityMessageReorderWindow);
+                            this.State.MessageSorter.LabelOutgoingMessage(operationMessage.EventContent, operationMessage.Target.InstanceId, DateTime.UtcNow, this.Config.MessageReorderWindow);
                         }
 
                         this.Config.TraceHelper.SendingEntityMessage(
@@ -562,6 +696,45 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 this.outbox.Clear();
             }
+        }
+
+        internal void RescheduleMessages(OrchestrationContext innerContext, List<RequestMessage> messages)
+        {
+            if (messages != null)
+            {
+                foreach (var message in messages)
+                {
+                    var instance = new OrchestrationInstance { InstanceId = this.InstanceId };
+                    DateTime adjustedDeliveryTime = message.GetAdjustedDeliveryTime(this.durabilityProvider);
+                    var eventName = EntityMessageEventNames.ScheduledRequestMessageEventName(adjustedDeliveryTime);
+                    innerContext.SendEvent(instance, eventName, message);
+                }
+
+                messages.Clear();
+            }
+        }
+
+        /// <inheritdoc/>
+        void IDurableEntityContext.SignalEntity<TEntityInterface>(string entityKey, Action<TEntityInterface> operation)
+        {
+            ((IDurableEntityContext)this).SignalEntity<TEntityInterface>(new EntityId(DurableEntityProxyHelpers.ResolveEntityName<TEntityInterface>(), entityKey), operation);
+        }
+
+        /// <inheritdoc/>
+        void IDurableEntityContext.SignalEntity<TEntityInterface>(string entityKey, DateTime scheduledTimeUtc, Action<TEntityInterface> operation)
+        {
+            ((IDurableEntityContext)this).SignalEntity<TEntityInterface>(new EntityId(DurableEntityProxyHelpers.ResolveEntityName<TEntityInterface>(), entityKey), scheduledTimeUtc, operation);
+        }
+
+        /// <inheritdoc/>
+        void IDurableEntityContext.SignalEntity<TEntityInterface>(EntityId entityId, Action<TEntityInterface> operation)
+        {
+            operation(EntityProxyFactory.Create<TEntityInterface>(new EntityContextProxy(this), entityId));
+        }
+
+        void IDurableEntityContext.SignalEntity<TEntityInterface>(EntityId entityId, DateTime scheduledTimeUtc, Action<TEntityInterface> operation)
+        {
+            operation(EntityProxyFactory.Create<TEntityInterface>(new EntityContextProxy(this, scheduledTimeUtc), entityId));
         }
 
         private abstract class OutgoingMessage

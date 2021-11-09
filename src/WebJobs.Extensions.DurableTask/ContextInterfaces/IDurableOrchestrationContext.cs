@@ -114,8 +114,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="method">HttpMethod used for api call.</param>
         /// <param name="uri">uri used to make the HTTP call.</param>
         /// <param name="content">Content passed in the HTTP request.</param>
+        /// <param name="retryOptions">The retry option for the HTTP task.</param>
         /// <returns>A <see cref="Task{DurableHttpResponse}"/>Result of the HTTP call.</returns>
-        Task<DurableHttpResponse> CallHttpAsync(HttpMethod method, Uri uri, string content = null);
+        Task<DurableHttpResponse> CallHttpAsync(HttpMethod method, Uri uri, string content = null, HttpRetryOptions retryOptions = null);
 
         /// <summary>
         /// Makes an HTTP call using the information in the DurableHttpRequest.
@@ -123,6 +124,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="req">The DurableHttpRequest used to make the HTTP call.</param>
         /// <returns>A <see cref="Task{DurableHttpResponse}"/>Result of the HTTP call.</returns>
         Task<DurableHttpResponse> CallHttpAsync(DurableHttpRequest req);
+
+        /// <summary>
+        /// Calls an operation on an entity and returns the result asynchronously.
+        /// </summary>
+        /// <typeparam name="TResult">The JSON-serializable result type of the operation.</typeparam>
+        /// <param name="entityId">The target entity.</param>
+        /// <param name="operationName">The name of the operation.</param>
+        /// <returns>A task representing the result of the operation.</returns>
+        Task<TResult> CallEntityAsync<TResult>(EntityId entityId, string operationName);
+
+        /// <summary>
+        /// Calls an operation on an entity and waits for it to complete.
+        /// </summary>
+        /// <param name="entityId">The target entity.</param>
+        /// <param name="operationName">The name of the operation.</param>
+        /// <returns>A task representing the completion of the operation on the entity.</returns>
+        Task CallEntityAsync(EntityId entityId, string operationName);
 
         /// <summary>
         /// Calls an operation on an entity, passing an argument, and returns the result asynchronously.
@@ -146,6 +164,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         Task CallEntityAsync(EntityId entityId, string operationName, object operationInput);
 
         /// <summary>
+        /// Schedules an orchestrator function named <paramref name="functionName"/> for execution.
+        /// </summary>
+        /// <typeparam name="TResult">The return type of the scheduled orchestrator function.</typeparam>
+        /// <param name="functionName">The name of the orchestrator function to call.</param>
+        /// <param name="input">The JSON-serializeable input to pass to the orchestrator function.</param>
+        /// <returns>A durable task that completes when the called orchestrator function completes or fails.</returns>
+        /// <exception cref="ArgumentException">
+        /// The specified function does not exist, is disabled, or is not an orchestrator function.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        /// The current thread is different than the thread which started the orchestrator execution.
+        /// </exception>
+        /// <exception cref="FunctionFailedException">
+        /// The sub-orchestrator function failed with an unhandled exception.
+        /// </exception>
+        Task<TResult> CallSubOrchestratorAsync<TResult>(string functionName, object input);
+
+        /// <summary>
         /// Schedules an orchestration function named <paramref name="functionName"/> for execution.
         /// </summary>
         /// <typeparam name="TResult">The return type of the scheduled orchestrator function.</typeparam>
@@ -163,6 +199,41 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// The activity function failed with an unhandled exception.
         /// </exception>
         Task<TResult> CallSubOrchestratorAsync<TResult>(string functionName, string instanceId, object input);
+
+        /// <summary>
+        /// Schedules an orchestrator function named <paramref name="functionName"/> for execution.
+        /// </summary>
+        /// <param name="functionName">The name of the orchestrator function to call.</param>
+        /// <param name="input">The JSON-serializeable input to pass to the orchestrator function.</param>
+        /// <returns>A durable task that completes when the called orchestrator function completes or fails.</returns>
+        /// <exception cref="ArgumentException">
+        /// The specified function does not exist, is disabled, or is not an orchestrator function.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        /// The current thread is different than the thread which started the orchestrator execution.
+        /// </exception>
+        /// <exception cref="FunctionFailedException">
+        /// The sub-orchestrator function failed with an unhandled exception.
+        /// </exception>
+        Task CallSubOrchestratorAsync(string functionName, object input);
+
+        /// <summary>
+        /// Schedules an orchestrator function named <paramref name="functionName"/> for execution.
+        /// </summary>
+        /// <param name="functionName">The name of the orchestrator function to call.</param>
+        /// <param name="instanceId">A unique ID to use for the sub-orchestration instance.</param>
+        /// <param name="input">The JSON-serializeable input to pass to the orchestrator function.</param>
+        /// <returns>A durable task that completes when the called orchestrator function completes or fails.</returns>
+        /// <exception cref="ArgumentException">
+        /// The specified function does not exist, is disabled, or is not an orchestrator function.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        /// The current thread is different than the thread which started the orchestrator execution.
+        /// </exception>
+        /// <exception cref="FunctionFailedException">
+        /// The activity function failed with an unhandled exception.
+        /// </exception>
+        Task CallSubOrchestratorAsync(string functionName, string instanceId, object input);
 
         /// <summary>
         /// Schedules an orchestrator function named <paramref name="functionName"/> for execution with retry options.
@@ -188,12 +259,78 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         Task<TResult> CallSubOrchestratorWithRetryAsync<TResult>(string functionName, RetryOptions retryOptions, string instanceId, object input);
 
         /// <summary>
+        /// Schedules an orchestrator function named <paramref name="functionName"/> for execution with retry options.
+        /// </summary>
+        /// <param name="functionName">The name of the orchestrator function to call.</param>
+        /// <param name="retryOptions">The retry option for the orchestrator function.</param>
+        /// <param name="input">The JSON-serializeable input to pass to the orchestrator function.</param>
+        /// <returns>A durable task that completes when the called orchestrator function completes or fails.</returns>
+        /// <exception cref="ArgumentNullException">
+        /// The retry option object is null.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        /// The specified function does not exist, is disabled, or is not an orchestrator function.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        /// The current thread is different than the thread which started the orchestrator execution.
+        /// </exception>
+        /// <exception cref="FunctionFailedException">
+        /// The activity function failed with an unhandled exception.
+        /// </exception>
+        Task CallSubOrchestratorWithRetryAsync(string functionName, RetryOptions retryOptions, object input);
+
+        /// <summary>
+        /// Schedules an orchestrator function named <paramref name="functionName"/> for execution with retry options.
+        /// </summary>
+        /// <param name="functionName">The name of the orchestrator function to call.</param>
+        /// <param name="retryOptions">The retry option for the orchestrator function.</param>
+        /// <param name="instanceId">A unique ID to use for the sub-orchestration instance.</param>
+        /// <param name="input">The JSON-serializeable input to pass to the orchestrator function.</param>
+        /// <returns>A durable task that completes when the called orchestrator function completes or fails.</returns>
+        /// <exception cref="ArgumentNullException">
+        /// The retry option object is null.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        /// The specified function does not exist, is disabled, or is not an orchestrator function.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        /// The current thread is different than the thread which started the orchestrator execution.
+        /// </exception>
+        /// <exception cref="FunctionFailedException">
+        /// The activity function failed with an unhandled exception.
+        /// </exception>
+        Task CallSubOrchestratorWithRetryAsync(string functionName, RetryOptions retryOptions, string instanceId, object input);
+
+        /// <summary>
+        /// Schedules an orchestrator function named <paramref name="functionName"/> for execution with retry options.
+        /// </summary>
+        /// <typeparam name="TResult">The return type of the scheduled orchestrator function.</typeparam>
+        /// <param name="functionName">The name of the orchestrator function to call.</param>
+        /// <param name="retryOptions">The retry option for the orchestrator function.</param>
+        /// <param name="input">The JSON-serializeable input to pass to the orchestrator function.</param>
+        /// <returns>A durable task that completes when the called orchestrator function completes or fails.</returns>
+        /// <exception cref="ArgumentNullException">
+        /// The retry option object is null.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        /// The specified function does not exist, is disabled, or is not an orchestrator function.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        /// The current thread is different than the thread which started the orchestrator execution.
+        /// </exception>
+        /// <exception cref="FunctionFailedException">
+        /// The activity function failed with an unhandled exception.
+        /// </exception>
+        Task<TResult> CallSubOrchestratorWithRetryAsync<TResult>(string functionName, RetryOptions retryOptions, object input);
+
+        /// <summary>
         /// Creates a durable timer that expires at a specified time.
         /// </summary>
         /// <remarks>
         /// All durable timers created using this method must either expire or be cancelled
         /// using the <paramref name="cancelToken"/> before the orchestrator function completes.
-        /// Otherwise the underlying framework will keep the instance alive until the timer expires.
+        ///  Otherwise the underlying framework will keep the instance in the "Running" state
+        ///  even after the orchestrator function has completed.
         /// </remarks>
         /// <typeparam name="T">The type of <paramref name="state"/>.</typeparam>
         /// <param name="fireAt">The time at which the timer should expire.</param>
@@ -201,6 +338,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="cancelToken">The <c>CancellationToken</c> to use for cancelling the timer.</param>
         /// <returns>A durable task that completes when the durable timer expires.</returns>
         Task<T> CreateTimer<T>(DateTime fireAt, T state, CancellationToken cancelToken);
+
+        /// <summary>
+        /// Creates a durable timer that expires at a specified time.
+        /// </summary>
+        /// <remarks>
+        /// All durable timers created using this method must either expire or be cancelled
+        /// using the <paramref name="cancelToken"/> before the orchestrator function completes.
+        ///  Otherwise the underlying framework will keep the instance in the "Running" state
+        ///  even after the orchestrator function has completed.
+        /// </remarks>
+        /// <param name="fireAt">The time at which the timer should expire.</param>
+        /// <param name="cancelToken">The <c>CancellationToken</c> to use for cancelling the timer.</param>
+        /// <returns>A durable task that completes when the durable timer expires.</returns>
+        Task CreateTimer(DateTime fireAt, CancellationToken cancelToken);
 
         /// <summary>
         /// Waits asynchronously for an event to be raised with name <paramref name="name"/> and returns the event data.
@@ -215,21 +366,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         Task<T> WaitForExternalEvent<T>(string name);
 
         /// <summary>
-        /// Waits asynchronously for an event to be raised with name <paramref name="name"/> and returns the event data.
+        /// Waits asynchronously for an event to be raised with name <paramref name="name"/>.
         /// </summary>
         /// <remarks>
         /// External clients can raise events to a waiting orchestration instance using
-        /// <see cref="IDurableOrchestrationClient.RaiseEventAsync(string, string, object)"/>.
+        /// <see cref="IDurableOrchestrationClient.RaiseEventAsync(string, string, object)"/> with the object parameter set to <c>null</c>.
+        /// </remarks>
+        /// <param name="name">The name of the event to wait for.</param>
+        /// <returns>A durable task that completes when the external event is received.</returns>
+        Task WaitForExternalEvent(string name);
+
+        /// <summary>
+        /// Waits asynchronously for an event to be raised with name <paramref name="name"/>.
+        /// </summary>
+        /// <remarks>
+        /// External clients can raise events to a waiting orchestration instance using
+        /// <see cref="IDurableOrchestrationClient.RaiseEventAsync(string, string, object)"/> with the object parameter set to <c>null</c>.
         /// </remarks>
         /// <param name="name">The name of the event to wait for.</param>
         /// <param name="timeout">The duration after which to throw a TimeoutException.</param>
         /// <param name="cancelToken">The <c>CancellationToken</c> to use for cancelling <paramref name="timeout"/>'s internal timer.</param>
-        /// <typeparam name="T">Any serializeable type that represents the JSON event payload.</typeparam>
         /// <returns>A durable task that completes when the external event is received.</returns>
         /// <exception cref="TimeoutException">
         /// The external event was not received before the timeout expired.
         /// </exception>
-        Task<T> WaitForExternalEvent<T>(string name, TimeSpan timeout, CancellationToken cancelToken);
+        Task WaitForExternalEvent(string name, TimeSpan timeout, CancellationToken cancelToken = default(CancellationToken));
 
         /// <summary>
         /// Waits asynchronously for an event to be raised with name <paramref name="name"/> and returns the event data.
@@ -239,13 +400,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <see cref="IDurableOrchestrationClient.RaiseEventAsync(string, string, object)"/>.
         /// </remarks>
         /// <param name="name">The name of the event to wait for.</param>
-        /// <param name="timeout">The duration after which to return the value in the <paramref name="defaultValue"/> parameter.</param>
-        /// <param name="defaultValue">The default value to return if the timeout expires before the external event is received.</param>
+        /// <param name="timeout">The duration of time to wait for the event.</param>
+        /// <param name="cancelToken">The <c>CancellationToken</c> to use for cancelling <paramref name="timeout"/>'s internal timer.</param>
+        /// <typeparam name="T">Any serializeable type that represents the JSON event payload.</typeparam>
+        /// <returns>A durable task that completes when the external event is received, or throws a timeout exception"/>
+        /// if the timeout expires.</returns>
+        Task<T> WaitForExternalEvent<T>(string name, TimeSpan timeout, CancellationToken cancelToken = default(CancellationToken));
+
+        /// <summary>
+        /// Waits asynchronously for an event to be raised with name <paramref name="name"/> and returns the event data.
+        /// </summary>
+        /// <remarks>
+        /// External clients can raise events to a waiting orchestration instance using
+        /// <see cref="IDurableOrchestrationClient.RaiseEventAsync(string, string, object)"/>.
+        /// </remarks>
+        /// <param name="name">The name of the event to wait for.</param>
+        /// <param name="timeout">The duration of time to wait for the event.</param>
+        /// <param name="defaultValue">If specified, the default value to return if the timeout expires before the external event is received.
+        /// Otherwise, a timeout exception will be thrown instead.</param>
         /// <param name="cancelToken">The <c>CancellationToken</c> to use for cancelling <paramref name="timeout"/>'s internal timer.</param>
         /// <typeparam name="T">Any serializeable type that represents the JSON event payload.</typeparam>
         /// <returns>A durable task that completes when the external event is received, or returns the value of <paramref name="defaultValue"/>
         /// if the timeout expires.</returns>
-        Task<T> WaitForExternalEvent<T>(string name, TimeSpan timeout, T defaultValue, CancellationToken cancelToken);
+        Task<T> WaitForExternalEvent<T>(string name, TimeSpan timeout, T defaultValue, CancellationToken cancelToken = default(CancellationToken));
 
         /// <summary>
         /// Acquires one or more locks, for the specified entities.
@@ -299,6 +476,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         Task<TResult> CallActivityAsync<TResult>(string functionName, object input);
 
         /// <summary>
+        /// Schedules an activity function named <paramref name="functionName"/> for execution.
+        /// </summary>
+        /// <param name="functionName">The name of the activity function to call.</param>
+        /// <param name="input">The JSON-serializeable input to pass to the activity function.</param>
+        /// <returns>A durable task that completes when the called function completes or fails.</returns>
+        /// <exception cref="ArgumentException">
+        /// The specified function does not exist, is disabled, or is not an orchestrator function.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        /// The current thread is different than the thread which started the orchestrator execution.
+        /// </exception>
+        /// <exception cref="FunctionFailedException">
+        /// The activity function failed with an unhandled exception.
+        /// </exception>
+        Task CallActivityAsync(string functionName, object input);
+
+        /// <summary>
         /// Schedules an activity function named <paramref name="functionName"/> for execution with retry options.
         /// </summary>
         /// <typeparam name="TResult">The return type of the scheduled activity function.</typeparam>
@@ -319,6 +513,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// The activity function failed with an unhandled exception.
         /// </exception>
         Task<TResult> CallActivityWithRetryAsync<TResult>(string functionName, RetryOptions retryOptions, object input);
+
+        /// <summary>
+        /// Schedules an activity function named <paramref name="functionName"/> for execution with retry options.
+        /// </summary>
+        /// <param name="functionName">The name of the activity function to call.</param>
+        /// <param name="retryOptions">The retry option for the activity function.</param>
+        /// <param name="input">The JSON-serializeable input to pass to the activity function.</param>
+        /// <returns>A durable task that completes when the called activity function completes or fails.</returns>
+        /// <exception cref="ArgumentNullException">
+        /// The retry option object is null.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        /// The specified function does not exist, is disabled, or is not an orchestrator function.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        /// The current thread is different than the thread which started the orchestrator execution.
+        /// </exception>
+        /// <exception cref="FunctionFailedException">
+        /// The activity function failed with an unhandled exception.
+        /// </exception>
+        Task CallActivityWithRetryAsync(string functionName, RetryOptions retryOptions, object input);
 
         /// <summary>
         /// Signals an entity to perform an operation, without waiting for a response. Any result or exception is ignored (fire and forget).
@@ -349,5 +564,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </exception>
         /// <returns>The instance id of the new orchestration.</returns>
         string StartNewOrchestration(string functionName, object input, string instanceId = null);
+
+        /// <summary>
+        /// Create an entity proxy.
+        /// </summary>
+        /// <param name="entityKey">The target entity key.</param>
+        /// <typeparam name="TEntityInterface">Entity interface.</typeparam>
+        /// <returns>Entity proxy.</returns>
+        TEntityInterface CreateEntityProxy<TEntityInterface>(string entityKey);
+
+        /// <summary>
+        /// Create an entity proxy.
+        /// </summary>
+        /// <param name="entityId">The target entity.</param>
+        /// <typeparam name="TEntityInterface">Entity interface.</typeparam>
+        /// <returns>Entity proxy.</returns>
+        TEntityInterface CreateEntityProxy<TEntityInterface>(EntityId entityId);
     }
 }
