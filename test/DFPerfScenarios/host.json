@@ -5,6 +5,7 @@
       "routePrefix": "tests"
     },
     "durableTask": {
+      "hubName": "DFPerfHub",
       "maxConcurrentActivityFunctions": 400,
       "maxConcurrentOrchestratorFunctions": 400,
       "extendedSessionsEnabled": true,
