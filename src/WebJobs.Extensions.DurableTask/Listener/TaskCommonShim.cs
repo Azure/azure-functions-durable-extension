@@ -23,6 +23,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         protected Func<Task> FunctionInvocationCallback { get; private set; }
 
+        internal Task<Exception> TimeoutTask { get; set; }
+
         public void SetFunctionInvocationCallback(Func<Task> callback)
         {
             this.FunctionInvocationCallback = callback ?? throw new ArgumentNullException(nameof(callback));
