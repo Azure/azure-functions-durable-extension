@@ -4,6 +4,41 @@
         <name>Microsoft.Azure.WebJobs.Extensions.DurableTask</name>
     </assembly>
     <members>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth.IStorageCredentialsFactory">
+            <summary>
+            Defines methods for retrieving <see cref="T:Microsoft.WindowsAzure.Storage.Auth.StorageCredentials"/>.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth.IStorageCredentialsFactory.CreateAsync(Microsoft.Azure.WebJobs.Extensions.DurableTask.ClientIdentityOptions,System.Threading.CancellationToken)">
+            <summary>
+            Asynchronously creates <see cref="T:Microsoft.WindowsAzure.Storage.Auth.StorageCredentials"/> based on the specified <paramref name="options"/>.
+            </summary>
+            <param name="options">Information about the user to authenticate.</param>
+            <param name="cancellationToken">
+            An optional <see cref="T:System.Threading.CancellationToken"/> for prematurely canceled the asynchronous operation.
+            </param>
+            <returns>
+            A task representing the asynchronous operation. The value of the <see cref="P:System.Threading.Tasks.Task`1.Result"/>
+            property contains the <see cref="T:Microsoft.WindowsAzure.Storage.Auth.StorageCredentials"/> based on the specified <paramref name="options"/>.
+            </returns>
+            <exception cref="T:System.OperationCanceledException">The resulting task was canceled.</exception>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth.IStorageCredentialsFactory.CreateAsync(Microsoft.Azure.WebJobs.Extensions.DurableTask.ClientIdentityOptions,System.TimeSpan,System.TimeSpan,System.Threading.CancellationToken)">
+            <summary>
+            Asynchronously creates <see cref="T:Microsoft.WindowsAzure.Storage.Auth.StorageCredentials"/> based on the specified <paramref name="options"/>.
+            </summary>
+            <param name="options">Information about the user to authenticate.</param>
+            <param name="tokenRefreshOffset">The offset from the token expiration date to begin refresh.</param>
+            <param name="tokenRefreshRetryDelay">The amount of time to wait between refresh attempts in the event of a problem.</param>
+            <param name="cancellationToken">
+            An optional <see cref="T:System.Threading.CancellationToken"/> for prematurely canceled the asynchronous operation.
+            </param>
+            <returns>
+            A task representing the asynchronous operation. The value of the <see cref="P:System.Threading.Tasks.Task`1.Result"/>
+            property contains the <see cref="T:Microsoft.WindowsAzure.Storage.Auth.StorageCredentials"/> based on the specified <paramref name="options"/>.
+            </returns>
+            <exception cref="T:System.OperationCanceledException">The resulting task was canceled.</exception>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageDurabilityProvider">
             <summary>
             The Azure Storage implementation of additional methods not required by IOrchestrationService.
@@ -2104,7 +2139,7 @@
             <param name="functionId">Function id.</param>
             <param name="functionName">Function name.</param>
             <param name="hubName">Task hub name.</param>
-            <param name="storageConnectionString">Storage account connection string, used for Azure Storage provider.</param>
+            <param name="name">The name of the storage-specific settings.</param>
             <param name="scaleMonitor">The scale monitor.</param>
             <returns>True if autoscaling is supported, false otherwise.</returns>
         </member>
@@ -2141,7 +2176,7 @@
             </summary>
             <value>The name of an app setting containing connection details.</value>
             <remarks>
-            For Azure Storage the default behavior is to use the value of <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageOptions.ConnectionStringName"/>.
+            For Azure Storage the default behavior is to use the value of <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageOptions.ConnectionName"/>.
             If no value exists there, then the default behavior is to use the standard `AzureWebJobsStorage` connection string for all storage usage.
             </remarks>
         </member>
@@ -3500,6 +3535,31 @@
             </summary>
             <returns>The application container name.</returns>
         </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IStorageAccountProvider">
+            <summary>
+            Defines methods for retrieving Azure Storage account metadata.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IStorageAccountProvider.GetStorageAccountDetails(System.String)">
+            <summary>
+            Gets the <see cref="T:DurableTask.AzureStorage.StorageAccountDetails"/> associated with the <paramref name="name"/>.
+            </summary>
+            <param name="name">The name containing account information.</param>
+            <remarks>
+            Depending on the implementation, this may either be a connection string or a configuration section.
+            </remarks>
+            <returns>The corresponding <see cref="T:DurableTask.AzureStorage.StorageAccountDetails"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IStorageAccountProvider.GetCloudStorageAccount(System.String)">
+            <summary>
+            Gets the <see cref="T:Microsoft.WindowsAzure.Storage.CloudStorageAccount"/> associated with the <paramref name="name"/>.
+            </summary>
+            <param name="name">The name containing account information.</param>
+            <remarks>
+            Depending on the implementation, this may either be a connection string or a configuration section.
+            </remarks>
+            <returns>The corresponding <see cref="T:Microsoft.WindowsAzure.Storage.CloudStorageAccount"/>.</returns>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.ITokenSource">
             <summary>
             Implementations of this interface can be used to provide authorization tokens for outbound HTTP requests.
@@ -3798,19 +3858,54 @@
             resulting JSON exceeds the maximum size specified by <paramref name="maxSizeInKB"/>.
             </summary>
         </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.DurableClientOptions">
+            <summary>
+            Options used to bind a function parameter to a <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableClient"/>, <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableEntityClient"/>, or <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient"/> instance.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.DurableClientOptions.ConnectionName">
+            <summary>
+            Optional. Gets or sets the setting name for the app setting containing connection details used by this binding to connect
+            to instances of the storage provider other than the default one this application communicates with.
+            </summary>
+            <value>The name of an app setting containing connection details.</value>
+            <remarks>
+            For Azure Storage the default behavior is to use the value of <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageOptions.ConnectionName"/>.
+            If no value exists there, then the default behavior is to use the standard `AzureWebJobsStorage` connection string for all storage usage.
+            </remarks>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.DurableClientOptions.TaskHub">
+            <summary>
+             Gets or sets the name of the task hub in which the orchestration data lives.
+            </summary>
+            <value>The task hub used by this binding.</value>
+            <remarks>
+            The default behavior is to use the task hub name specified in <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.HubName"/>.
+            If no value exists there, then a default value will be used.
+            </remarks>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.DurableClientOptions.IsExternalClient">
+            <summary>
+                Indicate if the client is External from the azure function where orchestrator functions are hosted.
+            </summary>
+            <remarks>
+                Default is true.
+            </remarks>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageOptions">
             <summary>
             Configuration options for the Azure Storage storage provider.
             </summary>
         </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageOptions.ConnectionStringName">
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageOptions.ConnectionName">
             <summary>
-            Gets or sets the name of the Azure Storage connection string used to manage the underlying Azure Storage resources.
+            Gets or sets the name of the Azure Storage connection information used to manage the underlying Azure Storage resources.
             </summary>
             <remarks>
-            If not specified, the default behavior is to use the standard `AzureWebJobsStorage` connection string for all storage usage.
+            The value may refer to either a connection string or the configuration section containing connection metadata.
+            The default behavior is to use the standard <c>AzureWebJobsStorage</c> connection string for all storage usage.
             </remarks>
-            <value>The name of a connection string that exists in the app's application settings.</value>
+            <value>The name of a connection name that exists in the app's application settings.</value>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageOptions.ControlQueueBatchSize">
             <summary>
@@ -3871,7 +3966,7 @@
             durable tracking store (History and Instances tables).
             </summary>
             <remarks><para>
-            If not specified, the <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageOptions.ConnectionStringName"/> connection string
+            If not specified, the <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageOptions.ConnectionName"/> connection string
             is used for the durable tracking store.
             </para><para>
             This property is primarily useful when deploying multiple apps that need to share the same
@@ -3921,40 +4016,6 @@
             <summary>
             Throws an exception if any of the settings of the storage provider are invalid.
             </summary>
-        </member>
-        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.DurableClientOptions">
-            <summary>
-            Options used to bind a function parameter to a <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableClient"/>, <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableEntityClient"/>, or <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient"/> instance.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.DurableClientOptions.ConnectionName">
-            <summary>
-            Optional. Gets or sets the setting name for the app setting containing connection details used by this binding to connect
-            to instances of the storage provider other than the default one this application communicates with.
-            </summary>
-            <value>The name of an app setting containing connection details.</value>
-            <remarks>
-            For Azure Storage the default behavior is to use the value of <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageOptions.ConnectionStringName"/>.
-            If no value exists there, then the default behavior is to use the standard `AzureWebJobsStorage` connection string for all storage usage.
-            </remarks>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.DurableClientOptions.TaskHub">
-            <summary>
-             Gets or sets the name of the task hub in which the orchestration data lives.
-            </summary>
-            <value>The task hub used by this binding.</value>
-            <remarks>
-            The default behavior is to use the task hub name specified in <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.HubName"/>.
-            If no value exists there, then a default value will be used.
-            </remarks>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.DurableClientOptions.IsExternalClient">
-            <summary>
-                Indicate if the client is External from the azure function where orchestrator functions are hosted.
-            </summary>
-            <remarks>
-                Default is true.
-            </remarks>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions">
             <summary>

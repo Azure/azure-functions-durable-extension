@@ -5,6 +5,7 @@ using System;
 using System.Net.Http;
 using System.Threading;
 #if !FUNCTIONS_V1
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
@@ -42,6 +43,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             serviceCollection.TryAddSingleton<INameResolver, DefaultNameResolver>();
             serviceCollection.TryAddSingleton<IConnectionStringResolver, StandardConnectionStringProvider>();
+#if FUNCTIONS_V1
+            serviceCollection.TryAddSingleton<IStorageAccountProvider, SimpleStorageAccountProvider>();
+#else
+            serviceCollection.TryAddSingleton<IStorageCredentialsFactory, StorageCredentialsFactory>();
+            serviceCollection.TryAddSingleton<IStorageAccountProvider, AzureStorageAccountProvider>();
+#endif
             serviceCollection.TryAddSingleton<IDurabilityProviderFactory, AzureStorageDurabilityProviderFactory>();
             serviceCollection.TryAddSingleton<IDurableClientFactory, DurableClientFactory>();
             serviceCollection.TryAddSingleton<IMessageSerializerSettingsFactory, MessageSerializerSettingsFactory>();
@@ -78,10 +85,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new ArgumentNullException(nameof(builder));
             }
 
-            var serviceCollection = builder.AddExtension<DurableTaskExtension>()
-                .BindOptions<DurableTaskOptions>()
-                .Services.AddSingleton<IConnectionStringResolver, WebJobsConnectionStringProvider>();
+            builder
+                .AddExtension<DurableTaskExtension>()
+                .BindOptions<DurableTaskOptions>();
 
+            IServiceCollection serviceCollection = builder.Services;
+            serviceCollection.AddSingleton<IConnectionStringResolver, WebJobsConnectionStringProvider>();
+            serviceCollection.TryAddSingleton<IStorageCredentialsFactory, StorageCredentialsFactory>();
+            serviceCollection.TryAddSingleton<IStorageAccountProvider, AzureStorageAccountProvider>();
             serviceCollection.TryAddSingleton<IDurableHttpMessageHandlerFactory, DurableHttpMessageHandlerFactory>();
             serviceCollection.AddSingleton<IDurabilityProviderFactory, AzureStorageDurabilityProviderFactory>();
             serviceCollection.TryAddSingleton<IMessageSerializerSettingsFactory, MessageSerializerSettingsFactory>();
@@ -167,5 +178,5 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             extensions.RegisterExtension<IExtensionConfigProvider>(listenerConfig);
         }
 #endif
+        }
     }
-}

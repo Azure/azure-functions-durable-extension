@@ -39,7 +39,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var config = new JobHostConfiguration { HostId = "durable-task-host" };
             config.TypeLocator = TestHelpers.GetTypeLocator();
 
-            var connectionResolver = new WebJobsConnectionStringProvider();
+            var storageAccountProvider = new SimpleStorageAccountProvider(new WebJobsConnectionStringProvider());
 
             var loggerFactory = new LoggerFactory();
             loggerFactory.AddProvider(loggerProvider);
@@ -56,7 +56,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             IDurabilityProviderFactory orchestrationServiceFactory = new AzureStorageDurabilityProviderFactory(
                 options,
-                connectionResolver,
+                storageAccountProvider,
                 nameResolver,
                 loggerFactory,
                 platformInformationService);
@@ -87,23 +87,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             config.LoggerFactory = loggerFactory;
 
             var host = new JobHost(config);
-            return new FunctionsV1HostWrapper(host, options, connectionResolver);
+            return new FunctionsV1HostWrapper(host, options, storageAccountProvider);
         }
 
         private class FunctionsV1HostWrapper : ITestHost
         {
             private readonly JobHost innerHost;
             private readonly DurableTaskOptions options;
-            private readonly IConnectionStringResolver connectionResolver;
+            private readonly IStorageAccountProvider storageAccountProvider;
 
             public FunctionsV1HostWrapper(
                 JobHost innerHost,
                 IOptions<DurableTaskOptions> options,
-                IConnectionStringResolver connectionResolver)
+                IStorageAccountProvider storageAccountResolver)
             {
                 this.innerHost = innerHost ?? throw new ArgumentNullException(nameof(innerHost));
                 this.options = options.Value;
-                this.connectionResolver = connectionResolver;
+                this.storageAccountProvider = storageAccountResolver;
             }
 
             public Task CallAsync(string methodName, IDictionary<string, object> args)

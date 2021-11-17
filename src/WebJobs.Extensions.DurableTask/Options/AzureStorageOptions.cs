@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.Serialization;
 using Microsoft.Extensions.Logging;
 using Microsoft.WindowsAzure.Storage;
 
@@ -21,13 +20,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private const string TaskHubPadding = "Hub";
 
         /// <summary>
-        /// Gets or sets the name of the Azure Storage connection string used to manage the underlying Azure Storage resources.
+        /// Gets or sets the name of the Azure Storage connection information used to manage the underlying Azure Storage resources.
         /// </summary>
         /// <remarks>
-        /// If not specified, the default behavior is to use the standard `AzureWebJobsStorage` connection string for all storage usage.
+        /// The value may refer to either a connection string or the configuration section containing connection metadata.
+        /// The default behavior is to use the standard <c>AzureWebJobsStorage</c> connection string for all storage usage.
         /// </remarks>
-        /// <value>The name of a connection string that exists in the app's application settings.</value>
-        public string ConnectionStringName { get; set; }
+        /// <value>The name of a connection name that exists in the app's application settings.</value>
+        public string ConnectionName { get; set; }
 
         /// <summary>
         /// Gets or sets the number of messages to pull from the control queue at a time.
@@ -87,7 +87,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// durable tracking store (History and Instances tables).
         /// </summary>
         /// <remarks><para>
-        /// If not specified, the <see cref="AzureStorageOptions.ConnectionStringName"/> connection string
+        /// If not specified, the <see cref="AzureStorageOptions.ConnectionName"/> connection string
         /// is used for the durable tracking store.
         /// </para><para>
         /// This property is primarily useful when deploying multiple apps that need to share the same

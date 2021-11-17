@@ -34,21 +34,21 @@
   <PropertyGroup Condition="'$(TargetFramework)' != 'netstandard2.0'">
     <DocumentationFile>$(AssemblyName)-$(TargetFramework).xml</DocumentationFile>
   </PropertyGroup>
-  
+
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <WarningsAsErrors />
     <StyleCopTreatErrorsAsWarnings>true</StyleCopTreatErrorsAsWarnings>
   </PropertyGroup>
-  
+
   <PropertyGroup Condition="'$(TargetFramework)' != 'netstandard2.0'">
     <DefineConstants>FUNCTIONS_V1</DefineConstants>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
   </PropertyGroup>
 
   <ItemGroup>
-    <!--Don't include Correlation classes in Function V1.-->
-    <Compile Include="**/*.cs" Exclude="Correlation/*.cs;**/obj/**/*.cs" Condition="'$(TargetFramework)' != 'netstandard2.0'" />
+    <!--Don't include Auth and Correlation classes in Function V1.-->
+    <Compile Include="**/*.cs" Exclude="Auth/*.cs;Correlation/*.cs;**/obj/**/*.cs" Condition="'$(TargetFramework)' != 'netstandard2.0'" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' != 'netstandard2.0'">
@@ -63,18 +63,21 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <PackageReference Include="Azure.Core" Version="1.21.0" />
     <PackageReference Include="Microsoft.Azure.WebJobs" Version="3.0.14" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.WebApiCompatShim" Version="2.1.0" />
     <PackageReference Include="Microsoft.AspNetCore.Routing" Version="2.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Server.Kestrel" Version="2.2.0" />
+    <PackageReference Include="Microsoft.Extensions.Azure" Version="1.1.1" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="2.2.0" />
     <PackageReference Include="Microsoft.ApplicationInsights" Version="2.12.2" />
-    
+
     <!-- Explicitly pinned transitive dependencies with CVE vulnerabilities.-->
     <PackageReference Include="Microsoft.AspNetCore.Server.Kestrel.Transport.Sockets" Version="2.2.1" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.Azure.Services.AppAuthentication" Version="1.6.2" />
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.*" PrivateAssets="All" />
     <PackageReference Include="StyleCop.Analyzers" Version="1.1.*" PrivateAssets="All" />
   </ItemGroup>
@@ -87,7 +90,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" Version="1.9.4" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers" Version="0.4.1" />
-    <PackageReference Include="Azure.Identity" Version="1.1.1" />
+    <PackageReference Include="Azure.Identity" Version="1.5.0" />
 
     <!-- Explicitly pinned transitive dependencies with CVE vulnerabilities.-->
     <PackageReference Include="System.Text.Encodings.Web" Version="4.7.2" />
