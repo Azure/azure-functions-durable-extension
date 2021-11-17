@@ -36,6 +36,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             IPlatformInformation platformInfo)
 #pragma warning restore CS0612 // Type or member is obsolete
         {
+            // this constructor may be called by dependency injection even if the AzureStorage provider is not selected
+            // in that case, return immediately, since this provider is not actually used, but can still throw validation errors
+            if (options.Value.StorageProvider.TryGetValue("type", out object value)
+                && value is string s
+                && !string.Equals(s, ProviderName, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
             this.options = options.Value;
             this.nameResolver = nameResolver;
             this.loggerFactory = loggerFactory;
