@@ -13,7 +13,7 @@ using Microsoft.WindowsAzure.Storage.Auth;
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth
 {
     // TODO: Replace with Azure.Identity
-    internal sealed class StorageCredentialsFactory : IStorageCredentialsFactory
+    internal sealed class AppAuthenticationCredentialsFactory : IStorageCredentialsFactory
     {
         private const string LoggerName = "Host.Triggers.DurableTask.Auth";
 
@@ -21,7 +21,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth
         private readonly AsyncLock cacheLock = new AsyncLock();
         private readonly Dictionary<string, TokenCredential> cache = new Dictionary<string, TokenCredential>();
 
-        public StorageCredentialsFactory(ILoggerFactory loggerFactory)
+        public AppAuthenticationCredentialsFactory(ILoggerFactory loggerFactory)
         {
             if (loggerFactory == null)
             {

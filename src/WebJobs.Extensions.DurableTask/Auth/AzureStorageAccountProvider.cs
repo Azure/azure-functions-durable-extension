@@ -12,12 +12,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth
 {
     internal sealed class AzureStorageAccountProvider : SimpleStorageAccountProvider
     {
-        private readonly StorageCredentialsFactory credentialFactory;
+        private readonly IStorageCredentialsFactory credentialFactory;
         private readonly IConfiguration configuration;
 
         public AzureStorageAccountProvider(
             IConnectionStringResolver connectionStringResolver,
-            StorageCredentialsFactory credentialFactory,
+            IStorageCredentialsFactory credentialFactory,
             IConfiguration configuration)
             : base(connectionStringResolver)
         {

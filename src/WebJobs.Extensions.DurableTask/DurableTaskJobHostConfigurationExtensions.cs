@@ -46,7 +46,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #if FUNCTIONS_V1
             serviceCollection.TryAddSingleton<IStorageAccountProvider, SimpleStorageAccountProvider>();
 #else
-            serviceCollection.TryAddSingleton<IStorageCredentialsFactory, StorageCredentialsFactory>();
+            serviceCollection.TryAddSingleton<IStorageCredentialsFactory, AppAuthenticationCredentialsFactory>();
             serviceCollection.TryAddSingleton<IStorageAccountProvider, AzureStorageAccountProvider>();
 #endif
             serviceCollection.TryAddSingleton<IDurabilityProviderFactory, AzureStorageDurabilityProviderFactory>();
@@ -91,7 +91,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             IServiceCollection serviceCollection = builder.Services;
             serviceCollection.AddSingleton<IConnectionStringResolver, WebJobsConnectionStringProvider>();
-            serviceCollection.TryAddSingleton<IStorageCredentialsFactory, StorageCredentialsFactory>();
+            serviceCollection.TryAddSingleton<IStorageCredentialsFactory, AppAuthenticationCredentialsFactory>();
             serviceCollection.TryAddSingleton<IStorageAccountProvider, AzureStorageAccountProvider>();
             serviceCollection.TryAddSingleton<IDurableHttpMessageHandlerFactory, DurableHttpMessageHandlerFactory>();
             serviceCollection.AddSingleton<IDurabilityProviderFactory, AzureStorageDurabilityProviderFactory>();
