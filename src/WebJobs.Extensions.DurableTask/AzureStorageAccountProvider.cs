@@ -37,12 +37,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             if (account.QueueServiceUri != null || account.TableServiceUri != null)
             {
-                if (account.QueueServiceUri == null || account.TableServiceUri == null)
-                {
-                    throw new InvalidOperationException(
-                        $"Both {nameof(AzureStorageAccountOptions.QueueServiceUri)} and {nameof(AzureStorageAccountOptions.TableServiceUri)} must be specified.");
-                }
-
                 // TODO: Use new endpoints when Durable Task is updated
                 return new StorageAccountDetails
                 {
@@ -76,17 +70,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             if (account.QueueServiceUri != null || account.TableServiceUri != null)
             {
-                if (account.QueueServiceUri == null || account.TableServiceUri == null)
-                {
-                    throw new InvalidOperationException(
-                        $"Both {nameof(AzureStorageAccountOptions.QueueServiceUri)} and {nameof(AzureStorageAccountOptions.TableServiceUri)} must be specified.");
-                }
-
                 return new CloudStorageAccount(
                     storageCredentials,
                     blobEndpoint: null,
-                    queueEndpoint: account.QueueServiceUri,
-                    tableEndpoint: account.TableServiceUri,
+                    queueEndpoint: account.QueueServiceUri ?? account.GetDefaultServiceUri("queue"),
+                    tableEndpoint: account.TableServiceUri ?? account.GetDefaultServiceUri("table"),
                     fileEndpoint: null);
             }
             else

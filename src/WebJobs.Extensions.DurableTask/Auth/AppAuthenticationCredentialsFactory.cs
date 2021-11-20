@@ -82,21 +82,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth
             // options and behavior to make the inevitable migration to Azure.Identity seamless for consumers.
             if (options.UseManagedIdentity)
             {
-                return !string.IsNullOrEmpty(options.ClientId) ? $"RunAs=App;AppId={options.ClientId}" : "RunAs=App";
+                return !string.IsNullOrEmpty(options.ClientId) ? FormattableString.Invariant($"RunAs=App;AppId={options.ClientId}") : "RunAs=App";
             }
             else if (
                 !string.IsNullOrWhiteSpace(options.TenantId) &&
                 !string.IsNullOrWhiteSpace(options.ClientId) &&
                 !string.IsNullOrWhiteSpace(options.ClientSecret))
             {
-                return $"RunAs=App;AppId={options.ClientId};TenantId={options.TenantId};AppKey={options.ClientSecret}";
+                return FormattableString.Invariant($"RunAs=App;AppId={options.ClientId};TenantId={options.TenantId};AppKey={options.ClientSecret}");
             }
             else if (
                 !string.IsNullOrWhiteSpace(options.TenantId) &&
                 !string.IsNullOrWhiteSpace(options.ClientId) &&
                 !string.IsNullOrWhiteSpace(options.Certificate))
             {
-                return $"RunAs=App;AppId={options.ClientId};TenantId={options.TenantId};CertificateThumbprint={options.Certificate};CertificateStoreLocation={options.ClientCertificateStoreLocation}";
+                return FormattableString.Invariant($"RunAs=App;AppId={options.ClientId};TenantId={options.TenantId};CertificateThumbprint={options.Certificate};CertificateStoreLocation={options.ClientCertificateStoreLocation}");
             }
             else
             {
