@@ -40,7 +40,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth
             TimeSpan tokenRefreshRetryDelay,
             CancellationToken cancellationToken = default)
         {
-            string connectionString = CreateTokenProviderConnectionString(options);
+            if (options == null)
+            {
+                throw new ArgumentNullException(nameof(options));
+            }
+
+            string connectionString = GetAuthenticationConnectionString(options);
             if (!this.cache.TryGetValue(connectionString, out TokenCredential credential))
             {
                 using (await this.cacheLock.AcquireAsync())
@@ -51,7 +56,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth
                         {
                             RefreshDelay = tokenRefreshRetryDelay,
                             RefreshOffset = tokenRefreshOffset,
-                            TokenProvider = new AzureServiceTokenProvider(),
+                            TokenProvider = new AzureServiceTokenProvider(connectionString),
                         };
 
                         NewTokenAndFrequency response = await this.RenewTokenAsync(state, cancellationToken);
@@ -66,7 +71,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth
             return new StorageCredentials(credential);
         }
 
-        private static string CreateTokenProviderConnectionString(ClientIdentityOptions options)
+        internal static string GetAuthenticationConnectionString(ClientIdentityOptions options)
         {
             StringBuilder builder = new StringBuilder("RunAs=App");
 
@@ -82,7 +87,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth
 
             if (!string.IsNullOrEmpty(options.ClientSecret))
             {
-                builder.Append($";ClientSecret={options.ClientSecret}");
+                builder.Append($";AppKey={options.ClientSecret}");
             }
 
             return builder.ToString();
@@ -95,7 +100,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth
             {
                 result = await state.TokenProvider.GetAuthenticationResultAsync(
                     "https://storage.azure.com/",
-                    forceRefresh: false,
+                    forceRefresh: true,
                     cancellationToken: cancellationToken);
             }
             catch (AzureServiceTokenProviderException e)
