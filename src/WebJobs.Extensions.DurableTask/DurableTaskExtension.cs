@@ -87,7 +87,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private HttpClient durableHttpClient;
         private EventSourceListener eventSourceListener;
 #if FUNCTIONS_V1
-        private IConnectionStringResolver connectionStringResolver;
+        private IConnectionInfoResolver connectionInfoResolver;
 
         /// <summary>
         /// Obsolete. Please use an alternate constructor overload.
@@ -197,7 +197,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             ILoggerFactory loggerFactory,
             INameResolver nameResolver,
             IEnumerable<IDurabilityProviderFactory> orchestrationServiceFactories,
-            IConnectionStringResolver connectionStringResolver,
+            IConnectionInfoResolver connectionInfoResolver,
             IApplicationLifetimeWrapper shutdownNotification,
             IDurableHttpMessageHandlerFactory durableHttpMessageHandlerFactory,
 #pragma warning disable CS0612 // Type or member is obsolete
@@ -206,7 +206,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             : this(options, loggerFactory, nameResolver, orchestrationServiceFactories, shutdownNotification, durableHttpMessageHandlerFactory)
         {
-            this.connectionStringResolver = connectionStringResolver;
+            this.connectionInfoResolver = connectionInfoResolver;
         }
 
         /// <summary>
@@ -514,11 +514,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.ResolveAppSettingOptions();
             ILogger logger = this.loggerFactory.CreateLogger(LoggerCategoryName);
             this.TraceHelper = new EndToEndTraceHelper(logger, this.Options.Tracing.TraceReplayEvents);
-            this.connectionStringResolver = new WebJobsConnectionStringProvider();
+            this.connectionInfoResolver = new WebJobsConnectionInfoProvider();
             this.PlatformInformationService = new DefaultPlatformInformation(this.nameResolver, this.loggerFactory);
             this.durabilityProviderFactory = new AzureStorageDurabilityProviderFactory(
                 new OptionsWrapper<DurableTaskOptions>(this.Options),
-                new SimpleStorageAccountProvider(this.connectionStringResolver),
+                new AzureStorageAccountProvider(this.connectionInfoResolver),
                 this.nameResolver,
                 this.loggerFactory,
                 this.PlatformInformationService);

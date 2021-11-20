@@ -82,12 +82,12 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void ConsumptionDefaultsAreNotAlwaysApplied()
         {
-            var connectionStringResolver = new TestStorageAccountProvider();
+            var accountProvider = new TestStorageAccountProvider();
             var mockOptions = new OptionsWrapper<DurableTaskOptions>(new DurableTaskOptions());
             var nameResolver = new Mock<INameResolver>().Object;
             var factory = new AzureStorageDurabilityProviderFactory(
                 mockOptions,
-                connectionStringResolver,
+                accountProvider,
                 nameResolver,
                 NullLoggerFactory.Instance,
                 TestHelpers.GetMockPlatformInformationService(inConsumption: false));

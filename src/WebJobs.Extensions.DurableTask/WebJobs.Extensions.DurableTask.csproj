@@ -48,7 +48,7 @@
 
   <ItemGroup>
     <!--Don't include Auth and Correlation classes in Function V1.-->
-    <Compile Include="**/*.cs" Exclude="Auth/*.cs;Correlation/*.cs;**/obj/**/*.cs" Condition="'$(TargetFramework)' != 'netstandard2.0'" />
+    <Compile Include="**/*.cs" Exclude="Auth/AppAuthenticationCredentialsFactory.cs;Correlation/*.cs;**/obj/**/*.cs" Condition="'$(TargetFramework)' != 'netstandard2.0'" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' != 'netstandard2.0'">

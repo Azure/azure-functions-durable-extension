@@ -39,7 +39,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var config = new JobHostConfiguration { HostId = "durable-task-host" };
             config.TypeLocator = TestHelpers.GetTypeLocator();
 
-            var storageAccountProvider = new SimpleStorageAccountProvider(new WebJobsConnectionStringProvider());
+            var storageAccountProvider = new AzureStorageAccountProvider(new WebJobsConnectionInfoProvider());
 
             var loggerFactory = new LoggerFactory();
             loggerFactory.AddProvider(loggerProvider);

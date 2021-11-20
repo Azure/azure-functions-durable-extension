@@ -14,6 +14,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 #else
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.Azure.WebJobs.Host;
@@ -42,12 +43,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             serviceCollection.TryAddSingleton<INameResolver, DefaultNameResolver>();
-            serviceCollection.TryAddSingleton<IConnectionStringResolver, StandardConnectionStringProvider>();
+            serviceCollection.TryAddSingleton<IConnectionInfoResolver, StandardConnectionInfoProvider>();
+            serviceCollection.TryAddSingleton<IConnectionStringResolver>(p => p.GetRequiredService<IConnectionInfoResolver>());
+            serviceCollection.TryAddSingleton<IStorageAccountProvider, AzureStorageAccountProvider>();
 #if FUNCTIONS_V1
-            serviceCollection.TryAddSingleton<IStorageAccountProvider, SimpleStorageAccountProvider>();
+            serviceCollection.TryAddSingleton<IStorageCredentialsFactory>(NullCredentialsFactory.Instance);
 #else
             serviceCollection.TryAddSingleton<IStorageCredentialsFactory, AppAuthenticationCredentialsFactory>();
-            serviceCollection.TryAddSingleton<IStorageAccountProvider, AzureStorageAccountProvider>();
 #endif
             serviceCollection.TryAddSingleton<IDurabilityProviderFactory, AzureStorageDurabilityProviderFactory>();
             serviceCollection.TryAddSingleton<IDurableClientFactory, DurableClientFactory>();
@@ -90,7 +92,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 .BindOptions<DurableTaskOptions>();
 
             IServiceCollection serviceCollection = builder.Services;
-            serviceCollection.AddSingleton<IConnectionStringResolver, WebJobsConnectionStringProvider>();
+            serviceCollection.TryAddSingleton<IConnectionInfoResolver, WebJobsConnectionInfoProvider>();
+            serviceCollection.TryAddSingleton<IConnectionStringResolver>(p => p.GetRequiredService<IConnectionInfoResolver>());
             serviceCollection.TryAddSingleton<IStorageCredentialsFactory, AppAuthenticationCredentialsFactory>();
             serviceCollection.TryAddSingleton<IStorageAccountProvider, AzureStorageAccountProvider>();
             serviceCollection.TryAddSingleton<IDurableHttpMessageHandlerFactory, DurableHttpMessageHandlerFactory>();

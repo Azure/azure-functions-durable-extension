@@ -25,7 +25,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth
         /// property contains the <see cref="StorageCredentials"/> based on the specified <paramref name="options"/>.
         /// </returns>
         /// <exception cref="OperationCanceledException">The resulting task was canceled.</exception>
-        Task<StorageCredentials> CreateAsync(ClientIdentityOptions options, CancellationToken cancellationToken = default);
+        Task<StorageCredentials> CreateAsync(AzureIdentityOptions options, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Asynchronously creates <see cref="StorageCredentials"/> based on the specified <paramref name="options"/>.
@@ -42,7 +42,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth
         /// </returns>
         /// <exception cref="OperationCanceledException">The resulting task was canceled.</exception>
         Task<StorageCredentials> CreateAsync(
-            ClientIdentityOptions options,
+            AzureIdentityOptions options,
             TimeSpan tokenRefreshOffset,
             TimeSpan tokenRefreshRetryDelay,
             CancellationToken cancellationToken = default);

@@ -4,6 +4,76 @@
         <name>Microsoft.Azure.WebJobs.Extensions.DurableTask</name>
     </assembly>
     <members>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth.AzureIdentityOptions">
+            <summary>
+            Represents the identity of an Azure service, application, or user.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth.AzureIdentityOptions.TenantId">
+            <summary>
+            Gets or sets the identifier for the Azure Active Directory (AAD) tenant.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth.AzureIdentityOptions.ClientId">
+            <summary>
+            Gets or sets the identifier for the application (client).
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth.AzureIdentityOptions.ClientSecret">
+            <summary>
+            Gets or sets the application client's secret.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth.AzureIdentityOptions.Credential">
+            <summary>
+            Gets or sets a moniker indicating the type of authentication to be used.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth.AzureIdentityOptions.Certificate">
+            <summary>
+            Gets or sets the thumbprint of the certificate associated with the application (client).
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth.AzureIdentityOptions.ClientCertificateStoreLocation">
+            <summary>
+            Gets or sets the location of the <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth.AzureIdentityOptions.Certificate"/>.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth.IStorageCredentialsFactory">
+            <summary>
+            Defines methods for retrieving <see cref="T:Microsoft.WindowsAzure.Storage.Auth.StorageCredentials"/>.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth.IStorageCredentialsFactory.CreateAsync(Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth.AzureIdentityOptions,System.Threading.CancellationToken)">
+            <summary>
+            Asynchronously creates <see cref="T:Microsoft.WindowsAzure.Storage.Auth.StorageCredentials"/> based on the specified <paramref name="options"/>.
+            </summary>
+            <param name="options">Information about the user to authenticate.</param>
+            <param name="cancellationToken">
+            An optional <see cref="T:System.Threading.CancellationToken"/> for prematurely canceled the asynchronous operation.
+            </param>
+            <returns>
+            A task representing the asynchronous operation. The value of the <see cref="P:System.Threading.Tasks.Task`1.Result"/>
+            property contains the <see cref="T:Microsoft.WindowsAzure.Storage.Auth.StorageCredentials"/> based on the specified <paramref name="options"/>.
+            </returns>
+            <exception cref="T:System.OperationCanceledException">The resulting task was canceled.</exception>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth.IStorageCredentialsFactory.CreateAsync(Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth.AzureIdentityOptions,System.TimeSpan,System.TimeSpan,System.Threading.CancellationToken)">
+            <summary>
+            Asynchronously creates <see cref="T:Microsoft.WindowsAzure.Storage.Auth.StorageCredentials"/> based on the specified <paramref name="options"/>.
+            </summary>
+            <param name="options">Information about the user to authenticate.</param>
+            <param name="tokenRefreshOffset">The offset from the token expiration date to begin refresh.</param>
+            <param name="tokenRefreshRetryDelay">The amount of time to wait between refresh attempts in the event of a problem.</param>
+            <param name="cancellationToken">
+            An optional <see cref="T:System.Threading.CancellationToken"/> for prematurely canceled the asynchronous operation.
+            </param>
+            <returns>
+            A task representing the asynchronous operation. The value of the <see cref="P:System.Threading.Tasks.Task`1.Result"/>
+            property contains the <see cref="T:Microsoft.WindowsAzure.Storage.Auth.StorageCredentials"/> based on the specified <paramref name="options"/>.
+            </returns>
+            <exception cref="T:System.OperationCanceledException">The resulting task was canceled.</exception>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageDurabilityProvider">
             <summary>
             The Azure Storage implementation of additional methods not required by IOrchestrationService.
@@ -3042,6 +3112,19 @@
             A <see cref="T:System.Threading.CancellationToken"/> that is signalled when the function app has completed shutting down.
             </value>
         </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IConnectionInfoResolver">
+            <summary>
+            Interface defining methods to resolve connection information.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IConnectionInfoResolver.Resolve``1(System.String)">
+            <summary>
+            Looks up the connection info given a name.
+            </summary>
+            <typeparam name="T">The type of the information to resolve.</typeparam>
+            <param name="name">The name of the connection information.</param>
+            <returns>The resolved connection information or <see langword="null"/> if not found.</returns>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IConnectionStringResolver">
             <summary>
             Interface defining methods to resolve connection strings.
@@ -4263,23 +4346,23 @@
             The delegate to handle exception to determine if retries should proceed.
             </value>
         </member>
-        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.StandardConnectionStringProvider">
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.StandardConnectionInfoProvider">
             <summary>
-            Connection string provider which resolves connection strings from the an standard application (Non WebJob).
+            Connection info provider which resolves connection information from a standard application (Non WebJob).
             </summary>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.StandardConnectionStringProvider.#ctor(Microsoft.Extensions.Configuration.IConfiguration)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.StandardConnectionInfoProvider.#ctor(Microsoft.Extensions.Configuration.IConfiguration)">
             <summary>
-            Initializes a new instance of the <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.StandardConnectionStringProvider"/> class.
+            Initializes a new instance of the <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.StandardConnectionInfoProvider"/> class.
             </summary>
             <param name="configuration">A <see cref="T:Microsoft.Extensions.Configuration.IConfiguration"/> object provided by the application host.</param>
+            <exception cref="T:System.ArgumentNullException"><paramref name="configuration"/> is <see langword="null"/>.</exception>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.StandardConnectionStringProvider.Resolve(System.String)">
-            <summary>
-            Looks up a connection string value given a name.
-            </summary>
-            <param name="connectionStringName">The name of the connection string.</param>
-            <returns>Returns the resolved connection string value.</returns>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.StandardConnectionInfoProvider.Resolve``1(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.StandardConnectionInfoProvider.Resolve(System.String)">
+            <inheritdoc />
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.StartOrchestrationArgs">
             <summary>
@@ -4423,12 +4506,15 @@
             is generated via the source-generator nuget package.
             </summary>
         </member>
-        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.WebJobsConnectionStringProvider">
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.WebJobsConnectionInfoProvider">
             <summary>
-            Connection string provider which resolves connection strings from the WebJobs context.
+            Connection info provider which resolves connection information from the WebJobs context.
             </summary>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.WebJobsConnectionStringProvider.Resolve(System.String)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.WebJobsConnectionInfoProvider.Resolve``1(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.WebJobsConnectionInfoProvider.Resolve(System.String)">
             <inheritdoc />
         </member>
     </members>

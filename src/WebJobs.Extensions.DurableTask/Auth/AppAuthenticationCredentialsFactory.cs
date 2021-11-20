@@ -31,11 +31,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth
             this.logger = loggerFactory.CreateLogger(LoggerName);
         }
 
-        public Task<StorageCredentials> CreateAsync(ClientIdentityOptions options, CancellationToken cancellationToken = default) =>
+        public Task<StorageCredentials> CreateAsync(AzureIdentityOptions options, CancellationToken cancellationToken = default) =>
             this.CreateAsync(options, TimeSpan.FromMinutes(5d), TimeSpan.FromSeconds(30d), cancellationToken);
 
         public async Task<StorageCredentials> CreateAsync(
-            ClientIdentityOptions options,
+            AzureIdentityOptions options,
             TimeSpan tokenRefreshOffset,
             TimeSpan tokenRefreshRetryDelay,
             CancellationToken cancellationToken = default)
@@ -45,7 +45,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth
                 throw new ArgumentNullException(nameof(options));
             }
 
-            string connectionString = GetAuthenticationConnectionString(options);
+            string connectionString = GetConnectionString(options);
+            if (connectionString == null)
+            {
+                return null;
+            }
+
             if (!this.cache.TryGetValue(connectionString, out TokenCredential credential))
             {
                 using (await this.cacheLock.AcquireAsync())
@@ -71,26 +76,32 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth
             return new StorageCredentials(credential);
         }
 
-        internal static string GetAuthenticationConnectionString(ClientIdentityOptions options)
+        internal static string GetConnectionString(AzureIdentityOptions options)
         {
-            StringBuilder builder = new StringBuilder("RunAs=App");
-
-            if (!string.IsNullOrEmpty(options.ClientId))
+            // Here we are attempting to emulate Microsoft.Extensions.Azure.ClientFactory
+            // options and behavior to make the inevitable migration to Azure.Identity seamless for consumers.
+            if (options.UseManagedIdentity)
             {
-                builder.Append($";AppId={options.ClientId}");
+                return !string.IsNullOrEmpty(options.ClientId) ? $"RunAs=App;AppId={options.ClientId}" : "RunAs=App";
             }
-
-            if (!string.IsNullOrEmpty(options.TenantId))
+            else if (
+                !string.IsNullOrWhiteSpace(options.TenantId) &&
+                !string.IsNullOrWhiteSpace(options.ClientId) &&
+                !string.IsNullOrWhiteSpace(options.ClientSecret))
             {
-                builder.Append($";TenantId={options.TenantId}");
+                return $"RunAs=App;AppId={options.ClientId};TenantId={options.TenantId};AppKey={options.ClientSecret}";
             }
-
-            if (!string.IsNullOrEmpty(options.ClientSecret))
+            else if (
+                !string.IsNullOrWhiteSpace(options.TenantId) &&
+                !string.IsNullOrWhiteSpace(options.ClientId) &&
+                !string.IsNullOrWhiteSpace(options.Certificate))
             {
-                builder.Append($";AppKey={options.ClientSecret}");
+                return $"RunAs=App;AppId={options.ClientId};TenantId={options.TenantId};CertificateThumbprint={options.Certificate};CertificateStoreLocation={options.ClientCertificateStoreLocation}";
             }
-
-            return builder.ToString();
+            else
+            {
+                return null;
+            }
         }
 
         private async Task<NewTokenAndFrequency> RenewTokenAsync(TokenRenewalState state, CancellationToken cancellationToken)

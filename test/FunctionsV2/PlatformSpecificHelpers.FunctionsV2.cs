@@ -173,7 +173,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             var serviceCollection = builder.AddExtension<DurableTaskExtension>()
                 .BindOptions<DurableTaskOptions>()
-                .Services.AddSingleton<IConnectionStringResolver, WebJobsConnectionStringProvider>();
+                .Services.AddSingleton<IConnectionInfoResolver, WebJobsConnectionInfoProvider>();
 
             serviceCollection.TryAddSingleton<IApplicationLifetimeWrapper, HostLifecycleService>();
 #pragma warning disable CS0612 // Type or member is obsolete
@@ -195,7 +195,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             var serviceCollection = builder.AddExtension<DurableTaskExtension>()
                 .BindOptions<DurableTaskOptions>()
-                .Services.AddSingleton<IConnectionStringResolver, WebJobsConnectionStringProvider>();
+                .Services.AddSingleton<IConnectionInfoResolver, WebJobsConnectionInfoProvider>();
 
             serviceCollection.TryAddSingleton<IApplicationLifetimeWrapper, HostLifecycleService>();
 
