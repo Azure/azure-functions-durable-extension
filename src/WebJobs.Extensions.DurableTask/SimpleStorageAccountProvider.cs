@@ -39,7 +39,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         protected bool TryResolveConnectionString(string name, out string connectionString)
         {
             connectionString = name != null ? this.connectionStringResolver.Resolve(name) : null;
-            return false;
+            return !string.IsNullOrEmpty(connectionString);
         }
     }
 }

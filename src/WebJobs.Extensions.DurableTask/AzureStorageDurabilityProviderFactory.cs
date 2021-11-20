@@ -180,7 +180,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 ExtendedSessionsEnabled = this.options.ExtendedSessionsEnabled,
                 ExtendedSessionIdleTimeout = extendedSessionTimeout,
                 MaxQueuePollingInterval = this.azureStorageOptions.MaxQueuePollingInterval,
-                TrackingStoreStorageAccountDetails = this.storageAccountProvider.GetStorageAccountDetails(this.azureStorageOptions.TrackingStoreConnectionStringName),
+                TrackingStoreStorageAccountDetails = this.azureStorageOptions.TrackingStoreConnectionName != null
+                    ? this.storageAccountProvider.GetStorageAccountDetails(this.azureStorageOptions.TrackingStoreConnectionName)
+                    : null,
                 FetchLargeMessageDataEnabled = this.azureStorageOptions.FetchLargeMessagesAutomatically,
                 ThrowExceptionOnInvalidDedupeStatus = true,
                 UseAppLease = this.options.UseAppLease,

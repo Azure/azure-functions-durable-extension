@@ -120,7 +120,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             // Azure Storage specfic tests
             if (string.Equals(storageProviderType, AzureStorageProviderType))
             {
-                options.StorageProvider["ConnectionStringName"] = "AzureWebJobsStorage";
+                options.StorageProvider["ConnectionName"] = "AzureWebJobsStorage";
                 options.StorageProvider["fetchLargeMessagesAutomatically"] = autoFetchLargeMessages;
                 if (maxQueuePollingInterval != null)
                 {

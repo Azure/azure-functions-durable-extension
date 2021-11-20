@@ -49,7 +49,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth
                     {
                         RefreshDelay = tokenRefreshRetryDelay,
                         RefreshOffset = tokenRefreshOffset,
-                        TokenProvider = new AzureServiceTokenProvider(),
+                        TokenProvider = new AzureServiceTokenProvider(connectionString),
                     };
 
                     NewTokenAndFrequency response = await this.RenewTokenAsync(state, cancellationToken);
