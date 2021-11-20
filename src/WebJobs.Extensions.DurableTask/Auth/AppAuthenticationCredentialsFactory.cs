@@ -41,26 +41,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth
             CancellationToken cancellationToken = default)
         {
             string connectionString = CreateTokenProviderConnectionString(options);
-            using (await this.cacheLock.AcquireAsync())
+            if (!this.cache.TryGetValue(connectionString, out TokenCredential credential))
             {
-                if (!this.cache.TryGetValue(connectionString, out TokenCredential credential))
+                using (await this.cacheLock.AcquireAsync())
                 {
-                    var state = new TokenRenewalState
+                    if (!this.cache.TryGetValue(connectionString, out credential))
                     {
-                        RefreshDelay = tokenRefreshRetryDelay,
-                        RefreshOffset = tokenRefreshOffset,
-                        TokenProvider = new AzureServiceTokenProvider(connectionString),
-                    };
+                        var state = new TokenRenewalState
+                        {
+                            RefreshDelay = tokenRefreshRetryDelay,
+                            RefreshOffset = tokenRefreshOffset,
+                            TokenProvider = new AzureServiceTokenProvider(connectionString),
+                        };
 
-                    NewTokenAndFrequency response = await this.RenewTokenAsync(state, cancellationToken);
-                    credential = new TokenCredential(response.Token, (s, t) => this.RenewTokenAsync(s as TokenRenewalState, t), state, tokenRefreshOffset);
+                        NewTokenAndFrequency response = await this.RenewTokenAsync(state, cancellationToken);
+                        credential = new TokenCredential(response.Token, (s, t) => this.RenewTokenAsync(s as TokenRenewalState, t), state, tokenRefreshOffset);
 
-                    // Update cache
-                    this.cache.Add(connectionString, credential);
+                        // Update cache
+                        this.cache.Add(connectionString, credential);
+                    }
                 }
-
-                return new StorageCredentials(credential);
             }
+
+            return new StorageCredentials(credential);
         }
 
         private static string CreateTokenProviderConnectionString(ClientIdentityOptions options)
