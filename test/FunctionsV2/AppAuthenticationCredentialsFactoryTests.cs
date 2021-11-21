@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.Services.AppAuthentication;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.IdentityModel.Clients.ActiveDirectory;
 using Microsoft.WindowsAzure.Storage.Auth;
@@ -20,6 +21,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
     public class AppAuthenticationCredentialsFactoryTests
     {
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(null, null, null, null, null, default(StoreLocation), null)]
         [InlineData("managedidentity", null, null, null, null, default(StoreLocation), "RunAs=App")]
         [InlineData("managedidentity", "UserA", null, null, null, default(StoreLocation), "RunAs=App;AppId=UserA")]
@@ -48,6 +50,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task NoConnection()
         {
             await using var factory = new AppAuthenticationCredentialsFactory(NullLoggerFactory.Instance);
@@ -55,6 +58,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task CreateAsync()
         {
             const string token = "12345";
@@ -109,6 +113,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task ConnectionFailure()
         {
             TimeSpan delay = TimeSpan.FromMinutes(1);

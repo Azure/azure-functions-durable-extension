@@ -13,6 +13,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     public class StandardConnectionInfoProviderTests
     {
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void ResolveConnectionString()
         {
             IConfiguration config = new ConfigurationBuilder()
@@ -29,6 +30,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void Resolve()
         {
             const string connectionName = "MyConnection";

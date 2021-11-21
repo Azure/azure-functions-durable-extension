@@ -10,12 +10,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     public class AzureStorageAccountOptionsTests
     {
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void GetDefaultServiceUriWithNoAccount()
         {
             Assert.Throws<InvalidOperationException>(() => new AzureStorageAccountOptions().GetDefaultServiceUri("blob"));
         }
 
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData("foo", "blob", "https://foo.blob.core.windows.net/")]
         [InlineData("bar", "file", "https://bar.file.core.windows.net/")]
         [InlineData("baz", "queue", "https://baz.queue.core.windows.net/")]

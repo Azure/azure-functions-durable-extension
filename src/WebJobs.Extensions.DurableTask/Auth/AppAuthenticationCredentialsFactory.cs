@@ -12,7 +12,7 @@ using Microsoft.WindowsAzure.Storage.Auth;
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth
 {
     // TODO: Replace with Azure.Identity
-    internal sealed class AppAuthenticationCredentialsFactory : IStorageCredentialsFactory, IAsyncDisposable
+    internal sealed class AppAuthenticationCredentialsFactory : IStorageCredentialsFactory, IAsyncDisposable, IDisposable
     {
         private const string LoggerName = "Host.Triggers.DurableTask.Auth";
 
@@ -150,23 +150,43 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth
             }
         }
 
+        void IDisposable.Dispose()
+        {
+            if (!this.disposed)
+            {
+                using (this.cacheLock.Acquire())
+                {
+                    this.Dispose(disposing: true);
+                    GC.SuppressFinalize(this);
+                }
+            }
+        }
+
         async ValueTask IAsyncDisposable.DisposeAsync()
         {
             if (!this.disposed)
             {
                 using (await this.cacheLock.AcquireAsync())
                 {
-                    if (!this.disposed)
-                    {
-                        foreach (TokenCredential tokenCredential in this.cache.Values)
-                        {
-                            tokenCredential.Dispose();
-                        }
+                    this.Dispose(disposing: true);
+                    GC.SuppressFinalize(this);
+                }
+            }
+        }
 
-                        GC.SuppressFinalize(this);
-                        this.disposed = true;
+        private void Dispose(bool disposing)
+        {
+            if (!this.disposed)
+            {
+                if (disposing)
+                {
+                    foreach (TokenCredential tokenCredential in this.cache.Values)
+                    {
+                        tokenCredential.Dispose();
                     }
                 }
+
+                this.disposed = true;
             }
         }
 

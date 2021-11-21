@@ -13,6 +13,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     public class WebJobsConnectionInfoProviderTests
     {
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(false)]
         [InlineData(true)]
         public void ResolveConnectionString(bool prefix)
@@ -50,12 +51,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
 #if FUNCTIONS_V1
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void Resolve()
         {
-            Assert.Throws<NotSupportedException>(() => new WebJobsConnectionInfoProvider().Resolve<AzureStorageAccountOptions>(connectionName));
+            Assert.Throws<NotSupportedException>(() => new WebJobsConnectionInfoProvider().Resolve<AzureStorageAccountOptions>("MyConnection"));
         }
 #else
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(false)]
         [InlineData(true)]
         public void Resolve(bool prefix)
@@ -94,8 +97,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(new Uri("https://unit-test/queue", UriKind.Absolute), actual.QueueServiceUri);
             Assert.Equal(new Uri("https://unit-test/table", UriKind.Absolute), actual.TableServiceUri);
             Assert.Equal("MyTenant", actual.TenantId);
-#endif
         }
+#endif
 
         private static string Prefix(string name, bool prefix) =>
             prefix ? "AzureWebJobs" + name : name;

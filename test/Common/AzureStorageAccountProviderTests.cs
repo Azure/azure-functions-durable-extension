@@ -16,6 +16,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     public class AzureStorageAccountProviderTests
     {
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void GetStorageAccountDetails_ConnectionString()
         {
             const string connectionName = "storage";
@@ -27,6 +28,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void GetStorageAccountDetails_Endpoints()
         {
             const string connectionName = "storage";
@@ -48,6 +50,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void GetStorageAccountDetails_DefaultEndpoints()
         {
             const string connectionName = "storage";
@@ -68,6 +71,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void GetStorageAccountDetails_AccountName()
         {
             const string connectionName = "storage";
@@ -83,6 +87,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void GetCloudStorageAccount_ConnectionString()
         {
             const string connectionName = "storage";
@@ -96,6 +101,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void GetCloudStorageAccount_Endpoints()
         {
             const string connectionName = "storage";
@@ -114,6 +120,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void GetCloudStorageAccount_DefaultEndpoints()
         {
             const string connectionName = "storage";
@@ -132,6 +139,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void GetCloudStorageAccount_AccountName()
         {
             const string connectionName = "storage";
