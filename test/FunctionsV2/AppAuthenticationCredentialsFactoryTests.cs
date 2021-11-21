@@ -53,7 +53,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task NoConnection()
         {
-            await using var factory = new AppAuthenticationCredentialsFactory(NullLoggerFactory.Instance);
+            using var factory = new AppAuthenticationCredentialsFactory(NullLoggerFactory.Instance);
             Assert.Null(await factory.CreateAsync(new AzureIdentityOptions()));
         }
 
@@ -78,7 +78,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
                 .ReturnsAsync(result);
 
             // Create the credentials factory with the mock token provider
-            await using var factory = new AppAuthenticationCredentialsFactory(
+            using var factory = new AppAuthenticationCredentialsFactory(
                 s =>
                 {
                     Assert.Equal(connectionString, s);
@@ -127,7 +127,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
                     It.IsAny<CancellationToken>()))
                 .ThrowsAsync(CreateAzureServiceTokenProviderException());
 
-            await using var factory = new AppAuthenticationCredentialsFactory(s => mock.Object, NullLoggerFactory.Instance);
+            using var factory = new AppAuthenticationCredentialsFactory(s => mock.Object, NullLoggerFactory.Instance);
 
             // Assert behavior through events
             int renewingCalls = 0, failureCalls = 0;
