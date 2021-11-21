@@ -3370,6 +3370,13 @@
             Interface defining methods to resolve connection information.
             </summary>
         </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IConnectionInfoResolver.Resolve(System.String)">
+            <summary>
+            Looks up the connection string given a name.
+            </summary>
+            <param name="name">The name of the connection string.</param>
+            <returns>The resolved connection string or <see langword="null"/> if not found.</returns>
+        </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IConnectionInfoResolver.Resolve``1(System.String)">
             <summary>
             Looks up the connection info given a name.
@@ -4659,6 +4666,24 @@
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.StandardConnectionInfoProvider.Resolve(System.String)">
             <inheritdoc />
         </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.StandardConnectionStringProvider">
+            <summary>
+            Connection string provider which resolves connection strings from the an standard application (Non WebJob).
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.StandardConnectionStringProvider.#ctor(Microsoft.Extensions.Configuration.IConfiguration)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.StandardConnectionStringProvider"/> class.
+            </summary>
+            <param name="configuration">A <see cref="T:Microsoft.Extensions.Configuration.IConfiguration"/> object provided by the application host.</param>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.StandardConnectionStringProvider.Resolve(System.String)">
+            <summary>
+            Looks up a connection string value given a name.
+            </summary>
+            <param name="connectionStringName">The name of the connection string.</param>
+            <returns>Returns the resolved connection string value.</returns>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.StartOrchestrationArgs">
             <summary>
             Parameters for starting a new instance of an orchestration.
@@ -4816,6 +4841,20 @@
             <inheritdoc />
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.WebJobsConnectionInfoProvider.Resolve(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.WebJobsConnectionStringProvider">
+            <summary>
+            Connection string provider which resolves connection strings from the WebJobs context.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.WebJobsConnectionStringProvider.#ctor(Microsoft.Extensions.Configuration.IConfiguration)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.WebJobsConnectionStringProvider"/> class.
+            </summary>
+            <param name="hostConfiguration">A <see cref="T:Microsoft.Extensions.Configuration.IConfiguration"/> object provided by the WebJobs host.</param>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.WebJobsConnectionStringProvider.Resolve(System.String)">
             <inheritdoc />
         </member>
     </members>

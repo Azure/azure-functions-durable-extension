@@ -1,11 +1,14 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using System;
+
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     /// <summary>
     /// Interface defining methods to resolve connection strings.
     /// </summary>
+    [Obsolete("Please use IConnectionInfoResolver instead.")]
     public interface IConnectionStringResolver
     {
         /// <summary>

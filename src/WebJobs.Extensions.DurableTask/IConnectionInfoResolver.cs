@@ -6,8 +6,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// <summary>
     /// Interface defining methods to resolve connection information.
     /// </summary>
-    internal interface IConnectionInfoResolver : IConnectionStringResolver
+    internal interface IConnectionInfoResolver
     {
+        /// <summary>
+        /// Looks up the connection string given a name.
+        /// </summary>
+        /// <param name="name">The name of the connection string.</param>
+        /// <returns>The resolved connection string or <see langword="null"/> if not found.</returns>
+        string Resolve(string name);
+
         /// <summary>
         /// Looks up the connection info given a name.
         /// </summary>

@@ -44,7 +44,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             serviceCollection.TryAddSingleton<INameResolver, DefaultNameResolver>();
             serviceCollection.TryAddSingleton<IConnectionInfoResolver, StandardConnectionInfoProvider>();
-            serviceCollection.TryAddSingleton<IConnectionStringResolver>(p => p.GetRequiredService<IConnectionInfoResolver>());
             serviceCollection.TryAddSingleton<IStorageAccountProvider, AzureStorageAccountProvider>();
 #if FUNCTIONS_V1
             serviceCollection.TryAddSingleton<IStorageCredentialsFactory>(NullCredentialsFactory.Instance);
@@ -54,9 +53,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             serviceCollection.TryAddSingleton<IDurabilityProviderFactory, AzureStorageDurabilityProviderFactory>();
             serviceCollection.TryAddSingleton<IDurableClientFactory, DurableClientFactory>();
             serviceCollection.TryAddSingleton<IMessageSerializerSettingsFactory, MessageSerializerSettingsFactory>();
-#pragma warning disable CS0612 // Type or member is obsolete
+#pragma warning disable CS0612, CS0618 // Type or member is obsolete
+            serviceCollection.TryAddSingleton<IConnectionStringResolver, StandardConnectionStringProvider>();
             serviceCollection.TryAddSingleton<IPlatformInformation, DefaultPlatformInformation>();
-#pragma warning restore CS0612 // Type or member is obsolete
+#pragma warning restore CS0612, CS0618 // Type or member is obsolete
 
             return serviceCollection;
         }
@@ -93,7 +93,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             IServiceCollection serviceCollection = builder.Services;
             serviceCollection.TryAddSingleton<IConnectionInfoResolver, WebJobsConnectionInfoProvider>();
-            serviceCollection.TryAddSingleton<IConnectionStringResolver>(p => p.GetRequiredService<IConnectionInfoResolver>());
             serviceCollection.TryAddSingleton<IStorageCredentialsFactory, AppAuthenticationCredentialsFactory>();
             serviceCollection.TryAddSingleton<IStorageAccountProvider, AzureStorageAccountProvider>();
             serviceCollection.TryAddSingleton<IDurableHttpMessageHandlerFactory, DurableHttpMessageHandlerFactory>();
@@ -103,9 +102,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             serviceCollection.TryAddSingleton<IApplicationLifetimeWrapper, HostLifecycleService>();
             serviceCollection.AddSingleton<ITelemetryActivator, TelemetryActivator>();
             serviceCollection.TryAddSingleton<IDurableClientFactory, DurableClientFactory>();
-#pragma warning disable CS0612 // Type or member is obsolete
+#pragma warning disable CS0612, CS0618 // Type or member is obsolete
+            serviceCollection.TryAddSingleton<IConnectionStringResolver, WebJobsConnectionStringProvider>();
             serviceCollection.AddSingleton<IPlatformInformation, DefaultPlatformInformation>();
-#pragma warning restore CS0612 // Type or member is obsolete
+#pragma warning restore CS0612, CS0618 // Type or member is obsolete
 
             return builder;
         }
