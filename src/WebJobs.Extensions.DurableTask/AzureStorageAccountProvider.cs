@@ -5,6 +5,7 @@ using System;
 using DurableTask.AzureStorage;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
+using Microsoft.Extensions.Configuration;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Auth;
 
@@ -89,14 +90,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private AzureStorageAccountOptions ResolveAccountInfo(string name)
         {
-            string connectionString = this.connectionInfoResolver.Resolve(name);
-            if (string.IsNullOrEmpty(connectionString))
+            IConfigurationSection connection = this.connectionInfoResolver.Resolve(name);
+            if (string.IsNullOrEmpty(connection.Value))
             {
-                AzureStorageAccountOptions account = this.connectionInfoResolver.Resolve<AzureStorageAccountOptions>(name);
-                return account ?? throw new InvalidOperationException($"Unable to resolve the Azure Storage connection named '{name}'.");
+#if FUNCTIONS_V1
+                throw new InvalidOperationException($"Unable to resolve the Azure Storage connection named '{name}'.");
+#else
+                return connection.Get<AzureStorageAccountOptions>() ?? throw new InvalidOperationException($"Unable to resolve the Azure Storage connection named '{name}'.");
+#endif
             }
 
-            return new AzureStorageAccountOptions { ConnectionString = connectionString };
+            return new AzureStorageAccountOptions { ConnectionString = connection.Value };
         }
     }
 }

@@ -24,20 +24,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc />
-        public T Resolve<T>(string name)
-            where T : class
+        public IConfigurationSection Resolve(string name)
         {
-#if FUNCTIONS_V1
-            throw new NotSupportedException("Only connection strings are supported");
-#else
-            return this.configuration.GetSection(name).Get<T>();
-#endif
-        }
-
-        /// <inheritdoc />
-        public string Resolve(string connectionStringName)
-        {
-            return this.configuration[connectionStringName];
+            return this.configuration.GetSection(name);
         }
     }
 }

@@ -24,31 +24,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc />
-        public T Resolve<T>(string name)
-            where T : class
+        public IConfigurationSection Resolve(string name)
         {
-            string prefixedName = IConfigurationExtensions.GetPrefixedConnectionStringName(name);
-            T options = this.hostConfiguration.GetSection(prefixedName).Get<T>();
-            return options ?? this.hostConfiguration.GetSection(name).Get<T>();
-        }
-
-        /// <inheritdoc />
-        public string Resolve(string connectionStringName)
-        {
-            return this.hostConfiguration.GetWebJobsConnectionString(connectionStringName);
+            return this.hostConfiguration.GetWebJobsConnectionSection(name);
         }
 #else
         /// <inheritdoc />
-        public T Resolve<T>(string name)
-            where T : class
+        public IConfigurationSection Resolve(string name)
         {
-            throw new NotSupportedException("Only connection strings are supported");
-        }
-
-        /// <inheritdoc />
-        public string Resolve(string connectionStringName)
-        {
-            return Microsoft.Azure.WebJobs.Host.AmbientConnectionStringProvider.Instance.GetConnectionString(connectionStringName);
+            // The returned key doesn't reflect whether the ConnectionString section was used or if the name was ultimately prefixed.
+            return new ReadOnlyConfigurationValue(name, Host.AmbientConnectionStringProvider.Instance.GetConnectionString(name));
         }
 #endif
     }

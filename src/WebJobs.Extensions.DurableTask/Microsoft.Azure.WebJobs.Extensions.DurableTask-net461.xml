@@ -3119,18 +3119,15 @@
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IConnectionInfoResolver.Resolve(System.String)">
             <summary>
-            Looks up the connection string given a name.
+            Attempts to resolve the connection info given a name.
             </summary>
-            <param name="name">The name of the connection string.</param>
-            <returns>The resolved connection string or <see langword="null"/> if not found.</returns>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IConnectionInfoResolver.Resolve``1(System.String)">
-            <summary>
-            Looks up the connection info given a name.
-            </summary>
-            <typeparam name="T">The type of the information to resolve.</typeparam>
+            <remarks>
+            Depending on the configuration, the value may either be a connection string in the
+            <see cref="P:Microsoft.Extensions.Configuration.IConfigurationSection.Value"/> property, or a user-defined type made
+            up of one or more key-value pairs.
+            </remarks>
             <param name="name">The name of the connection information.</param>
-            <returns>The resolved connection information or <see langword="null"/> if not found.</returns>
+            <returns>The resolved connection information.</returns>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IConnectionStringResolver">
             <summary>
@@ -4365,9 +4362,6 @@
             <param name="configuration">A <see cref="T:Microsoft.Extensions.Configuration.IConfiguration"/> object provided by the application host.</param>
             <exception cref="T:System.ArgumentNullException"><paramref name="configuration"/> is <see langword="null"/>.</exception>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.StandardConnectionInfoProvider.Resolve``1(System.String)">
-            <inheritdoc />
-        </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.StandardConnectionInfoProvider.Resolve(System.String)">
             <inheritdoc />
         </member>
@@ -4535,9 +4529,6 @@
             <summary>
             Connection info provider which resolves connection information from the WebJobs context.
             </summary>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.WebJobsConnectionInfoProvider.Resolve``1(System.String)">
-            <inheritdoc />
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.WebJobsConnectionInfoProvider.Resolve(System.String)">
             <inheritdoc />
