@@ -134,6 +134,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             const string connectionName = "storage";
             var options = new AzureStorageAccountOptions
             {
+                BlobServiceUri = new Uri("https://unit-test/blob", UriKind.Absolute),
                 QueueServiceUri = new Uri("https://unit-test/queue", UriKind.Absolute),
                 TableServiceUri = new Uri("https://unit-test/table", UriKind.Absolute),
             };
@@ -142,6 +143,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             CloudStorageAccount actual = provider.GetCloudStorageAccount(connectionName);
             Assert.Same(credentials, actual.Credentials);
+            Assert.Equal(options.BlobServiceUri, actual.QueueEndpoint);
             Assert.Equal(options.QueueServiceUri, actual.QueueEndpoint);
             Assert.Equal(options.TableServiceUri, actual.TableEndpoint);
         }
@@ -161,6 +163,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             CloudStorageAccount actual = provider.GetCloudStorageAccount(connectionName);
             Assert.Same(credentials, actual.Credentials);
+            Assert.Equal(options.GetDefaultServiceUri("blob"), actual.BlobEndpoint);
             Assert.Equal(options.QueueServiceUri, actual.QueueEndpoint);
             Assert.Equal(options.GetDefaultServiceUri("table"), actual.TableEndpoint);
         }

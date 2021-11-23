@@ -1344,13 +1344,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        internal IScaleMonitor GetScaleMonitor(string functionId, FunctionName functionName, string name)
+        internal IScaleMonitor GetScaleMonitor(string functionId, FunctionName functionName, string connectionName)
         {
             if (this.defaultDurabilityProvider.TryGetScaleMonitor(
                     functionId,
                     functionName.Name,
                     this.Options.HubName,
-                    name,
+                    connectionName,
                     out IScaleMonitor scaleMonitor))
             {
                 return scaleMonitor;

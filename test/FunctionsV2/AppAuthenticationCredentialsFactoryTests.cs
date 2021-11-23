@@ -119,6 +119,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
             TimeSpan delay = TimeSpan.FromMinutes(1);
 
             // Setup mocks
+            // In this test, the provider will be unable to fetch an access token
             var mock = new Mock<AzureServiceTokenProvider>(MockBehavior.Strict, "RunAs=App", "https://login.microsoftonline.com/", (IHttpClientFactory)null);
             mock.Setup(
                 p => p.GetAuthenticationResultAsync(
@@ -140,6 +141,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
                 Assert.Equal(delay, n.Frequency);
             };
 
+            // Throw an exception if we cannot retrieve an initial access token
             await Assert.ThrowsAsync<InvalidOperationException>(
                 () => factory.CreateAsync(new AzureIdentityOptions { Credential = "managedidentity" }, TimeSpan.FromMinutes(10), delay));
 

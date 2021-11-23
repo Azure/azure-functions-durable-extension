@@ -851,6 +851,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 configurationJsonString, hubName, LocalAppName, LocalSlotName, ExtensionVersion);
         }
 
+        public void TokenRenewalFailed(
+           string resource,
+           string tenantId,
+           string clientId,
+           TimeSpan delay,
+           Exception exception)
+        {
+            long delayMs = (long)delay.TotalMilliseconds;
+            EtwEventSource.Instance.TokenRenewalFailed(
+                resource,
+                tenantId,
+                clientId,
+                delayMs,
+                exception.Message,
+                ExtensionVersion);
+
+            this.logger.LogWarning(
+                default,
+                exception,
+                "Unable to refresh token for resource '{resource}'. Will retry in {Delay} ms. TenantId: {tenantId}. ClientId: {clientId}. ExtensionVersion: {extensionVersion}.",
+                resource, delay, tenantId, clientId, ExtensionVersion);
+        }
+
         private bool ShouldLogEvent(bool isReplay)
         {
             return this.traceReplayEvents || !isReplay;

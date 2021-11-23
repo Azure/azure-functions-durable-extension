@@ -17,7 +17,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth
         private const string LoggerName = "Host.Triggers.DurableTask.Auth";
 
         private readonly Func<string, AzureServiceTokenProvider> tokenProviderFactory;
-        private readonly ILogger logger;
+        private readonly EndToEndTraceHelper traceHelper;
         private readonly AsyncLock cacheLock = new AsyncLock();
         private readonly Dictionary<string, TokenCredential> cache = new Dictionary<string, TokenCredential>();
         private volatile bool disposed;
@@ -34,7 +34,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth
             }
 
             this.tokenProviderFactory = tokenProviderFactory ?? throw new ArgumentNullException(nameof(tokenProviderFactory));
-            this.logger = loggerFactory.CreateLogger(LoggerName);
+            this.traceHelper = new EndToEndTraceHelper(loggerFactory.CreateLogger(LoggerName), false);
         }
 
         internal event Action<TokenRenewalState> Renewing;
@@ -44,7 +44,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth
         internal event Action<NewTokenAndFrequency, AzureServiceTokenProviderException> RenewalFailed;
 
         public Task<StorageCredentials> CreateAsync(AzureIdentityOptions options, CancellationToken cancellationToken = default) =>
-            this.CreateAsync(options, TimeSpan.FromMinutes(5d), TimeSpan.FromSeconds(30d), cancellationToken);
+            this.CreateAsync(options, TimeSpan.FromMinutes(5), TimeSpan.FromSeconds(30), cancellationToken);
 
         public async Task<StorageCredentials> CreateAsync(
             AzureIdentityOptions options,
@@ -76,8 +76,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth
                     {
                         var state = new TokenRenewalState
                         {
+                            ClientId = options.ClientId,
                             RefreshDelay = tokenRefreshRetryDelay,
                             RefreshOffset = tokenRefreshOffset,
+                            TenantId = options.TenantId,
                             TokenProvider = this.tokenProviderFactory(connectionString),
                         };
 
@@ -99,6 +101,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth
 
         private async Task<NewTokenAndFrequency> RenewTokenAsync(TokenRenewalState state, CancellationToken cancellationToken)
         {
+            const string resource = "https://storage.azure.com/";
+
             this.OnRenewing(state);
 
             NewTokenAndFrequency next;
@@ -106,15 +110,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth
             try
             {
                 result = await state.TokenProvider.GetAuthenticationResultAsync(
-                    "https://storage.azure.com/",
+                    resource,
                     forceRefresh: true,
                     cancellationToken: cancellationToken);
             }
             catch (AzureServiceTokenProviderException e)
             {
+                this.traceHelper.TokenRenewalFailed(resource, state.TenantId, state.ClientId, state.RefreshDelay, e);
                 next = new NewTokenAndFrequency(state.Token, state.RefreshDelay);
-                this.logger.LogWarning(e, "Unable to refresh token. Will retry in '{Delay}'.", next.Frequency);
-
                 this.OnRenewalFailed(next, e);
                 return next;
             }
@@ -128,7 +131,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth
             // Save the token in case renewal results in an exception
             state.Token = result.AccessToken;
             next = new NewTokenAndFrequency(result.AccessToken, frequency);
-
             this.OnRenewed(next);
             return next;
         }
@@ -215,6 +217,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth
             public TimeSpan RefreshDelay { get; set; }
 
             public string Token { get; set; }
+
+            public string TenantId { get; set; }
+
+            public string ClientId { get; set; }
         }
     }
 }

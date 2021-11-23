@@ -73,7 +73,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 return new CloudStorageAccount(
                     storageCredentials,
-                    blobEndpoint: null,
+                    blobEndpoint: account.BlobServiceUri ?? account.GetDefaultServiceUri("blob"),
                     queueEndpoint: account.QueueServiceUri ?? account.GetDefaultServiceUri("queue"),
                     tableEndpoint: account.TableServiceUri ?? account.GetDefaultServiceUri("table"),
                     fileEndpoint: null);

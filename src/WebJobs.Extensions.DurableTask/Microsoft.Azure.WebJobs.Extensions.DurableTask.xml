@@ -50,7 +50,7 @@
             </summary>
             <param name="options">Information about the user to authenticate.</param>
             <param name="cancellationToken">
-            An optional <see cref="T:System.Threading.CancellationToken"/> for prematurely canceled the asynchronous operation.
+            An optional <see cref="T:System.Threading.CancellationToken"/> for prematurely canceling the asynchronous operation.
             </param>
             <returns>
             A task representing the asynchronous operation. The value of the <see cref="P:System.Threading.Tasks.Task`1.Result"/>
@@ -66,7 +66,7 @@
             <param name="tokenRefreshOffset">The offset from the token expiration date to begin refresh.</param>
             <param name="tokenRefreshRetryDelay">The amount of time to wait between refresh attempts in the event of a problem.</param>
             <param name="cancellationToken">
-            An optional <see cref="T:System.Threading.CancellationToken"/> for prematurely canceled the asynchronous operation.
+            An optional <see cref="T:System.Threading.CancellationToken"/> for prematurely canceling the asynchronous operation.
             </param>
             <returns>
             A task representing the asynchronous operation. The value of the <see cref="P:System.Threading.Tasks.Task`1.Result"/>
@@ -2174,7 +2174,7 @@
             <param name="functionId">Function id.</param>
             <param name="functionName">Function name.</param>
             <param name="hubName">Task hub name.</param>
-            <param name="name">The name of the storage-specific settings.</param>
+            <param name="connectionName">The name of the storage-specific connection settings.</param>
             <param name="scaleMonitor">The scale monitor.</param>
             <returns>True if autoscaling is supported, false otherwise.</returns>
         </member>
@@ -3594,22 +3594,16 @@
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IStorageAccountProvider.GetStorageAccountDetails(System.String)">
             <summary>
-            Gets the <see cref="T:DurableTask.AzureStorage.StorageAccountDetails"/> associated with the <paramref name="name"/>.
+            Gets the <see cref="T:DurableTask.AzureStorage.StorageAccountDetails"/> associated with the <paramref name="connectionName"/>.
             </summary>
-            <param name="name">The name containing account information.</param>
-            <remarks>
-            Depending on the implementation, this may either be a connection string or a configuration section.
-            </remarks>
+            <param name="connectionName">The name associated with the connection information.</param>
             <returns>The corresponding <see cref="T:DurableTask.AzureStorage.StorageAccountDetails"/>.</returns>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IStorageAccountProvider.GetCloudStorageAccount(System.String)">
             <summary>
-            Gets the <see cref="T:Microsoft.WindowsAzure.Storage.CloudStorageAccount"/> associated with the <paramref name="name"/>.
+            Gets the <see cref="T:Microsoft.WindowsAzure.Storage.CloudStorageAccount"/> associated with the <paramref name="connectionName"/>.
             </summary>
-            <param name="name">The name containing account information.</param>
-            <remarks>
-            Depending on the implementation, this may either be a connection string or a configuration section.
-            </remarks>
+            <param name="connectionName">The name associated with the connection information.</param>
             <returns>The corresponding <see cref="T:Microsoft.WindowsAzure.Storage.CloudStorageAccount"/>.</returns>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.ITokenSource">

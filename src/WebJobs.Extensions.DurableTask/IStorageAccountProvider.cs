@@ -9,26 +9,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// <summary>
     /// Defines methods for retrieving Azure Storage account metadata.
     /// </summary>
-    public interface IStorageAccountProvider
+    internal interface IStorageAccountProvider
     {
         /// <summary>
-        /// Gets the <see cref="StorageAccountDetails"/> associated with the <paramref name="name"/>.
+        /// Gets the <see cref="StorageAccountDetails"/> associated with the <paramref name="connectionName"/>.
         /// </summary>
-        /// <param name="name">The name containing account information.</param>
-        /// <remarks>
-        /// Depending on the implementation, this may either be a connection string or a configuration section.
-        /// </remarks>
+        /// <param name="connectionName">The name associated with the connection information.</param>
         /// <returns>The corresponding <see cref="StorageAccountDetails"/>.</returns>
-        StorageAccountDetails GetStorageAccountDetails(string name);
+        StorageAccountDetails GetStorageAccountDetails(string connectionName);
 
         /// <summary>
-        /// Gets the <see cref="CloudStorageAccount"/> associated with the <paramref name="name"/>.
+        /// Gets the <see cref="CloudStorageAccount"/> associated with the <paramref name="connectionName"/>.
         /// </summary>
-        /// <param name="name">The name containing account information.</param>
-        /// <remarks>
-        /// Depending on the implementation, this may either be a connection string or a configuration section.
-        /// </remarks>
+        /// <param name="connectionName">The name associated with the connection information.</param>
         /// <returns>The corresponding <see cref="CloudStorageAccount"/>.</returns>
-        CloudStorageAccount GetCloudStorageAccount(string name);
+        CloudStorageAccount GetCloudStorageAccount(string connectionName);
     }
 }

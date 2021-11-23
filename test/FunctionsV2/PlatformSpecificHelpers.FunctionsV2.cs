@@ -20,7 +20,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     /// <summary>
     /// These helpers are specific to Functions v2.
     /// </summary>
-    public static class PlatformSpecificHelpers
+    internal static class PlatformSpecificHelpers
     {
         public const string VersionSuffix = "V2";
         public const string TestCategory = "Functions" + VersionSuffix;

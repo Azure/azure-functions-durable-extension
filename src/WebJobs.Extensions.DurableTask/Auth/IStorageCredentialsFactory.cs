@@ -18,7 +18,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth
         /// </summary>
         /// <param name="options">Information about the user to authenticate.</param>
         /// <param name="cancellationToken">
-        /// An optional <see cref="CancellationToken"/> for prematurely canceled the asynchronous operation.
+        /// An optional <see cref="CancellationToken"/> for prematurely canceling the asynchronous operation.
         /// </param>
         /// <returns>
         /// A task representing the asynchronous operation. The value of the <see cref="Task{TResult}.Result"/>
@@ -34,7 +34,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth
         /// <param name="tokenRefreshOffset">The offset from the token expiration date to begin refresh.</param>
         /// <param name="tokenRefreshRetryDelay">The amount of time to wait between refresh attempts in the event of a problem.</param>
         /// <param name="cancellationToken">
-        /// An optional <see cref="CancellationToken"/> for prematurely canceled the asynchronous operation.
+        /// An optional <see cref="CancellationToken"/> for prematurely canceling the asynchronous operation.
         /// </param>
         /// <returns>
         /// A task representing the asynchronous operation. The value of the <see cref="Task{TResult}.Result"/>
