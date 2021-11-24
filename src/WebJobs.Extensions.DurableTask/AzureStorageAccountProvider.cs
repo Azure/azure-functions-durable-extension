@@ -46,7 +46,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             AzureStorageAccountOptions account = connectionInfo.Get<AzureStorageAccountOptions>() ?? throw new InvalidOperationException($"Unable to resolve the Azure Storage connection named '{name}'.");
             TokenCredential credential = this.credentialFactory.Create(connectionInfo);
 
-            if (account.QueueServiceUri != null || account.TableServiceUri != null)
+            if (account.BlobServiceUri != null || account.QueueServiceUri != null || account.TableServiceUri != null)
             {
                 // TODO: Use new endpoints when Durable Task is updated
                 return new StorageAccountDetails
@@ -81,7 +81,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 ?? throw new InvalidOperationException($"Unable to resolve the Azure Storage connection named '{name}'.");
             TokenCredential credential = this.credentialFactory.Create(connectionInfo);
 
-            if (account.QueueServiceUri != null || account.TableServiceUri != null)
+            if (account.BlobServiceUri != null || account.QueueServiceUri != null || account.TableServiceUri != null)
             {
                 return new CloudStorageAccount(
                     new StorageCredentials(credential),

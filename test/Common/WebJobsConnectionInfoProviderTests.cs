@@ -20,6 +20,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 #if FUNCTIONS_V1
             // Instead of mocking ConfigurationManager.ConnectionStrings, use environment variables
             string connectionName = Guid.NewGuid().ToString();
+            string previousValue = Environment.GetEnvironmentVariable(AddPrefix(connectionName, prefixNames), EnvironmentVariableTarget.Process);
             Environment.SetEnvironmentVariable(AddPrefix(connectionName, prefixNames), "Foo=Bar;Baz", EnvironmentVariableTarget.Process);
 
             try
@@ -30,7 +31,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
             finally
             {
-                Environment.SetEnvironmentVariable(AddPrefix(connectionName, prefixNames), null, EnvironmentVariableTarget.Process);
+                Environment.SetEnvironmentVariable(AddPrefix(connectionName, prefixNames), previousValue, EnvironmentVariableTarget.Process);
             }
 #else
             IConfiguration config = new ConfigurationBuilder()

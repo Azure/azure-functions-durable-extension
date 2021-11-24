@@ -9,6 +9,7 @@ using Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
+using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
@@ -45,6 +46,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             serviceCollection.TryAddSingleton<IConnectionInfoResolver, StandardConnectionInfoProvider>();
             serviceCollection.TryAddSingleton<IStorageAccountProvider, AzureStorageAccountProvider>();
 #if !FUNCTIONS_V1
+            serviceCollection.AddAzureClientsCore();
             serviceCollection.TryAddSingleton<ITokenCredentialFactory, AzureCredentialFactory>();
 #endif
             serviceCollection.TryAddSingleton<IDurabilityProviderFactory, AzureStorageDurabilityProviderFactory>();
@@ -89,6 +91,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 .BindOptions<DurableTaskOptions>();
 
             IServiceCollection serviceCollection = builder.Services;
+            serviceCollection.AddAzureClientsCore();
             serviceCollection.TryAddSingleton<IConnectionInfoResolver, WebJobsConnectionInfoProvider>();
             serviceCollection.TryAddSingleton<ITokenCredentialFactory, AzureCredentialFactory>();
             serviceCollection.TryAddSingleton<IStorageAccountProvider, AzureStorageAccountProvider>();

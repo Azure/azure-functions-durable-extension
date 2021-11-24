@@ -4,6 +4,12 @@
         <name>Microsoft.Azure.WebJobs.Extensions.DurableTask</name>
     </assembly>
     <members>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth.AzureCredentialFactory.Create(Microsoft.Extensions.Configuration.IConfiguration,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth.AzureCredentialFactory.Create(Microsoft.Extensions.Configuration.IConfiguration,System.TimeSpan,System.TimeSpan,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth.ITokenCredentialFactory">
             <summary>
             Defines methods for retrieving <see cref="T:Microsoft.WindowsAzure.Storage.Auth.TokenCredential"/>.

@@ -6,11 +6,13 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Azure.Core;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests;
 using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Moq;
 using Moq.Language;
 using Xunit;
@@ -44,7 +46,6 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
 
             // Assert behavior through events
             int renewingCalls = 0, renewedCalls = 0;
-            ManualResetEventSlim completeEvent = new ManualResetEventSlim(false);
             factory.Renewing += s =>
             {
                 renewingCalls++;
@@ -70,7 +71,6 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
                     // We expect to renew this token within the offset from the expiration time
                     TimeSpan max = expected[^1].ExpiresOn - start - offset;
                     Assert.True(n.Frequency <= max);
-                    completeEvent.Set();
                 }
             };
 
@@ -80,9 +80,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
             using AppAuthTokenCredential credential = factory.Create(config, offset, delay);
 
             // Wait until the final renewal complete
-            completeEvent.Wait();
-
-            Assert.Equal(expected[^1].Token, credential.Token);
+            WaitUntilRenewal(credential, expected[^1].Token, TimeSpan.FromSeconds(30));
             Assert.Equal(expected.Length - 1, renewingCalls);
             Assert.Equal(expected.Length - 1, renewedCalls);
         }
@@ -109,16 +107,8 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
 
             // Assert behavior through events
             int renewingCalls = 0, renewedCalls = 0, failureCalls = 0;
-            ManualResetEventSlim completeEvent = new ManualResetEventSlim(false);
             factory.Renewing += s => renewingCalls++;
-            factory.Renewed += n =>
-            {
-                renewedCalls++;
-                if (renewedCalls == expected.Length - 1)
-                {
-                    completeEvent.Set();
-                }
-            };
+            factory.Renewed += n => renewedCalls++;
             factory.RenewalFailed += (n, e) =>
             {
                 failureCalls++;
@@ -130,8 +120,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
             using AppAuthTokenCredential credential = factory.Create(config, offset, delay);
 
             // Wait until the final renewal complete (including the extra retry on error)
-            completeEvent.Wait();
-
+            WaitUntilRenewal(credential, expected[^1].Token, TimeSpan.FromSeconds(30));
             Assert.Equal(expected[^1].Token, credential.Token);
             Assert.Equal(expected.Length, renewingCalls);
             Assert.Equal(expected.Length - 1, renewedCalls);
@@ -159,7 +148,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
                         It.IsAny<CancellationToken>()))
                 .ReturnsSequenceAsync(tokens.Skip(1));
 
-            return new AzureCredentialFactory(mockFactory.Object, NullLoggerFactory.Instance);
+            return new AzureCredentialFactory(Options.Create(new DurableTaskOptions()), mockFactory.Object, NullLoggerFactory.Instance);
         }
 
         private static AzureCredentialFactory SetupCredentialsFactoryWithError(IConfiguration config, params AccessToken[] tokens)
@@ -186,7 +175,20 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
                 .Throws<Exception>()
                 .Returns(new ValueTask<AccessToken>(tokens[^1]));
 
-            return new AzureCredentialFactory(mockFactory.Object, NullLoggerFactory.Instance);
+            return new AzureCredentialFactory(Options.Create(new DurableTaskOptions()), mockFactory.Object, NullLoggerFactory.Instance);
+        }
+
+        private static void WaitUntilRenewal(AppAuthTokenCredential credential, string token, TimeSpan timeout)
+        {
+            // We need to spin-loop to wait for the renewal as there is no "hook" for waiting until
+            // the TokenCredential object has updated its Token (only after we've fetched the new value).
+            using var source = new CancellationTokenSource();
+            source.CancelAfter(timeout);
+
+            while (credential.Token != token)
+            {
+                Assert.False(source.IsCancellationRequested, $"Could not renew credentials within {timeout}");
+            }
         }
     }
 }

@@ -8,6 +8,7 @@ using Azure.Core;
 using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Microsoft.WindowsAzure.Storage.Auth;
 using AppAuthTokenCredential = Microsoft.WindowsAzure.Storage.Auth.TokenCredential;
 using AzureTokenCredential = Azure.Core.TokenCredential;
@@ -18,11 +19,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth
     {
         private const string LoggerName = "Host.Triggers.DurableTask.Auth";
 
+        private readonly string hubName; 
         private readonly AzureComponentFactory componentFactory;
         private readonly EndToEndTraceHelper traceHelper;
 
-        public AzureCredentialFactory(AzureComponentFactory componentFactory, ILoggerFactory loggerFactory)
+        public AzureCredentialFactory(
+            IOptions<DurableTaskOptions> options,
+            AzureComponentFactory componentFactory,
+            ILoggerFactory loggerFactory)
         {
+            this.hubName = options?.Value?.HubName ?? throw new ArgumentNullException(nameof(options));
             this.componentFactory = componentFactory ?? throw new ArgumentNullException(nameof(componentFactory));
             this.traceHelper = new EndToEndTraceHelper(loggerFactory?.CreateLogger(LoggerName) ?? throw new ArgumentNullException(nameof(loggerFactory)), false);
         }
@@ -33,9 +39,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth
 
         internal event Action<NewTokenAndFrequency, Exception> RenewalFailed;
 
+        /// <inheritdoc />
         public AppAuthTokenCredential Create(IConfiguration configuration, CancellationToken cancellationToken = default) =>
             this.Create(configuration, TimeSpan.FromMinutes(5), TimeSpan.FromSeconds(30), cancellationToken);
 
+        /// <inheritdoc />
         public AppAuthTokenCredential Create(IConfiguration configuration, TimeSpan tokenRefreshOffset, TimeSpan tokenRefreshRetryDelay, CancellationToken cancellationToken = default)
         {
             var context = new TokenRequestContext(new[] { "https://storage.azure.com/.default" }, null);
@@ -96,7 +104,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth
 
         private void OnRenewalFailed(NewTokenAndFrequency next, Exception exception)
         {
-            this.traceHelper.TokenRenewalFailed("https://storage.azure.com/", next.Frequency.GetValueOrDefault(), exception);
+            this.traceHelper.TokenRenewalFailed(this.hubName, "https://storage.azure.com/", next.Frequency.GetValueOrDefault(), exception);
             this.RenewalFailed?.Invoke(next, exception);
         }
 
