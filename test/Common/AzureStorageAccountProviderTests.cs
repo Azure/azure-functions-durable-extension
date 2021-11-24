@@ -77,6 +77,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             const string connectionName = "storage";
             var options = new AzureStorageAccountOptions
             {
+                BlobServiceUri = new Uri("https://unit-test/blob", UriKind.Absolute),
                 QueueServiceUri = new Uri("https://unit-test/queue", UriKind.Absolute),
                 TableServiceUri = new Uri("https://unit-test/table", UriKind.Absolute),
             };
@@ -87,28 +88,32 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.True(actual.StorageCredentials.IsToken);
 
             // TODO: Add properties to durable task
-            // Assert.Equal(options.QueueServiceUri, actual);
-            // Assert.Equal(options.TableServiceUri, actual);
+            // Assert.Equal(options.BlobServiceUri, actual.BlobServiceUri);
+            // Assert.Equal(options.QueueServiceUri, actual.QueueServiceUri);
+            // Assert.Equal(options.TableServiceUri, actual.TableServiceUri);
         }
 
-        [Fact]
+        [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public void GetStorageAccountDetails_DefaultEndpoints()
+        [InlineData(false, false, false)]
+        [InlineData(true, false, false)]
+        [InlineData(false, true, false)]
+        [InlineData(false, false, true)]
+        [InlineData(true, true, false)]
+        [InlineData(false, true, true)]
+        [InlineData(true, false, true)]
+        public void GetStorageAccountDetails_PartialEndpoints(bool hasBlob, bool hasQueue, bool hasTable)
         {
             const string connectionName = "storage";
             var options = new AzureStorageAccountOptions
             {
-                QueueServiceUri = new Uri("https://unit-test/queue", UriKind.Absolute),
+                BlobServiceUri = hasBlob ? new Uri("https://unit-test/blob", UriKind.Absolute) : null,
+                QueueServiceUri = hasQueue ? new Uri("https://unit-test/queue", UriKind.Absolute) : null,
+                TableServiceUri = hasTable ? new Uri("https://unit-test/table", UriKind.Absolute) : null,
             };
             AzureStorageAccountProvider provider = SetupStorageAccountProvider(connectionName, options);
 
-            StorageAccountDetails actual = provider.GetStorageAccountDetails(connectionName);
-            Assert.Null(actual.ConnectionString);
-            Assert.True(actual.StorageCredentials.IsToken);
-
-            // TODO: Add properties to durable task
-            // Assert.Equal(options.QueueServiceUri, actual);
-            // Assert.Equal(options.TableServiceUri, actual);
+            Assert.Throws<InvalidOperationException>(() => provider.GetStorageAccountDetails(connectionName));
         }
 
         [Fact]
@@ -146,23 +151,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(options.TableServiceUri, actual.TableEndpoint);
         }
 
-        [Fact]
+        [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public void GetCloudStorageAccount_DefaultEndpoints()
+        [InlineData(false, false, false)]
+        [InlineData(true, false, false)]
+        [InlineData(false, true, false)]
+        [InlineData(false, false, true)]
+        [InlineData(true, true, false)]
+        [InlineData(false, true, true)]
+        [InlineData(true, false, true)]
+        public void GetCloudStorageAccount_PartialEndpoints(bool hasBlob, bool hasQueue, bool hasTable)
         {
             const string connectionName = "storage";
             var options = new AzureStorageAccountOptions
             {
-                AccountName = "unit-test",
-                QueueServiceUri = new Uri("https://unit-test/queue", UriKind.Absolute),
+                BlobServiceUri = hasBlob ? new Uri("https://unit-test/blob", UriKind.Absolute) : null,
+                QueueServiceUri = hasQueue ? new Uri("https://unit-test/queue", UriKind.Absolute) : null,
+                TableServiceUri = hasTable ? new Uri("https://unit-test/table", UriKind.Absolute) : null,
             };
             AzureStorageAccountProvider provider = SetupStorageAccountProvider(connectionName, options);
 
-            CloudStorageAccount actual = provider.GetCloudStorageAccount(connectionName);
-            Assert.True(actual.Credentials.IsToken);
-            Assert.Equal(options.GetDefaultServiceUri("blob"), actual.BlobEndpoint);
-            Assert.Equal(options.QueueServiceUri, actual.QueueEndpoint);
-            Assert.Equal(options.GetDefaultServiceUri("table"), actual.TableEndpoint);
+            Assert.Throws<InvalidOperationException>(() => provider.GetCloudStorageAccount(connectionName));
         }
 
         [Fact]
@@ -170,14 +179,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public void GetCloudStorageAccount_AccountName()
         {
             const string connectionName = "storage";
-            var options = new AzureStorageAccountOptions { AccountName = "MyAccount" };
+            var options = new AzureStorageAccountOptions { AccountName = "my" };
             AzureStorageAccountProvider provider = SetupStorageAccountProvider(connectionName, options);
 
             CloudStorageAccount actual = provider.GetCloudStorageAccount(connectionName);
             Assert.True(actual.Credentials.IsToken);
-            Assert.Equal(options.GetDefaultServiceUri("blob"), actual.BlobEndpoint);
-            Assert.Equal(options.GetDefaultServiceUri("queue"), actual.QueueEndpoint);
-            Assert.Equal(options.GetDefaultServiceUri("table"), actual.TableEndpoint);
+            Assert.Equal(new Uri("https://my.blob.core.windows.net", UriKind.Absolute), actual.BlobEndpoint);
+            Assert.Equal(new Uri("https://my.queue.core.windows.net", UriKind.Absolute), actual.QueueEndpoint);
+            Assert.Equal(new Uri("https://my.table.core.windows.net", UriKind.Absolute), actual.TableEndpoint);
         }
 
         private static AzureStorageAccountProvider SetupStorageAccountProvider(string connectionName, AzureStorageAccountOptions options)

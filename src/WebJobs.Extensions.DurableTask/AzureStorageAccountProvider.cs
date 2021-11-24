@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Globalization;
 using DurableTask.AzureStorage;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.Extensions.Configuration;
@@ -49,6 +50,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (account.BlobServiceUri != null || account.QueueServiceUri != null || account.TableServiceUri != null)
             {
                 // TODO: Use new endpoints when Durable Task is updated
+                ValidateServiceUris(account);
                 return new StorageAccountDetails
                 {
                     StorageCredentials = new StorageCredentials(credential),
@@ -83,11 +85,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             if (account.BlobServiceUri != null || account.QueueServiceUri != null || account.TableServiceUri != null)
             {
+                ValidateServiceUris(account);
                 return new CloudStorageAccount(
                     new StorageCredentials(credential),
-                    blobEndpoint: account.BlobServiceUri ?? account.GetDefaultServiceUri("blob"),
-                    queueEndpoint: account.QueueServiceUri ?? account.GetDefaultServiceUri("queue"),
-                    tableEndpoint: account.TableServiceUri ?? account.GetDefaultServiceUri("table"),
+                    blobEndpoint: account.BlobServiceUri,
+                    queueEndpoint: account.QueueServiceUri,
+                    tableEndpoint: account.TableServiceUri,
                     fileEndpoint: null);
             }
             else
@@ -99,6 +102,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     useHttps: true);
             }
 #endif
+        }
+
+        private static void ValidateServiceUris(AzureStorageAccountOptions account)
+        {
+            if (account.BlobServiceUri == null || account.QueueServiceUri == null || account.TableServiceUri == null)
+            {
+                throw new InvalidOperationException(
+                    string.Format(
+                        CultureInfo.InvariantCulture,
+                        "If at least one Azure Storage service URI is specified, {0}, {1}, and {1} must all be provided.",
+                        nameof(AzureStorageAccountOptions.BlobServiceUri),
+                        nameof(AzureStorageAccountOptions.QueueServiceUri),
+                        nameof(AzureStorageAccountOptions.TableServiceUri)));
+            }
         }
     }
 }
