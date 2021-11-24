@@ -15,12 +15,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
         }
 
-        public Releaser Acquire()
-        {
-            this.semaphore.Wait();
-            return new Releaser(this);
-        }
-
         public async Task<Releaser> AcquireAsync()
         {
             await this.semaphore.WaitAsync();

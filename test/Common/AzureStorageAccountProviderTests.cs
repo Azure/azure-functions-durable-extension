@@ -6,7 +6,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using DurableTask.AzureStorage;
+#if !FUNCTIONS_V1
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth;
+#endif
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.Extensions.Configuration;
 using Microsoft.WindowsAzure.Storage;
@@ -78,12 +80,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 QueueServiceUri = new Uri("https://unit-test/queue", UriKind.Absolute),
                 TableServiceUri = new Uri("https://unit-test/table", UriKind.Absolute),
             };
-            var credentials = new StorageCredentials();
-            AzureStorageAccountProvider provider = SetupStorageAccountProvider(connectionName, options, credentials);
+            AzureStorageAccountProvider provider = SetupStorageAccountProvider(connectionName, options);
 
             StorageAccountDetails actual = provider.GetStorageAccountDetails(connectionName);
             Assert.Null(actual.ConnectionString);
-            Assert.Same(credentials, actual.StorageCredentials);
+            Assert.True(actual.StorageCredentials.IsToken);
 
             // TODO: Add properties to durable task
             // Assert.Equal(options.QueueServiceUri, actual);
@@ -99,12 +100,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 QueueServiceUri = new Uri("https://unit-test/queue", UriKind.Absolute),
             };
-            var credentials = new StorageCredentials();
-            AzureStorageAccountProvider provider = SetupStorageAccountProvider(connectionName, options, credentials);
+            AzureStorageAccountProvider provider = SetupStorageAccountProvider(connectionName, options);
 
             StorageAccountDetails actual = provider.GetStorageAccountDetails(connectionName);
             Assert.Null(actual.ConnectionString);
-            Assert.Same(credentials, actual.StorageCredentials);
+            Assert.True(actual.StorageCredentials.IsToken);
 
             // TODO: Add properties to durable task
             // Assert.Equal(options.QueueServiceUri, actual);
@@ -117,14 +117,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             const string connectionName = "storage";
             var options = new AzureStorageAccountOptions { AccountName = "MyAccount" };
-            var credentials = new StorageCredentials();
-            AzureStorageAccountProvider provider = SetupStorageAccountProvider(connectionName, options, credentials);
+            AzureStorageAccountProvider provider = SetupStorageAccountProvider(connectionName, options);
 
             StorageAccountDetails actual = provider.GetStorageAccountDetails(connectionName);
             Assert.Null(actual.ConnectionString);
             Assert.Equal(options.AccountName, actual.AccountName);
             Assert.Equal(AzureStorageAccountOptions.DefaultEndpointSuffix, actual.EndpointSuffix);
-            Assert.Equal(credentials, actual.StorageCredentials);
+            Assert.True(actual.StorageCredentials.IsToken);
         }
 
         [Fact]
@@ -138,12 +137,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 QueueServiceUri = new Uri("https://unit-test/queue", UriKind.Absolute),
                 TableServiceUri = new Uri("https://unit-test/table", UriKind.Absolute),
             };
-            var credentials = new StorageCredentials();
-            AzureStorageAccountProvider provider = SetupStorageAccountProvider(connectionName, options, credentials);
+            AzureStorageAccountProvider provider = SetupStorageAccountProvider(connectionName, options);
 
             CloudStorageAccount actual = provider.GetCloudStorageAccount(connectionName);
-            Assert.Same(credentials, actual.Credentials);
-            Assert.Equal(options.BlobServiceUri, actual.QueueEndpoint);
+            Assert.True(actual.Credentials.IsToken);
+            Assert.Equal(options.BlobServiceUri, actual.BlobEndpoint);
             Assert.Equal(options.QueueServiceUri, actual.QueueEndpoint);
             Assert.Equal(options.TableServiceUri, actual.TableEndpoint);
         }
@@ -158,11 +156,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 AccountName = "unit-test",
                 QueueServiceUri = new Uri("https://unit-test/queue", UriKind.Absolute),
             };
-            var credentials = new StorageCredentials();
-            AzureStorageAccountProvider provider = SetupStorageAccountProvider(connectionName, options, credentials);
+            AzureStorageAccountProvider provider = SetupStorageAccountProvider(connectionName, options);
 
             CloudStorageAccount actual = provider.GetCloudStorageAccount(connectionName);
-            Assert.Same(credentials, actual.Credentials);
+            Assert.True(actual.Credentials.IsToken);
             Assert.Equal(options.GetDefaultServiceUri("blob"), actual.BlobEndpoint);
             Assert.Equal(options.QueueServiceUri, actual.QueueEndpoint);
             Assert.Equal(options.GetDefaultServiceUri("table"), actual.TableEndpoint);
@@ -174,16 +171,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             const string connectionName = "storage";
             var options = new AzureStorageAccountOptions { AccountName = "MyAccount" };
-            var credentials = new StorageCredentials();
-            AzureStorageAccountProvider provider = SetupStorageAccountProvider(connectionName, options, credentials);
+            AzureStorageAccountProvider provider = SetupStorageAccountProvider(connectionName, options);
 
             CloudStorageAccount actual = provider.GetCloudStorageAccount(connectionName);
+            Assert.True(actual.Credentials.IsToken);
+            Assert.Equal(options.GetDefaultServiceUri("blob"), actual.BlobEndpoint);
             Assert.Equal(options.GetDefaultServiceUri("queue"), actual.QueueEndpoint);
             Assert.Equal(options.GetDefaultServiceUri("table"), actual.TableEndpoint);
         }
 
-        private static AzureStorageAccountProvider SetupStorageAccountProvider(string connectionName, AzureStorageAccountOptions options, StorageCredentials credentials)
+        private static AzureStorageAccountProvider SetupStorageAccountProvider(string connectionName, AzureStorageAccountOptions options)
         {
+            var credential = new TokenCredential("AAAA");
             IConfigurationSection config = new ConfigurationBuilder()
                 .AddInMemoryCollection(Serialize(options).Select(x => new KeyValuePair<string, string>(connectionName + ':' + x.Key, x.Value)))
                 .Build()
@@ -192,12 +191,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var mockResolver = new Mock<IConnectionInfoResolver>(MockBehavior.Strict);
             mockResolver.Setup(r => r.Resolve(connectionName)).Returns(config);
 
-            var mockFactory = new Mock<IStorageCredentialsFactory>(MockBehavior.Strict);
+            var mockFactory = new Mock<ITokenCredentialFactory>(MockBehavior.Strict);
             mockFactory.Setup(f => f
-                .CreateAsync(
-                    It.Is<AzureStorageAccountOptions>(o => EqualsOptions(o, options)), // Can't compare by reference because we're deserializing from the config
-                    It.IsAny<CancellationToken>()))
-                .ReturnsAsync(credentials);
+                .Create(config, It.IsAny<CancellationToken>()))
+                .Returns(credential);
 
             return new AzureStorageAccountProvider(mockResolver.Object, mockFactory.Object);
         }
@@ -213,19 +210,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 settings);
         }
 
-        private static bool EqualsOptions(AzureStorageAccountOptions expected, AzureStorageAccountOptions actual) =>
-            expected.AccountName == actual.AccountName &&
-            expected.BlobServiceUri == actual.BlobServiceUri &&
-            expected.Certificate == actual.Certificate &&
-            expected.ClientCertificateStoreLocation == actual.ClientCertificateStoreLocation &&
-            expected.ClientId == actual.ClientId &&
-            expected.ClientSecret == actual.ClientSecret &&
-            expected.ConnectionString == actual.ConnectionString &&
-            expected.Credential == actual.Credential &&
-            expected.QueueServiceUri == actual.QueueServiceUri &&
-            expected.TableServiceUri == actual.TableServiceUri &&
-            expected.TenantId == actual.TenantId;
-
 #endif
 
         private static AzureStorageAccountProvider SetupStorageAccountProvider(string connectionName, string connectionString)
@@ -233,7 +217,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var mock = new Mock<IConnectionInfoResolver>(MockBehavior.Strict);
             mock.Setup(r => r.Resolve(connectionName)).Returns(new ReadOnlyConfigurationValue(connectionName, connectionString));
 
+#if FUNCTIONS_V1
             return new AzureStorageAccountProvider(mock.Object);
+#else
+            return new AzureStorageAccountProvider(mock.Object, new Mock<ITokenCredentialFactory>(MockBehavior.Strict).Object);
+#endif
         }
     }
 }

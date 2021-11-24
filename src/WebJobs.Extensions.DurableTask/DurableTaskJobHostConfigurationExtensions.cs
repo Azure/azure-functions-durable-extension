@@ -14,7 +14,6 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 #else
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.Azure.WebJobs.Host;
@@ -45,10 +44,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             serviceCollection.TryAddSingleton<INameResolver, DefaultNameResolver>();
             serviceCollection.TryAddSingleton<IConnectionInfoResolver, StandardConnectionInfoProvider>();
             serviceCollection.TryAddSingleton<IStorageAccountProvider, AzureStorageAccountProvider>();
-#if FUNCTIONS_V1
-            serviceCollection.TryAddSingleton<IStorageCredentialsFactory>(NullCredentialsFactory.Instance);
-#else
-            serviceCollection.TryAddSingleton<IStorageCredentialsFactory, AppAuthenticationCredentialsFactory>();
+#if !FUNCTIONS_V1
+            serviceCollection.TryAddSingleton<ITokenCredentialFactory, AzureCredentialFactory>();
 #endif
             serviceCollection.TryAddSingleton<IDurabilityProviderFactory, AzureStorageDurabilityProviderFactory>();
             serviceCollection.TryAddSingleton<IDurableClientFactory, DurableClientFactory>();
@@ -93,7 +90,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             IServiceCollection serviceCollection = builder.Services;
             serviceCollection.TryAddSingleton<IConnectionInfoResolver, WebJobsConnectionInfoProvider>();
-            serviceCollection.TryAddSingleton<IStorageCredentialsFactory, AppAuthenticationCredentialsFactory>();
+            serviceCollection.TryAddSingleton<ITokenCredentialFactory, AzureCredentialFactory>();
             serviceCollection.TryAddSingleton<IStorageAccountProvider, AzureStorageAccountProvider>();
             serviceCollection.TryAddSingleton<IDurableHttpMessageHandlerFactory, DurableHttpMessageHandlerFactory>();
             serviceCollection.AddSingleton<IDurabilityProviderFactory, AzureStorageDurabilityProviderFactory>();

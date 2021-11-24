@@ -2,11 +2,10 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Options
 {
-    internal sealed class AzureStorageAccountOptions : AzureIdentityOptions
+    internal sealed class AzureStorageAccountOptions
     {
         public const string DefaultEndpointSuffix = "core.windows.net";
         public const string DefaultScheme = "https";
@@ -18,8 +17,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Options
         public Uri QueueServiceUri { get; set; }
 
         public Uri TableServiceUri { get; set; }
-
-        public string ConnectionString { get; set; }
 
         internal Uri GetDefaultServiceUri(string service)
         {

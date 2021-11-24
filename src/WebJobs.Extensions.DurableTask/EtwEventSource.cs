@@ -450,13 +450,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         [Event(228, Level = EventLevel.Warning)]
         public void TokenRenewalFailed(
             string Resource,
-            string TenantId,
-            string ClientId,
             long DelayMs,
             string ExceptionMessage,
             string ExtensionVersion)
         {
-            this.WriteEvent(228, Resource, TenantId, ClientId, DelayMs, ExceptionMessage, ExtensionVersion);
+            this.WriteEvent(228, Resource, DelayMs, ExceptionMessage, ExtensionVersion);
         }
 
 #pragma warning restore SA1313 // Parameter names should begin with lower-case letter
