@@ -79,6 +79,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     var listenUri = new Uri(this.InternalRpcUri.GetLeftPart(UriPartial.Authority));
                     this.localWebHost = new WebHostBuilder()
                         .UseKestrel()
+                        .ConfigureKestrel(o =>
+                        {
+                            // remove request's Content size limits
+                            o.Limits.MaxRequestBodySize = -1;
+                        })
                         .UseUrls(listenUri.OriginalString)
                         .Configure(a => a.Run(this.HandleRequestAsync))
                         .Build();
