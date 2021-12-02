@@ -104,7 +104,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public void ConsumptionDefaulstDoNotOverrideCustomerOptions()
+        public void ConsumptionDefaultsDoNotOverrideCustomerOptions()
         {
             var connectionStringResolver = new TestConnectionStringResolver();
             var options = new DurableTaskOptions();
