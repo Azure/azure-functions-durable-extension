@@ -86,11 +86,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             StorageAccountDetails actual = provider.GetStorageAccountDetails(connectionName);
             Assert.Null(actual.ConnectionString);
             Assert.True(actual.StorageCredentials.IsToken);
-
-            // TODO: Add properties to durable task
-            // Assert.Equal(options.BlobServiceUri, actual.BlobServiceUri);
-            // Assert.Equal(options.QueueServiceUri, actual.QueueServiceUri);
-            // Assert.Equal(options.TableServiceUri, actual.TableServiceUri);
+            Assert.Equal(options.BlobServiceUri, actual.BlobServiceUri);
+            Assert.Equal(options.QueueServiceUri, actual.QueueServiceUri);
+            Assert.Equal(options.TableServiceUri, actual.TableServiceUri);
         }
 
         [Theory]

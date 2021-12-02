@@ -88,7 +88,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" Version="1.9.4" />
+    <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" Version="1.10.0" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers" Version="0.4.1" />
 
     <!-- Explicitly pinned transitive dependencies with CVE vulnerabilities.-->

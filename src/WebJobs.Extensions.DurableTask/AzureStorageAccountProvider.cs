@@ -42,18 +42,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
 #if FUNCTIONS_V1
-            throw new InvalidOperationException($"Unable to resolve the Azure Storage connection named '{name}'.");
+            throw new InvalidOperationException($"Unable to resolve the Azure Storage connection string named '{name}'.");
 #else
-            AzureStorageAccountOptions account = connectionInfo.Get<AzureStorageAccountOptions>() ?? throw new InvalidOperationException($"Unable to resolve the Azure Storage connection named '{name}'.");
+            AzureStorageAccountOptions account = connectionInfo.Get<AzureStorageAccountOptions>()
+                ?? throw new InvalidOperationException($"Unable to resolve the Azure Storage connection string named '{name}'.");
             TokenCredential credential = this.credentialFactory.Create(connectionInfo);
 
             if (account.BlobServiceUri != null || account.QueueServiceUri != null || account.TableServiceUri != null)
             {
-                // TODO: Use new endpoints when Durable Task is updated
                 ValidateServiceUris(account);
                 return new StorageAccountDetails
                 {
+                    BlobServiceUri = account.BlobServiceUri,
+                    QueueServiceUri = account.QueueServiceUri,
                     StorageCredentials = new StorageCredentials(credential),
+                    TableServiceUri = account.TableServiceUri,
                 };
             }
             else
@@ -77,10 +80,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
 #if FUNCTIONS_V1
-            throw new InvalidOperationException($"Unable to resolve the Azure Storage connection named '{name}'.");
+            throw new InvalidOperationException($"Unable to resolve the Azure Storage connection string named '{name}'.");
 #else
             AzureStorageAccountOptions account = connectionInfo.Get<AzureStorageAccountOptions>()
-                ?? throw new InvalidOperationException($"Unable to resolve the Azure Storage connection named '{name}'.");
+                ?? throw new InvalidOperationException($"Unable to resolve the Azure Storage connection string named '{name}'.");
             TokenCredential credential = this.credentialFactory.Create(connectionInfo);
 
             if (account.BlobServiceUri != null || account.QueueServiceUri != null || account.TableServiceUri != null)

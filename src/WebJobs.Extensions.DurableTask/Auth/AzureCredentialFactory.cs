@@ -19,7 +19,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth
     {
         private const string LoggerName = "Host.Triggers.DurableTask.Auth";
 
-        private readonly string hubName; 
+        private readonly string hubName;
         private readonly AzureComponentFactory componentFactory;
         private readonly EndToEndTraceHelper traceHelper;
 
