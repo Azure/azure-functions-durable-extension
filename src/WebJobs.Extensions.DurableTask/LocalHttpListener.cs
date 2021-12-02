@@ -82,7 +82,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         .ConfigureKestrel(o =>
                         {
                             // remove request's Content size limits
-                            o.Limits.MaxRequestBodySize = -1;
+                            o.Limits.MaxRequestBodySize = null;
                         })
                         .UseUrls(listenUri.OriginalString)
                         .Configure(a => a.Run(this.HandleRequestAsync))
