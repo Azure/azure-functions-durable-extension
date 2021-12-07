@@ -210,7 +210,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 functionId,
                 functionName,
                 hubName,
-                this.storageAccountProvider.GetCloudStorageAccount(connectionName),
+                this.storageAccountProvider.GetStorageAccountDetails(connectionName).ToCloudStorageAccount(),
                 this.logger);
             return true;
         }

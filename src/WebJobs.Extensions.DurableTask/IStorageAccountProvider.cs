@@ -2,7 +2,6 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using DurableTask.AzureStorage;
-using Microsoft.WindowsAzure.Storage;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
@@ -17,12 +16,5 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="connectionName">The name associated with the connection information.</param>
         /// <returns>The corresponding <see cref="StorageAccountDetails"/>.</returns>
         StorageAccountDetails GetStorageAccountDetails(string connectionName);
-
-        /// <summary>
-        /// Gets the <see cref="CloudStorageAccount"/> associated with the <paramref name="connectionName"/>.
-        /// </summary>
-        /// <param name="connectionName">The name associated with the connection information.</param>
-        /// <returns>The corresponding <see cref="CloudStorageAccount"/>.</returns>
-        CloudStorageAccount GetCloudStorageAccount(string connectionName);
     }
 }
