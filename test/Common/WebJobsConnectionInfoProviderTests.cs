@@ -40,8 +40,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     {
                         new KeyValuePair<string, string>(AddPrefix("MyConnectionString", prefixNames), "Foo=Bar;Baz"),
                         new KeyValuePair<string, string>($"ConnectionStrings:{AddPrefix("MyOtherConnectionString", prefixNames)}", "https://foo.bar/baz"),
-                        new KeyValuePair<string, string>($"{AddPrefix("MyConnection", prefixNames)}:{nameof(AzureStorageAccountOptions.AccountName)}", "MyAccount"),
-                        new KeyValuePair<string, string>($"ConnectionStrings:{AddPrefix("MyOtherConnection", prefixNames)}:{nameof(AzureStorageAccountOptions.AccountName)}", "MyOtherAccount"),
+                        new KeyValuePair<string, string>($"{AddPrefix("MyConnection", prefixNames)}:AccountName", "MyAccount"),
+                        new KeyValuePair<string, string>($"ConnectionStrings:{AddPrefix("MyOtherConnection", prefixNames)}:AccountName", "MyOtherAccount"),
                     })
                 .Build();
 
@@ -49,8 +49,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             Assert.Equal("Foo=Bar;Baz", provider.Resolve("MyConnectionString").Value);
             Assert.Equal("https://foo.bar/baz", provider.Resolve("MyOtherConnectionString").Value);
-            Assert.Equal("MyAccount", provider.Resolve("MyConnection")[nameof(AzureStorageAccountOptions.AccountName)]);
-            Assert.Equal("MyOtherAccount", provider.Resolve("MyOtherConnection")[nameof(AzureStorageAccountOptions.AccountName)]);
+            Assert.Equal("MyAccount", provider.Resolve("MyConnection")["AccountName"]);
+            Assert.Equal("MyOtherAccount", provider.Resolve("MyOtherConnection")["AccountName"]);
 #endif
         }
 

@@ -19,14 +19,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     new KeyValuePair<string, string>[]
                     {
                         new KeyValuePair<string, string>($"MyConnectionString", "Foo=Bar;Baz"),
-                        new KeyValuePair<string, string>($"MyConnection:{nameof(AzureStorageAccountOptions.AccountName)}", "MyAccount"),
+                        new KeyValuePair<string, string>($"MyConnection:AccountName", "MyAccount"),
                     })
                 .Build();
 
             var provider = new StandardConnectionInfoProvider(config);
 
             Assert.Equal("Foo=Bar;Baz", provider.Resolve("MyConnectionString").Value);
-            Assert.Equal("MyAccount", provider.Resolve("MyConnection")[nameof(AzureStorageAccountOptions.AccountName)]);
+            Assert.Equal("MyAccount", provider.Resolve("MyConnection")["AccountName"]);
         }
     }
 }

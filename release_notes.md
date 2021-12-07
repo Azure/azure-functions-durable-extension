@@ -8,4 +8,5 @@
 ## Breaking Changes
 
 ## Dependency Updates
-* Updated [Azure.Identity](https://www.nuget.org/packages/Azure.Identity/1.4.0) dependency to v1.4.0
+* Updated [Azure.Identity](https://www.nuget.org/packages/Azure.Identity/1.5.0) dependency to v1.5.0 for Azure Functions 2.0 and beyond
+* Added [Microsoft.Extensions.Azure](https://www.nuget.org/packages/Microsoft.Extensions.Azure/1.1.1) v1.1.1 as a dependency for Azure Functions 2.0 and beyond

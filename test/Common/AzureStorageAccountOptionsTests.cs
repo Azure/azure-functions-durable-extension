@@ -22,10 +22,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     {
                         // Users will not specify every value in the AzureStorageAccountOptions,
                         // but this test demonstrates that any of these properties can be populated via a configuration
-                        new KeyValuePair<string, string>($"{connectionName}:{nameof(AzureStorageAccountOptions.AccountName)}", "MyAccount"),
-                        new KeyValuePair<string, string>($"{connectionName}:{nameof(AzureStorageAccountOptions.BlobServiceUri)}", "https://unit-test/blob"),
-                        new KeyValuePair<string, string>($"{connectionName}:{nameof(AzureStorageAccountOptions.QueueServiceUri)}", "https://unit-test/queue"),
-                        new KeyValuePair<string, string>($"{connectionName}:{nameof(AzureStorageAccountOptions.TableServiceUri)}", "https://unit-test/table"),
+                        new KeyValuePair<string, string>($"{connectionName}:AccountName", "MyAccount"),
+                        new KeyValuePair<string, string>($"{connectionName}:BlobServiceUri", "https://unit-test/blob"),
+                        new KeyValuePair<string, string>($"{connectionName}:QueueServiceUri", "https://unit-test/queue"),
+                        new KeyValuePair<string, string>($"{connectionName}:TableServiceUri", "https://unit-test/table"),
                     })
                 .Build();
 
