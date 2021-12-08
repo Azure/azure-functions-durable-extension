@@ -871,7 +871,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 default,
                 exception,
                 "Unable to refresh token for resource '{resource}'. Will retry in {delay} ms. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}.",
-                resource, delay, hubName, LocalAppName, LocalSlotName, ExtensionVersion);
+                resource, delayMs, hubName, LocalAppName, LocalSlotName, ExtensionVersion);
         }
 
         private bool ShouldLogEvent(bool isReplay)
