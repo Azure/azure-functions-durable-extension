@@ -63,7 +63,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth
                 value.Token,
                 (o, t) => this.RenewTokenAsync(o as TokenRenewalState, t),
                 state,
-                default);
+                GetRenewalFrequency(value, tokenRefreshOffset));
         }
 
         private async Task<NewTokenAndFrequency> RenewTokenAsync(TokenRenewalState state, CancellationToken cancellationToken)
@@ -83,15 +83,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth
                 return next;
             }
 
-            var frequency = result.ExpiresOn - DateTimeOffset.UtcNow - state.RefreshOffset;
-            if (frequency < TimeSpan.Zero)
-            {
-                frequency = TimeSpan.Zero;
-            }
-
             // Save the token in case renewal results in an exception
             state.Previous = result;
-            next = new NewTokenAndFrequency(result.Token, frequency);
+            next = new NewTokenAndFrequency(result.Token, GetRenewalFrequency(result, state.RefreshOffset));
             this.OnRenewed(next);
             return next;
         }
@@ -106,6 +100,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth
         {
             this.traceHelper.TokenRenewalFailed(this.hubName, "https://storage.azure.com/", next.Frequency.GetValueOrDefault(), exception);
             this.RenewalFailed?.Invoke(next, exception);
+        }
+
+        private static TimeSpan GetRenewalFrequency(AccessToken accessToken, TimeSpan refreshOffset)
+        {
+            TimeSpan frequency = accessToken.ExpiresOn - DateTimeOffset.UtcNow - refreshOffset;
+            if (frequency < TimeSpan.Zero)
+            {
+                frequency = TimeSpan.Zero;
+            }
+
+            return frequency;
         }
 
         internal sealed class TokenRenewalState

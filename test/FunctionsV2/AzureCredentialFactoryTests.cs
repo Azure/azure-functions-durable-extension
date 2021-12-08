@@ -16,7 +16,6 @@ using Microsoft.Extensions.Options;
 using Moq;
 using Moq.Language;
 using Xunit;
-using Xunit.Sdk;
 using AppAuthTokenCredential = Microsoft.WindowsAzure.Storage.Auth.TokenCredential;
 using AzureTokenCredential = Azure.Core.TokenCredential;
 
@@ -27,6 +26,33 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void Create()
+        {
+            // Create test data
+            IConfiguration config = new ConfigurationBuilder().Build();
+
+            // Setup mocks
+            AzureCredentialFactory factory = SetupCredentialsFactory(config, new AccessToken("AAAA", DateTime.UtcNow.AddMinutes(5)));
+
+            // Assert behavior through events
+            (int Renewing, int Renewed, int RenewedFailed) invocations = (0, 0, 0);
+            factory.Renewing += s => invocations.Renewing++;
+            factory.Renewed += n => invocations.Renewed++;
+            factory.RenewalFailed += (n, e) => invocations.RenewedFailed++;
+
+            // Create the credential and assert its state
+            using AppAuthTokenCredential credential = factory.Create(config, TimeSpan.Zero, TimeSpan.Zero);
+
+            // Wait a short amount of time in case of erroneous renewal
+            Thread.Sleep(1000);
+
+            // Validate
+            Assert.Equal("AAAA", credential.Token);
+            Assert.Equal((0, 0, 0), invocations);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void Renew()
         {
             // Create test data
             IConfiguration config = new ConfigurationBuilder().Build();
@@ -45,23 +71,23 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
             AzureCredentialFactory factory = SetupCredentialsFactory(config, expected);
 
             // Assert behavior through events
-            int renewingCalls = 0, renewedCalls = 0;
+            (int Renewing, int Renewed, int RenewedFailed) invocations = (0, 0, 0);
             factory.Renewing += s =>
             {
-                renewingCalls++;
+                invocations.Renewing++;
                 Assert.Equal(offset, s.RefreshOffset);
                 Assert.Equal(delay, s.RefreshDelay);
                 Assert.Equal("https://storage.azure.com/.default", s.Context.Scopes.Single());
                 Assert.Null(s.Context.TenantId);
-                Assert.Equal(expected[renewingCalls - 1], s.Previous);
+                Assert.Equal(expected[invocations.Renewing - 1], s.Previous);
             };
 
             factory.Renewed += n =>
             {
-                renewedCalls++;
-                Assert.Equal(expected[renewedCalls].Token, n.Token);
+                invocations.Renewed++;
+                Assert.Equal(expected[invocations.Renewed].Token, n.Token);
 
-                if (renewedCalls < expected.Length - 1)
+                if (invocations.Renewed < expected.Length - 1)
                 {
                     // The expirations are so short for the first entries that they will renew immediately!
                     Assert.Equal(TimeSpan.Zero, n.Frequency);
@@ -74,15 +100,14 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
                 }
             };
 
-            factory.RenewalFailed += (n, e) => throw new XunitException($"Renewal failed unexpectedly: {e}");
+            factory.RenewalFailed += (n, e) => invocations.RenewedFailed++;
 
             // Create the credential and assert its state
             using AppAuthTokenCredential credential = factory.Create(config, offset, delay);
 
             // Wait until the final renewal complete
             WaitUntilRenewal(credential, expected[^1].Token, TimeSpan.FromSeconds(30));
-            Assert.Equal(expected.Length - 1, renewingCalls);
-            Assert.Equal(expected.Length - 1, renewedCalls);
+            Assert.Equal((expected.Length - 1, expected.Length - 1, 0), invocations);
         }
 
         [Fact]
@@ -106,12 +131,12 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
             AzureCredentialFactory factory = SetupCredentialsFactoryWithError(config, expected);
 
             // Assert behavior through events
-            int renewingCalls = 0, renewedCalls = 0, failureCalls = 0;
-            factory.Renewing += s => renewingCalls++;
-            factory.Renewed += n => renewedCalls++;
+            (int Renewing, int Renewed, int RenewedFailed) invocations = (0, 0, 0);
+            factory.Renewing += s => invocations.Renewing++;
+            factory.Renewed += n => invocations.Renewed++;
             factory.RenewalFailed += (n, e) =>
             {
-                failureCalls++;
+                invocations.RenewedFailed++;
                 Assert.Equal(expected[^2].Token, n.Token);
                 Assert.Equal(delay, n.Frequency);
             };
@@ -122,9 +147,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
             // Wait until the final renewal complete (including the extra retry on error)
             WaitUntilRenewal(credential, expected[^1].Token, TimeSpan.FromSeconds(30));
             Assert.Equal(expected[^1].Token, credential.Token);
-            Assert.Equal(expected.Length, renewingCalls);
-            Assert.Equal(expected.Length - 1, renewedCalls);
-            Assert.Equal(1, failureCalls);
+            Assert.Equal((expected.Length, expected.Length - 1, 1), invocations);
         }
 
         private static AzureCredentialFactory SetupCredentialsFactory(IConfiguration config, params AccessToken[] tokens)
