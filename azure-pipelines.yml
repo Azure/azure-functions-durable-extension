@@ -120,12 +120,11 @@ jobs:
       displayName: 'Use NuGet '
 
     - task: DotNetCoreCLI@2
-      displayName: 'dotnet restore'
       inputs:
-        command: restore
+        command: 'restore'
         projects: '**/**/*.csproj'
-        feedsToUse: config
-        nugetConfigPath: 'azure-functions-durable-extension/.nuget/nuget.config'
+        feedsToUse: 'config'
+        nugetConfigPath: '.nuget/nuget.config'
 
     - task: VSBuild@1
       displayName: 'Build Durable Extension'
