@@ -141,6 +141,17 @@ jobs:
         packDirectory: '$(Build.BinariesDirectory)'
         nobuild: true
         verbosityPack: Normal
+    - script: |
+        echo *** Searching for .symbols.nupkg files to delete...
+        dir /s /b *.symbols.nupkg
+        
+        echo *** Deleting .symbols.nupkg files...
+        del /S /Q *.symbols.nupkg
+        
+        echo *** Listing remaining packages
+        dir /s /b *.nupkg
+        displayName: 'Remove Redundant Symbols Package(s)'
+        continueOnError: true
     - task: SFP.build-tasks.custom-build-task-1.EsrpCodeSigning@1
       displayName: 'ESRP CodeSigning: Nupkg'
       inputs:
