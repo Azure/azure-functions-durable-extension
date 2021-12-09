@@ -120,7 +120,7 @@ jobs:
       displayName: 'dotnet pack'
       inputs:
         command: pack
-        packagesToPack: 'src/**/WebJobs.Extensions.DurableTask.csproj.csproj'
+        packagesToPack: '**/WebJobs.Extensions.DurableTask.csproj.csproj'
         packDirectory: '$(Build.BinariesDirectory)'
         nobuild: true
         verbosityPack: Normal
