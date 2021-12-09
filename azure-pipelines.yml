@@ -116,6 +116,24 @@ jobs:
       buildConfiguration: 'Release'
     
     steps:
+    - task: NuGetToolInstaller@1
+      displayName: 'Use NuGet '
+
+    - task: DotNetCoreCLI@2
+      displayName: 'dotnet restore'
+      inputs:
+        command: restore
+        projects: '**/**/*.csproj'
+        feedsToUse: config
+        nugetConfigPath: 'azure-functions-durable-extension/.nuget/nuget.config'
+
+    - task: VSBuild@1
+      displayName: 'Build Durable Extension'
+      inputs:
+        solution: 'WebJobs.Extensions.DurableTask.sln'
+        vsVersion: 16.0
+        configuration: Release
+
     - task: DotNetCoreCLI@2
       displayName: 'dotnet pack'
       inputs:
