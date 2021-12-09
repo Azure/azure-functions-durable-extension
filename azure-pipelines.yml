@@ -141,6 +141,30 @@ jobs:
         packDirectory: '$(Build.BinariesDirectory)'
         nobuild: true
         verbosityPack: Normal
+    - task: SFP.build-tasks.custom-build-task-1.EsrpCodeSigning@1
+      displayName: 'ESRP CodeSigning: Nupkg'
+      inputs:
+        ConnectedServiceName: 'ESRP Service'
+        FolderPath: '.'
+        Pattern: '*.nupkg'
+        signConfigType: inlineSignParams
+        inlineOperation: |
+        [    
+                            {
+                              "KeyCode": "CP-401405",
+                              "OperationCode": "NuGetSign",
+                              "Parameters": {},
+                              "ToolName": "sign",
+                              "ToolVersion": "1.0"
+                            },
+                            {
+                              "KeyCode": "CP-401405",
+                              "OperationCode": "NuGetVerify",
+                              "Parameters": {},
+                              "ToolName": "sign",
+                              "ToolVersion": "1.0"
+                            }
+                        ]
     - task: AzureArtifacts.drop-validator-task.manifest-generator-task.ManifestGeneratorTask@0
       displayName: "SBOM Generation Task"
       inputs:
