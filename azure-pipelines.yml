@@ -106,6 +106,36 @@ jobs:
         ArtifactName: "drop"
         publishLocation: "Container"
 
+  - job: Build 
+    pool: 
+      vmImage: 'windows-latest'
+
+    variables:
+      solution: '**/WebJobs.Extensions.DurableTask.sln'
+      buildPlatform: 'Any CPU'
+      buildConfiguration: 'Release'
+    
+    steps:
+    - task: DotNetCoreCLI@2
+      displayName: 'dotnet pack'
+      inputs:
+        command: pack
+        packagesToPack: 'src/**/WebJobs.Extensions.DurableTask.csproj.csproj'
+        packDirectory: '$(Build.BinariesDirectory)'
+        nobuild: true
+        verbosityPack: Normal
+    - task: AzureArtifacts.drop-validator-task.manifest-generator-task.ManifestGeneratorTask@0
+      displayName: "SBOM Generation Task"
+      inputs:
+        BuildDropPath: "$(Build.ArtifactStagingDirectory)"
+        Verbosity: "Information"
+    - task: PublishBuildArtifacts@1
+      displayName: 'Publish Artifact: dist'
+      inputs:
+        PathtoPublish: "$(Build.ArtifactStagingDirectory)"
+        ArtifactName: "drop"
+        publishLocation: "Container"
+
   - job: DurableAnalyzerTests
     pool: 
       vmImage: 'windows-latest'
