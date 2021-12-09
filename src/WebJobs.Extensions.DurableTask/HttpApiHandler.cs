@@ -177,8 +177,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string instanceId,
             string taskHub,
             string connectionName,
-            bool returnInternalServerErrorOnFailure = false,
-            bool restartWithNewInstanceId = true)
+            bool returnInternalServerErrorOnFailure = false)
         {
             HttpManagementPayload httpManagementPayload = this.GetClientResponseLinks(
                 null,
@@ -1150,7 +1149,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return response;
         }
 
-        private Uri GetWebhookUri()
+        internal Uri GetWebhookUri()
         {
             return this.webhookUrlProvider?.Invoke() ?? throw new InvalidOperationException("Webhooks are not configured");
         }

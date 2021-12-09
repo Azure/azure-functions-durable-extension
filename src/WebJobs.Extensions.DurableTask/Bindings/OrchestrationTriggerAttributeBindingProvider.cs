@@ -36,7 +36,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             ParameterInfo parameter = context.Parameter;
-            OrchestrationTriggerAttribute trigger = parameter.GetCustomAttribute<OrchestrationTriggerAttribute>(inherit: false);
+            OrchestrationTriggerAttribute? trigger = parameter.GetCustomAttribute<OrchestrationTriggerAttribute>(inherit: false);
             if (trigger == null)
             {
                 return Task.FromResult<ITriggerBinding?>(null);
@@ -63,7 +63,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private class OrchestrationTriggerBinding : ITriggerBinding
         {
-            static readonly IReadOnlyDictionary<string, object?> EmptyBindingData = new Dictionary<string, object?>(capacity: 0);
+            private static readonly IReadOnlyDictionary<string, object?> EmptyBindingData = new Dictionary<string, object?>(capacity: 0);
 
             private readonly DurableTaskExtension config;
             private readonly ParameterInfo parameterInfo;
@@ -99,7 +99,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 };
 
                 // allow binding to the parameter name
-                contract[parameterInfo.Name] = parameterInfo.ParameterType;
+                contract[parameterInfo.Name!] = parameterInfo.ParameterType;
 
                 return contract;
             }
@@ -131,7 +131,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                     var bindingData = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
                     {
-                        [this.parameterInfo.Name] = convertedValue,
+                        [this.parameterInfo.Name!] = convertedValue,
                     };
 
                     // We don't specify any return value binding because we process the return value

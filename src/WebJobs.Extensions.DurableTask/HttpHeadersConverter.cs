@@ -38,7 +38,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 reader.Read();
 
                 // Header values can be either individual strings or string arrays
-                StringValues values;
+                StringValues values = default(StringValues);
                 if (reader.TokenType == JsonToken.String)
                 {
                     values = new StringValues((string)reader.Value);

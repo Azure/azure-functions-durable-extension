@@ -1,13 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
+    <TargetFrameworks>net6.0;netstandard2.0;net461</TargetFrameworks>
     <AssemblyName>Microsoft.Azure.WebJobs.Extensions.DurableTask</AssemblyName>
     <RootNamespace>Microsoft.Azure.WebJobs.Extensions.DurableTask</RootNamespace>
     <MajorVersion>2</MajorVersion>
     <MinorVersion>7</MinorVersion>
     <PatchVersion>0</PatchVersion>
-    <Version>$(MajorVersion).$(MinorVersion).$(PatchVersion)</Version>
+    <Version>$(MajorVersion).$(MinorVersion).$(PatchVersion)-dotnetisolated.1</Version>
     <FileVersion>$(MajorVersion).$(MinorVersion).$(PatchVersion)</FileVersion>
     <AssemblyVersion>$(MajorVersion).0.0.0</AssemblyVersion>
     <Company>Microsoft Corporation</Company>
@@ -18,7 +18,6 @@
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>embedded</DebugType>
-    <IncludeSymbols>false</IncludeSymbols>
     <!-- See https://github.com/Azure/azure-functions-durable-extension/issues/1433 -->
     <NoWarn>NU5125</NoWarn>
   </PropertyGroup>
@@ -28,10 +27,10 @@
     xml file that matches the assembly name. This doesn't work for multi-targeting so
     we have to choose the most important target, which is currently netstandard2.0.
   -->
-  <PropertyGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net6.0'">
     <DocumentationFile>$(AssemblyName).xml</DocumentationFile>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetFramework)' != 'netstandard2.0'">
+  <PropertyGroup Condition="'$(TargetFramework)' != 'net6.0'">
     <DocumentationFile>$(AssemblyName)-$(TargetFramework).xml</DocumentationFile>
   </PropertyGroup>
   
@@ -41,17 +40,17 @@
     <StyleCopTreatErrorsAsWarnings>true</StyleCopTreatErrorsAsWarnings>
   </PropertyGroup>
   
-  <PropertyGroup Condition="'$(TargetFramework)' != 'netstandard2.0'">
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net461'">
     <DefineConstants>FUNCTIONS_V1</DefineConstants>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
   </PropertyGroup>
 
   <ItemGroup>
     <!--Don't include Correlation classes in Function V1.-->
-    <Compile Include="**/*.cs" Exclude="Correlation/*.cs;**/obj/**/*.cs" Condition="'$(TargetFramework)' != 'netstandard2.0'" />
+    <Compile Include="**/*.cs" Exclude="Correlation/*.cs;**/obj/**/*.cs" Condition="'$(TargetFramework)' == 'net461'" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' != 'netstandard2.0'">
+  <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
     <PackageReference Include="Microsoft.Azure.WebJobs" Version="2.3.0" />
 
     <!--Don't increase below versions without significantly testing on Functions V1. Increasing these versions increments
@@ -62,7 +61,7 @@
     <PackageReference Include="Microsoft.AspNetCore.Mvc.WebApiCompatShim" Version="1.0.3" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+  <ItemGroup Condition="'$(TargetFramework)' != 'net461'">
     <PackageReference Include="Microsoft.Azure.WebJobs" Version="3.0.14" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.WebApiCompatShim" Version="2.1.0" />
     <PackageReference Include="Microsoft.AspNetCore.Routing" Version="2.2.0" />
@@ -72,6 +71,11 @@
     
     <!-- Explicitly pinned transitive dependencies with CVE vulnerabilities.-->
     <PackageReference Include="Microsoft.AspNetCore.Server.Kestrel.Transport.Sockets" Version="2.2.1" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net6.0'">
+    <PackageReference Include="Microsoft.DurableTask" Version="0.1.0-alpha" />
+    <PackageReference Include="Microsoft.DurableTask.Sidecar" Version="0.1.0-alpha" />
   </ItemGroup>
 
   <ItemGroup>
@@ -85,10 +89,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Azure.DurableTask.Core" Version="2.7.0-private" />
-    <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" Version="1.9.*" />
+    <PackageReference Include="Microsoft.Azure.DurableTask.Core" Version="2.7.0-ooproc.1" />
+    <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" Version="1.10.*" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers" Version="0.4.*" />
-    <PackageReference Include="Azure.Identity" Version="1.1.1" />
+    <PackageReference Include="Azure.Identity" Version="1.3.0" />
 
     <!-- Explicitly pinned transitive dependencies with CVE vulnerabilities.-->
     <PackageReference Include="System.Text.Encodings.Web" Version="4.7.2" />
