@@ -165,6 +165,13 @@ jobs:
                               "ToolVersion": "1.0"
                             }
                         ]
+    - task: CopyFiles@2
+      displayName: 'Copy Files to: $(Build.ArtifactStagingDirectory)'
+      inputs:
+        SourceFolder: '$(Build.BinariesDirectory)'
+        Contents: '*.nupkg'
+        TargetFolder: '$(Build.ArtifactStagingDirectory)'
+        CleanTargetFolder: true
     - task: AzureArtifacts.drop-validator-task.manifest-generator-task.ManifestGeneratorTask@0
       displayName: "SBOM Generation Task"
       inputs:
