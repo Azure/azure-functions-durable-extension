@@ -149,7 +149,7 @@ jobs:
         Pattern: '*.nupkg'
         signConfigType: inlineSignParams
         inlineOperation: |
-        [    
+          [    
                             {
                               "KeyCode": "CP-401405",
                               "OperationCode": "NuGetSign",
