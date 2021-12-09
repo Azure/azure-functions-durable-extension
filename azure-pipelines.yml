@@ -149,4 +149,6 @@ jobs:
     - task: PublishBuildArtifacts@1
       displayName: 'Publish Artifact: dist'
       inputs:
-        PathtoPublish: dist
+        PathtoPublish: "$(Build.ArtifactStagingDirectory)"
+        ArtifactName: "drop"
+        publishLocation: "Container"
