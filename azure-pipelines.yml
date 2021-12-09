@@ -92,7 +92,7 @@ jobs:
       env:
         AzureWebJobsStorage: $(AzureWebJobsStorage)
         APPINSIGHTS_INSTRUMENTATIONKEY: $(APPINSIGHTS_INSTRUMENTATIONKEY)
-    - task: ManifestGeneratorTask@0
+    - task: AzureArtifacts.drop-validator-task.manifest-generator-task.ManifestGeneratorTask@0
       displayName: "SBOM Generation Task"
       inputs:
           BuildDropPath: "$(Build.ArtifactStagingDirectory)"
@@ -141,7 +141,7 @@ jobs:
       env:
         AzureWebJobsStorage: $(AzureWebJobsStorage)
         APPINSIGHTS_INSTRUMENTATIONKEY: $(APPINSIGHTS_INSTRUMENTATIONKEY)
-    - task: ManifestGeneratorTask@0
+    - task: AzureArtifacts.drop-validator-task.manifest-generator-task.ManifestGeneratorTask@0
       displayName: "SBOM Generation Task"
       inputs:
           BuildDropPath: "$(Build.ArtifactStagingDirectory)"
