@@ -237,7 +237,7 @@ jobs:
     - task: VSBuild@1
       displayName: 'Build Durable Extension Analyzer'
       inputs:
-        solution: 'WebJobs.Extensions.DurableTask.Analyzers.sln'
+        solution: 'src/**/**/WebJobs.Extensions.DurableTask.Analyzers.sln'
         vsVersion: 16.0
         configuration: Release
 
