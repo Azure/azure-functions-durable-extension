@@ -294,7 +294,7 @@ jobs:
     - task: AzureArtifacts.drop-validator-task.manifest-generator-task.ManifestGeneratorTask@0
       displayName: "SBOM Generation Task"
       inputs:
-        BuildDropPath: "$(Build.ArtifactStagingDirectory)"
+        BuildDropPath: "$(Build.ArtifactStagingDirectory)/analyzer"
         Verbosity: "Information"
     - task: PublishBuildArtifacts@1
       displayName: 'Publish Artifact: dist'
