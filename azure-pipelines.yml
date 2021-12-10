@@ -124,15 +124,11 @@ jobs:
         AzureWebJobsStorage: $(AzureWebJobsStorage)
         APPINSIGHTS_INSTRUMENTATIONKEY: $(APPINSIGHTS_INSTRUMENTATIONKEY)
 
-
+  # Build, sign, and add SBOM manifest to a Nuget payload of the extension (V2).
+  # Our release pipeline should re-use this payload at release time.
   - job: BuildExtensionV2 
     pool: 
       vmImage: 'windows-latest'
-
-    variables:
-      solution: '**/WebJobs.Extensions.DurableTask.sln'
-      buildPlatform: 'Any CPU'
-      buildConfiguration: 'Release'
     
     steps:
     - task: NuGetToolInstaller@1
@@ -202,6 +198,7 @@ jobs:
         Contents: '*.nupkg'
         TargetFolder: '$(Build.ArtifactStagingDirectory)'
         CleanTargetFolder: true
+    # This task needed to be fully qualified to disambiguate it.
     - task: AzureArtifacts.drop-validator-task.manifest-generator-task.ManifestGeneratorTask@0
       displayName: "SBOM Generation Task"
       inputs:
@@ -214,14 +211,11 @@ jobs:
         ArtifactName: "extensionV2"
         publishLocation: "Container"
 
+  # Build, sign, and add SBOM manifest to a Nuget payload of the analyzer.
+  # Our release pipeline should re-use this payload at release time.
   - job: BuildAnalyzer 
     pool: 
       vmImage: 'windows-latest'
-
-    variables:
-      solution: '**/WebJobs.Extensions.DurableTask.Analyzers.sln'
-      buildPlatform: 'Any CPU'
-      buildConfiguration: 'Release'
     
     steps:
     - task: NuGetToolInstaller@1
@@ -291,6 +285,7 @@ jobs:
         Contents: '*.nupkg'
         TargetFolder: '$(Build.ArtifactStagingDirectory)'
         CleanTargetFolder: true
+    # This task needed to be fully qualified to disambiguate it.
     - task: AzureArtifacts.drop-validator-task.manifest-generator-task.ManifestGeneratorTask@0
       displayName: "SBOM Generation Task"
       inputs:
