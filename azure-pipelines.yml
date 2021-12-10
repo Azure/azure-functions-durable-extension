@@ -235,7 +235,7 @@ jobs:
         nugetConfigPath: '.nuget/nuget.config'
 
     - task: VSBuild@1
-      displayName: 'Build Durable Extension'
+      displayName: 'Build Durable Extension Analyzer'
       inputs:
         solution: 'WebJobs.Extensions.DurableTask.Analyzers.sln'
         vsVersion: 16.0
@@ -245,7 +245,7 @@ jobs:
       displayName: 'dotnet pack'
       inputs:
         command: pack
-        packagesToPack: 'src/WebJobs.Extensions.DurableTask/**/WebJobs.Extensions.DurableTask.Analyzers.csproj'
+        packagesToPack: 'src/**/**/WebJobs.Extensions.DurableTask.Analyzers.csproj'
         packDirectory: '$(Build.BinariesDirectory)'
         nobuild: true
         verbosityPack: Normal
