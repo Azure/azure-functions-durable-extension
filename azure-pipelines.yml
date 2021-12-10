@@ -221,7 +221,7 @@ jobs:
   - job: BuildAnalyzer 
     pool: 
       vmImage: 'windows-latest'
-    
+
     steps:
     - task: NuGetToolInstaller@1
       displayName: 'Use NuGet '
@@ -247,7 +247,7 @@ jobs:
         packagesToPack: 'src/**/**/WebJobs.Extensions.DurableTask.Analyzers.csproj'
         packDirectory: '$(Build.BinariesDirectory)'
         nobuild: true
-        verbosityPack: Normal
+        verbosityPack: Diagnostic
     - script: |
         echo *** Searching for .symbols.nupkg files to delete...
         dir /s /b *.symbols.nupkg
