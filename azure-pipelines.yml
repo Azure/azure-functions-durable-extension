@@ -39,17 +39,6 @@ jobs:
       env:
         AzureWebJobsStorage: $(AzureWebJobsStorage)
         APPINSIGHTS_INSTRUMENTATIONKEY: $(APPINSIGHTS_INSTRUMENTATIONKEY)
-    - task: AzureArtifacts.drop-validator-task.manifest-generator-task.ManifestGeneratorTask@0
-      displayName: "SBOM Generation Task"
-      inputs:
-          BuildDropPath: "$(Build.ArtifactStagingDirectory)"
-          Verbosity: "Information"
-    - task: PublishBuildArtifacts@1
-      displayName: 'Publish Artifact: dist'
-      inputs:
-        PathtoPublish: "$(Build.ArtifactStagingDirectory)"
-        ArtifactName: "drop"
-        publishLocation: "Container"
 
   - job: FunctionsV2Tests
     pool: 
@@ -94,19 +83,49 @@ jobs:
       env:
         AzureWebJobsStorage: $(AzureWebJobsStorage)
         APPINSIGHTS_INSTRUMENTATIONKEY: $(APPINSIGHTS_INSTRUMENTATIONKEY)
-    - task: AzureArtifacts.drop-validator-task.manifest-generator-task.ManifestGeneratorTask@0
-      displayName: "SBOM Generation Task"
-      inputs:
-          BuildDropPath: "$(Build.ArtifactStagingDirectory)"
-          Verbosity: "Information"
-    - task: PublishBuildArtifacts@1
-      displayName: 'Publish Artifact: dist'
-      inputs:
-        PathtoPublish: "$(Build.ArtifactStagingDirectory)"
-        ArtifactName: "drop"
-        publishLocation: "Container"
 
-  - job: Build 
+  - job: DurableAnalyzerTests
+    pool: 
+      vmImage: 'windows-latest'
+
+    variables:
+      solution: '**/WebJobs.Extensions.DurableTask.Analyzers.sln'
+      buildPlatform: 'Any CPU'
+      buildConfiguration: 'Release'
+
+    steps:
+    - task: NuGetToolInstaller@1
+
+    - task: DotNetCoreCLI@2
+      inputs:
+        command: 'restore'
+        projects: 'test/WebJobs.Extensions.DurableTask.Analyzers.Test/*.csproj'
+        feedsToUse: 'config'
+        nugetConfigPath: '.nuget/nuget.config'
+
+    - task: DotNetCoreCLI@2
+      inputs:
+        command: 'build'
+        projects: 'test/WebJobs.Extensions.DurableTask.Analyzers.Test/*.csproj'
+        arguments: '--configuration $(buildConfiguration)'
+      displayName: 'dotnet build $(buildConfiguration) '
+
+    - task: VSTest@2
+      inputs:
+        testSelector: 'testAssemblies'
+        testAssemblyVer2: |
+           **/bin/**/*Analyzers.Test.dll
+        distributionBatchType: basedOnExecutionTime
+        diagnosticsEnabled: true
+        rerunFailedTests: true
+        rerunFailedThreshold: 10
+        rerunMaxAttempts: 2
+      env:
+        AzureWebJobsStorage: $(AzureWebJobsStorage)
+        APPINSIGHTS_INSTRUMENTATIONKEY: $(APPINSIGHTS_INSTRUMENTATIONKEY)
+
+
+  - job: BuildExtensionV2 
     pool: 
       vmImage: 'windows-latest'
 
@@ -188,57 +207,6 @@ jobs:
       inputs:
         BuildDropPath: "$(Build.ArtifactStagingDirectory)"
         Verbosity: "Information"
-    - task: PublishBuildArtifacts@1
-      displayName: 'Publish Artifact: dist'
-      inputs:
-        PathtoPublish: "$(Build.ArtifactStagingDirectory)"
-        ArtifactName: "drop"
-        publishLocation: "Container"
-
-  - job: DurableAnalyzerTests
-    pool: 
-      vmImage: 'windows-latest'
-
-    variables:
-      solution: '**/WebJobs.Extensions.DurableTask.Analyzers.sln'
-      buildPlatform: 'Any CPU'
-      buildConfiguration: 'Release'
-
-    steps:
-    - task: NuGetToolInstaller@1
-
-    - task: DotNetCoreCLI@2
-      inputs:
-        command: 'restore'
-        projects: 'test/WebJobs.Extensions.DurableTask.Analyzers.Test/*.csproj'
-        feedsToUse: 'config'
-        nugetConfigPath: '.nuget/nuget.config'
-
-    - task: DotNetCoreCLI@2
-      inputs:
-        command: 'build'
-        projects: 'test/WebJobs.Extensions.DurableTask.Analyzers.Test/*.csproj'
-        arguments: '--configuration $(buildConfiguration)'
-      displayName: 'dotnet build $(buildConfiguration) '
-
-    - task: VSTest@2
-      inputs:
-        testSelector: 'testAssemblies'
-        testAssemblyVer2: |
-           **/bin/**/*Analyzers.Test.dll
-        distributionBatchType: basedOnExecutionTime
-        diagnosticsEnabled: true
-        rerunFailedTests: true
-        rerunFailedThreshold: 10
-        rerunMaxAttempts: 2
-      env:
-        AzureWebJobsStorage: $(AzureWebJobsStorage)
-        APPINSIGHTS_INSTRUMENTATIONKEY: $(APPINSIGHTS_INSTRUMENTATIONKEY)
-    - task: AzureArtifacts.drop-validator-task.manifest-generator-task.ManifestGeneratorTask@0
-      displayName: "SBOM Generation Task"
-      inputs:
-          BuildDropPath: "$(Build.ArtifactStagingDirectory)"
-          Verbosity: "Information"
     - task: PublishBuildArtifacts@1
       displayName: 'Publish Artifact: dist'
       inputs:
