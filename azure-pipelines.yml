@@ -131,7 +131,7 @@ jobs:
       vmImage: 'windows-latest'
 
     variables:
-      solution: '**/WebJobs.Extensions.DurableTask.sln'
+      solution: 'WebJobs.Extensions.DurableTask.sln'
       buildPlatform: 'Any CPU'
       buildConfiguration: 'Release'
     
@@ -140,6 +140,7 @@ jobs:
       displayName: 'Use NuGet '
 
     - task: DotNetCoreCLI@2
+      displayName: 'Restore project'
       inputs:
         command: 'restore'
         projects: '**/**/*.csproj'
@@ -149,9 +150,9 @@ jobs:
     - task: VSBuild@1
       displayName: 'Build Durable Extension'
       inputs:
-        solution: 'WebJobs.Extensions.DurableTask.sln'
+        solution: '$(solution)'
         vsVersion: 16.0
-        configuration: Release
+        configuration: '$(buildConfiguration)'
 
     - task: DotNetCoreCLI@2
       displayName: 'dotnet pack'
@@ -205,16 +206,16 @@ jobs:
         CleanTargetFolder: true
     # This task needed to be fully qualified to disambiguate it.
     - task: AzureArtifacts.drop-validator-task.manifest-generator-task.ManifestGeneratorTask@0
-      displayName: "SBOM Generation Task"
+      displayName: 'SBOM Generation Task'
       inputs:
-        BuildDropPath: "$(Build.ArtifactStagingDirectory)"
-        Verbosity: "Information"
+        BuildDropPath: '$(Build.ArtifactStagingDirectory)'
+        Verbosity: 'Information'
     - task: PublishBuildArtifacts@1
       displayName: 'Publish Artifact: dist'
       inputs:
-        PathtoPublish: "$(Build.ArtifactStagingDirectory)"
-        ArtifactName: "extensionV2"
-        publishLocation: "Container"
+        PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+        ArtifactName: 'extensionV2'
+        publishLocation: 'Container'
 
   # Build, sign, and add SBOM manifest to a Nuget payload of the analyzer.
   # Our release pipeline should re-use this payload at release time.
@@ -222,11 +223,17 @@ jobs:
     pool: 
       vmImage: 'windows-latest'
 
+    variables:
+      solution: 'src/**/**/WebJobs.Extensions.DurableTask.Analyzers.sln'
+      buildPlatform: 'Any CPU'
+      buildConfiguration: 'Release'
+
     steps:
     - task: NuGetToolInstaller@1
       displayName: 'Use NuGet '
 
     - task: DotNetCoreCLI@2
+      displayName: 'Restore project'
       inputs:
         command: 'restore'
         projects: '**/**/*.csproj'
@@ -236,16 +243,16 @@ jobs:
     - task: VSBuild@1
       displayName: 'Build Durable Extension Analyzer'
       inputs:
-        solution: 'src/**/**/WebJobs.Extensions.DurableTask.Analyzers.sln'
+        solution: '$(solution)'
         vsVersion: 16.0
-        configuration: Release
+        configuration: $(buildConfiguration)
 
     - task: DotNetCoreCLI@2
       displayName: 'dotnet pack'
       inputs:
         command: pack
         packagesToPack: 'src/**/**/WebJobs.Extensions.DurableTask.Analyzers.csproj'
-        configuration: Release
+        configuration: $(buildConfiguration)
         packDirectory: '$(Build.BinariesDirectory)'
         nobuild: true
         verbosityPack: Diagnostic
@@ -293,13 +300,13 @@ jobs:
         CleanTargetFolder: true
     # This task needed to be fully qualified to disambiguate it.
     - task: AzureArtifacts.drop-validator-task.manifest-generator-task.ManifestGeneratorTask@0
-      displayName: "SBOM Generation Task"
+      displayName: 'SBOM Generation Task'
       inputs:
-        BuildDropPath: "$(Build.ArtifactStagingDirectory)"
-        Verbosity: "Information"
+        BuildDropPath: '$(Build.ArtifactStagingDirectory)'
+        Verbosity: 'Information'
     - task: PublishBuildArtifacts@1
       displayName: 'Publish Artifact: dist'
       inputs:
-        PathtoPublish: "$(Build.ArtifactStagingDirectory)"
-        ArtifactName: "analyzer"
-        publishLocation: "Container"
+        PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+        ArtifactName: 'analyzer'
+        publishLocation: 'Container'
