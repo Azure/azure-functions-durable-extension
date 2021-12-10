@@ -245,6 +245,7 @@ jobs:
       inputs:
         command: pack
         packagesToPack: 'src/**/**/WebJobs.Extensions.DurableTask.Analyzers.csproj'
+        configuration: Release
         packDirectory: '$(Build.BinariesDirectory)'
         nobuild: true
         verbosityPack: Diagnostic
