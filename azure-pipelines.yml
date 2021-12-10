@@ -211,7 +211,7 @@ jobs:
       displayName: 'Publish Artifact: dist'
       inputs:
         PathtoPublish: "$(Build.ArtifactStagingDirectory)"
-        ArtifactName: "drop"
+        ArtifactName: "extensionV2"
         publishLocation: "Container"
 
   - job: BuildAnalyzer 
@@ -294,11 +294,11 @@ jobs:
     - task: AzureArtifacts.drop-validator-task.manifest-generator-task.ManifestGeneratorTask@0
       displayName: "SBOM Generation Task"
       inputs:
-        BuildDropPath: "$(Build.ArtifactStagingDirectory)/analyzer"
+        BuildDropPath: "$(Build.ArtifactStagingDirectory)"
         Verbosity: "Information"
     - task: PublishBuildArtifacts@1
       displayName: 'Publish Artifact: dist'
       inputs:
         PathtoPublish: "$(Build.ArtifactStagingDirectory)"
-        ArtifactName: "drop"
+        ArtifactName: "analyzer"
         publishLocation: "Container"
