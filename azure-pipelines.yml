@@ -213,3 +213,92 @@ jobs:
         PathtoPublish: "$(Build.ArtifactStagingDirectory)"
         ArtifactName: "drop"
         publishLocation: "Container"
+
+  - job: BuildAnalyzer 
+    pool: 
+      vmImage: 'windows-latest'
+
+    variables:
+      solution: '**/WebJobs.Extensions.DurableTask.Analyzers.sln'
+      buildPlatform: 'Any CPU'
+      buildConfiguration: 'Release'
+    
+    steps:
+    - task: NuGetToolInstaller@1
+      displayName: 'Use NuGet '
+
+    - task: DotNetCoreCLI@2
+      inputs:
+        command: 'restore'
+        projects: '**/**/*.csproj'
+        feedsToUse: 'config'
+        nugetConfigPath: '.nuget/nuget.config'
+
+    - task: VSBuild@1
+      displayName: 'Build Durable Extension'
+      inputs:
+        solution: 'WebJobs.Extensions.DurableTask.Analyzers.sln'
+        vsVersion: 16.0
+        configuration: Release
+
+    - task: DotNetCoreCLI@2
+      displayName: 'dotnet pack'
+      inputs:
+        command: pack
+        packagesToPack: 'src/WebJobs.Extensions.DurableTask/**/WebJobs.Extensions.DurableTask.Analyzers.csproj'
+        packDirectory: '$(Build.BinariesDirectory)'
+        nobuild: true
+        verbosityPack: Normal
+    - script: |
+        echo *** Searching for .symbols.nupkg files to delete...
+        dir /s /b *.symbols.nupkg
+        
+        echo *** Deleting .symbols.nupkg files...
+        del /S /Q *.symbols.nupkg
+        
+        echo *** Listing remaining packages
+        dir /s /b *.nupkg
+      displayName: 'Remove Redundant Symbols Package(s)'
+      continueOnError: true
+    - task: SFP.build-tasks.custom-build-task-1.EsrpCodeSigning@1
+      displayName: 'ESRP CodeSigning: Nupkg'
+      inputs:
+        ConnectedServiceName: 'ESRP Service'
+        FolderPath: '.'
+        Pattern: '*.nupkg'
+        signConfigType: inlineSignParams
+        inlineOperation: |
+          [    
+                            {
+                              "KeyCode": "CP-401405",
+                              "OperationCode": "NuGetSign",
+                              "Parameters": {},
+                              "ToolName": "sign",
+                              "ToolVersion": "1.0"
+                            },
+                            {
+                              "KeyCode": "CP-401405",
+                              "OperationCode": "NuGetVerify",
+                              "Parameters": {},
+                              "ToolName": "sign",
+                              "ToolVersion": "1.0"
+                            }
+                        ]
+    - task: CopyFiles@2
+      displayName: 'Copy Files to: $(Build.ArtifactStagingDirectory)'
+      inputs:
+        SourceFolder: '$(Build.BinariesDirectory)'
+        Contents: '*.nupkg'
+        TargetFolder: '$(Build.ArtifactStagingDirectory)'
+        CleanTargetFolder: true
+    - task: AzureArtifacts.drop-validator-task.manifest-generator-task.ManifestGeneratorTask@0
+      displayName: "SBOM Generation Task"
+      inputs:
+        BuildDropPath: "$(Build.ArtifactStagingDirectory)"
+        Verbosity: "Information"
+    - task: PublishBuildArtifacts@1
+      displayName: 'Publish Artifact: dist'
+      inputs:
+        PathtoPublish: "$(Build.ArtifactStagingDirectory)"
+        ArtifactName: "drop"
+        publishLocation: "Container"
