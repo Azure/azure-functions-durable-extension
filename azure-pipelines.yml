@@ -150,8 +150,8 @@ jobs:
         
         echo *** Listing remaining packages
         dir /s /b *.nupkg
-        displayName: 'Remove Redundant Symbols Package(s)'
-        continueOnError: true
+      displayName: 'Remove Redundant Symbols Package(s)'
+      continueOnError: true
     - task: SFP.build-tasks.custom-build-task-1.EsrpCodeSigning@1
       displayName: 'ESRP CodeSigning: Nupkg'
       inputs:
