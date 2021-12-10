@@ -129,6 +129,11 @@ jobs:
   - job: BuildExtensionV2 
     pool: 
       vmImage: 'windows-latest'
+
+    variables:
+      solution: '**/WebJobs.Extensions.DurableTask.sln'
+      buildPlatform: 'Any CPU'
+      buildConfiguration: 'Release'
     
     steps:
     - task: NuGetToolInstaller@1
