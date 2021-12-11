@@ -9,7 +9,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// <summary>
     /// Connection info provider which resolves connection information from the WebJobs context.
     /// </summary>
-    internal class WebJobsConnectionInfoProvider : IConnectionInfoResolver
+    public class WebJobsConnectionInfoProvider : IConnectionInfoResolver
     {
 #if !FUNCTIONS_V1
         private readonly IConfiguration hostConfiguration;

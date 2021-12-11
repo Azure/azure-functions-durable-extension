@@ -9,7 +9,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// <summary>
     /// Connection info provider which resolves connection information from a standard application (Non WebJob).
     /// </summary>
-    internal class StandardConnectionInfoProvider : IConnectionInfoResolver
+    public class StandardConnectionInfoProvider : IConnectionInfoResolver
     {
         private readonly IConfiguration configuration;
 

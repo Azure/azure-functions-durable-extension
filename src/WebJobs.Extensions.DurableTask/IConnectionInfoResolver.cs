@@ -8,7 +8,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// <summary>
     /// Interface defining methods to resolve connection information.
     /// </summary>
-    internal interface IConnectionInfoResolver
+    public interface IConnectionInfoResolver
     {
         /// <summary>
         /// Attempts to resolve the connection info given a name.
