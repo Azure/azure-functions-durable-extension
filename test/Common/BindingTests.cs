@@ -202,10 +202,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
-        public async Task BindToBlobViaParameterName(string storageProviderType)
+        [MemberData(nameof(TestDataGenerator.GetBooleanAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        public async Task BindToBlobViaParameterName(bool isNotDotNet, string storageProviderType)
         {
-            using (ITestHost host = TestHelpers.GetJobHost(this.loggerProvider, nameof(this.BindToBlobViaParameterName), false, storageProviderType))
+            // Mock enviroment variables to select between language-dependent logic
+            var workerRuntimeKey = "FUNCTIONS_WORKER_RUNTIME";
+            var enviromentVars = new Dictionary<string, string>()
+            {
+                { workerRuntimeKey, isNotDotNet ? "python" : "dotnet" },
+            };
+            var nameResolver = new SimpleNameResolver(enviromentVars);
+
+            using (ITestHost host = TestHelpers.GetJobHost(this.loggerProvider, nameof(this.BindToBlobViaParameterName), false, storageProviderType, nameResolver: nameResolver))
             {
                 await host.StartAsync();
 
@@ -235,6 +243,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var startArgs = new StartOrchestrationArgs();
                 startArgs.FunctionName = nameof(TestActivities.BindToBlobViaParameterName);
                 startArgs.Input = OriginalBlobName;
+                if (isNotDotNet)
+                {
+                    // We doubly-serialize the input, which non-dotnet PLs do to protect their datatypes from dotNet interpretation
+                    var serializer = new MessagePayloadDataConverter(settings: new MessageSerializerSettingsFactory().CreateJsonSerializerSettings(), isDefault: true);
+                    startArgs.Input = serializer.Serialize(startArgs.Input);
+                }
 
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.CallActivity), startArgs, this.output);
                 var status = await client.WaitForCompletionAsync(this.output);
