@@ -161,11 +161,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 // Non-dotnet payloads are doubly-serialized for protection against being interpreted/mutated within dotNET.
                 // Therefore, they also need to be doubly-deserialized when binding to expression-bindings.
+                // We avoid double-deserialized when the worker is unknown, for safety.
                 var workerRuntime = this.durableTaskConfig.PlatformInformationService.GetWorkerRuntimeType();
                 var isNotDotNetWorker = workerRuntime != WorkerRuntimeType.DotNet;
-                if (isNotDotNetWorker && convertedValue is string convertedValueStr)
+                var isNotUnknownWorker = workerRuntime != WorkerRuntimeType.Unknown;
+                if (isNotDotNetWorker && isNotUnknownWorker && convertedValue is string convertedValueStr)
                 {
-                    convertedValue = this.durableTaskConfig.MessageDataConverter.Deserialize<string>(convertedValueStr);
+                    convertedValue = this.durableTaskConfig.MessageDataConverter.Deserialize<object>(convertedValueStr);
                 }
 
                 bindingData[this.parameterInfo.Name] = convertedValue;
