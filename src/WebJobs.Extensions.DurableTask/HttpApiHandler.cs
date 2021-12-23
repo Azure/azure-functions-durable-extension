@@ -204,7 +204,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             HttpManagementPayload httpManagementPayload = this.GetClientResponseLinks(request, instanceId, attribute?.TaskHub, attribute?.ConnectionName, returnInternalServerErrorOnFailure);
 
-            IDurableOrchestrationClient client = this.GetClient(request);
+            IDurableOrchestrationClient client = this.GetClient(request, attribute);
             Stopwatch stopwatch = Stopwatch.StartNew();
 
             // This retry loop completes either when the
@@ -1008,10 +1008,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        private IDurableClient GetClient(HttpRequestMessage request)
+        private IDurableClient GetClient(HttpRequestMessage request, DurableClientAttribute existingAttribute = null)
         {
-            string taskHub = null;
-            string connectionName = null;
+            string taskHub = existingAttribute?.TaskHub;
+            string connectionName = existingAttribute?.ConnectionName;
 
             NameValueCollection pairs = request.GetQueryNameValuePairs();
             foreach (string key in pairs.AllKeys)
