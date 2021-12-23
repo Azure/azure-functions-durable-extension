@@ -245,7 +245,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         status.RuntimeStatus == OrchestrationRuntimeStatus.Failed ||
                         status.RuntimeStatus == OrchestrationRuntimeStatus.Terminated)
                     {
-                        return await this.HandleGetStatusRequestAsync(request, instanceId, returnInternalServerErrorOnFailure);
+                        return await this.HandleGetStatusRequestAsync(request, instanceId, returnInternalServerErrorOnFailure, client);
                     }
                 }
 
@@ -575,9 +575,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private async Task<HttpResponseMessage> HandleGetStatusRequestAsync(
             HttpRequestMessage request,
             string instanceId,
-            bool? returnInternalServerErrorOnFailure = null)
+            bool? returnInternalServerErrorOnFailure = null,
+            IDurableOrchestrationClient existingClient = null)
         {
-            IDurableOrchestrationClient client = this.GetClient(request);
+            IDurableOrchestrationClient client = existingClient ?? this.GetClient(request);
             var queryNameValuePairs = request.GetQueryNameValuePairs();
 
             if (!TryGetBooleanQueryParameterValue(queryNameValuePairs, ShowHistoryParameter, out bool showHistory))
