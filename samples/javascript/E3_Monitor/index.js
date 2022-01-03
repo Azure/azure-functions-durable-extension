@@ -1,18 +1,18 @@
 const df = require("durable-functions");
-const moment = require('moment');
+const { DateTime } = require("luxon");
 
-module.exports = df.orchestrator(function*(context) {
+module.exports = df.orchestrator(function* (context) {
     const input = context.df.getInput();
     context.log("Received monitor request. location: " + (input ? input.location : undefined)
         + ". phone: " + (input ? input.phone : undefined) + ".");
 
     verifyRequest(input);
 
-    const endTime = moment.utc(context.df.currentUtcDateTime).add(6, 'h');
+    const endTime = DateTime.fromJSDate(context.df.currentUtcDateTime, { zone: 'utc' }).plus({ hours: 6 });
     context.log("Instantiating monitor for " + input.location.city + ", " + input.location.state
         + ". Expires: " + (endTime) + ".");
 
-    while (moment.utc(context.df.currentUtcDateTime).isBefore(endTime)) {
+    while (DateTime.fromJSDate(context.df.currentUtcDateTime, { zone: 'utc' }) < endTime) {
         // Check the weather
         context.log("Checking current weather conditions for " + input.location.city + ", "
             + input.location.state + " at " + context.df.currentUtcDateTime + ".");
@@ -27,7 +27,7 @@ module.exports = df.orchestrator(function*(context) {
             break;
         } else {
             // Wait for the next checkpoint
-            var nextCheckpoint = moment.utc(context.df.currentUtcDateTime).add(30, 's');
+            var nextCheckpoint = DateTime.fromJSDate(context.df.currentUtcDateTime, { zone: 'utc' }).plus({ seconds: 30 });
             context.log("Next check for " + input.location.city + ", " + input.location.state
                 + " at " + nextCheckpoint.toString());
 
