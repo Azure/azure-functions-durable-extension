@@ -61,6 +61,12 @@ jobs:
     steps:
     - task: NuGetToolInstaller@1
 
+    - task: UseDotNet@2
+      displayName: 'Use the .NET 6 SDK'
+      inputs:
+        packageType: 'sdk'
+        version: '6.0.x'
+
     - task: DotNetCoreCLI@2
       inputs:
         command: 'restore'
@@ -101,6 +107,12 @@ jobs:
 
     steps:
     - task: NuGetToolInstaller@1
+
+    - task: UseDotNet@2
+      displayName: 'Use the .NET 6 SDK'
+      inputs:
+        packageType: 'sdk'
+        version: '6.0.x'
 
     - task: DotNetCoreCLI@2
       inputs:
