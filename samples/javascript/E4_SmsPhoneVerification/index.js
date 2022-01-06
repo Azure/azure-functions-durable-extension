@@ -1,5 +1,5 @@
 const df = require("durable-functions");
-const moment = require('moment');
+const { DateTime } = require("luxon");
 
 module.exports = df.orchestrator(function*(context) {
     const phoneNumber = context.df.getInput();
@@ -10,8 +10,8 @@ module.exports = df.orchestrator(function*(context) {
     const challengeCode = yield context.df.callActivity("E4_SendSmsChallenge", phoneNumber);
 
     // The user has 90 seconds to respond with the code they received in the SMS message.
-    const expiration = moment.utc(context.df.currentUtcDateTime).add(90, 's');
-    const timeoutTask = context.df.createTimer(expiration.toDate());
+    const expiration = DateTime.fromJSDate(context.df.currentUtcDateTime, {zone: 'utc'}).plus({ seconds: 90 });
+    const timeoutTask = context.df.createTimer(expiration.toJSDate());
 
     let authorized = false;
     for (let i = 0; i <= 3; i++) {
