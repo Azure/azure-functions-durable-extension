@@ -105,6 +105,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 #endif
 
+#pragma warning disable CS1572 // XML comment has a param tag for 'XXX', but there is no parameter by that name
         /// <summary>
         /// Initializes a new instance of the <see cref="DurableTaskExtension"/>.
         /// </summary>
@@ -141,6 +142,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #else
             IErrorSerializerSettingsFactory errorSerializerSettingsFactory = null)
 #endif
+#pragma warning restore CS1572 // XML comment has a param tag for 'XXX', but there is no parameter by that name
         {
             // Options will be null in Functions v1 runtime - populated later.
             this.Options = options?.Value ?? new DurableTaskOptions();
@@ -844,6 +846,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             dispatchContext.SetProperty(activityResult);
         }
+#nullable disable
 
         /// <summary>
         /// This DTFx orchestration middleware allows us to initialize Durable Functions-specific context
@@ -853,7 +856,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="next">The handler for running the next middleware in the pipeline.</param>
         private async Task OrchestrationMiddleware(DispatchMiddlewareContext dispatchContext, Func<Task> next)
         {
-            TaskOrchestrationShim? shim = dispatchContext.GetProperty<TaskOrchestration>() as TaskOrchestrationShim;
+            TaskOrchestrationShim shim = dispatchContext.GetProperty<TaskOrchestration>() as TaskOrchestrationShim;
             if (shim == null)
             {
                 // This is either not an orchestration or it's a special out-of-proc orchestration; skip.
@@ -871,8 +874,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 context.ParentInstanceId = orchestrationRuntimeState.ParentInstance.OrchestrationInstance.InstanceId;
             }
 
-            context.InstanceId = orchestrationRuntimeState.OrchestrationInstance.InstanceId;
-            context.ExecutionId = orchestrationRuntimeState.OrchestrationInstance.ExecutionId;
+            context.InstanceId = orchestrationRuntimeState.OrchestrationInstance?.InstanceId;
+            context.ExecutionId = orchestrationRuntimeState.OrchestrationInstance?.ExecutionId;
             context.IsReplaying = orchestrationRuntimeState.ExecutionStartedEvent.IsPlayed;
             context.History = orchestrationRuntimeState.Events;
             context.RawInput = orchestrationRuntimeState.Input;
@@ -960,6 +963,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
 #if NET6_0_OR_GREATER
+#nullable enable
         private async Task OrchestrationMiddlewareV2(DispatchMiddlewareContext dispatchContext, Func<Task> next)
         {
             if (!this.IsOutOfProcV2)
@@ -999,7 +1003,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return;
             }
 
-            ExecutionStartedEvent startEvent = runtimeState.ExecutionStartedEvent;
+            ExecutionStartedEvent? startEvent = runtimeState.ExecutionStartedEvent;
+            if (startEvent == null)
+            {
+                // This should never happen, but it's almost certainly non-retriable if it does.
+                dispatchContext.SetProperty(OrchestratorExecutionResult.ForFailure(
+                    message: "ExecutionStartedEvent was missing from runtime state!",
+                    details: null));
+                return;
+            }
+
             bool isReplaying = runtimeState.PastEvents.Any();
 
             this.TraceHelper.FunctionStarting(
@@ -1135,6 +1148,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // This signals it to short-circuit the pipeline and process the given results immediately.
             dispatchContext.SetProperty(orchestratorResult);
         }
+#nullable disable
 #endif
 
         /// <summary>
@@ -1335,13 +1349,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return this.defaultDurabilityProvider.ConnectionName;
         }
 
-        internal RegisteredFunctionInfo? GetOrchestratorInfo(FunctionName orchestratorFunction)
+        internal RegisteredFunctionInfo GetOrchestratorInfo(FunctionName orchestratorFunction)
         {
             this.knownOrchestrators.TryGetValue(orchestratorFunction, out var info);
             return info;
         }
 
-        internal RegisteredFunctionInfo? GetEntityInfo(FunctionName entityFunction)
+        internal RegisteredFunctionInfo GetEntityInfo(FunctionName entityFunction)
         {
             this.knownEntities.TryGetValue(entityFunction, out var info);
             return info;
@@ -1355,7 +1369,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #endif
         }
 
-        private static Assembly? ResolveAssembly(object sender, ResolveEventArgs args)
+        private static Assembly ResolveAssembly(object sender, ResolveEventArgs args)
         {
             if (args.Name.StartsWith("DurableTask.Core"))
             {
@@ -1391,7 +1405,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return client;
         }
 
-        internal void RegisterOrchestrator(FunctionName orchestratorFunction, RegisteredFunctionInfo? orchestratorInfo)
+        internal void RegisterOrchestrator(FunctionName orchestratorFunction, RegisteredFunctionInfo orchestratorInfo)
         {
             if (orchestratorInfo != null)
             {
@@ -1429,7 +1443,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        internal void RegisterActivity(FunctionName activityFunction, ITriggeredFunctionExecutor? executor)
+        internal void RegisterActivity(FunctionName activityFunction, ITriggeredFunctionExecutor executor)
         {
             if (this.knownActivities.TryGetValue(activityFunction, out RegisteredFunctionInfo existing))
             {
@@ -1465,7 +1479,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        internal void RegisterEntity(FunctionName entityFunction, RegisteredFunctionInfo? entityInfo)
+        internal void RegisterEntity(FunctionName entityFunction, RegisteredFunctionInfo entityInfo)
         {
             if (entityInfo != null)
             {
@@ -1663,7 +1677,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return false;
         }
 
-        internal string? GetIntputOutputTrace(string? rawInputOutputData)
+        internal string GetIntputOutputTrace(string rawInputOutputData)
         {
             if (this.Options.Tracing.TraceInputsAndOutputs)
             {

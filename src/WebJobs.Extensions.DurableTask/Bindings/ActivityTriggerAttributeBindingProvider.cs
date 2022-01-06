@@ -35,7 +35,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             ParameterInfo parameter = context.Parameter;
-            ActivityTriggerAttribute trigger = parameter.GetCustomAttribute<ActivityTriggerAttribute>(inherit: false);
+            ActivityTriggerAttribute? trigger = parameter.GetCustomAttribute<ActivityTriggerAttribute>(inherit: false);
             if (trigger == null)
             {
                 return Task.FromResult<ITriggerBinding?>(null);
@@ -97,7 +97,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 };
 
                 // allow binding to the parameter name
-                contract[parameterInfo.Name] = parameterInfo.ParameterType;
+                contract[parameterInfo.Name!] = parameterInfo.ParameterType;
 
                 // allow binding directly to the JSON representation of the data.
                 contract[DataBindingPropertyName] = typeof(JValue);
@@ -150,7 +150,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 // the order here determines which binding rule will win.
                 var bindingData = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
                 bindingData[InstanceIdBindingPropertyName] = ((IDurableActivityContext)activityContext).InstanceId;
-                bindingData[this.parameterInfo.Name] = convertedValue;
+                bindingData[this.parameterInfo.Name!] = convertedValue;
                 bindingData[DataBindingPropertyName] = activityContext.GetInputAsJson();
 
                 var triggerData = new TriggerData(inputValueProvider, bindingData);
