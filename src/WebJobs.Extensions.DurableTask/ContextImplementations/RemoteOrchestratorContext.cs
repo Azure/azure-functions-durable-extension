@@ -23,10 +23,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         [JsonProperty("instanceId")]
-        public string InstanceId => this.runtimeState.OrchestrationInstance.InstanceId;
+        public string InstanceId => this.runtimeState.OrchestrationInstance?.InstanceId ?? string.Empty;
 
         [JsonProperty("pastEvents")]
-        public IReadOnlyList<HistoryEvent> PastEvents => this.runtimeState.PastEvents;
+        public IEnumerable<HistoryEvent> PastEvents => this.runtimeState.PastEvents;
 
         [JsonProperty("newEvents")]
         public IEnumerable<HistoryEvent> NewEvents => this.runtimeState.NewEvents;
