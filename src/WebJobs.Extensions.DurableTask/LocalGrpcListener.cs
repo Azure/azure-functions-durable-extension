@@ -106,6 +106,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     await this.host.StartAsync(cancelToken);
                     this.ListenAddress = listenAddress;
+
+                    this.extension.TraceHelper.ExtensionInformationalEvent(
+                        this.extension.Options.HubName,
+                        instanceId: string.Empty,
+                        functionName: string.Empty,
+                        message: $"Opened local gRPC endpoint: {listenAddress}",
+                        writeToUserLogs: true);
+
                     return;
                 }
                 catch (IOException)
@@ -125,7 +133,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public Task StopAsync(CancellationToken cancelToken = default)
         {
-            return this.host?.StopAsync(cancelToken) ?? Task.CompletedTask;
+            if (this.host != null && this.ListenAddress != null)
+            {
+                this.extension.TraceHelper.ExtensionInformationalEvent(
+                    this.extension.Options.HubName,
+                    instanceId: string.Empty,
+                    functionName: string.Empty,
+                    message: $"Closing local gRPC endpoint: {this.ListenAddress}",
+                    writeToUserLogs: true);
+
+                return this.host.StopAsync(cancelToken);
+            }
+
+            return Task.CompletedTask;
         }
 
         private int GetRandomPort()
