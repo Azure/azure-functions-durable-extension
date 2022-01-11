@@ -2,7 +2,9 @@ jobs:
 
   - job: FunctionsV1Tests
     pool: 
-      vmImage: 'windows-latest'
+      name: '1ES-Hosted-AzFunc'
+      demands:
+        - ImageOverride -equals MMS2019TLS
 
     variables:
       solution: 'WebJobs.Extensions.DurableTask.sln'
@@ -42,7 +44,9 @@ jobs:
 
   - job: FunctionsV2Tests
     pool: 
-      vmImage: 'windows-latest'
+      name: '1ES-Hosted-AzFunc'
+      demands:
+        - ImageOverride -equals MMS2019TLS
 
     strategy:
       parallel: 8
@@ -86,7 +90,9 @@ jobs:
 
   - job: DurableAnalyzerTests
     pool: 
-      vmImage: 'windows-latest'
+      name: '1ES-Hosted-AzFunc'
+      demands:
+        - ImageOverride -equals MMS2019TLS
 
     variables:
       solution: '**/WebJobs.Extensions.DurableTask.Analyzers.sln'
