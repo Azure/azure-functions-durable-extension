@@ -1,0 +1,133 @@
+trigger: none
+pr: none
+
+pool:
+  vmImage: 'windows-latest'
+
+steps:
+# Use NuGet
+- task: NuGetToolInstaller@1
+  displayName: 'Use NuGet '
+
+# dotnet restore
+- task: DotNetCoreCLI@2
+  displayName: 'dotnet restore'
+  inputs:
+    command: restore
+    projects: '**/**/*.csproj'
+    feedsToUse: config
+    nugetConfigPath: 'azure-functions-durable-extension/.nuget/nuget.config'
+
+# Build durable-extension
+- task: VSBuild@1
+  displayName: 'Build Durable Extension'
+  inputs:
+    solution: 'azure-functions-durable-extension/WebJobs.Extensions.DurableTask.sln'
+    vsVersion: "16.0"
+    configuration: Release
+
+- task: EsrpCodeSigning@1
+  inputs:
+    ConnectedServiceName: 'ESRP Service'
+    FolderPath: 'azure-functions-durable-extension/src/WebJobs.Extensions.DurableTask/bin/Release'
+    Pattern: '*DurableTask.dll'
+    signConfigType: 'inlineSignParams'
+    inlineOperation: |
+      [    
+          {
+            "KeyCode": "CP-230012",
+            "OperationCode": "SigntoolSign",
+            "Parameters": {
+              "OpusName": "Microsoft",
+              "OpusInfo": "http://www.microsoft.com",
+              "FileDigest": "/fd \"SHA256\"",
+              "PageHash": "/NPH",
+              "TimeStamp": "/tr \"http://rfc3161.gtm.corp.microsoft.com/TSS/HttpTspServer\" /td sha256"
+            },
+            "ToolName": "sign",
+            "ToolVersion": "1.0"
+          },
+          {
+            "KeyCode": "CP-230012",
+            "OperationCode": "SigntoolVerify",
+            "Parameters": {},
+            "ToolName": "sign",
+            "ToolVersion": "1.0"
+          }
+      ]
+    SessionTimeout: '60'
+    MaxConcurrency: '50'
+    MaxRetryAttempts: '5'
+
+# dotnet pack
+# Packaging needs to be a separate step from build.
+# This will automatically pick up the signed DLLs.
+- task: DotNetCoreCLI@2
+  displayName: 'dotnet pack WebJobs.Extensions.DurableTask.csproj'
+  inputs:
+    command: pack
+    packagesToPack: 'azure-functions-durable-extension/src/**/WebJobs.Extensions.DurableTask.csproj'
+    configuration: Release
+    packDirectory: 'azure-functions-durable-extension'
+    nobuild: true
+
+# Remove redundant symbol package(s)
+- script: |
+   echo *** Searching for .symbols.nupkg files to delete...
+   dir /s /b *.symbols.nupkg
+   
+   echo *** Deleting .symbols.nupkg files...
+   del /S /Q *.symbols.nupkg
+   
+   echo *** Listing remaining packages
+   dir /s /b *.nupkg
+  displayName: 'Remove Redundant Symbols Package(s)'
+  continueOnError: true
+
+# Digitally sign all the nuget packages with the Microsoft certificate.
+# This appears to be an in-place signing job, which is convenient.
+- task: EsrpCodeSigning@1
+  inputs:
+    ConnectedServiceName: 'ESRP Service'
+    FolderPath: 'azure-functions-durable-extension'
+    Pattern: '*.nupkg'
+    signConfigType: 'inlineSignParams'
+    inlineOperation: |
+      [    
+          {
+            "KeyCode": "CP-401405",
+            "OperationCode": "NuGetSign",
+            "Parameters": {},
+            "ToolName": "sign",
+            "ToolVersion": "1.0"
+          },
+          {
+            "KeyCode": "CP-401405",
+            "OperationCode": "NuGetVerify",
+            "Parameters": {},
+            "ToolName": "sign",
+            "ToolVersion": "1.0"
+          }
+      ]
+    SessionTimeout: '60'
+    MaxConcurrency: '50'
+    MaxRetryAttempts: '5'
+
+# Manifest Generator Task
+- task: ManifestGeneratorTask@0
+  displayName: 'Manifest Generator '
+  inputs:
+    BuildDropPath: '$(System.DefaultWorkingDirectory)/azure-functions-durable-extension'
+
+# Make the nuget packages available for download in the ADO portal UI
+- publish: '$(System.DefaultWorkingDirectory)/azure-functions-durable-extension'
+  displayName: 'Publish nuget packages to Artifacts'
+  artifact: PackageOutput
+
+- task: NuGetCommand@2
+  displayName: 'NuGet push'
+  inputs:
+    command: push
+    packagesToPush: 'azure-functions-durable-extension/Microsoft.Azure.WebJobs.Extensions.DurableTask.*.nupkg'
+    nuGetFeedType: external
+    publishFeedCredentials: 'Connor Credentials MyGet Staging'
