@@ -1,8 +1,10 @@
 jobs:
 
   - job: FunctionsV1Tests
-    pool: 
-      vmImage: 'windows-latest'
+     pool:
+      name: '1ES-Hosted-DurableTaskFramework'
+      demands:
+        - ImageOverride -equals MMS2022TLS
 
     variables:
       solution: 'WebJobs.Extensions.DurableTask.sln'
@@ -41,8 +43,10 @@ jobs:
         APPINSIGHTS_INSTRUMENTATIONKEY: $(APPINSIGHTS_INSTRUMENTATIONKEY) 
 
   - job: FunctionsV2Tests
-    pool: 
-      vmImage: 'windows-latest'
+    pool:
+      name: '1ES-Hosted-DurableTaskFramework'
+      demands:
+        - ImageOverride -equals MMS2022TLS
 
     strategy:
       parallel: 8
@@ -85,8 +89,10 @@ jobs:
         APPINSIGHTS_INSTRUMENTATIONKEY: $(APPINSIGHTS_INSTRUMENTATIONKEY) 
 
   - job: DurableAnalyzerTests
-    pool: 
-      vmImage: 'windows-latest'
+    pool:
+      name: '1ES-Hosted-DurableTaskFramework'
+      demands:
+        - ImageOverride -equals MMS2022TLS
 
     variables:
       solution: '**/WebJobs.Extensions.DurableTask.Analyzers.sln'
