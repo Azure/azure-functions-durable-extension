@@ -23,14 +23,14 @@ steps:
 - task: VSBuild@1
   displayName: 'Build Durable Extension'
   inputs:
-    solution: 'azure-functions-durable-extension/WebJobs.Extensions.DurableTask.sln'
+    solution: '/WebJobs.Extensions.DurableTask.sln'
     vsVersion: "16.0"
     configuration: Release
 
 - task: EsrpCodeSigning@1
   inputs:
     ConnectedServiceName: 'ESRP Service'
-    FolderPath: 'azure-functions-durable-extension/src/WebJobs.Extensions.DurableTask/bin/Release'
+    FolderPath: '/src/WebJobs.Extensions.DurableTask/bin/Release'
     Pattern: '*DurableTask.dll'
     signConfigType: 'inlineSignParams'
     inlineOperation: |
@@ -67,7 +67,7 @@ steps:
   displayName: 'dotnet pack WebJobs.Extensions.DurableTask.csproj'
   inputs:
     command: pack
-    packagesToPack: 'azure-functions-durable-extension/src/**/WebJobs.Extensions.DurableTask.csproj'
+    packagesToPack: 'src/**/WebJobs.Extensions.DurableTask.csproj'
     configuration: Release
     packDirectory: 'azure-functions-durable-extension'
     nobuild: true
@@ -129,6 +129,6 @@ steps:
   displayName: 'NuGet push'
   inputs:
     command: push
-    packagesToPush: 'azure-functions-durable-extension/Microsoft.Azure.WebJobs.Extensions.DurableTask.*.nupkg'
+    packagesToPush: 'Microsoft.Azure.WebJobs.Extensions.DurableTask.*.nupkg'
     nuGetFeedType: external
     publishFeedCredentials: 'Connor Credentials MyGet Staging'
