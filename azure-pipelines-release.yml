@@ -24,7 +24,7 @@ steps:
 - task: VSBuild@1
   displayName: 'Build Durable Extension'
   inputs:
-    solution: '**/WebJobs.Extensions.DurableTask.sln'
+    solution: '**/WebJobs.Extensions.DurableTaskNoTest.sln'
     vsVersion: "16.0"
     configuration: Release
 
