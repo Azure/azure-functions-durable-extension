@@ -46,7 +46,7 @@ jobs:
     pool:
       name: '1ES-Hosted-DurableTaskFramework'
       demands:
-        - ImageOverride -equals MMS2022TLS
+        - ImageOverride -equals MMSWindows2022Custom
 
     strategy:
       parallel: 8
@@ -92,7 +92,7 @@ jobs:
     pool:
       name: '1ES-Hosted-DurableTaskFramework'
       demands:
-        - ImageOverride -equals MMS2022TLS
+        - ImageOverride -equals MMSWindows2022Custom
 
     variables:
       solution: '**/WebJobs.Extensions.DurableTask.Analyzers.sln'
