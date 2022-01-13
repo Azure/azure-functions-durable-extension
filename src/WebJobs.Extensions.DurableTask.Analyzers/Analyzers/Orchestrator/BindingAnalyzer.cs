@@ -35,9 +35,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     if (attributeName != "OrchestrationTrigger")
                     {
                         var diagnostic = Diagnostic.Create(Rule, attribute.GetLocation(), attributeName);
-                        
-                        context.ReportDiagnostic(diagnostic);
-                        
+
+                        if (context.Compilation.ContainsSyntaxTree(method.SyntaxTree))
+                        {
+                            context.ReportDiagnostic(diagnostic);
+                        }
+
                         diagnosedIssue = true;
                     }
                 }
