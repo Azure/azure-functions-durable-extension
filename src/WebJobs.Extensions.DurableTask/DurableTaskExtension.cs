@@ -75,7 +75,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly LocalGrpcListener localGrpcListener;
 #endif
         private readonly bool isOptionsConfigured;
-        private readonly IApplicationLifetimeWrapper hostLifetimeService = HostLifecycleService.NoOp;
 #pragma warning disable CS0612 // Type or member is obsolete
 #pragma warning disable SA1401 // Fields should be private
         internal IPlatformInformation PlatformInformationService;
@@ -183,12 +182,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 webhookDelegate);
 #endif
 
-            this.hostLifetimeService = hostLifetimeService;
+            this.HostLifetimeService = hostLifetimeService;
 
 #if !FUNCTIONS_V1
             // The RPC server is started when the extension is initialized.
             // The RPC server is stopped when the host has finished shutting down.
-            this.hostLifetimeService.OnStopped.Register(this.StopLocalHttpServer);
+            this.HostLifetimeService.OnStopped.Register(this.StopLocalHttpServer);
             this.telemetryActivator = telemetryActivator;
             this.telemetryActivator?.Initialize(logger);
 #endif
@@ -208,7 +207,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.loggerFactory,
                     this.defaultDurabilityProvider,
                     this.defaultDurabilityProvider);
-                this.hostLifetimeService.OnStopped.Register(this.StopLocalGrpcServer);
+                this.HostLifetimeService.OnStopped.Register(this.StopLocalGrpcServer);
             }
 #endif
         }
@@ -263,6 +262,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal TimeSpan MessageReorderWindow
             => this.defaultDurabilityProvider.GuaranteesOrderedDelivery ? TimeSpan.Zero : TimeSpan.FromMinutes(this.Options.EntityMessageReorderWindowInMinutes);
+
+        internal IApplicationLifetimeWrapper HostLifetimeService { get; } = HostLifecycleService.NoOp;
 
         internal bool IsOutOfProcV2 { get; }
 
@@ -434,25 +435,32 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // Add middleware to the DTFx dispatcher so that we can inject our own logic
             // into and customize the orchestration execution pipeline.
             // Note that the order of the middleware added determines the order in which it executes.
-            this.taskHubWorker.AddActivityDispatcherMiddleware(this.ActivityMiddlewareV2);
-            this.taskHubWorker.AddActivityDispatcherMiddleware(this.ActivityMiddleware);
-            this.taskHubWorker.AddOrchestrationDispatcherMiddleware(this.EntityMiddleware);
-#if NET6_0_OR_GREATER
-            this.taskHubWorker.AddOrchestrationDispatcherMiddleware(this.OrchestrationMiddlewareV2);
-#endif
-            this.taskHubWorker.AddOrchestrationDispatcherMiddleware(this.OrchestrationMiddleware);
+            if (this.IsOutOfProcV2)
+            {
+                // This is a newer, more performant flavor of orchestration/activity middleware that is being
+                // enabled for newer language runtimes. Support for entities in this model is TBD.
+                var ooprocMiddleware = new OutOfProcMiddleware(this);
+                this.taskHubWorker.AddActivityDispatcherMiddleware(ooprocMiddleware.CallActivityAsync);
+                this.taskHubWorker.AddOrchestrationDispatcherMiddleware(ooprocMiddleware.CallOrchestratorAsync);
+            }
+            else
+            {
+                // This is the older middleware implementation that is currently in use for in-process .NET
+                // and the older out-of-proc languages, like Node.js, Python, and PowerShell.
+                this.taskHubWorker.AddActivityDispatcherMiddleware(this.ActivityMiddleware);
+                this.taskHubWorker.AddOrchestrationDispatcherMiddleware(this.EntityMiddleware);
+                this.taskHubWorker.AddOrchestrationDispatcherMiddleware(this.OrchestrationMiddleware);
+            }
 
 #if !FUNCTIONS_V1
             // The RPC server needs to be started sometime before any functions can be triggered
             // and this is the latest point in the pipeline available to us.
             this.StartLocalHttpServer();
 #endif
-#if NET6_0_OR_GREATER
             if (this.IsOutOfProcV2)
             {
                 this.StartLocalGrpcServer();
             }
-#endif
         }
 
         internal string GetLocalRpcAddress()
@@ -463,6 +471,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return this.localGrpcListener.ListenAddress;
             }
 #endif
+
             return this.HttpApiHandler.GetBaseUrl();
         }
 
@@ -480,7 +489,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string containerName = this.PlatformInformationService.GetContainerName();
 
             // If running in linux, initialize the EventSource listener with the appropiate logger.
-            LinuxAppServiceLogger linuxLogger = null;
+            LinuxAppServiceLogger linuxLogger;
             if (!inConsumption)
             {
                 linuxLogger = new LinuxAppServiceLogger(writeToConsole: false, containerName, tenant, stampName);
@@ -517,14 +526,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             bool? shouldEnable = this.Options.LocalRpcEndpointEnabled;
             if (!shouldEnable.HasValue)
             {
-                // Default behavior is to only start the local RPC server for specific non-.NET function languages.
                 WorkerRuntimeType runtimeType = this.PlatformInformationService.GetWorkerRuntimeType();
                 shouldEnable = runtimeType switch
                 {
+                    // dotnet runs in process
                     WorkerRuntimeType.DotNet => false,
+
+                    // dotnet-isolated and java use a gRPC server instead of the HTTP server
                     WorkerRuntimeType.DotNetIsolated => false,
                     WorkerRuntimeType.Java => false,
 
+                    // everything else - assume the HTTP server
                     WorkerRuntimeType.Python => true,
                     WorkerRuntimeType.Node => true,
                     WorkerRuntimeType.PowerShell => true,
@@ -691,10 +703,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return new TaskNonexistentActivityShim(this, name);
             }
 
-            return new TaskActivityShim(this, info.Executor, this.hostLifetimeService, name);
+            return new TaskActivityShim(this, info.Executor, this.HostLifetimeService, name);
         }
 
-#nullable enable
         /// <summary>
         /// This DTFx activity middleware allows us to add context to the activity function shim
         /// before it actually starts running.
@@ -705,148 +716,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             if (dispatchContext.GetProperty<TaskActivity>() is TaskActivityShim shim)
             {
-                TaskScheduledEvent? @event = dispatchContext.GetProperty<TaskScheduledEvent>();
+                TaskScheduledEvent @event = dispatchContext.GetProperty<TaskScheduledEvent>();
                 shim.SetTaskEventId(@event?.EventId ?? -1);
             }
 
             // Move to the next stage of the DTFx pipeline to trigger the activity shim.
             return next();
         }
-
-        private async Task ActivityMiddlewareV2(DispatchMiddlewareContext dispatchContext, Func<Task> next)
-        {
-            if (!this.IsOutOfProcV2)
-            {
-                // Not applicable; this middleware is specific to out-of-proc V2.
-                await next();
-                return;
-            }
-
-            TaskScheduledEvent? scheduledEvent = dispatchContext.GetProperty<TaskScheduledEvent>();
-            if (scheduledEvent == null)
-            {
-                // Not an activity
-                await next();
-                return;
-            }
-
-            FunctionName functionName = new (scheduledEvent.Name);
-
-            OrchestrationInstance? instance = dispatchContext.GetProperty<OrchestrationInstance>();
-            if (instance == null)
-            {
-                // This should never happen, but it's almost certainly non-retriable if it does.
-                // TODO: Return some kind of validation failure
-                dispatchContext.SetProperty(new ActivityExecutionResult
-                {
-                    ResponseEvent = new TaskFailedEvent(
-                        eventId: -1,
-                        taskScheduledId: scheduledEvent.EventId,
-                        reason: $"Function {functionName} could not execute because instance ID metadata was missing!",
-                        details: null),
-                });
-                return;
-            }
-
-            if (!this.knownActivities.TryGetValue(functionName, out RegisteredFunctionInfo? function))
-            {
-                dispatchContext.SetProperty(new ActivityExecutionResult
-                {
-                    ResponseEvent = new TaskFailedEvent(
-                        eventId: -1,
-                        taskScheduledId: scheduledEvent.EventId,
-                        reason: $"No enabled activity function named '{functionName}' was found!",
-                        details: null),
-                });
-                return;
-            }
-
-            string? rawInput = scheduledEvent.Input;
-            this.TraceHelper.FunctionStarting(
-                this.Options.HubName,
-                functionName.Name,
-                instance.InstanceId,
-                this.GetIntputOutputTrace(rawInput),
-                functionType: FunctionType.Activity,
-                isReplay: false,
-                taskEventId: scheduledEvent.EventId);
-
-            var inputContext = new DurableActivityContext(this, instance.InstanceId, rawInput, functionName.Name);
-            var triggerInput = new TriggeredFunctionData { TriggerValue = inputContext };
-
-            FunctionResult result;
-            try
-            {
-                result = await function.Executor.TryExecuteAsync(
-                    triggerInput,
-                    cancellationToken: this.hostLifetimeService.OnStopping);
-            }
-            catch (Exception hostRuntimeException)
-            {
-                string reason = this.hostLifetimeService.OnStopping.IsCancellationRequested ?
-                    "The Functions/WebJobs runtime is shutting down!" :
-                    $"Unhandled exception in the Functions/WebJobs runtime: {hostRuntimeException}";
-
-                this.TraceHelper.FunctionAborted(
-                    this.Options.HubName,
-                    functionName.Name,
-                    instance.InstanceId,
-                    reason,
-                    functionType: FunctionType.Activity);
-
-                // This will abort the current execution and force an durable retry
-                throw new SessionAbortedException(reason);
-            }
-
-            ActivityExecutionResult activityResult;
-            if (result.Succeeded)
-            {
-                string? serializedOutput = inputContext.GetSerializedOutput();
-                this.TraceHelper.FunctionCompleted(
-                    this.Options.HubName,
-                    functionName.Name,
-                    instance.InstanceId,
-                    this.GetIntputOutputTrace(serializedOutput),
-                    continuedAsNew: false,
-                    FunctionType.Activity,
-                    isReplay: false,
-                    scheduledEvent.EventId);
-
-                activityResult = new ActivityExecutionResult
-                {
-                    ResponseEvent = new TaskCompletedEvent(
-                        eventId: -1,
-                        taskScheduledId: scheduledEvent.EventId,
-                        result: serializedOutput),
-                };
-            }
-            else
-            {
-                // TODO: Deserialize the out-of-proc exception
-                string exceptionDetails = result.Exception.ToString();
-
-                this.TraceHelper.FunctionFailed(
-                    this.Options.HubName,
-                    functionName.Name,
-                    instance.InstanceId,
-                    exceptionDetails,
-                    FunctionType.Activity,
-                    isReplay: false,
-                    scheduledEvent.EventId);
-
-                activityResult = new ActivityExecutionResult
-                {
-                    ResponseEvent = new TaskFailedEvent(
-                        eventId: -1,
-                        taskScheduledId: scheduledEvent.EventId,
-                        reason: $"Function {functionName} failed with an unhandled exception.",
-                        exceptionDetails),
-                };
-            }
-
-            dispatchContext.SetProperty(activityResult);
-        }
-#nullable disable
 
         /// <summary>
         /// This DTFx orchestration middleware allows us to initialize Durable Functions-specific context
@@ -924,7 +800,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #pragma warning restore CS0618
                     },
                     context,
-                    this.hostLifetimeService.OnStopping);
+                    this.HostLifetimeService.OnStopping);
 
                 if (result.ExecutionStatus == WrappedFunctionResult.FunctionResultStatus.FunctionsRuntimeError)
                 {
@@ -961,195 +837,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             await context.RunDeferredTasks();
         }
-
-#if NET6_0_OR_GREATER
-#nullable enable
-        private async Task OrchestrationMiddlewareV2(DispatchMiddlewareContext dispatchContext, Func<Task> next)
-        {
-            if (!this.IsOutOfProcV2)
-            {
-                // Not applicable; this middleware is specific to out-of-proc V2.
-                await next();
-                return;
-            }
-
-            OrchestrationRuntimeState? runtimeState = dispatchContext.GetProperty<OrchestrationRuntimeState>();
-            if (runtimeState == null)
-            {
-                // This is not an orchestration; skip.
-                await next();
-                return;
-            }
-
-            OrchestrationInstance? instance = dispatchContext.GetProperty<OrchestrationInstance>();
-            if (instance == null)
-            {
-                // This should never happen, but it's almost certainly non-retriable if it does.
-                // TODO: Return some kind of validation failure
-                dispatchContext.SetProperty(OrchestratorExecutionResult.ForFailure(
-                    message: "Instance ID metadata was missing!",
-                    details: null));
-                return;
-            }
-
-            FunctionName functionName = new (runtimeState.Name);
-            RegisteredFunctionInfo? function = this.GetOrchestratorInfo(functionName);
-            if (function == null)
-            {
-                // TODO: Don't we have a better error message for this somewhere?
-                dispatchContext.SetProperty(OrchestratorExecutionResult.ForFailure(
-                    message: $"No enabled orchestrator function named '{functionName}' was found!",
-                    details: null));
-                return;
-            }
-
-            ExecutionStartedEvent? startEvent = runtimeState.ExecutionStartedEvent;
-            if (startEvent == null)
-            {
-                // This should never happen, but it's almost certainly non-retriable if it does.
-                dispatchContext.SetProperty(OrchestratorExecutionResult.ForFailure(
-                    message: "ExecutionStartedEvent was missing from runtime state!",
-                    details: null));
-                return;
-            }
-
-            bool isReplaying = runtimeState.PastEvents.Any();
-
-            this.TraceHelper.FunctionStarting(
-                this.Options.HubName,
-                functionName.Name,
-                instance.InstanceId,
-                isReplaying ? "(replay)" : this.GetIntputOutputTrace(startEvent.Input),
-                FunctionType.Orchestrator,
-                isReplaying);
-
-            // One-time logging/notifications for when the orchestration first starts.
-            if (!isReplaying)
-            {
-                TagActivityWithOrchestrationStatus(OrchestrationRuntimeStatus.Running, instance.InstanceId);
-
-                await this.LifeCycleNotificationHelper.OrchestratorStartingAsync(
-                    this.Options.HubName,
-                    functionName.Name,
-                    instance.InstanceId,
-                    isReplay: false);
-            }
-
-            var context = new RemoteOrchestratorContext(runtimeState);
-            var input = new TriggeredFunctionData
-            {
-                TriggerValue = context,
-#pragma warning disable CS0618 // Type or member is obsolete (not intended for general public use)
-                InvokeHandler = async functionInvoker =>
-#pragma warning restore CS0618 // Type or member is obsolete (not intended for general public use)
-                {
-                    // Invoke the function and look for a return value. Trigger return values are an undocumented feature that we depend on.
-                    Task invokeTask = functionInvoker();
-                    if (invokeTask is not Task<object> invokeTaskWithResult)
-                    {
-                        throw new InvalidOperationException("The internal function invoker returned a task that does not support return values!");
-                    }
-
-                    // The return value is expected to be a JSON string of a well-known schema.
-                    string? triggerReturnValue = (await invokeTaskWithResult) as string;
-                    if (triggerReturnValue == null || triggerReturnValue[0] != '{')
-                    {
-                        throw new InvalidOperationException("The returned orchestrator response data was not a JSON object!");
-                    }
-
-                    context.SetResult(triggerReturnValue);
-                },
-            };
-
-            FunctionResult functionResult;
-            try
-            {
-                functionResult = await function.Executor.TryExecuteAsync(
-                    input,
-                    cancellationToken: this.hostLifetimeService.OnStopping);
-            }
-            catch (Exception hostRuntimeException)
-            {
-                string reason = this.hostLifetimeService.OnStopping.IsCancellationRequested ?
-                    "The Functions/WebJobs runtime is shutting down!" :
-                    $"Unhandled exception in the Functions/WebJobs runtime: {hostRuntimeException}";
-
-                this.TraceHelper.FunctionAborted(
-                    this.Options.HubName,
-                    functionName.Name,
-                    instance.InstanceId,
-                    reason,
-                    functionType: FunctionType.Orchestrator);
-
-                // This will abort the current execution and force an durable retry
-                throw new SessionAbortedException(reason);
-            }
-
-            OrchestratorExecutionResult orchestratorResult;
-            if (functionResult.Succeeded)
-            {
-                orchestratorResult = context.GetResult();
-
-                if (context.OrchestratorCompleted)
-                {
-                    this.TraceHelper.FunctionCompleted(
-                        this.Options.HubName,
-                        functionName.Name,
-                        instance.InstanceId,
-                        this.GetIntputOutputTrace(context.SerializedOutput),
-                        context.ContinuedAsNew,
-                        FunctionType.Orchestrator,
-                        isReplay: false);
-
-                    TagActivityWithOrchestrationStatus(OrchestrationRuntimeStatus.Completed, instance.InstanceId);
-
-                    await this.LifeCycleNotificationHelper.OrchestratorCompletedAsync(
-                        this.Options.HubName,
-                        functionName.Name,
-                        instance.InstanceId,
-                        context.ContinuedAsNew,
-                        isReplay: false);
-                }
-                else
-                {
-                    this.TraceHelper.FunctionAwaited(
-                        this.Options.HubName,
-                        functionName.Name,
-                        FunctionType.Orchestrator,
-                        instance.InstanceId,
-                        isReplay: false);
-                }
-            }
-            else
-            {
-                string exceptionDetails = functionResult.Exception.ToString();
-
-                this.TraceHelper.FunctionFailed(
-                    this.Options.HubName,
-                    functionName.Name,
-                    instance.InstanceId,
-                    exceptionDetails,
-                    FunctionType.Orchestrator,
-                    isReplay: false);
-
-                await this.LifeCycleNotificationHelper.OrchestratorFailedAsync(
-                    this.Options.HubName,
-                    functionName.Name,
-                    instance.InstanceId,
-                    exceptionDetails,
-                    isReplay: false);
-
-                orchestratorResult = OrchestratorExecutionResult.ForFailure(
-                    message: $"Function '{functionName}' failed with an unhandled exception.",
-                    functionResult.Exception);
-            }
-
-            // Send the result of the orchestrator function to the DTFx dispatch pipeline.
-            // This signals it to short-circuit the pipeline and process the given results immediately.
-            dispatchContext.SetProperty(orchestratorResult);
-        }
-#nullable disable
-#endif
 
         /// <summary>
         /// This DTFx orchestration middleware (for entities) allows us to add context and set state
@@ -1321,7 +1008,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #pragma warning restore CS0618
                 },
                 entityContext,
-                this.hostLifetimeService.OnStopping);
+                this.HostLifetimeService.OnStopping);
 
             if (result.ExecutionStatus == WrappedFunctionResult.FunctionResultStatus.FunctionsRuntimeError)
             {
@@ -1353,6 +1040,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             this.knownOrchestrators.TryGetValue(orchestratorFunction, out var info);
             return info;
+        }
+
+        internal bool TryGetActivityInfo(FunctionName activityFunction, out RegisteredFunctionInfo info)
+        {
+            return this.knownActivities.TryGetValue(activityFunction, out info);
         }
 
         internal RegisteredFunctionInfo GetEntityInfo(FunctionName entityFunction)

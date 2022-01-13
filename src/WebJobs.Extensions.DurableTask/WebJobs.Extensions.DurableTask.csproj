@@ -74,8 +74,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net6.0'">
-    <PackageReference Include="Microsoft.DurableTask" Version="0.1.0-alpha" />
-    <PackageReference Include="Microsoft.DurableTask.Sidecar" Version="0.1.0-alpha" />
+    <PackageReference Include="Microsoft.DurableTask.Sidecar" Version="0.2.0-alpha" />
   </ItemGroup>
 
   <ItemGroup>

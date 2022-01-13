@@ -21,6 +21,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{9850DECF-CBA2-43E7-B5E2-55053DD308E9}"
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
+		azure-pipelines.yml = azure-pipelines.yml
 		README.md = README.md
 	EndProjectSection
 EndProject
@@ -41,6 +42,18 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "extensions", "test\SmokeTests\OOProcSmokeTests\durablePy\extensions.csproj", "{CB481383-8B54-4FCB-8DCB-F348E08C2A9C}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DurableFunctions.TypedInterfaces", "src\DurableFunctions.TypedInterfaces\SourceGenerator\DurableFunctions.TypedInterfaces.csproj", "{44A9EFDA-CAA2-48B6-80D3-76566B660365}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DurableFunctions.TypedInterfaces.SourceGenerator.Test", "test\CodeGen.SourceGenerator.Test\DurableFunctions.TypedInterfaces.SourceGenerator.Test.csproj", "{A050602C-A85A-4888-9CEC-A654D346927C}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SourceGenerators", "SourceGenerators", "{4DDB6BA9-201F-4BCB-9C28-801A43B7CA7B}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DurableFunctions.TypedInterfaces.Examples.Test", "test\CodeGen.Example.Test\DurableFunctions.TypedInterfaces.Examples.Test.csproj", "{68F8AB7F-BF03-4BCE-8398-2D8EBEE58231}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DurableFunctions.TypedInterfaces.Example", "src\DurableFunctions.TypedInterfaces\Example\DurableFunctions.TypedInterfaces.Example.csproj", "{C88D68A2-7FC8-4AB8-B784-5F32C2C460FE}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebJobs.Extensions.DurableTask.Analyzers", "src\WebJobs.Extensions.DurableTask.Analyzers\WebJobs.Extensions.DurableTask.Analyzers.csproj", "{AC0A99E3-D4B6-42F5-AB82-9BA244DED6A9}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebJobs.Extensions.DurableTask.Analyzers.Test", "test\WebJobs.Extensions.DurableTask.Analyzers.Test\WebJobs.Extensions.DurableTask.Analyzers.Test.csproj", "{8518C337-A787-4CB9-B0B3-3AC3CD51E109}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -84,6 +97,26 @@ Global
 		{44A9EFDA-CAA2-48B6-80D3-76566B660365}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{44A9EFDA-CAA2-48B6-80D3-76566B660365}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{44A9EFDA-CAA2-48B6-80D3-76566B660365}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A050602C-A85A-4888-9CEC-A654D346927C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A050602C-A85A-4888-9CEC-A654D346927C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A050602C-A85A-4888-9CEC-A654D346927C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A050602C-A85A-4888-9CEC-A654D346927C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{68F8AB7F-BF03-4BCE-8398-2D8EBEE58231}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{68F8AB7F-BF03-4BCE-8398-2D8EBEE58231}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{68F8AB7F-BF03-4BCE-8398-2D8EBEE58231}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{68F8AB7F-BF03-4BCE-8398-2D8EBEE58231}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C88D68A2-7FC8-4AB8-B784-5F32C2C460FE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C88D68A2-7FC8-4AB8-B784-5F32C2C460FE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C88D68A2-7FC8-4AB8-B784-5F32C2C460FE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C88D68A2-7FC8-4AB8-B784-5F32C2C460FE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AC0A99E3-D4B6-42F5-AB82-9BA244DED6A9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AC0A99E3-D4B6-42F5-AB82-9BA244DED6A9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AC0A99E3-D4B6-42F5-AB82-9BA244DED6A9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AC0A99E3-D4B6-42F5-AB82-9BA244DED6A9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8518C337-A787-4CB9-B0B3-3AC3CD51E109}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8518C337-A787-4CB9-B0B3-3AC3CD51E109}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8518C337-A787-4CB9-B0B3-3AC3CD51E109}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8518C337-A787-4CB9-B0B3-3AC3CD51E109}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -101,6 +134,12 @@ Global
 		{FA53EBC4-8265-4063-B9F8-0D5EA0366B90} = {A8CF6993-258A-484A-AF6D-6CC88D36AF93}
 		{CB481383-8B54-4FCB-8DCB-F348E08C2A9C} = {FA53EBC4-8265-4063-B9F8-0D5EA0366B90}
 		{44A9EFDA-CAA2-48B6-80D3-76566B660365} = {7EC858EE-3481-4A82-AED4-CB00C34F42D0}
+		{A050602C-A85A-4888-9CEC-A654D346927C} = {4DDB6BA9-201F-4BCB-9C28-801A43B7CA7B}
+		{4DDB6BA9-201F-4BCB-9C28-801A43B7CA7B} = {78BCF152-C22C-408F-9FB1-0F8C99B154B5}
+		{68F8AB7F-BF03-4BCE-8398-2D8EBEE58231} = {4DDB6BA9-201F-4BCB-9C28-801A43B7CA7B}
+		{C88D68A2-7FC8-4AB8-B784-5F32C2C460FE} = {4DDB6BA9-201F-4BCB-9C28-801A43B7CA7B}
+		{AC0A99E3-D4B6-42F5-AB82-9BA244DED6A9} = {7EC858EE-3481-4A82-AED4-CB00C34F42D0}
+		{8518C337-A787-4CB9-B0B3-3AC3CD51E109} = {78BCF152-C22C-408F-9FB1-0F8C99B154B5}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {5E9AC327-DE18-41A5-A55D-E44CB4281943}
