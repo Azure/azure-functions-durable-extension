@@ -2,7 +2,9 @@ trigger: none
 pr: none
 
 pool:
-  vmImage: 'windows-latest'
+  name: '1ES-Hosted-DurableTaskFramework'
+  demands:
+    - ImageOverride -equals MMS2022TLS
 
 steps:
 # Use NuGet
