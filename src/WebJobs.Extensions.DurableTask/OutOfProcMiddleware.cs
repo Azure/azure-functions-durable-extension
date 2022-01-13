@@ -93,8 +93,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // One-time logging/notifications for when the orchestration first starts.
             if (!isReplaying)
             {
+#if !FUNCTIONS_V1
                 DurableTaskExtension.TagActivityWithOrchestrationStatus(OrchestrationRuntimeStatus.Running, instance.InstanceId);
-
+#endif
                 await this.LifeCycleNotificationHelper.OrchestratorStartingAsync(
                     this.Options.HubName,
                     functionName.Name,
@@ -172,11 +173,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         context.ContinuedAsNew,
                         FunctionType.Orchestrator,
                         isReplay: false);
-
+#if !FUNCTIONS_V1
                     DurableTaskExtension.TagActivityWithOrchestrationStatus(
                         OrchestrationRuntimeStatus.Completed,
                         instance.InstanceId);
-
+#endif
                     await this.LifeCycleNotificationHelper.OrchestratorCompletedAsync(
                         this.Options.HubName,
                         functionName.Name,

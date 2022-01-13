@@ -457,10 +457,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // and this is the latest point in the pipeline available to us.
             this.StartLocalHttpServer();
 #endif
+#if NET6_0_OR_GREATER
             if (this.IsOutOfProcV2)
             {
                 this.StartLocalGrpcServer();
             }
+#endif
         }
 
         internal string GetLocalRpcAddress()
