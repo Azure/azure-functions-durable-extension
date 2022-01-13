@@ -1,10 +1,10 @@
 jobs:
 
   - job: FunctionsV1Tests
-     pool:
+    pool:
       name: '1ES-Hosted-DurableTaskFramework'
       demands:
-        - ImageOverride -equals MMS2022TLS
+        - ImageOverride -equals MMSWindows2022Custom
 
     variables:
       solution: 'WebJobs.Extensions.DurableTask.sln'
