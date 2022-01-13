@@ -15,7 +15,7 @@ def orchestrator_function(context: df.DurableOrchestrationContext):
         print("Exiting generator.")
         raise
     except:
-        print("Whew!", sys.exc_info()[0], "occurred.")
+        print("Whew! The test passed. ", sys.exc_info()[0], "occurred.")
         return "test passed: exception thrown"
 
 main = df.Orchestrator.create(orchestrator_function)
