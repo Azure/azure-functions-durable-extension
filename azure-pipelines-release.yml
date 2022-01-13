@@ -114,7 +114,7 @@ steps:
     MaxRetryAttempts: '5'
 
 # Manifest Generator Task
-- task: ManifestGeneratorTask@0
+- task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
   displayName: 'Manifest Generator '
   inputs:
     BuildDropPath: '$(System.DefaultWorkingDirectory)/azure-functions-durable-extension'
