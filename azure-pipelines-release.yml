@@ -90,7 +90,7 @@ steps:
 - task: EsrpCodeSigning@1
   inputs:
     ConnectedServiceName: 'ESRP Service'
-    FolderPath: '**/azure-functions-durable-extension'
+    FolderPath: '$(System.DefaultWorkingDirectory)'
     Pattern: '*.nupkg'
     signConfigType: 'inlineSignParams'
     inlineOperation: |
@@ -118,10 +118,10 @@ steps:
 - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
   displayName: 'Manifest Generator '
   inputs:
-    BuildDropPath: '$(System.DefaultWorkingDirectory)/azure-functions-durable-extension'
+    BuildDropPath: '$(System.DefaultWorkingDirectory)'
 
 # Make the nuget packages available for download in the ADO portal UI
-- publish: '$(System.DefaultWorkingDirectory)/azure-functions-durable-extension'
+- publish: '$(System.DefaultWorkingDirectory)'
   displayName: 'Publish nuget packages to Artifacts'
   artifact: PackageOutput
 
