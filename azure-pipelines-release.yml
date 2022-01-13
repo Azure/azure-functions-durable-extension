@@ -23,14 +23,14 @@ steps:
 - task: VSBuild@1
   displayName: 'Build Durable Extension'
   inputs:
-    solution: '/WebJobs.Extensions.DurableTask.sln'
+    solution: '**/WebJobs.Extensions.DurableTask.sln'
     vsVersion: "16.0"
     configuration: Release
 
 - task: EsrpCodeSigning@1
   inputs:
     ConnectedServiceName: 'ESRP Service'
-    FolderPath: '/src/WebJobs.Extensions.DurableTask/bin/Release'
+    FolderPath: '**/src/WebJobs.Extensions.DurableTask/bin/Release'
     Pattern: '*DurableTask.dll'
     signConfigType: 'inlineSignParams'
     inlineOperation: |
@@ -90,7 +90,7 @@ steps:
 - task: EsrpCodeSigning@1
   inputs:
     ConnectedServiceName: 'ESRP Service'
-    FolderPath: 'azure-functions-durable-extension'
+    FolderPath: '**/azure-functions-durable-extension'
     Pattern: '*.nupkg'
     signConfigType: 'inlineSignParams'
     inlineOperation: |
