@@ -4,7 +4,7 @@ pr: none
 pool:
   name: '1ES-Hosted-DurableTaskFramework'
   demands:
-    - ImageOverride -equals MMS2022TLS
+    - ImageOverride -equals MMSWindows2022Custom
 
 steps:
 # Use NuGet
