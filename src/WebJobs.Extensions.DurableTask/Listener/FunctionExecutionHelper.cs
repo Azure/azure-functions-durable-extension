@@ -27,8 +27,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener
             try
             {
                 context.ExecutorCalledBack = false;
-                var timeoutSource = new System.Threading.Tasks.TaskCompletionSource<Exception>();
-                shim.TimeoutTask = timeoutSource.Task;
 
                 FunctionResult result = await executor.TryExecuteAsync(triggerInput, cancellationToken);
 
@@ -48,7 +46,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener
                     // So it is either a user code failure or a function timeout.
                     if (result.Exception is Microsoft.Azure.WebJobs.Host.FunctionTimeoutException)
                     {
-                        timeoutSource.TrySetResult(result.Exception);
+                        shim.TimeoutTriggered(result.Exception);
                         return WrappedFunctionResult.FunctionTimeoutFailure(result.Exception);
                     }
                     else

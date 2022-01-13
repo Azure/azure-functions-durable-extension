@@ -12,6 +12,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// </summary>
     internal abstract class TaskCommonShim : TaskOrchestration
     {
+        private readonly TaskCompletionSource<Exception> timeoutTaskCompletionSource = new TaskCompletionSource<Exception>();
+ 
         public TaskCommonShim(DurableTaskExtension config)
         {
             this.Config = config ?? throw new ArgumentNullException(nameof(config));
@@ -23,7 +25,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         protected Func<Task> FunctionInvocationCallback { get; private set; }
 
-        internal Task<Exception> TimeoutTask { get; set; }
+        internal Task<Exception> TimeoutTask => this.timeoutTaskCompletionSource.Task;
+
+        internal void TimeoutTriggered(Exception exception)
+        {
+            this.timeoutTaskCompletionSource.TrySetResult(exception);
+        }
 
         public void SetFunctionInvocationCallback(Func<Task> callback)
         {
