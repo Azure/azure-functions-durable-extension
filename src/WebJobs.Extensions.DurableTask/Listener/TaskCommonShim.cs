@@ -13,7 +13,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     internal abstract class TaskCommonShim : TaskOrchestration
     {
         private readonly TaskCompletionSource<Exception> timeoutTaskCompletionSource = new TaskCompletionSource<Exception>();
- 
+
         public TaskCommonShim(DurableTaskExtension config)
         {
             this.Config = config ?? throw new ArgumentNullException(nameof(config));
