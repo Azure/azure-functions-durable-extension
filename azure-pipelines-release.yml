@@ -17,7 +17,7 @@ steps:
     command: restore
     projects: '**/**/*.csproj'
     feedsToUse: config
-    nugetConfigPath: 'azure-functions-durable-extension/nuget.config'
+    nugetConfigPath: '.nuget/nuget.config'
 
 # Build durable-extension
 - task: VSBuild@1
