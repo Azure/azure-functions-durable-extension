@@ -30,7 +30,7 @@ steps:
 - task: EsrpCodeSigning@1
   inputs:
     ConnectedServiceName: 'ESRP Service'
-    FolderPath: '**/src/WebJobs.Extensions.DurableTask/bin/Release'
+    FolderPath: 'src/WebJobs.Extensions.DurableTask/bin/Release'
     Pattern: '*DurableTask.dll'
     signConfigType: 'inlineSignParams'
     inlineOperation: |
