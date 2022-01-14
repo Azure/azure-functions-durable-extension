@@ -4719,8 +4719,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
-        public async Task DurableEntity_ListEntitiesAsync_Paging(string storageProvider)
+        [MemberData(nameof(TestDataGenerator.GetBooleanAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        public async Task DurableEntity_ListEntitiesAsync_Paging(bool moreThanOne, string storageProvider)
         {
             var yesterday = DateTime.UtcNow.Subtract(TimeSpan.FromDays(1));
             var tomorrow = DateTime.UtcNow.Add(TimeSpan.FromDays(1));
@@ -4730,7 +4730,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 EntityName = "StringStore",
                 LastOperationFrom = yesterday,
                 LastOperationTo = tomorrow,
-                PageSize = 2,
+                PageSize = moreThanOne ? 2 : 1,
             };
 
             List<EntityId> entityIds = new List<EntityId>()
@@ -4743,7 +4743,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             var result = await this.DurableEntity_ListEntitiesAsync(nameof(this.DurableEntity_ListEntitiesAsync_Paging), storageProvider, query, entityIds);
 
-            Assert.Equal(2, result.Count);
+            Assert.Equal(3, result.Count);
         }
 
         [Theory]
