@@ -4845,6 +4845,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 nameof(TestOrchestrations.EntityId_SignalAndCallStringStore),
             };
 
+            if (storageProvider == TestHelpers.AzureStorageProviderType)
+            {
+                // account for delay in updating instance tables
+                await Task.Delay(TimeSpan.FromSeconds(20));
+            }
+
             var result = await this.DurableEntity_ListEntitiesAsync(nameof(this.DurableEntity_ListEntities_DeletedPaged), storageProvider, query, entityIds, orchestrations);
 
             Assert.Single(result.Entities);
@@ -4904,13 +4910,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.CreateEmptyEntities), new EntityId[] { emptyEntityId }, this.output);
                 var status = await client.WaitForCompletionAsync(this.output);
 
-                // check that the empty entity record is still there in storage
+                if (storageProvider == TestHelpers.AzureStorageProviderType)
+                {
+                    // account for delay in updating instance tables
+                    await Task.Delay(TimeSpan.FromSeconds(20));
+                }
+
+                // check that the empty entity record does not show up in query
                 var query = new EntityQuery
                 {
                     EntityName = emptyEntityId.EntityName,
                 };
                 var result = await client.InnerClient.ListEntitiesAsync(query, CancellationToken.None);
-                Assert.Contains(result.Entities, s => s.EntityId.Equals(emptyEntityId));
+                Assert.Empty(result.Entities);
 
                 // run an orchestration A that leaves an orphaned lock
                 TestDurableClient clientA = await host.StartOrchestratorAsync(nameof(TestOrchestrations.LockThenFailReplay), (orphanedEntityId, true), this.output, orchestrationA);
@@ -4928,7 +4940,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 status = await clientB.WaitForCompletionAsync(this.output);
                 Assert.True(status.RuntimeStatus == OrchestrationRuntimeStatus.Completed);
 
-                // check that the empty entity record has been removed from storage
+                // check that the empty entity record still does not show up in queries
                 result = await client.InnerClient.ListEntitiesAsync(query, CancellationToken.None);
                 Assert.DoesNotContain(result.Entities, s => s.EntityId.Equals(emptyEntityId));
 
