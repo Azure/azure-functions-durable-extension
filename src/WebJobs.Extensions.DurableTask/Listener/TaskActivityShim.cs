@@ -94,7 +94,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     // This will abort the execution and cause the message to go back onto the queue for re-processing
                     throw new SessionAbortedException(
                         $"An internal error occurred while attempting to execute '{this.activityName}'.", result.Exception);
+
                 case WrappedFunctionResult.FunctionResultStatus.UserCodeError:
+                case WrappedFunctionResult.FunctionResultStatus.FunctionTimeoutError:
                     // Flow the original activity function exception to the orchestration
                     // without the outer FunctionInvocationException.
                     Exception exceptionToReport = StripFunctionInvocationException(result.Exception);
