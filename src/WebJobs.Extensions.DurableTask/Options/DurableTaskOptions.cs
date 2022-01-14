@@ -123,6 +123,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public bool? LocalRpcEndpointEnabled { get; set; }
 
         /// <summary>
+        /// Gets or sets the maximum number of entity operations that are processed as a single batch.
+        /// </summary>
+        /// <remarks>
+        /// Reducing this number can help to avoid timeouts on consumption plans. If set to 1, batching is disabled, and each operation
+        /// message executes and is billed as a separate function invocation.
+        /// </remarks>
+        /// <value>
+        /// A positive integer configured by the host.
+        /// </value>
+        public int? MaxEntityOperationBatchSize { get; set; } = null;
+
+        /// <summary>
         /// Gets or sets a flag indicating whether to enable extended sessions.
         /// </summary>
         /// <remarks>
@@ -274,12 +286,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             if (this.MaxConcurrentActivityFunctions <= 0)
             {
-                throw new InvalidOperationException($"{nameof(this.MaxConcurrentActivityFunctions)} must be a non-negative integer value.");
+                throw new InvalidOperationException($"{nameof(this.MaxConcurrentActivityFunctions)} must be a positive integer value.");
             }
 
             if (this.MaxConcurrentOrchestratorFunctions <= 0)
             {
-                throw new InvalidOperationException($"{nameof(this.MaxConcurrentOrchestratorFunctions)} must be a non-negative integer value.");
+                throw new InvalidOperationException($"{nameof(this.MaxConcurrentOrchestratorFunctions)} must be a positive integer value.");
+            }
+
+            if (this.MaxEntityOperationBatchSize <= 0)
+            {
+                throw new InvalidOperationException($"{nameof(this.MaxEntityOperationBatchSize)} must be a positive integer value.");
             }
         }
 
