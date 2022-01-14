@@ -1,0 +1,21 @@
+{
+  "version": "2.0",
+  "functionTimeout": "00:02:00",
+  "logging": {
+    "logLevel": {
+      "DurableTask.AzureStorage": "Warning",
+      "DurableTask.Core": "Warning"
+    },
+    "applicationInsights": {
+      "samplingSettings": {
+        "isEnabled": false,
+        "excludedTypes": "Request"
+      }
+    }
+  },
+  "extensions": {
+    "durableTask": {
+      "hubName": "PythonTimeoutTests"
+    }
+  }
+}

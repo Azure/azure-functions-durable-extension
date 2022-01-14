@@ -313,9 +313,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.CurrentStateAccess = StateAccess.Accessed;
         }
 
-        internal bool TryWriteback(out ResponseMessage serializationErrorMessage, string operationName = null, string operationId = null)
+        internal bool TryWriteback(out ResponseMessage serializationErrorMessage, out Exception exception, string operationName = null, string operationId = null)
         {
             serializationErrorMessage = null;
+            exception = null;
 
             if (this.CurrentStateAccess == StateAccess.Deleted)
             {
@@ -361,6 +362,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                     serializationErrorMessage = new ResponseMessage();
                     serializationErrorMessage.SetExceptionResult(serializationException, operationName, this.errorDataConverter);
+                    exception = serializationException;
 
                     this.CurrentStateAccess = StateAccess.NotAccessed;
                     this.CurrentState = null;
@@ -712,6 +714,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 messages.Clear();
             }
+        }
+
+        internal void SendContinue(OrchestrationContext innerContext)
+        {
+            var instance = new OrchestrationInstance { InstanceId = this.InstanceId };
+            var eventName = EntityMessageEventNames.ContinueMessageEventName;
+            innerContext.SendEvent(instance, eventName, null);
         }
 
         /// <inheritdoc/>
