@@ -104,7 +104,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public void ConsumptionDefaulstDoNotOverrideCustomerOptions()
+        public void ConsumptionDefaultsDoNotOverrideCustomerOptions()
         {
             var storageAccountProvider = new TestStorageAccountProvider();
             var options = new DurableTaskOptions();

@@ -39,5 +39,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// Determines whether the query will include the state of the entity.
         /// </summary>
         public bool FetchState { get; set; } = false;
+
+        /// <summary>
+        /// Determines whether the results should include recently deleted entities.
+        /// </summary>
+        public bool IncludeDeleted { get; set; } = false;
     }
 }

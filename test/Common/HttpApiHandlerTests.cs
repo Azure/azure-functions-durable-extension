@@ -1457,6 +1457,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var orchestrationServiceMock = new Mock<IOrchestrationService>();
                 var storageProvider = new DurabilityProvider("Mock", orchestrationServiceMock.Object, orchestrationServiceClientMock.Object, "mock");
 
+                Assert.Equal(TestConstants.TaskHub, attribute.TaskHub);
+                Assert.Equal(TestConstants.ConnectionName, attribute.ConnectionName);
                 return new DurableClientMock(storageProvider, this, attribute);
             }
         }

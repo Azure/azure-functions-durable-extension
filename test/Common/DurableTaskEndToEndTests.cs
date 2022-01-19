@@ -4702,22 +4702,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             var result = await this.DurableEntity_ListEntitiesAsync(nameof(this.DurableEntity_ListEntitiesAsync_FetchState), storageProvider, query, entityIds);
 
-            Assert.Equal(3, result.Entities.Count());
+            Assert.Equal(3, result.Count);
 
             if (fetchState)
             {
-                Assert.NotNull(result.Entities.First().State);
+                Assert.NotNull(result[0].State);
             }
             else
             {
-                Assert.Null(result.Entities.First().State);
+                Assert.Null(result[0].State);
             }
         }
 
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
-        public async Task DurableEntity_ListEntitiesAsync_Paging(string storageProvider)
+        [MemberData(nameof(TestDataGenerator.GetBooleanAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        public async Task DurableEntity_ListEntitiesAsync_Paging(bool moreThanOne, string storageProvider)
         {
             var yesterday = DateTime.UtcNow.Subtract(TimeSpan.FromDays(1));
             var tomorrow = DateTime.UtcNow.Add(TimeSpan.FromDays(1));
@@ -4727,7 +4727,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 EntityName = "StringStore",
                 LastOperationFrom = yesterday,
                 LastOperationTo = tomorrow,
-                PageSize = 2,
+                PageSize = moreThanOne ? 2 : 1,
             };
 
             List<EntityId> entityIds = new List<EntityId>()
@@ -4740,7 +4740,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             var result = await this.DurableEntity_ListEntitiesAsync(nameof(this.DurableEntity_ListEntitiesAsync_Paging), storageProvider, query, entityIds);
 
-            Assert.Equal(2, result.Entities.Count());
+            Assert.Equal(3, result.Count);
         }
 
         [Theory]
@@ -4769,10 +4769,89 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             var result = await this.DurableEntity_ListEntitiesAsync(nameof(this.DurableEntity_ListEntitiesAsync_NoResults), storageProvider, query, entityIds);
 
-            Assert.Empty(result.Entities);
+            Assert.Empty(result);
         }
 
-        private async Task<EntityQueryResult> DurableEntity_ListEntitiesAsync(string taskHub, string storageProvider, EntityQuery query, IList<EntityId> entitiyIds)
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [MemberData(nameof(TestDataGenerator.GetBooleanAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        public async Task DurableEntity_ListEntities_Deleted(bool includeDeleted, string storageProvider)
+        {
+            var yesterday = DateTime.UtcNow.Subtract(TimeSpan.FromDays(1));
+            var tomorrow = DateTime.UtcNow.Add(TimeSpan.FromDays(1));
+
+            var query = new EntityQuery()
+            {
+                IncludeDeleted = includeDeleted,
+                LastOperationFrom = yesterday,
+                LastOperationTo = tomorrow,
+            };
+
+            List<EntityId> entityIds = new List<EntityId>()
+            {
+                new EntityId("StringStore", "foo"),
+                new EntityId("StringStore2", "bar"),
+                new EntityId("StringStore2", "baz"),
+                new EntityId("StringStore2", "foo"),
+            };
+
+            List<string> orchestrations = new List<string>()
+            {
+                nameof(TestOrchestrations.EntityId_SignalAndCallStringStore),
+                nameof(TestOrchestrations.EntityId_CallAndDeleteStringStore),
+                nameof(TestOrchestrations.EntityId_SignalAndCallStringStore),
+                nameof(TestOrchestrations.EntityId_CallAndDeleteStringStore),
+            };
+
+            var result = await this.DurableEntity_ListEntitiesAsync(nameof(this.DurableEntity_ListEntities_Deleted), storageProvider, query, entityIds, orchestrations);
+
+            Assert.Equal(includeDeleted ? 4 : 2, result.Count);
+        }
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [MemberData(nameof(TestDataGenerator.GetBooleanAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        public async Task DurableEntity_ListEntities_DeletedPaged(bool includeDeleted, string storageProvider)
+        {
+            var yesterday = DateTime.UtcNow.Subtract(TimeSpan.FromDays(1));
+            var tomorrow = DateTime.UtcNow.Add(TimeSpan.FromDays(1));
+
+            var query = new EntityQuery()
+            {
+                IncludeDeleted = includeDeleted,
+                LastOperationFrom = yesterday,
+                LastOperationTo = tomorrow,
+                PageSize = 2,
+            };
+
+            List<EntityId> entityIds = new List<EntityId>()
+            {
+                new EntityId("StringStore2", "bar"),
+                new EntityId("StringStore2", "baz"),
+                new EntityId("StringStore2", "foo"),
+                new EntityId("StringStore2", "ffo"),
+                new EntityId("StringStore2", "zzz"),
+                new EntityId("StringStore2", "aaa"),
+                new EntityId("StringStore2", "bbb"),
+            };
+
+            List<string> orchestrations = new List<string>()
+            {
+                nameof(TestOrchestrations.EntityId_SignalAndCallStringStore),
+                nameof(TestOrchestrations.EntityId_CallAndDeleteStringStore),
+                nameof(TestOrchestrations.EntityId_CallAndDeleteStringStore),
+                nameof(TestOrchestrations.EntityId_SignalAndCallStringStore),
+                nameof(TestOrchestrations.EntityId_CallAndDeleteStringStore),
+                nameof(TestOrchestrations.EntityId_SignalAndCallStringStore),
+                nameof(TestOrchestrations.EntityId_SignalAndCallStringStore),
+            };
+
+            var result = await this.DurableEntity_ListEntitiesAsync(nameof(this.DurableEntity_ListEntities_DeletedPaged), storageProvider, query, entityIds, orchestrations);
+
+            Assert.Equal(includeDeleted ? 7 : 4, result.Count);
+        }
+
+        private async Task<IList<DurableEntityStatus>> DurableEntity_ListEntitiesAsync(string taskHub, string storageProvider, EntityQuery query, IList<EntityId> entitiyIds, IList<string> orchestrations = null)
         {
             using (ITestHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
@@ -4784,18 +4863,42 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 TestDurableClient client = null;
 
-                foreach (EntityId id in entitiyIds)
+                for (int i = 0; i < entitiyIds.Count; i++)
                 {
-                    client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.EntityId_SignalAndCallStringStore), id, this.output);
+                    EntityId id = entitiyIds[i];
+                    string orchestrationName = orchestrations == null ? nameof(TestOrchestrations.EntityId_SignalAndCallStringStore) : orchestrations[i];
+                    client = await host.StartOrchestratorAsync(orchestrationName, id, this.output);
 
                     await client.WaitForCompletionAsync(this.output);
                 }
 
-                var result = await client.InnerClient.ListEntitiesAsync(query, CancellationToken.None);
+                if (storageProvider == TestHelpers.AzureStorageProviderType)
+                {
+                    // account for delay in updating instance tables
+                    await Task.Delay(TimeSpan.FromSeconds(20));
+                }
+
+                List<DurableEntityStatus> results = new List<DurableEntityStatus>();
+
+                do
+                {
+                    var result = await client.InnerClient.ListEntitiesAsync(query, CancellationToken.None);
+
+                    // The result may return fewer records than the page size, but never more
+                    Assert.True(result.Entities.Count() <= query.PageSize);
+
+                    foreach (var element in result.Entities)
+                    {
+                        results.Add(element);
+                    }
+
+                    query.ContinuationToken = result.ContinuationToken;
+                }
+                while (query.ContinuationToken != null);
 
                 await host.StopAsync();
 
-                return result;
+                return results;
             }
         }
 
@@ -4824,10 +4927,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.CreateEmptyEntities), new EntityId[] { emptyEntityId }, this.output);
                 var status = await client.WaitForCompletionAsync(this.output);
 
+                if (storageProvider == TestHelpers.AzureStorageProviderType)
+                {
+                    // account for delay in updating instance tables
+                    await Task.Delay(TimeSpan.FromSeconds(20));
+                }
+
                 // check that the empty entity record is still there in storage
                 var query = new EntityQuery
                 {
                     EntityName = emptyEntityId.EntityName,
+                    IncludeDeleted = true,
                 };
                 var result = await client.InnerClient.ListEntitiesAsync(query, CancellationToken.None);
                 Assert.Contains(result.Entities, s => s.EntityId.Equals(emptyEntityId));

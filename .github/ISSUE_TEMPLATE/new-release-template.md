@@ -18,6 +18,7 @@ onenote:https://microsoft.sharepoint.com/teams/AzureWebjobs/SiteAssets/AzureWebj
 **Prep Release (assigned to: )**
 _Due: <2-business-days-before-release>_
 - [ ] Update Durable Functions references (Analyzer? DTFx?) and check current version.
+- [ ] Locally, run `dotnet list package --vulnerable` to ensure the release is not affected by any vulnerable dependencies.
 - [ ] Add Durable Functions package to myget staging feed.
 - [ ] Check for package size, make sure it's not surprisingly heavier than a previous release.
 - [ ] Merge dev into main. Person performing validation must approve PR. Important: Merge NOT Squash merge.

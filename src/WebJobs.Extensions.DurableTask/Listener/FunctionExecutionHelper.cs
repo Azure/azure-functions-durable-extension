@@ -13,6 +13,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener
         public static async Task<WrappedFunctionResult> ExecuteFunctionInOrchestrationMiddleware(
             ITriggeredFunctionExecutor executor,
             TriggeredFunctionData triggerInput,
+            TaskCommonShim shim,
             DurableCommonContext context,
             CancellationToken cancellationToken)
         {
@@ -29,24 +30,35 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener
 
                 FunctionResult result = await executor.TryExecuteAsync(triggerInput, cancellationToken);
 
+                if (result.Succeeded)
+                {
+                    return WrappedFunctionResult.Success();
+                }
+
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return WrappedFunctionResult.FunctionHostStoppingFailure(result.Exception);
+                }
+
                 if (context.ExecutorCalledBack)
                 {
-                    if (result.Succeeded)
+                    // the problem did happen while the function code was executing.
+                    // So it is either a user code failure or a function timeout.
+                    if (result.Exception is Microsoft.Azure.WebJobs.Host.FunctionTimeoutException)
                     {
-                        return WrappedFunctionResult.Success();
+                        shim.TimeoutTriggered(result.Exception);
+                        return WrappedFunctionResult.FunctionTimeoutFailure(result.Exception);
                     }
-
-                    if (cancellationToken.IsCancellationRequested)
+                    else
                     {
-                        return WrappedFunctionResult.FunctionRuntimeFailure(result.Exception);
+                        return WrappedFunctionResult.UserCodeFailure(result.Exception);
                     }
-
-                    return WrappedFunctionResult.UserCodeFailure(result.Exception);
                 }
                 else
                 {
-                    // This can happen if the constructor for a non-static function fails.
-                    // We want to treat this case exactly as if the function itself is throwing the exception.
+                    // The problem happened before the function code even got called.
+                    // This can happen if the constructor for a non-static function fails, for example.
+                    // We want this to appear as if the function code threw the exception.
                     // So we execute the middleware directly, instead of via the executor.
                     try
                     {
@@ -65,7 +77,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener
             }
             catch (Exception e)
             {
-                return WrappedFunctionResult.FunctionRuntimeFailure(e);
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return WrappedFunctionResult.FunctionHostStoppingFailure(e);
+                }
+                else
+                {
+                    return WrappedFunctionResult.FunctionRuntimeFailure(e);
+                }
             }
         }
 
@@ -94,14 +113,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener
 
                 if (cancellationToken.IsCancellationRequested)
                 {
-                    return WrappedFunctionResult.FunctionRuntimeFailure(result.Exception);
+                    return WrappedFunctionResult.FunctionHostStoppingFailure(result.Exception);
+                }
+
+                if (result.Exception is Microsoft.Azure.WebJobs.Host.FunctionTimeoutException)
+                {
+                    return WrappedFunctionResult.FunctionTimeoutFailure(result.Exception);
                 }
 
                 return WrappedFunctionResult.UserCodeFailure(result.Exception);
             }
             catch (Exception e)
             {
-                return WrappedFunctionResult.FunctionRuntimeFailure(e);
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return WrappedFunctionResult.FunctionHostStoppingFailure(e);
+                }
+                else
+                {
+                    return WrappedFunctionResult.FunctionRuntimeFailure(e);
+                }
             }
         }
     }

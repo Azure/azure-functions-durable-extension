@@ -14,10 +14,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public static string ReleaseMessageEventName => "release";
 
+        public static string ContinueMessageEventName => "continue";
+
         public static string ScheduledRequestMessageEventName(DateTime scheduledUtc) => $"op@{scheduledUtc:o}";
 
         public static string ResponseMessageEventName(Guid requestId) => requestId.ToString();
 
         public static bool IsRequestMessage(string eventName) => eventName.StartsWith("op");
+
+        public static bool IsReleaseMessage(string eventName) => eventName == "release";
     }
 }

@@ -40,8 +40,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                 var compilation = model.Compilation;
                 if (!compilation.ContainsSyntaxTree(node.SyntaxTree))
                 {
-                    var newComplilation = model.Compilation.AddSyntaxTrees(node.SyntaxTree);
-                    newModel = newComplilation.GetSemanticModel(node.SyntaxTree);
+                    var newCompilation = compilation.AddSyntaxTrees(node.SyntaxTree);
+                    newModel = newCompilation.GetSemanticModel(node.SyntaxTree);
                 }
                 else
                 {
