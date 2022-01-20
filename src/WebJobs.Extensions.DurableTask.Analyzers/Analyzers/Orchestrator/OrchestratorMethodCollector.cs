@@ -79,7 +79,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
                             this.orchestratorMethodDeclarations.Add(invokedSymbol, invokedMethodInformation);
 
-                            FindInvokedMethods(semanticModel, invokedMethodInformation);
+                            FindInvokedMethods(invocationModel, invokedMethodInformation);
                         }
                     }
                 }

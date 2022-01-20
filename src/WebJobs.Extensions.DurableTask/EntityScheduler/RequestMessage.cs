@@ -8,7 +8,7 @@ using Newtonsoft.Json.Linq;
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     /// <summary>
-    /// A message that represents an operation request or a lock request.
+    /// A message sent to an entity, such as operation, signal, lock, release, or continue messages.
     /// </summary>
     internal class RequestMessage
     {

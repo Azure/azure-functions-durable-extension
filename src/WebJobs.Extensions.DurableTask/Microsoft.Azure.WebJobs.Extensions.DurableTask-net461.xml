@@ -2352,6 +2352,11 @@
             Determines whether the query will include the state of the entity.
             </summary>
         </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.EntityQuery.IncludeDeleted">
+            <summary>
+            Determines whether the query will include deleted entities.
+            </summary>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.EntityQueryResult">
             <summary>
             The status of all entity instances with paging for a given query.

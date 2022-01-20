@@ -204,7 +204,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             HttpManagementPayload httpManagementPayload = this.GetClientResponseLinks(request, instanceId, attribute?.TaskHub, attribute?.ConnectionName, returnInternalServerErrorOnFailure);
 
-            IDurableOrchestrationClient client = this.GetClient(request);
+            IDurableOrchestrationClient client = this.GetClient(request, attribute);
             Stopwatch stopwatch = Stopwatch.StartNew();
 
             // This retry loop completes either when the
@@ -245,7 +245,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         status.RuntimeStatus == OrchestrationRuntimeStatus.Failed ||
                         status.RuntimeStatus == OrchestrationRuntimeStatus.Terminated)
                     {
-                        return await this.HandleGetStatusRequestAsync(request, instanceId, returnInternalServerErrorOnFailure);
+                        return await this.HandleGetStatusRequestAsync(request, instanceId, returnInternalServerErrorOnFailure, client);
                     }
                 }
 
@@ -575,9 +575,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private async Task<HttpResponseMessage> HandleGetStatusRequestAsync(
             HttpRequestMessage request,
             string instanceId,
-            bool? returnInternalServerErrorOnFailure = null)
+            bool? returnInternalServerErrorOnFailure = null,
+            IDurableOrchestrationClient existingClient = null)
         {
-            IDurableOrchestrationClient client = this.GetClient(request);
+            IDurableOrchestrationClient client = existingClient ?? this.GetClient(request);
             var queryNameValuePairs = request.GetQueryNameValuePairs();
 
             if (!TryGetBooleanQueryParameterValue(queryNameValuePairs, ShowHistoryParameter, out bool showHistory))
@@ -1008,10 +1009,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        private IDurableClient GetClient(HttpRequestMessage request)
+        private IDurableClient GetClient(HttpRequestMessage request, DurableClientAttribute existingAttribute = null)
         {
-            string taskHub = null;
-            string connectionName = null;
+            string taskHub = existingAttribute?.TaskHub;
+            string connectionName = existingAttribute?.ConnectionName;
 
             NameValueCollection pairs = request.GetQueryNameValuePairs();
             foreach (string key in pairs.AllKeys)
