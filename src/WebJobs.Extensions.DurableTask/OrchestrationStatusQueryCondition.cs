@@ -55,8 +55,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public IEnumerable<string> TaskHubNames { get; set; }
 
         /// <summary>
-        /// Number of records per one request. The default value is 100.
+        /// Maximum number of records that can be returned by the request. The default value is 100.
         /// </summary>
+        /// <remarks>
+        /// Requests may return fewer records than the specified page size, even if there are more records.
+        /// Always check the continuation token to determine whether there are more records.
+        /// </remarks>
         public int PageSize { get; set; } = 100;
 
         /// <summary>
