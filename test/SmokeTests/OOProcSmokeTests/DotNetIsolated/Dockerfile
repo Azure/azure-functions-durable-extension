@@ -15,9 +15,8 @@ RUN cd /root/src/WebJobs.Extensions.DurableTask && \
 # Step 2: Build the sample app, which references the locally built extension from Step 1
 RUN cd /root/test/SmokeTests/OOProcSmokeTests/DotNetIsolated && \
     mkdir -p /home/site/wwwroot && \
-    dotnet restore && \
-    dotnet build --no-restore -c Release && \
-    dotnet publish --no-restore --no-build -c Release --output /home/site/wwwroot
+    dotnet publish -c Release --output /home/site/wwwroot && \
+    cat /home/site/wwwroot/extensions.json # debugging
 
 # Step 3: Generate the final app image to run
 FROM mcr.microsoft.com/azure-functions/dotnet-isolated:4-dotnet-isolated6.0
