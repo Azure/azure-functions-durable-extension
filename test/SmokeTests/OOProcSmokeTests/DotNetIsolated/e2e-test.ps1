@@ -22,8 +22,8 @@ docker run -p 8080:80 -it --add-host=host.docker.internal:host-gateway -d `
 	$imageName
 
 # The container needs a bit more time before it can start receiving requests
-Write-Host "Sleeping for 30 seconds to let the container finish initializing..." -ForegroundColor Yellow
-Start-Sleep -Seconds 30
+Write-Host "Sleeping for 60 seconds to let the container finish initializing..." -ForegroundColor Yellow
+Start-Sleep -Seconds 60
 
 # Check to see what containers are running
 docker ps
