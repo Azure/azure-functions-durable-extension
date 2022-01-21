@@ -1,0 +1,22 @@
+name: Smoke Test - .NET Isolated
+
+on:
+  push:
+    branches: [ main, dev ]
+    paths:
+      - 'src/**'
+      - 'test/SmokeTests/OOProcSmokeTests/DotNetIsolated/**'
+  pull_request:
+    branches: [ main, dev ]
+    paths:
+      - 'src/**'
+      - 'test/SmokeTests/OOProcSmokeTests/DotNetIsolated/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Run .NET Isolated Smoke Test
+      run: test/SmokeTests/OOProcSmokeTests/DotNetIsolated/e2e-test.ps1
+      shell: pwsh
