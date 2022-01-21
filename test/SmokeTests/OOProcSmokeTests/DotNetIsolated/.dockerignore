@@ -1,0 +1,15 @@
+﻿# directories
+bin/
+obj/
+.vs/
+.vscode/
+.git/
+
+# test scripts
+*.ps1
+
+# functions-specific
+local.settings.json
+
+# misc
+.gitignore
