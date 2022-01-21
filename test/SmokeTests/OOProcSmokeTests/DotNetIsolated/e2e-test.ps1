@@ -19,14 +19,13 @@ docker run --name 'azurite' -p 10000:10000 -p 10001:10001 -p 10002:10002 -d mcr.
 
 # Finally, start up the smoke test container, which will connect to the Azurite container
 docker run --name 'app' -p 8080:80 -it --add-host=host.docker.internal:host-gateway -d `
-	--memory="512m" --cpus=1 `
 	--env 'AzureWebJobsStorage=UseDevelopmentStorage=true;DevelopmentStorageProxyUri=http://host.docker.internal' `
 	--env 'WEBSITE_HOSTNAME=localhost:8080' `
 	$imageName
 
 # The container needs a bit more time before it can start receiving requests
-Write-Host "Sleeping for 60 seconds to let the container finish initializing..." -ForegroundColor Yellow
-Start-Sleep -Seconds 60
+Write-Host "Sleeping for 30 seconds to let the container finish initializing..." -ForegroundColor Yellow
+Start-Sleep -Seconds 30
 
 # Check to see what containers are running
 docker ps
