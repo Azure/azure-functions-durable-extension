@@ -15,7 +15,8 @@ RUN cd /root/src/WebJobs.Extensions.DurableTask && \
 # Step 2: Build the sample app, which references the locally built extension from Step 1
 RUN cd /root/test/SmokeTests/OOProcSmokeTests/DotNetIsolated && \
     mkdir -p /home/site/wwwroot && \
-    dotnet publish -c Release --output /home/site/wwwroot && \
+    dotnet build -c Release -maxcpucount:1 && \
+    dotnet publish -c Release --no-build --output /home/site/wwwroot && \
     ls -R /home/site/wwwroot && \
     cat /home/site/wwwroot/extensions.json # debugging
 
