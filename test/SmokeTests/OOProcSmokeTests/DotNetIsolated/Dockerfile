@@ -16,7 +16,7 @@ RUN cd /root/src/WebJobs.Extensions.DurableTask && \
 RUN cd /root/test/SmokeTests/OOProcSmokeTests/DotNetIsolated && \
     mkdir -p /home/site/wwwroot && \
     dotnet publish -c Release --output /home/site/wwwroot && \
-    ls -R /home/site/wwwroot && \ # debugging
+    ls -R /home/site/wwwroot && \
     cat /home/site/wwwroot/extensions.json # debugging
 
 # Step 3: Generate the final app image to run
