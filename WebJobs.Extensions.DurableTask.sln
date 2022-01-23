@@ -27,6 +27,9 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VSSampleV1", "test\SmokeTests\SmokeTestsV1\VSSampleV1.csproj", "{78141F66-4DDD-4ABB-9DE3-D0B426FE8110}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SmokeTests", "SmokeTests", "{A8CF6993-258A-484A-AF6D-6CC88D36AF93}"
+	ProjectSection(SolutionItems) = preProject
+		test\SmokeTests\e2e-test.ps1 = test\SmokeTests\e2e-test.ps1
+	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VSSampleV2", "test\SmokeTests\SmokeTestsV2\VSSampleV2.csproj", "{E997024B-633E-4252-880B-E2A726E1B4A4}"
 EndProject
@@ -72,6 +75,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "pipelines", "pipelines", "{
 	ProjectSection(SolutionItems) = preProject
 		azure-pipelines.yml = azure-pipelines.yml
 		.github\workflows\smoketest-dotnet-isolated.yml = .github\workflows\smoketest-dotnet-isolated.yml
+		.github\workflows\smoketest-dotnetV3.yml = .github\workflows\smoketest-dotnetV3.yml
 	EndProjectSection
 EndProject
 Global

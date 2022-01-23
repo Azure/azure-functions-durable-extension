@@ -18,5 +18,5 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Run .NET Isolated Smoke Test
-      run: test/SmokeTests/OOProcSmokeTests/DotNetIsolated/e2e-test.ps1
+      run: test/SmokeTests/e2e-test.ps1 -DockerfilePath test/SmokeTests/OOProcSmokeTests/DotNetIsolated/Dockerfile -HttpStartPath api/StartHelloCitiesTyped
       shell: pwsh

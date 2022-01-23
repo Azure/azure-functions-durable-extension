@@ -1,7 +1,10 @@
 ﻿# Installing PowerShell: https://docs.microsoft.com/powershell/scripting/install/installing-powershell
 
 param(
-    [string]$ImageName="dfapp-dotnet-isolated",
+	[Parameter(Mandatory=$true)]
+	[string]$DockerfilePath,
+	[string]$HttpStartPath,
+    [string]$ImageName="dfapp",
 	[string]$ContainerName="app",
 	[switch]$NoSetup=$false,
 	[int]$Sleep=30
@@ -11,8 +14,8 @@ $ErrorActionPreference = "Stop"
 
 if ($NoSetup -eq $false) {
 	# Build the docker image first, since that's the most critical step
-	Write-Host "Building sample app Docker container..." -ForegroundColor Yellow
-	docker build -f $PSScriptRoot/Dockerfile -t $ImageName $PSScriptRoot/../../../../
+	Write-Host "Building sample app Docker container from '$DockerfilePath'..." -ForegroundColor Yellow
+	docker build -f $DockerfilePath -t $ImageName $PSScriptRoot/../../
 
 	# Next, download and start the Azurite emulator Docker image
 	Write-Host "Pulling down the mcr.microsoft.com/azure-storage/azurite image..." -ForegroundColor Yellow
@@ -39,7 +42,7 @@ docker ps
 
 try {
 	# Note that any HTTP protocol errors (e.g. HTTP 4xx or 5xx) will cause an immediate failure
-	$startOrchestrationUri = "http://localhost:8080/api/StartHelloCitiesTyped"
+	$startOrchestrationUri = "http://localhost:8080/$HttpStartPath"
 	Write-Host "Starting a new orchestration instance via POST to $startOrchestrationUri..." -ForegroundColor Yellow
 
 	$result = Invoke-RestMethod -Method Post -Uri $startOrchestrationUri
