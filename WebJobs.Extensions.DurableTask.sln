@@ -74,8 +74,9 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "pipelines", "pipelines", "{B7FBBE6E-9AC7-4CEB-9B80-6FD9AE74415A}"
 	ProjectSection(SolutionItems) = preProject
 		azure-pipelines.yml = azure-pipelines.yml
-		.github\workflows\smoketest-dotnet-isolated.yml = .github\workflows\smoketest-dotnet-isolated.yml
-		.github\workflows\smoketest-dotnetV3.yml = .github\workflows\smoketest-dotnetV3.yml
+		.github\workflows\smoketest-dotnet-isolated-v4.yml = .github\workflows\smoketest-dotnet-isolated-v4.yml
+		.github\workflows\smoketest-dotnet-v3.yml = .github\workflows\smoketest-dotnet-v3.yml
+		.github\workflows\smoketest-node14-v4.yml = .github\workflows\smoketest-node14-v4.yml
 	EndProjectSection
 EndProject
 Global

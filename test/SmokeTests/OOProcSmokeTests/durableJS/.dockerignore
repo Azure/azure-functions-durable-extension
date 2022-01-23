@@ -1,0 +1,12 @@
+# Azure Functions artifacts
+bin
+obj
+appsettings.json
+local.settings.json
+
+# Other
+.funcignore
+.gitignore
+.ionide
+.vscode
+node_modules
