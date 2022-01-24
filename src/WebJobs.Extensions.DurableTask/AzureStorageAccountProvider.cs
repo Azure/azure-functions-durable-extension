@@ -31,9 +31,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 #endif
 
-        public StorageAccountDetails GetStorageAccountDetails(string name)
+        /// <inheritdoc />
+        public StorageAccountDetails GetStorageAccountDetails(string connectionName)
         {
-            IConfigurationSection connectionInfo = this.connectionInfoResolver.Resolve(name);
+            IConfigurationSection connectionInfo = this.connectionInfoResolver.Resolve(connectionName);
             if (!string.IsNullOrEmpty(connectionInfo.Value))
             {
                 return new StorageAccountDetails { ConnectionString = connectionInfo.Value };
@@ -56,7 +57,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 };
             }
 #endif
-            throw new InvalidOperationException($"Unable to resolve the Azure Storage connection string named '{name}'.");
+            throw new InvalidOperationException($"Unable to resolve the Azure Storage connection named '{connectionName}'.");
         }
     }
 }

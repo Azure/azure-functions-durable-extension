@@ -37,7 +37,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
             (int Renewing, int Renewed, int RenewedFailed) invocations = (0, 0, 0);
             factory.Renewing += s => invocations.Renewing++;
             factory.Renewed += n => invocations.Renewed++;
-            factory.RenewalFailed += (n, e) => invocations.RenewedFailed++;
+            factory.RenewalFailed += (i, n, e) => invocations.RenewedFailed++;
 
             // Create the credential and assert its state
             using AppAuthTokenCredential credential = factory.Create(config, TimeSpan.Zero, TimeSpan.Zero);
@@ -100,13 +100,13 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
                 }
             };
 
-            factory.RenewalFailed += (n, e) => invocations.RenewedFailed++;
+            factory.RenewalFailed += (i, n, e) => invocations.RenewedFailed++;
 
             // Create the credential and assert its state
             using AppAuthTokenCredential credential = factory.Create(config, offset, delay);
 
             // Wait until the final renewal complete
-            WaitUntilRenewal(credential, expected[^1].Token, TimeSpan.FromSeconds(30));
+            WaitUntilRenewal(credential, expected[^1].Token, TimeSpan.FromSeconds(5));
             Assert.Equal((expected.Length - 1, expected.Length - 1, 0), invocations);
         }
 
@@ -134,9 +134,9 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
             (int Renewing, int Renewed, int RenewedFailed) invocations = (0, 0, 0);
             factory.Renewing += s => invocations.Renewing++;
             factory.Renewed += n => invocations.Renewed++;
-            factory.RenewalFailed += (n, e) =>
+            factory.RenewalFailed += (i, n, e) =>
             {
-                invocations.RenewedFailed++;
+                Assert.Equal(++invocations.RenewedFailed, i);
                 Assert.Equal(expected[^2].Token, n.Token);
                 Assert.Equal(delay, n.Frequency);
             };
@@ -145,7 +145,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
             using AppAuthTokenCredential credential = factory.Create(config, offset, delay);
 
             // Wait until the final renewal complete (including the extra retry on error)
-            WaitUntilRenewal(credential, expected[^1].Token, TimeSpan.FromSeconds(30));
+            WaitUntilRenewal(credential, expected[^1].Token, TimeSpan.FromSeconds(5));
             Assert.Equal(expected[^1].Token, credential.Token);
             Assert.Equal((expected.Length, expected.Length - 1, 1), invocations);
         }

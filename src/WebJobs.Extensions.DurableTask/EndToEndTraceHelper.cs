@@ -854,6 +854,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public void TokenRenewalFailed(
             string hubName,
             string resource,
+            int attempt,
             TimeSpan delay,
             Exception exception)
         {
@@ -863,6 +864,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 LocalAppName,
                 LocalSlotName,
                 resource,
+                attempt,
                 delayMs,
                 exception.Message,
                 ExtensionVersion);
@@ -870,8 +872,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.logger.LogWarning(
                 default,
                 exception,
-                "Unable to refresh token for resource '{resource}'. Will retry in {delay} ms. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}.",
-                resource, delayMs, hubName, LocalAppName, LocalSlotName, ExtensionVersion);
+                "Unable to refresh token on attempt #{attempt} for resource '{resource}'. Will retry in {delay} ms. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}.",
+                attempt, resource, delayMs, hubName, LocalAppName, LocalSlotName, ExtensionVersion);
         }
 
         private bool ShouldLogEvent(bool isReplay)

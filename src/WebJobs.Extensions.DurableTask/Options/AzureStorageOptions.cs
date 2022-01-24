@@ -24,7 +24,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </summary>
         /// <remarks>
         /// The value may refer to either a connection string or the configuration section containing connection metadata.
-        /// The default behavior is to use the standard <c>AzureWebJobsStorage</c> connection string for all storage usage.
+        /// The default behavior is to use the standard <c>AzureWebJobsStorage</c> connection for all storage usage.
         /// </remarks>
         /// <value>
         /// The name of a connection-related key that exists in the app's application settings. The value may refer to

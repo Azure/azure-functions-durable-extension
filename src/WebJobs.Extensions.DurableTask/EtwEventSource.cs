@@ -453,11 +453,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string AppName,
             string SlotName,
             string Resource,
+            int Attempt,
             long DelayMs,
             string Details,
             string ExtensionVersion)
         {
-            this.WriteEvent(228, TaskHub, AppName, SlotName, Resource, DelayMs, Details, ExtensionVersion);
+            this.WriteEvent(228, TaskHub, AppName, SlotName, Resource, Attempt, DelayMs, Details, ExtensionVersion);
         }
 
 #pragma warning restore SA1313 // Parameter names should begin with lower-case letter

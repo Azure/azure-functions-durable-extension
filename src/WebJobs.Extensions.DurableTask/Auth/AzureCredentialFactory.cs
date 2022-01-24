@@ -37,7 +37,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth
 
         internal event Action<NewTokenAndFrequency> Renewed;
 
-        internal event Action<NewTokenAndFrequency, Exception> RenewalFailed;
+        internal event Action<int, NewTokenAndFrequency, Exception> RenewalFailed;
 
         /// <inheritdoc />
         public AppAuthTokenCredential Create(IConfiguration configuration, CancellationToken cancellationToken = default) =>
@@ -68,6 +68,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth
 
         private async Task<NewTokenAndFrequency> RenewTokenAsync(TokenRenewalState state, CancellationToken cancellationToken)
         {
+            // The AppAuthTokenCredential object is being disposed
+            cancellationToken.ThrowIfCancellationRequested();
+
             this.OnRenewing(state);
 
             NewTokenAndFrequency next;
@@ -76,17 +79,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth
             {
                 result = await state.Credential.GetTokenAsync(state.Context, cancellationToken);
             }
+            catch (OperationCanceledException ex) when (ex.CancellationToken == cancellationToken)
+            {
+                throw;
+            }
             catch (Exception e)
             {
                 next = new NewTokenAndFrequency(state.Previous.Token, state.RefreshDelay);
-                this.OnRenewalFailed(next, e);
+                this.OnRenewalFailed(++state.Attempts, next, e);
                 return next;
             }
 
             // Save the token in case renewal results in an exception
+            state.Attempts = 0;
             state.Previous = result;
             next = new NewTokenAndFrequency(result.Token, GetRenewalFrequency(result, state.RefreshOffset));
             this.OnRenewed(next);
+
             return next;
         }
 
@@ -96,10 +105,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth
         private void OnRenewed(NewTokenAndFrequency next) =>
             this.Renewed?.Invoke(next);
 
-        private void OnRenewalFailed(NewTokenAndFrequency next, Exception exception)
+        private void OnRenewalFailed(int attempt, NewTokenAndFrequency next, Exception exception)
         {
-            this.traceHelper.TokenRenewalFailed(this.hubName, "https://storage.azure.com/", next.Frequency.GetValueOrDefault(), exception);
-            this.RenewalFailed?.Invoke(next, exception);
+            this.traceHelper.TokenRenewalFailed(this.hubName, "https://storage.azure.com/", attempt, next.Frequency.GetValueOrDefault(), exception);
+            this.RenewalFailed?.Invoke(attempt, next, exception);
         }
 
         private static TimeSpan GetRenewalFrequency(AccessToken accessToken, TimeSpan refreshOffset)
@@ -115,6 +124,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth
 
         internal sealed class TokenRenewalState
         {
+            public int Attempts { get; set; }
+
             public TokenRequestContext Context { get; set; }
 
             public AzureTokenCredential Credential { get; set; }

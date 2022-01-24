@@ -11,6 +11,7 @@ using Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth;
 #endif
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.Extensions.Configuration;
+using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Auth;
 using Moq;
 using Newtonsoft.Json;
@@ -35,7 +36,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public void GetStorageAccountDetails_ConnectionString()
         {
             const string connectionName = "storage";
-            const string connectionString = "MyConnectionString";
+            const string connectionString = "UseDevelopmentStorage=true";
             AzureStorageAccountProvider provider = SetupStorageAccountProvider(connectionName, connectionString);
 
             StorageAccountDetails actual = provider.GetStorageAccountDetails(connectionName);
@@ -46,18 +47,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Null(actual.QueueServiceUri);
             Assert.Null(actual.StorageCredentials);
             Assert.Null(actual.TableServiceUri);
+
+            // Get CloudStorageAccount (using the emulator)
+            CloudStorageAccount account = actual.ToCloudStorageAccount();
+            Assert.Equal(new Uri("http://127.0.0.1:10000/devstoreaccount1", UriKind.Absolute), account.BlobEndpoint);
+            Assert.Equal(new Uri("http://127.0.0.1:10001/devstoreaccount1", UriKind.Absolute), account.QueueEndpoint);
+            Assert.Equal(new Uri("http://127.0.0.1:10002/devstoreaccount1", UriKind.Absolute), account.TableEndpoint);
         }
 
 #if !FUNCTIONS_V1
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public void GetStorageAccountDetails_ConfigSection()
+        public void GetStorageAccountDetails_ConfigSection_Endpoints()
         {
             const string connectionName = "storage";
             var options = new AzureStorageAccountOptions
             {
-                AccountName = "MyAccountName",
                 BlobServiceUri = new Uri("https://unit-test/blob", UriKind.Absolute),
                 QueueServiceUri = new Uri("https://unit-test/queue", UriKind.Absolute),
                 TableServiceUri = new Uri("https://unit-test/table", UriKind.Absolute),
@@ -65,13 +71,45 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             AzureStorageAccountProvider provider = SetupStorageAccountProvider(connectionName, options);
 
             StorageAccountDetails actual = provider.GetStorageAccountDetails(connectionName);
-            Assert.Equal(options.AccountName, actual.AccountName);
+            Assert.Null(actual.AccountName);
             Assert.Equal(options.BlobServiceUri, actual.BlobServiceUri);
             Assert.Null(actual.ConnectionString);
             Assert.Equal(AzureStorageAccountOptions.DefaultEndpointSuffix, actual.EndpointSuffix);
             Assert.Equal(options.QueueServiceUri, actual.QueueServiceUri);
             Assert.True(actual.StorageCredentials.IsToken);
             Assert.Equal(options.TableServiceUri, actual.TableServiceUri);
+
+            // Get CloudStorageAccount
+            CloudStorageAccount acount = actual.ToCloudStorageAccount();
+            Assert.Same(actual.StorageCredentials, acount.Credentials);
+            Assert.Equal(options.BlobServiceUri, acount.BlobEndpoint);
+            Assert.Equal(options.QueueServiceUri, acount.QueueEndpoint);
+            Assert.Equal(options.TableServiceUri, acount.TableEndpoint);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void GetStorageAccountDetails_ConfigSection_Account()
+        {
+            const string connectionName = "storage";
+            var options = new AzureStorageAccountOptions { AccountName = "myaccount" };
+            AzureStorageAccountProvider provider = SetupStorageAccountProvider(connectionName, options);
+
+            StorageAccountDetails actual = provider.GetStorageAccountDetails(connectionName);
+            Assert.Equal("myaccount", actual.AccountName);
+            Assert.Null(actual.BlobServiceUri);
+            Assert.Null(actual.ConnectionString);
+            Assert.Equal(AzureStorageAccountOptions.DefaultEndpointSuffix, actual.EndpointSuffix);
+            Assert.Null(actual.QueueServiceUri);
+            Assert.True(actual.StorageCredentials.IsToken);
+            Assert.Null(actual.TableServiceUri);
+
+            // Get CloudStorageAccount
+            CloudStorageAccount acount = actual.ToCloudStorageAccount();
+            Assert.Same(actual.StorageCredentials, acount.Credentials);
+            Assert.Equal(new Uri("https://myaccount.blob.core.windows.net", UriKind.Absolute), acount.BlobEndpoint);
+            Assert.Equal(new Uri("https://myaccount.queue.core.windows.net", UriKind.Absolute), acount.QueueEndpoint);
+            Assert.Equal(new Uri("https://myaccount.table.core.windows.net", UriKind.Absolute), acount.TableEndpoint);
         }
 
         private static AzureStorageAccountProvider SetupStorageAccountProvider(string connectionName, AzureStorageAccountOptions options)
