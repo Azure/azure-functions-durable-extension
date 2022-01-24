@@ -136,6 +136,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
             factory.Renewed += n => invocations.Renewed++;
             factory.RenewalFailed += (i, n, e) =>
             {
+                // The renewal failure should occur after successfully fetching "BBBB"
                 Assert.Equal(++invocations.RenewedFailed, i);
                 Assert.Equal(expected[^2].Token, n.Token);
                 Assert.Equal(delay, n.Frequency);
