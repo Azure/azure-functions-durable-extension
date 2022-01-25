@@ -130,21 +130,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public bool UseLegacyPartitionManagement { get; set; } = false;
 
         /// <summary>
-        /// Gets or sets whether to enable the orchestration-start de-duplication feature
-        /// of the Durable Task Framework's Azure Storage provider.
-        /// </summary>
-        /// <remarks>
-        /// When enabled, this feature will try to detect and discard orchestration-start
-        /// messages for the same instance ID that are scheduled around the same time. There
-        /// is a slight performance impact when this feature is enabled due to additional
-        /// storage account queries that occur for every received orchestration start message.
-        /// It's generally recommended to enable this feature unless the performance impact
-        /// is too burdensome for an important workload.
-        /// </remarks>
-        /// <value>A boolean value indicating whether to enable orchestration-start de-duplication.</value>
-        public bool EnableOrchestrationStartDeduplication { get; set; } = true;
-
-        /// <summary>
         /// Throws an exception if the provided hub name violates any naming conventions for the storage provider.
         /// </summary>
         public void ValidateHubName(string hubName)

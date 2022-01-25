@@ -8,5 +8,7 @@ local.settings.json
 .funcignore
 .gitignore
 .ionide
+.git
+.vs
 .vscode
 node_modules

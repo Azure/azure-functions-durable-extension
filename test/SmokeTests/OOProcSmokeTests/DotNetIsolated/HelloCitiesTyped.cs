@@ -6,9 +6,9 @@ using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Logging;
 
-namespace DotNetIsolated;
+namespace DotNetIsolated.Typed;
 
-internal static class HelloSequenceTyped
+public static class HelloCitiesTypedStarter
 {
     /// <summary>
     /// HTTP-triggered function that starts the <see cref="HelloCitiesTyped"/> orchestration.
@@ -42,7 +42,7 @@ internal static class HelloSequenceTyped
 /// that invokes the <see cref="OnRunAsync"/> method.
 /// </summary>
 [DurableTask(nameof(HelloCitiesTyped))]
-internal class HelloCitiesTyped : TaskOrchestratorBase<string, string>
+public class HelloCitiesTyped : TaskOrchestratorBase<string, string>
 {
     protected async override Task<string?> OnRunAsync(TaskOrchestrationContext context, string? input)
     {
@@ -63,7 +63,7 @@ internal class HelloCitiesTyped : TaskOrchestratorBase<string, string>
 /// definition that creates an instance of this class and invokes its <see cref="OnRun"/> method.
 /// </summary>
 [DurableTask(nameof(SayHelloTyped))]
-internal class SayHelloTyped : TaskActivityBase<string, string>
+public class SayHelloTyped : TaskActivityBase<string, string>
 {
     private readonly ILogger? logger;
 

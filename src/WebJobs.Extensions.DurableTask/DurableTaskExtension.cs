@@ -737,8 +737,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             TaskOrchestrationShim shim = dispatchContext.GetProperty<TaskOrchestration>() as TaskOrchestrationShim;
             if (shim == null)
             {
-                // This is either not an orchestration or it's a special out-of-proc orchestration; skip.
-                // If it's a special out-of-proc orchestration, then OrchestrationMiddlewareV2 will handle it.
+                // This is not an orchestration - skip.
                 await next();
                 return;
             }

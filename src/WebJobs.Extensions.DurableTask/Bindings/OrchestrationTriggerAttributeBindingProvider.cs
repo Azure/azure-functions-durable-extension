@@ -64,6 +64,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private class OrchestrationTriggerBinding : ITriggerBinding
         {
             private static readonly IReadOnlyDictionary<string, object?> EmptyBindingData = new Dictionary<string, object?>(capacity: 0);
+            private static readonly JsonSerializerSettings JsonSettings = new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.Auto };
 
             private readonly DurableTaskExtension config;
             private readonly ParameterInfo parameterInfo;
@@ -143,8 +144,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     // Remote context is only for modern out-of-process function execution and
                     // contains a lighter payload.
-                    // TODO: Cache the serializer settings
-                    string serializedContext = JsonConvert.SerializeObject(remoteContext, new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.Auto });
+                    string serializedContext = JsonConvert.SerializeObject(remoteContext, JsonSettings);
                     var valueProvider = new ObjectValueProvider(serializedContext, typeof(string));
                     var triggerData = new TriggerData(valueProvider, EmptyBindingData);
                     return Task.FromResult<ITriggerData>(triggerData);
