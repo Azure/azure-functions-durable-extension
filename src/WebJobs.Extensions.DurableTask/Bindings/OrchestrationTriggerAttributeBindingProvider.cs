@@ -126,7 +126,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         convertedValue = OrchestrationContextToString(orchestrationContext);
                     }
 
-                    var inputValueProvider = new ObjectValueProvider(
+                    var contextValueProvider = new ObjectValueProvider(
                         convertedValue ?? value,
                         this.parameterInfo.ParameterType);
 
@@ -137,7 +137,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                     // We don't specify any return value binding because we process the return value
                     // earlier in the pipeline via the InvokeHandler extensibility.
-                    var triggerData = new TriggerData(inputValueProvider, bindingData);
+                    var triggerData = new TriggerData(contextValueProvider, bindingData);
                     return Task.FromResult<ITriggerData>(triggerData);
                 }
                 else if (value is RemoteOrchestratorContext remoteContext)
@@ -145,8 +145,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     // Remote context is only for modern out-of-process function execution and
                     // contains a lighter payload.
                     string serializedContext = JsonConvert.SerializeObject(remoteContext, JsonSettings);
-                    var valueProvider = new ObjectValueProvider(serializedContext, typeof(string));
-                    var triggerData = new TriggerData(valueProvider, EmptyBindingData);
+                    var contextValueProvider = new ObjectValueProvider(serializedContext, typeof(string));
+                    var triggerData = new TriggerData(contextValueProvider, EmptyBindingData);
                     return Task.FromResult<ITriggerData>(triggerData);
                 }
                 else

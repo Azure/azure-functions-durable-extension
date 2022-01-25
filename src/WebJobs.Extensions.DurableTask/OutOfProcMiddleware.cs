@@ -45,8 +45,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             OrchestrationRuntimeState? runtimeState = dispatchContext.GetProperty<OrchestrationRuntimeState>();
             if (runtimeState == null)
             {
-                // This is not an orchestration; skip.
-                await next();
+                // This should never happen, but it's almost certainly non-retriable if it does.
+                dispatchContext.SetProperty(OrchestratorExecutionResult.ForFailure(
+                    message: "Orchestration runtime state was missing!",
+                    details: null));
                 return;
             }
 
@@ -121,14 +123,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                     // The return value is expected to be a JSON string of a well-known schema.
                     string? triggerReturnValue = (await invokeTaskWithResult) as string;
-                    if (triggerReturnValue == null || triggerReturnValue[0] != '{')
-                    {
-                        // The language worker gave us some bad/unexpected data. We throw an exception instead of failing
-                        // the orchestration since it's not an app issue. Users will likely need to update their SDK version
-                        // to mitigate this kind of problem.
-                        throw new InvalidOperationException("The returned orchestrator response data was not a JSON object!");
-                    }
 
+                    // This will fail with an exception if the language worker gave us some bad/unexpected data. We throw an
+                    // exception instead of failing the orchestration since it's not an app issue. Users will likely need to
+                    // update their SDK version to mitigate this kind of problem.
                     context.SetResult(triggerReturnValue);
 #pragma warning restore CS0618 // Type or member is obsolete (not intended for general public use)
                 },
@@ -235,9 +233,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             TaskScheduledEvent? scheduledEvent = dispatchContext.GetProperty<TaskScheduledEvent>();
             if (scheduledEvent == null)
             {
-                // Not an activity
-                await next();
-                return;
+                // This should never happen, and there's no good response we can return if it does.
+                throw new InvalidOperationException($"An activity was scheduled but no {nameof(TaskScheduledEvent)} was found!");
             }
 
             FunctionName functionName = new FunctionName(scheduledEvent.Name);

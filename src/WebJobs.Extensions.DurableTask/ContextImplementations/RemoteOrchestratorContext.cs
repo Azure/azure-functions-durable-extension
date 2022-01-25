@@ -43,21 +43,38 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         [JsonIgnore]
         internal string? SerializedOutput { get; private set; }
 
-        internal void SetResult(string orchestratorResponseJsonText)
+        internal void SetResult(string? orchestratorResponseJsonText)
         {
-            // Validate the JSON since we don't know for sure if the out-of-proc SDK is correctly implemented.
-            // We validate the JObject directly instead of the deserialized object since .NET objects don't distinguish
-            // between null and not present.
-            JObject orchestratorResponseJson = JObject.Parse(orchestratorResponseJsonText);
-            if (!orchestratorResponseJson.TryGetValue(nameof(OrchestratorExecutionResult.Actions), StringComparison.OrdinalIgnoreCase, out _) ||
-                !orchestratorResponseJson.TryGetValue(nameof(OrchestratorExecutionResult.CustomStatus), StringComparison.OrdinalIgnoreCase, out _))
+            const string ActionsFieldName = nameof(OrchestratorExecutionResult.Actions);
+            const string CustomStatusFieldName = nameof(OrchestratorExecutionResult.CustomStatus);
+
+            Exception? jsonReaderException = null;
+            try
             {
-                throw new ArgumentException(
-                    $"Unrecognized orchestrator response payload. First 50 characters: '{orchestratorResponseJson.ToString().Substring(0, 50)}'. " +
-                    "Ensure that a compatible SDK is being used to generate the orchestrator response.");
+                // Validate the JSON since we don't know for sure if the out-of-proc SDK is correctly implemented.
+                // We validate the JObject directly instead of the deserialized object since .NET objects don't distinguish
+                // between null and not present.
+                JObject orchestratorResponseJson = JObject.Parse(orchestratorResponseJsonText);
+                if (orchestratorResponseJson.TryGetValue(ActionsFieldName, StringComparison.OrdinalIgnoreCase, out _) &&
+                    orchestratorResponseJson.TryGetValue(CustomStatusFieldName, StringComparison.OrdinalIgnoreCase, out _))
+                {
+                    this.executionResult = orchestratorResponseJson.ToObject<OrchestratorExecutionResult>();
+                }
+            }
+            catch (JsonReaderException e)
+            {
+                jsonReaderException = e;
             }
 
-            this.executionResult = orchestratorResponseJson.ToObject<OrchestratorExecutionResult>();
+            if (this.executionResult == null)
+            {
+                throw new ArgumentException(
+                    message: "Unrecognized orchestrator response payload. The response is expected to be a JSON object with " +
+                            $"a '{ActionsFieldName}' array property and a '{CustomStatusFieldName}' string property. " +
+                            "Ensure that a compatible SDK is being used to generate the orchestrator response.",
+                    paramName: nameof(orchestratorResponseJsonText),
+                    innerException: jsonReaderException);
+            }
 
             // Look for an orchestration completion action to see if we need to grab the output.
             foreach (OrchestratorAction action in this.executionResult.Actions)
