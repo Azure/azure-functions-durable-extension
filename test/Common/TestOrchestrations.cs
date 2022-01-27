@@ -730,6 +730,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return "ok";
         }
 
+        public static async Task<string> EntityId_CallAndDeleteStringStore([OrchestrationTrigger] IDurableOrchestrationContext ctx)
+        {
+            var entity = ctx.GetInput<EntityId>();
+
+            await ctx.CallEntityAsync(entity, "set", "333");
+
+            await ctx.CallEntityAsync<string>(entity, "delete");
+
+            return "ok";
+        }
+
         public static async Task<string> StringStoreWithCreateDelete([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
             // construct entity id from entity name and a (deterministic) new guid key

@@ -34,7 +34,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                         {
                             var diagnostic = Diagnostic.Create(Rule, identifierName.Identifier.GetLocation(), type);
 
-                            context.ReportDiagnostic(diagnostic);
+                            if (context.Compilation.ContainsSyntaxTree(method.SyntaxTree))
+                            {
+                                context.ReportDiagnostic(diagnostic);
+                            }
 
                             diagnosedIssue = true;
                         }

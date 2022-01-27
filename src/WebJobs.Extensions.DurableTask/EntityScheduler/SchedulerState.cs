@@ -36,6 +36,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public string LockedBy { get; set; }
 
         /// <summary>
+        /// Whether processing on this entity is currently suspended.
+        /// </summary>
+        [JsonProperty(PropertyName = "suspended", DefaultValueHandling = DefaultValueHandling.Ignore)]
+        public bool Suspended { get; set; }
+
+        /// <summary>
         /// The metadata used for reordering and deduplication of messages sent to entities.
         /// </summary>
         [JsonProperty(PropertyName = "sorter", DefaultValueHandling = DefaultValueHandling.Ignore)]
@@ -54,23 +60,36 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.Queue.Enqueue(operationMessage);
         }
 
-        internal bool TryDequeue(out RequestMessage operationMessage)
+        internal void PutBack(Queue<RequestMessage> messages)
         {
-            operationMessage = null;
-
-            if (this.Queue == null)
+            if (this.Queue != null)
             {
-                return false;
+                foreach (var message in this.Queue)
+                {
+                    messages.Enqueue(message);
+                }
             }
 
-            operationMessage = this.Queue.Dequeue();
+            this.Queue = messages;
+        }
+
+        internal bool MayDequeue()
+        {
+            return this.Queue != null
+                && this.Queue.Count > 0
+                && (this.LockedBy == null || this.LockedBy == this.Queue.Peek().ParentInstanceId);
+        }
+
+        internal RequestMessage Dequeue()
+        {
+            var result = this.Queue.Dequeue();
 
             if (this.Queue.Count == 0)
             {
                 this.Queue = null;
             }
 
-            return true;
+            return result;
         }
 
         public override string ToString()
