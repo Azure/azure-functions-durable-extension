@@ -44,6 +44,13 @@
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageDurabilityProvider.TryGetScaleMonitor(System.String,System.String,System.String,System.String,Microsoft.Azure.WebJobs.Host.Scale.IScaleMonitor@)">
             <inheritdoc/>
         </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.BindingHelper.OrchestrationClientInputData.RpcBaseUrl">
+            <summary>
+            The URL used by the client binding object to use when calling back into
+            the extension. For the original out-of-proc implementation, this is a simple
+            HTTP endpoint. For out-of-proc "v2" (middelware passthrough), this is a gRPC endpoint.
+            </summary>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.CleanEntityStorageResult">
             <summary>
             The result of a clean entity storage operation.
@@ -4425,6 +4432,29 @@
             <param name="dispatchContext">This middleware context provided by the framework that contains information about the activity.</param>
             <param name="next">The next middleware handler in the pipeline.</param>
             <exception cref="T:DurableTask.Core.Exceptions.SessionAbortedException">Thrown if there is a recoverable error in the Functions runtime that's expected to be handled gracefully.</exception>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationProtocol">
+            <summary>
+            Represents the out-of-proc protocols supported by this extension.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationProtocol.OrchestratorShim">
+            <summary>
+            Out-of-proc works by replaying SDK actions in an orchestration "shim", which interprets
+            the output of an out-of-proc language SDK and makes DTFx API calls on behalf of the
+            out-of-process orchestrator.
+            </summary>
+            <remarks>
+            This protocol has been deprecated. All new language SDK should instead use
+            <see cref="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationProtocol.MiddlewarePassthrough"/>.
+            </remarks>
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationProtocol.MiddlewarePassthrough">
+            <summary>
+            Out-of-proc works by forwarding all outputs directly to the Durable Task Framework
+            without using any orchestrator "shims" or attemping any interpretation. This is
+            sometimes referred to as "out of proc v2".
+            </summary>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.OverridableStates">
             <summary>

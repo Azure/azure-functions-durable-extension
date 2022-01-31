@@ -195,21 +195,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // Starting with .NET isolated and Java, we have a more efficient out-of-process
             // function invocation protocol. Other languages will use the existing protocol.
             WorkerRuntimeType runtimeType = this.PlatformInformationService.GetWorkerRuntimeType();
-            this.IsOutOfProcV2 =
-                runtimeType == WorkerRuntimeType.DotNetIsolated ||
-                runtimeType == WorkerRuntimeType.Java;
-
-#if NET6_0_OR_GREATER
-            if (this.IsOutOfProcV2)
+            if (runtimeType == WorkerRuntimeType.DotNetIsolated || runtimeType == WorkerRuntimeType.Java)
             {
+                this.OutOfProcProtocol = OutOfProcOrchestrationProtocol.MiddlewarePassthrough;
+#if NET6_0_OR_GREATER
                 this.localGrpcListener = new LocalGrpcListener(
                     this,
                     this.loggerFactory,
                     this.defaultDurabilityProvider,
                     this.defaultDurabilityProvider);
                 this.HostLifetimeService.OnStopped.Register(this.StopLocalGrpcServer);
-            }
 #endif
+            }
+            else
+            {
+                this.OutOfProcProtocol = OutOfProcOrchestrationProtocol.OrchestratorShim;
+            }
         }
 
 #if FUNCTIONS_V1
@@ -265,7 +266,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal IApplicationLifetimeWrapper HostLifetimeService { get; } = HostLifecycleService.NoOp;
 
-        internal bool IsOutOfProcV2 { get; }
+        internal OutOfProcOrchestrationProtocol OutOfProcProtocol { get; }
 
         internal static MessagePayloadDataConverter CreateMessageDataConverter(IMessageSerializerSettingsFactory messageSerializerSettingsFactory)
         {
@@ -435,7 +436,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // Add middleware to the DTFx dispatcher so that we can inject our own logic
             // into and customize the orchestration execution pipeline.
             // Note that the order of the middleware added determines the order in which it executes.
-            if (this.IsOutOfProcV2)
+            if (this.OutOfProcProtocol == OutOfProcOrchestrationProtocol.MiddlewarePassthrough)
             {
                 // This is a newer, more performant flavor of orchestration/activity middleware that is being
                 // enabled for newer language runtimes. Support for entities in this model is TBD.
@@ -458,7 +459,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.StartLocalHttpServer();
 #endif
 #if NET6_0_OR_GREATER
-            if (this.IsOutOfProcV2)
+            if (this.OutOfProcProtocol == OutOfProcOrchestrationProtocol.MiddlewarePassthrough)
             {
                 this.StartLocalGrpcServer();
             }
@@ -468,7 +469,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         internal string GetLocalRpcAddress()
         {
 #if NET6_0_OR_GREATER
-            if (this.IsOutOfProcV2)
+            if (this.OutOfProcProtocol == OutOfProcOrchestrationProtocol.MiddlewarePassthrough)
             {
                 return this.localGrpcListener.ListenAddress;
             }

@@ -28,9 +28,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public string DurableOrchestrationClientToString(IDurableOrchestrationClient client, DurableClientAttribute attr)
         {
-            if (this.config.IsOutOfProcV2)
+            if (this.config.OutOfProcProtocol == OutOfProcOrchestrationProtocol.MiddlewarePassthrough)
             {
-                // Out-of-proc v2 uses gRPC instead of vanilla HTTP + JSON as the RPC protocol.
+                // Out-of-proc v2 (aka middleware passthrough) uses gRPC instead of vanilla HTTP + JSON as the RPC protocol.
                 string? localRpcAddress = this.config.GetLocalRpcAddress();
                 if (localRpcAddress == null)
                 {
@@ -122,7 +122,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             /// <summary>
             /// The URL used by the client binding object to use when calling back into
             /// the extension. For the original out-of-proc implementation, this is a simple
-            /// HTTP endpoint. For out-of-proc "v2", this is a gRPC endpoint.
+            /// HTTP endpoint. For out-of-proc "v2" (middelware passthrough), this is a gRPC endpoint.
             /// </summary>
             [JsonProperty("rpcBaseUrl")]
             public string? RpcBaseUrl { get; set; }

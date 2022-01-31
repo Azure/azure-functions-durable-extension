@@ -85,7 +85,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             // Out-of-proc V2 uses a different trigger value type
-            public Type TriggerValueType => this.config.IsOutOfProcV2 ?
+            public Type TriggerValueType => this.config.OutOfProcProtocol == OutOfProcOrchestrationProtocol.MiddlewarePassthrough ?
                 typeof(RemoteOrchestratorContext) :
                 typeof(IDurableOrchestrationContext);
 
