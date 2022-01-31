@@ -40,7 +40,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // in that case, return immediately, since this provider is not actually used, but can still throw validation errors
             if (options.Value.StorageProvider.TryGetValue("type", out object value)
                 && value is string s
-                && !string.Equals(s, ProviderName, StringComparison.OrdinalIgnoreCase))
+                && !string.Equals(s, this.Name, StringComparison.OrdinalIgnoreCase))
             {
                 return;
             }
