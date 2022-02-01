@@ -1,4 +1,5 @@
 ## New Features
+- Support specification of max entity operation batch size
 
 - Added a boolean property `IncludeDeleted` to `EntityQuery` which controls whether to return deleted entities.
 - Azure Durable Functions now supports identity-based connections. See [here](https://docs.microsoft.com/en-us/azure/azure-functions/functions-reference?tabs=blob#connecting-to-host-storage-with-an-identity-preview) for details on how to configure these connections ([#2014](https://github.com/Azure/azure-functions-durable-extension/pull/2014)) - contributed by [@wsugarman](https://github.com/wsugarman)
@@ -6,6 +7,7 @@
 
 ## Bug fixes
 - Fixed handling of function timeouts inside entity and activity functions and added tests
+- Skip constructor of AzureStorageDurabilityProvider if not used, to avoid spurious validation exceptions
 
 ## Breaking Changes
 
