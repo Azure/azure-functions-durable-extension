@@ -89,7 +89,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" Version="1.10.1" />
-    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers" Version="0.4.1" />
+    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers" Version="0.4.2" />
 
     <!-- Explicitly pinned transitive dependencies with CVE vulnerabilities.-->
     <PackageReference Include="System.Text.Encodings.Web" Version="4.7.2" />
