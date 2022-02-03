@@ -17,7 +17,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth
 {
     internal class AzureCredentialFactory : ITokenCredentialFactory
     {
-        private const string LoggerName = "Host.Triggers.DurableTask.Auth";
+        private const string AzureStorageResource = "https://storage.azure.com/";
+        private const string AzureStorageResourceScope = AzureStorageResource + ".default";
 
         private readonly string hubName;
         private readonly AzureComponentFactory componentFactory;
@@ -30,7 +31,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth
         {
             this.hubName = options?.Value?.HubName ?? throw new ArgumentNullException(nameof(options));
             this.componentFactory = componentFactory ?? throw new ArgumentNullException(nameof(componentFactory));
-            this.traceHelper = new EndToEndTraceHelper(loggerFactory?.CreateLogger(LoggerName) ?? throw new ArgumentNullException(nameof(loggerFactory)), false);
+            this.traceHelper = new EndToEndTraceHelper(loggerFactory?.CreateLogger(DurableTaskExtension.LoggerCategoryName) ?? throw new ArgumentNullException(nameof(loggerFactory)), false);
         }
 
         internal event Action<TokenRenewalState> Renewing;
@@ -46,10 +47,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth
         /// <inheritdoc />
         public AppAuthTokenCredential Create(IConfiguration configuration, TimeSpan tokenRefreshOffset, TimeSpan tokenRefreshRetryDelay, CancellationToken cancellationToken = default)
         {
-            var context = new TokenRequestContext(new[] { "https://storage.azure.com/.default" }, null);
+            var context = new TokenRequestContext(new[] { AzureStorageResourceScope }, null);
 
             AzureTokenCredential tokenCredential = this.componentFactory.CreateTokenCredential(configuration);
-            AccessToken value = tokenCredential.GetToken(context, default);
+
+            AccessToken value;
+            this.traceHelper.RetrievingToken(this.hubName, AzureStorageResource);
+            try
+            {
+                value = tokenCredential.GetToken(context, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                this.traceHelper.TokenRetrievalFailed(this.hubName, AzureStorageResource, ex);
+                throw;
+            }
+
             var state = new TokenRenewalState
             {
                 Context = context,
@@ -61,14 +74,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth
 
             return new AppAuthTokenCredential(
                 value.Token,
-                (o, t) => this.RenewTokenAsync(o as TokenRenewalState, t),
+                (o, t) => this.RenewTokenAsync((TokenRenewalState)o, t),
                 state,
                 GetRenewalFrequency(value, tokenRefreshOffset));
         }
 
         private async Task<NewTokenAndFrequency> RenewTokenAsync(TokenRenewalState state, CancellationToken cancellationToken)
         {
-            // The AppAuthTokenCredential object is being disposed
+            // First, check if the credential is being disposed
             cancellationToken.ThrowIfCancellationRequested();
 
             this.OnRenewing(state);
@@ -85,12 +98,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth
             }
             catch (Exception e)
             {
+                // Attempt to renew the token again after the configured delay has elapsed
                 next = new NewTokenAndFrequency(state.Previous.Token, state.RefreshDelay);
                 this.OnRenewalFailed(++state.Attempts, next, e);
                 return next;
             }
 
-            // Save the token in case renewal results in an exception
+            // Save the token in case the next renewal results in an exception
             state.Attempts = 0;
             state.Previous = result;
             next = new NewTokenAndFrequency(result.Token, GetRenewalFrequency(result, state.RefreshOffset));
@@ -99,27 +113,28 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth
             return next;
         }
 
-        private void OnRenewing(TokenRenewalState state) =>
+        private void OnRenewing(TokenRenewalState state)
+        {
+            this.traceHelper.RetrievingToken(this.hubName, AzureStorageResource);
             this.Renewing?.Invoke(state);
+        }
 
         private void OnRenewed(NewTokenAndFrequency next) =>
             this.Renewed?.Invoke(next);
 
         private void OnRenewalFailed(int attempt, NewTokenAndFrequency next, Exception exception)
         {
-            this.traceHelper.TokenRenewalFailed(this.hubName, "https://storage.azure.com/", attempt, next.Frequency.GetValueOrDefault(), exception);
+            this.traceHelper.TokenRenewalFailed(this.hubName, AzureStorageResource, attempt, next.Frequency.GetValueOrDefault(), exception);
             this.RenewalFailed?.Invoke(attempt, next, exception);
         }
 
         private static TimeSpan GetRenewalFrequency(AccessToken accessToken, TimeSpan refreshOffset)
         {
+            // If the token expires within the offset duration,
+            // then adjust the value to zero so we can immediately renew it.
+            // Eg. The token expires in 10 minutes, but we typically try to renew it 30 minutes before expiry
             TimeSpan frequency = accessToken.ExpiresOn - DateTimeOffset.UtcNow - refreshOffset;
-            if (frequency < TimeSpan.Zero)
-            {
-                frequency = TimeSpan.Zero;
-            }
-
-            return frequency;
+            return frequency < TimeSpan.Zero ? TimeSpan.Zero : frequency;
         }
 
         internal sealed class TokenRenewalState

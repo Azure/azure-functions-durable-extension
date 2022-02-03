@@ -447,7 +447,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.WriteEvent(227, TaskHub, AppName, SlotName, FunctionName, InstanceId, OperationName, OperationId, FunctionType, ExtensionVersion, IsReplay);
         }
 
-        [Event(228, Level = EventLevel.Warning)]
+        [Event(228, Level = EventLevel.Informational)]
+        public void RetrievingToken(
+            string TaskHub,
+            string AppName,
+            string SlotName,
+            string Resource,
+            string ExtensionVersion)
+        {
+            this.WriteEvent(228, TaskHub, AppName, SlotName, Resource, ExtensionVersion);
+        }
+
+        [Event(229, Level = EventLevel.Error)]
+        public void TokenRetrievalFailed(
+            string TaskHub,
+            string AppName,
+            string SlotName,
+            string Resource,
+            string Details,
+            string ExtensionVersion)
+        {
+            this.WriteEvent(229, TaskHub, AppName, SlotName, Resource, Details, ExtensionVersion);
+        }
+
+        [Event(230, Level = EventLevel.Warning)]
         public void TokenRenewalFailed(
             string TaskHub,
             string AppName,
@@ -458,7 +481,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string Details,
             string ExtensionVersion)
         {
-            this.WriteEvent(228, TaskHub, AppName, SlotName, Resource, Attempt, DelayMs, Details, ExtensionVersion);
+            this.WriteEvent(230, TaskHub, AppName, SlotName, Resource, Attempt, DelayMs, Details, ExtensionVersion);
         }
 
 #pragma warning restore SA1313 // Parameter names should begin with lower-case letter
