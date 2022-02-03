@@ -880,7 +880,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 exception.Message,
                 ExtensionVersion);
 
-            this.logger.LogWarning(
+            this.logger.LogError(
                 default,
                 exception,
                 "Unable to retrieve authentication token for resource '{resource}'. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}.",
