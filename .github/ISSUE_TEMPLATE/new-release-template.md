@@ -18,6 +18,7 @@ onenote:https://microsoft.sharepoint.com/teams/AzureWebjobs/SiteAssets/AzureWebj
 **Prep Release (assigned to: )**
 _Due: <2-business-days-before-release>_
 - [ ] Update Durable Functions references (Analyzer? DTFx?) and check current version.
+- [ ] Locally, run `dotnet list package --vulnerable` to ensure the release is not affected by any vulnerable dependencies.
 - [ ] Add Durable Functions package to myget staging feed.
 - [ ] Check for package size, make sure it's not surprisingly heavier than a previous release.
 - [ ] Merge dev into main. Person performing validation must approve PR. Important: Merge NOT Squash merge.
@@ -39,8 +40,9 @@ _Due: <release-deadline>_
 - [ ] Delete Durable Functions packages from myget.
 - [ ] Run Durable Functions release pipeline.
 - [ ] Push myget package to nuget (nuget.org extensions package option).
-- [ ] Create a PR in the [Azure Functions templates repo](https://github.com/Azure/azure-functions-templates) to update templates to the latest version.
-- [ ] Create a PR in the [Azure Functions bundles repo](https://github.com/Azure/azure-functions-extension-bundles) to update bundles to the latest version.
+- [ ] Create a PR in the [Azure Functions templates repo](https://github.com/Azure/azure-functions-templates) targeting branch `v3.x` to update *only the dotnet* templates (`template.json` files) to the latest version.
+- [ ] Create a PR in the [Azure Functions templates repo](https://github.com/Azure/azure-functions-templates) targeting branch `v4.x` to update *only the dotnet* templates (`template.json` files) to the latest version.
+- [ ] _if and only if this is a new major release_, Create a PR in the [Azure Functions bundles repo](https://github.com/Azure/azure-functions-extension-bundles) to update bundles to the latest version .
 - [ ] Merge all pending PR docs from `pending_docs.md.`
 - [ ] Reset `pending_docs.md` and `release_notes.md` in the `dev` branch. You will want to save `release_notes.md` somewhere for when you publish release notes.
 - [ ] Publish release notes from the pre-reset `release_notes.md.`

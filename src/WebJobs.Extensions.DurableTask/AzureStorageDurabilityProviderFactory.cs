@@ -36,6 +36,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             IPlatformInformation platformInfo)
 #pragma warning restore CS0612 // Type or member is obsolete
         {
+            // this constructor may be called by dependency injection even if the AzureStorage provider is not selected
+            // in that case, return immediately, since this provider is not actually used, but can still throw validation errors
+            if (options.Value.StorageProvider.TryGetValue("type", out object value)
+                && value is string s
+                && !string.Equals(s, this.Name, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
             this.options = options.Value;
             this.nameResolver = nameResolver;
             this.loggerFactory = loggerFactory;
@@ -46,6 +55,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // different defaults for key configuration values.
             int maxConcurrentOrchestratorsDefault = this.inConsumption ? 5 : 10 * Environment.ProcessorCount;
             int maxConcurrentActivitiesDefault = this.inConsumption ? 10 : 10 * Environment.ProcessorCount;
+            int maxEntityOperationBatchSizeDefault = this.inConsumption ? 50 : 5000;
 
             if (this.inConsumption)
             {
@@ -63,6 +73,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // The following defaults are only applied if the customer did not explicitely set them on `host.json`
             this.options.MaxConcurrentOrchestratorFunctions = this.options.MaxConcurrentOrchestratorFunctions ?? maxConcurrentOrchestratorsDefault;
             this.options.MaxConcurrentActivityFunctions = this.options.MaxConcurrentActivityFunctions ?? maxConcurrentActivitiesDefault;
+            this.options.MaxEntityOperationBatchSize = this.options.MaxEntityOperationBatchSize ?? maxEntityOperationBatchSizeDefault;
 
             // Override the configuration defaults with user-provided values in host.json, if any.
             JsonConvert.PopulateObject(JsonConvert.SerializeObject(this.options.StorageProvider), this.azureStorageOptions);

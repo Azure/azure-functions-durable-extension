@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -542,12 +543,34 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return this.DurabilityProvider.GetOrchestrationStateWithPagination(condition, cancellationToken);
         }
 
+        private static EntityQueryResult ConvertToEntityQueryResult(IEnumerable<DurableEntityStatus> entities, string continuationToken)
+        {
+            var entityQueryResult = new EntityQueryResult();
+            entityQueryResult.Entities = entities;
+            entityQueryResult.ContinuationToken = continuationToken;
+
+            return entityQueryResult;
+        }
+
         /// <inheritdoc />
         async Task<EntityQueryResult> IDurableEntityClient.ListEntitiesAsync(EntityQuery query, CancellationToken cancellationToken)
         {
             var condition = new OrchestrationStatusQueryCondition(query);
-            var result = await ((IDurableClient)this).ListInstancesAsync(condition, cancellationToken);
-            var entityResult = new EntityQueryResult(result);
+            EntityQueryResult entityResult;
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
+
+            do
+            {
+                var result = await ((IDurableClient)this).ListInstancesAsync(condition, cancellationToken);
+                entityResult = new EntityQueryResult(result, query.IncludeDeleted);
+                condition.ContinuationToken = entityResult.ContinuationToken;
+            }
+            while ( // run multiple queries if no records are found, but never in excess of 100ms
+                entityResult.ContinuationToken != null
+                && !entityResult.Entities.Any()
+                && stopwatch.ElapsedMilliseconds <= 100);
+
             return entityResult;
         }
 
