@@ -851,6 +851,67 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 configurationJsonString, hubName, LocalAppName, LocalSlotName, ExtensionVersion);
         }
 
+        public void RetrievingToken(
+            string hubName,
+            string resource)
+        {
+            EtwEventSource.Instance.RetrievingToken(
+                hubName,
+                LocalAppName,
+                LocalSlotName,
+                resource,
+                ExtensionVersion);
+
+            this.logger.LogInformation(
+                "Attempting to retrieve authentication token for resource '{resource}'. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}.",
+                resource, hubName, LocalAppName, LocalSlotName, ExtensionVersion);
+        }
+
+        public void TokenRetrievalFailed(
+            string hubName,
+            string resource,
+            Exception exception)
+        {
+            EtwEventSource.Instance.TokenRetrievalFailed(
+                hubName,
+                LocalAppName,
+                LocalSlotName,
+                resource,
+                exception.Message,
+                ExtensionVersion);
+
+            this.logger.LogError(
+                default,
+                exception,
+                "Unable to retrieve authentication token for resource '{resource}'. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}.",
+                resource, hubName, LocalAppName, LocalSlotName, ExtensionVersion);
+        }
+
+        public void TokenRenewalFailed(
+            string hubName,
+            string resource,
+            int attempt,
+            TimeSpan delay,
+            Exception exception)
+        {
+            long delayMs = (long)delay.TotalMilliseconds;
+            EtwEventSource.Instance.TokenRenewalFailed(
+                hubName,
+                LocalAppName,
+                LocalSlotName,
+                resource,
+                attempt,
+                delayMs,
+                exception.Message,
+                ExtensionVersion);
+
+            this.logger.LogWarning(
+                default,
+                exception,
+                "Unable to renew authentication token for resource '{resource}' on attempt #{attempt}. Will retry in {delay} ms. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}.",
+                resource, attempt, delayMs, hubName, LocalAppName, LocalSlotName, ExtensionVersion);
+        }
+
         private bool ShouldLogEvent(bool isReplay)
         {
             return this.traceReplayEvents || !isReplay;

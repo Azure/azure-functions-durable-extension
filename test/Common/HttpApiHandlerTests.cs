@@ -1440,7 +1440,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     {
                         new AzureStorageDurabilityProviderFactory(
                         new OptionsWrapper<DurableTaskOptions>(options),
-                        new TestConnectionStringResolver(),
+                        new TestStorageAccountProvider(),
                         TestHelpers.GetTestNameResolver(),
                         NullLoggerFactory.Instance,
                         TestHelpers.GetMockPlatformInformationService()),

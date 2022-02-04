@@ -87,7 +87,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private HttpClient durableHttpClient;
         private EventSourceListener eventSourceListener;
 #if FUNCTIONS_V1
-        private IConnectionStringResolver connectionStringResolver;
+        private IConnectionInfoResolver connectionInfoResolver;
 
         /// <summary>
         /// Obsolete. Please use an alternate constructor overload.
@@ -197,7 +197,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             ILoggerFactory loggerFactory,
             INameResolver nameResolver,
             IEnumerable<IDurabilityProviderFactory> orchestrationServiceFactories,
-            IConnectionStringResolver connectionStringResolver,
+            IConnectionInfoResolver connectionInfoResolver,
             IApplicationLifetimeWrapper shutdownNotification,
             IDurableHttpMessageHandlerFactory durableHttpMessageHandlerFactory,
 #pragma warning disable CS0612 // Type or member is obsolete
@@ -206,7 +206,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             : this(options, loggerFactory, nameResolver, orchestrationServiceFactories, shutdownNotification, durableHttpMessageHandlerFactory)
         {
-            this.connectionStringResolver = connectionStringResolver;
+            this.connectionInfoResolver = connectionInfoResolver;
         }
 
         /// <summary>
@@ -389,21 +389,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 backwardsCompRule.Bind(new TypedDurableClientBindingProvider(this.TypedCodeProvider, this.GetClient));
             }
 
-            string storageConnectionString = null;
-            var providerFactory = this.durabilityProviderFactory as AzureStorageDurabilityProviderFactory;
-            if (providerFactory != null)
-            {
-                storageConnectionString = providerFactory.GetDefaultStorageConnectionString();
-            }
+            string connectionName = this.durabilityProviderFactory is AzureStorageDurabilityProviderFactory azureStorageDurabilityProviderFactory
+                ? azureStorageDurabilityProviderFactory.DefaultConnectionName
+                : null;
 
             context.AddBindingRule<OrchestrationTriggerAttribute>()
-                .BindToTrigger(new OrchestrationTriggerAttributeBindingProvider(this, context, storageConnectionString, this.TraceHelper));
+                .BindToTrigger(new OrchestrationTriggerAttributeBindingProvider(this, context, connectionName, this.TraceHelper));
 
             context.AddBindingRule<ActivityTriggerAttribute>()
-                .BindToTrigger(new ActivityTriggerAttributeBindingProvider(this, context, storageConnectionString, this.TraceHelper));
+                .BindToTrigger(new ActivityTriggerAttributeBindingProvider(this, context, connectionName, this.TraceHelper));
 
             context.AddBindingRule<EntityTriggerAttribute>()
-                .BindToTrigger(new EntityTriggerAttributeBindingProvider(this, context, storageConnectionString, this.TraceHelper));
+                .BindToTrigger(new EntityTriggerAttributeBindingProvider(this, context, connectionName, this.TraceHelper));
 
             this.taskHubWorker = new TaskHubWorker(this.defaultDurabilityProvider, this, this, this.loggerFactory);
 
@@ -517,11 +514,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.ResolveAppSettingOptions();
             ILogger logger = this.loggerFactory.CreateLogger(LoggerCategoryName);
             this.TraceHelper = new EndToEndTraceHelper(logger, this.Options.Tracing.TraceReplayEvents);
-            this.connectionStringResolver = new WebJobsConnectionStringProvider();
+            this.connectionInfoResolver = new WebJobsConnectionInfoProvider();
             this.PlatformInformationService = new DefaultPlatformInformation(this.nameResolver, this.loggerFactory);
             this.durabilityProviderFactory = new AzureStorageDurabilityProviderFactory(
                 new OptionsWrapper<DurableTaskOptions>(this.Options),
-                this.connectionStringResolver,
+                new AzureStorageAccountProvider(this.connectionInfoResolver),
                 this.nameResolver,
                 this.loggerFactory,
                 this.PlatformInformationService);
@@ -1440,13 +1437,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        internal IScaleMonitor GetScaleMonitor(string functionId, FunctionName functionName, string storageConnectionString)
+        internal IScaleMonitor GetScaleMonitor(string functionId, FunctionName functionName, string connectionName)
         {
             if (this.defaultDurabilityProvider.TryGetScaleMonitor(
                     functionId,
                     functionName.Name,
                     this.Options.HubName,
-                    storageConnectionString,
+                    connectionName,
                     out IScaleMonitor scaleMonitor))
             {
                 return scaleMonitor;

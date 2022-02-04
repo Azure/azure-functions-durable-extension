@@ -7,33 +7,33 @@ using Microsoft.Extensions.Configuration;
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     /// <summary>
-    /// Connection string provider which resolves connection strings from the WebJobs context.
+    /// Connection info provider which resolves connection information from the WebJobs context.
     /// </summary>
-    [Obsolete("Please use WebJobsConnectionInfoProvider instead.")]
-    public class WebJobsConnectionStringProvider : IConnectionStringResolver
+    public class WebJobsConnectionInfoProvider : IConnectionInfoResolver
     {
 #if !FUNCTIONS_V1
         private readonly IConfiguration hostConfiguration;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="WebJobsConnectionStringProvider"/> class.
+        /// Initializes a new instance of the <see cref="WebJobsConnectionInfoProvider"/> class.
         /// </summary>
         /// <param name="hostConfiguration">A <see cref="IConfiguration"/> object provided by the WebJobs host.</param>
-        public WebJobsConnectionStringProvider(IConfiguration hostConfiguration)
+        public WebJobsConnectionInfoProvider(IConfiguration hostConfiguration)
         {
             this.hostConfiguration = hostConfiguration ?? throw new ArgumentNullException(nameof(hostConfiguration));
         }
 
         /// <inheritdoc />
-        public string Resolve(string connectionStringName)
+        public IConfigurationSection Resolve(string name)
         {
-            return this.hostConfiguration.GetWebJobsConnectionString(connectionStringName);
+            return this.hostConfiguration.GetWebJobsConnectionSection(name);
         }
 #else
         /// <inheritdoc />
-        public string Resolve(string connectionStringName)
+        public IConfigurationSection Resolve(string name)
         {
-            return Microsoft.Azure.WebJobs.Host.AmbientConnectionStringProvider.Instance.GetConnectionString(connectionStringName);
+            // The returned key doesn't reflect whether the ConnectionString section was used or if the name was ultimately prefixed.
+            return new ReadOnlyConfigurationValue(name, Host.AmbientConnectionStringProvider.Instance.GetConnectionString(name));
         }
 #endif
     }

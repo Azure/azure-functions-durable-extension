@@ -1,6 +1,7 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using System;
 using Microsoft.Extensions.Configuration;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
@@ -8,6 +9,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// <summary>
     /// Connection string provider which resolves connection strings from the an standard application (Non WebJob).
     /// </summary>
+    [Obsolete("Please use StandardConnectionInfoProvider instead.")]
     public class StandardConnectionStringProvider : IConnectionStringResolver
     {
         private readonly IConfiguration configuration;

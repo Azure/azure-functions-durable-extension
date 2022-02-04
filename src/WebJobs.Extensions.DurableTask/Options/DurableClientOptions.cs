@@ -14,7 +14,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Options
         /// </summary>
         /// <value>The name of an app setting containing connection details.</value>
         /// <remarks>
-        /// For Azure Storage the default behavior is to use the value of <see cref="AzureStorageOptions.ConnectionStringName"/>.
+        /// For Azure Storage the default behavior is to use the value of <see cref="AzureStorageOptions.ConnectionName"/>.
         /// If no value exists there, then the default behavior is to use the standard `AzureWebJobsStorage` connection string for all storage usage.
         /// </remarks>
         public string ConnectionName { get; set; }

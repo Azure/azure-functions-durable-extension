@@ -459,14 +459,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="functionId">Function id.</param>
         /// <param name="functionName">Function name.</param>
         /// <param name="hubName">Task hub name.</param>
-        /// <param name="storageConnectionString">Storage account connection string, used for Azure Storage provider.</param>
+        /// <param name="connectionName">The name of the storage-specific connection settings.</param>
         /// <param name="scaleMonitor">The scale monitor.</param>
         /// <returns>True if autoscaling is supported, false otherwise.</returns>
         public virtual bool TryGetScaleMonitor(
             string functionId,
             string functionName,
             string hubName,
-            string storageConnectionString,
+            string connectionName,
             out IScaleMonitor scaleMonitor)
         {
             scaleMonitor = null;
