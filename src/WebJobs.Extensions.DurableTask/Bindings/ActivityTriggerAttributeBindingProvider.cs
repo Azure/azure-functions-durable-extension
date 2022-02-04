@@ -19,18 +19,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     {
         private readonly DurableTaskExtension durableTaskConfig;
         private readonly ExtensionConfigContext extensionContext;
-        private readonly string storageConnectionString;
+        private readonly string connectionName;
         private readonly EndToEndTraceHelper traceHelper;
 
         public ActivityTriggerAttributeBindingProvider(
             DurableTaskExtension durableTaskConfig,
             ExtensionConfigContext extensionContext,
-            string storageConnectionString,
+            string connectionName,
             EndToEndTraceHelper traceHelper)
         {
             this.durableTaskConfig = durableTaskConfig;
             this.extensionContext = extensionContext;
-            this.storageConnectionString = storageConnectionString;
+            this.connectionName = connectionName;
             this.traceHelper = traceHelper;
         }
 
@@ -188,7 +188,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.activityName,
                     context.Executor,
                     FunctionType.Activity,
-                    this.parent.storageConnectionString);
+                    this.parent.connectionName);
                 return Task.FromResult<IListener>(listener);
             }
 

@@ -26,7 +26,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly FunctionName functionName;
         private readonly ITriggeredFunctionExecutor executor;
         private readonly FunctionType functionType;
-        private readonly string storageConnectionString;
+        private readonly string connectionName;
 #if !FUNCTIONS_V1
         private readonly Lazy<IScaleMonitor> scaleMonitor;
 #endif
@@ -37,7 +37,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             FunctionName functionName,
             ITriggeredFunctionExecutor executor,
             FunctionType functionType,
-            string storageConnectionString)
+            string connectionName)
         {
             this.config = config ?? throw new ArgumentNullException(nameof(config));
             this.executor = executor ?? throw new ArgumentNullException(nameof(executor));
@@ -50,13 +50,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.functionId = functionId;
             this.functionName = functionName;
             this.functionType = functionType;
-            this.storageConnectionString = storageConnectionString;
+            this.connectionName = connectionName;
 #if !FUNCTIONS_V1
             this.scaleMonitor = new Lazy<IScaleMonitor>(() =>
                 this.config.GetScaleMonitor(
                     this.functionId,
                     this.functionName,
-                    this.storageConnectionString));
+                    this.connectionName));
 #endif
         }
 

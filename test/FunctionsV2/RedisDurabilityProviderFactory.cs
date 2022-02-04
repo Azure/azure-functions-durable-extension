@@ -12,14 +12,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private readonly DurabilityProvider defaultProvider;
         private readonly string defaultHubName;
-        private readonly IConnectionStringResolver connectionResolver;
+        private readonly IConnectionInfoResolver connectionResolver;
 
-        public RedisDurabilityProviderFactory(IOptions<DurableTaskOptions> options, IConnectionStringResolver connectionStringResolver)
+        public RedisDurabilityProviderFactory(IOptions<DurableTaskOptions> options, IConnectionInfoResolver connectionResolver)
         {
             this.defaultConnectionName = options.Value.StorageProvider["connectionName"] as string;
-            string redisConnectionString = connectionStringResolver.Resolve(this.defaultConnectionName);
+            string redisConnectionString = connectionResolver.Resolve(this.defaultConnectionName).Value;
             this.defaultHubName = options.Value.HubName;
-            this.connectionResolver = connectionStringResolver;
+            this.connectionResolver = connectionResolver;
             var defaultTaskHubService = new RedisOrchestrationService(new RedisOrchestrationServiceSettings()
             {
                 TaskHubName = this.defaultHubName,
@@ -45,7 +45,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return this.defaultProvider;
             }
 
-            string redisConnectionString = this.connectionResolver.Resolve(attribute.ConnectionName);
+            string redisConnectionString = this.connectionResolver.Resolve(attribute.ConnectionName).Value;
             var redisOrchestartionService = new RedisOrchestrationService(new RedisOrchestrationServiceSettings()
             {
                 TaskHubName = attribute.TaskHub,
