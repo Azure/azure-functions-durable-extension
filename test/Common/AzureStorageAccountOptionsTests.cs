@@ -13,6 +13,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     {
 #if !FUNCTIONS_V1
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void GetFromConfiguration()
         {
             const string connectionName = "MyConnection";
