@@ -204,67 +204,71 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             HttpManagementPayload httpManagementPayload = this.GetClientResponseLinks(request, instanceId, attribute?.TaskHub, attribute?.ConnectionName, returnInternalServerErrorOnFailure);
 
             IDurableOrchestrationClient client = this.GetClient(request, attribute);
-            Stopwatch stopwatch = Stopwatch.StartNew();
 
-            // This retry loop completes either when the
-            // orchestration has completed, or when the timeout is reached.
-            while (true)
+            DurableOrchestrationStatus status = null;
+
+            if (client is DurableClient durableClient && durableClient.DurabilityProvider.SupportsPollFreeWait)
             {
-                DurableOrchestrationStatus status = null;
+                // For durability providers that support long polling, WaitForOrchestrationAsync is more efficient than GetStatusAsync
+                // so we ignore the retryInterval argument and instead wait for the entire timeout duration
 
-                if (client is DurableClient durableClient && durableClient.DurabilityProvider.SupportsPollFreeWait)
+                var state = await durableClient.DurabilityProvider.WaitForOrchestrationAsync(instanceId, null, timeout, CancellationToken.None);
+                if (state != null)
                 {
-                    // For durability providers that support efficient (poll-free) waiting, we take advantage of that API
-                    try
-                    {
-                        var state = await durableClient.DurabilityProvider.WaitForOrchestrationAsync(instanceId, null, timeout, CancellationToken.None);
-                        status = DurableClient.ConvertOrchestrationStateToStatus(state);
-                    }
-                    catch (TimeoutException)
-                    {
-                        // The orchestration did not complete.
-                        // Depending on the implementation of the backend, we may get here before the full timeout has elapsed,
-                        // so we recheck how much time has elapsed below, and retry if there is time left.
-                    }
+                    status = DurableClient.ConvertOrchestrationStateToStatus(state);
                 }
-                else
+            }
+            else
+            {
+                // This retry loop completes either when the
+                // orchestration has completed, or when the timeout is reached.
+
+                Stopwatch stopwatch = Stopwatch.StartNew();
+                while (true)
                 {
-                    // For durability providers that do not support efficient (poll-free) waiting, we do explicit retries.
                     status = await client.GetStatusAsync(instanceId);
-                }
 
-                if (status != null)
-                {
-                    if (status.RuntimeStatus == OrchestrationRuntimeStatus.Completed)
-                    {
-                        return request.CreateResponse(HttpStatusCode.OK, status.Output);
-                    }
-
-                    if (status.RuntimeStatus == OrchestrationRuntimeStatus.Canceled ||
+                    if (status != null && (
+                        status.RuntimeStatus == OrchestrationRuntimeStatus.Completed ||
+                        status.RuntimeStatus == OrchestrationRuntimeStatus.Canceled ||
                         status.RuntimeStatus == OrchestrationRuntimeStatus.Failed ||
-                        status.RuntimeStatus == OrchestrationRuntimeStatus.Terminated)
+                        status.RuntimeStatus == OrchestrationRuntimeStatus.Terminated))
                     {
-                        return await this.HandleGetStatusRequestAsync(request, instanceId, returnInternalServerErrorOnFailure, client);
+                        break;
+                    }
+
+                    TimeSpan elapsed = stopwatch.Elapsed;
+                    if (elapsed < timeout)
+                    {
+                        TimeSpan remainingTime = timeout.Subtract(elapsed);
+                        await Task.Delay(remainingTime > retryInterval ? retryInterval : remainingTime);
+                    }
+                    else
+                    {
+                        break;
                     }
                 }
+            }
 
-                TimeSpan elapsed = stopwatch.Elapsed;
-                if (elapsed < timeout)
-                {
-                    TimeSpan remainingTime = timeout.Subtract(elapsed);
-                    await Task.Delay(remainingTime > retryInterval ? retryInterval : remainingTime);
-                }
-                else
-                {
+            switch (status?.RuntimeStatus)
+            {
+                case OrchestrationRuntimeStatus.Completed:
+                    return request.CreateResponse(HttpStatusCode.OK, status.Output);
+
+                case OrchestrationRuntimeStatus.Canceled:
+                case OrchestrationRuntimeStatus.Failed:
+                case OrchestrationRuntimeStatus.Terminated:
+                    return await this.HandleGetStatusRequestAsync(request, instanceId, returnInternalServerErrorOnFailure, client);
+
+                default:
                     return this.CreateCheckStatusResponseMessage(
-                        request,
-                        instanceId,
-                        httpManagementPayload.StatusQueryGetUri,
-                        httpManagementPayload.SendEventPostUri,
-                        httpManagementPayload.TerminatePostUri,
-                        httpManagementPayload.PurgeHistoryDeleteUri,
-                        httpManagementPayload.RestartPostUri);
-                }
+                                  request,
+                                  instanceId,
+                                  httpManagementPayload.StatusQueryGetUri,
+                                  httpManagementPayload.SendEventPostUri,
+                                  httpManagementPayload.TerminatePostUri,
+                                  httpManagementPayload.PurgeHistoryDeleteUri,
+                                  httpManagementPayload.RestartPostUri);
             }
         }
 
