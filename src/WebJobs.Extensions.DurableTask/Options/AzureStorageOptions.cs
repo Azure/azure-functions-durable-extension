@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.Serialization;
 using Microsoft.Extensions.Logging;
 using Microsoft.WindowsAzure.Storage;
 
@@ -21,13 +20,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private const string TaskHubPadding = "Hub";
 
         /// <summary>
+        /// Gets or sets the name of the Azure Storage connection information used to manage the underlying Azure Storage resources.
+        /// </summary>
+        /// <remarks>
+        /// The value may refer to either a connection string or the configuration section containing connection metadata.
+        /// The default behavior is to use the standard <c>AzureWebJobsStorage</c> connection for all storage usage.
+        /// </remarks>
+        /// <value>
+        /// The name of a connection-related key that exists in the app's application settings. The value may refer to
+        /// a connection string or the section detailing additional connection metadata.
+        /// </value>
+        public string ConnectionName { get; set; }
+
+        /// <summary>
         /// Gets or sets the name of the Azure Storage connection string used to manage the underlying Azure Storage resources.
         /// </summary>
         /// <remarks>
         /// If not specified, the default behavior is to use the standard `AzureWebJobsStorage` connection string for all storage usage.
         /// </remarks>
         /// <value>The name of a connection string that exists in the app's application settings.</value>
-        public string ConnectionStringName { get; set; }
+        [Obsolete("Please use ConnectionName instead.")]
+        public string ConnectionStringName
+        {
+            get => this.ConnectionName;
+            set => this.ConnectionName = value;
+        }
 
         /// <summary>
         /// Gets or sets the number of messages to pull from the control queue at a time.
@@ -83,6 +100,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public TimeSpan WorkItemQueueVisibilityTimeout { get; set; } = TimeSpan.FromMinutes(5);
 
         /// <summary>
+        /// Gets or sets the name of the Azure Storage connection information to use for the
+        /// durable tracking store (History and Instances tables).
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// If not specified, the <see cref="ConnectionName"/> connection string is used for the durable tracking store.
+        /// </para>
+        /// <para>
+        /// This property is primarily useful when deploying multiple apps that need to share the same
+        /// tracking infrastructure. For example, when deploying two versions of an app side by side, using
+        /// the same tracking store allows both versions to save history into the same table, which allows
+        /// clients to query for instance status across all versions.
+        /// </para>
+        /// </remarks>
+        /// <value>
+        /// The name of a connection-related key that exists in the app's application settings. The value may refer to
+        /// a connection string or the section detailing additional connection metadata.
+        /// </value>
+        public string TrackingStoreConnectionName { get; set; }
+
+        /// <summary>
         /// Gets or sets the name of the Azure Storage connection string to use for the
         /// durable tracking store (History and Instances tables).
         /// </summary>
@@ -96,13 +134,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// clients to query for instance status across all versions.
         /// </para></remarks>
         /// <value>The name of a connection string that exists in the app's application settings.</value>
-        public string TrackingStoreConnectionStringName { get; set; }
+        [Obsolete("Please use TrackingStoreConnectionName instead.")]
+        public string TrackingStoreConnectionStringName
+        {
+            get => this.TrackingStoreConnectionName;
+            set => this.TrackingStoreConnectionName = value;
+        }
 
         /// <summary>
         /// Gets or sets the name prefix to use for history and instance tables in Azure Storage.
         /// </summary>
         /// <remarks>
-        /// This property is only used when <see cref="TrackingStoreConnectionStringName"/> is specified.
+        /// This property is only used when <see cref="TrackingStoreConnectionName"/> is specified.
         /// If no prefix is specified, the default prefix value is "DurableTask".
         /// </remarks>
         /// <value>The prefix to use when naming the generated Azure tables.</value>

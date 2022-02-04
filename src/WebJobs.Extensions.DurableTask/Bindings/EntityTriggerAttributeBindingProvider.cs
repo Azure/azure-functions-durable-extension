@@ -16,14 +16,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     internal class EntityTriggerAttributeBindingProvider : ITriggerBindingProvider
     {
         private readonly DurableTaskExtension config;
-        private readonly string storageConnectionString;
+        private readonly string connectionName;
 
         public EntityTriggerAttributeBindingProvider(
             DurableTaskExtension config,
-            string storageConnectionString)
+            string connectionName)
         {
             this.config = config;
-            this.storageConnectionString = storageConnectionString;
+            this.connectionName = connectionName;
         }
 
         public Task<ITriggerBinding?> TryCreateAsync(TriggerBindingProviderContext context)
@@ -51,7 +51,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // The entity class name defaults to the method name.
             var entityName = new FunctionName(name);
             this.config.RegisterEntity(entityName, null);
-            var binding = new EntityTriggerBinding(this.config, parameter, entityName, this.storageConnectionString);
+            var binding = new EntityTriggerBinding(this.config, parameter, entityName, this.connectionName);
             return Task.FromResult<ITriggerBinding?>(binding);
         }
 
@@ -60,18 +60,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             private readonly DurableTaskExtension config;
             private readonly ParameterInfo parameterInfo;
             private readonly FunctionName entityName;
-            private readonly string storageConnectionString;
+            private readonly string connectionName;
 
             public EntityTriggerBinding(
                 DurableTaskExtension config,
                 ParameterInfo parameterInfo,
                 FunctionName entityName,
-                string storageConnectionString)
+                string connectionName)
             {
                 this.config = config;
                 this.parameterInfo = parameterInfo;
                 this.entityName = entityName;
-                this.storageConnectionString = storageConnectionString;
+                this.connectionName = connectionName;
                 this.BindingDataContract = GetBindingDataContract(parameterInfo);
             }
 
@@ -147,7 +147,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     context.Descriptor.Id,
                     this.entityName,
                     FunctionType.Entity,
-                    this.storageConnectionString);
+                    this.connectionName);
                 return Task.FromResult<IListener>(listener);
             }
 

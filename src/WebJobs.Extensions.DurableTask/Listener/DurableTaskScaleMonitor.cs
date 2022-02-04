@@ -19,7 +19,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly string functionId;
         private readonly string functionName;
         private readonly string hubName;
-        private readonly string storageConnectionString;
+        private readonly CloudStorageAccount storageAccount;
         private readonly ScaleMonitorDescriptor scaleMonitorDescriptor;
         private readonly ILogger logger;
 
@@ -29,14 +29,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string functionId,
             string functionName,
             string hubName,
-            string storageConnectionString,
+            CloudStorageAccount storageAccount,
             ILogger logger,
             DisconnectedPerformanceMonitor performanceMonitor = null)
         {
             this.functionId = functionId;
             this.functionName = functionName;
             this.hubName = hubName;
-            this.storageConnectionString = storageConnectionString;
+            this.storageAccount = storageAccount;
             this.logger = logger;
             this.performanceMonitor = performanceMonitor;
             this.scaleMonitorDescriptor = new ScaleMonitorDescriptor($"{this.functionId}-DurableTaskTrigger-{this.hubName}".ToLower());
@@ -54,12 +54,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             if (this.performanceMonitor == null)
             {
-                if (this.storageConnectionString == null)
+                if (this.storageAccount == null)
                 {
-                    throw new ArgumentNullException(nameof(this.storageConnectionString));
+                    throw new ArgumentNullException(nameof(this.storageAccount));
                 }
 
-                this.performanceMonitor = new DisconnectedPerformanceMonitor(this.storageConnectionString, this.hubName);
+                this.performanceMonitor = new DisconnectedPerformanceMonitor(this.storageAccount, this.hubName);
             }
 
             return this.performanceMonitor;

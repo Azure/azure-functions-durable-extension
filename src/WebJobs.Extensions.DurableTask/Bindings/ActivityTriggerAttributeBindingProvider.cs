@@ -17,14 +17,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     internal class ActivityTriggerAttributeBindingProvider : ITriggerBindingProvider
     {
         private readonly DurableTaskExtension durableTaskConfig;
-        private readonly string storageConnectionString;
+        private readonly string connectionName;
 
         public ActivityTriggerAttributeBindingProvider(
             DurableTaskExtension durableTaskConfig,
-            string storageConnectionString)
+            string connectionName)
         {
             this.durableTaskConfig = durableTaskConfig;
-            this.storageConnectionString = storageConnectionString;
+            this.connectionName = connectionName;
         }
 
         public Task<ITriggerBinding?> TryCreateAsync(TriggerBindingProviderContext context)
@@ -109,9 +109,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 // If we are not directly passed a DurableActivityContext, we can assume we are being called directly
                 // by the admin API. This is mainly used for the Azure Portal execution scenario.
-                if (!(value is DurableActivityContext activityContext))
+                if (value is not DurableActivityContext activityContext)
                 {
-                    if (!(value is string serializedInput))
+                    if (value is not string serializedInput)
                     {
                         throw new InvalidOperationException($"Cannot execute an Activity Trigger without a {nameof(DurableActivityContext)} or a {nameof(String)} that represents the serialized input.");
                     }
@@ -180,7 +180,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     context.Descriptor.Id,
                     this.activityName,
                     FunctionType.Activity,
-                    this.parent.storageConnectionString);
+                    this.parent.connectionName);
                 return Task.FromResult<IListener>(listener);
             }
 
