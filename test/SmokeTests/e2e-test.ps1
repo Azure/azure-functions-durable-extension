@@ -9,6 +9,7 @@ param(
 	[string]$ContainerName="app",
 	[switch]$NoSetup=$false,
 	[switch]$NoValidation=$false,
+	[string]$AzuriteVersion="3.15.0",
 	[int]$Sleep=30
 )
 
@@ -20,11 +21,11 @@ if ($NoSetup -eq $false) {
 	docker build -f $DockerfilePath -t $ImageName $PSScriptRoot/../../
 
 	# Next, download and start the Azurite emulator Docker image
-	Write-Host "Pulling down the mcr.microsoft.com/azure-storage/azurite image..." -ForegroundColor Yellow
-	docker pull mcr.microsoft.com/azure-storage/azurite
+	Write-Host "Pulling down the mcr.microsoft.com/azure-storage/azurite:$AzuriteVersion image..." -ForegroundColor Yellow
+	docker pull "mcr.microsoft.com/azure-storage/azurite:${AzuriteVersion}"
 
 	Write-Host "Starting Azurite storage emulator using default ports..." -ForegroundColor Yellow
-	docker run --name 'azurite' -p 10000:10000 -p 10001:10001 -p 10002:10002 -d mcr.microsoft.com/azure-storage/azurite
+	docker run --name 'azurite' -p 10000:10000 -p 10001:10001 -p 10002:10002 -d "mcr.microsoft.com/azure-storage/azurite:${AzuriteVersion}"
 
 	# Finally, start up the smoke test container, which will connect to the Azurite container
 	docker run --name $ContainerName -p 8080:80 -it --add-host=host.docker.internal:host-gateway -d `
@@ -42,13 +43,13 @@ if ($sleep -gt  0) {
 # Check to see what containers are running
 docker ps
 
-# Make sure the Functions runtime is up and running
-$pingUrl = "http://localhost:8080/admin/host/ping"
-Write-Host "Pinging app at $pingUrl to ensure the host is healthy" -ForegroundColor Yellow
-Invoke-RestMethod -Method Post -Uri "http://localhost:8080/admin/host/ping"
+try {
+	# Make sure the Functions runtime is up and running
+	$pingUrl = "http://localhost:8080/admin/host/ping"
+	Write-Host "Pinging app at $pingUrl to ensure the host is healthy" -ForegroundColor Yellow
+	Invoke-RestMethod -Method Post -Uri "http://localhost:8080/admin/host/ping"
 
-if ($NoValidation -eq $false) {
-	try {
+	if ($NoValidation -eq $false) {
 		# Note that any HTTP protocol errors (e.g. HTTP 4xx or 5xx) will cause an immediate failure
 		$startOrchestrationUri = "http://localhost:8080/$HttpStartPath"
 		Write-Host "Starting a new orchestration instance via POST to $startOrchestrationUri..." -ForegroundColor Yellow
@@ -74,21 +75,21 @@ if ($NoValidation -eq $false) {
 			Start-Sleep -Seconds 1
 			$retryCount = $retryCount + 1
 		}
-	} catch {
-		Write-Host "An error occurred:" -ForegroundColor Red
-		Write-Host $_ -ForegroundColor Red
-
-		# Dump the docker logs to make debugging the issue easier
-		Write-Host "Below are the docker logs for the app container:" -ForegroundColor Red
-		docker logs $ContainerName
-
-		# Rethrow the original exception
-		throw
 	}
 
 	if ($success -eq $false) {
 		throw "Orchestration didn't complete in time! :("
 	}
+} catch {
+	Write-Host "An error occurred:" -ForegroundColor Red
+	Write-Host $_ -ForegroundColor Red
+
+	# Dump the docker logs to make debugging the issue easier
+	Write-Host "Below are the docker logs for the app container:" -ForegroundColor Red
+	docker logs $ContainerName
+
+	# Rethrow the original exception
+	throw
 }
 
 Write-Host "Success!" -ForegroundColor Green
