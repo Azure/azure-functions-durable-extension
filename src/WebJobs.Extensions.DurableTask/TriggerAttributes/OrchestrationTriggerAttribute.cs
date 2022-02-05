@@ -11,7 +11,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// Trigger attribute used for durable orchestrator functions.
     /// </summary>
     [AttributeUsage(AttributeTargets.Parameter)]
-    [DebuggerDisplay("{Orchestration} ({Version})")]
+    [DebuggerDisplay("{Orchestration}")]
 #if !FUNCTIONS_V1
 #pragma warning disable CS0618 // Type or member is obsolete
     [Binding(TriggerHandlesReturnValue = true)]

@@ -71,8 +71,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly ITelemetryActivator telemetryActivator;
 #pragma warning restore CS0169
 #endif
+#if NET6_0_OR_GREATER
+        private readonly LocalGrpcListener localGrpcListener;
+#endif
         private readonly bool isOptionsConfigured;
-        private readonly IApplicationLifetimeWrapper hostLifetimeService = HostLifecycleService.NoOp;
 #pragma warning disable CS0612 // Type or member is obsolete
 #pragma warning disable SA1401 // Fields should be private
         internal IPlatformInformation PlatformInformationService;
@@ -86,6 +88,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private bool isTaskHubWorkerStarted;
         private HttpClient durableHttpClient;
         private EventSourceListener eventSourceListener;
+
 #if FUNCTIONS_V1
         private IConnectionInfoResolver connectionInfoResolver;
 
@@ -100,7 +103,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.isOptionsConfigured = false;
         }
 #endif
-#pragma warning disable CS1572
+
+#pragma warning disable CS1572 // XML comment has a param tag for 'XXX', but there is no parameter by that name
         /// <summary>
         /// Initializes a new instance of the <see cref="DurableTaskExtension"/>.
         /// </summary>
@@ -116,7 +120,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="webhookProvider">Provides webhook urls for HTTP management APIs.</param>
         /// <param name="telemetryActivator">The activator of DistributedTracing. .netstandard2.0 only.</param>
         /// <param name="platformInformationService">The platform information provider to inspect the OS, app service plan, and other enviroment information.</param>
-#pragma warning restore CS1572
         public DurableTaskExtension(
             IOptions<DurableTaskOptions> options,
             ILoggerFactory loggerFactory,
@@ -134,12 +137,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #pragma warning disable CS0618 // Type or member is obsolete
             IWebHookProvider webhookProvider = null,
 #pragma warning restore CS0618 // Type or member is obsolete
-#pragma warning disable SA1113, SA1001, SA1115
             ITelemetryActivator telemetryActivator = null)
-#pragma warning restore SA1113, SA1001, SA1115
 #else
             IErrorSerializerSettingsFactory errorSerializerSettingsFactory = null)
 #endif
+#pragma warning restore CS1572 // XML comment has a param tag for 'XXX', but there is no parameter by that name
         {
             // Options will be null in Functions v1 runtime - populated later.
             this.Options = options?.Value ?? new DurableTaskOptions();
@@ -180,15 +182,35 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 webhookDelegate);
 #endif
 
-            this.hostLifetimeService = hostLifetimeService;
+            this.HostLifetimeService = hostLifetimeService;
 
 #if !FUNCTIONS_V1
             // The RPC server is started when the extension is initialized.
             // The RPC server is stopped when the host has finished shutting down.
-            this.hostLifetimeService.OnStopped.Register(this.StopLocalRcpServer);
+            this.HostLifetimeService.OnStopped.Register(this.StopLocalHttpServer);
             this.telemetryActivator = telemetryActivator;
             this.telemetryActivator?.Initialize(logger);
 #endif
+
+            // Starting with .NET isolated and Java, we have a more efficient out-of-process
+            // function invocation protocol. Other languages will use the existing protocol.
+            WorkerRuntimeType runtimeType = this.PlatformInformationService.GetWorkerRuntimeType();
+            if (runtimeType == WorkerRuntimeType.DotNetIsolated || runtimeType == WorkerRuntimeType.Java)
+            {
+                this.OutOfProcProtocol = OutOfProcOrchestrationProtocol.MiddlewarePassthrough;
+#if NET6_0_OR_GREATER
+                this.localGrpcListener = new LocalGrpcListener(
+                    this,
+                    this.loggerFactory,
+                    this.defaultDurabilityProvider,
+                    this.defaultDurabilityProvider);
+                this.HostLifetimeService.OnStopped.Register(this.StopLocalGrpcServer);
+#endif
+            }
+            else
+            {
+                this.OutOfProcProtocol = OutOfProcOrchestrationProtocol.OrchestratorShim;
+            }
         }
 
 #if FUNCTIONS_V1
@@ -241,6 +263,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal TimeSpan MessageReorderWindow
             => this.defaultDurabilityProvider.GuaranteesOrderedDelivery ? TimeSpan.Zero : TimeSpan.FromMinutes(this.Options.EntityMessageReorderWindowInMinutes);
+
+        internal IApplicationLifetimeWrapper HostLifetimeService { get; } = HostLifecycleService.NoOp;
+
+        internal OutOfProcOrchestrationProtocol OutOfProcProtocol { get; }
 
         internal static MessagePayloadDataConverter CreateMessageDataConverter(IMessageSerializerSettingsFactory messageSerializerSettingsFactory)
         {
@@ -350,7 +376,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             this.TraceConfigurationSettings();
 
-            var bindings = new BindingHelper(this, this.TraceHelper);
+            var bindings = new BindingHelper(this);
 
             // Note that the order of the rules is important
             var rule = context.AddBindingRule<DurableClientAttribute>()
@@ -394,27 +420,59 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 : null;
 
             context.AddBindingRule<OrchestrationTriggerAttribute>()
-                .BindToTrigger(new OrchestrationTriggerAttributeBindingProvider(this, context, connectionName, this.TraceHelper));
+                .BindToTrigger(new OrchestrationTriggerAttributeBindingProvider(this, connectionName));
 
             context.AddBindingRule<ActivityTriggerAttribute>()
-                .BindToTrigger(new ActivityTriggerAttributeBindingProvider(this, context, connectionName, this.TraceHelper));
+                .BindToTrigger(new ActivityTriggerAttributeBindingProvider(this, connectionName));
 
             context.AddBindingRule<EntityTriggerAttribute>()
-                .BindToTrigger(new EntityTriggerAttributeBindingProvider(this, context, connectionName, this.TraceHelper));
+                .BindToTrigger(new EntityTriggerAttributeBindingProvider(this, connectionName));
 
             this.taskHubWorker = new TaskHubWorker(this.defaultDurabilityProvider, this, this, this.loggerFactory);
 
             // Add middleware to the DTFx dispatcher so that we can inject our own logic
             // into and customize the orchestration execution pipeline.
-            this.taskHubWorker.AddActivityDispatcherMiddleware(this.ActivityMiddleware);
-            this.taskHubWorker.AddOrchestrationDispatcherMiddleware(this.EntityMiddleware);
-            this.taskHubWorker.AddOrchestrationDispatcherMiddleware(this.OrchestrationMiddleware);
+            // Note that the order of the middleware added determines the order in which it executes.
+            if (this.OutOfProcProtocol == OutOfProcOrchestrationProtocol.MiddlewarePassthrough)
+            {
+                // This is a newer, more performant flavor of orchestration/activity middleware that is being
+                // enabled for newer language runtimes. Support for entities in this model is TBD.
+                var ooprocMiddleware = new OutOfProcMiddleware(this);
+                this.taskHubWorker.AddActivityDispatcherMiddleware(ooprocMiddleware.CallActivityAsync);
+                this.taskHubWorker.AddOrchestrationDispatcherMiddleware(ooprocMiddleware.CallOrchestratorAsync);
+            }
+            else
+            {
+                // This is the older middleware implementation that is currently in use for in-process .NET
+                // and the older out-of-proc languages, like Node.js, Python, and PowerShell.
+                this.taskHubWorker.AddActivityDispatcherMiddleware(this.ActivityMiddleware);
+                this.taskHubWorker.AddOrchestrationDispatcherMiddleware(this.EntityMiddleware);
+                this.taskHubWorker.AddOrchestrationDispatcherMiddleware(this.OrchestrationMiddleware);
+            }
 
 #if !FUNCTIONS_V1
             // The RPC server needs to be started sometime before any functions can be triggered
             // and this is the latest point in the pipeline available to us.
-            this.StartLocalRcpServer();
+            this.StartLocalHttpServer();
 #endif
+#if NET6_0_OR_GREATER
+            if (this.OutOfProcProtocol == OutOfProcOrchestrationProtocol.MiddlewarePassthrough)
+            {
+                this.StartLocalGrpcServer();
+            }
+#endif
+        }
+
+        internal string GetLocalRpcAddress()
+        {
+#if NET6_0_OR_GREATER
+            if (this.OutOfProcProtocol == OutOfProcOrchestrationProtocol.MiddlewarePassthrough)
+            {
+                return this.localGrpcListener.ListenAddress;
+            }
+#endif
+
+            return this.HttpApiHandler.GetBaseUrl();
         }
 
         /// <summary>
@@ -431,7 +489,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string containerName = this.PlatformInformationService.GetContainerName();
 
             // If running in linux, initialize the EventSource listener with the appropiate logger.
-            LinuxAppServiceLogger linuxLogger = null;
+            LinuxAppServiceLogger linuxLogger;
             if (!inConsumption)
             {
                 linuxLogger = new LinuxAppServiceLogger(writeToConsole: false, containerName, tenant, stampName);
@@ -463,15 +521,28 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
 #if !FUNCTIONS_V1
-        private void StartLocalRcpServer()
+        private void StartLocalHttpServer()
         {
             bool? shouldEnable = this.Options.LocalRpcEndpointEnabled;
             if (!shouldEnable.HasValue)
             {
-                // Default behavior is to only start the local RPC server for non-.NET function languages.
-                // We'll enable it if it's non-.NET or if the FUNCTIONS_WORKER_RUNTIME value isn't present.
-                string functionsWorkerRuntime = this.nameResolver.Resolve("FUNCTIONS_WORKER_RUNTIME");
-                shouldEnable = !string.Equals(functionsWorkerRuntime, "dotnet", StringComparison.OrdinalIgnoreCase);
+                WorkerRuntimeType runtimeType = this.PlatformInformationService.GetWorkerRuntimeType();
+                shouldEnable = runtimeType switch
+                {
+                    // dotnet runs in process
+                    WorkerRuntimeType.DotNet => false,
+
+                    // dotnet-isolated and java use a gRPC server instead of the HTTP server
+                    WorkerRuntimeType.DotNetIsolated => false,
+                    WorkerRuntimeType.Java => false,
+
+                    // everything else - assume the HTTP server
+                    WorkerRuntimeType.Python => true,
+                    WorkerRuntimeType.Node => true,
+                    WorkerRuntimeType.PowerShell => true,
+                    WorkerRuntimeType.Unknown => true,
+                    _ => true,
+                };
             }
 
             if (shouldEnable == true)
@@ -480,9 +551,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        private void StopLocalRcpServer()
+        private void StopLocalHttpServer()
         {
             this.HttpApiHandler.StopLocalHttpServerAsync().GetAwaiter().GetResult();
+        }
+#endif
+
+#if NET6_0_OR_GREATER
+        private void StartLocalGrpcServer()
+        {
+            this.localGrpcListener.StartAsync().GetAwaiter().GetResult();
+        }
+
+        private void StopLocalGrpcServer()
+        {
+            this.localGrpcListener.StopAsync().GetAwaiter().GetResult();
         }
 #endif
 
@@ -620,7 +703,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return new TaskNonexistentActivityShim(this, name);
             }
 
-            return new TaskActivityShim(this, info.Executor, this.hostLifetimeService, name);
+            return new TaskActivityShim(this, info.Executor, this.HostLifetimeService, name);
         }
 
         /// <summary>
@@ -666,13 +749,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 context.ParentInstanceId = orchestrationRuntimeState.ParentInstance.OrchestrationInstance.InstanceId;
             }
 
-            context.InstanceId = orchestrationRuntimeState.OrchestrationInstance.InstanceId;
-            context.ExecutionId = orchestrationRuntimeState.OrchestrationInstance.ExecutionId;
+            context.InstanceId = orchestrationRuntimeState.OrchestrationInstance?.InstanceId;
+            context.ExecutionId = orchestrationRuntimeState.OrchestrationInstance?.ExecutionId;
             context.IsReplaying = orchestrationRuntimeState.ExecutionStartedEvent.IsPlayed;
             context.History = orchestrationRuntimeState.Events;
             context.RawInput = orchestrationRuntimeState.Input;
 
-            var info = shim.GetFunctionInfo();
+            RegisteredFunctionInfo info = shim.GetFunctionInfo();
             if (info == null)
             {
                 string message = this.GetInvalidOrchestratorFunctionMessage(context.FunctionName);
@@ -717,7 +800,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     },
                     shim,
                     context,
-                    this.hostLifetimeService.OnStopping);
+                    this.HostLifetimeService.OnStopping);
 
                 if (result.ExecutionStatus == WrappedFunctionResult.FunctionResultStatus.FunctionsRuntimeError
                     || result.ExecutionStatus == WrappedFunctionResult.FunctionResultStatus.FunctionsHostStoppingError)
@@ -921,7 +1004,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             WrappedFunctionResult result;
 
-            if (entityShim.OperationBatch.Count > 0 && !this.hostLifetimeService.OnStopping.IsCancellationRequested)
+            if (entityShim.OperationBatch.Count > 0 && !this.HostLifetimeService.OnStopping.IsCancellationRequested)
             {
                 // 3a. Start the functions invocation pipeline (billing, logging, bindings, and timeout tracking).
                 result = await FunctionExecutionHelper.ExecuteFunctionInOrchestrationMiddleware(
@@ -949,7 +1032,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                                 {
                                     try
                                     {
-                                        await entityShim.ExecuteBatch(this.hostLifetimeService.OnStopping);
+                                        await entityShim.ExecuteBatch(this.HostLifetimeService.OnStopping);
                                     }
                                     catch (Exception e)
                                     {
@@ -992,7 +1075,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     },
                     entityShim,
                     entityContext,
-                    this.hostLifetimeService.OnStopping);
+                    this.HostLifetimeService.OnStopping);
 
                 if (result.ExecutionStatus == WrappedFunctionResult.FunctionResultStatus.FunctionTimeoutError)
                 {
@@ -1023,7 +1106,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     try
                     {
-                        await entityShim.ExecuteBatch(this.hostLifetimeService.OnStopping);
+                        await entityShim.ExecuteBatch(this.HostLifetimeService.OnStopping);
                         await next();
                     }
                     catch (Exception e)
@@ -1049,6 +1132,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             this.knownOrchestrators.TryGetValue(orchestratorFunction, out var info);
             return info;
+        }
+
+        internal bool TryGetActivityInfo(FunctionName activityFunction, out RegisteredFunctionInfo info)
+        {
+            return this.knownActivities.TryGetValue(activityFunction, out info);
         }
 
         internal RegisteredFunctionInfo GetEntityInfo(FunctionName entityFunction)
@@ -1314,8 +1402,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                         // Enable flowing exception information from activities
                         // to the parent orchestration code.
-                        this.taskHubWorker.TaskActivityDispatcher.IncludeDetails = true;
-                        this.taskHubWorker.TaskOrchestrationDispatcher.IncludeDetails = true;
+                        if (this.taskHubWorker.TaskActivityDispatcher != null)
+                        {
+                            this.taskHubWorker.TaskActivityDispatcher.IncludeDetails = true;
+                        }
+
+                        if (this.taskHubWorker.TaskOrchestrationDispatcher != null)
+                        {
+                            this.taskHubWorker.TaskOrchestrationDispatcher.IncludeDetails = true;
+                        }
+
                         this.isTaskHubWorkerStarted = true;
                         return true;
                     }

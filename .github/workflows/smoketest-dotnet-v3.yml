@@ -1,0 +1,22 @@
+name: Smoke Test - .NET V3
+
+on:
+  push:
+    branches: [ main, dev ]
+    paths:
+      - 'src/**'
+      - 'test/SmokeTests/SmokeTestsV3/**'
+  pull_request:
+    branches: [ main, dev ]
+    paths:
+      - 'src/**'
+      - 'test/SmokeTests/SmokeTestsV3/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Run .NET V3 Smoke Test
+      run: test/SmokeTests/e2e-test.ps1 -DockerfilePath test/SmokeTests/SmokeTestsV3/Dockerfile -HttpStartPath api/HttpStart
+      shell: pwsh

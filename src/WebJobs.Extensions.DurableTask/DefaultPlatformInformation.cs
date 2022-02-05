@@ -1,6 +1,6 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-
+#nullable enable
 using System;
 using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
@@ -29,9 +29,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.cachedEnviromentVariables = new Dictionary<string, string>();
         }
 
-        private string ReadEnviromentVariable(string variableName)
+        private string? ReadEnviromentVariable(string variableName)
         {
-            string value;
+            string? value;
             if (!this.cachedEnviromentVariables.TryGetValue(variableName, out value))
             {
                 value = this.nameResolver.Resolve(variableName);
@@ -43,20 +43,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private bool IsInLinuxConsumption()
         {
-            string containerName = this.GetContainerName();
+            string? containerName = this.GetContainerName();
             bool inLinuxConsumption = !this.IsInAppService() && !string.IsNullOrEmpty(containerName);
             return inLinuxConsumption;
         }
 
         private bool IsInAppService()
         {
-            string azureWebsiteInstanceId = this.ReadEnviromentVariable("WEBSITE_INSTANCE_ID");
+            string? azureWebsiteInstanceId = this.ReadEnviromentVariable("WEBSITE_INSTANCE_ID");
             return !string.IsNullOrEmpty(azureWebsiteInstanceId);
         }
 
         private bool IsInLinuxAppService()
         {
-            string functionsLogsMountPath = this.ReadEnviromentVariable("FUNCTIONS_LOGS_MOUNT_PATH");
+            string? functionsLogsMountPath = this.ReadEnviromentVariable("FUNCTIONS_LOGS_MOUNT_PATH");
             bool inLinuxDedicated = this.IsInAppService() && !string.IsNullOrEmpty(functionsLogsMountPath);
             return inLinuxDedicated;
         }
@@ -73,7 +73,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private bool IsInWindowsConsumption()
         {
-            string value = this.ReadEnviromentVariable("WEBSITE_SKU");
+            string? value = this.ReadEnviromentVariable("WEBSITE_SKU");
             return string.Equals(value, "Dynamic", StringComparison.OrdinalIgnoreCase);
         }
 
@@ -84,9 +84,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public WorkerRuntimeType GetWorkerRuntimeType()
         {
-            string workerRuntime = this.ReadEnviromentVariable("FUNCTIONS_WORKER_RUNTIME");
+            string? workerRuntime = this.ReadEnviromentVariable("FUNCTIONS_WORKER_RUNTIME");
             WorkerRuntimeType workerRuntimeType;
-            if (Enum.TryParse(workerRuntime, ignoreCase: true, out workerRuntimeType))
+            if (workerRuntime != null && Enum.TryParse(workerRuntime.Replace("-", ""), ignoreCase: true, out workerRuntimeType))
             {
                 return workerRuntimeType;
             }
@@ -97,17 +97,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return WorkerRuntimeType.Unknown;
         }
 
-        public string GetLinuxTenant()
+        public string? GetLinuxTenant()
         {
             return this.ReadEnviromentVariable("WEBSITE_STAMP_DEPLOYMENT_ID");
         }
 
-        public string GetLinuxStampName()
+        public string? GetLinuxStampName()
         {
             return this.ReadEnviromentVariable("WEBSITE_HOME_STAMPNAME");
         }
 
-        public string GetContainerName()
+        public string? GetContainerName()
         {
             return this.ReadEnviromentVariable("CONTAINER_NAME");
         }

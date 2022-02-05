@@ -5,12 +5,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
-using System.Net.WebSockets;
-using System.Text;
 using System.Threading.Tasks;
 using DurableTask.AzureStorage.Monitoring;
-using Dynamitey.DynamicObjects;
 using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Extensions.Logging;
 using Microsoft.WindowsAzure.Storage;
@@ -96,7 +92,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 metrics.ControlQueueLengths = JsonConvert.SerializeObject(heartbeat.ControlQueueLengths);
                 metrics.ControlQueueLatencies = JsonConvert.SerializeObject(heartbeat.ControlQueueLatencies);
                 metrics.WorkItemQueueLength = heartbeat.WorkItemQueueLength;
-                if (heartbeat.WorkItemQueueLatency != null)
+                if (heartbeat.WorkItemQueueLatency > TimeSpan.Zero)
                 {
                     metrics.WorkItemQueueLatency = heartbeat.WorkItemQueueLatency.ToString();
                 }

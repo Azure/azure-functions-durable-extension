@@ -24,7 +24,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly DurableTaskExtension config;
         private readonly string functionId;
         private readonly FunctionName functionName;
-        private readonly ITriggeredFunctionExecutor executor;
         private readonly FunctionType functionType;
         private readonly string connectionName;
 #if !FUNCTIONS_V1
@@ -35,12 +34,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             DurableTaskExtension config,
             string functionId,
             FunctionName functionName,
-            ITriggeredFunctionExecutor executor,
             FunctionType functionType,
             string connectionName)
         {
             this.config = config ?? throw new ArgumentNullException(nameof(config));
-            this.executor = executor ?? throw new ArgumentNullException(nameof(executor));
 
             if (functionName == default(FunctionName))
             {
