@@ -1,0 +1,54 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Core compiler settings -->
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <DebugType>embedded</DebugType>
+  </PropertyGroup>
+
+  <!-- Assembly/NuGet package settings & metadata -->
+  <PropertyGroup>
+    <AssemblyName>Microsoft.Azure.Functions.Worker.Extensions.DurableTask</AssemblyName>
+    <RootNamespace>Microsoft.Azure.Functions.Worker.Extensions.DurableTask</RootNamespace>
+    <Description>Durable Task extension for .NET isolated functions</Description>
+    <Authors>Microsoft</Authors>
+    <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryType>git</RepositoryType>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageProjectUrl>https://github.com/Azure/azure-functions-durable-extension</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/Azure/azure-functions-durable-extension/</RepositoryUrl>
+    <PackageReleaseNotes>https://github.com/Azure/azure-functions-durable-extension/releases/</PackageReleaseNotes>
+    <PackageTags>Microsoft Azure Durable Orchestration Workflow Functions</PackageTags>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\..\sign.snk</AssemblyOriginatorKeyFile>
+
+    <!-- Version information -->
+    <VersionPrefix>0.2.0</VersionPrefix>
+    <VersionSuffix>alpha</VersionSuffix>
+    <FileVersion>$(VersionPrefix)</FileVersion>
+    <AssemblyVersion>$(VersionPrefix).0</AssemblyVersion>
+    <Version>$(VersionPrefix)-$(VersionSuffix)</Version>
+
+    <!--Temporarily opting out of documentation. -->
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Azure.Functions.Worker.Core" Version="1.5.0-preview1" />
+    <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Abstractions" Version="1.1.0" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <PackageReference Include="Microsoft.DurableTask" Version="0.2.0-alpha" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.*" PrivateAssets="All" />
+  </ItemGroup>
+
+</Project>

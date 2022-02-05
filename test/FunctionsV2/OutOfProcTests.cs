@@ -314,13 +314,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [InlineData(null, true)]
-        [InlineData("node", true)]
-        [InlineData("java", true)]
-        [InlineData("powershell", true)]
-        [InlineData("python", true)]
-        [InlineData("dotnet", false)]
-        public async Task TestLocalRcpEndpointRuntimeVersion(string runtimeVersion, bool enabledExpected)
+        [InlineData(null, true, "http RPC")]
+        [InlineData("node", true, "http RPC")]
+        [InlineData("java", true, "gRPC")]
+        [InlineData("powershell", true, "http RPC")]
+        [InlineData("python", true, "http RPC")]
+        [InlineData("dotnet", false, null)]
+        [InlineData("dotnet-isolated", true, "gRPC")]
+        public async Task TestLocalRcpEndpointRuntimeVersion(string runtimeVersion, bool enabledExpected, string expectedProtocol)
         {
             INameResolver nameResolver = new SimpleNameResolver(
                 new Dictionary<string, string>
@@ -340,7 +341,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 // Validate if we opened local RPC endpoint by looking at log statements.
                 var logger = this.loggerProvider.CreatedLoggers.Single(l => l.Category == TestHelpers.LogCategory);
                 var logMessages = logger.LogMessages.ToList();
-                bool enabledRpcEndpoint = logMessages.Any(msg => msg.Level == Microsoft.Extensions.Logging.LogLevel.Information && msg.FormattedMessage.StartsWith("Opened local RPC endpoint:"));
+                bool enabledRpcEndpoint = logMessages.Any(msg => msg.Level == Microsoft.Extensions.Logging.LogLevel.Information && msg.FormattedMessage.StartsWith($"Opened local {expectedProtocol} endpoint:"));
 
                 Assert.Equal(enabledExpected, enabledRpcEndpoint);
 

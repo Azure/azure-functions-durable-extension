@@ -1,0 +1,13 @@
+# Editorconfig reference: https://docs.microsoft.com/visualstudio/ide/editorconfig-code-style-settings-reference
+[*.cs]
+
+# prefer fields, properties, and methods to be prefaced with "this."
+dotnet_style_qualification_for_field = true:warning
+dotnet_style_qualification_for_method = true:warning
+dotnet_style_qualification_for_property = true:warning
+
+# prefer file-scoped namespaces (C# 10+) with using statements above
+csharp_using_directive_placement = outside_namespace
+csharp_style_namespace_declarations = file_scoped:silent
+
+file_header_template = Copyright (c) .NET Foundation. All rights reserved.\nLicensed under the MIT License. See License.txt in the project root for license information.

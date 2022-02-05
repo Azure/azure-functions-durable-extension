@@ -1,12 +1,11 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Host.Bindings;
-using Microsoft.Azure.WebJobs.Host.Config;
 using Microsoft.Azure.WebJobs.Host.Listeners;
 using Microsoft.Azure.WebJobs.Host.Protocols;
 using Microsoft.Azure.WebJobs.Host.Triggers;
@@ -17,23 +16,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     internal class EntityTriggerAttributeBindingProvider : ITriggerBindingProvider
     {
         private readonly DurableTaskExtension config;
-        private readonly ExtensionConfigContext extensionContext;
         private readonly string connectionName;
-        private readonly EndToEndTraceHelper traceHelper;
 
         public EntityTriggerAttributeBindingProvider(
             DurableTaskExtension config,
-            ExtensionConfigContext extensionContext,
-            string connectionName,
-            EndToEndTraceHelper traceHelper)
+            string connectionName)
         {
             this.config = config;
-            this.extensionContext = extensionContext;
             this.connectionName = connectionName;
-            this.traceHelper = traceHelper;
         }
 
-        public Task<ITriggerBinding> TryCreateAsync(TriggerBindingProviderContext context)
+        public Task<ITriggerBinding?> TryCreateAsync(TriggerBindingProviderContext context)
         {
             if (context == null)
             {
@@ -41,10 +34,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             ParameterInfo parameter = context.Parameter;
-            EntityTriggerAttribute trigger = parameter.GetCustomAttribute<EntityTriggerAttribute>(inherit: false);
+            EntityTriggerAttribute? trigger = parameter.GetCustomAttribute<EntityTriggerAttribute>(inherit: false);
             if (trigger == null)
             {
-                return Task.FromResult<ITriggerBinding>(null);
+                return Task.FromResult<ITriggerBinding?>(null);
             }
 
             // Priority for getting the name is [EntityTrigger], [FunctionName], method name
@@ -59,7 +52,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             var entityName = new FunctionName(name);
             this.config.RegisterEntity(entityName, null);
             var binding = new EntityTriggerBinding(this.config, parameter, entityName, this.connectionName);
-            return Task.FromResult<ITriggerBinding>(binding);
+            return Task.FromResult<ITriggerBinding?>(binding);
         }
 
         private class EntityTriggerBinding : ITriggerBinding
@@ -95,7 +88,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 };
 
                 // allow binding to the parameter name
-                contract[parameterInfo.Name] = parameterInfo.ParameterType;
+                contract[parameterInfo.Name!] = parameterInfo.ParameterType;
 
                 return contract;
             }
@@ -105,7 +98,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 var entityContext = (DurableEntityContext)value;
                 Type destinationType = this.parameterInfo.ParameterType;
 
-                object convertedValue = null;
+                object? convertedValue = null;
                 if (destinationType == typeof(IDurableEntityContext))
                 {
                     convertedValue = entityContext;
@@ -122,8 +115,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     convertedValue ?? value,
                     this.parameterInfo.ParameterType);
 
-                var bindingData = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
-                bindingData[this.parameterInfo.Name] = convertedValue;
+                var bindingData = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+                bindingData[this.parameterInfo.Name!] = convertedValue;
 
                 var triggerData = new TriggerData(inputValueProvider, bindingData);
                 return Task.FromResult<ITriggerData>(triggerData);
@@ -134,7 +127,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return new ParameterDescriptor { Name = this.parameterInfo.Name };
             }
 
-            [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope", Justification = "The caller is responsible for disposing")]
             public Task<IListener> CreateListenerAsync(ListenerFactoryContext context)
             {
                 if (context == null)
@@ -154,7 +146,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.config,
                     context.Descriptor.Id,
                     this.entityName,
-                    context.Executor,
                     FunctionType.Entity,
                     this.connectionName);
                 return Task.FromResult<IListener>(listener);

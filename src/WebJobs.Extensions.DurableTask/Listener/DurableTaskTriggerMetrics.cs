@@ -1,10 +1,6 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-#if NETSTANDARD2_0
-using System;
-using System.Collections.Generic;
-using System.Text;
-using DurableTask.AzureStorage.Monitoring;
+#if !FUNCTIONS_V1
 using Microsoft.Azure.WebJobs.Host.Scale;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
