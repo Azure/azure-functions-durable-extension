@@ -7,6 +7,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
 using Moq;
 using Newtonsoft.Json.Linq;
@@ -367,6 +368,44 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 }
 
                 await host.StopAsync();
+            }
+        }
+
+        [Theory]
+        [InlineData("dotnet")]
+        [InlineData("DotNet")]
+        [InlineData("node")]
+        [InlineData("Node")]
+        [InlineData("python")]
+        [InlineData("Python")]
+        [InlineData("powershell")]
+        [InlineData("PowerShell")]
+        [InlineData("haskell")]
+        [Trait("Category", TestHelpers.DefaultTestCategory)]
+        public void WorkerRuntimeTypeFollowsSpec(string workerRuntime)
+        {
+            INameResolver nameResolver = new SimpleNameResolver(
+                new Dictionary<string, string>
+                {
+                    { "FUNCTIONS_WORKER_RUNTIME", workerRuntime },
+                });
+
+            ILoggerFactory loggerFactory = new LoggerFactory();
+            var platformInformation = new DefaultPlatformInformation(nameResolver, loggerFactory);
+
+            var runtimeType = platformInformation.GetWorkerRuntimeType();
+
+            var supportedPLs = (IEnumerable<string>)Enum.GetNames(typeof(WorkerRuntimeType));
+            if (!supportedPLs.Contains(workerRuntime, StringComparer.OrdinalIgnoreCase))
+            {
+                // Unknown runtimes should return Unknown
+                Assert.Equal(WorkerRuntimeType.Unknown, runtimeType);
+            }
+            else
+            {
+                // Known runtimes should be parseable regardless of capitalization
+                Assert.NotEqual(WorkerRuntimeType.Unknown, runtimeType);
+                runtimeType.ToString().Equals(workerRuntime, StringComparison.OrdinalIgnoreCase);
             }
         }
     }

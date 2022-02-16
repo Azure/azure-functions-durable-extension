@@ -30,6 +30,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     TimerAnalyzer.V1Rule,
                     TimerAnalyzer.V2Rule,
                     CancellationTokenAnalyzer.Rule,
+                    BindingAnalyzer.Rule,
                     MethodInvocationAnalyzer.Rule);
             }
         }
@@ -63,7 +64,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     | IOTypesAnalyzer.RegisterDiagnostic(context, semanticModel, methodDeclaration)
                     | ThreadTaskAnalyzer.RegisterDiagnostic(context, semanticModel, methodDeclaration)
                     | TimerAnalyzer.RegisterDiagnostic(context, semanticModel, methodDeclaration)
-                    | CancellationTokenAnalyzer.RegisterDiagnostic(context, methodDeclaration))
+                    | CancellationTokenAnalyzer.RegisterDiagnostic(context, methodDeclaration)
+                    | BindingAnalyzer.RegisterDiagnostic(context, methodDeclaration))
                 {
                     methodInvocationAnalyzer.RegisterDiagnostics(context, methodInformation);
                 }

@@ -42,6 +42,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly DurableClientAttribute attribute; // for rehydrating a Client after a webhook
         private readonly MessagePayloadDataConverter messageDataConverter;
         private readonly DurableTaskOptions durableTaskOptions;
+        private readonly ContextImplementations.IDurableClientFactory clientFactory;
 
         internal DurableClient(
             DurabilityProvider serviceClient,
@@ -72,6 +73,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.config = config;
         }
 
+        internal DurableClient(
+            DurabilityProvider serviceClient,
+            HttpApiHandler httpHandler,
+            DurableClientAttribute attribute,
+            MessagePayloadDataConverter messageDataConverter,
+            EndToEndTraceHelper traceHelper,
+            DurableTaskOptions durableTaskOption,
+            ContextImplementations.IDurableClientFactory clientFactory)
+           : this(serviceClient, httpHandler, attribute, messageDataConverter, traceHelper, durableTaskOption)
+        {
+            this.clientFactory = clientFactory;
+        }
+
         public string TaskHubName => this.hubName;
 
         internal DurabilityProvider DurabilityProvider => this.durabilityProvider;
@@ -83,10 +97,35 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         string IDurableEntityClient.TaskHubName => this.TaskHubName;
 
+        private IDurableClient GetDurableClient(string taskHubName, string connectionName)
+        {
+            if (string.Equals(this.TaskHubName, taskHubName, StringComparison.OrdinalIgnoreCase)
+                && string.Equals(this.attribute.ConnectionName, connectionName, StringComparison.OrdinalIgnoreCase))
+            {
+                return this;
+            }
+            else if (this.config != null)
+            {
+                return this.config.GetClient(new DurableClientAttribute
+                {
+                    TaskHub = taskHubName,
+                    ConnectionName = connectionName,
+                });
+            }
+            else
+            {
+                return this.clientFactory.CreateClient(new Options.DurableClientOptions()
+                {
+                    TaskHub = taskHubName,
+                    ConnectionName = connectionName,
+                });
+            }
+        }
+
         /// <inheritdoc/>
         public override string ToString()
         {
-            return $"DurableClient[backend={this.config.GetBackendInfo()}]";
+            return $"DurableClient[backend={this.config?.GetBackendInfo() ?? "none"}]";
         }
 
         /// <inheritdoc />
@@ -134,7 +173,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             if (this.ClientReferencesCurrentApp(this))
             {
-                this.config.ThrowIfFunctionDoesNotExist(orchestratorFunctionName, FunctionType.Orchestrator);
+                this.config?.ThrowIfFunctionDoesNotExist(orchestratorFunctionName, FunctionType.Orchestrator);
             }
 
             if (string.IsNullOrEmpty(instanceId))
@@ -223,13 +262,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 connectionName = this.attribute.ConnectionName;
             }
 
-            var attribute = new DurableClientAttribute
-            {
-                TaskHub = taskHubName,
-                ConnectionName = connectionName,
-            };
-
-            TaskHubClient taskHubClient = ((DurableClient)this.config.GetClient(attribute)).client;
+            DurableClient durableClient = (DurableClient)this.GetDurableClient(taskHubName, connectionName);
+            TaskHubClient taskHubClient = durableClient.client;
 
             return this.RaiseEventInternalAsync(taskHubClient, taskHubName, instanceId, eventName, eventData);
         }
@@ -248,13 +282,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     connectionName = this.attribute.ConnectionName;
                 }
 
-                var attribute = new DurableClientAttribute
-                {
-                    TaskHub = taskHubName,
-                    ConnectionName = connectionName,
-                };
-
-                var durableClient = (DurableClient)this.config.GetClient(attribute);
+                DurableClient durableClient = (DurableClient)this.GetDurableClient(taskHubName, connectionName);
                 return this.SignalEntityAsyncInternal(durableClient, taskHubName, entityId, null, operationName, operationInput);
             }
         }
@@ -273,13 +301,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     connectionName = this.attribute.ConnectionName;
                 }
 
-                var attribute = new DurableClientAttribute
-                {
-                    TaskHub = taskHubName,
-                    ConnectionName = connectionName,
-                };
-
-                var durableClient = (DurableClient)this.config.GetClient(attribute);
+                DurableClient durableClient = (DurableClient)this.GetDurableClient(taskHubName, connectionName);
                 return this.SignalEntityAsyncInternal(durableClient, taskHubName, entityId, scheduledTimeUtc, operationName, operationInput);
             }
         }
@@ -304,7 +326,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             if (this.ClientReferencesCurrentApp(durableClient))
             {
-                this.config.ThrowIfFunctionDoesNotExist(entityId.EntityName, FunctionType.Entity);
+                this.config?.ThrowIfFunctionDoesNotExist(entityId.EntityName, FunctionType.Entity);
             }
 
             var guid = Guid.NewGuid(); // unique id for this request
@@ -475,7 +497,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     ConnectionName = connectionName,
                 };
 
-                DurabilityProvider durabilityProvider = ((DurableClient)this.config.GetClient(attribute)).DurabilityProvider;
+                DurableClient durableClient = (DurableClient)this.GetDurableClient(taskHubName, connectionName);
+                DurabilityProvider durabilityProvider = durableClient.DurabilityProvider;
                 return this.ReadEntityStateAsync<T>(durabilityProvider, entityId);
             }
         }
@@ -558,7 +581,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     if (removeEmptyEntities)
                     {
                         bool isEmptyEntity = !status.EntityExists && status.LockedBy == null && status.QueueSize == 0;
-                        bool safeToRemoveWithoutBreakingMessageSorterLogic = now - state.LastUpdatedTime > this.config.MessageReorderWindow;
+                        bool safeToRemoveWithoutBreakingMessageSorterLogic = this.durabilityProvider.GuaranteesOrderedDelivery ?
+                            true : (now - state.LastUpdatedTime > TimeSpan.FromMinutes(this.durableTaskOptions.EntityMessageReorderWindowInMinutes));
                         if (isEmptyEntity && safeToRemoveWithoutBreakingMessageSorterLogic)
                         {
                             tasks.Add(DeleteIdleOrchestrationEntity(state));

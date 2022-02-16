@@ -163,7 +163,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             serviceCollection.TryAddSingleton<IApplicationLifetimeWrapper, HostLifecycleService>();
 #pragma warning disable CS0612 // Type or member is obsolete
-            serviceCollection.TryAddSingleton<IPlatformInformationService, DefaultPlatformInformationProvider>();
+            serviceCollection.TryAddSingleton<IPlatformInformation, DefaultPlatformInformation>();
 #pragma warning restore CS0612 // Type or member is obsolete
 
             return builder;
@@ -278,7 +278,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             IApplicationLifetimeWrapper shutdownNotificationService = null,
             Action<ITelemetry> onSend = null,
 #pragma warning disable CS0612 // Type or member is obsolete
-            IPlatformInformationService platformInformationService = null)
+            IPlatformInformation platformInformationService = null)
 #pragma warning restore CS0612 // Type or member is obsolete
         {
             var config = new JobHostConfiguration { HostId = "durable-task-host" };

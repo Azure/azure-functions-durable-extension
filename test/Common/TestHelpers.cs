@@ -158,7 +158,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             IApplicationLifetimeWrapper shutdownNotificationService = null,
 #pragma warning disable CS0612 // Type or member is obsolete
             Action<ITelemetry> onSend = null,
-            IPlatformInformationService platformInformationService = null)
+            IPlatformInformation platformInformationService = null)
         {
             return PlatformSpecificHelpers.CreateJobHost(
                 options,
@@ -400,26 +400,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 #endif
 
 #pragma warning disable CS0612 // Type or member is obsolete
-        public static IPlatformInformationService GetMockPlatformInformationService(
+        public static IPlatformInformation GetMockPlatformInformationService(
             bool inConsumption = false,
-            bool inLinuxConsumption = false,
-            bool inWindowsConsumption = false,
-            bool inLinuxAppsService = false,
-            bool isPython = false,
+            OperatingSystem operatingSystem = OperatingSystem.Windows,
+            WorkerRuntimeType language = WorkerRuntimeType.DotNet,
             string getLinuxStampName = "",
             string getContainerName = "")
 #pragma warning restore CS0612 // Type or member is obsolete
         {
 #pragma warning disable CS0612 // Type or member is obsolete
-            var mockPlatformProvider = new Mock<IPlatformInformationService>();
+            var mockPlatformProvider = new Mock<IPlatformInformation>();
 #pragma warning restore CS0612 // Type or member is obsolete
-            mockPlatformProvider.Setup(x => x.InConsumption()).Returns(inConsumption);
-            mockPlatformProvider.Setup(x => x.InLinuxConsumption()).Returns(inLinuxConsumption);
-            mockPlatformProvider.Setup(x => x.InWindowsConsumption()).Returns(inWindowsConsumption);
-            mockPlatformProvider.Setup(x => x.InLinuxAppService()).Returns(inLinuxAppsService);
+            mockPlatformProvider.Setup(x => x.GetOperatingSystem()).Returns(operatingSystem);
+            mockPlatformProvider.Setup(x => x.IsInConsumptionPlan()).Returns(inConsumption);
             mockPlatformProvider.Setup(x => x.GetLinuxStampName()).Returns(getLinuxStampName);
             mockPlatformProvider.Setup(x => x.GetContainerName()).Returns(getContainerName);
-            mockPlatformProvider.Setup(x => x.IsPython()).Returns(isPython);
+            mockPlatformProvider.Setup(x => x.GetWorkerRuntimeType()).Returns(language);
             return mockPlatformProvider.Object;
         }
 

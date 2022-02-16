@@ -57,6 +57,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
                     { "CONTAINER_NAME", "val1" },
                     { "WEBSITE_STAMP_DEPLOYMENT_ID", "val3" },
                     { "WEBSITE_HOME_STAMPNAME", "val4" },
+                    { "FUNCTIONS_WORKER_RUNTIME", "node" },
                 });
 
                 // Run trivial orchestrator

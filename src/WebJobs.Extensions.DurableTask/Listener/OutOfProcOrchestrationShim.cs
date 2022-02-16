@@ -197,7 +197,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             foreach (AsyncAction action in actions)
             {
-                await this.InvokeAPIFromAction(action);
+                // Before awaiting the task, we wrap it in a `WhenAny` call
+                // to protect against possible exceptions. Exception handling
+                // and exception throwing is managed in the OOProc SDKs and
+                // should not affect / interrupt this replay loop
+                try
+                {
+                    await this.InvokeAPIFromAction(action);
+                }
+                catch (Exception)
+                {
+                    // ignore exceptions, they should be handled by user-code instead.
+                }
             }
         }
 
