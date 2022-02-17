@@ -41,6 +41,13 @@ steps:
     vsVersion: "16.0"
     configuration: Release
 
+# Manifest Generator Task
+- task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
+  displayName: 'Manifest Generator '
+  inputs:
+    BuildDropPath: '$(System.DefaultWorkingDirectory)'
+    ManifestDirPath: '$(System.DefaultWorkingDirectory)/azure-functions-durable-extension'
+
 - task: EsrpCodeSigning@1
   inputs:
     ConnectedServiceName: 'ESRP Service'
@@ -127,12 +134,6 @@ steps:
     SessionTimeout: '60'
     MaxConcurrency: '50'
     MaxRetryAttempts: '5'
-
-# Manifest Generator Task
-- task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
-  displayName: 'Manifest Generator '
-  inputs:
-    BuildDropPath: '$(System.DefaultWorkingDirectory)'
 
 # Make the nuget packages available for download in the ADO portal UI
 - publish: '$(System.DefaultWorkingDirectory)'
