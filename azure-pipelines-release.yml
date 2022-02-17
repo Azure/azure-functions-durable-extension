@@ -46,7 +46,7 @@ steps:
   displayName: 'Manifest Generator '
   inputs:
     BuildDropPath: '$(System.DefaultWorkingDirectory)'
-    ManifestDirPath: '$(System.DefaultWorkingDirectory)/azure-functions-durable-extension'
+    ManifestDirPath: '**/azure-functions-durable-extension'
 
 - task: EsrpCodeSigning@1
   inputs:
