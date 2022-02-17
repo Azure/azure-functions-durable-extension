@@ -24,11 +24,18 @@ namespace DurableFunctions.NetheriteEndToEnd
             options.Value.UseGracefulShutdown = false;
             options.Value.StorageProvider["type"] = NetheriteProviderFactory.ProviderName;
             this.nameResolvers[options.Value].AddSetting("EventHubsConnection", "Memory");
+
             options.Value.StorageProvider[nameof(NetheriteOrchestrationServiceSettings.LogLevelLimit)] = LogLevel.Trace.ToString();
             options.Value.StorageProvider[nameof(NetheriteOrchestrationServiceSettings.StorageLogLevelLimit)] = LogLevel.Trace.ToString();
             options.Value.StorageProvider[nameof(NetheriteOrchestrationServiceSettings.TransportLogLevelLimit)] = LogLevel.Trace.ToString();
             options.Value.StorageProvider[nameof(NetheriteOrchestrationServiceSettings.EventLogLevelLimit)] = LogLevel.Trace.ToString();
             options.Value.StorageProvider[nameof(NetheriteOrchestrationServiceSettings.WorkItemLogLevelLimit)] = LogLevel.Trace.ToString();
+
+            // blob tracing does not work with AzureStorageEmulator because the latter does not support append blobs
+            // options.Value.StorageProvider["TraceToBlob"] = "true";
+
+            options.Value.StorageProvider[nameof(NetheriteOrchestrationServiceSettings.CacheOrchestrationCursors)] = options.Value.ExtendedSessionsEnabled.ToString();
+            
             builder.AddDurableTask(options);
             builder.Services.AddSingleton<IConnectionStringResolver, TestConnectionStringResolver>();
         }
