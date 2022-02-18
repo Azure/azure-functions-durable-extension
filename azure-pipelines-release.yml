@@ -136,7 +136,7 @@ steps:
     MaxRetryAttempts: '5'
 
 # Make the nuget packages available for download in the ADO portal UI
-- publish: '$(System.DefaultWorkingDirectory)'
+- publish: '$(System.DefaultWorkingDirectory)/azure-functions-durable-extension'
   displayName: 'Publish nuget packages to Artifacts'
   artifact: PackageOutput
 
