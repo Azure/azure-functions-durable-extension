@@ -41,6 +41,22 @@ steps:
     vsVersion: "16.0"
     configuration: Release
 
+# Lists file structure for work folder (temporarily using for debugging)
+- powershell: |
+   Write-Host "Show all folder content"
+   Get-ChildItem -Path $(Agent.WorkFolder)\*.* -Recurse -Force
+  errorActionPreference: continue
+  displayName: 'PowerShell Script List folder structure'
+  continueOnError: true
+
+# Lists file structure for default working directory (temporarily using for debugging)
+- powershell: |
+   Write-Host "Show all folder content"
+   Get-ChildItem -Path $(System.DefaultWorkingDirectory)\*.* -Recurse -Force
+  errorActionPreference: continue
+  displayName: 'PowerShell Script List folder structure'
+  continueOnError: true
+
 # Manifest Generator Task
 - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
   displayName: 'Manifest Generator '
