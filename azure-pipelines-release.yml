@@ -41,6 +41,25 @@ steps:
     vsVersion: "16.0"
     configuration: Release
 
+- task: DotNetCoreCLI@2
+  inputs:
+    command: 'publish'
+    publishWebProjects: true
+
+- task: PowerShell@2
+  displayName: 'Installing ManifestTool'
+  inputs:
+    targetType: 'inline'
+    script: 'Install-Package Microsoft.ManifestTool.CrossPlatform -version 2.1.15'
+
+# Generating manifest
+- task: DotNetCoreCLI@2
+  displayName: 'Generate manifest'
+  inputs:
+    command: 'custom'
+    custom: 'Microsoft.ManifestTool.dll'
+    arguments: '-b $(System.DefaultWorkingDirectory) -bc $(System.DefaultWorkingDirectory) -pn WebJobs.Extensions.DurableTask.nuspec'
+
 # Lists file structure for work folder (temporarily using for debugging)
 - powershell: |
    Write-Host "Show all folder content"
@@ -58,11 +77,11 @@ steps:
   continueOnError: true
 
 # Manifest Generator Task
-- task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
-  displayName: 'Manifest Generator '
-  inputs:
-    BuildDropPath: '$(System.DefaultWorkingDirectory)'
-    ManifestDirPath: '$(System.DefaultWorkingDirectory)'
+#- task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
+#  displayName: 'Manifest Generator '
+#  inputs:
+#    BuildDropPath: '$(System.DefaultWorkingDirectory)'
+#    ManifestDirPath: '$(System.DefaultWorkingDirectory)'
 
 - task: EsrpCodeSigning@1
   inputs:
