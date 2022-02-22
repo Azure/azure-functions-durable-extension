@@ -45,8 +45,8 @@ steps:
   displayName: 'dotnet publish'
   inputs:
     command: 'publish'
-    publishWebProjects: true
-    arguments: '**/WebJobs.Extensions.DurableTask.sln'
+    publishWebProjects: false
+    projects: 'src\WebJobs.Extensions.DurableTask\WebJobs.Extensions.DurableTask.csproj' 
 
 #- task: PowerShell@2
 #  displayName: 'Installing ManifestTool'
