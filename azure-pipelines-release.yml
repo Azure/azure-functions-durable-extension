@@ -46,6 +46,7 @@ steps:
   inputs:
     command: 'publish'
     publishWebProjects: true
+    arguments: '**/WebJobs.Extensions.DurableTask.sln'
 
 #- task: PowerShell@2
 #  displayName: 'Installing ManifestTool'
