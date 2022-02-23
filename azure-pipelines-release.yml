@@ -50,6 +50,22 @@ steps:
     configuration: Release
     arguments: "-f netstandard2.0"
 
+# Lists file structure for work folder (temporarily using for debugging)
+- powershell: |
+   Write-Host "Show all folder content"
+   Get-ChildItem -Path $(Agent.WorkFolder)\*.* -Recurse -Force
+  errorActionPreference: continue
+  displayName: 'PowerShell Script List folder structure'
+  continueOnError: true
+
+# Lists file structure for default working directory (temporarily using for debugging)
+- powershell: |
+   Write-Host "Show all folder content"
+   Get-ChildItem -Path $(System.DefaultWorkingDirectory)\*.* -Recurse -Force
+  errorActionPreference: continue
+  displayName: 'PowerShell Script List folder structure'
+  continueOnError: true
+
 #- task: PowerShell@2
 #  displayName: 'Installing ManifestTool'
 #  inputs:
@@ -69,23 +85,8 @@ steps:
   displayName: 'Manifest Generator '
   inputs:
     BuildDropPath: '$(System.DefaultWorkingDirectory)'
-    ManifestDirPath: '$(System.DefaultWorkingDirectory)\src\WebJobs.Extensions.DurableTask\bin\Debug\netstandard2.0\publish\'
-
-# Lists file structure for work folder (temporarily using for debugging)
-- powershell: |
-   Write-Host "Show all folder content"
-   Get-ChildItem -Path $(Agent.WorkFolder)\*.* -Recurse -Force
-  errorActionPreference: continue
-  displayName: 'PowerShell Script List folder structure'
-  continueOnError: true
-
-# Lists file structure for default working directory (temporarily using for debugging)
-- powershell: |
-   Write-Host "Show all folder content"
-   Get-ChildItem -Path $(System.DefaultWorkingDirectory)\*.* -Recurse -Force
-  errorActionPreference: continue
-  displayName: 'PowerShell Script List folder structure'
-  continueOnError: true
+    ManifestDirPath: '$(System.DefaultWorkingDirectory)\src\WebJobs.Extensions.DurableTask\bin\**\publish\'
+    PackageName: 'WebJobs.Extensions.DurableTask.nuspec'
 
 - task: EsrpCodeSigning@1
   inputs:
