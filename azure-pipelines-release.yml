@@ -47,6 +47,8 @@ steps:
     command: 'publish'
     publishWebProjects: false
     projects: 'src\WebJobs.Extensions.DurableTask\WebJobs.Extensions.DurableTask.csproj' 
+    configuration: Release
+    arguments: "-f netstandard2.0"
 
 #- task: PowerShell@2
 #  displayName: 'Installing ManifestTool'
