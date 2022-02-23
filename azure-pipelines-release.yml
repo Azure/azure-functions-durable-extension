@@ -69,7 +69,7 @@ steps:
   displayName: 'Manifest Generator '
   inputs:
     BuildDropPath: '$(System.DefaultWorkingDirectory)'
-    ManifestDirPath: '$(System.DefaultWorkingDirectory)'
+    ManifestDirPath: '$(System.DefaultWorkingDirectory)\src\WebJobs.Extensions.DurableTask\bin\Debug\netstandard2.0\publish\'
 
 # Lists file structure for work folder (temporarily using for debugging)
 - powershell: |
