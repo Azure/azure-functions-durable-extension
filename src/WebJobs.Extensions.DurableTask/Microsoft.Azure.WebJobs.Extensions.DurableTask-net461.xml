@@ -2354,7 +2354,7 @@
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.EntityQuery.IncludeDeleted">
             <summary>
-            Determines whether the query will include deleted entities.
+            Determines whether the results should include recently deleted entities.
             </summary>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.EntityQueryResult">
@@ -2644,7 +2644,7 @@
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.RequestMessage">
             <summary>
-            A message that represents an operation request or a lock request.
+            A message sent to an entity, such as operation, signal, lock, release, or continue messages.
             </summary>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.RequestMessage.Operation">
@@ -2729,6 +2729,11 @@
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.SchedulerState.LockedBy">
             <summary>
             The instance id of the orchestration that currently holds the lock of this entity.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.SchedulerState.Suspended">
+            <summary>
+            Whether processing on this entity is currently suspended.
             </summary>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.SchedulerState.MessageSorter">
@@ -3760,6 +3765,18 @@
             </list>
             </remarks>
         </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.MaxEntityOperationBatchSize">
+            <summary>
+            Gets or sets the maximum number of entity operations that are processed as a single batch.
+            </summary>
+            <remarks>
+            Reducing this number can help to avoid timeouts on consumption plans. If set to 1, batching is disabled, and each operation
+            message executes and is billed as a separate function invocation.
+            </remarks>
+            <value>
+            A positive integer configured by the host.
+            </value>
+        </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.ExtendedSessionsEnabled">
             <summary>
             Gets or sets a flag indicating whether to enable extended sessions.
@@ -4048,8 +4065,12 @@
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.OrchestrationStatusQueryCondition.PageSize">
             <summary>
-            Number of records per one request. The default value is 100.
+            Maximum number of records that can be returned by the request. The default value is 100.
             </summary>
+            <remarks>
+            Requests may return fewer records than the specified page size, even if there are more records.
+            Always check the continuation token to determine whether there are more records.
+            </remarks>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.OrchestrationStatusQueryCondition.ContinuationToken">
             <summary>

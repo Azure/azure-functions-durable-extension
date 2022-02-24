@@ -17,8 +17,14 @@ Licensed under the MIT license. See LICENSE file in the project root for full li
     <description>Azure WebJobs SDK Extension for the Durable Task Framework</description>
     <copyright>© Microsoft Corporation. All rights reserved.</copyright>
     <tags>azure,functions,azure-function,durable-functions</tags>
+    <dependencies>
+      <group targetFramework=".NETFramework4.6.1" />
+      <group targetFramework=".NETStandard2.0" />
+    </dependencies>
   </metadata>
   <files>
-    <file src="..\WebJobs.Extensions.DurableTask\" target="contentFiles\any"/>
+    <file src=".\bin\$configuration$\net461\publish\**" target="lib/net461"/>
+    <file src=".\bin\$configuration$\netstandard2.0\publish\**" target="lib/netstandard2.0"/>
+    <file src="..\_manifest\**" target="content/manifest"/>
   </files>
 </package>
