@@ -63,8 +63,7 @@ steps:
     command: 'publish'
     publishWebProjects: false
     projects: 'src\WebJobs.Extensions.DurableTask\WebJobs.Extensions.DurableTask.csproj' 
-    configuration: Release
-    arguments: "-f net461"
+    arguments: "-c Release -f net461"
 
 - task: DotNetCoreCLI@2
   displayName: 'dotnet publish'
@@ -72,8 +71,7 @@ steps:
     command: 'publish'
     publishWebProjects: false
     projects: 'src\WebJobs.Extensions.DurableTask\WebJobs.Extensions.DurableTask.csproj' 
-    configuration: Release
-    arguments: "-f netstandard2.0"
+    arguments: "-c Release -f netstandard2.0"
 
 # Manifest Generator Task
 - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
