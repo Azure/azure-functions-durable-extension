@@ -19,6 +19,6 @@ Licensed under the MIT license. See LICENSE file in the project root for full li
     <tags>azure,functions,azure-function,durable-functions</tags>
   </metadata>
   <files>
-    <file src="..\WebJobs.Extensions.DurableTask\bin\$configuration$\$targetFramework$\publish\**\*" target="contentFiles\any"/>
+    <file src="..\WebJobs.Extensions.DurableTask\" target="contentFiles\any"/>
   </files>
 </package>
