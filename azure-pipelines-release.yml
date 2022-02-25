@@ -33,22 +33,6 @@ steps:
     feedsToUse: config
     nugetConfigPath: '.nuget/nuget.config'
 
-# Lists file structure for work folder (temporarily using for debugging)
-- powershell: |
-   Write-Host "Show all folder content"
-   Get-ChildItem -Path $(Agent.WorkFolder)\*.* -Recurse -Force
-  errorActionPreference: continue
-  displayName: 'PowerShell Script List folder structure'
-  continueOnError: true
-
-# Lists file structure for default working directory (temporarily using for debugging)
-- powershell: |
-   Write-Host "Show all folder content"
-   Get-ChildItem -Path $(System.DefaultWorkingDirectory)\*.* -Recurse -Force
-  errorActionPreference: continue
-  displayName: 'PowerShell Script List folder structure'
-  continueOnError: true
-
 # Build durable-extension
 - task: VSBuild@1
   displayName: 'Build Durable Extension'
@@ -81,21 +65,6 @@ steps:
   inputs:
     BuildDropPath: '$(System.DefaultWorkingDirectory)'
 
-# Lists file structure for work folder (temporarily using for debugging)
-- powershell: |
-   Write-Host "Show all folder content"
-   Get-ChildItem -Path $(Agent.WorkFolder)\*.* -Recurse -Force
-  errorActionPreference: continue
-  displayName: 'PowerShell Script List folder structure'
-  continueOnError: true
-
-# Lists file structure for default working directory (temporarily using for debugging)
-- powershell: |
-   Write-Host "Show all folder content"
-   Get-ChildItem -Path $(System.DefaultWorkingDirectory)\*.* -Recurse -Force
-  errorActionPreference: continue
-  displayName: 'PowerShell Script List folder structure'
-  continueOnError: true
 - task: EsrpCodeSigning@1
   inputs:
     ConnectedServiceName: 'ESRP Service'
