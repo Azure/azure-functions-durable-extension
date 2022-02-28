@@ -108,7 +108,15 @@
     <IncludeReferenceProjects>true</IncludeReferenceProjects>
     <RepositoryUrl>https://github.com/Azure/azure-functions-durable-extension/</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)'=='Debug'">
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)'=='Release'">
+    <NuspecFile>WebJobs.Extensions.DurableTask.nuspec</NuspecFile>
+    <NuspecProperties>configuration=$(Configuration);targetFramework=$(TargetFramework);version=$(Version)</NuspecProperties>
   </PropertyGroup>
 
 </Project>

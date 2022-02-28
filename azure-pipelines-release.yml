@@ -41,6 +41,30 @@ steps:
     vsVersion: "16.0"
     configuration: Release
 
+- task: DotNetCoreCLI@2
+  displayName: 'dotnet publish'
+  inputs:
+    command: 'publish'
+    publishWebProjects: false
+    projects: 'src\WebJobs.Extensions.DurableTask\WebJobs.Extensions.DurableTask.csproj' 
+    arguments: "-c Release -f net461"
+    zipAfterPublish: false
+
+- task: DotNetCoreCLI@2
+  displayName: 'dotnet publish'
+  inputs:
+    command: 'publish'
+    publishWebProjects: false
+    projects: 'src\WebJobs.Extensions.DurableTask\WebJobs.Extensions.DurableTask.csproj' 
+    arguments: "-c Release -f netstandard2.0"
+    zipAfterPublish: false
+
+# Manifest Generator Task
+- task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
+  displayName: 'Manifest Generator '
+  inputs:
+    BuildDropPath: '$(System.DefaultWorkingDirectory)'
+
 - task: EsrpCodeSigning@1
   inputs:
     ConnectedServiceName: 'ESRP Service'
@@ -128,14 +152,8 @@ steps:
     MaxConcurrency: '50'
     MaxRetryAttempts: '5'
 
-# Manifest Generator Task
-- task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
-  displayName: 'Manifest Generator '
-  inputs:
-    BuildDropPath: '$(System.DefaultWorkingDirectory)'
-
 # Make the nuget packages available for download in the ADO portal UI
-- publish: '$(System.DefaultWorkingDirectory)'
+- publish: '$(System.DefaultWorkingDirectory)/azure-functions-durable-extension'
   displayName: 'Publish nuget packages to Artifacts'
   artifact: PackageOutput
 
