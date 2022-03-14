@@ -110,7 +110,7 @@ Configure host.json. The host.json sample below enables Distributed Tracing and 
 ```
 
 ## Storage Emulator 
-For the local execution, you need the [Strorage Emulator](https://docs.microsoft.com/en-us/azure/storage/common/storage-use-emulator). Download it from the link and execute it before you run the functions. 
+For the local execution, you need the [Storage Emulator](https://docs.microsoft.com/en-us/azure/storage/common/storage-use-emulator). Download it from the link and execute it before you run the functions. 
 
 ## Publish the samples to the Function App
 
