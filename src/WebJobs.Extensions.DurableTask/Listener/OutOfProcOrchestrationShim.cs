@@ -38,6 +38,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             Original = 0,
             V2 = 1,
+            V3 = 2
         }
 
         private enum AsyncActionType
@@ -117,10 +118,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     DurableOrchestrationContext ctx = this.context as DurableOrchestrationContext;
                     using (var cts = new CancellationTokenSource())
                     {
-                        if (ctx != null)
-                        {
-                            ctx.ThrowIfInvalidTimerLengthForStorageProvider(action.FireAt);
-                        }
+                        //if (ctx != null)
+                        //{
+                        //    ctx.ThrowIfInvalidTimerLengthForStorageProvider(action.FireAt);
+                        //}
 
                         task = this.context.CreateTimer(action.FireAt, cts.Token);
 
@@ -219,7 +220,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// Replays the OOProc orchestration based on the actions array. It uses the schema enum to
         /// determine which replay implementation is most appropiate.
         /// </summary>
-        /// <param name="actions">The OOProc actions payload.</param>
+        /// <param name="actions">The OOProc actions payload.</param> 
         /// <param name="schema">The OOProc protocol schema version.</param>
         /// <returns>An awaitable Task that completes once replay completes.</returns>
         private async Task ReplayOOProcOrchestration(AsyncAction[][] actions, SchemaVersion schema)
