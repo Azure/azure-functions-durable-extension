@@ -2,8 +2,9 @@
 - Azure Durable Functions now supports identity-based connections. See [here](https://docs.microsoft.com/en-us/azure/azure-functions/functions-reference?tabs=blob#connecting-to-host-storage-with-an-identity-preview) for details on how to configure these connections ([#2014](https://github.com/Azure/azure-functions-durable-extension/pull/2014)) - contributed by [@wsugarman](https://github.com/wsugarman)
 - `IConnectionStringResolver` has been deprecated in favor of `IConnectionInfoResolver`
   - Similarly, both `StandardConnectionStringProvider` and `WebJobsConnectionStringProvider` have been deprecated in favor of `StandardConnectionInfoProvider` and `WebJobsConnectionInfoProvider`
-
 - Initial support for .NET Isolated
+- Added support for long timers for Out-of-Proc SDKs
+- Updated the Replay Schema version to V3 for Out-of-Proc SDKs
 
 ## Bug fixes
 
