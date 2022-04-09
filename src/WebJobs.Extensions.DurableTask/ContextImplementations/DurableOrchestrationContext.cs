@@ -54,23 +54,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private MessageSorter messageSorter;
 
-        internal TimeSpan LongRunningTimerIntervalDuration
-        {
-            get
-            {
-                return this.durabilityProvider.LongRunningTimerIntervalLength;
-            }
-        }
-
-
-        internal TimeSpan MaximumShortTimerDuration
-        {
-            get
-            {
-                return this.durabilityProvider.MaximumDelayTime;
-            }
-        }
-
         internal DurableOrchestrationContext(DurableTaskExtension config, DurabilityProvider durabilityProvider, string functionName)
             : base(config, functionName)
         {
@@ -95,6 +78,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             set
             {
                 this.isReplaying = value;
+            }
+        }
+
+        internal TimeSpan LongRunningTimerIntervalDuration
+        {
+            get
+            {
+                return this.durabilityProvider.LongRunningTimerIntervalLength;
+            }
+        }
+
+        internal TimeSpan MaximumShortTimerDuration
+        {
+            get
+            {
+                return this.durabilityProvider.MaximumDelayTime;
             }
         }
 
