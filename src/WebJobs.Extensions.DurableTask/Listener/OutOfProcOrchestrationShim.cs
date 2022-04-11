@@ -201,7 +201,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             foreach (AsyncAction action in actions)
             {
                 // This line may throw exceptions (usually to validate that some OOProc operation is valid), which we still want to surface
-                Task durableTask = this.InvokeAPIFromAction(action);
+                Task durableTask = this.InvokeAPIFromAction(action, schema);
 
                 // Before awaiting the task, we wrap it in a try/catch block
                 // to protect against possible exceptions thrown by user code.
