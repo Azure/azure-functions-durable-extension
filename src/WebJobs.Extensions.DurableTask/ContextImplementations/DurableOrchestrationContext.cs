@@ -81,7 +81,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        internal TimeSpan LongRunningTimerIntervalDuration
+        internal TimeSpan LongRunningTimerIntervalLength
         {
             get
             {
