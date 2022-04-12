@@ -3393,18 +3393,20 @@
             Identifiers for each OOProc Schema Version.
             </summary>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationShim.InvokeAPIFromAction(Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationShim.AsyncAction)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationShim.InvokeAPIFromAction(Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationShim.AsyncAction,Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationShim.SchemaVersion)">
             <summary>
             Invokes a DF API based on the input action object.
             </summary>
             <param name="action">An OOProc action object representing a DF task.</param>
+            <param name="schema">The schema version.</param>
             <returns>If the API returns a task, the DF task corresponding to the input action. Else, null.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationShim.ProcessAsyncActionsV2(Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationShim.AsyncAction[])">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationShim.ProcessAsyncActionsV2(Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationShim.AsyncAction[],Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationShim.SchemaVersion)">
             <summary>
             Replays the orchestration execution from an OOProc SDK in .NET.
             </summary>
             <param name="actions">The OOProc actions payload.</param>
+            <param name="schema">The schema version.</param>
             <returns>An awaitable Task that completes once replay completes.</returns>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationShim.ReplayOOProcOrchestration(Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationShim.AsyncAction[][],Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationShim.SchemaVersion)">

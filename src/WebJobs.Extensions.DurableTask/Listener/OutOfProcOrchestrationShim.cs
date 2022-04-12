@@ -38,6 +38,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             Original = 0,
             V2 = 1,
+            V3 = 2,
         }
 
         private enum AsyncActionType
@@ -103,8 +104,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// Invokes a DF API based on the input action object.
         /// </summary>
         /// <param name="action">An OOProc action object representing a DF task.</param>
+        /// <param name="schema">The schema version.</param>
         /// <returns>If the API returns a task, the DF task corresponding to the input action. Else, null.</returns>
-        private Task InvokeAPIFromAction(AsyncAction action)
+        private Task InvokeAPIFromAction(AsyncAction action, SchemaVersion schema)
         {
             Task fireAndForgetTask = Task.CompletedTask;
             Task task = null;
@@ -117,7 +119,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     DurableOrchestrationContext ctx = this.context as DurableOrchestrationContext;
                     using (var cts = new CancellationTokenSource())
                     {
-                        if (ctx != null)
+                        if (ctx != null && schema < SchemaVersion.V3)
                         {
                             ctx.ThrowIfInvalidTimerLengthForStorageProvider(action.FireAt);
                         }
@@ -176,10 +178,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     task = this.context.CallHttpAsync(action.HttpRequest);
                     break;
                 case AsyncActionType.WhenAll:
-                    task = Task.WhenAll(action.CompoundActions.Select(x => this.InvokeAPIFromAction(x)));
+                    task = Task.WhenAll(action.CompoundActions.Select(x => this.InvokeAPIFromAction(x, schema)));
                     break;
                 case AsyncActionType.WhenAny:
-                    task = Task.WhenAny(action.CompoundActions.Select(x => this.InvokeAPIFromAction(x)));
+                    task = Task.WhenAny(action.CompoundActions.Select(x => this.InvokeAPIFromAction(x, schema)));
                     break;
                 default:
                     throw new Exception($"Received an unexpected action type from the out-of-proc function: '${action.ActionType}'.");
@@ -192,13 +194,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// Replays the orchestration execution from an OOProc SDK in .NET.
         /// </summary>
         /// <param name="actions">The OOProc actions payload.</param>
+        /// <param name="schema">The schema version.</param>
         /// <returns>An awaitable Task that completes once replay completes.</returns>
-        private async Task ProcessAsyncActionsV2(AsyncAction[] actions)
+        private async Task ProcessAsyncActionsV2(AsyncAction[] actions, SchemaVersion schema)
         {
             foreach (AsyncAction action in actions)
             {
                 // This line may throw exceptions (usually to validate that some OOProc operation is valid), which we still want to surface
-                Task durableTask = this.InvokeAPIFromAction(action);
+                Task durableTask = this.InvokeAPIFromAction(action, schema);
 
                 // Before awaiting the task, we wrap it in a try/catch block
                 // to protect against possible exceptions thrown by user code.
@@ -226,6 +229,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             switch (schema)
             {
+                case SchemaVersion.V3:
                 case SchemaVersion.V2:
                     // In this schema, action arrays should be 1 dimensional (1 action per yield), but due to legacy behavior they're nested within a 2-dimensional array.
                     if (actions.Length != 1)
@@ -233,17 +237,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         throw new ArgumentException($"With OOProc schema {schema}, expected actions array to be of length 1 in outer layer but got size: {actions.Length}");
                     }
 
-                    await this.ProcessAsyncActionsV2(actions[0]);
+                    await this.ProcessAsyncActionsV2(actions[0], schema);
                     break;
                 case SchemaVersion.Original:
-                    await this.ProcessAsyncActionsV1(actions);
+                    await this.ProcessAsyncActionsV1(actions, schema);
                     break;
                 default:
                     throw new ArgumentException($"The OOProc schema of of version \"{schema}\" is unsupported by this durable-extension version.");
             }
         }
 
-        private async Task ProcessAsyncActionsV1(AsyncAction[][] actions)
+        private async Task ProcessAsyncActionsV1(AsyncAction[][] actions, SchemaVersion schema)
         {
             if (actions == null)
             {
@@ -260,7 +264,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 Task newTask;
                 foreach (AsyncAction action in actionSet)
                 {
-                    newTask = this.InvokeAPIFromAction(action);
+                    newTask = this.InvokeAPIFromAction(action, schema);
                     if (newTask != Task.CompletedTask)
                     {
                         tasks.Add(newTask);
