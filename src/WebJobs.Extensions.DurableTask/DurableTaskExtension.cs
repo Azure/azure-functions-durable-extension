@@ -820,6 +820,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             if (!context.IsCompleted && !context.IsLongRunningTimer)
             {
+                this.TraceHelper.ExtensionInformationalEvent(
+                   context.HubName,
+                   context.InstanceId,
+                   context.Name,
+                   $"INSTRUMENTATION: Orchestration awaiting. IsCompleted: {context.IsCompleted} | IsLongRunningTimer: {context.IsLongRunningTimer}",
+                   true);
+
                 this.TraceHelper.FunctionAwaited(
                     context.HubName,
                     context.Name,
