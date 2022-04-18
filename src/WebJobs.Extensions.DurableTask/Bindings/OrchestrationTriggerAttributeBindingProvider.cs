@@ -186,7 +186,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             private static string OrchestrationContextToString(DurableOrchestrationContext arg)
             {
-                var history = JArray.FromObject(arg.History);
+                JsonSerializer serializer = JsonSerializer.Create(new JsonSerializerSettings
+                {
+                    TypeNameHandling = TypeNameHandling.All,
+                });
+                var historyStr = JsonConvert.SerializeObject(arg.History, new JsonSerializerSettings
+                {
+                    TypeNameHandling = TypeNameHandling.Auto,
+                });
+                var history = JArray.Parse(historyStr);
                 var input = arg.GetInputAsJson();
 
                 var contextObject = new JObject(
