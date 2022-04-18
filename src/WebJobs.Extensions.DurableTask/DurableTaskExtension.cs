@@ -337,7 +337,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         void IExtensionConfigProvider.Initialize(ExtensionConfigContext context)
         {
 #if !FUNCTIONS_V1
-            // .NET461 is not supported in linux, so this is conditionally compiled
+            // Functions V1 is not supported in linux, so this is conditionally compiled
             // We initialize linux logging early on in case any initialization steps below were to trigger a log event.
             if (this.PlatformInformationService.GetOperatingSystem() == OperatingSystem.Linux)
             {
