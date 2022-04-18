@@ -17,7 +17,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     {
         private readonly INameResolver nameResolver;
         private readonly Dictionary<string, string> cachedEnviromentVariables;
-        private EndToEndTraceHelper traceHelper;
+        private readonly EndToEndTraceHelper traceHelper;
+
+        private WorkerRuntimeType? workerRuntimeType;
 
         public DefaultPlatformInformation(INameResolver nameResolver, ILoggerFactory loggerFactory)
         {
@@ -84,17 +86,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public WorkerRuntimeType GetWorkerRuntimeType()
         {
-            string? workerRuntime = this.ReadEnviromentVariable("FUNCTIONS_WORKER_RUNTIME");
-            WorkerRuntimeType workerRuntimeType;
-            if (workerRuntime != null && Enum.TryParse(workerRuntime.Replace("-", ""), ignoreCase: true, out workerRuntimeType))
+            if (this.workerRuntimeType == null)
             {
-                return workerRuntimeType;
+                const string envVariableName = "FUNCTIONS_WORKER_RUNTIME";
+                string? workerRuntime = this.ReadEnviromentVariable(envVariableName);
+                if (workerRuntime != null && Enum.TryParse(workerRuntime.Replace("-", ""), ignoreCase: true, out WorkerRuntimeType type))
+                {
+                    this.workerRuntimeType = type;
+                }
+                else
+                {
+                    this.traceHelper.ExtensionWarningEvent(
+                        hubName: "",
+                        functionName: "",
+                        instanceId: "",
+                        $"Failed to parse {envVariableName} value: '{workerRuntime}'. This could lead to performance and correctness problems");
+                    this.workerRuntimeType = WorkerRuntimeType.Unknown;
+                }
             }
 
-            var message = $"Failed to parse worker runtime value: {workerRuntime}." +
-                "This could lead to performance and correctness problems";
-            this.traceHelper.ExtensionWarningEvent(hubName: "", functionName: "", instanceId: "", message);
-            return WorkerRuntimeType.Unknown;
+            return this.workerRuntimeType.Value;
         }
 
         public string? GetLinuxTenant()

@@ -3,6 +3,8 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Host.Bindings;
@@ -140,15 +142,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     var triggerData = new TriggerData(contextValueProvider, bindingData);
                     return Task.FromResult<ITriggerData>(triggerData);
                 }
+#if NET6_0_OR_GREATER
                 else if (value is RemoteOrchestratorContext remoteContext)
                 {
-                    // Remote context is only for modern out-of-process function execution and
-                    // contains a lighter payload.
-                    string serializedContext = JsonConvert.SerializeObject(remoteContext, JsonSettings);
-                    var contextValueProvider = new ObjectValueProvider(serializedContext, typeof(string));
+                    // Generate a byte array which is the serialized protobuf payload
+                    // https://developers.google.com/protocol-buffers/docs/csharptutorial#parsing_and_serialization
+                    var orchestratorRequest = new global::DurableTask.Protobuf.OrchestratorRequest()
+                    {
+                        InstanceId = remoteContext.InstanceId,
+                        PastEvents = { remoteContext.PastEvents.Select(global::DurableTask.Sidecar.Grpc.ProtobufUtils.ToHistoryEventProto) },
+                        NewEvents = { remoteContext.NewEvents.Select(global::DurableTask.Sidecar.Grpc.ProtobufUtils.ToHistoryEventProto) },
+                    };
+
+                    // We convert the binary payload into a base64 string because that seems to be the most commonly supported
+                    // format for Azure Functions language workers. Attempts to send unencoded byte[] payloads were unsuccessful.
+                    string encodedRequest = global::DurableTask.Sidecar.Grpc.ProtobufUtils.Base64Encode(orchestratorRequest);
+                    var contextValueProvider = new ObjectValueProvider(encodedRequest, typeof(string));
                     var triggerData = new TriggerData(contextValueProvider, EmptyBindingData);
                     return Task.FromResult<ITriggerData>(triggerData);
                 }
+#endif
                 else
                 {
                     throw new ArgumentException($"Don't know how to bind to {value?.GetType().Name ?? "null"}.", nameof(value));

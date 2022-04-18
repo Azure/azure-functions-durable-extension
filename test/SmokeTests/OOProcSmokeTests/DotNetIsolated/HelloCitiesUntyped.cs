@@ -38,11 +38,11 @@ internal static class HelloSequenceUntyped
     /// <summary>
     /// Orchestrator function that calls the <see cref="SayHelloUntyped"/> activity function several times consecutively.
     /// </summary>
-    /// <param name="state">The opaque orchestration state that gets passed to the function. Code should never attempt to read this state.</param>
+    /// <param name="requestState">The serialized orchestration state that gets passed to the function.</param>
     /// <returns>Returns an opaque output string with instructions about what actions to persist into the orchestration history.</returns>
     [Function(nameof(HelloCitiesUntyped))]
-    public static string HelloCitiesUntyped([OrchestrationTrigger] string state, FunctionContext executionContext) =>
-        DurableTask.OrchestrationRunner.LoadAndRun<string, string>(state, async (context, _) =>
+    public static string HelloCitiesUntyped([OrchestrationTrigger] string requestState, FunctionContext functionContext) =>
+        DurableTask.OrchestrationRunner.LoadAndRun<string, string>(requestState, async (context, _) =>
         {
             string result = "";
             result += await context.CallActivityAsync<string>(nameof(SayHelloUntyped), "Tokyo") + " ";
@@ -50,7 +50,7 @@ internal static class HelloSequenceUntyped
             result += await context.CallActivityAsync<string>(nameof(SayHelloUntyped), "Seattle");
             return result;
         },
-        executionContext.InstanceServices);
+        functionContext.InstanceServices);
 
     /// <summary>
     /// Simple activity function that returns the string "Hello, {input}!".

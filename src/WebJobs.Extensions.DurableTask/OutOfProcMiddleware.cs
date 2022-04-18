@@ -3,6 +3,7 @@
 #nullable enable
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading.Tasks;
 using DurableTask.Core;
@@ -123,11 +124,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                     // The return value is expected to be a JSON string of a well-known schema.
                     string? triggerReturnValue = (await invokeTaskWithResult) as string;
+                    if (string.IsNullOrEmpty(triggerReturnValue))
+                    {
+                        throw new InvalidOperationException(
+                            "The function invocation resulted in a null response. This means that either the orchestrator function was implemented " +
+                            "incorrectly, the Durable Task language SDK was implemented incorrectly, or that the destination language worker is not " +
+                            "sending the function result back to the host.");
+                    }
 
-                    // This will fail with an exception if the language worker gave us some bad/unexpected data. We throw an
-                    // exception instead of failing the orchestration since it's not an app issue. Users will likely need to
-                    // update their SDK version to mitigate this kind of problem.
-                    context.SetResult(triggerReturnValue);
+#if NET6_0_OR_GREATER
+                    byte[] triggerReturnValueBytes = Convert.FromBase64String(triggerReturnValue);
+                    var response = global::DurableTask.Protobuf.OrchestratorResponse.Parser.ParseFrom(triggerReturnValueBytes);
+                    context.SetResult(
+                        response.Actions.Select(global::DurableTask.Sidecar.Grpc.ProtobufUtils.ToOrchestratorAction),
+                        response.CustomStatus);
+#else
+                    throw new NotSupportedException("The current platform does not support running remote orchestrator functions.");
+#endif
 #pragma warning restore CS0618 // Type or member is obsolete (not intended for general public use)
                 },
             };
@@ -330,14 +343,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             else
             {
-                // TODO: Deserialize the out-of-proc exception
-                string exceptionDetails = result.Exception.ToString();
-
                 this.TraceHelper.FunctionFailed(
                     this.Options.HubName,
                     functionName.Name,
                     instance.InstanceId,
-                    exceptionDetails,
+                    result.Exception.ToString(),
                     FunctionType.Activity,
                     isReplay: false,
                     scheduledEvent.EventId);
@@ -347,8 +357,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     ResponseEvent = new TaskFailedEvent(
                         eventId: -1,
                         taskScheduledId: scheduledEvent.EventId,
-                        reason: $"Function {functionName} failed with an unhandled exception.",
-                        exceptionDetails),
+                        reason: $"Function '{functionName}' failed with an unhandled exception.",
+                        details: null,
+                        GetFailureDetails(result.Exception)),
                 };
             }
 
@@ -356,5 +367,115 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // This allows us to bypass the default, in-process execution and process the given results immediately.
             dispatchContext.SetProperty(activityResult);
         }
+
+#if NET6_0_OR_GREATER
+        private static FailureDetails GetFailureDetails(Exception e)
+        {
+            if (e.InnerException != null && e.InnerException.Message.StartsWith("Result:"))
+            {
+                Exception rpcException = e.InnerException;
+                if (TryGetRpcExceptionFields(rpcException.Message, out string? exception, out string? stackTrace))
+                {
+                    if (TrySplitExceptionTypeFromMessage(exception, out string? exceptionType, out string? exceptionMessage))
+                    {
+                        return new FailureDetails(exceptionType, exceptionMessage, stackTrace, innerFailure: null, isNonRetriable: false);
+                    }
+
+                    return new FailureDetails("(unknown)", exception, stackTrace, innerFailure: null, isNonRetriable: false);
+                }
+                else
+                {
+                    // Don't recognize this message format - return the failure as-is
+                    return new FailureDetails(rpcException);
+                }
+            }
+
+            // Don't recognize this exception - return it as-is
+            return new FailureDetails(e);
+        }
+
+        private static bool TryGetRpcExceptionFields(
+            string rpcExceptionMessage,
+            [NotNullWhen(true)] out string? exception,
+            out string? stackTrace)
+        {
+            exception = null;
+            stackTrace = null;
+
+            // The message string is formatted as follows:
+            // Result: {result}\nException: {message}\nStack: {stack}
+
+            const string ExceptionDelimeter = "\nException: ";
+            const string StackDelimeter = "\nStack: ";
+
+            ReadOnlySpan<char> messageSpan = rpcExceptionMessage;
+            int startException = messageSpan.IndexOf(ExceptionDelimeter);
+            if (startException == -1)
+            {
+                // Couldn't find the exception payload - give up
+                return false;
+            }
+
+            int startExceptionPayload = startException + ExceptionDelimeter.Length;
+            ReadOnlySpan<char> exceptionPayloadStartSpan = messageSpan[startExceptionPayload..];
+            int endException = exceptionPayloadStartSpan.LastIndexOf(StackDelimeter);
+            if (endException >= 0)
+            {
+                exception = new string(exceptionPayloadStartSpan[..endException]);
+
+                // Start looking for the stack trace payload immediately after the exception payload
+                int startStack = endException + StackDelimeter.Length;
+                stackTrace = new string(exceptionPayloadStartSpan[startStack..]);
+            }
+            else
+            {
+                // [Not expected] Couldn't find the stack trace for whatever reason. Just take the rest of the payload as the stack trace.
+                exception = new string(exceptionPayloadStartSpan);
+            }
+
+            return true;
+        }
+
+        private static bool TrySplitExceptionTypeFromMessage(
+            string exception,
+            [NotNullWhen(true)] out string? exceptionType,
+            [NotNullWhen(true)] out string? exceptionMessage)
+        {
+            // Example exception messages:
+            // .NET   : System.ApplicationException: Kah-BOOOOM!!
+            // Java   : SQLServerException: Invalid column name 'status'.
+            // Python : ResourceNotFoundError: The specified blob does not exist. RequestId:8d5a2c9b-b01e-006f-33df-3f7a2e000000 Time:2022-03-25T00:31:24.2003327Z ErrorCode:BlobNotFound Error:None
+            // Node   : SyntaxError: Unexpected token N in JSON at position 12768
+
+            // From the above examples, they all follow the same pattern of {ExceptionType}: {Message}
+            string delimeter = ": ";
+            int endExceptionType = exception.IndexOf(delimeter);
+            if (endExceptionType < 0)
+            {
+                exceptionType = null;
+                exceptionMessage = null;
+                return false;
+            }
+
+            exceptionType = exception[..endExceptionType];
+
+            // The .NET Isolated language worker strangely includes the stack trace in the exception message.
+            // To avoid bloating the payload with redundant information, we only consider the first line.
+            int startMessage = endExceptionType + delimeter.Length;
+            int endMessage = exception.IndexOf('\n', startMessage);
+            if (endMessage < 0)
+            {
+                exceptionMessage = exception[startMessage..];
+            }
+            else
+            {
+                exceptionMessage = exception[startMessage..endMessage].TrimEnd();
+            }
+
+            return true;
+        }
+#else
+        private static FailureDetails GetFailureDetails(Exception e) => new FailureDetails(e);
+#endif
     }
 }
