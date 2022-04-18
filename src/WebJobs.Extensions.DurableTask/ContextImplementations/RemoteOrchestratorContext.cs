@@ -43,12 +43,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         [JsonIgnore]
         internal string? SerializedOutput { get; private set; }
 
-        internal void SetResult(string? orchestratorResponseJsonText)
+        internal void SetResult(IEnumerable<OrchestratorAction> actions, string customStatus)
+        {
+            var result = new OrchestratorExecutionResult
+            {
+                CustomStatus = customStatus,
+                Actions = actions,
+            };
+
+            this.SetResultInternal(result);
+        }
+
+        // TODO: This method should be considered deprecated because SDKs should no longer be returning results as JSON.
+        internal void SetResult(string orchestratorResponseJsonText)
         {
             const string ActionsFieldName = nameof(OrchestratorExecutionResult.Actions);
             const string CustomStatusFieldName = nameof(OrchestratorExecutionResult.CustomStatus);
 
             Exception? jsonReaderException = null;
+            OrchestratorExecutionResult? result = null;
             try
             {
                 // Validate the JSON since we don't know for sure if the out-of-proc SDK is correctly implemented.
@@ -58,7 +71,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 if (orchestratorResponseJson.TryGetValue(ActionsFieldName, StringComparison.OrdinalIgnoreCase, out _) &&
                     orchestratorResponseJson.TryGetValue(CustomStatusFieldName, StringComparison.OrdinalIgnoreCase, out _))
                 {
-                    this.executionResult = orchestratorResponseJson.ToObject<OrchestratorExecutionResult>();
+                    result = orchestratorResponseJson.ToObject<OrchestratorExecutionResult>();
                 }
             }
             catch (JsonReaderException e)
@@ -66,7 +79,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 jsonReaderException = e;
             }
 
-            if (this.executionResult == null)
+            if (result == null)
             {
                 throw new ArgumentException(
                     message: "Unrecognized orchestrator response payload. The response is expected to be a JSON object with " +
@@ -76,8 +89,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     innerException: jsonReaderException);
             }
 
+            this.SetResultInternal(result);
+        }
+
+        private void SetResultInternal(OrchestratorExecutionResult result)
+        {
             // Look for an orchestration completion action to see if we need to grab the output.
-            foreach (OrchestratorAction action in this.executionResult.Actions)
+            foreach (OrchestratorAction action in result.Actions)
             {
                 if (action is OrchestrationCompleteOrchestratorAction completeAction)
                 {
@@ -87,6 +105,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     break;
                 }
             }
+
+            this.executionResult = result;
         }
 
         internal OrchestratorExecutionResult GetResult()

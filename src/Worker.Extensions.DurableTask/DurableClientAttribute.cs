@@ -15,10 +15,16 @@ public sealed class DurableClientAttribute : InputBindingAttribute
     /// </summary>
     /// <value>The task hub used by this binding.</value>
     /// <remarks>
+    /// <para>
     /// If not specified, the task hub name used by this binding will be the value specified in host.json.
     /// If a task hub name is not configured in host.json and if the function app is running in the 
     /// Azure Functions hosted service, then task hub name is derived from the function app's name.
     /// Otherwise, a constant value is used for the task hub name.
+    /// </para>
+    /// <para>
+    /// In general, you should <i>not</i> set a value for the task hub name here unless you intend to
+    /// configure the client to interact with orchestrations in another app.
+    /// </para>
     /// </remarks>
     public string? TaskHub { get; set; }
 

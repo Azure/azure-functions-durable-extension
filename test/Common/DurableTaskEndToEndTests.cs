@@ -5557,8 +5557,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
-                Assert.Equal("World", status?.Input);
-                Assert.Equal("Hello, World!", status?.Output);
+                Assert.Equal("World", (string)status?.Input);
+                Assert.Equal("Hello, World!", (string)status?.Output);
 
                 await host.StopAsync();
             }
