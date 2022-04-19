@@ -18,3 +18,4 @@
 - Added [Microsoft.Extensions.Azure](https://www.nuget.org/packages/Microsoft.Extensions.Azure/1.1.1) v1.1.1 as a dependency for Azure Functions 2.0 and beyond
 - Azure.Identity 1.1.1 -> 1.5.0 for Azure Functions 2.0 and beyond
 - Microsoft.Azure.WebJobs 3.0.14 -> 3.0.31 for for Azure Functions 2.0 and beyond
+- Updated minimum .NET Framework version to v4.6.2 to stay within official support window
