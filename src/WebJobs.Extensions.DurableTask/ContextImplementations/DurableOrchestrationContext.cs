@@ -97,6 +97,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
+        internal int DefaultHttpAsyncRequestSleepTimeMillseconds
+        {
+            get
+            {
+                return this.Config.Options.HttpSettings.DefaultAsyncRequestSleepTimeMilliseconds;
+            }
+        }
+
         internal bool ContinuedAsNew { get; private set; }
 
         internal bool IsCompleted { get; set; }
