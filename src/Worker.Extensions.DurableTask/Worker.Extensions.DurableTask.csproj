@@ -28,8 +28,8 @@
     <AssemblyOriginatorKeyFile>..\..\sign.snk</AssemblyOriginatorKeyFile>
 
     <!-- Version information -->
-    <VersionPrefix>0.2.0</VersionPrefix>
-    <VersionSuffix>alpha</VersionSuffix>
+    <VersionPrefix>0.3.0</VersionPrefix>
+    <VersionSuffix>beta</VersionSuffix>
     <FileVersion>$(VersionPrefix)</FileVersion>
     <AssemblyVersion>$(VersionPrefix).0</AssemblyVersion>
     <Version>$(VersionPrefix)-$(VersionSuffix)</Version>
@@ -44,7 +44,7 @@
   </ItemGroup>
   
   <ItemGroup>
-    <PackageReference Include="Microsoft.DurableTask" Version="0.2.0-alpha" />
+    <PackageReference Include="Microsoft.DurableTask" Version="0.3.0-beta" />
   </ItemGroup>
 
   <ItemGroup>

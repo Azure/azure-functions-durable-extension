@@ -5,10 +5,10 @@ using System;
 using System.Net;
 using System.Text.Json;
 using System.Threading.Tasks;
-using DurableTask;
-using DurableTask.Grpc;
 using Microsoft.Azure.Functions.Worker.Converters;
 using Microsoft.Azure.Functions.Worker.Http;
+using Microsoft.DurableTask;
+using Microsoft.DurableTask.Grpc;
 
 namespace Microsoft.Azure.Functions.Worker;
 
