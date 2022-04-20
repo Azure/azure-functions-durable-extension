@@ -3,7 +3,6 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -147,16 +146,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     // Generate a byte array which is the serialized protobuf payload
                     // https://developers.google.com/protocol-buffers/docs/csharptutorial#parsing_and_serialization
-                    var orchestratorRequest = new global::DurableTask.Protobuf.OrchestratorRequest()
+                    var orchestratorRequest = new Microsoft.DurableTask.Protobuf.OrchestratorRequest()
                     {
                         InstanceId = remoteContext.InstanceId,
-                        PastEvents = { remoteContext.PastEvents.Select(global::DurableTask.Sidecar.Grpc.ProtobufUtils.ToHistoryEventProto) },
-                        NewEvents = { remoteContext.NewEvents.Select(global::DurableTask.Sidecar.Grpc.ProtobufUtils.ToHistoryEventProto) },
+                        PastEvents = { remoteContext.PastEvents.Select(Microsoft.DurableTask.Sidecar.Grpc.ProtobufUtils.ToHistoryEventProto) },
+                        NewEvents = { remoteContext.NewEvents.Select(Microsoft.DurableTask.Sidecar.Grpc.ProtobufUtils.ToHistoryEventProto) },
                     };
 
                     // We convert the binary payload into a base64 string because that seems to be the most commonly supported
                     // format for Azure Functions language workers. Attempts to send unencoded byte[] payloads were unsuccessful.
-                    string encodedRequest = global::DurableTask.Sidecar.Grpc.ProtobufUtils.Base64Encode(orchestratorRequest);
+                    string encodedRequest = Microsoft.DurableTask.Sidecar.Grpc.ProtobufUtils.Base64Encode(orchestratorRequest);
                     var contextValueProvider = new ObjectValueProvider(encodedRequest, typeof(string));
                     var triggerData = new TriggerData(contextValueProvider, EmptyBindingData);
                     return Task.FromResult<ITriggerData>(triggerData);

@@ -42,7 +42,7 @@ internal static class HelloSequenceUntyped
     /// <returns>Returns an opaque output string with instructions about what actions to persist into the orchestration history.</returns>
     [Function(nameof(HelloCitiesUntyped))]
     public static string HelloCitiesUntyped([OrchestrationTrigger] string requestState, FunctionContext functionContext) =>
-        DurableTask.OrchestrationRunner.LoadAndRun<string, string>(requestState, async (context, _) =>
+        Microsoft.DurableTask.OrchestrationRunner.LoadAndRun<string, string>(requestState, async (context, _) =>
         {
             string result = "";
             result += await context.CallActivityAsync<string>(nameof(SayHelloUntyped), "Tokyo") + " ";
