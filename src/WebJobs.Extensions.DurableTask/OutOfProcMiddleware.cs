@@ -134,9 +134,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
 #if NET6_0_OR_GREATER
                     byte[] triggerReturnValueBytes = Convert.FromBase64String(triggerReturnValue);
-                    var response = global::DurableTask.Protobuf.OrchestratorResponse.Parser.ParseFrom(triggerReturnValueBytes);
+                    var response = Microsoft.DurableTask.Protobuf.OrchestratorResponse.Parser.ParseFrom(triggerReturnValueBytes);
                     context.SetResult(
-                        response.Actions.Select(global::DurableTask.Sidecar.Grpc.ProtobufUtils.ToOrchestratorAction),
+                        response.Actions.Select(Microsoft.DurableTask.Sidecar.Grpc.ProtobufUtils.ToOrchestratorAction),
                         response.CustomStatus);
 #else
                     throw new NotSupportedException("The current platform does not support running remote orchestrator functions.");
