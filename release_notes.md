@@ -8,7 +8,19 @@
 
 ## Bug fixes
 
+All bug fixes are coming in transitively via our DTFx dependency updates:
+
+- Fix for stuck orchestration issue caused by incorrect de-dupe flagging (https://github.com/Azure/durabletask/pull/708)
+- Fix for stuck orchestration issue caused by certain partition movement issues (https://github.com/Azure/durabletask/pull/710)
+- Fix for noisy error message in DTFx logs (ArgumentException: A lease ID must be specified when changing a lease) (https://github.com/Azure/durabletask/issues/406)
+- Fix some false positives in deadlock detection that resulted in unnecessary ExecutionEngineExceptions (https://github.com/Azure/durabletask/pull/678)
+- Fix issue related to in-order delivery guarantees for Durable Entities (https://github.com/Azure/durabletask/pull/680)
+- Improved logging for lease/partition management (https://github.com/Azure/durabletask/pull/699)
+- Reduce GC impact of lease blob operations (https://github.com/Azure/durabletask/pull/673)
+
 ## Breaking Changes
+
+See dependency updates below, which can be breaking if there are hard dependency conflicts (like .NET Framework 4.6.1)
 
 ## Dependency Updates
 
