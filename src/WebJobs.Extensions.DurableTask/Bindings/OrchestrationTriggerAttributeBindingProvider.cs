@@ -207,7 +207,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     new JProperty("instanceId", arg.InstanceId),
                     new JProperty("isReplaying", arg.IsReplaying),
                     new JProperty("parentInstanceId", arg.ParentInstanceId),
-                    new JProperty("upperSchemaVersion", SchemaVersion.V3),
+                    new JProperty("upperSchemaVersion", SchemaVersion.V2),
+                    // due to Python only supporting up to SchemaVersion V2 from versions 1.1.0 to 1.1.3, we need a new upperSchemaVersion field
+                    // to track schema values larger than V2. This is for backwards compatibility only.
+                    new JProperty("upperSchemaVersionNew", SchemaVersion.V3),
                     new JProperty("longRunningTimerIntervalDuration", arg.LongRunningTimerIntervalLength),
                     new JProperty("maximumShortTimerDuration", arg.MaximumShortTimerDuration),
                     new JProperty("defaultHttpAsyncRequestSleepTimeMillseconds", arg.DefaultHttpAsyncRequestSleepTimeMillseconds));
