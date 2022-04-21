@@ -201,13 +201,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 var history = JArray.FromObject(arg.History);
                 var input = arg.GetInputAsJson();
 
+                // due to Python only supporting up to SchemaVersion V2 from SDK versions 1.1.0 to 1.1.3,
+                // we need a new upperSchemaVersion field  to track schema values larger than V2.
+                // This is for backwards compatibility only, and should be dropped in a new major release.
                 var contextObject = new JObject(
                     new JProperty("history", history),
                     new JProperty("input", input),
                     new JProperty("instanceId", arg.InstanceId),
                     new JProperty("isReplaying", arg.IsReplaying),
                     new JProperty("parentInstanceId", arg.ParentInstanceId),
-                    new JProperty("upperSchemaVersion", SchemaVersion.V3),
+                    new JProperty("upperSchemaVersion", SchemaVersion.V2),
+                    new JProperty("upperSchemaVersionNew", SchemaVersion.V3),
                     new JProperty("longRunningTimerIntervalDuration", arg.LongRunningTimerIntervalLength),
                     new JProperty("maximumShortTimerDuration", arg.MaximumShortTimerDuration),
                     new JProperty("defaultHttpAsyncRequestSleepTimeMillseconds", arg.DefaultHttpAsyncRequestSleepTimeMillseconds));
