@@ -14,7 +14,7 @@ namespace DFPerfScenarios
     public static class CounterTest
 	{
 		[FunctionName("StartCounter")]
-		public static async Task<HttpResponseMessage> Start(
+		public static HttpResponseMessage Start(
             [HttpTrigger(AuthorizationLevel.Function, methods: "post", Route = "StartCounter")] HttpRequestMessage req,
             [DurableClient] IDurableClient starter,
             ILogger log)
