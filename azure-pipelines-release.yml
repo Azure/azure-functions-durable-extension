@@ -4,10 +4,11 @@ pr: none
 pool:
   name: '1ES-Hosted-DurableTaskFramework'
   demands:
-    - ImageOverride -equals MMSWindows2022Custom
+    - ImageOverride -equals MMS2022TLS
 
 steps:
 
+# Configure all the .NET SDK versions we need
 - task: UseDotNet@2
   displayName: 'Use the .NET Core 2.1 SDK (required for build signing)'
   inputs:
@@ -19,6 +20,12 @@ steps:
   inputs:
     packageType: 'sdk'
     version: '3.1.x'
+
+- task: UseDotNet@2
+  displayName: 'Use the .NET 6 SDK'
+  inputs:
+    packageType: 'sdk'
+    version: '6.0.x'
 
 # Use NuGet
 - task: NuGetToolInstaller@1
@@ -41,30 +48,7 @@ steps:
     vsVersion: "16.0"
     configuration: Release
 
-- task: DotNetCoreCLI@2
-  displayName: 'dotnet publish'
-  inputs:
-    command: 'publish'
-    publishWebProjects: false
-    projects: 'src\WebJobs.Extensions.DurableTask\WebJobs.Extensions.DurableTask.csproj' 
-    arguments: "-c Release -f net461"
-    zipAfterPublish: false
-
-- task: DotNetCoreCLI@2
-  displayName: 'dotnet publish'
-  inputs:
-    command: 'publish'
-    publishWebProjects: false
-    projects: 'src\WebJobs.Extensions.DurableTask\WebJobs.Extensions.DurableTask.csproj' 
-    arguments: "-c Release -f netstandard2.0"
-    zipAfterPublish: false
-
-# Manifest Generator Task
-- task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
-  displayName: 'Manifest Generator '
-  inputs:
-    BuildDropPath: '$(System.DefaultWorkingDirectory)'
-
+# Authenticode sign all the DLLs with the Microsoft certificate.
 - task: EsrpCodeSigning@1
   inputs:
     ConnectedServiceName: 'ESRP Service'
@@ -97,6 +81,12 @@ steps:
     SessionTimeout: '60'
     MaxConcurrency: '50'
     MaxRetryAttempts: '5'
+
+# SBOM generator task for additional supply chain protection
+- task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
+  displayName: 'Manifest Generator '
+  inputs:
+    BuildDropPath: '$(System.DefaultWorkingDirectory)'
 
 # dotnet pack
 # Packaging needs to be a separate step from build.
