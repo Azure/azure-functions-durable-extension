@@ -9,6 +9,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// <summary>
     /// Connection string provider which resolves connection strings from the WebJobs context.
     /// </summary>
+    [Obsolete("Please use WebJobsConnectionInfoProvider instead.")]
     public class WebJobsConnectionStringProvider : IConnectionStringResolver
     {
 #if !FUNCTIONS_V1

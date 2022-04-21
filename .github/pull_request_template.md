@@ -17,3 +17,5 @@ resolves #issue_for_this_pr
 * [ ] I have added all required tests (Unit tests, E2E tests)
 * [ ] My changes **do not** require any extra work to be leveraged by OutOfProc SDKs
     * [ ] Otherwise: That work is being tracked here: #issue_or_pr_in_each_sdk
+* [ ] My changes **do not** change the version of the WebJobs.Extensions.DurableTask package
+    * [ ] Otherwise: major or minor version updates are reflected in `/src/Worker.Extensions.DurableTask/AssemblyInfo.cs`

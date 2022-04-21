@@ -81,6 +81,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
+        internal TimeSpan LongRunningTimerIntervalLength
+        {
+            get
+            {
+                return this.durabilityProvider.LongRunningTimerIntervalLength;
+            }
+        }
+
+        internal TimeSpan MaximumShortTimerDuration
+        {
+            get
+            {
+                return this.durabilityProvider.MaximumDelayTime;
+            }
+        }
+
+        internal int DefaultHttpAsyncRequestSleepTimeMillseconds
+        {
+            get
+            {
+                return this.Config.Options.HttpSettings.DefaultAsyncRequestSleepTimeMilliseconds;
+            }
+        }
+
         internal bool ContinuedAsNew { get; private set; }
 
         internal bool IsCompleted { get; set; }

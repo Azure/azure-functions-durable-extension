@@ -40,7 +40,9 @@ namespace TimeoutTests
         {
             int seconds = 180;
             logger.LogWarning($"{context.InstanceId} starting slow orchestration duration={seconds}s");
+#pragma warning disable DF0103 // Thread.Sleep and Task.Delay calls are not allowed inside an orchestrator function.
             System.Threading.Thread.Sleep(seconds * 1000); // does not complete within the 00:02:00 timeout setting
+#pragma warning restore DF0103 // Thread.Sleep and Task.Delay calls are not allowed inside an orchestrator function.
             return Task.FromResult("Done waiting");
         }
     }

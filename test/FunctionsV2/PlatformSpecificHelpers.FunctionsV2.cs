@@ -20,7 +20,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     /// <summary>
     /// These helpers are specific to Functions v2.
     /// </summary>
-    public static class PlatformSpecificHelpers
+    internal static class PlatformSpecificHelpers
     {
         public const string VersionSuffix = "V2";
         public const string TestCategory = "Functions" + VersionSuffix;
@@ -103,13 +103,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return new FunctionsV2HostWrapper(host, options, nameResolver);
         }
 
-        public static IHost CreateJobHostExternalEnvironment(IConnectionStringResolver connectionStringResolver)
+        public static IHost CreateJobHostExternalEnvironment(IStorageAccountProvider storageAccountProvider)
         {
             IHost host = new HostBuilder()
                 .ConfigureServices(
                     serviceCollection =>
                     {
-                        serviceCollection.AddSingleton(connectionStringResolver);
+                        serviceCollection.AddSingleton(storageAccountProvider);
                         serviceCollection.AddDurableClientFactory();
                     })
                 .Build();
@@ -173,7 +173,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             var serviceCollection = builder.AddExtension<DurableTaskExtension>()
                 .BindOptions<DurableTaskOptions>()
-                .Services.AddSingleton<IConnectionStringResolver, WebJobsConnectionStringProvider>();
+                .Services.AddSingleton<IConnectionInfoResolver, WebJobsConnectionInfoProvider>();
 
             serviceCollection.TryAddSingleton<IApplicationLifetimeWrapper, HostLifecycleService>();
 #pragma warning disable CS0612 // Type or member is obsolete
@@ -195,7 +195,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             var serviceCollection = builder.AddExtension<DurableTaskExtension>()
                 .BindOptions<DurableTaskOptions>()
-                .Services.AddSingleton<IConnectionStringResolver, WebJobsConnectionStringProvider>();
+                .Services.AddSingleton<IConnectionInfoResolver, WebJobsConnectionInfoProvider>();
 
             serviceCollection.TryAddSingleton<IApplicationLifetimeWrapper, HostLifecycleService>();
 

@@ -18,22 +18,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         private readonly string functionId = "DurableTaskTriggerFunctionId";
         private readonly FunctionName functionName = new FunctionName("DurableTaskTriggerFunctionName");
         private readonly DurableTaskExtension config;
-        private readonly Mock<ITriggeredFunctionExecutor> executor;
         private readonly string storageConnectionString;
         private readonly DurableTaskListener listener;
 
         public DurableTaskListenerTests()
         {
             this.config = GetDurableTaskConfig();
-            this.executor = new Mock<ITriggeredFunctionExecutor>(MockBehavior.Strict);
             this.storageConnectionString = TestHelpers.GetStorageConnectionString();
             this.listener = new DurableTaskListener(
-                                            this.config,
-                                            this.functionId,
-                                            this.functionName,
-                                            this.executor.Object,
-                                            FunctionType.Activity,
-                                            this.storageConnectionString);
+                this.config,
+                this.functionId,
+                this.functionName,
+                FunctionType.Activity,
+                this.storageConnectionString);
         }
 
         [Fact]
@@ -57,11 +54,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             options.WebhookUriProviderOverride = () => new Uri("https://sampleurl.net");
             var wrappedOptions = new OptionsWrapper<DurableTaskOptions>(options);
             var nameResolver = TestHelpers.GetTestNameResolver();
-            var connectionStringResolver = new TestConnectionStringResolver();
+            var storageAccountProvider = new TestStorageAccountProvider();
             var platformInformationService = TestHelpers.GetMockPlatformInformationService();
             var serviceFactory = new AzureStorageDurabilityProviderFactory(
                 wrappedOptions,
-                connectionStringResolver,
+                storageAccountProvider,
                 nameResolver,
                 NullLoggerFactory.Instance,
                 platformInformationService);

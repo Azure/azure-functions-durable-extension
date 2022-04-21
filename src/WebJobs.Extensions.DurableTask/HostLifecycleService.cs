@@ -16,14 +16,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #endif
     {
         internal static readonly IApplicationLifetimeWrapper NoOp = new NoOpLifetimeWrapper();
-#if !FUNCTIONS_V1
+#if NET6_0_OR_GREATER // Functions v4 (.NET 6) requires IHostApplicationLifetime (IApplicationLifetime is deprecated)
+        private readonly IHostApplicationLifetime appLifetime;
+
+        public HostLifecycleService(IHostApplicationLifetime appLifetime)
+        {
+            this.appLifetime = appLifetime ?? throw new ArgumentNullException(nameof(appLifetime));
+        }
+
+#elif !FUNCTIONS_V1 // Functions v2 or v3 requires IApplicationLifetime (IHostApplicationLifetime doesn't exist)
         private readonly IApplicationLifetime appLifetime;
 
         public HostLifecycleService(IApplicationLifetime appLifetime)
         {
             this.appLifetime = appLifetime ?? throw new ArgumentNullException(nameof(appLifetime));
         }
+#endif
 
+#if !FUNCTIONS_V1
         public CancellationToken OnStarted => this.appLifetime.ApplicationStarted;
 
         public CancellationToken OnStopping => this.appLifetime.ApplicationStopping;

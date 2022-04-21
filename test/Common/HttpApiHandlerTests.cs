@@ -222,7 +222,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public void CreateCheckStatus_Returns_Correct_HttpManagementPayload_based_on_custom_values()
         {
             var httpApiHandler = new HttpApiHandler(GetTestExtension(), null);
-            HttpManagementPayload httpManagementPayload = httpApiHandler.CreateHttpManagementPayload(TestConstants.InstanceId, TestConstants.TaskHub, TestConstants.CustomConnectionName, returnInternalServerErrorOnFailure: true, restartWithNewInstanceId: false);
+            HttpManagementPayload httpManagementPayload = httpApiHandler.CreateHttpManagementPayload(TestConstants.InstanceId, TestConstants.TaskHub, TestConstants.CustomConnectionName, returnInternalServerErrorOnFailure: true);
             Assert.NotNull(httpManagementPayload);
             Assert.Equal(httpManagementPayload.Id, TestConstants.InstanceId);
             Assert.Equal(
@@ -1440,7 +1440,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     {
                         new AzureStorageDurabilityProviderFactory(
                         new OptionsWrapper<DurableTaskOptions>(options),
-                        new TestConnectionStringResolver(),
+                        new TestStorageAccountProvider(),
                         TestHelpers.GetTestNameResolver(),
                         NullLoggerFactory.Instance,
                         TestHelpers.GetMockPlatformInformationService()),

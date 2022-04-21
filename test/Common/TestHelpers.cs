@@ -120,7 +120,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             // Azure Storage specfic tests
             if (string.Equals(storageProviderType, AzureStorageProviderType))
             {
-                options.StorageProvider["ConnectionStringName"] = "AzureWebJobsStorage";
+                options.StorageProvider["ConnectionName"] = "AzureWebJobsStorage";
                 options.StorageProvider["fetchLargeMessagesAutomatically"] = autoFetchLargeMessages;
                 if (maxQueuePollingInterval != null)
                 {
@@ -208,19 +208,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
 #if !FUNCTIONS_V1
-        public static IHost GetJobHostExternalEnvironment(IConnectionStringResolver connectionStringResolver = null)
+        public static IHost GetJobHostExternalEnvironment(IStorageAccountProvider storageAccountProvider = null)
         {
-            if (connectionStringResolver == null)
+            if (storageAccountProvider == null)
             {
-                connectionStringResolver = new TestConnectionStringResolver();
+                storageAccountProvider = new TestStorageAccountProvider();
             }
 
-            return GetJobHostWithOptionsForDurableClientFactoryExternal(connectionStringResolver);
+            return GetJobHostWithOptionsForDurableClientFactoryExternal(storageAccountProvider);
         }
 
-        public static IHost GetJobHostWithOptionsForDurableClientFactoryExternal(IConnectionStringResolver connectionStringResolver)
+        public static IHost GetJobHostWithOptionsForDurableClientFactoryExternal(IStorageAccountProvider storageAccountProvider)
         {
-            return PlatformSpecificHelpers.CreateJobHostExternalEnvironment(connectionStringResolver);
+            return PlatformSpecificHelpers.CreateJobHostExternalEnvironment(storageAccountProvider);
         }
 
         public static ITestHost GetJobHostWithMultipleDurabilityProviders(

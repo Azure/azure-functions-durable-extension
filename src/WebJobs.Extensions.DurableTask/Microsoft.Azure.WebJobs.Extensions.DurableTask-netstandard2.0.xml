@@ -4,6 +4,48 @@
         <name>Microsoft.Azure.WebJobs.Extensions.DurableTask</name>
     </assembly>
     <members>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth.AzureCredentialFactory.Create(Microsoft.Extensions.Configuration.IConfiguration,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth.AzureCredentialFactory.Create(Microsoft.Extensions.Configuration.IConfiguration,System.TimeSpan,System.TimeSpan,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth.ITokenCredentialFactory">
+            <summary>
+            Defines methods for retrieving <see cref="T:Microsoft.WindowsAzure.Storage.Auth.TokenCredential"/>.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth.ITokenCredentialFactory.Create(Microsoft.Extensions.Configuration.IConfiguration,System.Threading.CancellationToken)">
+            <summary>
+            Creates a <see cref="T:Microsoft.WindowsAzure.Storage.Auth.TokenCredential"/> based on the specified <paramref name="configuration"/>.
+            </summary>
+            <param name="configuration">A configuration containing information about the connection.</param>
+            <param name="cancellationToken">
+            An optional <see cref="T:System.Threading.CancellationToken"/> for prematurely canceling the operation.
+            </param>
+            <returns>
+            The <see cref="T:Microsoft.WindowsAzure.Storage.Auth.TokenCredential"/> based on the specified <paramref name="configuration"/>.
+            </returns>
+            <exception cref="T:System.OperationCanceledException">The operation was canceled.</exception>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth.ITokenCredentialFactory.Create(Microsoft.Extensions.Configuration.IConfiguration,System.TimeSpan,System.TimeSpan,System.Threading.CancellationToken)">
+            <summary>
+            Creates a <see cref="T:Microsoft.WindowsAzure.Storage.Auth.TokenCredential"/> based on the specified <paramref name="configuration"/>.
+            </summary>
+            <param name="configuration">A configuration containing information about the connection.</param>
+            <param name="tokenRefreshOffset">The offset from the token expiration date to begin refresh.</param>
+            <param name="tokenRefreshRetryDelay">The amount of time to wait between refresh attempts in the event of a problem.</param>
+            <param name="cancellationToken">
+            An optional <see cref="T:System.Threading.CancellationToken"/> for prematurely canceling the operation.
+            </param>
+            <returns>
+            The <see cref="T:Microsoft.WindowsAzure.Storage.Auth.TokenCredential"/> based on the specified <paramref name="configuration"/>.
+            </returns>
+            <exception cref="T:System.OperationCanceledException">The operation was canceled.</exception>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageAccountProvider.GetStorageAccountDetails(System.String)">
+            <inheritdoc />
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageDurabilityProvider">
             <summary>
             The Azure Storage implementation of additional methods not required by IOrchestrationService.
@@ -40,6 +82,16 @@
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageDurabilityProvider.MakeCurrentAppPrimaryAsync">
             <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageDurabilityProvider.TryGetScaleMonitor(System.String,System.String,System.String,System.String,Microsoft.Azure.WebJobs.Host.Scale.IScaleMonitor@)">
+            <inheritdoc/>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.BindingHelper.OrchestrationClientInputData.RpcBaseUrl">
+            <summary>
+            The URL used by the client binding object to use when calling back into
+            the extension. For the original out-of-proc implementation, this is a simple
+            HTTP endpoint. For out-of-proc "v2" (middelware passthrough), this is a gRPC endpoint.
+            </summary>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.CleanEntityStorageResult">
             <summary>
@@ -610,6 +662,11 @@
             An operation invocation on an entity includes an operation name, which states what
             operation to perform, and optionally an operation input.
             </remarks>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableEntityContext.FunctionBindingContext">
+            <summary>
+            Contains function invocation context to assist with dependency injection at Entity construction time.
+            </summary>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableEntityContext.HasState">
             <summary>
@@ -1621,6 +1678,210 @@
             Now obsolete: use <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient"/> instead.
             </summary>
         </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.DurableTaskCorrelationTelemetryInitializer">
+            <summary>
+            Telemetry Initializer that sets correlation ids for W3C.
+            This source is based on W3COperationCorrelationTelemetryInitializer.cs
+            1. Modified with CorrelationTraceContext.Current
+            2. Avoid to be overriden when it is RequestTelemetry
+            Original Source is here https://github.com/microsoft/ApplicationInsights-dotnet-server/blob/2.8.0/Src/Common/W3C/W3COperationCorrelationTelemetryInitializer.cs.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.DurableTaskCorrelationTelemetryInitializer.TraceIdTag">
+            These internal property is copied from W3CConstants
+            <summary>Trace-Id tag name.</summary>
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.DurableTaskCorrelationTelemetryInitializer.SpanIdTag">
+            <summary>Span-Id tag name.</summary>
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.DurableTaskCorrelationTelemetryInitializer.ParentSpanIdTag">
+            <summary>Parent span-Id tag name.</summary>
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.DurableTaskCorrelationTelemetryInitializer.VersionTag">
+            <summary>Version tag name.</summary>
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.DurableTaskCorrelationTelemetryInitializer.SampledTag">
+            <summary>Sampled tag name.</summary>
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.DurableTaskCorrelationTelemetryInitializer.TracestateTag">
+            <summary>Tracestate tag name.</summary>
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.DurableTaskCorrelationTelemetryInitializer.DefaultVersion">
+            <summary>Default version value.</summary>
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.DurableTaskCorrelationTelemetryInitializer.TraceFlagRecordedAndNotRequested">
+            <summary>
+            Default sampled flag value: may be recorded, not requested.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.DurableTaskCorrelationTelemetryInitializer.TraceFlagRecordedAndRequested">
+            <summary>Recorded and requested sampled flag value.</summary>
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.DurableTaskCorrelationTelemetryInitializer.RequestedTraceFlag">
+            <summary>Requested trace flag.</summary>
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.DurableTaskCorrelationTelemetryInitializer.LegacyRootIdProperty">
+            <summary>Legacy root Id tag name.</summary>
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.DurableTaskCorrelationTelemetryInitializer.LegacyRequestIdProperty">
+            <summary>Legacy root Id tag name.</summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.DurableTaskCorrelationTelemetryInitializer.#ctor">
+            <summary>
+            Constructor.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.DurableTaskCorrelationTelemetryInitializer.ExcludeComponentCorrelationHttpHeadersOnDomains">
+            <summary>
+            Set of suppress telemetry tracking if you add Host name on this.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.DurableTaskCorrelationTelemetryInitializer.Initialize(Microsoft.ApplicationInsights.Channel.ITelemetry)">
+            <summary>
+            Initializes telemetry item.
+            </summary>
+            <param name="telemetry">Telemetry item.</param>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.ITelemetryActivator">
+            <summary>
+            ITelemetryActivator is an interface.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.ITelemetryActivator.Initialize(Microsoft.Extensions.Logging.ILogger)">
+            <summary>
+            Initialize is initialize the telemetry client.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.NoOpTelemetryChannel">
+            <summary>
+            A stub of <see cref="T:Microsoft.ApplicationInsights.Channel.ITelemetryChannel"/>.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.NoOpTelemetryChannel.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.NoOpTelemetryChannel"/> class.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.NoOpTelemetryChannel.DeveloperMode">
+            <summary>
+            Gets or sets a value indicating whether this channel is in developer mode.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.NoOpTelemetryChannel.EndpointAddress">
+            <summary>
+            Gets or sets a value indicating the channel's URI. To this URI the telemetry is expected to be sent.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.NoOpTelemetryChannel.ThrowError">
+            <summary>
+            Gets or sets a value indicating whether to throw an error.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.NoOpTelemetryChannel.OnSend">
+            <summary>
+            Gets or sets the callback invoked by the <see cref="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.NoOpTelemetryChannel.Send(Microsoft.ApplicationInsights.Channel.ITelemetry)"/> method.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.NoOpTelemetryChannel.OnFlush">
+            <summary>
+            Gets or sets the callback invoked by the <see cref="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.NoOpTelemetryChannel.Flush"/> method.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.NoOpTelemetryChannel.OnDispose">
+            <summary>
+            Gets or sets the callback invoked by the <see cref="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.NoOpTelemetryChannel.Dispose"/> method.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.NoOpTelemetryChannel.Send(Microsoft.ApplicationInsights.Channel.ITelemetry)">
+            <summary>
+            Implements the <see cref="M:Microsoft.ApplicationInsights.Channel.ITelemetryChannel.Send(Microsoft.ApplicationInsights.Channel.ITelemetry)"/> method by invoking the <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.NoOpTelemetryChannel.OnSend"/> callback.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.NoOpTelemetryChannel.Dispose">
+            <summary>
+            Implements the <see cref="M:System.IDisposable.Dispose"/> method.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.NoOpTelemetryChannel.Flush">
+            <summary>
+            Implements  the <see cref="M:Microsoft.ApplicationInsights.Channel.ITelemetryChannel.Flush" /> method.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.TelemetryActivator">
+            <summary>
+            TelemetryActivator initializes Distributed Tracing. This class only works for netstandard2.0.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.TelemetryActivator.#ctor(Microsoft.Extensions.Options.IOptions{Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions},Microsoft.Azure.WebJobs.INameResolver)">
+            <summary>
+            Constructor for initializing Distributed Tracing.
+            </summary>
+            <param name="options">DurableTask options.</param>
+            <param name="nameResolver">Name resolver used for environment variables.</param>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.TelemetryActivator.OnSend">
+            <summary>
+            OnSend is an action that enable to hook of sending telemetry.
+            You can use this property for testing.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.TelemetryActivator.Initialize(Microsoft.Extensions.Logging.ILogger)">
+            <summary>
+            Initialize is initialize the telemetry client.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.TraceContextBaseExtensions">
+            <summary>
+            TraceContextBase extension methods.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.TraceContextBaseExtensions.CreateRequestTelemetry(DurableTask.Core.TraceContextBase,System.String)">
+            <summary>
+            Create RequestTelemetry from the TraceContext.
+            </summary>
+            <param name="context">TraceContext.</param>
+            <param name="siteName">Site name.</param>
+            <returns>RequestTelemetry.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.TraceContextBaseExtensions.CreateDependencyTelemetry(DurableTask.Core.TraceContextBase)">
+            <summary>
+            Create DependencyTelemetry from the Activity.
+            </summary>
+            <param name="context">TraceContext.</param>
+            <returns>DependencyTelemetry.</returns>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.TraceParent">
+            <summary>
+            Represents a traceParent that is defined W3C TraceContext.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.TraceParent.Version">
+            <summary>
+            Gets or sets the Version of the traceParent.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.TraceParent.TraceId">
+            <summary>
+            Gets or sets the TraceId of the traceParent.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.TraceParent.SpanId">
+            <summary>
+            Gets or sets the SpanId of the traceParent.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.TraceParent.TraceFlags">
+            <summary>
+            Gets or sets the TraceFlags of the traceParent.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.TraceParent.FromString(System.String)">
+            <summary>
+            Convert a traceParent string to TraceParent object.
+            </summary>
+            <param name="traceparent">string representations of traceParent.</param>
+            <returns>TraceParent object.</returns>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DefaultPlatformInformation">
             <summary>
             Provides information about the enviroment (OS, app service plan, user-facing PL)
@@ -1885,6 +2146,17 @@
             <param name="durabilityProvider">The DurabilityProvider used to check for matching connection string names.</param>
             <returns>A boolean indicating whether the connection names match.</returns>
         </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.TryGetScaleMonitor(System.String,System.String,System.String,System.String,Microsoft.Azure.WebJobs.Host.Scale.IScaleMonitor@)">
+            <summary>
+            Tries to obtain a scale monitor for autoscaling.
+            </summary>
+            <param name="functionId">Function id.</param>
+            <param name="functionName">Function name.</param>
+            <param name="hubName">Task hub name.</param>
+            <param name="connectionName">The name of the storage-specific connection settings.</param>
+            <param name="scaleMonitor">The scale monitor.</param>
+            <returns>True if autoscaling is supported, false otherwise.</returns>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClientAttribute">
             <summary>
             Attribute used to bind a function parameter to a <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableClient"/>, <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableEntityClient"/>, or <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient"/> instance.
@@ -1918,7 +2190,7 @@
             </summary>
             <value>The name of an app setting containing connection details.</value>
             <remarks>
-            For Azure Storage the default behavior is to use the value of <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageOptions.ConnectionStringName"/>.
+            For Azure Storage the default behavior is to use the value of <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageOptions.ConnectionName"/>.
             If no value exists there, then the default behavior is to use the standard `AzureWebJobsStorage` connection string for all storage usage.
             </remarks>
         </member>
@@ -2174,12 +2446,7 @@
             Configuration for the Durable Functions extension.
             </summary>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.#ctor">
-            <summary>
-            Obsolete. Please use an alternate constructor overload.
-            </summary>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.#ctor(Microsoft.Extensions.Options.IOptions{Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions},Microsoft.Extensions.Logging.ILoggerFactory,Microsoft.Azure.WebJobs.INameResolver,System.Collections.Generic.IEnumerable{Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurabilityProviderFactory},Microsoft.Azure.WebJobs.Extensions.DurableTask.IApplicationLifetimeWrapper,Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableHttpMessageHandlerFactory,Microsoft.Azure.WebJobs.Extensions.DurableTask.ILifeCycleNotificationHelper,Microsoft.Azure.WebJobs.Extensions.DurableTask.IMessageSerializerSettingsFactory,Microsoft.Azure.WebJobs.Extensions.DurableTask.IPlatformInformation,Microsoft.Azure.WebJobs.Extensions.DurableTask.IErrorSerializerSettingsFactory)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.#ctor(Microsoft.Extensions.Options.IOptions{Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions},Microsoft.Extensions.Logging.ILoggerFactory,Microsoft.Azure.WebJobs.INameResolver,System.Collections.Generic.IEnumerable{Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurabilityProviderFactory},Microsoft.Azure.WebJobs.Extensions.DurableTask.IApplicationLifetimeWrapper,Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableHttpMessageHandlerFactory,Microsoft.Azure.WebJobs.Extensions.DurableTask.ILifeCycleNotificationHelper,Microsoft.Azure.WebJobs.Extensions.DurableTask.IMessageSerializerSettingsFactory,Microsoft.Azure.WebJobs.Extensions.DurableTask.IPlatformInformation,Microsoft.Azure.WebJobs.Extensions.DurableTask.IErrorSerializerSettingsFactory,Microsoft.Azure.WebJobs.Host.Config.IWebHookProvider,Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.ITelemetryActivator)">
             <summary>
             Initializes a new instance of the <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension"/>.
             </summary>
@@ -2195,17 +2462,6 @@
             <param name="webhookProvider">Provides webhook urls for HTTP management APIs.</param>
             <param name="telemetryActivator">The activator of DistributedTracing. .netstandard2.0 only.</param>
             <param name="platformInformationService">The platform information provider to inspect the OS, app service plan, and other enviroment information.</param>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.HubName">
-            <summary>
-            Gets or sets default task hub name to be used by all <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableClient"/>, <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient"/>, <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableEntityClient"/>,
-            <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationContext"/>, and <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableActivityContext"/> instances.
-            </summary>
-            <remarks>
-            A task hub is a logical grouping of storage resources. Alternate task hub names can be used to isolate
-            multiple Durable Functions applications from each other, even if they are using the same storage backend.
-            </remarks>
-            <value>The name of the default task hub.</value>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.Microsoft#Azure#WebJobs#Host#Config#IExtensionConfigProvider#Initialize(Microsoft.Azure.WebJobs.Host.Config.ExtensionConfigContext)">
             <summary>
@@ -2290,6 +2546,36 @@
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.Microsoft#Azure#WebJobs#IAsyncConverter{System#Net#Http#HttpRequestMessage,System#Net#Http#HttpResponseMessage}#ConvertAsync(System.Net.Http.HttpRequestMessage,System.Threading.CancellationToken)">
             <inheritdoc/>
         </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.TagActivityWithOrchestrationStatus(Microsoft.Azure.WebJobs.Extensions.DurableTask.OrchestrationRuntimeStatus,System.String,System.Boolean)">
+            <summary>
+            Tags the current Activity with metadata: DurableFunctionsType, DurableFunctionsInstanceId, DurableFunctionsRuntimeStatus.
+            This metadata will show up in Application Insights, if enabled.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.NoOpScaleMonitor">
+            <summary>
+            A placeholder scale monitor, can be used by durability providers that do not support runtime scaling.
+            This is required to allow operation of those providers even if runtime scaling is turned off
+            see discussion https://github.com/Azure/azure-functions-durable-extension/pull/1009/files#r341767018.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.NoOpScaleMonitor.#ctor(System.String)">
+            <summary>
+            Construct a placeholder scale monitor.
+            </summary>
+            <param name="name">A descriptive name.</param>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.NoOpScaleMonitor.Descriptor">
+            <summary>
+            A descriptive name.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.NoOpScaleMonitor.Microsoft#Azure#WebJobs#Host#Scale#IScaleMonitor#GetMetricsAsync">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.NoOpScaleMonitor.Microsoft#Azure#WebJobs#Host#Scale#IScaleMonitor#GetScaleStatus(Microsoft.Azure.WebJobs.Host.Scale.ScaleStatusContext)">
+            <inheritdoc/>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskJobHostConfigurationExtensions">
             <summary>
             Extension for registering a Durable Functions configuration with <c>JobHostConfiguration</c>.
@@ -2310,12 +2596,28 @@
             <param name="optionsBuilder">Populate default configurations of <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.DurableClientOptions"/> to create Durable Clients.</param>
             <returns>Returns the provided <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/>.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskJobHostConfigurationExtensions.UseDurableTask(Microsoft.Azure.WebJobs.JobHostConfiguration,Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskJobHostConfigurationExtensions.AddDurableTask(Microsoft.Azure.WebJobs.IWebJobsBuilder)">
             <summary>
-            Enable running durable orchestrations implemented as functions.
+            Adds the Durable Task extension to the provided <see cref="T:Microsoft.Azure.WebJobs.IWebJobsBuilder"/>.
             </summary>
-            <param name="hostConfig">Configuration settings of the current <c>JobHost</c> instance.</param>
-            <param name="listenerConfig">Durable Functions configuration.</param>
+            <param name="builder">The <see cref="T:Microsoft.Azure.WebJobs.IWebJobsBuilder"/> to configure.</param>
+            <returns>Returns the provided <see cref="T:Microsoft.Azure.WebJobs.IWebJobsBuilder"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskJobHostConfigurationExtensions.AddDurableTask(Microsoft.Azure.WebJobs.IWebJobsBuilder,Microsoft.Extensions.Options.IOptions{Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions})">
+            <summary>
+            Adds the Durable Task extension to the provided <see cref="T:Microsoft.Azure.WebJobs.IWebJobsBuilder"/>.
+            </summary>
+            <param name="builder">The <see cref="T:Microsoft.Azure.WebJobs.IWebJobsBuilder"/> to configure.</param>
+            <param name="options">The configuration options for this extension.</param>
+            <returns>Returns the provided <see cref="T:Microsoft.Azure.WebJobs.IWebJobsBuilder"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskJobHostConfigurationExtensions.AddDurableTask(Microsoft.Azure.WebJobs.IWebJobsBuilder,System.Action{Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions})">
+            <summary>
+            Adds the Durable Task extension to the provided <see cref="T:Microsoft.Azure.WebJobs.IWebJobsBuilder"/>.
+            </summary>
+            <param name="builder">The <see cref="T:Microsoft.Azure.WebJobs.IWebJobsBuilder"/> to configure.</param>
+            <param name="configure">An <see cref="T:System.Action`1"/> to configure the provided <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions"/>.</param>
+            <returns>Returns the modified <paramref name="builder"/> object.</returns>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.EntityQuery">
             <summary>
@@ -3052,6 +3354,23 @@
             A <see cref="T:System.Threading.CancellationToken"/> that is signalled when the function app has completed shutting down.
             </value>
         </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IConnectionInfoResolver">
+            <summary>
+            Interface defining methods to resolve connection information.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IConnectionInfoResolver.Resolve(System.String)">
+            <summary>
+            Attempts to resolve the connection info given a name.
+            </summary>
+            <remarks>
+            Depending on the configuration, the value may either be a connection string in the
+            <see cref="P:Microsoft.Extensions.Configuration.IConfigurationSection.Value"/> property, or a user-defined type made
+            up of one or more key-value pairs.
+            </remarks>
+            <param name="name">The name of the connection information.</param>
+            <returns>The resolved connection information.</returns>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IConnectionStringResolver">
             <summary>
             Interface defining methods to resolve connection strings.
@@ -3189,7 +3508,12 @@
         </member>
         <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.WorkerRuntimeType.DotNet">
             <summary>
-            dotnet
+            .NET in-process.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.WorkerRuntimeType.DotNetIsolated">
+            <summary>
+            .NET out-of-process.
             </summary>
         </member>
         <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.WorkerRuntimeType.Python">
@@ -3205,6 +3529,11 @@
         <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.WorkerRuntimeType.PowerShell">
             <summary>
             PowerShell.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.WorkerRuntimeType.Java">
+            <summary>
+            Java.
             </summary>
         </member>
         <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.WorkerRuntimeType.Unknown">
@@ -3256,6 +3585,18 @@
             Returns the application container name when running on linux.
             </summary>
             <returns>The application container name.</returns>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IStorageAccountProvider">
+            <summary>
+            Defines methods for retrieving Azure Storage account metadata.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IStorageAccountProvider.GetStorageAccountDetails(System.String)">
+            <summary>
+            Gets the <see cref="T:DurableTask.AzureStorage.StorageAccountDetails"/> associated with the <paramref name="connectionName"/>.
+            </summary>
+            <param name="connectionName">The name associated with the connection information.</param>
+            <returns>The corresponding <see cref="T:DurableTask.AzureStorage.StorageAccountDetails"/>.</returns>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.ITokenSource">
             <summary>
@@ -3328,6 +3669,35 @@
             </summary>
             <param name="eventData">An EventSource message, usually generated by an EventListener.</param>
         </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskTriggerMetrics.PartitionCount">
+            <summary>
+            The number of partitions in the task hub.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskTriggerMetrics.ControlQueueLengths">
+            <summary>
+            The number of messages across control queues. This will
+            be in the form of a serialized array of ints, e.g. "[1,2,3,4]".
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskTriggerMetrics.ControlQueueLatencies">
+            <summary>
+            The latency of messages across control queues. This will
+            be in the form of a serialized array of TimeSpans in string
+            format, e.g. "["00:00:00.0010000","00:00:00.0020000","00:00:00.0030000","00:00:00.0040000"]".
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskTriggerMetrics.WorkItemQueueLength">
+            <summary>
+            The number of messages in the work-item queue.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskTriggerMetrics.WorkItemQueueLatency">
+            <summary>
+            The approximate age of the first work-item queue message. This
+            will be a TimeSpan in string format, e.g. "00:00:00.0010000".
+            </summary>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationShim">
             <summary>
             Not intended for public consumption.
@@ -3344,18 +3714,20 @@
             Identifiers for each OOProc Schema Version.
             </summary>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationShim.InvokeAPIFromAction(Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationShim.AsyncAction)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationShim.InvokeAPIFromAction(Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationShim.AsyncAction,Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationShim.SchemaVersion)">
             <summary>
             Invokes a DF API based on the input action object.
             </summary>
             <param name="action">An OOProc action object representing a DF task.</param>
+            <param name="schema">The schema version.</param>
             <returns>If the API returns a task, the DF task corresponding to the input action. Else, null.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationShim.ProcessAsyncActionsV2(Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationShim.AsyncAction[])">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationShim.ProcessAsyncActionsV2(Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationShim.AsyncAction[],Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationShim.SchemaVersion)">
             <summary>
             Replays the orchestration execution from an OOProc SDK in .NET.
             </summary>
             <param name="actions">The OOProc actions payload.</param>
+            <param name="schema">The schema version.</param>
             <returns>An awaitable Task that completes once replay completes.</returns>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationShim.ReplayOOProcOrchestration(Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationShim.AsyncAction[][],Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationShim.SchemaVersion)">
@@ -3526,10 +3898,57 @@
             resulting JSON exceeds the maximum size specified by <paramref name="maxSizeInKB"/>.
             </summary>
         </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.DurableClientOptions">
+            <summary>
+            Options used to bind a function parameter to a <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableClient"/>, <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableEntityClient"/>, or <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient"/> instance.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.DurableClientOptions.ConnectionName">
+            <summary>
+            Optional. Gets or sets the setting name for the app setting containing connection details used by this binding to connect
+            to instances of the storage provider other than the default one this application communicates with.
+            </summary>
+            <value>The name of an app setting containing connection details.</value>
+            <remarks>
+            For Azure Storage the default behavior is to use the value of <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageOptions.ConnectionName"/>.
+            If no value exists there, then the default behavior is to use the standard `AzureWebJobsStorage` connection string for all storage usage.
+            </remarks>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.DurableClientOptions.TaskHub">
+            <summary>
+             Gets or sets the name of the task hub in which the orchestration data lives.
+            </summary>
+            <value>The task hub used by this binding.</value>
+            <remarks>
+            The default behavior is to use the task hub name specified in <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.HubName"/>.
+            If no value exists there, then a default value will be used.
+            </remarks>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.DurableClientOptions.IsExternalClient">
+            <summary>
+                Indicate if the client is External from the azure function where orchestrator functions are hosted.
+            </summary>
+            <remarks>
+                Default is true.
+            </remarks>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageOptions">
             <summary>
             Configuration options for the Azure Storage storage provider.
             </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageOptions.ConnectionName">
+            <summary>
+            Gets or sets the name of the Azure Storage connection information used to manage the underlying Azure Storage resources.
+            </summary>
+            <remarks>
+            The value may refer to either a connection string or the configuration section containing connection metadata.
+            The default behavior is to use the standard <c>AzureWebJobsStorage</c> connection for all storage usage.
+            </remarks>
+            <value>
+            The name of a connection-related key that exists in the app's application settings. The value may refer to
+            a connection string or the section detailing additional connection metadata.
+            </value>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageOptions.ConnectionStringName">
             <summary>
@@ -3593,6 +4012,27 @@
             A <c>TimeSpan</c> configured by the host. The default is 5 minutes.
             </value>
         </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageOptions.TrackingStoreConnectionName">
+            <summary>
+            Gets or sets the name of the Azure Storage connection information to use for the
+            durable tracking store (History and Instances tables).
+            </summary>
+            <remarks>
+            <para>
+            If not specified, the <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageOptions.ConnectionName"/> connection string is used for the durable tracking store.
+            </para>
+            <para>
+            This property is primarily useful when deploying multiple apps that need to share the same
+            tracking infrastructure. For example, when deploying two versions of an app side by side, using
+            the same tracking store allows both versions to save history into the same table, which allows
+            clients to query for instance status across all versions.
+            </para>
+            </remarks>
+            <value>
+            The name of a connection-related key that exists in the app's application settings. The value may refer to
+            a connection string or the section detailing additional connection metadata.
+            </value>
+        </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageOptions.TrackingStoreConnectionStringName">
             <summary>
             Gets or sets the name of the Azure Storage connection string to use for the
@@ -3614,7 +4054,7 @@
             Gets or sets the name prefix to use for history and instance tables in Azure Storage.
             </summary>
             <remarks>
-            This property is only used when <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageOptions.TrackingStoreConnectionStringName"/> is specified.
+            This property is only used when <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageOptions.TrackingStoreConnectionName"/> is specified.
             If no prefix is specified, the default prefix value is "DurableTask".
             </remarks>
             <value>The prefix to use when naming the generated Azure tables.</value>
@@ -3649,40 +4089,6 @@
             <summary>
             Throws an exception if any of the settings of the storage provider are invalid.
             </summary>
-        </member>
-        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.DurableClientOptions">
-            <summary>
-            Options used to bind a function parameter to a <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableClient"/>, <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableEntityClient"/>, or <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient"/> instance.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.DurableClientOptions.ConnectionName">
-            <summary>
-            Optional. Gets or sets the setting name for the app setting containing connection details used by this binding to connect
-            to instances of the storage provider other than the default one this application communicates with.
-            </summary>
-            <value>The name of an app setting containing connection details.</value>
-            <remarks>
-            For Azure Storage the default behavior is to use the value of <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageOptions.ConnectionStringName"/>.
-            If no value exists there, then the default behavior is to use the standard `AzureWebJobsStorage` connection string for all storage usage.
-            </remarks>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.DurableClientOptions.TaskHub">
-            <summary>
-             Gets or sets the name of the task hub in which the orchestration data lives.
-            </summary>
-            <value>The task hub used by this binding.</value>
-            <remarks>
-            The default behavior is to use the task hub name specified in <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.HubName"/>.
-            If no value exists there, then a default value will be used.
-            </remarks>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.DurableClientOptions.IsExternalClient">
-            <summary>
-                Indicate if the client is External from the azure function where orchestrator functions are hosted.
-            </summary>
-            <remarks>
-                Default is true.
-            </remarks>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions">
             <summary>
@@ -3982,6 +4388,19 @@
             Boolean value specifying if the replay events should be logged.
             </value>
         </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.TraceOptions.DistributedTracingEnabled">
+            <summary>
+            Gets or sets a flag indicating whether to enable distributed tracing.
+            The default value is false.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.TraceOptions.DistributedTracingProtocol">
+            <summary>
+            Gets or sets a protocol for distributed Tracing.
+            Possible values are "HttpCorrelationProtocol" and "W3CTraceContext".
+            The default value is "HttpCorrelationProtocol".
+            </summary>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.OrchestrationClientAttribute">
             <summary>
             Deprecated attribute to bind a function parameter to a <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableClient"/>.
@@ -4103,6 +4522,46 @@
             Gets or sets a token that can be used to resume the query with data not already returned by this query.
             </summary>
             <value>A server-generated continuation token or <c>null</c> if there are no further continuations.</value>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcMiddleware.CallOrchestratorAsync(DurableTask.Core.Middleware.DispatchMiddlewareContext,System.Func{System.Threading.Tasks.Task})">
+            <summary>
+            Durable Task Framework orchestration middleware that invokes an out-of-process orchestrator function.
+            </summary>
+            <param name="dispatchContext">This middleware context provided by the framework that contains information about the orchestration.</param>
+            <param name="next">The next middleware handler in the pipeline.</param>
+            <exception cref="T:System.InvalidOperationException">Thrown if there's an internal failure in the middleware.</exception>
+            <exception cref="T:DurableTask.Core.Exceptions.SessionAbortedException">Thrown if there is a recoverable error in the Functions runtime that's expected to be handled gracefully.</exception>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcMiddleware.CallActivityAsync(DurableTask.Core.Middleware.DispatchMiddlewareContext,System.Func{System.Threading.Tasks.Task})">
+            <summary>
+            Durable Task Framework activity middleware that invokes an out-of-process orchestrator function.
+            </summary>
+            <param name="dispatchContext">This middleware context provided by the framework that contains information about the activity.</param>
+            <param name="next">The next middleware handler in the pipeline.</param>
+            <exception cref="T:DurableTask.Core.Exceptions.SessionAbortedException">Thrown if there is a recoverable error in the Functions runtime that's expected to be handled gracefully.</exception>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationProtocol">
+            <summary>
+            Represents the out-of-proc protocols supported by this extension.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationProtocol.OrchestratorShim">
+            <summary>
+            Out-of-proc works by replaying SDK actions in an orchestration "shim", which interprets
+            the output of an out-of-proc language SDK and makes DTFx API calls on behalf of the
+            out-of-process orchestrator.
+            </summary>
+            <remarks>
+            This protocol has been deprecated. All new language SDK should instead use
+            <see cref="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationProtocol.MiddlewarePassthrough"/>.
+            </remarks>
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationProtocol.MiddlewarePassthrough">
+            <summary>
+            Out-of-proc works by forwarding all outputs directly to the Durable Task Framework
+            without using any orchestrator "shims" or attemping any interpretation. This is
+            sometimes referred to as "out of proc v2".
+            </summary>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.OverridableStates">
             <summary>
@@ -4229,6 +4688,21 @@
             <value>
             The delegate to handle exception to determine if retries should proceed.
             </value>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.StandardConnectionInfoProvider">
+            <summary>
+            Connection info provider which resolves connection information from a standard application (Non WebJob).
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.StandardConnectionInfoProvider.#ctor(Microsoft.Extensions.Configuration.IConfiguration)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.StandardConnectionInfoProvider"/> class.
+            </summary>
+            <param name="configuration">A <see cref="T:Microsoft.Extensions.Configuration.IConfiguration"/> object provided by the application host.</param>
+            <exception cref="T:System.ArgumentNullException"><paramref name="configuration"/> is <see langword="null"/>.</exception>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.StandardConnectionInfoProvider.Resolve(System.String)">
+            <inheritdoc />
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.StandardConnectionStringProvider">
             <summary>
@@ -4390,10 +4864,30 @@
             is generated via the source-generator nuget package.
             </summary>
         </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.WebJobsConnectionInfoProvider">
+            <summary>
+            Connection info provider which resolves connection information from the WebJobs context.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.WebJobsConnectionInfoProvider.#ctor(Microsoft.Extensions.Configuration.IConfiguration)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.WebJobsConnectionInfoProvider"/> class.
+            </summary>
+            <param name="hostConfiguration">A <see cref="T:Microsoft.Extensions.Configuration.IConfiguration"/> object provided by the WebJobs host.</param>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.WebJobsConnectionInfoProvider.Resolve(System.String)">
+            <inheritdoc />
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.WebJobsConnectionStringProvider">
             <summary>
             Connection string provider which resolves connection strings from the WebJobs context.
             </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.WebJobsConnectionStringProvider.#ctor(Microsoft.Extensions.Configuration.IConfiguration)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.WebJobsConnectionStringProvider"/> class.
+            </summary>
+            <param name="hostConfiguration">A <see cref="T:Microsoft.Extensions.Configuration.IConfiguration"/> object provided by the WebJobs host.</param>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.WebJobsConnectionStringProvider.Resolve(System.String)">
             <inheritdoc />

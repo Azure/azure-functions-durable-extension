@@ -16,12 +16,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #pragma warning restore 618
     {
         private readonly string functionName;
-
         private readonly string serializedInput;
-
         private readonly string instanceId;
-
         private readonly MessagePayloadDataConverter messageDataConverter;
+        private readonly bool inputsAreArrays;
 
         private JToken parsedJsonInput;
         private string serializedOutput;
@@ -32,6 +30,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.instanceId = instanceId;
             this.serializedInput = serializedInput;
             this.functionName = functionName;
+
+            // Activity inputs are received differently depending on whether the DTFx orchestration context is the one scheduling the activity.
+            this.inputsAreArrays =
+                config.OutOfProcProtocol == OutOfProcOrchestrationProtocol.OrchestratorShim ||
+                config.PlatformInformationService.GetWorkerRuntimeType() == WorkerRuntimeType.DotNetIsolated;
         }
 
         /// <inheritdoc />
@@ -61,14 +64,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             if (this.serializedInput != null && this.parsedJsonInput == null)
             {
-                var objectArray = this.messageDataConverter.Deserialize<object[]>(this.serializedInput);
-
-                if (objectArray?.Length != 1)
+                string actualInput;
+                if (this.inputsAreArrays)
                 {
-                    throw new ArgumentException("The serialized input is expected to be an object array with one element.");
+                    // The legacy behavior where the DTFx orchestration context schedules the activity results in an input that's
+                    // wrapped in an array. This is unfortunately quite inefficient because it requires us to do an extra serialization
+                    // round-trip in order to correctly interpret the input data.
+                    object[] objectArray = this.messageDataConverter.Deserialize<object[]>(this.serializedInput);
+                    if (objectArray?.Length != 1)
+                    {
+                        throw new ArgumentException("The serialized input is expected to be an object array with one element.");
+                    }
+
+                    actualInput = this.messageDataConverter.Serialize(objectArray[0]);
+                }
+                else
+                {
+                    // The input can be parsed as-is when not using the DTFx orchestration context.
+                    actualInput = this.serializedInput;
                 }
 
-                this.parsedJsonInput = MessagePayloadDataConverter.ConvertToJToken(this.messageDataConverter.Serialize(objectArray[0]));
+                this.parsedJsonInput = MessagePayloadDataConverter.ConvertToJToken(actualInput);
             }
 
             return this.parsedJsonInput;

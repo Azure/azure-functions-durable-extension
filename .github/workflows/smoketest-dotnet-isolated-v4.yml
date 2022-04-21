@@ -1,0 +1,24 @@
+name: Smoke Test - .NET Isolated
+
+on:
+  push:
+    branches: [ main, dev ]
+    paths:
+      - 'src/**'
+      - 'test/SmokeTests/OOProcSmokeTests/DotNetIsolated/**'
+  pull_request:
+    branches: [ main, dev ]
+    paths:
+      - 'src/**'
+      - 'test/SmokeTests/OOProcSmokeTests/DotNetIsolated/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+      # Validation is blocked on https://github.com/Azure/azure-functions-host/issues/7995
+    - name: Run .NET Isolated Smoke Test
+      run: test/SmokeTests/e2e-test.ps1 -DockerfilePath test/SmokeTests/OOProcSmokeTests/DotNetIsolated/Dockerfile -HttpStartPath api/StartHelloCitiesTyped -NoValidation
+      shell: pwsh

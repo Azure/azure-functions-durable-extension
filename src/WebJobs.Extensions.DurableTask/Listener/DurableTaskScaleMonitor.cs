@@ -5,12 +5,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
-using System.Net.WebSockets;
-using System.Text;
 using System.Threading.Tasks;
 using DurableTask.AzureStorage.Monitoring;
-using Dynamitey.DynamicObjects;
 using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Extensions.Logging;
 using Microsoft.WindowsAzure.Storage;
@@ -23,7 +19,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly string functionId;
         private readonly string functionName;
         private readonly string hubName;
-        private readonly string storageConnectionString;
+        private readonly CloudStorageAccount storageAccount;
         private readonly ScaleMonitorDescriptor scaleMonitorDescriptor;
         private readonly ILogger logger;
 
@@ -33,14 +29,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string functionId,
             string functionName,
             string hubName,
-            string storageConnectionString,
+            CloudStorageAccount storageAccount,
             ILogger logger,
             DisconnectedPerformanceMonitor performanceMonitor = null)
         {
             this.functionId = functionId;
             this.functionName = functionName;
             this.hubName = hubName;
-            this.storageConnectionString = storageConnectionString;
+            this.storageAccount = storageAccount;
             this.logger = logger;
             this.performanceMonitor = performanceMonitor;
             this.scaleMonitorDescriptor = new ScaleMonitorDescriptor($"{this.functionId}-DurableTaskTrigger-{this.hubName}".ToLower());
@@ -58,12 +54,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             if (this.performanceMonitor == null)
             {
-                if (this.storageConnectionString == null)
+                if (this.storageAccount == null)
                 {
-                    throw new ArgumentNullException(nameof(this.storageConnectionString));
+                    throw new ArgumentNullException(nameof(this.storageAccount));
                 }
 
-                this.performanceMonitor = new DisconnectedPerformanceMonitor(this.storageConnectionString, this.hubName);
+                this.performanceMonitor = new DisconnectedPerformanceMonitor(this.storageAccount, this.hubName);
             }
 
             return this.performanceMonitor;
@@ -96,7 +92,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 metrics.ControlQueueLengths = JsonConvert.SerializeObject(heartbeat.ControlQueueLengths);
                 metrics.ControlQueueLatencies = JsonConvert.SerializeObject(heartbeat.ControlQueueLatencies);
                 metrics.WorkItemQueueLength = heartbeat.WorkItemQueueLength;
-                if (heartbeat.WorkItemQueueLatency != null)
+                if (heartbeat.WorkItemQueueLatency > TimeSpan.Zero)
                 {
                     metrics.WorkItemQueueLatency = heartbeat.WorkItemQueueLatency.ToString();
                 }
