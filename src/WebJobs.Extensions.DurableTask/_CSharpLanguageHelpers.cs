@@ -124,7 +124,7 @@ namespace System
         public bool IsFromEnd => _value < 0;
 
         /// <summary>Calculate the offset from the start using the giving collection length.</summary>
-        /// <param name="length">The length of the collection that the Index will be used with. length has to be a positive value</param>
+        /// <param name="length">The length of the collection that the Index will be used with. length has to be a positive value.</param>
         /// <remarks>
         /// For performance reason, we don't validate the input length parameter and the returned offset value against negative values.
         /// we don't validate either the returned offset is greater than the input length.
@@ -143,15 +143,16 @@ namespace System
 
                 offset += length + 1;
             }
+
             return offset;
         }
 
         /// <summary>Indicates whether the current Index object is equal to another object of the same type.</summary>
-        /// <param name="value">An object to compare with this object</param>
+        /// <param name="value">An object to compare with this object.</param>
         public override bool Equals(object? value) => value is Index && _value == ((Index)value)._value;
 
         /// <summary>Indicates whether the current Index object is equal to another Index object.</summary>
-        /// <param name="other">An object to compare with this object</param>
+        /// <param name="other">An object to compare with this object.</param>
         public bool Equals(Index other) => _value == other._value;
 
         /// <summary>Returns the hash code for this instance.</summary>
@@ -197,20 +198,20 @@ namespace System
         }
 
         /// <summary>Indicates whether the current Range object is equal to another object of the same type.</summary>
-        /// <param name="value">An object to compare with this object</param>
+        /// <param name="value">An object to compare with this object.</param>
         public override bool Equals(object? value) =>
             value is Range r &&
             r.Start.Equals(Start) &&
             r.End.Equals(End);
 
         /// <summary>Indicates whether the current Range object is equal to another Range object.</summary>
-        /// <param name="other">An object to compare with this object</param>
+        /// <param name="other">An object to compare with this object.</param>
         public bool Equals(Range other) => other.Start.Equals(Start) && other.End.Equals(End);
 
         /// <summary>Returns the hash code for this instance.</summary>
         public override int GetHashCode()
         {
-            return Start.GetHashCode() * 31 + End.GetHashCode();
+            return (Start.GetHashCode() * 31) + End.GetHashCode();
         }
 
         /// <summary>Converts the value of the current Range object to its equivalent string representation.</summary>

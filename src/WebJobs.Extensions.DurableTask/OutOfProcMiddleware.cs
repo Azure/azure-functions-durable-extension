@@ -44,6 +44,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public async Task CallOrchestratorAsync(DispatchMiddlewareContext dispatchContext, Func<Task> next)
         {
 #if FUNCTIONS_V1
+            await Task.Yield(); // Used to supress CS1998: This async method lacks "await" operators (by design)
             throw new NotSupportedException();
 #else
             OrchestrationRuntimeState? runtimeState = dispatchContext.GetProperty<OrchestrationRuntimeState>();

@@ -9,12 +9,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using Grpc.Core;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.DurableTask.Protobuf;
 using Microsoft.DurableTask.Sidecar.Grpc;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -38,8 +34,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private readonly Random portGenerator;
         private readonly HashSet<int> attemptedPorts;
-
-        private IWebHost? host;
 
         private SimpleHostLifetime? lifetime;
         private Server? grpcServer;

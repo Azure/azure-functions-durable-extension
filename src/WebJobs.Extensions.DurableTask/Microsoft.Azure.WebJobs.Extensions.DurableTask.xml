@@ -4941,7 +4941,7 @@
         </member>
         <member name="M:System.Index.GetOffset(System.Int32)">
             <summary>Calculate the offset from the start using the giving collection length.</summary>
-            <param name="length">The length of the collection that the Index will be used with. length has to be a positive value</param>
+            <param name="length">The length of the collection that the Index will be used with. length has to be a positive value.</param>
             <remarks>
             For performance reason, we don't validate the input length parameter and the returned offset value against negative values.
             we don't validate either the returned offset is greater than the input length.
@@ -4951,11 +4951,11 @@
         </member>
         <member name="M:System.Index.Equals(System.Object)">
             <summary>Indicates whether the current Index object is equal to another object of the same type.</summary>
-            <param name="value">An object to compare with this object</param>
+            <param name="value">An object to compare with this object.</param>
         </member>
         <member name="M:System.Index.Equals(System.Index)">
             <summary>Indicates whether the current Index object is equal to another Index object.</summary>
-            <param name="other">An object to compare with this object</param>
+            <param name="other">An object to compare with this object.</param>
         </member>
         <member name="M:System.Index.GetHashCode">
             <summary>Returns the hash code for this instance.</summary>
@@ -4990,11 +4990,11 @@
         </member>
         <member name="M:System.Range.Equals(System.Object)">
             <summary>Indicates whether the current Range object is equal to another object of the same type.</summary>
-            <param name="value">An object to compare with this object</param>
+            <param name="value">An object to compare with this object.</param>
         </member>
         <member name="M:System.Range.Equals(System.Range)">
             <summary>Indicates whether the current Range object is equal to another Range object.</summary>
-            <param name="other">An object to compare with this object</param>
+            <param name="other">An object to compare with this object.</param>
         </member>
         <member name="M:System.Range.GetHashCode">
             <summary>Returns the hash code for this instance.</summary>
