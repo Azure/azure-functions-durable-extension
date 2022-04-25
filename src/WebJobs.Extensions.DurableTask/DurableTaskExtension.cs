@@ -70,8 +70,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #pragma warning disable CS0169
         private readonly ITelemetryActivator telemetryActivator;
 #pragma warning restore CS0169
-#endif
-#if NET6_0_OR_GREATER
         private readonly LocalGrpcListener localGrpcListener;
 #endif
         private readonly bool isOptionsConfigured;
@@ -198,7 +196,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (runtimeType == WorkerRuntimeType.DotNetIsolated || runtimeType == WorkerRuntimeType.Java)
             {
                 this.OutOfProcProtocol = OutOfProcOrchestrationProtocol.MiddlewarePassthrough;
-#if NET6_0_OR_GREATER
+#if !FUNCTIONS_V1
                 this.localGrpcListener = new LocalGrpcListener(
                     this,
                     this.loggerFactory,
@@ -454,8 +452,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // The RPC server needs to be started sometime before any functions can be triggered
             // and this is the latest point in the pipeline available to us.
             this.StartLocalHttpServer();
-#endif
-#if NET6_0_OR_GREATER
             if (this.OutOfProcProtocol == OutOfProcOrchestrationProtocol.MiddlewarePassthrough)
             {
                 this.StartLocalGrpcServer();
@@ -465,7 +461,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal string GetLocalRpcAddress()
         {
-#if NET6_0_OR_GREATER
+#if !FUNCTIONS_V1
             if (this.OutOfProcProtocol == OutOfProcOrchestrationProtocol.MiddlewarePassthrough)
             {
                 return this.localGrpcListener.ListenAddress;
@@ -555,9 +551,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             this.HttpApiHandler.StopLocalHttpServerAsync().GetAwaiter().GetResult();
         }
-#endif
 
-#if NET6_0_OR_GREATER
         private void StartLocalGrpcServer()
         {
             this.localGrpcListener.StartAsync().GetAwaiter().GetResult();

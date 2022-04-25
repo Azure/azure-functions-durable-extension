@@ -141,7 +141,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     var triggerData = new TriggerData(contextValueProvider, bindingData);
                     return Task.FromResult<ITriggerData>(triggerData);
                 }
-#if NET6_0_OR_GREATER
+#if !FUNCTIONS_V1
                 else if (value is RemoteOrchestratorContext remoteContext)
                 {
                     // Generate a byte array which is the serialized protobuf payload

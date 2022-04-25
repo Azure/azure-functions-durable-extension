@@ -1,20 +1,23 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-#if NET6_0_OR_GREATER
 #nullable enable
+#if !FUNCTIONS_V1
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
+using Grpc.Core;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
+using Microsoft.DurableTask.Protobuf;
 using Microsoft.DurableTask.Sidecar.Grpc;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
@@ -38,6 +41,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private IWebHost? host;
 
+        private SimpleHostLifetime? lifetime;
+        private Server? grpcServer;
+
         public LocalGrpcListener(
             DurableTaskExtension extension,
             ILoggerFactory loggerFactory,
@@ -57,66 +63,55 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public void Dispose()
         {
-            this.host?.Dispose();
+            this.lifetime?.SignalShutdown();
+            this.lifetime?.Dispose();
         }
 
-        public async Task StartAsync(CancellationToken cancelToken = default)
+        public Task StartAsync(CancellationToken cancelToken = default)
         {
             const int maxAttempts = 10;
             int numAttempts = 1;
             while (numAttempts <= maxAttempts)
             {
                 int listeningPort = numAttempts == 1 ? DefaultPort : this.GetRandomPort();
-                string listenAddress = $"http://localhost:{listeningPort}";
-                this.host?.Dispose();
-                this.host = new WebHostBuilder()
-                    .UseKestrel(options =>
-                    {
-                        // Need to force Http2 in Kestrel in unencrypted scenarios
-                        // https://docs.microsoft.com/en-us/aspnet/core/grpc/troubleshoot?view=aspnetcore-3.0
-                        options.ConfigureEndpointDefaults(listenOptions => listenOptions.Protocols = HttpProtocols.Http2);
 
-                        // Ensure that there is no maximum request size since this is an internal endpoint
-                        options.Limits.MaxRequestBodySize = null;
-                        options.AddServerHeader = false;
-                    })
-                    .UseUrls(listenAddress)
-                    .ConfigureServices(services =>
-                    {
-                        services.AddGrpc();
-                        services.AddSingleton<ILoggerFactory>(this.loggerFactory);
-                        services.AddSingleton<IOrchestrationService>(this.orchestrationService);
-                        services.AddSingleton<IOrchestrationServiceClient>(this.orchestrationServiceClient);
-                        services.AddSingleton<TaskHubGrpcServer>();
+                // Configure the server to run in API server-only mode (disables the dispatcher, which we don't use).
+                var options = new TaskHubGrpcServerOptions { Mode = TaskHubGrpcServerMode.ApiServerOnly };
 
-                        // Configure the server to run in API server-only mode (disables the dispatcher, which we don't use).
-                        services.AddOptions<TaskHubGrpcServerOptions>().Configure(options => options.Mode = TaskHubGrpcServerMode.ApiServerOnly);
-                    })
-                    .Configure(app =>
-                    {
-                        app.UseRouting();
-                        app.UseEndpoints(endpoints =>
-                        {
-                            endpoints.MapGrpcService<TaskHubGrpcServer>();
-                        });
-                    })
-                    .Build();
+                this.lifetime?.Dispose();
+                this.lifetime = new SimpleHostLifetime();
+                this.grpcServer = new Server();
+                this.grpcServer.Services.Add(TaskHubSidecarService.BindService(new TaskHubGrpcServer(
+                    this.lifetime,
+                    this.loggerFactory,
+                    this.orchestrationService,
+                    this.orchestrationServiceClient,
+                    new OptionsWrapper<TaskHubGrpcServerOptions>(options))));
 
-                try
+                int portBindingResult = this.grpcServer.Ports.Add("localhost", listeningPort, ServerCredentials.Insecure);
+                if (portBindingResult != 0)
                 {
-                    await this.host.StartAsync(cancelToken);
-                    this.ListenAddress = listenAddress;
+                    try
+                    {
+                        this.grpcServer.Start();
+                        this.ListenAddress = $"http://localhost:{listeningPort}";
 
-                    this.extension.TraceHelper.ExtensionInformationalEvent(
-                        this.extension.Options.HubName,
-                        instanceId: string.Empty,
-                        functionName: string.Empty,
-                        message: $"Opened local gRPC endpoint: {listenAddress}",
-                        writeToUserLogs: true);
+                        this.extension.TraceHelper.ExtensionInformationalEvent(
+                            this.extension.Options.HubName,
+                            instanceId: string.Empty,
+                            functionName: string.Empty,
+                            message: $"Opened local gRPC endpoint: {this.ListenAddress}",
+                            writeToUserLogs: true);
 
-                    return;
+                        return Task.CompletedTask;
+                    }
+                    catch (IOException)
+                    {
+                        portBindingResult = 0;
+                    }
                 }
-                catch (IOException)
+
+                if (portBindingResult == 0)
                 {
                     this.extension.TraceHelper.ExtensionWarningEvent(
                         this.extension.Options.HubName,
@@ -131,21 +126,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             throw new IOException($"Unable to find a port to open an RPC endpoint on after {maxAttempts} attempts");
         }
 
-        public Task StopAsync(CancellationToken cancelToken = default)
+        public async Task StopAsync(CancellationToken cancelToken = default)
         {
-            if (this.host != null && this.ListenAddress != null)
+            this.lifetime?.SignalShutdown();
+            if (this.grpcServer != null)
             {
-                this.extension.TraceHelper.ExtensionInformationalEvent(
-                    this.extension.Options.HubName,
-                    instanceId: string.Empty,
-                    functionName: string.Empty,
-                    message: $"Closing local gRPC endpoint: {this.ListenAddress}",
-                    writeToUserLogs: true);
-
-                return this.host.StopAsync(cancelToken);
+                await this.grpcServer.ShutdownAsync();
             }
-
-            return Task.CompletedTask;
         }
 
         private int GetRandomPort()
@@ -160,6 +147,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             while (this.attemptedPorts.Contains(randomPort));
 
             return randomPort;
+        }
+
+        private sealed class SimpleHostLifetime : IHostApplicationLifetime, IDisposable
+        {
+            private readonly CancellationTokenSource startupSource = new CancellationTokenSource();
+            private readonly CancellationTokenSource shutdownSource = new CancellationTokenSource();
+
+            CancellationToken IHostApplicationLifetime.ApplicationStarted => this.startupSource.Token;
+
+            CancellationToken IHostApplicationLifetime.ApplicationStopping => this.shutdownSource.Token;
+
+            CancellationToken IHostApplicationLifetime.ApplicationStopped => this.shutdownSource.Token;
+
+            public void Dispose()
+            {
+                this.startupSource.Dispose();
+                this.shutdownSource.Dispose();
+            }
+
+            void IHostApplicationLifetime.StopApplication() => this.shutdownSource.Cancel();
+
+            internal void SignalStarting() => this.startupSource.Cancel();
+
+            internal void SignalShutdown() => this.shutdownSource.Cancel();
         }
     }
 }
