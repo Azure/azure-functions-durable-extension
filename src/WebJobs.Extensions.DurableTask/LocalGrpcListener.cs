@@ -17,7 +17,7 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
-    internal class LocalGrpcListener : IHostedService, IDisposable
+    internal class LocalGrpcListener : IHostedService
     {
         private const int DefaultPort = 4001;
 
@@ -35,7 +35,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly Random portGenerator;
         private readonly HashSet<int> attemptedPorts;
 
-        private SimpleHostLifetime? lifetime;
         private Server? grpcServer;
 
         public LocalGrpcListener(
@@ -55,12 +54,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public string? ListenAddress { get; private set; }
 
-        public void Dispose()
-        {
-            this.lifetime?.SignalShutdown();
-            this.lifetime?.Dispose();
-        }
-
         public Task StartAsync(CancellationToken cancelToken = default)
         {
             const int maxAttempts = 10;
@@ -72,11 +65,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 // Configure the server to run in API server-only mode (disables the dispatcher, which we don't use).
                 var options = new TaskHubGrpcServerOptions { Mode = TaskHubGrpcServerMode.ApiServerOnly };
 
-                this.lifetime?.Dispose();
-                this.lifetime = new SimpleHostLifetime();
                 this.grpcServer = new Server();
                 this.grpcServer.Services.Add(TaskHubSidecarService.BindService(new TaskHubGrpcServer(
-                    this.lifetime,
                     this.loggerFactory,
                     this.orchestrationService,
                     this.orchestrationServiceClient,
@@ -122,7 +112,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public async Task StopAsync(CancellationToken cancelToken = default)
         {
-            this.lifetime?.SignalShutdown();
             if (this.grpcServer != null)
             {
                 await this.grpcServer.ShutdownAsync();
@@ -141,30 +130,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             while (this.attemptedPorts.Contains(randomPort));
 
             return randomPort;
-        }
-
-        private sealed class SimpleHostLifetime : IHostApplicationLifetime, IDisposable
-        {
-            private readonly CancellationTokenSource startupSource = new CancellationTokenSource();
-            private readonly CancellationTokenSource shutdownSource = new CancellationTokenSource();
-
-            CancellationToken IHostApplicationLifetime.ApplicationStarted => this.startupSource.Token;
-
-            CancellationToken IHostApplicationLifetime.ApplicationStopping => this.shutdownSource.Token;
-
-            CancellationToken IHostApplicationLifetime.ApplicationStopped => this.shutdownSource.Token;
-
-            public void Dispose()
-            {
-                this.startupSource.Dispose();
-                this.shutdownSource.Dispose();
-            }
-
-            void IHostApplicationLifetime.StopApplication() => this.shutdownSource.Cancel();
-
-            internal void SignalStarting() => this.startupSource.Cancel();
-
-            internal void SignalShutdown() => this.shutdownSource.Cancel();
         }
     }
 }
