@@ -783,7 +783,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         InvokeHandler = async userCodeInvoker =>
                         {
                             // We yield control to ensure this code is executed asynchronously relative to WebJobs.
-                            // This ensures WebJobs is able to offload orchestrator code in the case of a timeout.
+                            // This ensures WebJobs is able to correctly cancel the invocation in the case of a timeout.
+
                             await Task.Yield();
                             context.ExecutorCalledBack = true;
 
