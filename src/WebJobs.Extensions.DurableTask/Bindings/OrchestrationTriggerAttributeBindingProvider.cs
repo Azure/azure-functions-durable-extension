@@ -141,7 +141,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     var triggerData = new TriggerData(contextValueProvider, bindingData);
                     return Task.FromResult<ITriggerData>(triggerData);
                 }
-#if !FUNCTIONS_V1
+#if FUNCTIONS_V3_OR_GREATER
                 else if (value is RemoteOrchestratorContext remoteContext)
                 {
                     // Generate a byte array which is the serialized protobuf payload
@@ -149,13 +149,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     var orchestratorRequest = new Microsoft.DurableTask.Protobuf.OrchestratorRequest()
                     {
                         InstanceId = remoteContext.InstanceId,
-                        PastEvents = { remoteContext.PastEvents.Select(Microsoft.DurableTask.Sidecar.Grpc.ProtobufUtils.ToHistoryEventProto) },
-                        NewEvents = { remoteContext.NewEvents.Select(Microsoft.DurableTask.Sidecar.Grpc.ProtobufUtils.ToHistoryEventProto) },
+                        PastEvents = { remoteContext.PastEvents.Select(ProtobufUtils.ToHistoryEventProto) },
+                        NewEvents = { remoteContext.NewEvents.Select(ProtobufUtils.ToHistoryEventProto) },
                     };
 
                     // We convert the binary payload into a base64 string because that seems to be the most commonly supported
                     // format for Azure Functions language workers. Attempts to send unencoded byte[] payloads were unsuccessful.
-                    string encodedRequest = Microsoft.DurableTask.Sidecar.Grpc.ProtobufUtils.Base64Encode(orchestratorRequest);
+                    string encodedRequest = ProtobufUtils.Base64Encode(orchestratorRequest);
                     var contextValueProvider = new ObjectValueProvider(encodedRequest, typeof(string));
                     var triggerData = new TriggerData(contextValueProvider, EmptyBindingData);
                     return Task.FromResult<ITriggerData>(triggerData);

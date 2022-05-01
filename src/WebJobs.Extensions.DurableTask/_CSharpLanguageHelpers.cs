@@ -4,7 +4,7 @@
 // This file defines several classes and methods that exist in .NET Core but not in .NET Standard 2.0.
 // They are defined here to enable certain C# features that otherwise require higher framework versions.
 // Redefining types in this way is a standard practice for libary authors that are forced to target .NET Standard 2.0.
-#if !NET31_OR_GREATER
+#if NETSTANDARD2_0
 
 #pragma warning disable SA1649 // File name should match first type name
 #pragma warning disable SA1403 // File may only contain a single namespace

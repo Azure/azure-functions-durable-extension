@@ -1,7 +1,7 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 #nullable enable
-
+#if FUNCTIONS_V3_OR_GREATER
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
@@ -43,10 +43,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <exception cref="SessionAbortedException">Thrown if there is a recoverable error in the Functions runtime that's expected to be handled gracefully.</exception>
         public async Task CallOrchestratorAsync(DispatchMiddlewareContext dispatchContext, Func<Task> next)
         {
-#if FUNCTIONS_V1
-            await Task.Yield(); // Used to supress CS1998: This async method lacks "await" operators (by design)
-            throw new NotSupportedException();
-#else
             OrchestrationRuntimeState? runtimeState = dispatchContext.GetProperty<OrchestrationRuntimeState>();
             if (runtimeState == null)
             {
@@ -137,7 +133,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     byte[] triggerReturnValueBytes = Convert.FromBase64String(triggerReturnValue);
                     var response = Microsoft.DurableTask.Protobuf.OrchestratorResponse.Parser.ParseFrom(triggerReturnValueBytes);
                     context.SetResult(
-                        response.Actions.Select(Microsoft.DurableTask.Sidecar.Grpc.ProtobufUtils.ToOrchestratorAction),
+                        response.Actions.Select(ProtobufUtils.ToOrchestratorAction),
                         response.CustomStatus);
 #pragma warning restore CS0618 // Type or member is obsolete (not intended for general public use)
                 },
@@ -231,7 +227,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // Send the result of the orchestrator function to the DTFx dispatch pipeline.
             // This allows us to bypass the default, in-process execution and process the given results immediately.
             dispatchContext.SetProperty(orchestratorResult);
-#endif
         }
 
         /// <summary>
@@ -474,3 +469,4 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
     }
 }
+#endif

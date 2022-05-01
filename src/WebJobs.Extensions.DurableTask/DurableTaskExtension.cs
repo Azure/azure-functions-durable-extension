@@ -66,10 +66,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             new ConcurrentDictionary<FunctionName, RegisteredFunctionInfo>();
 
         private readonly AsyncLock taskHubLock = new AsyncLock();
-#if !FUNCTIONS_V1
+#if FUNCTIONS_V2_OR_GREATER
 #pragma warning disable CS0169
         private readonly ITelemetryActivator telemetryActivator;
 #pragma warning restore CS0169
+#endif
+#if FUNCTIONS_V3_OR_GREATER
         private readonly LocalGrpcListener localGrpcListener;
 #endif
         private readonly bool isOptionsConfigured;
@@ -102,7 +104,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 #endif
 
-#pragma warning disable CS1572 // XML comment has a param tag for 'XXX', but there is no parameter by that name
         /// <summary>
         /// Initializes a new instance of the <see cref="DurableTaskExtension"/>.
         /// </summary>
@@ -130,7 +131,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #pragma warning disable CS0612 // Type or member is obsolete
             IPlatformInformation platformInformationService = null,
 #pragma warning restore CS0612 // Type or member is obsolete
-#if !FUNCTIONS_V1
+#if FUNCTIONS_V2_OR_GREATER
             IErrorSerializerSettingsFactory errorSerializerSettingsFactory = null,
 #pragma warning disable CS0618 // Type or member is obsolete
             IWebHookProvider webhookProvider = null,
@@ -139,7 +140,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #else
             IErrorSerializerSettingsFactory errorSerializerSettingsFactory = null)
 #endif
-#pragma warning restore CS1572 // XML comment has a param tag for 'XXX', but there is no parameter by that name
         {
             // Options will be null in Functions v1 runtime - populated later.
             this.Options = options?.Value ?? new DurableTaskOptions();
@@ -196,10 +196,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (runtimeType == WorkerRuntimeType.DotNetIsolated || runtimeType == WorkerRuntimeType.Java)
             {
                 this.OutOfProcProtocol = OutOfProcOrchestrationProtocol.MiddlewarePassthrough;
-#if !FUNCTIONS_V1
+#if FUNCTIONS_V3_OR_GREATER
                 this.localGrpcListener = new LocalGrpcListener(
                     this,
-                    this.loggerFactory,
                     this.defaultDurabilityProvider,
                     this.defaultDurabilityProvider);
                 this.HostLifetimeService.OnStopped.Register(this.StopLocalGrpcServer);
@@ -433,11 +432,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // Note that the order of the middleware added determines the order in which it executes.
             if (this.OutOfProcProtocol == OutOfProcOrchestrationProtocol.MiddlewarePassthrough)
             {
+#if FUNCTIONS_V3_OR_GREATER
                 // This is a newer, more performant flavor of orchestration/activity middleware that is being
                 // enabled for newer language runtimes. Support for entities in this model is TBD.
                 var ooprocMiddleware = new OutOfProcMiddleware(this);
                 this.taskHubWorker.AddActivityDispatcherMiddleware(ooprocMiddleware.CallActivityAsync);
                 this.taskHubWorker.AddOrchestrationDispatcherMiddleware(ooprocMiddleware.CallOrchestratorAsync);
+#else
+                // This can happen if, for example, a Java user tries to use Durable Functions while targeting V2 or V3 extension bundles
+                // because those bundles target .NET Core 2.2, which doesn't support the gRPC libraries used in the modern out-of-proc implementation.
+                throw new PlatformNotSupportedException(
+                    "This project type is not supported on this version of the Azure Functions runtime. Please upgrade to Azure Functions V3 or higher. " +
+                    "If you are using a language that supports extension bundles, please use extension bundles V4 or higher. " +
+                    "For more information on Azure Functions versions, see https://docs.microsoft.com/azure/azure-functions/functions-versions. " +
+                    "For more information on extension bundles, see https://docs.microsoft.com/azure/azure-functions/functions-bindings-register#extension-bundles.");
+#endif
             }
             else
             {
@@ -448,20 +457,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.taskHubWorker.AddOrchestrationDispatcherMiddleware(this.OrchestrationMiddleware);
             }
 
-#if !FUNCTIONS_V1
             // The RPC server needs to be started sometime before any functions can be triggered
             // and this is the latest point in the pipeline available to us.
-            this.StartLocalHttpServer();
+#if FUNCTIONS_V3_OR_GREATER
             if (this.OutOfProcProtocol == OutOfProcOrchestrationProtocol.MiddlewarePassthrough)
             {
                 this.StartLocalGrpcServer();
             }
+#elif FUNCTIONS_V2_OR_GREATER
+            this.StartLocalHttpServer();
 #endif
         }
 
         internal string GetLocalRpcAddress()
         {
-#if !FUNCTIONS_V1
+#if FUNCTIONS_V3_OR_GREATER
             if (this.OutOfProcProtocol == OutOfProcOrchestrationProtocol.MiddlewarePassthrough)
             {
                 return this.localGrpcListener.ListenAddress;
@@ -516,7 +526,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.eventSourceListener?.Dispose();
         }
 
-#if !FUNCTIONS_V1
+#if FUNCTIONS_V2_OR_GREATER
         private void StartLocalHttpServer()
         {
             bool? shouldEnable = this.Options.LocalRpcEndpointEnabled;
@@ -551,7 +561,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             this.HttpApiHandler.StopLocalHttpServerAsync().GetAwaiter().GetResult();
         }
+#endif
 
+#if FUNCTIONS_V3_OR_GREATER
         private void StartLocalGrpcServer()
         {
             this.localGrpcListener.StartAsync().GetAwaiter().GetResult();
