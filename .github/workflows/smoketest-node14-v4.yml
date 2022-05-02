@@ -1,4 +1,4 @@
-name: Smoke Test - Node14 V4
+name: Smoke Test - Node 14 on Functions V4
 
 on:
   push:

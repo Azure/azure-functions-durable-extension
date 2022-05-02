@@ -1,4 +1,4 @@
-name: Smoke Test - .NET V3
+name: Smoke Test - .NET on Functions V3
 
 on:
   push:
