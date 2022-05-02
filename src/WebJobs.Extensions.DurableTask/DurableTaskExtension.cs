@@ -464,8 +464,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 this.StartLocalGrpcServer();
             }
-#elif FUNCTIONS_V2_OR_GREATER
-            this.StartLocalHttpServer();
+#endif
+#if FUNCTIONS_V2_OR_GREATER
+            if (this.OutOfProcProtocol == OutOfProcOrchestrationProtocol.OrchestratorShim)
+            {
+                this.StartLocalHttpServer();
+            }
 #endif
         }
 
