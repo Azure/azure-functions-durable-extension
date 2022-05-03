@@ -12,7 +12,6 @@ using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 #else
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations;
@@ -181,5 +180,5 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             extensions.RegisterExtension<IExtensionConfigProvider>(listenerConfig);
         }
 #endif
-        }
     }
+}

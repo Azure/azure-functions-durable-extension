@@ -18,7 +18,7 @@ $ErrorActionPreference = "Stop"
 if ($NoSetup -eq $false) {
 	# Build the docker image first, since that's the most critical step
 	Write-Host "Building sample app Docker container from '$DockerfilePath'..." -ForegroundColor Yellow
-	docker build -f $DockerfilePath -t $ImageName $PSScriptRoot/../../
+	docker build -f $DockerfilePath -t $ImageName --progress plain $PSScriptRoot/../../
 
 	# Next, download and start the Azurite emulator Docker image
 	Write-Host "Pulling down the mcr.microsoft.com/azure-storage/azurite:$AzuriteVersion image..." -ForegroundColor Yellow

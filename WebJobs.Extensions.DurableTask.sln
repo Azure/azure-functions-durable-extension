@@ -24,6 +24,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		azure-pipelines-release.yml = azure-pipelines-release.yml
 		README.md = README.md
 		release_notes.md = release_notes.md
+		.stylecop\stylecop.json = .stylecop\stylecop.json
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VSSampleV1", "test\SmokeTests\SmokeTestsV1\VSSampleV1.csproj", "{78141F66-4DDD-4ABB-9DE3-D0B426FE8110}"
@@ -38,10 +39,17 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VSSampleV3", "test\SmokeTests\SmokeTestsV3\VSSampleV3.csproj", "{F1611EF4-457B-47CB-94E9-B611EE488984}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "JavaScript", "JavaScript", "{7B2EDAEC-CFD0-404A-8E52-133FFF595C2F}"
+	ProjectSection(SolutionItems) = preProject
+		test\SmokeTests\OOProcSmokeTests\durableJS\Dockerfile = test\SmokeTests\OOProcSmokeTests\durableJS\Dockerfile
+	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "extensions", "test\SmokeTests\OOProcSmokeTests\durableJS\extensions.csproj", "{9BA6093A-F71A-49F9-A159-B98ACBE41636}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Python", "Python", "{FA53EBC4-8265-4063-B9F8-0D5EA0366B90}"
+	ProjectSection(SolutionItems) = preProject
+		test\SmokeTests\OOProcSmokeTests\durablePy\Dockerfile = test\SmokeTests\OOProcSmokeTests\durablePy\Dockerfile
+		test\SmokeTests\OOProcSmokeTests\durablePy\requirements.txt = test\SmokeTests\OOProcSmokeTests\durablePy\requirements.txt
+	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "extensions", "test\SmokeTests\OOProcSmokeTests\durablePy\extensions.csproj", "{CB481383-8B54-4FCB-8DCB-F348E08C2A9C}"
 EndProject
@@ -77,8 +85,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "pipelines", "pipelines", "{
 	ProjectSection(SolutionItems) = preProject
 		azure-pipelines.yml = azure-pipelines.yml
 		.github\workflows\smoketest-dotnet-isolated-v4.yml = .github\workflows\smoketest-dotnet-isolated-v4.yml
+		.github\workflows\smoketest-dotnet-v2.yml = .github\workflows\smoketest-dotnet-v2.yml
 		.github\workflows\smoketest-dotnet-v3.yml = .github\workflows\smoketest-dotnet-v3.yml
 		.github\workflows\smoketest-node14-v4.yml = .github\workflows\smoketest-node14-v4.yml
+		.github\workflows\smoketest-python37-v2.yml = .github\workflows\smoketest-python37-v2.yml
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DFPerfScenariosV1", "test\DFPerfScenariosV1\DFPerfScenariosV1.csproj", "{65F904AA-0F6F-48CB-BE19-593B7D68152A}"

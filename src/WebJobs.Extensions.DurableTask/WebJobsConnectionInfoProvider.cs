@@ -30,8 +30,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #if FUNCTIONS_V1
             // The returned key doesn't reflect whether the ConnectionString section was used or if the name was ultimately prefixed.
             return new ReadOnlyConfigurationValue(name, Host.AmbientConnectionStringProvider.Instance.GetConnectionString(name));
-#elif NET6_0_OR_GREATER
-            return this.hostConfiguration.GetWebJobsConnectionSection(name);
 #else
             // The below represents the implementation of this.hostConfiguration.GetWebJobsConnectionSection(name), defined in the WebJobs SDK
             // but not available to Functions v3 at runtime.
