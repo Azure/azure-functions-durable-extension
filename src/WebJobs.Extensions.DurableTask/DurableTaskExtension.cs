@@ -825,7 +825,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                    context.InstanceId,
                    context.Name,
                    $"INSTRUMENTATION: Orchestration awaiting. IsCompleted: {context.IsCompleted} | IsLongRunningTimer: {context.IsLongRunningTimer}",
-                   true);
+                   false);
 
                 this.TraceHelper.FunctionAwaited(
                     context.HubName,

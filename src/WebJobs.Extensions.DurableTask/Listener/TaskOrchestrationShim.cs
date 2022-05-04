@@ -207,7 +207,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                    this.context.InstanceId,
                    this.context.Name,
                    $"INSTRUMENTATION: in `finally` statement, `isCompleted` set to `true`.",
-                   true);
+                   false);
+
                 this.context.IsCompleted = true;
             }
         }
