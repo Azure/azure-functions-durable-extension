@@ -807,7 +807,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.HostLifetimeService.OnStopping);
 
                 if (result.ExecutionStatus == WrappedFunctionResult.FunctionResultStatus.FunctionsRuntimeError
-                    || result.ExecutionStatus == WrappedFunctionResult.FunctionResultStatus.FunctionsHostStoppingError)
+                    || result.ExecutionStatus == WrappedFunctionResult.FunctionResultStatus.FunctionsHostStoppingError
+                    || result.ExecutionSTatus == WrappedFunctionResult.FunctionResultStatus.FunctionTimeoutError)
                 {
                     this.TraceHelper.FunctionAborted(
                         this.Options.HubName,
