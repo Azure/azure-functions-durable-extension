@@ -148,6 +148,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     // Orchestrator threads cannot perform async I/O, so block on such out-of-proc threads.
                     // Possible performance implications; may need revisiting.
                     object returnValue = orchestratorInfo.IsOutOfProc ? resultTask.Result : await resultTask;
+
+                    // If an "illegal await" (awaiting a non DF API) is detected, we throw an exception.
+                    // This exception will not transition the orchestrator to a Failed state.
+                    // TODO: look to fail orchestrator in illegal awaits. This may require DTFx support.
+                    this.context.ThrowIfInvalidAccess();
+                    
                     if (returnValue != null)
                     {
                         if (orchestratorInfo.IsOutOfProc)
