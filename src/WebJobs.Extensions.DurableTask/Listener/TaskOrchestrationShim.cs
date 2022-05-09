@@ -153,7 +153,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     // This exception will not transition the orchestrator to a Failed state.
                     // TODO: look to fail orchestrator in illegal awaits. This may require DTFx support.
                     this.context.ThrowIfInvalidAccess();
-                    
+
                     if (returnValue != null)
                     {
                         if (orchestratorInfo.IsOutOfProc)
