@@ -1151,7 +1151,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        private void ThrowIfInvalidAccess()
+        internal void ThrowIfInvalidAccess()
         {
             if (this.InnerContext == null)
             {

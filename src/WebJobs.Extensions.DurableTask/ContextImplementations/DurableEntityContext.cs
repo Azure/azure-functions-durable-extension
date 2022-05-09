@@ -549,7 +549,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return interfaces.Select(i => i.GetMethod(context.OperationName, bindingFlags)).FirstOrDefault(m => m != null);
         }
 
-        internal void ThrowIfInvalidAccess()
+        private void ThrowIfInvalidAccess()
         {
             if (this.CurrentOperation == null)
             {
