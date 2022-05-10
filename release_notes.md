@@ -1,6 +1,6 @@
 ## New Features
 
-None
+- Improve telemetry to detect "illegal"/non-DF Tasks being awaited (https://github.com/Azure/azure-functions-durable-extension/pull/2168)
 
 ## Bug fixes
 
