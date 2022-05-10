@@ -792,6 +792,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #pragma warning disable CS0618 // Approved for use by this extension
                         InvokeHandler = async userCodeInvoker =>
                         {
+                            // We yield control to ensure this code is executed asynchronously relative to WebJobs.
+                            // This ensures WebJobs is able to correctly cancel the invocation in the case of a timeout.
+
+                            await Task.Yield();
                             context.ExecutorCalledBack = true;
 
                             // 2. Configure the shim with the inner invoker to execute the user code.
@@ -813,7 +817,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.HostLifetimeService.OnStopping);
 
                 if (result.ExecutionStatus == WrappedFunctionResult.FunctionResultStatus.FunctionsRuntimeError
-                    || result.ExecutionStatus == WrappedFunctionResult.FunctionResultStatus.FunctionsHostStoppingError)
+                    || result.ExecutionStatus == WrappedFunctionResult.FunctionResultStatus.FunctionsHostStoppingError
+                    || result.ExecutionStatus == WrappedFunctionResult.FunctionResultStatus.FunctionTimeoutError)
                 {
                     this.TraceHelper.FunctionAborted(
                         this.Options.HubName,
