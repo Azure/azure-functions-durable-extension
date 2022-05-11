@@ -13,23 +13,20 @@ RUN cd /root/src/WebJobs.Extensions.DurableTask && \
     dotnet nuget add source /packages
 
 # Step 2: Build the sample app, which references the locally built extension from Step 1
+#         IMPORTANT: restore seems to need to be done separately to ensure the correct
+#         nuget package bits get published. Not sure why, but without this, we've observed
+#         that the wrong .NET target is used, resulting in app startup failures. It may
+#         be an issue with the Azure Functions Worker SDK build process.
 RUN cd /root/test/SmokeTests/OOProcSmokeTests/DotNetIsolated && \
     mkdir -p /home/site/wwwroot && \
-    dotnet build -c Debug && \
-    dotnet publish -c Debug --no-build --output /home/site/wwwroot && \
+    dotnet restore --verbosity normal && \
+    dotnet build -c Release && \
+    dotnet publish -c Release --no-build --output /home/site/wwwroot && \
     ls -aR /home/site/wwwroot && \
     cat /home/site/wwwroot/extensions.json # debugging
 
 # Step 3: Generate the final app image to run
 FROM mcr.microsoft.com/azure-functions/dotnet-isolated:4-dotnet-isolated6.0
-
-# Workaround for https://github.com/Azure/azure-functions-docker/issues/600
-RUN apt-get update -y \
-  && apt-get install -y apt-transport-https wget \
-  && wget https://packages.microsoft.com/config/debian/11/packages-microsoft-prod.deb -O packages-microsoft-prod.deb \
-  && dpkg -i packages-microsoft-prod.deb \
-  && apt-get update -y \
-  && apt-get install -y aspnetcore-runtime-6.0
 
 # This is the standard setup for Azure Functions running in Docker containers
 ENV AzureWebJobsScriptRoot=/home/site/wwwroot \

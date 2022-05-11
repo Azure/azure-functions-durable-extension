@@ -1,7 +1,7 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 #nullable enable
-
+#if FUNCTIONS_V3_OR_GREATER
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
@@ -96,9 +96,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // One-time logging/notifications for when the orchestration first starts.
             if (!isReplaying)
             {
-#if !FUNCTIONS_V1
                 DurableTaskExtension.TagActivityWithOrchestrationStatus(OrchestrationRuntimeStatus.Running, instance.InstanceId);
-#endif
                 await this.LifeCycleNotificationHelper.OrchestratorStartingAsync(
                     this.Options.HubName,
                     functionName.Name,
@@ -132,15 +130,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             "sending the function result back to the host.");
                     }
 
-#if NET6_0_OR_GREATER
                     byte[] triggerReturnValueBytes = Convert.FromBase64String(triggerReturnValue);
                     var response = Microsoft.DurableTask.Protobuf.OrchestratorResponse.Parser.ParseFrom(triggerReturnValueBytes);
                     context.SetResult(
-                        response.Actions.Select(Microsoft.DurableTask.Sidecar.Grpc.ProtobufUtils.ToOrchestratorAction),
+                        response.Actions.Select(ProtobufUtils.ToOrchestratorAction),
                         response.CustomStatus);
-#else
-                    throw new NotSupportedException("The current platform does not support running remote orchestrator functions.");
-#endif
 #pragma warning restore CS0618 // Type or member is obsolete (not intended for general public use)
                 },
             };
@@ -184,11 +178,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         context.ContinuedAsNew,
                         FunctionType.Orchestrator,
                         isReplay: false);
-#if !FUNCTIONS_V1
+
                     DurableTaskExtension.TagActivityWithOrchestrationStatus(
                         OrchestrationRuntimeStatus.Completed,
                         instance.InstanceId);
-#endif
+
                     await this.LifeCycleNotificationHelper.OrchestratorCompletedAsync(
                         this.Options.HubName,
                         functionName.Name,
@@ -368,7 +362,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             dispatchContext.SetProperty(activityResult);
         }
 
-#if NET6_0_OR_GREATER
         private static FailureDetails GetFailureDetails(Exception e)
         {
             if (e.InnerException != null && e.InnerException.Message.StartsWith("Result:"))
@@ -408,8 +401,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             const string ExceptionDelimeter = "\nException: ";
             const string StackDelimeter = "\nStack: ";
 
-            ReadOnlySpan<char> messageSpan = rpcExceptionMessage;
-            int startException = messageSpan.IndexOf(ExceptionDelimeter);
+            ReadOnlySpan<char> messageSpan = rpcExceptionMessage.AsSpan();
+            int startException = messageSpan.IndexOf(ExceptionDelimeter.AsSpan());
             if (startException == -1)
             {
                 // Couldn't find the exception payload - give up
@@ -418,19 +411,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             int startExceptionPayload = startException + ExceptionDelimeter.Length;
             ReadOnlySpan<char> exceptionPayloadStartSpan = messageSpan[startExceptionPayload..];
-            int endException = exceptionPayloadStartSpan.LastIndexOf(StackDelimeter);
+            int endException = exceptionPayloadStartSpan.LastIndexOf(StackDelimeter.AsSpan());
             if (endException >= 0)
             {
-                exception = new string(exceptionPayloadStartSpan[..endException]);
+                exception = new string(exceptionPayloadStartSpan[..endException].ToArray());
 
                 // Start looking for the stack trace payload immediately after the exception payload
                 int startStack = endException + StackDelimeter.Length;
-                stackTrace = new string(exceptionPayloadStartSpan[startStack..]);
+                stackTrace = new string(exceptionPayloadStartSpan[startStack..].ToArray());
             }
             else
             {
                 // [Not expected] Couldn't find the stack trace for whatever reason. Just take the rest of the payload as the stack trace.
-                exception = new string(exceptionPayloadStartSpan);
+                exception = new string(exceptionPayloadStartSpan.ToArray());
             }
 
             return true;
@@ -474,8 +467,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             return true;
         }
-#else
-        private static FailureDetails GetFailureDetails(Exception e) => new FailureDetails(e);
-#endif
     }
 }
+#endif
