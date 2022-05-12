@@ -83,6 +83,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         taskEventId: this.taskEventId);
 
                     return serializedOutput;
+                case WrappedFunctionResult.FunctionResultStatus.FunctionsHostStoppingError:
                 case WrappedFunctionResult.FunctionResultStatus.FunctionsRuntimeError:
                     this.config.TraceHelper.FunctionAborted(
                         this.config.Options.HubName,
