@@ -122,7 +122,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             $"Activity function '{this.activityName}' failed: {exceptionToReport.Message}",
                             Utils.SerializeCause(exceptionToReport, this.config.ErrorDataConverter));
                 default:
-                    throw new InvalidOperationException($"{nameof(TaskActivityShim.RunAsync)} does not handle the function execution status {result.ExecutionStatus}.");
+                    // we throw a TaskFailureException to ensure deserialization is possible.
+                    var innerException = new Exception($"{nameof(TaskActivityShim.RunAsync)} does not handle the function execution status {result.ExecutionStatus}.");
+                    throw new TaskFailureException(
+                            $"Activity function '{this.activityName}' failed: {innerException}",
+                            Utils.SerializeCause(innerException, this.config.ErrorDataConverter));
             }
         }
 
