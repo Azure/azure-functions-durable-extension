@@ -28,7 +28,7 @@
     <AssemblyOriginatorKeyFile>..\..\sign.snk</AssemblyOriginatorKeyFile>
 
     <!-- Version information -->
-    <VersionPrefix>0.3.0</VersionPrefix>
+    <VersionPrefix>0.4.0</VersionPrefix>
     <VersionSuffix>beta</VersionSuffix>
     <FileVersion>$(VersionPrefix)</FileVersion>
     <AssemblyVersion>$(VersionPrefix).0</AssemblyVersion>
@@ -39,12 +39,12 @@
   </PropertyGroup>
   
   <ItemGroup>
-    <PackageReference Include="Microsoft.Azure.Functions.Worker.Core" Version="1.5.0-preview1" />
+    <PackageReference Include="Microsoft.Azure.Functions.Worker.Core" Version="1.6.0-preview1" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Abstractions" Version="1.1.0" />
   </ItemGroup>
   
   <ItemGroup>
-    <PackageReference Include="Microsoft.DurableTask" Version="0.3.0-beta" />
+    <PackageReference Include="Microsoft.DurableTask" Version="0.4.0-beta" />
   </ItemGroup>
 
   <ItemGroup>
