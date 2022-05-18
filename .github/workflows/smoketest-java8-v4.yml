@@ -1,0 +1,22 @@
+name: Smoke Test - Java 8 on Functions V4
+
+on:
+  push:
+    branches: [ main, dev ]
+    paths:
+      - 'src/**'
+      - 'test/SmokeTests/OOProcSmokeTests/durableJava/**'
+  pull_request:
+    branches: [ main, dev ]
+    paths:
+      - 'src/**'
+      - 'test/SmokeTests/OOProcSmokeTests/durableJava/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Run V4 Java 8 Smoke Test
+        run: test/SmokeTests/e2e-test.ps1 -DockerfilePath test/SmokeTests/OOProcSmokeTests/durableJava/Dockerfile -HttpStartPath api/StartOrchestration
+        shell: pwsh
