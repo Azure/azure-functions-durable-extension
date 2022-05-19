@@ -1,0 +1,19 @@
+{
+  "scriptFile" : "../samples-azure-functions-0.1.0-SNAPSHOT.jar",
+  "entryPoint" : "com.functions.AzureFunctions.startOrchestration",
+  "bindings" : [ {
+    "type" : "httpTrigger",
+    "direction" : "in",
+    "name" : "req",
+    "methods" : [ "GET", "POST" ],
+    "authLevel" : "ANONYMOUS"
+  }, {
+    "type" : "durableClient",
+    "direction" : "in",
+    "name" : "durableContext"
+  }, {
+    "type" : "http",
+    "direction" : "out",
+    "name" : "$return"
+  } ]
+}
