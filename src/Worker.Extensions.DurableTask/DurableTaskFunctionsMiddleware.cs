@@ -114,6 +114,18 @@ internal class DurableTaskFunctionsMiddleware : IFunctionsWorkerMiddleware
 
         public override bool IsReplaying => this.innerContext.IsReplaying;
 
+        public override T GetInput<T>()
+        {
+            this.EnsureLegalAccess();
+            return this.innerContext.GetInput<T>()!;
+        }
+
+        public override Guid NewGuid()
+        {
+            this.EnsureLegalAccess();
+            return this.innerContext.NewGuid();
+        }
+
         public override Task<T> CallActivityAsync<T>(TaskName name, object? input = null, TaskOptions? options = null)
         {
             this.EnsureLegalAccess();

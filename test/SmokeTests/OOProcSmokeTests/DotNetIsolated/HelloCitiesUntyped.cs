@@ -42,8 +42,7 @@ internal static class HelloSequenceUntyped
     /// <param name="requestState">The serialized orchestration state that gets passed to the function.</param>
     /// <returns>Returns an opaque output string with instructions about what actions to persist into the orchestration history.</returns>
     [Function(nameof(HelloCitiesUntyped))]
-    public static async Task<string> HelloCitiesUntyped(
-        [OrchestrationTrigger] TaskOrchestrationContext context, string? input)
+    public static async Task<string> HelloCitiesUntyped([OrchestrationTrigger] TaskOrchestrationContext context)
     {
         string result = "";
         result += await context.CallActivityAsync<string>(nameof(SayHelloUntyped), "Tokyo") + " ";
