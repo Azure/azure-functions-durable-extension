@@ -21,6 +21,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{9850DECF-CBA2-43E7-B5E2-55053DD308E9}"
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
+		azure-pipelines-release-dotnet-isolated.yml = azure-pipelines-release-dotnet-isolated.yml
 		azure-pipelines-release.yml = azure-pipelines-release.yml
 		README.md = README.md
 		release_notes.md = release_notes.md

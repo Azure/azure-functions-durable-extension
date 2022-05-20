@@ -26,8 +26,15 @@ internal sealed class DefaultDurableClientContext : DurableClientContext
         this.Client = client ?? throw new ArgumentNullException(nameof(client));
         this.inputData = inputData ?? throw new ArgumentNullException(nameof(inputData));
 
-        ArgumentNullException.ThrowIfNull(inputData.taskHubName, nameof(inputData.taskHubName));
-        ArgumentNullException.ThrowIfNull(inputData.requiredQueryStringParameters, nameof(inputData.requiredQueryStringParameters));
+        if (string.IsNullOrEmpty(inputData.taskHubName))
+        {
+            throw new ArgumentNullException(nameof(inputData.taskHubName));
+        }
+
+        if (string.IsNullOrEmpty(inputData.requiredQueryStringParameters))
+        {
+            throw new ArgumentNullException(nameof(inputData.requiredQueryStringParameters));
+        }
     }
 
     /// <inheritdoc/>
