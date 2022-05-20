@@ -80,9 +80,9 @@ internal class DurableTaskFunctionsMiddleware : IFunctionsWorkerMiddleware
         Task orchestratorTask = next(functionContext);
         if (!orchestratorTask.IsCompleted && !orchestrationContext.IsAccessed)
         {
-            // If the middleware returns before the orchestrator function's context object was accessed, then we
-            // know that either some middleware component went async or that the orchestrator function did some illegal
-            // await as its very first action.
+            // If the middleware returns before the orchestrator function's context object was accessed and before
+            // it completes its execution, then we know that either some middleware component went async or that the
+            // orchestrator function did some illegal await as its very first action.
             throw new InvalidOperationException(IllegalAwaitErrorMessage);
         }
 
