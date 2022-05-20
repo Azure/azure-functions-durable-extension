@@ -26,8 +26,15 @@ internal sealed class DefaultDurableClientContext : DurableClientContext
         this.Client = client ?? throw new ArgumentNullException(nameof(client));
         this.inputData = inputData ?? throw new ArgumentNullException(nameof(inputData));
 
-        ArgumentNullException.ThrowIfNull(inputData.taskHubName, nameof(inputData.taskHubName));
-        ArgumentNullException.ThrowIfNull(inputData.requiredQueryStringParameters, nameof(inputData.requiredQueryStringParameters));
+        if (string.IsNullOrEmpty(inputData.taskHubName))
+        {
+            throw new ArgumentNullException(nameof(inputData.taskHubName));
+        }
+
+        if (string.IsNullOrEmpty(inputData.requiredQueryStringParameters))
+        {
+            throw new ArgumentNullException(nameof(inputData.requiredQueryStringParameters));
+        }
     }
 
     /// <inheritdoc/>
@@ -98,7 +105,13 @@ internal sealed class DefaultDurableClientContext : DurableClientContext
             try
             {
                 DurableTaskGrpcClient.Builder builder = DurableTaskGrpcClient.CreateBuilder();
-                builder.UseAddress(inputData.rpcBaseUrl);
+                if (!Uri.TryCreate(inputData.rpcBaseUrl, UriKind.Absolute, out Uri? baseUriResult))
+                {
+                    InvalidOperationException exception = new($"Failed to parse the {nameof(inputData.rpcBaseUrl)} field from the input binding data.");
+                    return new ValueTask<ConversionResult>(ConversionResult.Failed(exception));
+                }
+
+                builder.UseAddress(baseUriResult.Host, baseUriResult.Port);
                 if (this.serviceProvider != null)
                 {
                     // The builder will use the host's service provider to look up DI-registered
