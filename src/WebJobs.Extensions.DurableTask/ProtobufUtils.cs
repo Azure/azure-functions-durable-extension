@@ -351,8 +351,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 FetchInputsAndOutputs = request.Query.FetchInputsAndOutputs,
             };
 
-            // Empty lists are not allowed by the underlying code that takes in a OrchestrationQuery. However, protobuf
-            // uses empty lists by default instead of nulls. Need to overwrite empty lists will null values.
+            // Empty lists are not allowed by the underlying code that takes in an OrchestrationQuery. However,
+            // some clients use empty lists instead of nulls. Need to overwrite empty lists with null values.
             if (query.TaskHubNames?.Count == 0)
             {
                 query.TaskHubNames = null;
