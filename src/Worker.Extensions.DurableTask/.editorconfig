@@ -11,3 +11,6 @@ csharp_using_directive_placement = outside_namespace
 csharp_style_namespace_declarations = file_scoped:silent
 
 file_header_template = Copyright (c) .NET Foundation. All rights reserved.\nLicensed under the MIT License. See License.txt in the project root for license information.
+
+# https://marketplace.visualstudio.com/items?itemName=PaulHarrington.EditorGuidelinesPreview
+guidelines = 120

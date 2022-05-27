@@ -197,10 +197,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 this.OutOfProcProtocol = OutOfProcOrchestrationProtocol.MiddlewarePassthrough;
 #if FUNCTIONS_V3_OR_GREATER
-                this.localGrpcListener = new LocalGrpcListener(
-                    this,
-                    this.defaultDurabilityProvider,
-                    this.defaultDurabilityProvider);
+                this.localGrpcListener = new LocalGrpcListener(this, this.defaultDurabilityProvider);
                 this.HostLifetimeService.OnStopped.Register(this.StopLocalGrpcServer);
 #endif
             }

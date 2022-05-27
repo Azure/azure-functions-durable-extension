@@ -28,22 +28,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private const int MaxPort = 31000;
 
         private readonly DurableTaskExtension extension;
-        private readonly IOrchestrationService orchestrationService;
-        private readonly IOrchestrationServiceClient orchestrationServiceClient;
+        private readonly DurabilityProvider durabilityProvider;
 
         private readonly Random portGenerator;
         private readonly HashSet<int> attemptedPorts;
 
         private Server? grpcServer;
 
-        public LocalGrpcListener(
-            DurableTaskExtension extension,
-            IOrchestrationService orchestrationService,
-            IOrchestrationServiceClient orchestrationServiceClient)
+        public LocalGrpcListener(DurableTaskExtension extension, DurabilityProvider durabilityProvider)
         {
             this.extension = extension ?? throw new ArgumentNullException(nameof(extension));
-            this.orchestrationService = orchestrationService ?? throw new ArgumentNullException(nameof(orchestrationService));
-            this.orchestrationServiceClient = orchestrationServiceClient ?? throw new ArgumentNullException(nameof(orchestrationServiceClient));
+            this.durabilityProvider = durabilityProvider ?? throw new ArgumentNullException(nameof(durabilityProvider));
 
             this.portGenerator = new Random();
             this.attemptedPorts = new HashSet<int>();
@@ -123,26 +118,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private class TaskHubGrpcServer : P.TaskHubSidecarService.TaskHubSidecarServiceBase
         {
-            private readonly IOrchestrationService service;
-            private readonly IOrchestrationServiceClient client;
+            private readonly DurabilityProvider durabilityProvider;
 
             public TaskHubGrpcServer(LocalGrpcListener listener)
             {
-                this.service = listener.orchestrationService;
-                this.client = listener.orchestrationServiceClient;
+                this.durabilityProvider = listener.durabilityProvider;
             }
 
             public override Task<Empty> Hello(Empty request, ServerCallContext context) => Task.FromResult(new Empty());
 
             public override Task<P.CreateTaskHubResponse> CreateTaskHub(P.CreateTaskHubRequest request, ServerCallContext context)
             {
-                this.service.CreateAsync(request.RecreateIfExists);
+                this.durabilityProvider.CreateAsync(request.RecreateIfExists);
                 return Task.FromResult(new P.CreateTaskHubResponse());
             }
 
             public override Task<P.DeleteTaskHubResponse> DeleteTaskHub(P.DeleteTaskHubRequest request, ServerCallContext context)
             {
-                this.service.DeleteAsync();
+                this.durabilityProvider.DeleteAsync();
                 return Task.FromResult(new P.DeleteTaskHubResponse());
             }
 
@@ -154,7 +147,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     ExecutionId = Guid.NewGuid().ToString(),
                 };
 
-                await this.client.CreateTaskOrchestrationAsync(
+                await this.durabilityProvider.CreateTaskOrchestrationAsync(
                     new TaskMessage
                     {
                         Event = new ExecutionStartedEvent(-1, request.Input)
@@ -174,7 +167,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             public override async Task<P.RaiseEventResponse> RaiseEvent(P.RaiseEventRequest request, ServerCallContext context)
             {
-                await this.client.SendTaskOrchestrationMessageAsync(
+                await this.durabilityProvider.SendTaskOrchestrationMessageAsync(
                     new TaskMessage
                     {
                         Event = new EventRaisedEvent(-1, request.Input)
@@ -193,7 +186,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             public override async Task<P.TerminateResponse> TerminateInstance(P.TerminateRequest request, ServerCallContext context)
             {
-                await this.client.ForceTerminateTaskOrchestrationAsync(
+                await this.durabilityProvider.ForceTerminateTaskOrchestrationAsync(
                     request.InstanceId,
                     request.Output);
 
@@ -203,7 +196,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             public override async Task<P.GetInstanceResponse> GetInstance(P.GetInstanceRequest request, ServerCallContext context)
             {
-                OrchestrationState state = await this.client.GetOrchestrationStateAsync(request.InstanceId, executionId: null);
+                OrchestrationState state = await this.durabilityProvider.GetOrchestrationStateAsync(request.InstanceId, executionId: null);
                 if (state == null)
                 {
                     return new P.GetInstanceResponse() { Exists = false };
@@ -214,44 +207,33 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             public override async Task<P.QueryInstancesResponse> QueryInstances(P.QueryInstancesRequest request, ServerCallContext context)
             {
-                if (this.client is IOrchestrationServiceQueryClient queryClient)
-                {
-                    OrchestrationQuery query = ProtobufUtils.ToOrchestrationQuery(request);
-                    OrchestrationQueryResult result = await queryClient.GetOrchestrationWithQueryAsync(query, context.CancellationToken);
-                    return ProtobufUtils.CreateQueryInstancesResponse(result, request);
-                }
-                else
-                {
-                    throw new NotSupportedException($"{this.client.GetType().Name} doesn't support query operations.");
-                }
+                OrchestrationQuery query = ProtobufUtils.ToOrchestrationQuery(request);
+                var queryClient = (IOrchestrationServiceQueryClient)this.durabilityProvider;
+                OrchestrationQueryResult result = await queryClient.GetOrchestrationWithQueryAsync(query, context.CancellationToken);
+                return ProtobufUtils.CreateQueryInstancesResponse(result, request);
             }
 
             public override async Task<P.PurgeInstancesResponse> PurgeInstances(P.PurgeInstancesRequest request, ServerCallContext context)
             {
-                if (this.client is IOrchestrationServicePurgeClient purgeClient)
+                var purgeClient = (IOrchestrationServicePurgeClient)this.durabilityProvider;
+
+                PurgeResult result;
+                switch (request.RequestCase)
                 {
-                    PurgeResult result;
-                    switch (request.RequestCase)
-                    {
-                        case P.PurgeInstancesRequest.RequestOneofCase.InstanceId:
-                            result = await purgeClient.PurgeInstanceStateAsync(request.InstanceId);
-                            break;
+                    case P.PurgeInstancesRequest.RequestOneofCase.InstanceId:
+                        result = await purgeClient.PurgeInstanceStateAsync(request.InstanceId);
+                        break;
 
-                        case P.PurgeInstancesRequest.RequestOneofCase.PurgeInstanceFilter:
-                            PurgeInstanceFilter purgeInstanceFilter = ProtobufUtils.ToPurgeInstanceFilter(request);
-                            result = await purgeClient.PurgeInstanceStateAsync(purgeInstanceFilter);
-                            break;
+                    case P.PurgeInstancesRequest.RequestOneofCase.PurgeInstanceFilter:
+                        PurgeInstanceFilter purgeInstanceFilter = ProtobufUtils.ToPurgeInstanceFilter(request);
+                        result = await purgeClient.PurgeInstanceStateAsync(purgeInstanceFilter);
+                        break;
 
-                        default:
-                            throw new ArgumentException($"Unknown purge request type '{request.RequestCase}'.");
-                    }
-
-                    return ProtobufUtils.CreatePurgeInstancesResponse(result);
+                    default:
+                        throw new ArgumentException($"Unknown purge request type '{request.RequestCase}'.");
                 }
-                else
-                {
-                    throw new NotSupportedException($"{this.client.GetType().Name} doesn't support purge operations.");
-                }
+
+                return ProtobufUtils.CreatePurgeInstancesResponse(result);
             }
 
             public override async Task<P.GetInstanceResponse> WaitForInstanceStart(P.GetInstanceRequest request, ServerCallContext context)
@@ -260,7 +242,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 while (true)
                 {
                     // Keep fetching the status until we get one of the states we care about
-                    OrchestrationState state = await this.client.GetOrchestrationStateAsync(request.InstanceId, executionId: null);
+                    OrchestrationState state = await this.durabilityProvider.GetOrchestrationStateAsync(request.InstanceId, executionId: null);
                     if (state != null && state.OrchestrationStatus != OrchestrationStatus.Pending)
                     {
                         return CreateGetInstanceResponse(state, request);
@@ -277,7 +259,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             public override async Task<P.GetInstanceResponse> WaitForInstanceCompletion(P.GetInstanceRequest request, ServerCallContext context)
             {
-                OrchestrationState state = await this.client.WaitForOrchestrationAsync(
+                OrchestrationState state = await this.durabilityProvider.WaitForOrchestrationAsync(
                     request.InstanceId,
                     executionId: null,
                     timeout: Timeout.InfiniteTimeSpan,

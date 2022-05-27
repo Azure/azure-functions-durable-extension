@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
-using Microsoft.Extensions.Logging;
+using DurableTask.Core.Query;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 #if !FUNCTIONS_V1
@@ -22,7 +22,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// directly with the expectation that only those interfaces will be implemented. All of the Durable Functions specific
     /// methods/operations are virtual and can be overwritten by creating a subclass.
     /// </summary>
-    public class DurabilityProvider : IOrchestrationService, IOrchestrationServiceClient
+    public class DurabilityProvider :
+        IOrchestrationService,
+        IOrchestrationServiceClient,
+        IOrchestrationServiceQueryClient,
+        IOrchestrationServicePurgeClient
     {
         internal const string NoConnectionDetails = "default";
 
@@ -427,6 +431,49 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public Task PurgeOrchestrationHistoryAsync(DateTime thresholdDateTimeUtc, OrchestrationStateTimeRangeFilterType timeRangeFilterType)
         {
             return this.GetOrchestrationServiceClient().PurgeOrchestrationHistoryAsync(thresholdDateTimeUtc, timeRangeFilterType);
+        }
+
+        // The next few IOrchestrationServiceXXXClient methods are called by gRPC-based out-of-proc implementations
+
+        /// <inheritdoc />
+        Task<OrchestrationQueryResult> IOrchestrationServiceQueryClient.GetOrchestrationWithQueryAsync(
+            OrchestrationQuery query,
+            CancellationToken cancellationToken)
+        {
+            if (this.innerServiceClient is IOrchestrationServiceQueryClient queryClient)
+            {
+                return queryClient.GetOrchestrationWithQueryAsync(query, cancellationToken);
+            }
+            else
+            {
+                throw new NotSupportedException($"{this.innerServiceClient.GetType().Name} doesn't support query operations.");
+            }
+        }
+
+        /// <inheritdoc />
+        Task<PurgeResult> IOrchestrationServicePurgeClient.PurgeInstanceStateAsync(string instanceId)
+        {
+            if (this.innerServiceClient is IOrchestrationServicePurgeClient purgeClient)
+            {
+                return purgeClient.PurgeInstanceStateAsync(instanceId);
+            }
+            else
+            {
+                throw new NotSupportedException($"{this.innerServiceClient.GetType().Name} doesn't support purge operations.");
+            }
+        }
+
+        /// <inheritdoc />
+        Task<PurgeResult> IOrchestrationServicePurgeClient.PurgeInstanceStateAsync(PurgeInstanceFilter purgeInstanceFilter)
+        {
+            if (this.innerServiceClient is IOrchestrationServicePurgeClient purgeClient)
+            {
+                return purgeClient.PurgeInstanceStateAsync(purgeInstanceFilter);
+            }
+            else
+            {
+                throw new NotSupportedException($"{this.innerServiceClient.GetType().Name} doesn't support purge operations.");
+            }
         }
 
         /// <summary>

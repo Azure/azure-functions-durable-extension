@@ -6,7 +6,7 @@
     <RootNamespace>Microsoft.Azure.WebJobs.Extensions.DurableTask</RootNamespace>
     <MajorVersion>2</MajorVersion>
     <MinorVersion>7</MinorVersion>
-    <PatchVersion>1</PatchVersion>
+    <PatchVersion>2</PatchVersion>
     <Version>$(MajorVersion).$(MinorVersion).$(PatchVersion)</Version>
     <FileVersion>$(MajorVersion).$(MinorVersion).$(PatchVersion)</FileVersion>
     <AssemblyVersion>$(MajorVersion).0.0.0</AssemblyVersion>
@@ -109,6 +109,7 @@
 
   <!-- Common dependencies across all targets -->
   <ItemGroup>
+    <PackageReference Include="Microsoft.Azure.DurableTask.Core" Version="2.9.*" />
     <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" Version="1.11.*" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers" Version="0.4.*" />
     <!-- Build-time dependencies -->

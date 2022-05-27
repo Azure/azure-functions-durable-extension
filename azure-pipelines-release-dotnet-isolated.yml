@@ -1,0 +1,122 @@
+trigger: none
+pr: none
+
+# Use an internally approved MS host for building, signing, and SBOM generation
+pool:
+  name: '1ES-Hosted-DurableTaskFramework'
+  demands:
+    - ImageOverride -equals MMS2022TLS
+
+steps:
+- task: UseDotNet@2
+  displayName: 'Use the .NET Core 2.1 SDK (required for build signing)'
+  inputs:
+    packageType: 'sdk'
+    version: '2.1.x'
+
+- task: UseDotNet@2
+  displayName: 'Use the .NET 6 SDK'
+  inputs:
+    packageType: 'sdk'
+    version: '6.0.x'
+
+# Start by restoring all the .NET Isolated worker extension dependencies. This needs to be its own task.
+- task: DotNetCoreCLI@2
+  displayName: 'Restore nuget dependencies'
+  inputs:
+    command: restore
+    verbosityRestore: Minimal
+    projects: 'src/Worker.Extensions.DurableTask/*.csproj'
+
+# Build just the .NET Isolated worker extension project
+- task: VSBuild@1
+  displayName: 'Build'
+  inputs:
+    solution: 'src/Worker.Extensions.DurableTask/*.csproj'
+    vsVersion: 'latest'
+    logFileVerbosity: minimal
+    configuration: Release
+    msbuildArgs: /p:FileVersionRevision=$(Build.BuildId) /p:ContinuousIntegrationBuild=true
+
+# Authenticode sign all the DLLs with the Microsoft certificate.
+# This appears to be an in-place signing job, which is convenient.
+- task: SFP.build-tasks.custom-build-task-1.EsrpCodeSigning@1
+  displayName: 'ESRP CodeSigning: Authenticode'
+  inputs:
+    ConnectedServiceName: 'ESRP Service'
+    FolderPath: 'src/Worker.Extensions.DurableTask/bin/Release'
+    Pattern: 'Microsoft.Azure.Functions.Worker.Extensions.DurableTask.dll'
+    signConfigType: inlineSignParams
+    inlineOperation: |
+     [    
+        {
+            "KeyCode": "CP-230012",
+            "OperationCode": "SigntoolSign",
+            "Parameters": {
+                "OpusName": "Microsoft",
+                "OpusInfo": "http://www.microsoft.com",
+                "FileDigest": "/fd \"SHA256\"",
+                "PageHash": "/NPH",
+                "TimeStamp": "/tr \"http://rfc3161.gtm.corp.microsoft.com/TSS/HttpTspServer\" /td sha256"
+            },
+            "ToolName": "sign",
+            "ToolVersion": "1.0"
+          },
+          {
+              "KeyCode": "CP-230012",
+              "OperationCode": "SigntoolVerify",
+              "Parameters": {},
+              "ToolName": "sign",
+              "ToolVersion": "1.0"
+          }
+      ]
+
+# SBOM generator task for additional supply chain protection
+- task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
+  displayName: 'SBOM Manifest Generator'
+  inputs:
+    BuildDropPath: '$(System.DefaultWorkingDirectory)'
+
+# Packaging needs to be a separate step from build.
+# This will automatically pick up any signed DLLs.
+- task: DotNetCoreCLI@2
+  displayName: Generate nuget packages
+  inputs:
+    command: pack
+    verbosityPack: Minimal
+    configuration: Release
+    nobuild: true
+    packDirectory: $(build.artifactStagingDirectory)
+    packagesToPack: 'src/Worker.Extensions.DurableTask/*.csproj'
+
+# Digitally sign all the nuget packages with the Microsoft certificate.
+# This appears to be an in-place signing job, which is convenient.
+- task: SFP.build-tasks.custom-build-task-1.EsrpCodeSigning@1
+  displayName: 'ESRP CodeSigning: Nupkg'
+  inputs:
+    ConnectedServiceName: 'ESRP Service'
+    FolderPath: $(build.artifactStagingDirectory)
+    Pattern: '*.nupkg'
+    signConfigType: inlineSignParams
+    inlineOperation: |
+     [    
+        {
+            "KeyCode": "CP-401405",
+            "OperationCode": "NuGetSign",
+            "Parameters": {},
+            "ToolName": "sign",
+            "ToolVersion": "1.0"
+        },
+        {
+            "KeyCode": "CP-401405",
+            "OperationCode": "NuGetVerify",
+            "Parameters": {},
+            "ToolName": "sign",
+            "ToolVersion": "1.0"
+        }
+     ]
+
+# Make the nuget packages available for download in the ADO portal UI
+- publish: $(build.artifactStagingDirectory)
+  displayName: 'Publish nuget packages to Artifacts'
+  artifact: PackageOutput

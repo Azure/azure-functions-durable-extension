@@ -1,16 +1,6 @@
-## New Features
+## Bug Fixes
+- Correctly Serialize HostStoppingEvent in ActivityShim (https://github.com/Azure/azure-functions-durable-extension/pull/2178)
+- Fix NotImplementedException for management API calls from Java client (https://github.com/Azure/azure-functions-durable-extension/pull/2193)
 
-- Improve telemetry to detect "illegal"/non-DF Tasks being awaited (https://github.com/Azure/azure-functions-durable-extension/pull/2168)
-
-## Bug fixes
-
-None
-
-## Breaking Changes
-
-None
-
-## Dependency Updates
-
-- Removed .NET 6 target and added .NET Core 3.1 target
-- Removed DurableTask.Sidecar v0.3.0 dependency
+## Enhancements
+- add optional 'instanceIdPrefix' query parameter to the HTTP API for instance queries

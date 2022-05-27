@@ -3,6 +3,7 @@
 
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
+using Microsoft.DurableTask;
 using Microsoft.Extensions.Logging;
 
 namespace DurableNetIsolated.Untyped;
@@ -41,16 +42,14 @@ internal static class HelloSequenceUntyped
     /// <param name="requestState">The serialized orchestration state that gets passed to the function.</param>
     /// <returns>Returns an opaque output string with instructions about what actions to persist into the orchestration history.</returns>
     [Function(nameof(HelloCitiesUntyped))]
-    public static string HelloCitiesUntyped([OrchestrationTrigger] string requestState, FunctionContext functionContext) =>
-        Microsoft.DurableTask.OrchestrationRunner.LoadAndRun<string, string>(requestState, async (context, _) =>
-        {
-            string result = "";
-            result += await context.CallActivityAsync<string>(nameof(SayHelloUntyped), "Tokyo") + " ";
-            result += await context.CallActivityAsync<string>(nameof(SayHelloUntyped), "London") + " ";
-            result += await context.CallActivityAsync<string>(nameof(SayHelloUntyped), "Seattle");
-            return result;
-        },
-        functionContext.InstanceServices);
+    public static async Task<string> HelloCitiesUntyped([OrchestrationTrigger] TaskOrchestrationContext context)
+    {
+        string result = "";
+        result += await context.CallActivityAsync<string>(nameof(SayHelloUntyped), "Tokyo") + " ";
+        result += await context.CallActivityAsync<string>(nameof(SayHelloUntyped), "London") + " ";
+        result += await context.CallActivityAsync<string>(nameof(SayHelloUntyped), "Seattle");
+        return result;
+    }
 
     /// <summary>
     /// Simple activity function that returns the string "Hello, {input}!".
