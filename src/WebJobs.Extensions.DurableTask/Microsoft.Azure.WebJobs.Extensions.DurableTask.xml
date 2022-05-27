@@ -2130,6 +2130,15 @@
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.PurgeOrchestrationHistoryAsync(System.DateTime,DurableTask.Core.OrchestrationStateTimeRangeFilterType)">
             <inheritdoc />
         </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.DurableTask#Core#Query#IOrchestrationServiceQueryClient#GetOrchestrationWithQueryAsync(DurableTask.Core.Query.OrchestrationQuery,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.DurableTask#Core#IOrchestrationServicePurgeClient#PurgeInstanceStateAsync(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.DurableTask#Core#IOrchestrationServicePurgeClient#PurgeInstanceStateAsync(DurableTask.Core.PurgeInstanceFilter)">
+            <inheritdoc />
+        </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.ValidateDelayTime(System.TimeSpan,System.String@)">
             <summary>
             Uses durability provider specific logic to verify whether a timespan for a timer, timeout
