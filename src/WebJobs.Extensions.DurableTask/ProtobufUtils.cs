@@ -4,6 +4,7 @@
 #nullable enable
 using System;
 using System.Buffers;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using DurableTask.Core;
@@ -350,6 +351,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 FetchInputsAndOutputs = request.Query.FetchInputsAndOutputs,
             };
 
+            // Empty lists are not allowed by the underlying code that takes in an OrchestrationQuery. However,
+            // some clients use empty lists instead of nulls. Need to overwrite empty lists with null values.
+            if (query.TaskHubNames?.Count == 0)
+            {
+                query.TaskHubNames = null;
+            }
+
+            if (query.RuntimeStatus?.Count == 0)
+            {
+                query.RuntimeStatus = null;
+            }
+
             return query;
         }
 
@@ -381,10 +394,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal static PurgeInstanceFilter ToPurgeInstanceFilter(P.PurgeInstancesRequest request)
         {
+            // Empty lists are not allowed by the underlying code that takes in a PurgeInstanceFilter. However, some
+            // clients (like Java) may use empty lists by default instead of nulls.
+            // Long story short: we must make sure to only copy over the list if it's non-empty.
+            IEnumerable<OrchestrationStatus>? statusFilter = null;
+            if (request.PurgeInstanceFilter.RuntimeStatus != null && request.PurgeInstanceFilter.RuntimeStatus.Count > 0)
+            {
+                statusFilter = request.PurgeInstanceFilter.RuntimeStatus?.Select(status => (OrchestrationStatus)status).ToList();
+            }
+
             return new PurgeInstanceFilter(
                 request.PurgeInstanceFilter.CreatedTimeFrom.ToDateTime(),
                 request.PurgeInstanceFilter.CreatedTimeTo?.ToDateTime(),
-                request.PurgeInstanceFilter.RuntimeStatus?.Select(status => (OrchestrationStatus)status).ToList());
+                statusFilter);
         }
 
         internal static P.PurgeInstancesResponse CreatePurgeInstancesResponse(PurgeResult result)
