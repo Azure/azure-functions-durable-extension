@@ -47,6 +47,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private const string ShowHistoryOutputParameter = "showHistoryOutput";
         private const string ShowInputParameter = "showInput";
         private const string FetchStateParameter = "fetchState";
+        private const string InstanceIdPrefixParameter = "instanceIdPrefix";
         private const string CreatedTimeFromParameter = "createdTimeFrom";
         private const string CreatedTimeToParameter = "createdTimeTo";
         private const string RuntimeStatusParameter = "runtimeStatus";
@@ -442,6 +443,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             var condition = new OrchestrationStatusQueryCondition();
 
+            if (TryGetStringQueryParameterValue(queryNameValuePairs, InstanceIdPrefixParameter, out string instanceIdPrefix))
+            {
+                condition.InstanceIdPrefix = instanceIdPrefix;
+            }
+
             if (TryGetDateTimeQueryParameterValue(queryNameValuePairs, CreatedTimeFromParameter, out DateTime createdTimeFrom))
             {
                 condition.CreatedTimeFrom = createdTimeFrom;
@@ -715,6 +721,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             return false;
+        }
+
+        private static bool TryGetStringQueryParameterValue(NameValueCollection queryStringNameValueCollection, string queryParameterName, out string stringValue)
+        {
+            stringValue = queryStringNameValueCollection[queryParameterName];
+            return stringValue != null;
         }
 
         private static bool TryGetDateTimeQueryParameterValue(NameValueCollection queryStringNameValueCollection, string queryParameterName, out DateTime dateTimeValue)
