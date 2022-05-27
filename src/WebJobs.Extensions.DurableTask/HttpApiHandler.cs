@@ -47,7 +47,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private const string ShowHistoryOutputParameter = "showHistoryOutput";
         private const string ShowInputParameter = "showInput";
         private const string FetchStateParameter = "fetchState";
-        private const string instanceIdPrefixParameter = "instanceIdPrefix";
+        private const string InstanceIdPrefixParameter = "instanceIdPrefix";
         private const string CreatedTimeFromParameter = "createdTimeFrom";
         private const string CreatedTimeToParameter = "createdTimeTo";
         private const string RuntimeStatusParameter = "runtimeStatus";
@@ -443,7 +443,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             var condition = new OrchestrationStatusQueryCondition();
 
-            if (TryGetStringQueryParameterValue(queryNameValuePairs, instanceIdPrefixParameter, out string instanceIdPrefix))
+            if (TryGetStringQueryParameterValue(queryNameValuePairs, InstanceIdPrefixParameter, out string instanceIdPrefix))
             {
                 condition.InstanceIdPrefix = instanceIdPrefix;
             }
