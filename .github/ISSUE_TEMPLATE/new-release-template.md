@@ -11,8 +11,8 @@ assignees: comcmaho, amdeel, davidmrdavid, bachuv
 _Due: <2-3-business-days-before-release>_
 - [ ] Check DTFx package versions (either DT-AzureStorage only or if there were Core changes DT-AzureStorage, DT-Core, DT-Emulator, and DT-Redis)
 - [ ] Delete DTFx test packages from staging myget.
-- [ ] Run the [DTFx release pipeline](https://github.com/Azure/durabletask/blob/main/azure-pipelines-release.yml) to obtain new packages.
-- [ ] Publish DTFx packages to staging myget for testing.
+- [ ] Run the [DTFx release pipeline](https://durabletaskframework.visualstudio.com/Durable%20Task%20Framework%20CI/_build?definitionId=21) ([defined here](https://github.com/Azure/durabletask/blob/main/azure-pipelines-release.yml)) to obtain new packages.
+- [ ] Publish DTFx packages to staging myget (https://www.myget.org/feed/Packages/azure-appservice) for testing.
 
 **Prep Release (assigned to: )**
 _Due: <2-business-days-before-release>_
