@@ -529,7 +529,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var runtimeStatus = new List<OrchestrationRuntimeStatus>();
             runtimeStatus.Add(OrchestrationRuntimeStatus.Running);
             var runtimeStatusString = OrchestrationRuntimeStatus.Running.ToString();
-            var instanceIdStartsWith = "Do";
+            var instanceIdPrefix = "Do";
 
             var clientMock = new Mock<IDurableClient>();
             clientMock
@@ -541,7 +541,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             // Build uri
             var getStatusRequestUriBuilder = new UriBuilder(TestConstants.NotificationUrl);
             getStatusRequestUriBuilder.Path += $"/Instances/";
-            getStatusRequestUriBuilder.Query = $"createdTimeFrom={WebUtility.UrlEncode(createdTimeFrom.ToString())}&createdTimeTo={WebUtility.UrlEncode(createdTimeTo.ToString())}&runtimeStatus={runtimeStatusString}&instanceIdStartsWith={instanceIdStartsWith}";
+            getStatusRequestUriBuilder.Query = $"createdTimeFrom={WebUtility.UrlEncode(createdTimeFrom.ToString())}&createdTimeTo={WebUtility.UrlEncode(createdTimeTo.ToString())}&runtimeStatus={runtimeStatusString}&instanceIdPrefix={instanceIdPrefix}";
 
             // Test HttpApiHandler response
             var responseMessage = await httpApiHandler.HandleRequestAsync(
@@ -594,7 +594,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var runtimeStatusString = OrchestrationRuntimeStatus.Running.ToString();
             var pageSize = 100;
             var continuationToken = "XXXX-XXXXXXXX-XXXXXXXXXXXX";
-            var instanceIdStartsWith = "Do";
+            var instanceIdPrefix = "Do";
 
             var clientMock = new Mock<IDurableClient>();
             clientMock
@@ -607,7 +607,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     Assert.Equal(OrchestrationRuntimeStatus.Running, condition.RuntimeStatus.FirstOrDefault());
                     Assert.Equal(pageSize, condition.PageSize);
                     Assert.Equal(continuationToken, condition.ContinuationToken);
-                    Assert.Equal(instanceIdStartsWith, condition.InstanceIdPrefix);
+                    Assert.Equal(instanceIdPrefix, condition.InstanceIdPrefix);
                 });
 
             var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);
@@ -615,7 +615,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             // Build uri
             var getStatusRequestUriBuilder = new UriBuilder(TestConstants.NotificationUrl);
             getStatusRequestUriBuilder.Path += $"/Instances/";
-            getStatusRequestUriBuilder.Query = $"createdTimeFrom={WebUtility.UrlEncode(createdTimeFrom.ToString())}&createdTimeTo={WebUtility.UrlEncode(createdTimeTo.ToString())}&runtimeStatus={runtimeStatusString}&top=100&instanceIdStartsWith={instanceIdStartsWith}";
+            getStatusRequestUriBuilder.Query = $"createdTimeFrom={WebUtility.UrlEncode(createdTimeFrom.ToString())}&createdTimeTo={WebUtility.UrlEncode(createdTimeTo.ToString())}&runtimeStatus={runtimeStatusString}&top=100&instanceIdPrefix={instanceIdPrefix}";
 
             // Test HttpApiHandler response
             var requestMessage = new HttpRequestMessage
