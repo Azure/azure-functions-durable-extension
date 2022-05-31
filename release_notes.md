@@ -4,3 +4,7 @@
 
 ## Enhancements
 - add optional 'instanceIdPrefix' query parameter to the HTTP API for instance queries
+
+## Dependencies
+- DurableTask.Core --> v2.10.*
+- DurableTask.AzureStorage --> v1.12.*
