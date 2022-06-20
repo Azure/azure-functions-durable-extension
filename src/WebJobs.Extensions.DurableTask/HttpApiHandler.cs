@@ -1120,6 +1120,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 querySuffix += "&" + notificationUri.Query.TrimStart('?');
             }
 
+            // TODO: add fields for suspend/resume URLS to HttpManagementPayload
             var httpManagementPayload = new HttpManagementPayload
             {
                 Id = instanceId,
@@ -1148,6 +1149,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string purgeHistoryDeleteUri,
             string restartPostUri)
         {
+            string suspendAPI = "suspendURL";
+            string resumeAPI = "resumeURL";
+
             HttpResponseMessage response = request.CreateResponse(
                 HttpStatusCode.Accepted,
                 new
@@ -1158,6 +1162,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     terminatePostUri,
                     purgeHistoryDeleteUri,
                     restartPostUri,
+                    suspendAPI,
+                    resumeAPI,
                 });
 
             // Implement the async HTTP 202 pattern.
