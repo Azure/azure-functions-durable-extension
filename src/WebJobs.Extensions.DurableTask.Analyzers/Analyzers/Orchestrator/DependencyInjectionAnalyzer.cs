@@ -15,7 +15,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
     {
         public const string DiagnosticId = "DF0113";
 
-        //TODO: Fix strings
         private static readonly LocalizableString Title = new LocalizableResourceString(nameof(Resources.DependencyInjectionAnalyzerTitle), Resources.ResourceManager, typeof(Resources));
         private static readonly LocalizableString MessageFormat = new LocalizableResourceString(nameof(Resources.DeterministicAnalyzerMessageFormat), Resources.ResourceManager, typeof(Resources));
         private static readonly LocalizableString Description = new LocalizableResourceString(nameof(Resources.DeterministicAnalyzerDescription), Resources.ResourceManager, typeof(Resources));
