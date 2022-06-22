@@ -22,8 +22,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         public static void ReportProblems(CompilationAnalysisContext context, SyntaxNode methodDeclaration)
         {
-            var staticKeyword = methodDeclaration.ChildTokens().FirstOrDefault(x => x.IsKind(SyntaxKind.StaticKeyword));
-            if (staticKeyword == null || staticKeyword.IsKind(SyntaxKind.None))
+            if (!SyntaxNodeUtils.IsInStaticMethod(methodDeclaration))
             {
                 SemanticModel semanticModel = context.Compilation.GetSemanticModel(methodDeclaration.SyntaxTree);
                 if (IsInEntityClass(semanticModel, methodDeclaration))

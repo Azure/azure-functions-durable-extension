@@ -232,6 +232,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Injected dependencies cannot be used inside an orchestrator function..
+        /// </summary>
+        public static string DependencyInjectionAnalyzerTitle {
+            get {
+                return ResourceManager.GetString("DependencyInjectionAnalyzerTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to An orchestrator function must be deterministic. For more information on orchestrator code constraints, see:
         ///https://docs.microsoft.com/azure/azure-functions/durable/durable-functions-checkpointing-and-replay#orchestrator-code-constraints.
         /// </summary>

@@ -122,9 +122,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         {
             if (TryGetMethodDeclaration(node, out SyntaxNode methodDeclaration))
             {
-                var parameterList = methodDeclaration.ChildNodes().First(x => x.IsKind(SyntaxKind.ParameterList));
+                var parameters = ((MethodDeclarationSyntax)methodDeclaration).ParameterList.ChildNodes();
 
-                foreach (SyntaxNode parameter in parameterList.ChildNodes())
+                foreach (SyntaxNode parameter in parameters)
                 {
                     var attributeLists = parameter.ChildNodes().Where(x => x.IsKind(SyntaxKind.AttributeList));
                     foreach (SyntaxNode attribute in attributeLists)
@@ -196,6 +196,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         internal static bool TryGetInvocationExpression(SyntaxNode node, out SyntaxNode invocationExpression) => TryGetContainingSyntaxNode(node, SyntaxKind.InvocationExpression, out invocationExpression);
 
+        internal static bool TryGetClassDeclaration(SyntaxNode node, out SyntaxNode classDeclaration) => TryGetContainingSyntaxNode(node, SyntaxKind.ClassDeclaration, out classDeclaration);
+
         private static bool TryGetContainingSyntaxNode(SyntaxNode node, SyntaxKind kind, out SyntaxNode kindNode)
         {
             var currNode = node.IsKind(kind) ? node : node.Parent;
@@ -213,22 +215,69 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             return true;
         }
 
-        internal static bool TryGetClassName(SyntaxNode node, out string className)
+        internal static bool TryGetConstructor(SyntaxNode node, out ConstructorDeclarationSyntax constructor)
         {
-            var currNode = node.IsKind(SyntaxKind.ClassDeclaration) ? node : node.Parent;
-            while (!currNode.IsKind(SyntaxKind.ClassDeclaration))
+            if (TryGetClassDeclaration(node, out SyntaxNode classDeclaration))
             {
-                if (currNode.IsKind(SyntaxKind.CompilationUnit))
+                var constructorNode = classDeclaration.ChildNodes().FirstOrDefault(x => x.IsKind(SyntaxKind.ConstructorDeclaration));
+                if (constructorNode != null)
                 {
-                    className = null;
-                    return false;
+                    constructor = (ConstructorDeclarationSyntax)constructorNode;
+                    return true;
                 }
-                currNode = currNode.Parent;
             }
 
-            var classDeclaration = (ClassDeclarationSyntax)currNode;
-            className = classDeclaration.Identifier.ToString();
-            return true;
+            constructor = null;
+            return false;
+        }
+
+        internal static bool TryGetClassName(SyntaxNode node, out string className)
+        {
+            if (TryGetClassDeclaration(node, out SyntaxNode classDeclaration))
+            {
+                className = ((ClassDeclarationSyntax)classDeclaration).Identifier.ToString();
+                return true;
+            }
+
+            className = null;
+            return false;
+        }
+
+        internal static bool IsInStaticClass(SyntaxNode node)
+        {
+            if (TryGetClassDeclaration(node, out SyntaxNode classDeclaration))
+            {
+                if (HasStaticChildNode(classDeclaration))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        internal static bool IsInStaticMethod(SyntaxNode node)
+        {
+            if (TryGetMethodDeclaration(node, out SyntaxNode methodDeclaration))
+            {
+                if (HasStaticChildNode(methodDeclaration))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool HasStaticChildNode(SyntaxNode node)
+        {
+            var staticKeyword = node.ChildTokens().FirstOrDefault(x => x.IsKind(SyntaxKind.StaticKeyword));
+            if (staticKeyword != null && !staticKeyword.IsKind(SyntaxKind.None))
+            {
+                return true;
+            }
+
+            return false;
         }
 
         public static bool TryGetFunctionName(SemanticModel semanticModel, SyntaxNode node, out string functionName)
