@@ -62,7 +62,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                 var name = expression.Name;
                 if (name.ToString().StartsWith("DispatchAsync"))
                 {
-                    if(SyntaxNodeUtils.TryGetMethodDeclaration(expression, out SyntaxNode methodDeclaration))
+                    if(SyntaxNodeUtils.TryGetMethodDeclaration(expression, out MethodDeclarationSyntax methodDeclaration))
                     {
                         methodDeclarations.Add(methodDeclaration);
                     }

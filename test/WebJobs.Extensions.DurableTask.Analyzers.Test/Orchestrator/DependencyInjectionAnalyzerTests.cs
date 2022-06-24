@@ -27,8 +27,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
     {
         public class HelloSequence
         {
-            public HelloSequence()
+            private string injectedVariable;
+
+            public HelloSequence(string injectedVariable)
             {
+                this.injectedVariable = injectedVariable;
             }
 
             [FunctionName(""DIAnalyzerTestCases"")]
@@ -36,6 +39,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
                 var noninjectedVariable = ""test"";
+            }
+
+            [FunctionName(""DI_Activity"")]
+            public static void DIActivity([ActivityTrigger] IDurableActivityContext context)
+            {
+                var usingDIVar = injectedVariable;
             }
         }
     }";
