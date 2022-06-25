@@ -12,8 +12,10 @@
     }
   },
   "extensions": {
-    "durableTask": {
-      "hubName": "DFJavaSmokeTest"
+    "storageProvider": {
+      "type": "mssql",
+      "connectionStringName": "SQLDB_Connection",
+      "createDatabaseIfNotExists": true
     }
   }
 }

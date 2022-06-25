@@ -27,10 +27,38 @@ if ($NoSetup -eq $false) {
 	Write-Host "Starting Azurite storage emulator using default ports..." -ForegroundColor Yellow
 	docker run --name 'azurite' -p 10000:10000 -p 10001:10001 -p 10002:10002 -d "mcr.microsoft.com/azure-storage/azurite:${AzuriteVersion}"
 
+	# DO NOT CHECK IN
+	# START SQL BACKEND TESTING
+	$pw="NotASecret!12"
+	$sqlpid="Express"
+	$tag="2019-latest"
+	$port=1433
+	$dbname="DurableDB"
+	$collation="Latin1_General_100_BIN2_UTF8"
+	$additinalRunFlags=""
+
+	Write-Host "Pulling down the mcr.microsoft.com/mssql/server:$tag image..."
+	docker pull mcr.microsoft.com/mssql/server:$tag
+
+	# Start the SQL Server docker container with the specified edition
+	Write-Host "Starting SQL Server $tag $sqlpid docker container on port $port" -ForegroundColor DarkYellow
+	docker run $additinalRunFlags --name mssql-server -e 'ACCEPT_EULA=Y' -e "SA_PASSWORD=$pw" -e "MSSQL_PID=$sqlpid" -p ${port}:1433 -d mcr.microsoft.com/mssql/server:$tag
+
+	# The container needs a bit more time before it can start accepting commands
+	Write-Host "Sleeping for 30 seconds to let the container finish initializing..." -ForegroundColor Yellow
+	Start-Sleep -Seconds 30
+
+	# Create the database with strict binary collation
+	Write-Host "Creating '$dbname' database with '$collation' collation" -ForegroundColor DarkYellow
+	docker exec -d mssql-server /opt/mssql-tools/bin/sqlcmd -S . -U sa -P "$pw" -Q "CREATE DATABASE [$dbname] COLLATE $collation"
+
+	#END SQL SETUP
+
 	# Finally, start up the smoke test container, which will connect to the Azurite container
 	docker run --name $ContainerName -p 8080:80 -it --add-host=host.docker.internal:host-gateway -d `
 		--env 'AzureWebJobsStorage=UseDevelopmentStorage=true;DevelopmentStorageProxyUri=http://host.docker.internal' `
 		--env 'WEBSITE_HOSTNAME=localhost:8080' `
+		--env "SQLDB_Connection=Server=localhost;Database=DurableDB;Trusted_Connection=False;User ID=sa;Password=$pw;" `
 		$ImageName
 }
 

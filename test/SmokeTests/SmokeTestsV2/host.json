@@ -13,7 +13,11 @@
   },
   "extensions": {
     "durableTask": {
-      "hubName": "DotNetSmokeTestV2"
+      "storageProvider": {
+        "type": "mssql",
+        "connectionStringName": "SQLDB_Connection",
+        "createDatabaseIfNotExists": true
+      }
     }
   }
 }

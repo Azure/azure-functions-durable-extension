@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="3.1.*" />
+    <PackageReference Include="Microsoft.DurableTask.SqlServer.AzureFunctions" Version="1.0.0" />
   </ItemGroup>
 
   <ItemGroup>

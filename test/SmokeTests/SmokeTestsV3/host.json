@@ -12,8 +12,10 @@
     }
   },
   "extensions": {
-    "durableTask": {
-      "hubName": "DotNetSmokeTestV3"
+    "storageProvider": {
+      "type": "mssql",
+      "connectionStringName": "SQLDB_Connection",
+      "createDatabaseIfNotExists": true
     }
   }
 }

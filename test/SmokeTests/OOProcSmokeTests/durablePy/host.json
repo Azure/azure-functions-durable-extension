@@ -13,8 +13,10 @@
     }
   },
   "extensions": {
-    "durableTask": {
-      "hubName": "PythonSmokeTest"
+    "storageProvider": {
+      "type": "mssql",
+      "connectionStringName": "SQLDB_Connection",
+      "createDatabaseIfNotExists": true
     }
   }
 }
