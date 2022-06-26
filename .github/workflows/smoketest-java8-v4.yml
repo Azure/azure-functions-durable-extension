@@ -2,7 +2,7 @@ name: Smoke Test - Java 8 on Functions V4
 
 on:
   push:
-    branches: [ main, dev ]
+    branches: [ main, dev, shreyasg/smoke-test-java ]
     paths:
       - 'src/**'
       - 'test/SmokeTests/OOProcSmokeTests/durableJava/**'
@@ -17,6 +17,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+      - name: Set up JDK 8
+        uses: actions/setup-java@v2
+        with:
+          java-version: '8'
+          distribution: 'temurin'
+      - name: Build azure functions sample
+        uses: gradle/gradle-build-action@bc3340afc5e3cc44f2321809ac090d731c13c514
+        with:
+          gradle-version: 6.5
+          arguments: azureFunctionsPackage -p test/SmokeTests/OOProcSmokeTests/durableJava/
+        continue-on-error: true
+      - name: Download azure functions java library # TODO: Remove this step once gradle plugin is updated
+        run: |
+          wget -P test/SmokeTests/OOProcSmokeTests/durableJava/build/azure-functions/durableJava/lib/ "https://repo.maven.apache.org/maven2/com/microsoft/azure/functions/azure-functions-java-library/2.0.1/azure-functions-java-library-2.0.1.jar" --show-progress
       - name: Run V4 Java 8 Smoke Test
         run: test/SmokeTests/e2e-test.ps1 -DockerfilePath test/SmokeTests/OOProcSmokeTests/durableJava/Dockerfile -HttpStartPath api/StartOrchestration
         shell: pwsh
