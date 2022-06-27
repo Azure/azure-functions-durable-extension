@@ -1,9 +1,0 @@
-{
-  "scriptFile" : "../samples-azure-functions-0.1.0-SNAPSHOT.jar",
-  "entryPoint" : "com.functions.AzureFunctions.citiesOrchestrator",
-  "bindings" : [ {
-    "type" : "orchestrationTrigger",
-    "direction" : "in",
-    "name" : "orchestratorRequestProtoBytes"
-  } ]
-}
