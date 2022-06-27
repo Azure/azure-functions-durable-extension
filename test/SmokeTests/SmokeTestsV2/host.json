@@ -10,14 +10,5 @@
         "isEnabled": false
       }
     }
-  },
-  "extensions": {
-    "durableTask": {
-      "storageProvider": {
-        "type": "mssql",
-        "connectionStringName": "SQLDB_Connection",
-        "createDatabaseIfNotExists": true
-      }
-    }
   }
 }
