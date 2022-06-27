@@ -2,7 +2,7 @@ name: Smoke Test - Java 8 on Functions V4
 
 on:
   push:
-    branches: [ main, dev, shreyasg/smoke-test-java ]
+    branches: [ main, dev ]
     paths:
       - 'src/**'
       - 'test/SmokeTests/OOProcSmokeTests/durableJava/**'

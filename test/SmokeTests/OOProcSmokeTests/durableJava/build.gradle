@@ -16,7 +16,6 @@ repositories {
 }
 
 dependencies {
-    implementation 'com.microsoft:durabletask-client:1.0.0-beta.1'
     implementation 'com.microsoft:durabletask-azure-functions:1.0.0-beta.1'
 
     implementation 'com.microsoft.azure.functions:azure-functions-java-library:2.0.1'
