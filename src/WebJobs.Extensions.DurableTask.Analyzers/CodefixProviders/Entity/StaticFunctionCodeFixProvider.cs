@@ -46,9 +46,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         private async Task<Document> AddStaticModifierAsync(Document document, SyntaxNode identifierNode, CancellationToken cancellationToken)
         {
             var root = await document.GetSyntaxRootAsync(cancellationToken);
-            if (SyntaxNodeUtils.TryGetMethodDeclaration(identifierNode, out SyntaxNode methodDeclaration))
+            if (SyntaxNodeUtils.TryGetMethodDeclaration(identifierNode, out MethodDeclarationSyntax methodDeclaration))
             {
-                var newMethodDeclaration = ((MethodDeclarationSyntax)methodDeclaration).AddModifiers(SyntaxFactory.Token(SyntaxKind.StaticKeyword));
+                var newMethodDeclaration = methodDeclaration.AddModifiers(SyntaxFactory.Token(SyntaxKind.StaticKeyword));
                 var newRoot = root.ReplaceNode(methodDeclaration, newMethodDeclaration);
 
                 return document.WithSyntaxRoot(newRoot);
