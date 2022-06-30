@@ -40,9 +40,9 @@ steps:
     feedsToUse: config
     nugetConfigPath: '.nuget/nuget.config'
 
-# Build durable-extension
+# Build durable-analyzer
 - task: VSBuild@1
-  displayName: 'Build Durable Extension'
+  displayName: 'Build Durable Analyzer'
   inputs:
     solution: '**/WebJobs.Extensions.DurableTask.Analyzers.sln'
     vsVersion: "16.0"
@@ -52,7 +52,7 @@ steps:
 - task: EsrpCodeSigning@1
   inputs:
     ConnectedServiceName: 'ESRP Service'
-    FolderPath: 'src/WebJobs.Extensions.DurableTask/bin/Release'
+    FolderPath: 'src/WebJobs.Extensions.DurableTask.Analyzers/bin/Release'
     Pattern: '*DurableTask.dll'
     signConfigType: 'inlineSignParams'
     inlineOperation: |
@@ -92,10 +92,10 @@ steps:
 # Packaging needs to be a separate step from build.
 # This will automatically pick up the signed DLLs.
 - task: DotNetCoreCLI@2
-  displayName: 'dotnet pack WebJobs.Extensions.DurableTask.csproj'
+  displayName: 'dotnet pack WebJobs.Extensions.DurableTask.Analyzers.csproj'
   inputs:
     command: pack
-    packagesToPack: 'src/**/WebJobs.Extensions.DurableTask.csproj'
+    packagesToPack: 'src/**/WebJobs.Extensions.DurableTask.Analyzers.csproj'
     configuration: Release
     packDirectory: 'azure-functions-durable-extension'
     nobuild: true
