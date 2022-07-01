@@ -53,7 +53,7 @@ steps:
   inputs:
     ConnectedServiceName: 'ESRP Service'
     FolderPath: 'src/WebJobs.Extensions.DurableTask.Analyzers/bin/Release'
-    Pattern: '*DurableTask.dll'
+    Pattern: '*DurableTask.Analyzers.dll'
     signConfigType: 'inlineSignParams'
     inlineOperation: |
       [    
