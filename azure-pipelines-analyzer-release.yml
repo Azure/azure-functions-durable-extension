@@ -146,8 +146,3 @@ steps:
 - publish: '$(System.DefaultWorkingDirectory)/azure-functions-durable-extension'
   displayName: 'Publish nuget packages to Artifacts'
   artifact: PackageOutput
-
-# Make the nuget packages available for download in the ADO portal UI
-- publish: $(build.artifactStagingDirectory)
-  displayName: 'Publish nuget packages to Artifacts'
-  artifact: PackageOutput
