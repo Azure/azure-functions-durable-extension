@@ -50,5 +50,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// The orchestration was scheduled but has not yet started.
         /// </summary>
         Pending = 6,
+
+        /// <summary>
+        /// The orchestration was suspended via an API call
+        /// </summary>
+        Suspended = 7,
     }
 }

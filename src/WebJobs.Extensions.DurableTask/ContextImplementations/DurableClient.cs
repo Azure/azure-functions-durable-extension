@@ -390,6 +390,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 // We need to clear it to avoid sending messages to an expired ContinueAsNew instance.
                 state.OrchestrationInstance.ExecutionId = null;
 
+                // NOTE: this taps into the Durable Task repo
                 await this.client.TerminateInstanceAsync(state.OrchestrationInstance, reason);
 
                 this.traceHelper.FunctionTerminated(this.TaskHubName, state.Name, instanceId, reason);
@@ -402,6 +403,54 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     instanceId: instanceId,
                     message: $"Cannot terminate orchestration instance in the {state.OrchestrationStatus} state.");
                 throw new InvalidOperationException($"Cannot terminate the orchestration instance {instanceId} because instance is in the {state.OrchestrationStatus} state.");
+            }
+        }
+
+        async Task IDurableOrchestrationClient.SuspendAsync(string instanceId, string reason)
+        {
+            OrchestrationState state = await this.GetOrchestrationInstanceStateAsync(instanceId);
+            if (IsOrchestrationRunning(state))
+            {
+                // TODO: will suspend events target a particular execution ID?
+                state.OrchestrationInstance.ExecutionId = null;
+
+                await this.client.SuspendInstanceAsync(state.OrchestrationInstance, reason);
+
+                // TODO: Function suspended?
+                // this.traceHelper.FunctionTerminated(this.TaskHubName, state.Name, instanceId, reason);
+            }
+            else
+            {
+                this.traceHelper.ExtensionWarningEvent(
+                    hubName: this.TaskHubName,
+                    functionName: state.Name,
+                    instanceId: instanceId,
+                    message: $"Cannot suspend orchestration instance in the {state.OrchestrationStatus} state.");
+                throw new InvalidOperationException($"Cannot suspend the orchestration instance {instanceId} because instance is in the {state.OrchestrationStatus} state.");
+            }
+        }
+
+        async Task IDurableOrchestrationClient.ResumeAsync(string instanceId, string reason)
+        {
+            OrchestrationState state = await this.GetOrchestrationInstanceStateAsync(instanceId);
+            if (IsOrchestrationSuspended(state))
+            {
+                // TODO: will resuming events target a particular execution ID?
+                state.OrchestrationInstance.ExecutionId = null;
+
+                await this.client.ResumeInstanceAsync(state.OrchestrationInstance, reason);
+
+                // TODO: Function resumed?
+                // this.traceHelper.FunctionResumed(this.TaskHubName, state.Name, instanceId, reason);
+            }
+            else
+            {
+                this.traceHelper.ExtensionWarningEvent(
+                    hubName: this.TaskHubName,
+                    functionName: state.Name,
+                    instanceId: instanceId,
+                    message: $"Cannot resume orchestration instance in the {state.OrchestrationStatus} state.");
+                throw new InvalidOperationException($"Cannot resume the orchestration instance {instanceId} because instance is in the {state.OrchestrationStatus} state.");
             }
         }
 
@@ -683,7 +732,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return;
             }
 
-            if (IsOrchestrationRunning(status))
+            if (IsOrchestrationRunning(status) || IsOrchestrationSuspended(status))
             {
                 // External events are not supposed to target any particular execution ID.
                 // We need to clear it to avoid sending messages to an expired ContinueAsNew instance.
@@ -748,6 +797,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return status.OrchestrationStatus == OrchestrationStatus.Running ||
                 status.OrchestrationStatus == OrchestrationStatus.Pending ||
                 status.OrchestrationStatus == OrchestrationStatus.ContinuedAsNew;
+        }
+
+        private static bool IsOrchestrationSuspended(OrchestrationState status)
+        {
+            return status.OrchestrationStatus == OrchestrationStatus.Suspended;
         }
 
         private static HttpRequestMessage ConvertHttpRequestMessage(HttpRequest request)

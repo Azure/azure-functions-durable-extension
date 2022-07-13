@@ -227,6 +227,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         Task TerminateAsync(string instanceId, string reason);
 
         /// <summary>
+        /// Suspends a running orchestration instance.
+        /// </summary>
+        Task SuspendAsync(string instanceId, string reason);
+
+        /// <summary>
+        /// Resumes a suspended orchestration instance.
+        /// </summary>
+        Task ResumeAsync(string instanceId, string reason);
+
+        /// <summary>
         /// Rewinds the specified failed orchestration instance with a reason.
         /// </summary>
         /// <param name="instanceId">The ID of the orchestration instance to rewind.</param>

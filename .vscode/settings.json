@@ -1,0 +1,8 @@
+{
+    "azureFunctions.projectSubpath": "samples\\precompiled",
+    "azureFunctions.deploySubpath": "samples\\precompiled/bin/Release/netcoreapp3.1/publish",
+    "azureFunctions.projectLanguage": "C#",
+    "azureFunctions.projectRuntime": "~3",
+    "debug.internalConsoleOptions": "neverOpen",
+    "azureFunctions.preDeployTask": "publish (functions)"
+}

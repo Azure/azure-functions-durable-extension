@@ -404,9 +404,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc />
+        public Task ForceSuspendTaskOrchestrationAsync(string instanceId, string reason)
+        {
+            return this.GetOrchestrationServiceClient().ForceSuspendTaskOrchestrationAsync(instanceId, reason);
+        }
+
         public Task ForceTerminateTaskOrchestrationAsync(string instanceId, string reason)
         {
             return this.GetOrchestrationServiceClient().ForceTerminateTaskOrchestrationAsync(instanceId, reason);
+        }
+
+        /// <inheritdoc />
+        public Task ForceResumeTaskOrchestrationAsync(string instanceId, string reason)
+        {
+            return this.GetOrchestrationServiceClient().ForceResumeTaskOrchestrationAsync(instanceId, reason);
         }
 
         /// <inheritdoc />
