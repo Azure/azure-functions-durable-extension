@@ -11,7 +11,6 @@
     <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="1.0.*" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.Twilio" Version="3.0.0" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.Storage" Version="3.0.10" />
-    <PackageReference Include="Twilio" Version="5.75.3" />
   </ItemGroup>
 
   <ItemGroup>
