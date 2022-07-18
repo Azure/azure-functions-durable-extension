@@ -2125,10 +2125,13 @@
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.WaitForOrchestrationAsync(System.String,System.String,System.TimeSpan,System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.ForceSuspendTaskOrchestrationAsync(System.String,System.String)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.ForceTerminateTaskOrchestrationAsync(System.String,System.String)">
             <inheritdoc />
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.ForceResumeTaskOrchestrationAsync(System.String,System.String)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.SuspendTaskOrchestrationAsync(System.String,System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.ResumeTaskOrchestrationAsync(System.String,System.String)">
             <inheritdoc />
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.GetOrchestrationStateAsync(System.String,System.Boolean)">

@@ -1183,8 +1183,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 RewindPostUri = instancePrefix + "/" + RewindOperation + "?reason={text}&" + querySuffix,
                 PurgeHistoryDeleteUri = instancePrefix + "?" + querySuffix,
                 RestartPostUri = instancePrefix + "/" + RestartOperation + "?" + querySuffix,
-                SuspendPostUri = instancePrefix + "/" + SuspendOperation + "?" + querySuffix,
-                ResumePostUri = instancePrefix + "/" + ResumeOperation + "?" + querySuffix,
+                SuspendPostUri = instancePrefix + "/" + SuspendOperation + "?reason={text}&" + querySuffix,
+                ResumePostUri = instancePrefix + "/" + ResumeOperation + "?reason={text}&" + querySuffix,
             };
 
             if (returnInternalServerErrorOnFailure)
@@ -1206,12 +1206,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string suspendPostUri,
             string resumePostUri)
         {
-            // optional parameters
-
             string instancePrefix = this.GetBaseUrl() + "/" + InstancesControllerSegment + WebUtility.UrlEncode(instanceId);
-
-            // string suspendPostUri = instancePrefix + "/" + SuspendOperation;
-            // string resumePostUri = instancePrefix + "/" + ResumeOperation;
 
             HttpResponseMessage response = request.CreateResponse(
                 HttpStatusCode.Accepted,
