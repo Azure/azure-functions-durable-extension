@@ -384,7 +384,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         async Task IDurableOrchestrationClient.TerminateAsync(string instanceId, string reason)
         {
             OrchestrationState state = await this.GetOrchestrationInstanceStateAsync(instanceId);
-            if (IsOrchestrationRunning(state))
+            if (IsOrchestrationRunning(state) || IsOrchestrationSuspended(state))
             {
                 // Terminate events are not supposed to target any particular execution ID.
                 // We need to clear it to avoid sending messages to an expired ContinueAsNew instance.
