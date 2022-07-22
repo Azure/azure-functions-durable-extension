@@ -1128,11 +1128,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
             }
 
-            await entityContext.RunDeferredTasks();
-
-            // If there were internal errors, do not commit the batch, but instead rethrow
+            // If there were internal errors, throw a SessionAbortedException
             // here so DTFx can abort the batch and back off the work item
-            entityContext.ThrowInternalExceptionIfAny();
+            entityContext.AbortOnInternalError();
+
+            await entityContext.RunDeferredTasks();
         }
 
         internal string GetDefaultConnectionName()
