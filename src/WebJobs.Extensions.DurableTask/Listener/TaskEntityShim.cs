@@ -188,7 +188,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #endif
             try
             {
-
                 if (this.operationBatch.Count == 0
                     && this.lockRequest == null
                     && (this.toBeRescheduled == null || this.toBeRescheduled.Count == 0)
