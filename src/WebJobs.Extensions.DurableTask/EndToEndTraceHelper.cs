@@ -284,6 +284,56 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 LocalSlotName, ExtensionVersion, this.sequenceNumber++);
         }
 
+        public void FunctionSuspended(
+            string hubName,
+            string functionName,
+            string instanceId,
+            string reason)
+        {
+            FunctionType functionType = FunctionType.Orchestrator;
+
+            EtwEventSource.Instance.FunctionSuspended(
+                hubName,
+                LocalAppName,
+                LocalSlotName,
+                functionName,
+                instanceId,
+                reason,
+                functionType.ToString(),
+                ExtensionVersion,
+                IsReplay: false);
+
+            this.logger.LogWarning(
+                "{instanceId}: Function '{functionName} ({functionType})' was suspended. Reason: {reason}. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
+                instanceId, functionName, functionType, reason, FunctionState.Suspended, hubName, LocalAppName,
+                LocalSlotName, ExtensionVersion, this.sequenceNumber++);
+        }
+
+        public void FunctionResumed(
+            string hubName,
+            string functionName,
+            string instanceId,
+            string reason)
+        {
+            FunctionType functionType = FunctionType.Orchestrator;
+
+            EtwEventSource.Instance.FunctionResumed(
+                hubName,
+                LocalAppName,
+                LocalSlotName,
+                functionName,
+                instanceId,
+                reason,
+                functionType.ToString(),
+                ExtensionVersion,
+                IsReplay: false);
+
+            this.logger.LogWarning(
+                "{instanceId}: Function '{functionName} ({functionType})' was resumed. Reason: {reason}. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
+                instanceId, functionName, functionType, reason, FunctionState.Scheduled, hubName, LocalAppName,
+                LocalSlotName, ExtensionVersion, this.sequenceNumber++);
+        }
+
         public void FunctionRewound(
             string hubName,
             string functionName,

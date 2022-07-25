@@ -20,5 +20,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         Rewound,
         EntityStateCreated,
         EntityStateDeleted,
+        Suspended,
     }
 }

@@ -416,8 +416,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 await this.client.SuspendInstanceAsync(state.OrchestrationInstance, reason);
 
-                // TODO: Function suspended?
-                // this.traceHelper.FunctionTerminated(this.TaskHubName, state.Name, instanceId, reason);
+                this.traceHelper.FunctionSuspended(this.TaskHubName, state.Name, instanceId, reason);
             }
             else
             {
@@ -440,8 +439,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 await this.client.ResumeInstanceAsync(state.OrchestrationInstance, reason);
 
-                // TODO: Function resumed?
-                // this.traceHelper.FunctionResumed(this.TaskHubName, state.Name, instanceId, reason);
+                this.traceHelper.FunctionResumed(this.TaskHubName, state.Name, instanceId, reason);
             }
             else
             {
