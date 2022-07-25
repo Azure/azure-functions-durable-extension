@@ -88,7 +88,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <value>
         /// The HTTP URL for resuming an orchestration instance.
         /// </value>
-        [JsonProperty("suspendPostUri")]
+        [JsonProperty("resumePostUri")]
         public string ResumePostUri { get; internal set; }
     }
 }

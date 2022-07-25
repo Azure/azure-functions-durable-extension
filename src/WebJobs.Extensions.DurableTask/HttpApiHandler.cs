@@ -814,6 +814,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return request.CreateResponse(HttpStatusCode.NotFound);
             }
 
+            switch (status.RuntimeStatus)
+            {
+                case OrchestrationRuntimeStatus.Failed:
+                case OrchestrationRuntimeStatus.Canceled:
+                case OrchestrationRuntimeStatus.Terminated:
+                case OrchestrationRuntimeStatus.Completed:
+                    return request.CreateResponse(HttpStatusCode.Gone);
+            }
+
             string reason = request.GetQueryNameValuePairs()["reason"];
 
             await client.SuspendAsync(instanceId, reason);
@@ -831,6 +840,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (status == null)
             {
                 return request.CreateResponse(HttpStatusCode.NotFound);
+            }
+
+            switch (status.RuntimeStatus)
+            {
+                case OrchestrationRuntimeStatus.Failed:
+                case OrchestrationRuntimeStatus.Canceled:
+                case OrchestrationRuntimeStatus.Terminated:
+                case OrchestrationRuntimeStatus.Completed:
+                    return request.CreateResponse(HttpStatusCode.Gone);
             }
 
             string reason = request.GetQueryNameValuePairs()["reason"];

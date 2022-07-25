@@ -52,7 +52,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         Pending = 6,
 
         /// <summary>
-        /// The orchestration was suspended via an API call
+        /// The orchestration was suspended
         /// </summary>
         Suspended = 7,
     }
