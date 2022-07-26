@@ -384,7 +384,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         async Task IDurableOrchestrationClient.TerminateAsync(string instanceId, string reason)
         {
             OrchestrationState state = await this.GetOrchestrationInstanceStateAsync(instanceId);
-            if (IsOrchestrationRunning(state) || IsOrchestrationSuspended(state))
+            if (IsOrchestrationAvailable(state))
             {
                 // Terminate events are not supposed to target any particular execution ID.
                 // We need to clear it to avoid sending messages to an expired ContinueAsNew instance.
@@ -409,7 +409,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         async Task IDurableOrchestrationClient.SuspendAsync(string instanceId, string reason)
         {
             OrchestrationState state = await this.GetOrchestrationInstanceStateAsync(instanceId);
-            if (IsOrchestrationRunning(state))
+            if (IsOrchestrationSuspendable(state))
             {
                 // TODO: will suspend events target a particular execution ID?
                 state.OrchestrationInstance.ExecutionId = null;
@@ -730,7 +730,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return;
             }
 
-            if (IsOrchestrationRunning(status) || IsOrchestrationSuspended(status))
+            if (IsOrchestrationAvailable(status))
             {
                 // External events are not supposed to target any particular execution ID.
                 // We need to clear it to avoid sending messages to an expired ContinueAsNew instance.
@@ -790,9 +790,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 returnInternalServerErrorOnFailure);
         }
 
-        private static bool IsOrchestrationRunning(OrchestrationState status)
+        private static bool IsOrchestrationSuspendable(OrchestrationState status)
         {
             return status.OrchestrationStatus == OrchestrationStatus.Running ||
+                status.OrchestrationStatus == OrchestrationStatus.Pending ||
+                status.OrchestrationStatus == OrchestrationStatus.ContinuedAsNew;
+        }
+
+        private static bool IsOrchestrationAvailable(OrchestrationState status)
+        {
+            return status.OrchestrationStatus == OrchestrationStatus.Running ||
+                status.OrchestrationStatus == OrchestrationStatus.Suspended ||
                 status.OrchestrationStatus == OrchestrationStatus.Pending ||
                 status.OrchestrationStatus == OrchestrationStatus.ContinuedAsNew;
         }
