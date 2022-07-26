@@ -1475,6 +1475,73 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
+        /// End-to-end test which validates the Suspend-Resume functionality.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [MemberData(nameof(TestDataGenerator.GetBooleanAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        public async Task SuspendResumeOrchestration(bool extendedSessions, string storageProvider)
+        {
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.Counter),
+            };
+
+            using (ITestHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.TerminateOrchestration),
+                extendedSessions,
+                storageProviderType: storageProvider))
+            {
+                var suspendMsg = "sleepyOrch";
+                var resumeMsg = "wakeUp";
+                int expectedResult = 1;
+
+                await host.StartAsync();
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], 0, this.output);
+                await client.WaitForStartupAsync(this.output);
+
+                var status = await client.GetStatusAsync();
+
+                Assert.Equal(OrchestrationStatus.Running, status?.RuntimeStatus);
+
+                await client.SuspendAsync(suspendMsg);
+                await Task.Delay(2000);
+
+                await client.RaiseEventAsync("operation", "incr");
+                await client.RaiseEventAsync("operation", "end");
+                await Task.Delay(2000);
+
+                status = await client.GetStatusAsync();
+
+                // check that it still is in the suspended status, and that the external events did not cause it to act
+                Assert.AreEqual(OrchestrationStatus.Suspended, status?.OrchestrationStatus);
+                Assert.AreEqual(suspendMsg, status?.Output);
+
+                await client.ResumeAsync(resumeMsg);
+                await Task.Delay(2000);
+                status = await client.GetStatusAsync();
+
+                // chech that after it is resumed, it does the pending work
+                Assert.AreEqual(expectedResult, JToken.Parse(status?.Output));
+                Assert.AreEqual(OrchestrationStatus.Completed, status?.OrchestrationStatus);
+
+                await host.StopAsync();
+
+                if (this.useTestLogger)
+                {
+                    TestHelpers.AssertLogMessageSequence(
+                        this.output,
+                        this.loggerProvider,
+                        "TerminateOrchestration",
+                        client.InstanceId,
+                        extendedSessions,
+                        orchestratorFunctionNames);
+                }
+            }
+        }
+
+        /// <summary>
         /// End-to-end test which validates the Rewind functionality.
         /// </summary>
         [Theory]

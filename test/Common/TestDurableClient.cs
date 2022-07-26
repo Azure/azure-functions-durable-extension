@@ -98,6 +98,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             await this.innerClient.TerminateAsync(this.instanceId, reason);
         }
 
+        public async Task SuspendAsync(string reason)
+        {
+            await this.innerClient.SuspendAsync(this.instanceId, reason);
+        }
+
+        public async Task ResumeAsync(string reason)
+        {
+            await this.innerClient.ResumeAsync(this.instanceId, reason);
+        }
+
         public async Task RewindAsync(string reason)
         {
 #pragma warning disable 0618
