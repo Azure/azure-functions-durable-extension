@@ -1191,7 +1191,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 querySuffix += "&" + notificationUri.Query.TrimStart('?');
             }
 
-            // TODO: add OPTIONAL fields for suspend/resume URLS to HttpManagementPayload
             var httpManagementPayload = new HttpManagementPayload
             {
                 Id = instanceId,
