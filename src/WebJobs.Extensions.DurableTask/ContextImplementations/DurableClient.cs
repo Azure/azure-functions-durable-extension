@@ -381,7 +381,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc />
-        async Task IDurableOrchestrationClient.TerminateAsync(string instanceId, string reason, bool terminateDescendants = false)
+        async Task IDurableOrchestrationClient.TerminateAsync(string instanceId, string reason)
         {
             OrchestrationState state = await this.GetOrchestrationInstanceStateAsync(instanceId);
             if (IsOrchestrationRunning(state))
@@ -390,7 +390,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 // We need to clear it to avoid sending messages to an expired ContinueAsNew instance.
                 state.OrchestrationInstance.ExecutionId = null;
 
-                await this.client.TerminateInstanceAsync(state.OrchestrationInstance, reason, terminateDescendants);
+                await this.client.TerminateInstanceAsync(state.OrchestrationInstance, reason);
 
                 this.traceHelper.FunctionTerminated(this.TaskHubName, state.Name, instanceId, reason);
             }
@@ -405,14 +405,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        async Task IDurableOrchestrationClient.SuspendAsync(string instanceId, string reason, bool suspendDescendants = false)
+        async Task IDurableOrchestrationClient.SuspendAsync(string instanceId, string reason)
         {
             OrchestrationState state = await this.GetOrchestrationInstanceStateAsync(instanceId);
             if (IsOrchestrationSuspendable(state))
             {
                 state.OrchestrationInstance.ExecutionId = null;
 
-                await this.client.SuspendInstanceAsync(state.OrchestrationInstance, reason, suspendDescendants);
+                await this.client.SuspendInstanceAsync(state.OrchestrationInstance, reason);
 
                 this.traceHelper.FunctionSuspended(this.TaskHubName, state.Name, instanceId, reason);
             }
@@ -427,14 +427,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        async Task IDurableOrchestrationClient.ResumeAsync(string instanceId, string reason, bool resumeDescendants = false)
+        async Task IDurableOrchestrationClient.ResumeAsync(string instanceId, string reason)
         {
             OrchestrationState state = await this.GetOrchestrationInstanceStateAsync(instanceId);
             if (IsOrchestrationSuspended(state))
             {
                 state.OrchestrationInstance.ExecutionId = null;
 
-                await this.client.ResumeInstanceAsync(state.OrchestrationInstance, reason, resumeDescendants);
+                await this.client.ResumeInstanceAsync(state.OrchestrationInstance, reason);
 
                 this.traceHelper.FunctionResumed(this.TaskHubName, state.Name, instanceId, reason);
             }
