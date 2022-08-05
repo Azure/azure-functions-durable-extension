@@ -229,13 +229,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <summary>
         /// Suspends a running orchestration instance.
         /// </summary>
-        /// <returns>A task that completes when the terminate message is enqueued if necessary.</returns>
+        /// <returns>A task that completes when the suspend message is enqueued if necessary.</returns>
         Task SuspendAsync(string instanceId, string reason);
 
         /// <summary>
         /// Resumes a suspended orchestration instance.
         /// </summary>
-        /// <returns>A task that completes when the terminate message is enqueued if necessary.</returns>
+        /// <returns>A task that completes when the resume message is enqueued if necessary.</returns>
         Task ResumeAsync(string instanceId, string reason);
 
         /// <summary>
