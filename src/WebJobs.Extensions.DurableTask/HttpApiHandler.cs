@@ -60,9 +60,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private const string PollingInterval = "pollingInterval";
         private const string SuspendOperation = "suspend";
         private const string ResumeOperation = "resume";
-        private const string TerminateDescendantsParameter = "terminateDescendants";
-        private const string SuspendDescendantsParameter = "suspendDescendants";
-        private const string ResumeDescendantsParameter = "resumeDescendants";
 
         private const string EmptyEntityKeySymbol = "$";
 
@@ -845,9 +842,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return request.CreateResponse(HttpStatusCode.NotFound);
             }
 
-            if (this.IsCompletedStatus(status.RuntimeStatus))
+            switch (status.RuntimeStatus)
             {
-                return request.CreateResponse(HttpStatusCode.Gone);
+                case OrchestrationRuntimeStatus.Failed:
+                case OrchestrationRuntimeStatus.Canceled:
+                case OrchestrationRuntimeStatus.Terminated:
+                case OrchestrationRuntimeStatus.Completed:
+                    return request.CreateResponse(HttpStatusCode.Gone);
             }
 
             string reason = request.GetQueryNameValuePairs()["reason"];
@@ -1293,7 +1294,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        private bool IsCompletedStatus(OrchestrationRuntimeStatus status)
+/*        private bool IsCompletedStatus(OrchestrationRuntimeStatus status)
         {
             if (status == OrchestrationRuntimeStatus.Failed ||
                 status == OrchestrationRuntimeStatus.Canceled ||
@@ -1304,7 +1305,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             return false;
-        }
+        }*/
 #endif
     }
 }
