@@ -1489,7 +1489,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             using (ITestHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.TerminateOrchestration),
+                nameof(this.SuspendResumeOrchestration),
                 extendedSessions,
                 storageProviderType: storageProvider))
             {
