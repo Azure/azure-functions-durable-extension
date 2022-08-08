@@ -1489,42 +1489,33 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             using (ITestHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.TerminateOrchestration),
+                nameof(this.SuspendResumeOrchestration),
                 extendedSessions,
                 storageProviderType: storageProvider))
             {
-                var suspendMsg = "sleepyOrch";
-                var resumeMsg = "wakeUp";
-                int expectedResult = 1;
-
                 await host.StartAsync();
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], 0, this.output);
                 await client.WaitForStartupAsync(this.output);
 
+                // Test case 1: Suspend changes the status Running->Suspended
+                await client.SuspendAsync("sleepyOrch");
+                await Task.Delay(2000);
                 var status = await client.GetStatusAsync();
+                Assert.Equal(OrchestrationRuntimeStatus.Suspended, status?.RuntimeStatus);
 
-                Assert.Equal(OrchestrationStatus.Running, status?.RuntimeStatus);
-
-                await client.SuspendAsync(suspendMsg);
+                // Test case 2: external event does not go through
+                await client.RaiseEventAsync("operation", "incr", this.output);
+                await client.RaiseEventAsync("operation", "end", this.output);
                 await Task.Delay(2000);
+                status = await client.GetStatusAsync(showInput: false);
+                Assert.True(status.CustomStatus.Equals(0));
 
-                await client.RaiseEventAsync("operation", "incr");
-                await client.RaiseEventAsync("operation", "end");
+                // Test case 3: external event now goes through
+                await client.ResumeAsync("wakeUp");
                 await Task.Delay(2000);
-
-                status = await client.GetStatusAsync();
-
-                // check that it still is in the suspended status, and that the external events did not cause it to act
-                Assert.AreEqual(OrchestrationStatus.Suspended, status?.OrchestrationStatus);
-                Assert.AreEqual(suspendMsg, status?.Output);
-
-                await client.ResumeAsync(resumeMsg);
-                await Task.Delay(2000);
-                status = await client.GetStatusAsync();
-
-                // chech that after it is resumed, it does the pending work
-                Assert.AreEqual(expectedResult, JToken.Parse(status?.Output));
-                Assert.AreEqual(OrchestrationStatus.Completed, status?.OrchestrationStatus);
+                status = await client.WaitForCompletionAsync(this.output);
+                Assert.True(status.CustomStatus.Equals(1));
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
 
                 await host.StopAsync();
 
@@ -1533,7 +1524,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     TestHelpers.AssertLogMessageSequence(
                         this.output,
                         this.loggerProvider,
-                        "TerminateOrchestration",
+                        "SuspendResumeOrchestration",
                         client.InstanceId,
                         extendedSessions,
                         orchestratorFunctionNames);
