@@ -4,7 +4,7 @@
     <TargetFrameworks>netcoreapp3.1;netstandard2.0;net462</TargetFrameworks>
     <AssemblyName>Microsoft.Azure.WebJobs.Extensions.DurableTask</AssemblyName>
     <RootNamespace>Microsoft.Azure.WebJobs.Extensions.DurableTask</RootNamespace>
-    <MajorVersion>3</MajorVersion>
+    <MajorVersion>2</MajorVersion>
     <MinorVersion>7</MinorVersion>
     <PatchVersion>2</PatchVersion>
     <Version>$(MajorVersion).$(MinorVersion).$(PatchVersion)</Version>
