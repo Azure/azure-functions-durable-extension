@@ -774,6 +774,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return timeSpanValue != null;
         }
 
+        private static bool IsCompletedStatus(OrchestrationRuntimeStatus status)
+        {
+            return status == OrchestrationRuntimeStatus.Completed ||
+                status == OrchestrationRuntimeStatus.Terminated ||
+                status == OrchestrationRuntimeStatus.Canceled ||
+                status == OrchestrationRuntimeStatus.Failed;
+        }
+
         private async Task<HttpResponseMessage> HandleTerminateInstanceRequestAsync(
             HttpRequestMessage request,
             string instanceId)
@@ -786,13 +794,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return request.CreateResponse(HttpStatusCode.NotFound);
             }
 
-            switch (status.RuntimeStatus)
+            if (IsCompletedStatus(status.RuntimeStatus))
             {
-                case OrchestrationRuntimeStatus.Failed:
-                case OrchestrationRuntimeStatus.Canceled:
-                case OrchestrationRuntimeStatus.Terminated:
-                case OrchestrationRuntimeStatus.Completed:
-                    return request.CreateResponse(HttpStatusCode.Gone);
+                return request.CreateResponse(HttpStatusCode.Gone);
             }
 
             string reason = request.GetQueryNameValuePairs()["reason"];
@@ -814,13 +818,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return request.CreateResponse(HttpStatusCode.NotFound);
             }
 
-            switch (status.RuntimeStatus)
+            if (IsCompletedStatus(status.RuntimeStatus))
             {
-                case OrchestrationRuntimeStatus.Failed:
-                case OrchestrationRuntimeStatus.Canceled:
-                case OrchestrationRuntimeStatus.Terminated:
-                case OrchestrationRuntimeStatus.Completed:
-                    return request.CreateResponse(HttpStatusCode.Gone);
+                return request.CreateResponse(HttpStatusCode.Gone);
             }
 
             string reason = request.GetQueryNameValuePairs()["reason"];
@@ -842,13 +842,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return request.CreateResponse(HttpStatusCode.NotFound);
             }
 
-            switch (status.RuntimeStatus)
+            if (IsCompletedStatus(status.RuntimeStatus))
             {
-                case OrchestrationRuntimeStatus.Failed:
-                case OrchestrationRuntimeStatus.Canceled:
-                case OrchestrationRuntimeStatus.Terminated:
-                case OrchestrationRuntimeStatus.Completed:
-                    return request.CreateResponse(HttpStatusCode.Gone);
+                return request.CreateResponse(HttpStatusCode.Gone);
             }
 
             string reason = request.GetQueryNameValuePairs()["reason"];
