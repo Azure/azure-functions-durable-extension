@@ -1016,11 +1016,13 @@
             <summary>
             Suspends a running orchestration instance.
             </summary>
+            <returns>A task that completes when the suspend message is enqueued if necessary.</returns>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient.ResumeAsync(System.String,System.String)">
             <summary>
             Resumes a suspended orchestration instance.
             </summary>
+            <returns>A task that completes when the resume message is enqueued if necessary.</returns>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient.RewindAsync(System.String,System.String)">
             <summary>
