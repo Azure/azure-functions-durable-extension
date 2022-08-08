@@ -404,21 +404,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc />
-        public Task ForceTerminateTaskOrchestrationAsync(string instanceId, string reason)
+        public Task ForceTerminateTaskOrchestrationAsync(string instanceId, string reason, bool terminateDescendants = false)
         {
-            return this.GetOrchestrationServiceClient().ForceTerminateTaskOrchestrationAsync(instanceId, reason);
+            return this.GetOrchestrationServiceClient().ForceTerminateTaskOrchestrationAsync(instanceId, reason, terminateDescendants);
         }
 
         /// <inheritdoc />
-        public Task SuspendTaskOrchestrationAsync(string instanceId, string reason)
+        public Task SuspendTaskOrchestrationAsync(string instanceId, string reason, bool suspendDescendants = false)
         {
-            return this.GetOrchestrationServiceClient().SuspendTaskOrchestrationAsync(instanceId, reason);
+            return this.GetOrchestrationServiceClient().SuspendTaskOrchestrationAsync(instanceId, reason, suspendDescendants);
         }
 
         /// <inheritdoc />
-        public Task ResumeTaskOrchestrationAsync(string instanceId, string reason)
+        public Task ResumeTaskOrchestrationAsync(string instanceId, string reason, bool resumeDescendants = false)
         {
-            return this.GetOrchestrationServiceClient().ResumeTaskOrchestrationAsync(instanceId, reason);
+            return this.GetOrchestrationServiceClient().ResumeTaskOrchestrationAsync(instanceId, reason, resumeDescendants);
         }
 
         /// <inheritdoc />
