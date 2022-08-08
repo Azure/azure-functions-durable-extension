@@ -842,9 +842,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return request.CreateResponse(HttpStatusCode.NotFound);
             }
 
-            if (this.IsCompletedStatus(status.RuntimeStatus))
+            switch (status.RuntimeStatus)
             {
-                return request.CreateResponse(HttpStatusCode.Gone);
+                case OrchestrationRuntimeStatus.Failed:
+                case OrchestrationRuntimeStatus.Canceled:
+                case OrchestrationRuntimeStatus.Terminated:
+                case OrchestrationRuntimeStatus.Completed:
+                    return request.CreateResponse(HttpStatusCode.Gone);
             }
 
             string reason = request.GetQueryNameValuePairs()["reason"];
@@ -1288,19 +1292,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 await this.localHttpListener.StopAsync();
             }
-        }
-
-        private bool IsCompletedStatus(OrchestrationRuntimeStatus status)
-        {
-            if (status == OrchestrationRuntimeStatus.Failed ||
-                status == OrchestrationRuntimeStatus.Canceled ||
-                status == OrchestrationRuntimeStatus.Terminated ||
-                status == OrchestrationRuntimeStatus.Completed)
-            {
-                return true;
-            }
-
-            return false;
         }
 #endif
     }
