@@ -1508,13 +1508,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await client.RaiseEventAsync("operation", "end", this.output);
                 await Task.Delay(2000);
                 status = await client.GetStatusAsync(showInput: false);
-                Assert.True(status.CustomStatus.Equals(0));
+                Assert.Equal(0, status.Output);
 
                 // Test case 3: external event now goes through
                 await client.ResumeAsync("wakeUp");
                 await Task.Delay(2000);
                 status = await client.WaitForCompletionAsync(this.output);
-                Assert.True(status.CustomStatus.Equals(1));
+                Assert.Equal(1, status.Output);
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
 
                 await host.StopAsync();
