@@ -1518,17 +1518,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
 
                 await host.StopAsync();
-
-                if (this.useTestLogger)
-                {
-                    TestHelpers.AssertLogMessageSequence(
-                        this.output,
-                        this.loggerProvider,
-                        "SuspendResumeOrchestration",
-                        client.InstanceId,
-                        extendedSessions,
-                        orchestratorFunctionNames);
-                }
             }
         }
 
