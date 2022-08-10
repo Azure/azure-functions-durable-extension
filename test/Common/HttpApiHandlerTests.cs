@@ -976,8 +976,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     terminatePostUri = testTerminatePostUri,
                     rewindPostUri = testRewindPostUri,
                     restartPostUri = testRestartPostUri,
-                    testSuspendPostUri = testSuspendPostUri,
-                    testResumePostUri = testResumePostUri,
+                    suspendPostUri = testSuspendPostUri,
+                    resumePostUri = testResumePostUri,
                 });
 
             var clientMock = new Mock<IDurableClient>();
