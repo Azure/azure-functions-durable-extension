@@ -484,8 +484,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.WriteEvent(230, TaskHub, AppName, SlotName, Resource, Attempt, DelayMs, Details, ExtensionVersion);
         }
 
-        [Event(231, Level = EventLevel.Warning, Version = 2)]
-        public void FunctionSuspended(
+        [Event(231, Level = EventLevel.Warning, Version = 1)]
+        public void SuspendingOrchestration(
             string TaskHub,
             string AppName,
             string SlotName,
@@ -499,8 +499,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.WriteEvent(231, TaskHub, AppName, SlotName, FunctionName, InstanceId, Reason, FunctionType, ExtensionVersion, IsReplay);
         }
 
-        [Event(232, Level = EventLevel.Warning, Version = 2)]
-        public void FunctionResumed(
+        [Event(232, Level = EventLevel.Warning, Version = 1)]
+        public void ResumingOrchestration(
             string TaskHub,
             string AppName,
             string SlotName,

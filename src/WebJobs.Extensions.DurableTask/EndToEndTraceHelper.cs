@@ -284,7 +284,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 LocalSlotName, ExtensionVersion, this.sequenceNumber++);
         }
 
-        public void FunctionSuspended(
+        public void SuspendingOrchestration(
             string hubName,
             string functionName,
             string instanceId,
@@ -292,7 +292,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             FunctionType functionType = FunctionType.Orchestrator;
 
-            EtwEventSource.Instance.FunctionSuspended(
+            EtwEventSource.Instance.SuspendingOrchestration(
                 hubName,
                 LocalAppName,
                 LocalSlotName,
@@ -309,7 +309,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 LocalSlotName, ExtensionVersion, this.sequenceNumber++);
         }
 
-        public void FunctionResumed(
+        public void ResumingOrchestration(
             string hubName,
             string functionName,
             string instanceId,
@@ -317,7 +317,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             FunctionType functionType = FunctionType.Orchestrator;
 
-            EtwEventSource.Instance.FunctionResumed(
+            EtwEventSource.Instance.ResumingOrchestration(
                 hubName,
                 LocalAppName,
                 LocalSlotName,
