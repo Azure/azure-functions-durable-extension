@@ -1499,20 +1499,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 // Test case 1: Suspend changes the status Running->Suspended
                 await client.SuspendAsync("sleepyOrch");
-                await Task.Delay(2000);
-                var status = await client.GetStatusAsync();
+                var status = await client.WaitForStatusChange(this.output, OrchestrationRuntimeStatus.Suspended);
                 Assert.Equal(OrchestrationRuntimeStatus.Suspended, status?.RuntimeStatus);
 
                 // Test case 2: external event does not go through
                 await client.RaiseEventAsync("operation", "incr", this.output);
                 await client.RaiseEventAsync("operation", "end", this.output);
-                await Task.Delay(2000);
                 status = await client.GetStatusAsync(showInput: false);
                 Assert.Equal(0, status.Output);
 
                 // Test case 3: external event now goes through
                 await client.ResumeAsync("wakeUp");
-                await Task.Delay(2000);
                 status = await client.WaitForCompletionAsync(this.output);
                 Assert.Equal(1, status.Output);
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);

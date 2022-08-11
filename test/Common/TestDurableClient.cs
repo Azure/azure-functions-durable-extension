@@ -144,6 +144,36 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             throw new TimeoutException($"Durable function '{this.functionName}' with instance ID '{this.instanceId}' failed to start.");
         }
 
+        public async Task<DurableOrchestrationStatus> WaitForStatusChange(
+            ITestOutputHelper output,
+            OrchestrationRuntimeStatus expectedStatus,
+            TimeSpan? timeout = null)
+        {
+            if (timeout == null)
+            {
+                // We wait up to 30 seconds for things to start. It shouldn't normally take this
+                // long, but for whatever reason a small minority of tests don't acquire all
+                // partitions in less than 10 seconds.
+                timeout = Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(30);
+            }
+
+            Stopwatch sw = Stopwatch.StartNew();
+            do
+            {
+                DurableOrchestrationStatus status = await this.GetStatusAsync();
+                if (status != null && status.RuntimeStatus == expectedStatus)
+                {
+                    output.WriteLine($"Successfully changed to status = {expectedStatus}.");
+                    return status;
+                }
+
+                await Task.Delay(TimeSpan.FromMilliseconds(200));
+            }
+            while (sw.Elapsed < timeout);
+
+            throw new TimeoutException($"Durable function '{this.functionName}' with instance ID '{this.instanceId}' failed to change its status to {expectedStatus}.");
+        }
+
         public async Task<DurableOrchestrationStatus> WaitForCompletionAsync(
             ITestOutputHelper output,
             bool showHistory = false,
