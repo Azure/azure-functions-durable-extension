@@ -66,7 +66,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     | ThreadTaskAnalyzer.RegisterDiagnostic(context, semanticModel, methodDeclaration)
                     | TimerAnalyzer.RegisterDiagnostic(context, semanticModel, methodDeclaration)
                     | CancellationTokenAnalyzer.RegisterDiagnostic(context, methodDeclaration)
-                    | BindingAnalyzer.RegisterDiagnostic(context, methodDeclaration)
+                    | BindingAnalyzer.RegisterDiagnostic(context, semanticModel, methodDeclaration)
                     | DependencyInjectionAnalyzer.RegisterDiagnostic(context, methodDeclaration))
                 {
                     methodInvocationAnalyzer.RegisterDiagnostics(context, methodInformation);

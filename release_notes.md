@@ -8,3 +8,4 @@
 ## Dependencies
 - DurableTask.Core --> v2.10.*
 - DurableTask.AzureStorage --> v1.12.*
+- DurableTask.Analyzers --> 0.5.0
