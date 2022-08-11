@@ -22,9 +22,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         public static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, Severity, isEnabledByDefault: true);
 
-        public static bool RegisterDiagnostic(CompilationAnalysisContext context, SyntaxNode method)
+        public static bool RegisterDiagnostic(CompilationAnalysisContext context, SemanticModel semanticModel, SyntaxNode method)
         {
             var diagnosedIssue = false;
+
+            if (!SyntaxNodeUtils.IsInsideFunction(semanticModel, method))
+            {
+                return diagnosedIssue;
+            }
 
             var parameterList = method.ChildNodes().First(x => x.IsKind(SyntaxKind.ParameterList));
 
@@ -33,7 +38,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                 if (descendant is AttributeSyntax attribute)
                 {
                     var attributeName = attribute.Name.ToString();
-                    if (attributeName != "OrchestrationTrigger" && !IsExcludedAttributeName(attributeName))
+                    if (attributeName != "OrchestrationTrigger")
                     {
                         var diagnostic = Diagnostic.Create(Rule, attribute.GetLocation(), attributeName);
 
@@ -48,13 +53,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             }
             
             return diagnosedIssue;
-        }
-
-        private static bool IsExcludedAttributeName(string attributeName)
-        {
-            var excludedAttributeNames = new List<string> { "AllowNull", "DisallowNull", "MaybeNull", "NotNull", "MaybeNullWhen", 
-                "NotNullWhen", "NotNullIfNotNull", "MemberNotNull", "MemberNotNullWhen", "DoesNotReturn", "DoesNotReturnIf" };
-            return excludedAttributeNames.Contains(attributeName);
         }
     }
 }

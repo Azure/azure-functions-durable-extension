@@ -15,18 +15,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
         private static readonly DiagnosticSeverity Severity = DiagnosticSeverity.Warning;
 
         [TestMethod]
-        [DataRow("AllowNull")]
-        [DataRow("DisallowNull")]
-        [DataRow("MaybeNull")]
-        [DataRow("NotNull")]
-        [DataRow("MaybeNullWhen")]
-        [DataRow("NotNullWhen")]
-        [DataRow("NotNullIfNotNull")]
-        [DataRow("MemberNotNull")]
-        [DataRow("MemberNotNullWhen")]
-        [DataRow("DoesNotReturn")]
-        [DataRow("DoesNotReturnIf")]
-        public void Binding_NoDiagnosticTestCase(string excludedAttribute)
+        public void Binding_NoDiagnosticTestCase()
         {
             var test = @"
     using System;
@@ -42,10 +31,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             public static async Task Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
-                ExcludedAttributeTest(""test"");
+                ExcludeNonFunctionsTest(""test"");
             }
 
-            public void ExcludedAttributeTest([" + excludedAttribute + @"] string input)
+            public void ExcludeNonFunctionsTest([NotNull] string input)
             {
             }
         }
