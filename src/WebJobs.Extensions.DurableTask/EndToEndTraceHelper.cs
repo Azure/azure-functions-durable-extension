@@ -329,7 +329,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 IsReplay: false);
 
             this.logger.LogWarning(
-                "{instanceId}: Function '{functionName} ({functionType})' was resumed. Reason: {reason}. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
+                "{instanceId}: Resuming function '{functionName} ({functionType})'. Reason: {reason}. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
                 instanceId, functionName, functionType, reason, FunctionState.Scheduled, hubName, LocalAppName,
                 LocalSlotName, ExtensionVersion, this.sequenceNumber++);
         }
