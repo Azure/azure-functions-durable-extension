@@ -8,6 +8,8 @@ using System.Reflection;
 using System.Runtime.ExceptionServices;
 using System.Threading.Tasks;
 using DurableTask.Core;
+using DurableTask.Core.Common;
+using DurableTask.Core.Exceptions;
 using Microsoft.Azure.WebJobs.Host.Bindings;
 using Newtonsoft.Json;
 
@@ -130,6 +132,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             this.ApplicationErrors.Add(ExceptionDispatchInfo.Capture(e));
+        }
+
+        public void AbortOnInternalError()
+        {
+            if (this.InternalError != null)
+            {
+                throw new SessionAbortedException($"Session aborted because of {this.InternalError.SourceException.GetType().Name}", this.InternalError.SourceException);
+            }
         }
 
         public void ThrowInternalExceptionIfAny()
