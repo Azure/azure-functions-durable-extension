@@ -304,7 +304,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 IsReplay: false);
 
             this.logger.LogWarning(
-                "{instanceId}: Function '{functionName} ({functionType})' was suspended. Reason: {reason}. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
+                "{instanceId}: Suspending function '{functionName} ({functionType})'. Reason: {reason}. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
                 instanceId, functionName, functionType, reason, FunctionState.Suspended, hubName, LocalAppName,
                 LocalSlotName, ExtensionVersion, this.sequenceNumber++);
         }
