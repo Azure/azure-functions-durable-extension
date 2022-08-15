@@ -6,10 +6,10 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
+using DurableTask.Core.History;
 using DurableTask.Core.Query;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using DurableTask.Core.History;
 #if !FUNCTIONS_V1
 using Microsoft.Azure.WebJobs.Host.Scale;
 #endif
@@ -410,7 +410,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return this.GetOrchestrationServiceClient().ForceTerminateTaskOrchestrationAsync(instanceId, reason);
         }
 
-        /// <inheritdoc />
+        /// <summary>
+        ///     Suspend the specified orchestration instance with a reason.
+        /// </summary>
+        /// <param name="instanceId">Instance to suspend.</param>
+        /// <param name="reason">Reason for suspending the instance.</param>
+        /// <returns>A task that completes when the suspend message is enqueued.</returns>
         public Task SuspendTaskOrchestrationAsync(string instanceId, string reason)
         {
             var taskMessage = new TaskMessage
@@ -422,7 +427,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return this.GetOrchestrationServiceClient().SendTaskOrchestrationMessageAsync(taskMessage);
         }
 
-        /// <inheritdoc />
+        /// <summary>
+        ///     Resume the specified orchestration instance with a reason.
+        /// </summary>
+        /// <param name="instanceId">Instance to resume.</param>
+        /// <param name="reason">Reason for resuming the instance.</param>
+        /// <returns>A task that completes when the resume message is enqueued.</returns>
         public Task ResumeTaskOrchestrationAsync(string instanceId, string reason)
         {
             var taskMessage = new TaskMessage
