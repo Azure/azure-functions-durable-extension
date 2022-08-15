@@ -410,11 +410,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             OrchestrationState state = await this.GetOrchestrationInstanceStateAsync(instanceId);
             if (IsOrchestrationSuspendable(state))
             {
-                state.OrchestrationInstance.ExecutionId = null;
-
-                await this.client.SuspendInstanceAsync(state.OrchestrationInstance, reason);
-
                 this.traceHelper.SuspendingOrchestration(this.TaskHubName, state.Name, instanceId, reason);
+
+                var instance = new OrchestrationInstance { InstanceId = instanceId };
+                await this.client.SuspendInstanceAsync(instance, reason);
             }
             else
             {
@@ -432,11 +431,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             OrchestrationState state = await this.GetOrchestrationInstanceStateAsync(instanceId);
             if (IsOrchestrationSuspended(state))
             {
-                state.OrchestrationInstance.ExecutionId = null;
-
-                await this.client.ResumeInstanceAsync(state.OrchestrationInstance, reason);
-
                 this.traceHelper.ResumingOrchestration(this.TaskHubName, state.Name, instanceId, reason);
+
+                var instance = new OrchestrationInstance { InstanceId = instanceId };
+                await this.client.ResumeInstanceAsync(instance, reason);
             }
             else
             {
