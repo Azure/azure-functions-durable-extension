@@ -9,6 +9,7 @@ using DurableTask.Core;
 using DurableTask.Core.Query;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using DurableTask.Core.History;
 #if !FUNCTIONS_V1
 using Microsoft.Azure.WebJobs.Host.Scale;
 #endif
@@ -412,13 +413,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <inheritdoc />
         public Task SuspendTaskOrchestrationAsync(string instanceId, string reason)
         {
-            return this.GetOrchestrationServiceClient().SuspendTaskOrchestrationAsync(instanceId, reason);
+            var taskMessage = new TaskMessage
+            {
+                OrchestrationInstance = new OrchestrationInstance { InstanceId = instanceId },
+                Event = new ExecutionSuspendedEvent(-1, reason),
+            };
+
+            return this.GetOrchestrationServiceClient().SendTaskOrchestrationMessageAsync(taskMessage);
         }
 
         /// <inheritdoc />
         public Task ResumeTaskOrchestrationAsync(string instanceId, string reason)
         {
-            return this.GetOrchestrationServiceClient().ResumeTaskOrchestrationAsync(instanceId, reason);
+            var taskMessage = new TaskMessage
+            {
+                OrchestrationInstance = new OrchestrationInstance { InstanceId = instanceId },
+                Event = new ExecutionResumedEvent(-1, reason),
+            };
+
+            return this.GetOrchestrationServiceClient().SendTaskOrchestrationMessageAsync(taskMessage);
         }
 
         /// <inheritdoc />
