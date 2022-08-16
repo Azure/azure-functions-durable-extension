@@ -31,6 +31,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             public static async Task Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
+                ExcludeNonFunctionsTest(""test"");
+            }
+
+            public void ExcludeNonFunctionsTest([NotNull] string input)
+            {
             }
         }
     }";

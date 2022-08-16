@@ -163,28 +163,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         private static bool HasExecuteSynchronously(SyntaxNode node)
         {
-            if(!SyntaxNodeUtils.TryGetInvocationExpression(node, out SyntaxNode invocationExpression))
+            if(!SyntaxNodeUtils.TryGetInvocationExpression(node, out InvocationExpressionSyntax invocationExpression))
             {
                 return false;
             }
 
-            var argumentList = invocationExpression.ChildNodes().FirstOrDefault(x => x.IsKind(SyntaxKind.ArgumentList));
-
-            if (argumentList != null)
+            var argumentList = invocationExpression.ArgumentList;
+            foreach (ArgumentSyntax argument in argumentList.ChildNodes())
             {
-                foreach (SyntaxNode argument in argumentList.ChildNodes())
+                if (argument.Expression is MemberAccessExpressionSyntax expression)
                 {
-                    var simpleMemberAccessExpression = argument.ChildNodes().FirstOrDefault(x => x.IsKind(SyntaxKind.SimpleMemberAccessExpression));
-
-                    if (simpleMemberAccessExpression != null)
+                    var identifierNames = expression.ChildNodes().Where(x => x.IsKind(SyntaxKind.IdentifierName));
+                    foreach (SyntaxNode identifier in identifierNames)
                     {
-                        var identifierNames = simpleMemberAccessExpression.ChildNodes().Where(x => x.IsKind(SyntaxKind.IdentifierName));
-                        foreach (SyntaxNode identifier in identifierNames)
+                        if (identifier.ToString().Equals("ExecuteSynchronously"))
                         {
-                            if (identifier.ToString().Equals("ExecuteSynchronously"))
-                            {
-                                return true;
-                            }
+                            return true;
                         }
                     }
                 }

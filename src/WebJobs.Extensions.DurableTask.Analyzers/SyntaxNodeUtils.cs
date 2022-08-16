@@ -120,17 +120,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         public static bool IsInsideOrchestrationTrigger(SyntaxNode node)
         {
-            if (TryGetMethodDeclaration(node, out SyntaxNode methodDeclaration))
+            if (TryGetMethodDeclaration(node, out MethodDeclarationSyntax methodDeclaration))
             {
-                var parameterList = methodDeclaration.ChildNodes().First(x => x.IsKind(SyntaxKind.ParameterList));
+                var parameters = methodDeclaration.ParameterList.ChildNodes();
 
-                foreach (SyntaxNode parameter in parameterList.ChildNodes())
+                foreach (SyntaxNode parameter in parameters)
                 {
                     var attributeLists = parameter.ChildNodes().Where(x => x.IsKind(SyntaxKind.AttributeList));
-                    foreach (SyntaxNode attribute in attributeLists)
+                    foreach (SyntaxNode attributeList in attributeLists)
                     {
                         //An AttributeList will always have a child node Attribute
-                        if (attribute.ChildNodes().First().ToString().Equals("OrchestrationTrigger"))
+                        if (attributeList.ChildNodes().First().ToString().Equals("OrchestrationTrigger"))
                         {
                             return true;
                         }
@@ -148,9 +148,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         internal static bool TryGetMethodReturnTypeNode(SyntaxNode node, out SyntaxNode returnTypeNode)
         {
-            if (TryGetMethodDeclaration(node, out SyntaxNode methodDeclaration))
+            if (TryGetMethodDeclaration(node, out MethodDeclarationSyntax methodDeclaration))
             {
-                return TryGetChildTypeNode(methodDeclaration, out returnTypeNode);
+                returnTypeNode = methodDeclaration.ReturnType;
+                return returnTypeNode != null;
             }
 
             returnTypeNode = null;
@@ -172,7 +173,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         private static bool TryGetAttribute(SyntaxNode node, string attributeName, out SyntaxNode attribute)
         {
-            if (TryGetMethodDeclaration(node, out SyntaxNode methodDeclaration))
+            if (TryGetMethodDeclaration(node, out MethodDeclarationSyntax methodDeclaration))
             {
                 var attributeLists = methodDeclaration.ChildNodes().Where(x => x.IsKind(SyntaxKind.AttributeList));
                 foreach (var attributeList in attributeLists)
@@ -192,43 +193,97 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         }
 
-        internal static bool TryGetMethodDeclaration(SyntaxNode node, out SyntaxNode methodDeclaration) => TryGetContainingSyntaxNode(node, SyntaxKind.MethodDeclaration, out methodDeclaration);
+        internal static bool TryGetMethodDeclaration(SyntaxNode node, out MethodDeclarationSyntax methodDeclaration) => TryGetContainingSyntaxNode(node, SyntaxKind.MethodDeclaration, out methodDeclaration);
 
-        internal static bool TryGetInvocationExpression(SyntaxNode node, out SyntaxNode invocationExpression) => TryGetContainingSyntaxNode(node, SyntaxKind.InvocationExpression, out invocationExpression);
+        internal static bool TryGetInvocationExpression(SyntaxNode node, out InvocationExpressionSyntax invocationExpression) => TryGetContainingSyntaxNode(node, SyntaxKind.InvocationExpression, out invocationExpression);
 
-        private static bool TryGetContainingSyntaxNode(SyntaxNode node, SyntaxKind kind, out SyntaxNode kindNode)
+        internal static bool TryGetClassDeclaration(SyntaxNode node, out ClassDeclarationSyntax classDeclaration) => TryGetContainingSyntaxNode(node, SyntaxKind.ClassDeclaration, out classDeclaration);
+
+        private static bool TryGetContainingSyntaxNode<T>(SyntaxNode node, SyntaxKind kind, out T kindNode)
         {
+            kindNode = default(T);
             var currNode = node.IsKind(kind) ? node : node.Parent;
             while (!currNode.IsKind(kind))
             {
                 if (currNode.IsKind(SyntaxKind.CompilationUnit))
                 {
-                    kindNode = null;
-                    return false;
+                    break;
                 }
                 currNode = currNode.Parent;
             }
 
-            kindNode = currNode;
-            return true;
+            if (currNode is T)
+            {
+                kindNode = (T)(object)currNode;
+                return true;
+            }
+
+            return false;
+        }
+
+        internal static bool TryGetConstructor(SyntaxNode node, out ConstructorDeclarationSyntax constructor)
+        {
+            if (TryGetClassDeclaration(node, out ClassDeclarationSyntax classDeclaration))
+            {
+                var constructorNode = classDeclaration.ChildNodes().FirstOrDefault(x => x.IsKind(SyntaxKind.ConstructorDeclaration));
+                if (constructorNode != null)
+                {
+                    constructor = (ConstructorDeclarationSyntax)constructorNode;
+                    return true;
+                }
+            }
+
+            constructor = null;
+            return false;
         }
 
         internal static bool TryGetClassName(SyntaxNode node, out string className)
         {
-            var currNode = node.IsKind(SyntaxKind.ClassDeclaration) ? node : node.Parent;
-            while (!currNode.IsKind(SyntaxKind.ClassDeclaration))
+            if (TryGetClassDeclaration(node, out ClassDeclarationSyntax classDeclaration))
             {
-                if (currNode.IsKind(SyntaxKind.CompilationUnit))
-                {
-                    className = null;
-                    return false;
-                }
-                currNode = currNode.Parent;
+                className = classDeclaration.Identifier.ToString();
+                return true;
             }
 
-            var classDeclaration = (ClassDeclarationSyntax)currNode;
-            className = classDeclaration.Identifier.ToString();
-            return true;
+            className = null;
+            return false;
+        }
+
+        internal static bool IsInStaticClass(SyntaxNode node)
+        {
+            if (TryGetClassDeclaration(node, out ClassDeclarationSyntax classDeclaration))
+            {
+                if (HasStaticChildNode(classDeclaration))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        internal static bool IsInStaticMethod(SyntaxNode node)
+        {
+            if (TryGetMethodDeclaration(node, out MethodDeclarationSyntax methodDeclaration))
+            {
+                if (HasStaticChildNode(methodDeclaration))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool HasStaticChildNode(SyntaxNode node)
+        {
+            var staticKeyword = node.ChildTokens().FirstOrDefault(x => x.IsKind(SyntaxKind.StaticKeyword));
+            if (staticKeyword != null && !staticKeyword.IsKind(SyntaxKind.None))
+            {
+                return true;
+            }
+
+            return false;
         }
 
         public static bool TryGetFunctionName(SemanticModel semanticModel, SyntaxNode node, out string functionName)
