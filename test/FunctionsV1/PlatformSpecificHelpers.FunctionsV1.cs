@@ -37,7 +37,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 #pragma warning restore CS0612 // Type or member is obsolete
         {
             var config = new JobHostConfiguration { HostId = "durable-task-host" };
-            // var config = new JobHostConfiguration("UseDevelopmentStorage=true;DevelopmentStorageProxyUri=http://127.0.0.1:10002/");
             config.TypeLocator = TestHelpers.GetTypeLocator();
 
             var storageAccountProvider = new AzureStorageAccountProvider(new WebJobsConnectionInfoProvider());

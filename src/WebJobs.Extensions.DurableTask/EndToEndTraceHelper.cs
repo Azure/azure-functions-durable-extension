@@ -303,7 +303,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 ExtensionVersion,
                 IsReplay: false);
 
-            this.logger.LogWarning(
+            this.logger.LogInformation(
                 "{instanceId}: Suspending function '{functionName} ({functionType})'. Reason: {reason}. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
                 instanceId, functionName, functionType, reason, FunctionState.Suspended, hubName, LocalAppName,
                 LocalSlotName, ExtensionVersion, this.sequenceNumber++);
@@ -328,7 +328,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 ExtensionVersion,
                 IsReplay: false);
 
-            this.logger.LogWarning(
+            this.logger.LogInformation(
                 "{instanceId}: Resuming function '{functionName} ({functionType})'. Reason: {reason}. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
                 instanceId, functionName, functionType, reason, FunctionState.Scheduled, hubName, LocalAppName,
                 LocalSlotName, ExtensionVersion, this.sequenceNumber++);

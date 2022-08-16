@@ -1219,8 +1219,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string suspendPostUri,
             string resumePostUri)
         {
-            string instancePrefix = this.GetBaseUrl() + "/" + InstancesControllerSegment + WebUtility.UrlEncode(instanceId);
-
             HttpResponseMessage response = request.CreateResponse(
                 HttpStatusCode.Accepted,
                 new
