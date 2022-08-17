@@ -76,6 +76,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public virtual bool GuaranteesOrderedDelivery => false;
 
         /// <summary>
+        /// Specifies whether this backend supports implicit deletion of entities.
+        /// </summary>
+        public virtual bool SupportsImplicitEntityDeletion => false;
+
+        /// <summary>
         /// JSON representation of configuration to emit in telemetry.
         /// </summary>
         public virtual JObject ConfigurationJson => EmptyConfig;
