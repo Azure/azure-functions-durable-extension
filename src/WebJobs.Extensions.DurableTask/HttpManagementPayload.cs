@@ -72,5 +72,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </value>
         [JsonProperty("restartPostUri")]
         public string RestartPostUri { get; internal set; }
+
+        /// <summary>
+        /// Gets the HTTP POST instance suspend endpoint.
+        /// </summary>
+        /// <value>
+        /// The HTTP URL for suspending an orchestration instance.
+        /// </value>
+        [JsonProperty("suspendPostUri")]
+        public string SuspendPostUri { get; internal set; }
+
+        /// <summary>
+        /// Gets the HTTP POST instance resume endpoint.
+        /// </summary>
+        /// <value>
+        /// The HTTP URL for resuming an orchestration instance.
+        /// </value>
+        [JsonProperty("resumePostUri")]
+        public string ResumePostUri { get; internal set; }
     }
 }

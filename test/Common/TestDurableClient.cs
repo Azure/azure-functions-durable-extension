@@ -98,6 +98,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             await this.innerClient.TerminateAsync(this.instanceId, reason);
         }
 
+        public async Task SuspendAsync(string reason)
+        {
+            await this.innerClient.SuspendAsync(this.instanceId, reason);
+        }
+
+        public async Task ResumeAsync(string reason)
+        {
+            await this.innerClient.ResumeAsync(this.instanceId, reason);
+        }
+
         public async Task RewindAsync(string reason)
         {
 #pragma warning disable 0618
@@ -132,6 +142,36 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             while (sw.Elapsed < timeout);
 
             throw new TimeoutException($"Durable function '{this.functionName}' with instance ID '{this.instanceId}' failed to start.");
+        }
+
+        public async Task<DurableOrchestrationStatus> WaitForStatusChange(
+            ITestOutputHelper output,
+            OrchestrationRuntimeStatus expectedStatus,
+            TimeSpan? timeout = null)
+        {
+            if (timeout == null)
+            {
+                // We wait up to 30 seconds for things to start. It shouldn't normally take this
+                // long, but for whatever reason a small minority of tests don't acquire all
+                // partitions in less than 10 seconds.
+                timeout = Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(30);
+            }
+
+            Stopwatch sw = Stopwatch.StartNew();
+            do
+            {
+                DurableOrchestrationStatus status = await this.GetStatusAsync();
+                if (status != null && status.RuntimeStatus == expectedStatus)
+                {
+                    output.WriteLine($"Successfully changed to status = {expectedStatus}.");
+                    return status;
+                }
+
+                await Task.Delay(TimeSpan.FromMilliseconds(200));
+            }
+            while (sw.Elapsed < timeout);
+
+            throw new TimeoutException($"Durable function '{this.functionName}' with instance ID '{this.instanceId}' failed to change its status to {expectedStatus}.");
         }
 
         public async Task<DurableOrchestrationStatus> WaitForCompletionAsync(
