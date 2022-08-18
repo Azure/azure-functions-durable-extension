@@ -258,6 +258,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         internal TimeSpan MessageReorderWindow
             => this.defaultDurabilityProvider.GuaranteesOrderedDelivery ? TimeSpan.Zero : TimeSpan.FromMinutes(this.Options.EntityMessageReorderWindowInMinutes);
 
+        internal bool UseImplicitEntityDeletion => this.defaultDurabilityProvider.SupportsImplicitEntityDeletion;
+
         internal IApplicationLifetimeWrapper HostLifetimeService { get; } = HostLifecycleService.NoOp;
 
         internal OutOfProcOrchestrationProtocol OutOfProcProtocol { get; }
