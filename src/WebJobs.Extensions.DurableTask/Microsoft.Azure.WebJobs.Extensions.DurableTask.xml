@@ -1016,12 +1016,16 @@
             <summary>
             Suspends a running orchestration instance.
             </summary>
+            <param name="instanceId">The ID of the orchestration instance to suspend.</param>
+            <param name="reason">The reason for suspending the orchestration instance.</param>
             <returns>A task that completes when the suspend message is enqueued if necessary.</returns>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient.ResumeAsync(System.String,System.String)">
             <summary>
             Resumes a suspended orchestration instance.
             </summary>
+            <param name="instanceId">The ID of the orchestration instance to resume.</param>
+            <param name="reason">The reason for resuming the orchestration instance.</param>
             <returns>A task that completes when the resume message is enqueued if necessary.</returns>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient.RewindAsync(System.String,System.String)">
@@ -1946,6 +1950,11 @@
             Specifies whether this backend delivers messages in order.
             </summary>
         </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.SupportsImplicitEntityDeletion">
+            <summary>
+            Specifies whether this backend supports implicit deletion of entities.
+            </summary>
+        </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.ConfigurationJson">
             <summary>
             JSON representation of configuration to emit in telemetry.
@@ -2131,10 +2140,20 @@
             <inheritdoc />
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.SuspendTaskOrchestrationAsync(System.String,System.String)">
-            <inheritdoc />
+            <summary>
+                Suspend the specified orchestration instance with a reason.
+            </summary>
+            <param name="instanceId">Instance to suspend.</param>
+            <param name="reason">Reason for suspending the instance.</param>
+            <returns>A task that completes when the suspend message is enqueued.</returns>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.ResumeTaskOrchestrationAsync(System.String,System.String)">
-            <inheritdoc />
+            <summary>
+                Resume the specified orchestration instance with a reason.
+            </summary>
+            <param name="instanceId">Instance to resume.</param>
+            <param name="reason">Reason for resuming the instance.</param>
+            <returns>A task that completes when the resume message is enqueued.</returns>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.GetOrchestrationStateAsync(System.String,System.Boolean)">
             <inheritdoc />
