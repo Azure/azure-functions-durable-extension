@@ -4,4 +4,4 @@
 using Microsoft.Azure.Functions.Worker.Extensions.Abstractions;
 
 // TODO: Find a way to generate this dynamically at build-time
-[assembly: ExtensionInformation("Microsoft.Azure.WebJobs.Extensions.DurableTask", "2.7.*")]
+[assembly: ExtensionInformation("Microsoft.Azure.WebJobs.Extensions.DurableTask", "2.8.*")]
