@@ -297,7 +297,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         private static bool TryGetDurableActivityContextExpression(SemanticModel semanticModel, SyntaxNode node, out SyntaxNode durableContextExpression)
         {
-            if (SyntaxNodeUtils.TryGetMethodDeclaration(node, out SyntaxNode methodDeclaration))
+            if (SyntaxNodeUtils.TryGetMethodDeclaration(node, out MethodDeclarationSyntax methodDeclaration))
             {
                 var memberAccessExpressionList = methodDeclaration.DescendantNodes().Where(x => x.IsKind(SyntaxKind.SimpleMemberAccessExpression));
                 foreach (var memberAccessExpression in memberAccessExpressionList)

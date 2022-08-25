@@ -405,6 +405,48 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
+        async Task IDurableOrchestrationClient.SuspendAsync(string instanceId, string reason)
+        {
+            OrchestrationState state = await this.GetOrchestrationInstanceStateAsync(instanceId);
+            if (IsOrchestrationSuspendable(state))
+            {
+                this.traceHelper.SuspendingOrchestration(this.TaskHubName, state.Name, instanceId, reason);
+
+                var instance = new OrchestrationInstance { InstanceId = instanceId };
+                await this.client.SuspendInstanceAsync(instance, reason);
+            }
+            else
+            {
+                this.traceHelper.ExtensionWarningEvent(
+                    hubName: this.TaskHubName,
+                    functionName: state.Name,
+                    instanceId: instanceId,
+                    message: $"Cannot suspend orchestration instance in the {state.OrchestrationStatus} state.");
+                throw new InvalidOperationException($"Cannot suspend the orchestration instance {instanceId} because instance is in the {state.OrchestrationStatus} state.");
+            }
+        }
+
+        async Task IDurableOrchestrationClient.ResumeAsync(string instanceId, string reason)
+        {
+            OrchestrationState state = await this.GetOrchestrationInstanceStateAsync(instanceId);
+            if (IsOrchestrationSuspended(state))
+            {
+                this.traceHelper.ResumingOrchestration(this.TaskHubName, state.Name, instanceId, reason);
+
+                var instance = new OrchestrationInstance { InstanceId = instanceId };
+                await this.client.ResumeInstanceAsync(instance, reason);
+            }
+            else
+            {
+                this.traceHelper.ExtensionWarningEvent(
+                    hubName: this.TaskHubName,
+                    functionName: state.Name,
+                    instanceId: instanceId,
+                    message: $"Cannot resume orchestration instance in the {state.OrchestrationStatus} state.");
+                throw new InvalidOperationException($"Cannot resume the orchestration instance {instanceId} because instance is in the {state.OrchestrationStatus} state.");
+            }
+        }
+
         /// <inheritdoc />
         async Task IDurableOrchestrationClient.RewindAsync(string instanceId, string reason)
         {
@@ -743,11 +785,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 returnInternalServerErrorOnFailure);
         }
 
-        private static bool IsOrchestrationRunning(OrchestrationState status)
+        private static bool IsOrchestrationSuspendable(OrchestrationState status)
         {
             return status.OrchestrationStatus == OrchestrationStatus.Running ||
                 status.OrchestrationStatus == OrchestrationStatus.Pending ||
                 status.OrchestrationStatus == OrchestrationStatus.ContinuedAsNew;
+        }
+
+        private static bool IsOrchestrationRunning(OrchestrationState status)
+        {
+            return status.OrchestrationStatus == OrchestrationStatus.Running ||
+                status.OrchestrationStatus == OrchestrationStatus.Suspended ||
+                status.OrchestrationStatus == OrchestrationStatus.Pending ||
+                status.OrchestrationStatus == OrchestrationStatus.ContinuedAsNew;
+        }
+
+        private static bool IsOrchestrationSuspended(OrchestrationState status)
+        {
+            return status.OrchestrationStatus == OrchestrationStatus.Suspended;
         }
 
         private static HttpRequestMessage ConvertHttpRequestMessage(HttpRequest request)

@@ -3,6 +3,7 @@
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -24,9 +25,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         public static bool TryGetDurableOrchestrationContextVariableName(SyntaxNode node, out string variableName)
         {
-            if (SyntaxNodeUtils.TryGetMethodDeclaration(node, out SyntaxNode methodDeclaration))
+            if (SyntaxNodeUtils.TryGetMethodDeclaration(node, out MethodDeclarationSyntax methodDeclaration))
             {
-                var parameterList = methodDeclaration.ChildNodes().First(x => x.IsKind(SyntaxKind.ParameterList));
+                var parameterList = methodDeclaration.ParameterList;
 
                 foreach (SyntaxNode parameter in parameterList.ChildNodes())
                 {

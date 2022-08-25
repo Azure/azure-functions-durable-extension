@@ -1,6 +1,7 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using System.Collections.Generic;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -21,9 +22,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         public static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, Severity, isEnabledByDefault: true);
 
-        public static bool RegisterDiagnostic(CompilationAnalysisContext context, SyntaxNode method)
+        public static bool RegisterDiagnostic(CompilationAnalysisContext context, SemanticModel semanticModel, SyntaxNode method)
         {
             var diagnosedIssue = false;
+
+            if (!SyntaxNodeUtils.IsInsideFunction(semanticModel, method))
+            {
+                return diagnosedIssue;
+            }
 
             var parameterList = method.ChildNodes().First(x => x.IsKind(SyntaxKind.ParameterList));
 

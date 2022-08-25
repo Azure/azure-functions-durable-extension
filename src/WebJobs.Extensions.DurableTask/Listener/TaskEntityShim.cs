@@ -8,6 +8,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
+using DurableTask.Core.Exceptions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -146,7 +147,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             if (serializedInput == null)
             {
-                // this instance was automatically started by DTFx
+                // this instance was automatically started by DTFx, or a previous execution called continueAsNew(null)
                 this.context.State = new SchedulerState();
             }
             else
@@ -185,70 +186,86 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             DurableTaskExtension.TagActivityWithOrchestrationStatus(status, this.context.InstanceId, true);
 #endif
-
-            if (this.operationBatch.Count == 0
-                && this.lockRequest == null
-                && (this.toBeRescheduled == null || this.toBeRescheduled.Count == 0)
-                && !this.suspendAndContinueWithDelay)
+            try
             {
-                // we are idle after a ContinueAsNew - the batch is empty.
-                // Wait for more messages to get here (via extended sessions)
-                await this.doneProcessingMessages.Task;
-            }
-
-            if (!this.messageDataConverter.IsDefault)
-            {
-                innerContext.MessageDataConverter = this.messageDataConverter;
-            }
-
-            if (!this.errorDataConverter.IsDefault)
-            {
-                innerContext.ErrorDataConverter = this.errorDataConverter;
-            }
-
-            if (this.NumberEventsToReceive > 0)
-            {
-                await this.doneProcessingMessages.Task;
-            }
-
-            // Commit the effects of this batch, if
-            // we have not already run into an internal error
-            // (in which case we will abort the batch instead of committing it)
-            if (this.context.InternalError == null)
-            {
-                bool writeBackSuccessful = true;
-                ResponseMessage serializationErrorMessage = null;
-
-                if (this.RollbackFailedOperations)
+                if (this.operationBatch.Count == 0
+                    && this.lockRequest == null
+                    && (this.toBeRescheduled == null || this.toBeRescheduled.Count == 0)
+                    && !this.suspendAndContinueWithDelay)
                 {
-                    // the state has already been written back, since it is
-                    // done right after each operation.
-                }
-                else
-                {
-                    // we are writing back the state here, after executing
-                    // the entire batch of operations.
-                    writeBackSuccessful = this.context.TryWriteback(out serializationErrorMessage, out var _);
+                    // we are idle after a ContinueAsNew - the batch is empty.
+                    // Wait for more messages to get here (via extended sessions)
+                    await this.doneProcessingMessages.Task;
                 }
 
-                // Reschedule all signals that were received before their time
-                this.context.RescheduleMessages(innerContext, this.toBeRescheduled);
-
-                // Send all buffered outgoing messages
-                this.context.SendOutbox(innerContext, writeBackSuccessful, serializationErrorMessage);
-
-                // send a continue signal
-                if (this.suspendAndContinueWithDelay)
+                if (!this.messageDataConverter.IsDefault)
                 {
-                    this.context.SendContinue(innerContext);
-                    this.suspendAndContinueWithDelay = false;
-                    this.context.State.Suspended = true;
+                    innerContext.MessageDataConverter = this.messageDataConverter;
                 }
 
-                var jstate = JToken.FromObject(this.context.State);
+                if (!this.errorDataConverter.IsDefault)
+                {
+                    innerContext.ErrorDataConverter = this.errorDataConverter;
+                }
 
-                // continue as new
-                innerContext.ContinueAsNew(jstate);
+                if (this.NumberEventsToReceive > 0)
+                {
+                    await this.doneProcessingMessages.Task;
+                }
+
+                // Commit the effects of this batch, if
+                // we have not already run into an internal error
+                // (in which case we will abort the batch instead of committing it)
+                if (this.context.InternalError == null)
+                {
+                    bool writeBackSuccessful = true;
+                    ResponseMessage serializationErrorMessage = null;
+
+                    if (this.RollbackFailedOperations)
+                    {
+                        // the state has already been written back, since it is
+                        // done right after each operation.
+                    }
+                    else
+                    {
+                        // we are writing back the state here, after executing
+                        // the entire batch of operations.
+                        writeBackSuccessful = this.context.TryWriteback(out serializationErrorMessage, out var _);
+                    }
+
+                    // Reschedule all signals that were received before their time
+                    this.context.RescheduleMessages(innerContext, this.toBeRescheduled);
+
+                    // Send all buffered outgoing messages
+                    this.context.SendOutbox(innerContext, writeBackSuccessful, serializationErrorMessage);
+
+                    // send a continue signal
+                    if (this.suspendAndContinueWithDelay)
+                    {
+                        this.context.SendContinue(innerContext);
+                        this.suspendAndContinueWithDelay = false;
+                        this.context.State.Suspended = true;
+                    }
+
+                    if (this.Config.UseImplicitEntityDeletion && this.context.State.IsEmpty)
+                    {
+                        // this entity scheduler is idle and the entity is deleted, so the instance and history can be removed from storage
+                        // we convey this to the durability provider by issuing a continue-as-new with null input
+                        innerContext.ContinueAsNew(null);
+                    }
+                    else
+                    {
+                        // we persist the state of the entity scheduler and entity by issuing a continue-as-new
+                        var jstate = JToken.FromObject(this.context.State);
+                        innerContext.ContinueAsNew(jstate);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                // we must catch unexpected exceptions here, otherwise entity goes into permanent failed state
+                // for example, there can be an OOM thrown during serialization https://github.com/Azure/azure-functions-durable-extension/issues/2166
+                this.context.CaptureInternalError(e);
             }
 
             // The return value is not used.
