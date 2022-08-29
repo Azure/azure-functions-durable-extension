@@ -135,6 +135,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     // Ignored
                 }
+                finally
+                {
+                    Semaphore.Release();
+                }
 
                 this.currentBatch.Clear();
             }
