@@ -21,7 +21,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// </summary>
     internal class LinuxAppServiceFileLogger : IDisposable
     {
-        private static readonly SemaphoreSlim Semaphore = new SemaphoreSlim(initialCount: 0, maxCount: 1);
+        private static readonly SemaphoreSlim Semaphore = new SemaphoreSlim(initialCount: 1, maxCount: 1);
         private readonly string logFileName;
         private readonly string logFileDirectory;
         private readonly string logFilePath;
