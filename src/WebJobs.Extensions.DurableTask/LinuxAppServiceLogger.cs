@@ -18,16 +18,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// This class is utilized by <c>EventSourceListener</c> to write logs corresponding to
     /// specific EventSource providers.
     /// </summary>
-    internal class LinuxAppServiceLogger
+    internal class LinuxAppServiceLogger : IDisposable
     {
         private const string ConsolePrefix = "MS_DURABLE_FUNCTION_EVENTS_LOGS";
 
-        // variable below is internal static for testing and other convenient purposes
-        // we need to be able to change the logging path for a windows-based CI
-        // the logger being internal static is convenient for flushing it
 #pragma warning disable SA1401 // Fields should be private
         internal static string LoggingPath = "/var/log/functionsLogs/durableeventsJSON.log";
-        internal static LinuxAppServiceFileLogger Logger; // The File Logger
+        internal LinuxAppServiceFileLogger logger; // The File Logger
 #pragma warning restore SA1401 // Fields should be private
 
         // logging metadata
@@ -86,7 +83,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 // int tenMbInBytes = 10000000;
                 string fname = Path.GetFileName(LinuxAppServiceLogger.LoggingPath);
                 string dir = Path.GetDirectoryName(LinuxAppServiceLogger.LoggingPath);
-                Logger = new LinuxAppServiceFileLogger(fname, dir);
+                this.logger = new LinuxAppServiceFileLogger(fname, dir);
             }
         }
 
@@ -173,8 +170,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 // We write to a file in Linux Dedicated
                 // Our file logger already handles file rolling (archiving) and deletion of old logs
-                Logger.Log(jsonString);
+                this.logger.Log(jsonString);
             }
+        }
+
+        public void Dispose()
+        {
+            this.logger?.Dispose();
         }
     }
 }
