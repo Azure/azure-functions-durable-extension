@@ -249,7 +249,7 @@
             </summary>
             <param name="defaultDurableClientOptions">Default Options to Build Durable Clients.</param>
             <param name="orchestrationServiceFactory">The factory used to create orchestration service based on the configured storage provider.</param>
-            <param name="loggerFactory">The logger factory used for extension-specific logging and orchestration tracking.</param>
+            <param name="loggerFactory">The Logger factory used for extension-specific logging and orchestration tracking.</param>
             <param name="durableTaskOptions">The configuration options for this extension.</param>
             <param name="messageSerializerSettingsFactory">The factory used to create <see cref="T:Newtonsoft.Json.JsonSerializerSettings"/> for message settings.</param>
         </member>
@@ -479,7 +479,7 @@
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableContextExtensions.CreateReplaySafeLogger(Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationContext,Microsoft.Extensions.Logging.ILogger)">
             <summary>
-            Returns an instance of ILogger that is replay safe, ensuring the logger logs only when the orchestrator
+            Returns an instance of ILogger that is replay safe, ensuring the Logger logs only when the orchestrator
             is not replaying that line of code.
             </summary>
             <param name="context">The context object.</param>
@@ -2497,7 +2497,7 @@
             Initializes a new instance of the <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension"/>.
             </summary>
             <param name="options">The configuration options for this extension.</param>
-            <param name="loggerFactory">The logger factory used for extension-specific logging and orchestration tracking.</param>
+            <param name="loggerFactory">The Logger factory used for extension-specific logging and orchestration tracking.</param>
             <param name="nameResolver">The name resolver to use for looking up application settings.</param>
             <param name="orchestrationServiceFactories">The factories used to create orchestration service based on the configured storage provider.</param>
             <param name="durableHttpMessageHandlerFactory">The HTTP message handler that handles HTTP requests and HTTP responses.</param>
@@ -3105,7 +3105,7 @@
             Create an EventSourceListener to capture and log Durable EventSource
             data in Linux.
             </summary>
-            <param name="logger">A LinuxAppService logger configured for the current linux host.</param>
+            <param name="logger">A LinuxAppService Logger configured for the current linux host.</param>
             <param name="enableVerbose">If true, durableTask.Core verbose logs are enabled. The opposite if false.</param>
             <param name="traceHelper">A tracing client to log exceptions.</param>
             <param name="durabilityProviderEventSourceName">The durability provider's event source name.</param>
@@ -3673,7 +3673,7 @@
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.LinuxAppServiceFileLogger">
             <summary>
-            The File logger for linux dedicated. Manages file rolling and is concurrency-safe.
+            The File Logger for linux dedicated. Manages file rolling and is concurrency-safe.
             This is copied over from the azure-funtions-host codebase here:
             https://github.com/Azure/azure-functions-host/blob/35cf323fa3464a08b410a518bcab006e801301fe/src/WebJobs.Script.WebHost/Diagnostics/LinuxAppServiceFileLogger.cs
             We have modified their implementation to utilize syscall.rename instead of File.Move during file rolling.
@@ -3682,7 +3682,7 @@
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.LinuxAppServiceFileLogger.#ctor(System.String,System.String,System.Boolean)">
             <summary>
-            The File logger for linux dedicated. Manages file rolling and is concurrency-safe.
+            The File Logger for linux dedicated. Manages file rolling and is concurrency-safe.
             </summary>
             <param name="logFileName">Name of target logfile.</param>
             <param name="logFileDirectory">Directory of target logfile.</param>

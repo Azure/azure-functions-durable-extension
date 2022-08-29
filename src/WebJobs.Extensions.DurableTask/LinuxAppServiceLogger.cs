@@ -24,7 +24,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
 #pragma warning disable SA1401 // Fields should be private
         internal static string LoggingPath = "/var/log/functionsLogs/durableeventsJSON.log";
-        internal LinuxAppServiceFileLogger logger; // The File Logger
+        internal LinuxAppServiceFileLogger Logger; // The File Logger
 #pragma warning restore SA1401 // Fields should be private
 
         // logging metadata
@@ -77,13 +77,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.procID = process.Id;
             }
 
-            // Initialize file logger, if in Linux Dedicated
+            // Initialize file Logger, if in Linux Dedicated
             if (!writeToConsole)
             {
                 // int tenMbInBytes = 10000000;
                 string fname = Path.GetFileName(LinuxAppServiceLogger.LoggingPath);
                 string dir = Path.GetDirectoryName(LinuxAppServiceLogger.LoggingPath);
-                this.logger = new LinuxAppServiceFileLogger(fname, dir);
+                this.Logger = new LinuxAppServiceFileLogger(fname, dir);
             }
         }
 
@@ -169,14 +169,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             else
             {
                 // We write to a file in Linux Dedicated
-                // Our file logger already handles file rolling (archiving) and deletion of old logs
-                this.logger.Log(jsonString);
+                // Our file Logger already handles file rolling (archiving) and deletion of old logs
+                this.Logger.Log(jsonString);
             }
         }
 
         public void Dispose()
         {
-            this.logger?.Dispose();
+            this.Logger?.Dispose();
         }
     }
 }

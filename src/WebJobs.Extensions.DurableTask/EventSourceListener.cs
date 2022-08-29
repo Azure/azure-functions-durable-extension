@@ -26,7 +26,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// Create an EventSourceListener to capture and log Durable EventSource
         /// data in Linux.
         /// </summary>
-        /// <param name="logger">A LinuxAppService logger configured for the current linux host.</param>
+        /// <param name="logger">A LinuxAppService Logger configured for the current linux host.</param>
         /// <param name="enableVerbose">If true, durableTask.Core verbose logs are enabled. The opposite if false.</param>
         /// <param name="traceHelper">A tracing client to log exceptions.</param>
         /// <param name="durabilityProviderEventSourceName">The durability provider's event source name.</param>
