@@ -340,7 +340,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 this.InitializeLinuxLogging();
             }
-
 #endif
 
             ConfigureLoaderHooks();
