@@ -515,9 +515,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <inheritdoc />
         public void Dispose()
         {
-            this.linuxLogger?.Dispose();
             this.HttpApiHandler?.Dispose();
             this.eventSourceListener?.Dispose();
+            this.linuxLogger?.Dispose();
         }
 
 #if FUNCTIONS_V2_OR_GREATER
