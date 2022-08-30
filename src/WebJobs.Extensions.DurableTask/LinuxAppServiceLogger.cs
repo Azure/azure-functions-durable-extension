@@ -24,7 +24,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
 #pragma warning disable SA1401 // Fields should be private
         internal static string LoggingPath = "/var/log/functionsLogs/durableeventsJSON.log";
-        internal LinuxAppServiceFileLogger Logger; // The File Logger
 #pragma warning restore SA1401 // Fields should be private
 
         // logging metadata
@@ -36,6 +35,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         // if true, we write to console (linux consumption), else to a file (linux dedicated).
         private readonly bool writeToConsole;
+
+        private readonly LinuxAppServiceFileLogger fileLogger;
 
         /// <summary>
         /// Create a LinuxAppServiceLogger instance.
@@ -77,13 +78,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.procID = process.Id;
             }
 
-            // Initialize file Logger, if in Linux Dedicated
+            // Initialize file logger, if in Linux Dedicated
             if (!writeToConsole)
             {
                 // int tenMbInBytes = 10000000;
                 string fname = Path.GetFileName(LinuxAppServiceLogger.LoggingPath);
                 string dir = Path.GetDirectoryName(LinuxAppServiceLogger.LoggingPath);
-                this.Logger = new LinuxAppServiceFileLogger(fname, dir);
+                this.fileLogger = new LinuxAppServiceFileLogger(fname, dir);
             }
         }
 
@@ -169,14 +170,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             else
             {
                 // We write to a file in Linux Dedicated
-                // Our file Logger already handles file rolling (archiving) and deletion of old logs
-                this.Logger.Log(jsonString);
+                // Our file logger already handles file rolling (archiving) and deletion of old logs
+                this.fileLogger.Log(jsonString);
             }
         }
 
         public void Dispose()
         {
-            this.Logger?.Dispose();
+            this.fileLogger?.Dispose();
         }
     }
 }

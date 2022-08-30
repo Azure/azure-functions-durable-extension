@@ -83,7 +83,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             // when running in the storage emulator. Disabling to keep tests running quickly.
             config.DashboardConnectionString = null;
 
-            // Add test Logger
+            // Add test logger
             config.LoggerFactory = loggerFactory;
 
             var host = new JobHost(config);

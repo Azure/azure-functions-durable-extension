@@ -109,7 +109,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// Initializes a new instance of the <see cref="DurableTaskExtension"/>.
         /// </summary>
         /// <param name="options">The configuration options for this extension.</param>
-        /// <param name="loggerFactory">The Logger factory used for extension-specific logging and orchestration tracking.</param>
+        /// <param name="loggerFactory">The logger factory used for extension-specific logging and orchestration tracking.</param>
         /// <param name="nameResolver">The name resolver to use for looking up application settings.</param>
         /// <param name="orchestrationServiceFactories">The factories used to create orchestration service based on the configured storage provider.</param>
         /// <param name="durableHttpMessageHandlerFactory">The HTTP message handler that handles HTTP requests and HTTP responses.</param>

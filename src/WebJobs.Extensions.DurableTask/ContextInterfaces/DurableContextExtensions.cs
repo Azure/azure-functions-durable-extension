@@ -11,7 +11,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     public static class DurableContextExtensions
     {
         /// <summary>
-        /// Returns an instance of ILogger that is replay safe, ensuring the Logger logs only when the orchestrator
+        /// Returns an instance of ILogger that is replay safe, ensuring the logger logs only when the orchestrator
         /// is not replaying that line of code.
         /// </summary>
         /// <param name="context">The context object.</param>

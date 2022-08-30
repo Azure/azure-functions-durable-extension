@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     /// <summary>
-    /// The File Logger for linux dedicated. Manages file rolling and is concurrency-safe.
+    /// The File logger for linux dedicated. Manages file rolling and is concurrency-safe.
     /// This is copied over from the azure-funtions-host codebase here:
     /// https://github.com/Azure/azure-functions-host/blob/35cf323fa3464a08b410a518bcab006e801301fe/src/WebJobs.Script.WebHost/Diagnostics/LinuxAppServiceFileLogger.cs
     /// We have modified their implementation to utilize syscall.rename instead of File.Move during file rolling.
@@ -32,7 +32,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private Task outputTask;
 
         /// <summary>
-        /// The File Logger for linux dedicated. Manages file rolling and is concurrency-safe.
+        /// The File logger for linux dedicated. Manages file rolling and is concurrency-safe.
         /// </summary>
         /// <param name="logFileName">Name of target logfile.</param>
         /// <param name="logFileDirectory">Directory of target logfile.</param>
@@ -174,7 +174,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public void Dispose()
         {
-            // Not flushing the linux Logger may lead to lost logs
+            // Not flushing the linux logger may lead to lost logs
             // 40 seconds timeout because we write normally every 30 seconds, so we're just
             // adding an extra 10 seconds to flush.
             this.Stop(TimeSpan.FromSeconds(40));

@@ -33,7 +33,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations
         /// </summary>
         /// <param name="defaultDurableClientOptions">Default Options to Build Durable Clients.</param>
         /// <param name="orchestrationServiceFactory">The factory used to create orchestration service based on the configured storage provider.</param>
-        /// <param name="loggerFactory">The Logger factory used for extension-specific logging and orchestration tracking.</param>
+        /// <param name="loggerFactory">The logger factory used for extension-specific logging and orchestration tracking.</param>
         /// <param name="durableTaskOptions">The configuration options for this extension.</param>
         /// <param name="messageSerializerSettingsFactory">The factory used to create <see cref="JsonSerializerSettings"/> for message settings.</param>
         public DurableClientFactory(
