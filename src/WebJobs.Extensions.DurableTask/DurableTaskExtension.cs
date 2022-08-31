@@ -88,7 +88,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private bool isTaskHubWorkerStarted;
         private HttpClient durableHttpClient;
         private EventSourceListener eventSourceListener;
-        private LinuxAppServiceLogger linuxLogger;
 
 #if FUNCTIONS_V1
         private IConnectionInfoResolver connectionInfoResolver;
@@ -500,7 +499,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             // in linux consumption, logs are emitted to the console.
             // In other linux plans, they are emitted to a logfile.
-            this.linuxLogger = new LinuxAppServiceLogger(writeToConsole: inConsumption, containerName, tenant, stampName);
+            var linuxLogger = new LinuxAppServiceLogger(writeToConsole: inConsumption, containerName, tenant, stampName);
 
             // The logging service for linux works by capturing EventSource messages,
             // which our linux platform does not recognize, and logging them via a
@@ -509,7 +508,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // Since our logging payload can be quite large, linux telemetry by default
             // disables verbose-level telemetry to avoid a performance hit.
             bool enableVerbose = this.Options.Tracing.AllowVerboseLinuxTelemetry;
-            this.eventSourceListener = new EventSourceListener(this.linuxLogger, enableVerbose, this.TraceHelper, this.defaultDurabilityProvider.EventSourceName);
+            this.eventSourceListener = new EventSourceListener(linuxLogger, enableVerbose, this.TraceHelper, this.defaultDurabilityProvider.EventSourceName);
         }
 
         /// <inheritdoc />
@@ -517,7 +516,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             this.HttpApiHandler?.Dispose();
             this.eventSourceListener?.Dispose();
-            this.linuxLogger?.Dispose();
         }
 
 #if FUNCTIONS_V2_OR_GREATER
