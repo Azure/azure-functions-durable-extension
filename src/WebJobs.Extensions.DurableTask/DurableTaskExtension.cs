@@ -1405,6 +1405,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         await this.defaultDurabilityProvider.CreateIfNotExistsAsync();
                         await this.taskHubWorker.StartAsync();
 
+                        if (this.Options.IncludeParameters == true)
+                        {
+                            this.taskHubWorker.TaskOrchestrationDispatcher.IncludeParameters = true;
+                        }
+
+
                         this.TraceHelper.ExtensionInformationalEvent(
                             this.Options.HubName,
                             instanceId: string.Empty,

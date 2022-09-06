@@ -175,6 +175,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <summary>
         /// Throws an exception if the provided hub name violates any naming conventions for the storage provider.
         /// </summary>
+
         public void ValidateHubName(string hubName)
         {
             try
