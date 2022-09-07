@@ -204,11 +204,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public bool UseAppLease { get; set; } = true;
 
         /// <summary>
-        /// If UseAppLease is true, gets or sets the AppLeaaseOptions used for acquiring the lease to start the application.
+        /// If IncludeParameters is true, the input of the activity function will be displayed.
         /// </summary>
-
         public bool IncludeParameters { get; set; } = false;
 
+        /// <summary>
+        /// If UseAppLease is true, gets or sets the AppLeaaseOptions used for acquiring the lease to start the application.
+        /// </summary>
         public AppLeaseOptions AppLeaseOptions { get; set; } = AppLeaseOptions.DefaultOptions;
 
         // Used for mocking the lifecycle notification helper.

@@ -1410,7 +1410,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             this.taskHubWorker.TaskOrchestrationDispatcher.IncludeParameters = true;
                         }
 
-
                         this.TraceHelper.ExtensionInformationalEvent(
                             this.Options.HubName,
                             instanceId: string.Empty,
