@@ -15,7 +15,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// <summary>
     /// Provides functionality available to durable orchestration clients.
     /// </summary>
-    public interface IDurableOrchestrationClient 
+    public interface IDurableOrchestrationClient
     {
         /// <summary>
         /// Gets the name of the task hub configured on this client instance.
