@@ -485,6 +485,40 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc />
+        async Task<IList<DurableOrchestrationStatus>> IDurableOrchestrationClient.GetStatusAsync(IEnumerable<string> instanceID, bool showHistory, bool showHistoryOutput, bool showInput)
+        {
+            IList<DurableOrchestrationStatus> durableorchestrationstateList = new List<DurableOrchestrationStatus>();
+            foreach (string id in instanceID)
+            {
+                IList<OrchestrationState> stateList = null;
+                try
+                {
+                    stateList = await this.DurabilityProvider.GetOrchestrationStateWithInputsAsync(id, showInput);
+                }
+                catch (NotImplementedException)
+                {
+                    // TODO: Ignore the show input flag. Should consider logging a warning.
+                    stateList = await this.client.ServiceClient.GetOrchestrationStateAsync(id, allExecutions: false);
+                }
+
+                OrchestrationState state = stateList?.FirstOrDefault();
+                DurableOrchestrationStatus currentidstate = new DurableOrchestrationStatus();
+                if (state == null || state.OrchestrationInstance == null)
+                {
+                    currentidstate.InstanceId = id;
+                }
+                else
+                {
+                    currentidstate = await GetDurableOrchestrationStatusAsync(state, this.client, showHistory, showHistoryOutput);
+                }
+
+                durableorchestrationstateList.Add(currentidstate);
+            }
+
+            return durableorchestrationstateList;
+        }
+
+        /// <inheritdoc />
         async Task<IList<DurableOrchestrationStatus>> IDurableOrchestrationClient.GetStatusAsync(DateTime? createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationRuntimeStatus> runtimeStatus, CancellationToken cancellationToken)
         {
             return await this.GetAllStatusHelper(createdTimeFrom, createdTimeTo, runtimeStatus, cancellationToken);
@@ -561,6 +595,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         async Task<PurgeHistoryResult> IDurableOrchestrationClient.PurgeInstanceHistoryAsync(string instanceId)
         {
             return await this.DurabilityProvider.PurgeInstanceHistoryByInstanceId(instanceId);
+        }
+
+        /// <inheritdoc />
+        async Task<IList<PurgeHistoryResult>> IDurableOrchestrationClient.PurgeInstanceHistoryAsync(IEnumerable<string> instanceId)
+        {
+            IList<PurgeHistoryResult> purgehistoryresultList = new List<PurgeHistoryResult>();
+            foreach (string id in instanceId)
+            {
+                PurgeHistoryResult result = await this.DurabilityProvider.PurgeInstanceHistoryByInstanceId(id);
+                purgehistoryresultList.Add(result);
+            }
+
+            return purgehistoryresultList;
         }
 
         /// <inheritdoc />
