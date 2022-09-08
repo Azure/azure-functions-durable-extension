@@ -204,9 +204,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public bool UseAppLease { get; set; } = true;
 
         /// <summary>
-        /// If IncludeParameters is true, the input of the activity function will be displayed.
+        /// If <c>true</c>, the inputs of activity and sub-orchestrator functions will be saved to the orchestration history, making them visible to debugging tools. The default value is <c>false</c>.
         /// </summary>
-        public bool IncludeParameters { get; set; } = false;
+        public bool StoreInputsInOrchestrationHistory { get; set; } = false;
 
         /// <summary>
         /// If UseAppLease is true, gets or sets the AppLeaaseOptions used for acquiring the lease to start the application.

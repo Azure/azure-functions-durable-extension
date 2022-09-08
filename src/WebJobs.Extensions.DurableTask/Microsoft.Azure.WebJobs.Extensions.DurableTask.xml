@@ -4261,9 +4261,9 @@
             If true, takes a lease on the task hub container, allowing for only one app to process messages in a task hub at a time.
             </summary>
         </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.IncludeParameters">
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.StoreInputsInOrchestrationHistory">
             <summary>
-            If IncludeParameters is true, the input of the activity function will be displayed.
+            If <c>true</c>, the inputs of activity and sub-orchestrator functions will be saved to the orchestration history, making them visible to debugging tools. The default value is <c>false</c>.
             </summary>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.AppLeaseOptions">
