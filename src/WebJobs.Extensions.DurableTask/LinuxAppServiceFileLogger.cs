@@ -19,8 +19,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// We have modified their implementation to utilize syscall.rename instead of File.Move during file rolling.
     /// This change is necessary for older versions of fluent-bit, our logging infrastructure in linux dedicated, to properly deal with logfile archiving.
     /// </summary>
-    public class LinuxAppServiceFileLogger
+    internal class LinuxAppServiceFileLogger : IDisposable
     {
+        private static readonly SemaphoreSlim Semaphore = new SemaphoreSlim(initialCount: 1, maxCount: 1);
         private readonly string logFileName;
         private readonly string logFileDirectory;
         private readonly string logFilePath;
@@ -126,11 +127,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 try
                 {
+                    // block on semaphore to prevent concurrent writes
+                    await Semaphore.WaitAsync();
                     await this.WriteLogs(this.currentBatch);
                 }
                 catch (Exception)
                 {
                     // Ignored
+                }
+                finally
+                {
+                    Semaphore.Release();
                 }
 
                 this.currentBatch.Clear();
@@ -163,6 +170,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     await streamWriter.WriteLineAsync(log);
                 }
             }
+        }
+
+        public void Dispose()
+        {
+            // Not flushing the linux logger may lead to lost logs
+            // 40 seconds timeout because we write normally every 30 seconds, so we're just
+            // adding an extra 10 seconds to flush.
+            this.Stop(TimeSpan.FromSeconds(40));
         }
 
         private void RollFiles()

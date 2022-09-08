@@ -106,5 +106,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
             }
         }
+
+        public override void Dispose()
+        {
+            this.logger?.Dispose();
+            base.Dispose();
+        }
     }
 }
