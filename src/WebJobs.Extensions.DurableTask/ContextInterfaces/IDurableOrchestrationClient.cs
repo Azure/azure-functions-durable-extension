@@ -268,8 +268,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="showHistory">Boolean marker for including execution history in the response.</param>
         /// <param name="showHistoryOutput">Boolean marker for including input and output in the execution history response.</param>
         /// <param name="showInput">If set, fetch and return the input for the orchestration instance.</param>
-        /// <returns>return a list of instances of orchestration status.</returns>
-        Task<IList<DurableOrchestrationStatus>> GetStatusAsync(IEnumerable<string> instanceID, bool showHistory = false, bool showHistoryOutput = false, bool showInput = true);
+        /// <returns>Returns a list of orchestration status values.</returns>
+        Task<List<DurableOrchestrationStatus>> GetStatusAsync(IEnumerable<string> instanceID, bool showHistory = false, bool showHistoryOutput = false, bool showInput = false);
 
         /// <summary>
         /// Gets the status of all orchestration instances that match the specified conditions.

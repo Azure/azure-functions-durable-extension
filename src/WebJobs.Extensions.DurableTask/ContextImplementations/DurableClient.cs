@@ -485,12 +485,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc />
-        async Task<IList<DurableOrchestrationStatus>> IDurableOrchestrationClient.GetStatusAsync(IEnumerable<string> instanceID, bool showHistory, bool showHistoryOutput, bool showInput)
+        async Task<List<DurableOrchestrationStatus>> IDurableOrchestrationClient.GetStatusAsync(IEnumerable<string> instanceID, bool showHistory, bool showHistoryOutput, bool showInput)
         {
-            IList<DurableOrchestrationStatus> durableorchestrationstateList = new List<DurableOrchestrationStatus>();
+            var results = new List<DurableOrchestrationStatus>();
             foreach (string id in instanceID)
             {
-                IList<OrchestrationState> stateList = null;
+                IList<OrchestrationState> stateList;
                 try
                 {
                     stateList = await this.DurabilityProvider.GetOrchestrationStateWithInputsAsync(id, showInput);
@@ -502,20 +502,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
 
                 OrchestrationState state = stateList?.FirstOrDefault();
-                DurableOrchestrationStatus currentidstate = new DurableOrchestrationStatus();
+                var currenStatus = new DurableOrchestrationStatus();
                 if (state == null || state.OrchestrationInstance == null)
                 {
-                    currentidstate.InstanceId = id;
+                    currenStatus = null;
                 }
                 else
                 {
-                    currentidstate = await GetDurableOrchestrationStatusAsync(state, this.client, showHistory, showHistoryOutput);
+                    currenStatus = await GetDurableOrchestrationStatusAsync(state, this.client, showHistory, showHistoryOutput);
                 }
 
-                durableorchestrationstateList.Add(currentidstate);
+                results.Add(currenStatus);
             }
 
-            return durableorchestrationstateList;
+            return results;
         }
 
         /// <inheritdoc />

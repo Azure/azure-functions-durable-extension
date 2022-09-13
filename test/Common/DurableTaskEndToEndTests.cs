@@ -4434,11 +4434,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [MemberData(nameof(TestDataGenerator.GetBooleanAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
-        public async Task Purgemultipleinstancehistory(bool extendedSessions, string storageProvider)
+        public async Task PurgeMultipleInstanceHistory(bool extendedSessions, string storageProvider)
         {
             using (ITestHost host = TestHelpers.GetJobHost(
                this.loggerProvider,
-               nameof(this.Purgemultipleinstancehistory),
+               nameof(this.PurgeMultipleInstanceHistory),
                extendedSessions,
                storageProviderType: storageProvider))
             {
@@ -4451,17 +4451,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 string firstInstanceId = client1.InstanceId;
                 string secondInstanceId = client2.InstanceId;
                 string thirdInstanceId = client3.InstanceId;
-                IList<string> instanceID = new List<string> { firstInstanceId, secondInstanceId, thirdInstanceId };
+                var instanceIdList = new List<string> { firstInstanceId, secondInstanceId, thirdInstanceId };
 
-                await client1.InnerClient.PurgeInstanceHistoryAsync(instanceID);
+                await client1.InnerClient.PurgeInstanceHistoryAsync(instanceIdList);
 
-                var status = await client1.InnerClient.GetStatusAsync(firstInstanceId, true);
+                var status = await client1.GetStatusAsync();
                 Assert.Null(status);
 
-                status = await client2.InnerClient.GetStatusAsync(secondInstanceId, true);
+                status = await client2.GetStatusAsync();
                 Assert.Null(status);
 
-                status = await client3.InnerClient.GetStatusAsync(thirdInstanceId, true);
+                status = await client3.GetStatusAsync();
                 Assert.Null(status);
 
                 await host.StopAsync();
@@ -4471,9 +4471,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
-        public async Task GetStatusAsyncmultipleinstance(string storageProvider)
+        public async Task GetStatusAsyncMultipleInstance(string storageProvider)
         {
-            const string testName = nameof(this.GetStatusAsyncmultipleinstance);
+            const string testName = nameof(this.GetStatusAsyncMultipleInstance);
             using (ITestHost host = TestHelpers.GetJobHost(this.loggerProvider, testName, false, storageProviderType: storageProvider))
             {
                 await host.StartAsync();
@@ -4481,17 +4481,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var client1 = await host.StartOrchestratorAsync(nameof(TestOrchestrations.Counter), 1, this.output);
                 var client2 = await host.StartOrchestratorAsync(nameof(TestOrchestrations.Counter), 2, this.output);
 
-                string firstinstanceId = client1.InstanceId;
-                string secondinstanceId = client2.InstanceId;
+                string firstInstanceId = client1.InstanceId;
+                string secondInstanceId = client2.InstanceId;
                 string thirdInstanceId = "00000000";
 
-                IList<string> instanceID = new List<string> { firstinstanceId, secondinstanceId, thirdInstanceId };
+                var instanceIdList = new List<string> { firstInstanceId, secondInstanceId, thirdInstanceId };
 
-                IList<DurableOrchestrationStatus> statuslist = new List<DurableOrchestrationStatus>();
-                statuslist = await client1.InnerClient.GetStatusAsync(instanceID, showHistory: false, showHistoryOutput: false);
-                Assert.Equal("1", statuslist[0].Input.ToString());
-                Assert.Equal("2", statuslist[1].Input.ToString());
-                Assert.Null(statuslist[2].Input);
+                var statusList = new List<DurableOrchestrationStatus>();
+                statusList = await client1.InnerClient.GetStatusAsync(instanceIdList, showHistory: false, showHistoryOutput: false);
+                Assert.Equal("1", statusList[0].Input.ToString());
+                Assert.Equal("2", statusList[1].Input.ToString());
+                Assert.Null(statusList[2].Input);
             }
         }
 
