@@ -208,9 +208,6 @@
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient.Microsoft#Azure#WebJobs#Extensions#DurableTask#IDurableOrchestrationClient#PurgeInstanceHistoryAsync(System.String)">
             <inheritdoc />
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient.Microsoft#Azure#WebJobs#Extensions#DurableTask#IDurableOrchestrationClient#PurgeInstanceHistoryAsync(System.Collections.Generic.IEnumerable{System.String})">
-            <inheritdoc />
-        </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient.Microsoft#Azure#WebJobs#Extensions#DurableTask#IDurableOrchestrationClient#PurgeInstanceHistoryAsync(System.DateTime,System.Nullable{System.DateTime},System.Collections.Generic.IEnumerable{DurableTask.Core.OrchestrationStatus})">
             <inheritdoc />
         </member>
@@ -1078,13 +1075,6 @@
             </summary>
             <param name="instanceId">The ID of the orchestration instance to purge.</param>
             <returns>Returns an instance of <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.PurgeHistoryResult"/>.</returns>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient.PurgeInstanceHistoryAsync(System.Collections.Generic.IEnumerable{System.String})">
-            <summary>
-            Purge the history of multiple instances.
-            </summary>
-            <param name="instanceId"> The lsit of the orchestration instance IDs to purge.</param>
-            <returns>Returns a list of instances of <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.PurgeHistoryResult"/>.</returns>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient.PurgeInstanceHistoryAsync(System.DateTime,System.Nullable{System.DateTime},System.Collections.Generic.IEnumerable{DurableTask.Core.OrchestrationStatus})">
             <summary>
