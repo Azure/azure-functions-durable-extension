@@ -6,7 +6,7 @@
     "repository": "https://github.com/Azure/azure-functions-durable-js",
     "dependencies": {
         "azure-storage": "^2.10.1",
-        "durable-functions": "^1.4.3",
+        "durable-functions": "^1.5.4",
         "luxon": "^2.3.0",
         "readdirp": "^2.1.0",
         "request-promise-native": "^1.0.5",
