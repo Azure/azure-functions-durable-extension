@@ -597,21 +597,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return await this.DurabilityProvider.PurgeInstanceHistoryByInstanceId(instanceId);
         }
 
-        async Task<List<PurgeHistoryResult>> IDurableOrchestrationClient.PurgeInstanceHistoryAsync(IEnumerable<string> instanceId)
+        async Task<PurgeHistoryResult> IDurableOrchestrationClient.PurgeInstanceHistoryAsync(IEnumerable<string> instanceId)
         {
             var tasks = new List<Task>();
-            var results = new List<PurgeHistoryResult>();
+            int instanceDeleted = 0;
             foreach (string id in instanceId)
             {
                 tasks.Add(Task.Run(async () =>
                 {
                     var purgeHistoryResult = await this.DurabilityProvider.PurgeInstanceHistoryByInstanceId(id);
-                    results.Add(purgeHistoryResult);
+                    if (purgeHistoryResult.InstancesDeleted == 1)
+                    {
+                        instanceDeleted += 1;
+                    }
                 }));
             }
 
             await Task.WhenAll(tasks);
-            return results;
+            PurgeHistoryResult result = new PurgeHistoryResult(instancesDeleted: instanceDeleted);
+            return result;
         }
 
         /// <inheritdoc />
