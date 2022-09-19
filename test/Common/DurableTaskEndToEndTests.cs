@@ -4461,6 +4461,43 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [MemberData(nameof(TestDataGenerator.GetBooleanAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        public async Task PurgeMultipleInstanceHistory(bool extendedSessions, string storageProvider)
+        {
+            using (ITestHost host = TestHelpers.GetJobHost(
+               this.loggerProvider,
+               nameof(this.PurgeMultipleInstanceHistory),
+               extendedSessions,
+               storageProviderType: storageProvider))
+            {
+                await host.StartAsync();
+
+                var client1 = await host.StartOrchestratorAsync(nameof(TestOrchestrations.SayHelloWithActivity), "foo", this.output);
+                var client2 = await host.StartOrchestratorAsync(nameof(TestOrchestrations.SayHelloWithActivity), "bar", this.output);
+                var client3 = await host.StartOrchestratorAsync(nameof(TestOrchestrations.SayHelloWithActivity), "baz", this.output);
+
+                string firstInstanceId = client1.InstanceId;
+                string secondInstanceId = client2.InstanceId;
+                string thirdInstanceId = client3.InstanceId;
+                var instanceIdList = new List<string> { firstInstanceId, secondInstanceId, thirdInstanceId };
+
+                await client1.InnerClient.PurgeInstanceHistoryAsync(instanceIdList);
+
+                var status = await client1.GetStatusAsync();
+                Assert.Null(status);
+
+                status = await client2.GetStatusAsync();
+                Assert.Null(status);
+
+                status = await client3.GetStatusAsync();
+                Assert.Null(status);
+
+                await host.StopAsync();
+            }
+        }
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [MemberData(nameof(TestDataGenerator.GetBooleanAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task Purge_All_History_By_TimePeriod(bool extendedSessions, string storageProvider)
         {
             string testName = nameof(this.Purge_All_History_By_TimePeriod);

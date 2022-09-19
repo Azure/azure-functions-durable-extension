@@ -290,6 +290,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         Task<PurgeHistoryResult> PurgeInstanceHistoryAsync(string instanceId);
 
         /// <summary>
+        /// Purge the history for multiple instances.
+        /// </summary>
+        /// <param name="instanceId">The IDs of the orchestration instance to purge.</param>
+        /// <returns>>Returns a list of instances of <see cref="PurgeHistoryResult"/>.</returns>
+        Task<List<PurgeHistoryResult>> PurgeInstanceHistoryAsync(IEnumerable<string> instanceId);
+
+        /// <summary>
         /// Purge the orchestration history for instances that match the conditions.
         /// </summary>
         /// <param name="createdTimeFrom">Start creation time for querying instances for purging.</param>
