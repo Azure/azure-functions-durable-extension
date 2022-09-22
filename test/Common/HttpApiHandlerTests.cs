@@ -430,7 +430,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var instanceId = Guid.NewGuid().ToString();
             var clientMock = new Mock<IDurableClient>();
             clientMock
-                .Setup(x => x.GetStatusAsync(instanceId, false, false, true))
+                .Setup(x => x.GetStatusAsync(instanceId, false, false, true, false))
                 .Returns(Task.FromResult(list.First()));
             var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);
 
@@ -782,7 +782,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 });
 
             clientMock
-                .Setup(x => x.GetStatusAsync(It.IsAny<string>(), false, false, true))
+                .Setup(x => x.GetStatusAsync(It.IsAny<string>(), false, false, true, false))
                 .Returns(Task.FromResult(
                     new DurableOrchestrationStatus
                     {

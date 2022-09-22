@@ -11,6 +11,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using DurableTask.Core.History;
+using Dynamitey;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.WebApiCompatShim;
@@ -420,7 +421,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc />
-        async Task<DurableOrchestrationStatus> IDurableOrchestrationClient.GetStatusAsync(string instanceId, bool showHistory, bool showHistoryOutput, bool showInput)
+        async Task<DurableOrchestrationStatus> IDurableOrchestrationClient.GetStatusAsync(string instanceId, bool showHistory, bool showHistoryOutput, bool showInput, bool showHistoryInput)
         {
             IList<OrchestrationState> stateList;
             try
@@ -439,7 +440,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return null;
             }
 
-            return await GetDurableOrchestrationStatusAsync(state, this.client, showHistory, showHistoryOutput);
+            return await GetDurableOrchestrationStatusAsync(state, this.client, showHistory, showHistoryOutput, showHistoryInput);
         }
 
         /// <inheritdoc />
@@ -762,7 +763,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return result;
         }
 
-        private static async Task<DurableOrchestrationStatus> GetDurableOrchestrationStatusAsync(OrchestrationState orchestrationState, TaskHubClient client, bool showHistory, bool showHistoryOutput)
+        private static async Task<DurableOrchestrationStatus> GetDurableOrchestrationStatusAsync(OrchestrationState orchestrationState, TaskHubClient client, bool showHistory, bool showHistoryOutput, bool showHistoryInput)
         {
             JArray historyArray = null;
             if (showHistory && orchestrationState.OrchestrationStatus != OrchestrationStatus.Pending)
@@ -787,7 +788,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                                 case EventType.TaskScheduled:
                                     TrackNameAndScheduledTime(historyItem, eventType, i, eventMapper);
                                     historyItem.Remove("Version");
-                                    historyItem.Remove("Input");
+                                    if (!showHistoryInput)
+                                    {
+                                        historyItem.Remove("Input");
+                                    }
+
                                     break;
                                 case EventType.TaskCompleted:
                                 case EventType.TaskFailed:
@@ -798,12 +803,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                                         historyItem.Remove("Result");
                                     }
 
+                                    if (!showHistoryInput)
+                                    {
+                                        historyItem.Remove("Input");
+                                    }
+
                                     ConvertOutputToJToken(historyItem, showHistoryOutput && eventType == EventType.TaskCompleted);
                                     break;
                                 case EventType.SubOrchestrationInstanceCreated:
                                     TrackNameAndScheduledTime(historyItem, eventType, i, eventMapper);
                                     historyItem.Remove("Version");
-                                    historyItem.Remove("Input");
+                                    if (!showHistoryInput)
+                                    {
+                                        historyItem.Remove("Input");
+                                    }
+
                                     break;
                                 case EventType.SubOrchestrationInstanceCompleted:
                                 case EventType.SubOrchestrationInstanceFailed:
@@ -824,7 +838,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                                     historyItem.Remove("ParentInstance");
                                     historyItem.Remove("Version");
                                     historyItem.Remove("Tags");
-                                    historyItem.Remove("Input");
+                                    if (!showHistoryInput)
+                                    {
+                                        historyItem.Remove("Input");
+                                    }
+
                                     break;
                                 case EventType.ExecutionCompleted:
                                     if (Enum.TryParse(historyItem["OrchestrationStatus"].Value<string>(), out OrchestrationStatus orchestrationStatus))
@@ -840,13 +858,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                                     ConvertOutputToJToken(historyItem, showHistoryOutput);
                                     break;
                                 case EventType.ExecutionTerminated:
-                                    historyItem.Remove("Input");
+                                    if (!showHistoryInput)
+                                    {
+                                        historyItem.Remove("Input");
+                                    }
+
                                     break;
                                 case EventType.TimerFired:
                                     historyItem.Remove("TimerId");
                                     break;
                                 case EventType.EventRaised:
-                                    historyItem.Remove("Input");
+                                    if (!showHistoryInput)
+                                    {
+                                        historyItem.Remove("Input");
+                                    }
+
                                     break;
                                 case EventType.OrchestratorStarted:
                                 case EventType.OrchestratorCompleted:
@@ -889,7 +915,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private static void TrackNameAndScheduledTime(JObject historyItem, EventType eventType, int index, Dictionary<string, EventIndexDateMapping> eventMapper)
         {
-            eventMapper.Add($"{eventType}_{historyItem["EventId"]}", new EventIndexDateMapping { Index = index, Name = (string)historyItem["Name"], Date = (DateTime)historyItem["Timestamp"] });
+            eventMapper.Add($"{eventType}_{historyItem["EventId"]}", new EventIndexDateMapping { Index = index, Name = (string)historyItem["Name"], Date = (DateTime)historyItem["Timestamp"], Input = (string)historyItem["Input"] });
         }
 
         private static void AddScheduledEventDataAndAggregate(ref Dictionary<string, EventIndexDateMapping> eventMapper, string prefix, JToken historyItem, List<int> indexList)
@@ -898,6 +924,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 historyItem["ScheduledTime"] = taskScheduledData.Date;
                 historyItem["FunctionName"] = taskScheduledData.Name;
+                historyItem["Input"] = taskScheduledData.Input;
                 indexList.Add(taskScheduledData.Index);
             }
         }
@@ -1040,6 +1067,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             public DateTime Date { get; set; }
 
             public string Name { get; set; }
+
+            public string Input { get; set; }
         }
     }
 }

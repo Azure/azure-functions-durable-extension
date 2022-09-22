@@ -5702,6 +5702,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             JObject.Parse(configJson);
         }
 
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task TestStoreInputsInOrchestrationHistory()
+        {
+            DurableTaskOptions options = new DurableTaskOptions();
+            options.StoreInputsInOrchestrationHistory = true;
+
+            using (var host = TestHelpers.GetJobHostWithOptions(
+                   this.loggerProvider,
+                   options))
+            {
+                await host.StartAsync();
+                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.SayHelloWithActivity), "foo", this.output);
+                await client.WaitForCompletionAsync(this.output);
+                var status = await client.InnerClient.GetStatusAsync(client.InstanceId, showHistory: true, showHistoryInput: true);
+
+                var input = status.History[1].Value<string>("Input");
+                Assert.Equal("[\"foo\"]", input);
+
+                await host.StopAsync();
+            }
+        }
+
         private static StringBuilder GenerateMediumRandomStringPayload()
         {
             // Generate a medium random string payload

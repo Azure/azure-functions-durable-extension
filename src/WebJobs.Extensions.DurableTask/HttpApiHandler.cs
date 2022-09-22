@@ -46,6 +46,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private const string ShowHistoryParameter = "showHistory";
         private const string ShowHistoryOutputParameter = "showHistoryOutput";
         private const string ShowInputParameter = "showInput";
+        private const string ShowHistoryInputParameter = "showHistoryInput";
         private const string FetchStateParameter = "fetchState";
         private const string InstanceIdPrefixParameter = "instanceIdPrefix";
         private const string CreatedTimeFromParameter = "createdTimeFrom";
@@ -600,6 +601,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 showHistoryOutput = false;
             }
 
+            if (!TryGetBooleanQueryParameterValue(queryNameValuePairs, ShowHistoryInputParameter, out bool showHistoryInput))
+            {
+                showHistoryInput = false;
+            }
+
             if (!TryGetBooleanQueryParameterValue(queryNameValuePairs, ShowInputParameter, out bool showInput))
             {
                 showInput = true;
@@ -618,7 +624,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
             }
 
-            var status = await client.GetStatusAsync(instanceId, showHistory, showHistoryOutput, showInput);
+            var status = await client.GetStatusAsync(instanceId, showHistory, showHistoryOutput, showInput, showHistoryInput);
             if (status == null)
             {
                 return request.CreateResponse(HttpStatusCode.NotFound);
