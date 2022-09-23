@@ -211,7 +211,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <para>
         /// A terminated instance will eventually transition into the <see cref="OrchestrationRuntimeStatus.Terminated"/> state.
         /// However, this transition will not happen immediately. Rather, the terminate operation will be queued in the task hub
-        /// along with other operations for that instance. You can use the <see cref="GetStatusAsync(string, bool, bool, bool)"/>
+        /// along with other operations for that instance. You can use the <see cref="GetStatusAsync(string, bool, bool, bool, bool)"/>
         /// method to know when a terminated instance has actually reached the Terminated state.
         /// </para>
         /// <para>
