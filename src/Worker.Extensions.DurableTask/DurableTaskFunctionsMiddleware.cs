@@ -167,7 +167,7 @@ internal class DurableTaskFunctionsMiddleware : IFunctionsWorkerMiddleware
         public override void SetCustomStatus(object? customStatus)
         {
             this.EnsureLegalAccess();
-            this.SetCustomStatus(customStatus);
+            this.innerContext.SetCustomStatus(customStatus);
         }
 
         public override Task<T> WaitForExternalEvent<T>(string eventName, CancellationToken cancellationToken = default)

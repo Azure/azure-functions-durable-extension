@@ -1475,6 +1475,50 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
+        /// End-to-end test which validates the Suspend-Resume functionality.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [MemberData(nameof(TestDataGenerator.GetBooleanAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        public async Task SuspendResumeOrchestration(bool extendedSessions, string storageProvider)
+        {
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.Counter),
+            };
+
+            using (ITestHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.SuspendResumeOrchestration),
+                extendedSessions,
+                storageProviderType: storageProvider))
+            {
+                await host.StartAsync();
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], 0, this.output);
+                await client.WaitForStartupAsync(this.output);
+
+                // Test case 1: Suspend changes the status Running->Suspended
+                await client.SuspendAsync("sleepyOrch");
+                var status = await client.WaitForStatusChange(this.output, OrchestrationRuntimeStatus.Suspended);
+                Assert.Equal(OrchestrationRuntimeStatus.Suspended, status?.RuntimeStatus);
+
+                // Test case 2: external event does not go through
+                await client.RaiseEventAsync("operation", "incr", this.output);
+                await client.RaiseEventAsync("operation", "end", this.output);
+                status = await client.GetStatusAsync(showInput: false);
+                Assert.Equal(0, status.Output);
+
+                // Test case 3: external event now goes through
+                await client.ResumeAsync("wakeUp");
+                status = await client.WaitForCompletionAsync(this.output);
+                Assert.Equal(1, status.Output);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
         /// End-to-end test which validates the Rewind functionality.
         /// </summary>
         [Theory]

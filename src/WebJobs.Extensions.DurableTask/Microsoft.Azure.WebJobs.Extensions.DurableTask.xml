@@ -1012,6 +1012,22 @@
             <param name="reason">The reason for terminating the orchestration instance.</param>
             <returns>A task that completes when the terminate message is enqueued if necessary.</returns>
         </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient.SuspendAsync(System.String,System.String)">
+            <summary>
+            Suspends a running orchestration instance.
+            </summary>
+            <param name="instanceId">The ID of the orchestration instance to suspend.</param>
+            <param name="reason">The reason for suspending the orchestration instance.</param>
+            <returns>A task that completes when the suspend message is enqueued if necessary.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient.ResumeAsync(System.String,System.String)">
+            <summary>
+            Resumes a suspended orchestration instance.
+            </summary>
+            <param name="instanceId">The ID of the orchestration instance to resume.</param>
+            <param name="reason">The reason for resuming the orchestration instance.</param>
+            <returns>A task that completes when the resume message is enqueued if necessary.</returns>
+        </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient.RewindAsync(System.String,System.String)">
             <summary>
             Rewinds the specified failed orchestration instance with a reason.
@@ -1935,6 +1951,11 @@
             Specifies whether this backend delivers messages in order.
             </summary>
         </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.SupportsImplicitEntityDeletion">
+            <summary>
+            Specifies whether this backend supports implicit deletion of entities.
+            </summary>
+        </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.ConfigurationJson">
             <summary>
             JSON representation of configuration to emit in telemetry.
@@ -2118,6 +2139,22 @@
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.ForceTerminateTaskOrchestrationAsync(System.String,System.String)">
             <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.SuspendTaskOrchestrationAsync(System.String,System.String)">
+            <summary>
+                Suspend the specified orchestration instance with a reason.
+            </summary>
+            <param name="instanceId">Instance to suspend.</param>
+            <param name="reason">Reason for suspending the instance.</param>
+            <returns>A task that completes when the suspend message is enqueued.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.ResumeTaskOrchestrationAsync(System.String,System.String)">
+            <summary>
+                Resume the specified orchestration instance with a reason.
+            </summary>
+            <param name="instanceId">Instance to resume.</param>
+            <param name="reason">Reason for resuming the instance.</param>
+            <returns>A task that completes when the resume message is enqueued.</returns>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.GetOrchestrationStateAsync(System.String,System.Boolean)">
             <inheritdoc />
@@ -3265,6 +3302,22 @@
             </summary>
             <value>
             The HTTP URL for restarting an orchestration instance.
+            </value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload.SuspendPostUri">
+            <summary>
+            Gets the HTTP POST instance suspend endpoint.
+            </summary>
+            <value>
+            The HTTP URL for suspending an orchestration instance.
+            </value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpManagementPayload.ResumePostUri">
+            <summary>
+            Gets the HTTP POST instance resume endpoint.
+            </summary>
+            <value>
+            The HTTP URL for resuming an orchestration instance.
             </value>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.HttpRetryOptions">
@@ -4465,6 +4518,11 @@
         <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.OrchestrationRuntimeStatus.Pending">
             <summary>
             The orchestration was scheduled but has not yet started.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.OrchestrationRuntimeStatus.Suspended">
+            <summary>
+            The orchestration was suspended
             </summary>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.OrchestrationStatusQueryCondition">

@@ -147,7 +147,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             if (serializedInput == null)
             {
-                // this instance was automatically started by DTFx
+                // this instance was automatically started by DTFx, or a previous execution called continueAsNew(null)
                 this.context.State = new SchedulerState();
             }
             else
@@ -247,10 +247,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         this.context.State.Suspended = true;
                     }
 
-                    var jstate = JToken.FromObject(this.context.State);
-
-                    // continue as new
-                    innerContext.ContinueAsNew(jstate);
+                    if (this.Config.UseImplicitEntityDeletion && this.context.State.IsEmpty)
+                    {
+                        // this entity scheduler is idle and the entity is deleted, so the instance and history can be removed from storage
+                        // we convey this to the durability provider by issuing a continue-as-new with null input
+                        innerContext.ContinueAsNew(null);
+                    }
+                    else
+                    {
+                        // we persist the state of the entity scheduler and entity by issuing a continue-as-new
+                        var jstate = JToken.FromObject(this.context.State);
+                        innerContext.ContinueAsNew(jstate);
+                    }
                 }
             }
             catch (Exception e)

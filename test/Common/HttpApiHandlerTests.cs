@@ -95,6 +95,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.StartsWith(expectedBaseUri, managementPayload.PurgeHistoryDeleteUri);
             Assert.StartsWith(expectedBaseUri, managementPayload.RestartPostUri);
             Assert.StartsWith(expectedBaseUri, managementPayload.TerminatePostUri);
+            Assert.StartsWith(expectedBaseUri, managementPayload.SuspendPostUri);
+            Assert.StartsWith(expectedBaseUri, managementPayload.ResumePostUri);
 
             string baseUri = httpApiHandler.GetBaseUrl();
             Assert.Equal(expectedBaseUri, baseUri);
@@ -140,6 +142,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(
                 $"{TestConstants.NotificationUrlBase}/instances/7b59154ae666471993659902ed0ba742/restart?taskHub=SampleHubVS&connection=Storage&code=mykey",
                 (string)status["restartPostUri"]);
+            Assert.Equal(
+                $"{TestConstants.NotificationUrlBase}/instances/7b59154ae666471993659902ed0ba742/suspend?reason={{text}}&taskHub=SampleHubVS&connection=Storage&code=mykey",
+                (string)status["suspendPostUri"]);
+            Assert.Equal(
+                $"{TestConstants.NotificationUrlBase}/instances/7b59154ae666471993659902ed0ba742/resume?reason={{text}}&taskHub=SampleHubVS&connection=Storage&code=mykey",
+                (string)status["resumePostUri"]);
         }
 
         [Fact]
@@ -165,6 +173,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(
                $"{TestConstants.NotificationUrlBase}/instances/7b59154ae666471993659902ed0ba742/restart?taskHub=DurableFunctionsHub&connection=Storage&code=mykey",
                httpManagementPayload.RestartPostUri);
+            Assert.Equal(
+                $"{TestConstants.NotificationUrlBase}/instances/7b59154ae666471993659902ed0ba742/suspend?reason={{text}}&taskHub=DurableFunctionsHub&connection=Storage&code=mykey",
+                httpManagementPayload.SuspendPostUri);
+            Assert.Equal(
+                $"{TestConstants.NotificationUrlBase}/instances/7b59154ae666471993659902ed0ba742/resume?reason={{text}}&taskHub=DurableFunctionsHub&connection=Storage&code=mykey",
+                httpManagementPayload.ResumePostUri);
         }
 
         [Fact]
@@ -190,6 +204,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(
                 $"{TestConstants.NotificationUrlBase}/instances/7b59154ae666471993659902ed0ba742/restart?taskHub=SampleHubVS&connection=Storage&code=mykey",
                 httpManagementPayload.RestartPostUri);
+            Assert.Equal(
+                $"{TestConstants.NotificationUrlBase}/instances/7b59154ae666471993659902ed0ba742/suspend?reason={{text}}&taskHub=SampleHubVS&connection=Storage&code=mykey",
+                httpManagementPayload.SuspendPostUri);
+            Assert.Equal(
+                $"{TestConstants.NotificationUrlBase}/instances/7b59154ae666471993659902ed0ba742/resume?reason={{text}}&taskHub=SampleHubVS&connection=Storage&code=mykey",
+                httpManagementPayload.ResumePostUri);
         }
 
         [Fact]
@@ -215,6 +235,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(
                 $"{TestConstants.NotificationUrlBase}/instances/7b59154ae666471993659902ed0ba742/restart?taskHub=DurableFunctionsHub&connection=TestConnection&code=mykey",
                 httpManagementPayload.RestartPostUri);
+            Assert.Equal(
+                $"{TestConstants.NotificationUrlBase}/instances/7b59154ae666471993659902ed0ba742/suspend?reason={{text}}&taskHub=DurableFunctionsHub&connection=TestConnection&code=mykey",
+                httpManagementPayload.SuspendPostUri);
+            Assert.Equal(
+                $"{TestConstants.NotificationUrlBase}/instances/7b59154ae666471993659902ed0ba742/resume?reason={{text}}&taskHub=DurableFunctionsHub&connection=TestConnection&code=mykey",
+                httpManagementPayload.ResumePostUri);
         }
 
         [Fact]
@@ -240,6 +266,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(
                 $"{TestConstants.NotificationUrlBase}/instances/7b59154ae666471993659902ed0ba742/restart?taskHub=SampleHubVS&connection=TestConnection&code=mykey",
                 httpManagementPayload.RestartPostUri);
+            Assert.Equal(
+                $"{TestConstants.NotificationUrlBase}/instances/7b59154ae666471993659902ed0ba742/suspend?reason={{text}}&taskHub=SampleHubVS&connection=TestConnection&code=mykey",
+                httpManagementPayload.SuspendPostUri);
+            Assert.Equal(
+                $"{TestConstants.NotificationUrlBase}/instances/7b59154ae666471993659902ed0ba742/resume?reason={{text}}&taskHub=SampleHubVS&connection=TestConnection&code=mykey",
+                httpManagementPayload.ResumePostUri);
         }
 
         [Fact]
@@ -279,6 +311,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(
                 $"{TestConstants.NotificationUrlBase}/instances/9b59154ae666471993659902ed0ba749?taskHub=SampleHubVS&connection=Storage&code=mykey",
                 (string)status["purgeHistoryDeleteUri"]);
+            Assert.Equal(
+                $"{TestConstants.NotificationUrlBase}/instances/9b59154ae666471993659902ed0ba749/suspend?reason={{text}}&taskHub=SampleHubVS&connection=Storage&code=mykey",
+                (string)status["suspendPostUri"]);
+            Assert.Equal(
+                $"{TestConstants.NotificationUrlBase}/instances/9b59154ae666471993659902ed0ba749/resume?reason={{text}}&taskHub=SampleHubVS&connection=Storage&code=mykey",
+                (string)status["resumePostUri"]);
             Assert.True(stopWatch.Elapsed > TimeSpan.FromSeconds(10));
         }
 
@@ -321,6 +359,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(
                 $"{TestConstants.NotificationUrlBase}/instances/9b59154ae666471993659902ed0ba749/restart?taskHub=SampleHubVS&connection=Storage&code=mykey",
                 (string)status["restartPostUri"]);
+            Assert.Equal(
+                $"{TestConstants.NotificationUrlBase}/instances/9b59154ae666471993659902ed0ba749/suspend?reason={{text}}&taskHub=SampleHubVS&connection=Storage&code=mykey",
+                (string)status["suspendPostUri"]);
+            Assert.Equal(
+                $"{TestConstants.NotificationUrlBase}/instances/9b59154ae666471993659902ed0ba749/resume?reason={{text}}&taskHub=SampleHubVS&connection=Storage&code=mykey",
+                (string)status["resumePostUri"]);
             Assert.True(stopWatch.Elapsed > TimeSpan.FromSeconds(10));
         }
 
@@ -806,6 +850,96 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(testReason, actualReason);
         }
 
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task SuspendInstanceWebhook()
+        {
+            string testInstanceId = Guid.NewGuid().ToString("N");
+            string testReason = "SuspensionReason" + Guid.NewGuid();
+
+            string actualInstanceId = null;
+            string actualReason = null;
+
+            var clientMock = new Mock<IDurableClient>();
+            clientMock
+                .Setup(x => x.SuspendAsync(It.IsAny<string>(), It.IsAny<string>()))
+                .Returns(Task.CompletedTask)
+                .Callback((string instanceId, string reason) =>
+                {
+                    actualInstanceId = instanceId;
+                    actualReason = reason;
+                });
+
+            clientMock
+                .Setup(x => x.GetStatusAsync(It.IsAny<string>(), false, false, true))
+                .Returns(Task.FromResult(
+                    new DurableOrchestrationStatus
+                    {
+                        InstanceId = testInstanceId,
+                        RuntimeStatus = OrchestrationRuntimeStatus.Suspended,
+                    }));
+
+            var suspendRequestUriBuilder = new UriBuilder(TestConstants.NotificationUrl);
+            suspendRequestUriBuilder.Path += $"/Instances/{testInstanceId}/suspend";
+            suspendRequestUriBuilder.Query = $"reason={testReason}&{suspendRequestUriBuilder.Query.TrimStart('?')}";
+
+            var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);
+            await httpApiHandler.HandleRequestAsync(
+                new HttpRequestMessage
+                {
+                    Method = HttpMethod.Post,
+                    RequestUri = suspendRequestUriBuilder.Uri,
+                });
+
+            Assert.Equal(testInstanceId, actualInstanceId);
+            Assert.Equal(testReason, actualReason);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task ResumeInstanceWebhook()
+        {
+            string testInstanceId = Guid.NewGuid().ToString("N");
+            string testReason = "ResumptionReason" + Guid.NewGuid();
+
+            string actualInstanceId = null;
+            string actualReason = null;
+
+            var clientMock = new Mock<IDurableClient>();
+            clientMock
+                .Setup(x => x.ResumeAsync(It.IsAny<string>(), It.IsAny<string>()))
+                .Returns(Task.CompletedTask)
+                .Callback((string instanceId, string reason) =>
+                {
+                    actualInstanceId = instanceId;
+                    actualReason = reason;
+                });
+
+            clientMock
+                .Setup(x => x.GetStatusAsync(It.IsAny<string>(), false, false, true))
+                .Returns(Task.FromResult(
+                    new DurableOrchestrationStatus
+                    {
+                        InstanceId = testInstanceId,
+                        RuntimeStatus = OrchestrationRuntimeStatus.Running,
+                    }));
+
+            var resumeRequestUriBuilder = new UriBuilder(TestConstants.NotificationUrl);
+            resumeRequestUriBuilder.Path += $"/Instances/{testInstanceId}/resume";
+            resumeRequestUriBuilder.Query = $"reason={testReason}&{resumeRequestUriBuilder.Query.TrimStart('?')}";
+
+            var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);
+            await httpApiHandler.HandleRequestAsync(
+                new HttpRequestMessage
+                {
+                    Method = HttpMethod.Post,
+                    RequestUri = resumeRequestUriBuilder.Uri,
+                });
+
+            Assert.Equal(testInstanceId, actualInstanceId);
+            Assert.Equal(testReason, actualReason);
+        }
+
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
@@ -830,6 +964,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var testTerminatePostUri = $"{TestConstants.NotificationUrlBase}/instances/{restartedInstanceId}/terminate?reason={{text}}&taskHub=SampleHubVS&connection=Storage&code=mykey";
             var testRewindPostUri = $"{TestConstants.NotificationUrlBase}/instances/{restartedInstanceId}/rewind?reason={{text}}&taskHub=SampleHubVS&connection=Storage&code=mykey";
             var testRestartPostUri = $"{TestConstants.NotificationUrlBase}/instances/{restartedInstanceId}/restart?taskHub=SampleHubVS&connection=Storage&code=mykey&restartWithNewInstanceId={restartWithNewInstanceId}";
+            var testSuspendPostUri = $"{TestConstants.NotificationUrlBase}/instances/{restartedInstanceId}/suspend?reason={{text}}&taskHub=SampleHubVS&connection=Storage&code=mykey";
+            var testResumePostUri = $"{TestConstants.NotificationUrlBase}/instances/{restartedInstanceId}/resume?reason={{text}}&taskHub=SampleHubVS&connection=Storage&code=mykey";
             var testResponse = testRequest.CreateResponse(
                 HttpStatusCode.Accepted,
                 new
@@ -840,6 +976,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     terminatePostUri = testTerminatePostUri,
                     rewindPostUri = testRewindPostUri,
                     restartPostUri = testRestartPostUri,
+                    suspendPostUri = testSuspendPostUri,
+                    resumePostUri = testResumePostUri,
                 });
 
             var clientMock = new Mock<IDurableClient>();
@@ -863,6 +1001,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(status["terminatePostUri"], testTerminatePostUri);
             Assert.Equal(status["rewindPostUri"], testRewindPostUri);
             Assert.Equal(status["restartPostUri"], testRestartPostUri);
+            Assert.Equal(status["suspendPostUri"], testSuspendPostUri);
+            Assert.Equal(status["resumePostUri"], testResumePostUri);
         }
 
         [Theory]
@@ -889,6 +1029,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var testTerminatePostUri = $"{TestConstants.NotificationUrlBase}/instances/{restartedInstanceId}/terminate?reason={{text}}&taskHub=SampleHubVS&connection=Storage&code=mykey";
             var testRewindPostUri = $"{TestConstants.NotificationUrlBase}/instances/{restartedInstanceId}/rewind?reason={{text}}&taskHub=SampleHubVS&connection=Storage&code=mykey";
             var testRestartPostUri = $"{TestConstants.NotificationUrlBase}/instances/{restartedInstanceId}/restart?taskHub=SampleHubVS&connection=Storage&code=mykey&restartWithNewInstanceId={restartWithNewInstanceId}";
+            var testSuspendPostUri = $"{TestConstants.NotificationUrlBase}/instances/{restartedInstanceId}/suspend?reason={{text}}&taskHub=SampleHubVS&connection=Storage&code=mykey";
+            var testResumePostUri = $"{TestConstants.NotificationUrlBase}/instances/{restartedInstanceId}/resume?reason={{text}}&taskHub=SampleHubVS&connection=Storage&code=mykey";
             var testResponse = testRequest.CreateResponse(
                 HttpStatusCode.Accepted,
                 new
@@ -899,6 +1041,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     terminatePostUri = testTerminatePostUri,
                     rewindPostUri = testRewindPostUri,
                     restartPostUri = testRestartPostUri,
+                    suspendPostUri = testSuspendPostUri,
+                    resumePostUri = testResumePostUri,
                 });
 
             var clientMock = new Mock<IDurableClient>();
@@ -922,6 +1066,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(status["terminatePostUri"], testTerminatePostUri);
             Assert.Equal(status["rewindPostUri"], testRewindPostUri);
             Assert.Equal(status["restartPostUri"], testRestartPostUri);
+            Assert.Equal(status["suspendPostUri"], testSuspendPostUri);
+            Assert.Equal(status["resumePostUri"], testResumePostUri);
         }
 
         [Fact]
@@ -981,6 +1127,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var testTerminatePostUri = $"{TestConstants.NotificationUrlBase}/instances/{testInstanceId}/terminate?reason={{text}}&taskHub=SampleHubVS&connection=Storage&code=mykey";
             var testRewindPostUri = $"{TestConstants.NotificationUrlBase}/instances/{testInstanceId}/rewind?reason={{text}}&taskHub=SampleHubVS&connection=Storage&code=mykey";
             var testRestartPostUri = $"{TestConstants.NotificationUrlBase}/instances/{testInstanceId}/restart?taskHub=SampleHubVS&connection=Storage&code=mykey";
+            var testSuspendPostUri = $"{TestConstants.NotificationUrlBase}/instances/{testInstanceId}/suspend?reason={{text}}&taskHub=SampleHubVS&connection=Storage&code=mykey";
+            var testResumePostUri = $"{TestConstants.NotificationUrlBase}/instances/{testInstanceId}/resume?reason={{text}}&taskHub=SampleHubVS&connection=Storage&code=mykey";
             var testResponse = testRequest.CreateResponse(
                 HttpStatusCode.Accepted,
                 new
@@ -991,6 +1139,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     terminatePostUri = testTerminatePostUri,
                     rewindPostUri = testRewindPostUri,
                     restartPostUri = testRestartPostUri,
+                    suspendPostUri = testSuspendPostUri,
+                    resumePostUri = testResumePostUri,
                 });
 
             var clientMock = new Mock<IDurableClient>();
@@ -1014,6 +1164,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(status["terminatePostUri"], testTerminatePostUri);
             Assert.Equal(status["rewindPostUri"], testRewindPostUri);
             Assert.Equal(status["restartPostUri"], testRestartPostUri);
+            Assert.Equal(status["suspendPostUri"], testSuspendPostUri);
+            Assert.Equal(status["resumePostUri"], testResumePostUri);
         }
 
         [Theory]
@@ -1045,6 +1197,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var testTerminatePostUri = $"{TestConstants.NotificationUrlBase}/instances/{testInstanceId}/terminate?reason={{text}}&taskHub=SampleHubVS&connection=Storage&code=mykey";
             var testRewindPostUri = $"{TestConstants.NotificationUrlBase}/instances/{testInstanceId}/rewind?reason={{text}}&taskHub=SampleHubVS&connection=Storage&code=mykey";
             var testRestartPostUri = $"{TestConstants.NotificationUrlBase}/instances/{testInstanceId}/restart?taskHub=SampleHubVS&connection=Storage&code=mykey";
+            var testSuspendPostUri = $"{TestConstants.NotificationUrlBase}/instances/{testInstanceId}/suspend?reason={{text}}&taskHub=SampleHubVS&connection=Storage&code=mykey";
+            var testResumePostUri = $"{TestConstants.NotificationUrlBase}/instances/{testInstanceId}/resume?reason={{text}}&taskHub=SampleHubVS&connection=Storage&code=mykey";
             var testResponse = testRequest.CreateResponse(
                 HttpStatusCode.Accepted,
                 new
@@ -1055,6 +1209,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     terminatePostUri = testTerminatePostUri,
                     rewindPostUri = testRewindPostUri,
                     restartPostUri = testRestartPostUri,
+                    suspendPostUri = testSuspendPostUri,
+                    resumePostUri = testResumePostUri,
                 });
 
             var clientMock = new Mock<IDurableClient>();
@@ -1078,6 +1234,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(status["terminatePostUri"], testTerminatePostUri);
             Assert.Equal(status["rewindPostUri"], testRewindPostUri);
             Assert.Equal(status["restartPostUri"], testRestartPostUri);
+            Assert.Equal(status["suspendPostUri"], testSuspendPostUri);
+            Assert.Equal(status["resumePostUri"], testResumePostUri);
         }
 
         [Fact]

@@ -59,6 +59,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private const string RestartWithNewInstanceId = "restartWithNewInstanceId";
         private const string TimeoutParameter = "timeout";
         private const string PollingInterval = "pollingInterval";
+        private const string SuspendOperation = "suspend";
+        private const string ResumeOperation = "resume";
 
         private const string EmptyEntityKeySymbol = "$";
 
@@ -122,7 +124,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 httpManagementPayload.SendEventPostUri,
                 httpManagementPayload.TerminatePostUri,
                 httpManagementPayload.PurgeHistoryDeleteUri,
-                httpManagementPayload.RestartPostUri);
+                httpManagementPayload.RestartPostUri,
+                httpManagementPayload.SuspendPostUri,
+                httpManagementPayload.ResumePostUri);
         }
 
         public void RegisterWebhookProvider(Func<Uri> webhookProvider)
@@ -270,7 +274,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                                   httpManagementPayload.SendEventPostUri,
                                   httpManagementPayload.TerminatePostUri,
                                   httpManagementPayload.PurgeHistoryDeleteUri,
-                                  httpManagementPayload.RestartPostUri);
+                                  httpManagementPayload.RestartPostUri,
+                                  httpManagementPayload.SuspendPostUri,
+                                  httpManagementPayload.ResumePostUri);
             }
         }
 
@@ -392,6 +398,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         else if (string.Equals(operation, RestartOperation, StringComparison.OrdinalIgnoreCase))
                         {
                             return await this.HandleRestartInstanceRequestAsync(request, instanceId);
+                        }
+                        else if (string.Equals(operation, SuspendOperation, StringComparison.OrdinalIgnoreCase))
+                        {
+                            return await this.HandleSuspendInstanceRequestAsync(request, instanceId);
+                        }
+                        else if (string.Equals(operation, ResumeOperation, StringComparison.OrdinalIgnoreCase))
+                        {
+                            return await this.HandleResumeInstanceRequestAsync(request, instanceId);
                         }
                     }
                     else
@@ -639,6 +653,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 case OrchestrationRuntimeStatus.Running:
                 case OrchestrationRuntimeStatus.Pending:
                 case OrchestrationRuntimeStatus.ContinuedAsNew:
+                case OrchestrationRuntimeStatus.Suspended:
                     statusCode = HttpStatusCode.Accepted;
                     location = request.RequestUri;
                     break;
@@ -765,6 +780,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return timeSpanValue != null;
         }
 
+        private static bool IsCompletedStatus(OrchestrationRuntimeStatus status)
+        {
+            return status == OrchestrationRuntimeStatus.Completed ||
+                status == OrchestrationRuntimeStatus.Terminated ||
+                status == OrchestrationRuntimeStatus.Canceled ||
+                status == OrchestrationRuntimeStatus.Failed;
+        }
+
         private async Task<HttpResponseMessage> HandleTerminateInstanceRequestAsync(
             HttpRequestMessage request,
             string instanceId)
@@ -777,18 +800,62 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return request.CreateResponse(HttpStatusCode.NotFound);
             }
 
-            switch (status.RuntimeStatus)
+            if (IsCompletedStatus(status.RuntimeStatus))
             {
-                case OrchestrationRuntimeStatus.Failed:
-                case OrchestrationRuntimeStatus.Canceled:
-                case OrchestrationRuntimeStatus.Terminated:
-                case OrchestrationRuntimeStatus.Completed:
-                    return request.CreateResponse(HttpStatusCode.Gone);
+                return request.CreateResponse(HttpStatusCode.Gone);
             }
 
             string reason = request.GetQueryNameValuePairs()["reason"];
 
             await client.TerminateAsync(instanceId, reason);
+
+            return request.CreateResponse(HttpStatusCode.Accepted);
+        }
+
+        private async Task<HttpResponseMessage> HandleSuspendInstanceRequestAsync(
+            HttpRequestMessage request,
+            string instanceId)
+        {
+            IDurableOrchestrationClient client = this.GetClient(request);
+
+            DurableOrchestrationStatus status = await client.GetStatusAsync(instanceId);
+            if (status == null)
+            {
+                return request.CreateResponse(HttpStatusCode.NotFound);
+            }
+
+            if (IsCompletedStatus(status.RuntimeStatus))
+            {
+                return request.CreateResponse(HttpStatusCode.Gone);
+            }
+
+            string reason = request.GetQueryNameValuePairs()["reason"];
+
+            await client.SuspendAsync(instanceId, reason);
+
+            return request.CreateResponse(HttpStatusCode.Accepted);
+        }
+
+        private async Task<HttpResponseMessage> HandleResumeInstanceRequestAsync(
+            HttpRequestMessage request,
+            string instanceId)
+        {
+            IDurableOrchestrationClient client = this.GetClient(request);
+
+            DurableOrchestrationStatus status = await client.GetStatusAsync(instanceId);
+            if (status == null)
+            {
+                return request.CreateResponse(HttpStatusCode.NotFound);
+            }
+
+            if (IsCompletedStatus(status.RuntimeStatus))
+            {
+                return request.CreateResponse(HttpStatusCode.Gone);
+            }
+
+            string reason = request.GetQueryNameValuePairs()["reason"];
+
+            await client.ResumeAsync(instanceId, reason);
 
             return request.CreateResponse(HttpStatusCode.Accepted);
         }
@@ -1135,6 +1202,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 RewindPostUri = instancePrefix + "/" + RewindOperation + "?reason={text}&" + querySuffix,
                 PurgeHistoryDeleteUri = instancePrefix + "?" + querySuffix,
                 RestartPostUri = instancePrefix + "/" + RestartOperation + "?" + querySuffix,
+                SuspendPostUri = instancePrefix + "/" + SuspendOperation + "?reason={text}&" + querySuffix,
+                ResumePostUri = instancePrefix + "/" + ResumeOperation + "?reason={text}&" + querySuffix,
             };
 
             if (returnInternalServerErrorOnFailure)
@@ -1152,7 +1221,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string sendEventPostUri,
             string terminatePostUri,
             string purgeHistoryDeleteUri,
-            string restartPostUri)
+            string restartPostUri,
+            string suspendPostUri,
+            string resumePostUri)
         {
             HttpResponseMessage response = request.CreateResponse(
                 HttpStatusCode.Accepted,
@@ -1164,6 +1235,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     terminatePostUri,
                     purgeHistoryDeleteUri,
                     restartPostUri,
+                    suspendPostUri,
+                    resumePostUri,
                 });
 
             // Implement the async HTTP 202 pattern.

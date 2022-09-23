@@ -258,6 +258,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         internal TimeSpan MessageReorderWindow
             => this.defaultDurabilityProvider.GuaranteesOrderedDelivery ? TimeSpan.Zero : TimeSpan.FromMinutes(this.Options.EntityMessageReorderWindowInMinutes);
 
+        internal bool UseImplicitEntityDeletion => this.defaultDurabilityProvider.SupportsImplicitEntityDeletion;
+
         internal IApplicationLifetimeWrapper HostLifetimeService { get; } = HostLifecycleService.NoOp;
 
         internal OutOfProcOrchestrationProtocol OutOfProcProtocol { get; }
@@ -495,16 +497,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string stampName = this.PlatformInformationService.GetLinuxStampName();
             string containerName = this.PlatformInformationService.GetContainerName();
 
-            // If running in linux, initialize the EventSource listener with the appropiate logger.
-            LinuxAppServiceLogger linuxLogger;
-            if (!inConsumption)
-            {
-                linuxLogger = new LinuxAppServiceLogger(writeToConsole: false, containerName, tenant, stampName);
-            }
-            else
-            {
-                linuxLogger = new LinuxAppServiceLogger(writeToConsole: true, containerName, tenant, stampName);
-            }
+            // in linux consumption, logs are emitted to the console.
+            // In other linux plans, they are emitted to a logfile.
+            var linuxLogger = new LinuxAppServiceLogger(writeToConsole: inConsumption, containerName, tenant, stampName);
 
             // The logging service for linux works by capturing EventSource messages,
             // which our linux platform does not recognize, and logging them via a
@@ -519,10 +514,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <inheritdoc />
         public void Dispose()
         {
-            // Not flushing the linux logger may lead to lost logs
-            // 40 seconds timeout because we write normally every 30 seconds, so we're just
-            // adding an extra 10 seconds to flush.
-            LinuxAppServiceLogger.Logger?.Stop(TimeSpan.FromSeconds(40));
             this.HttpApiHandler?.Dispose();
             this.eventSourceListener?.Dispose();
         }

@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
+using DurableTask.Core.History;
 using DurableTask.Core.Query;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -74,6 +75,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// Specifies whether this backend delivers messages in order.
         /// </summary>
         public virtual bool GuaranteesOrderedDelivery => false;
+
+        /// <summary>
+        /// Specifies whether this backend supports implicit deletion of entities.
+        /// </summary>
+        public virtual bool SupportsImplicitEntityDeletion => false;
 
         /// <summary>
         /// JSON representation of configuration to emit in telemetry.
@@ -407,6 +413,40 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public Task ForceTerminateTaskOrchestrationAsync(string instanceId, string reason)
         {
             return this.GetOrchestrationServiceClient().ForceTerminateTaskOrchestrationAsync(instanceId, reason);
+        }
+
+        /// <summary>
+        ///     Suspend the specified orchestration instance with a reason.
+        /// </summary>
+        /// <param name="instanceId">Instance to suspend.</param>
+        /// <param name="reason">Reason for suspending the instance.</param>
+        /// <returns>A task that completes when the suspend message is enqueued.</returns>
+        public Task SuspendTaskOrchestrationAsync(string instanceId, string reason)
+        {
+            var taskMessage = new TaskMessage
+            {
+                OrchestrationInstance = new OrchestrationInstance { InstanceId = instanceId },
+                Event = new ExecutionSuspendedEvent(-1, reason),
+            };
+
+            return this.GetOrchestrationServiceClient().SendTaskOrchestrationMessageAsync(taskMessage);
+        }
+
+        /// <summary>
+        ///     Resume the specified orchestration instance with a reason.
+        /// </summary>
+        /// <param name="instanceId">Instance to resume.</param>
+        /// <param name="reason">Reason for resuming the instance.</param>
+        /// <returns>A task that completes when the resume message is enqueued.</returns>
+        public Task ResumeTaskOrchestrationAsync(string instanceId, string reason)
+        {
+            var taskMessage = new TaskMessage
+            {
+                OrchestrationInstance = new OrchestrationInstance { InstanceId = instanceId },
+                Event = new ExecutionResumedEvent(-1, reason),
+            };
+
+            return this.GetOrchestrationServiceClient().SendTaskOrchestrationMessageAsync(taskMessage);
         }
 
         /// <inheritdoc />
