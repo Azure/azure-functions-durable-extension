@@ -871,7 +871,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 });
 
             clientMock
-                .Setup(x => x.GetStatusAsync(It.IsAny<string>(), false, false, true))
+                .Setup(x => x.GetStatusAsync(It.IsAny<string>(), false, false, true, false))
                 .Returns(Task.FromResult(
                     new DurableOrchestrationStatus
                     {
@@ -916,7 +916,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 });
 
             clientMock
-                .Setup(x => x.GetStatusAsync(It.IsAny<string>(), false, false, true))
+                .Setup(x => x.GetStatusAsync(It.IsAny<string>(), false, false, true, false))
                 .Returns(Task.FromResult(
                     new DurableOrchestrationStatus
                     {
