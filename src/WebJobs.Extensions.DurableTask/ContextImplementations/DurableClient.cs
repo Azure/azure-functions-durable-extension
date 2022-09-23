@@ -827,6 +827,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                                         historyItem.Remove("Result");
                                     }
 
+                                    if (!showHistoryInput)
+                                    {
+                                        historyItem.Remove("Input");
+                                    }
+
                                     ConvertOutputToJToken(historyItem, showHistoryOutput && eventType == EventType.SubOrchestrationInstanceCompleted);
                                     break;
                                 case EventType.ExecutionStarted:
