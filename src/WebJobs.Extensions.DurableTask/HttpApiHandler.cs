@@ -601,14 +601,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 showHistoryOutput = false;
             }
 
-            if (!TryGetBooleanQueryParameterValue(queryNameValuePairs, ShowHistoryInputParameter, out bool showHistoryInput))
-            {
-                showHistoryInput = false;
-            }
-
             if (!TryGetBooleanQueryParameterValue(queryNameValuePairs, ShowInputParameter, out bool showInput))
             {
                 showInput = true;
+            }
+
+            if (!TryGetBooleanQueryParameterValue(queryNameValuePairs, ShowHistoryInputParameter, out bool showHistoryInput))
+            {
+                showHistoryInput = false;
             }
 
             bool finalReturnInternalServerErrorOnFailure;
