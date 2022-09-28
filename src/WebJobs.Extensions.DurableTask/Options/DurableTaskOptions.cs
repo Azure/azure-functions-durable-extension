@@ -204,7 +204,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public bool UseAppLease { get; set; } = true;
 
         /// <summary>
-        /// If <c>true</c>, the inputs of activity and sub-orchestrator functions will be saved to the orchestration history, making them visible to debugging tools. The default value is <c>false</c>.
+        /// If <c>true</c>, the inputs of functions called by the orchestrator will be saved to the orchestration history, making them visible to debugging tools. The default value is <c>false</c>.
         /// </summary>
         public bool StoreInputsInOrchestrationHistory { get; set; } = false;
 

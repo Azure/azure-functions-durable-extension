@@ -840,7 +840,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             switch (eventType)
                             {
                                 case EventType.TaskScheduled:
-                                    TrackNameAndScheduledTime(historyItem, eventType, i, eventMapper);
+                                    TrackNameAndScheduledTime(historyItem, eventType, i, eventMapper, showHistoryInput);
                                     historyItem.Remove("Version");
                                     if (!showHistoryInput)
                                     {
@@ -850,7 +850,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                                     break;
                                 case EventType.TaskCompleted:
                                 case EventType.TaskFailed:
-                                    AddScheduledEventDataAndAggregate(ref eventMapper, "TaskScheduled", historyItem, indexList);
+                                    AddScheduledEventDataAndAggregate(ref eventMapper, "TaskScheduled", historyItem, indexList, showHistoryInput);
                                     historyItem["TaskScheduledId"]?.Parent.Remove();
                                     if (!showHistoryOutput && eventType == EventType.TaskCompleted)
                                     {
@@ -865,7 +865,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                                     ConvertOutputToJToken(historyItem, showHistoryOutput && eventType == EventType.TaskCompleted);
                                     break;
                                 case EventType.SubOrchestrationInstanceCreated:
-                                    TrackNameAndScheduledTime(historyItem, eventType, i, eventMapper);
+                                    TrackNameAndScheduledTime(historyItem, eventType, i, eventMapper, showHistoryInput);
                                     historyItem.Remove("Version");
                                     if (!showHistoryInput)
                                     {
@@ -875,7 +875,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                                     break;
                                 case EventType.SubOrchestrationInstanceCompleted:
                                 case EventType.SubOrchestrationInstanceFailed:
-                                    AddScheduledEventDataAndAggregate(ref eventMapper, "SubOrchestrationInstanceCreated", historyItem, indexList);
+                                    AddScheduledEventDataAndAggregate(ref eventMapper, "SubOrchestrationInstanceCreated", historyItem, indexList, showHistoryInput);
                                     historyItem.Remove("TaskScheduledId");
                                     if (!showHistoryOutput && eventType == EventType.SubOrchestrationInstanceCompleted)
                                     {
@@ -972,18 +972,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return this.httpApiHandler.CreateCheckStatusResponse(request, instanceId, attribute, returnInternalServerErrorOnFailure);
         }
 
-        private static void TrackNameAndScheduledTime(JObject historyItem, EventType eventType, int index, Dictionary<string, EventIndexDateMapping> eventMapper)
+        private static void TrackNameAndScheduledTime(JObject historyItem, EventType eventType, int index, Dictionary<string, EventIndexDateMapping> eventMapper, bool showHistoryInput)
         {
-            eventMapper.Add($"{eventType}_{historyItem["EventId"]}", new EventIndexDateMapping { Index = index, Name = (string)historyItem["Name"], Date = (DateTime)historyItem["Timestamp"], Input = (string)historyItem["Input"] });
+            if (showHistoryInput)
+            {
+                eventMapper.Add($"{eventType}_{historyItem["EventId"]}", new EventIndexDateMapping { Index = index, Name = (string)historyItem["Name"], Date = (DateTime)historyItem["Timestamp"], Input = (string)historyItem["Input"] });
+            }
+            else
+            {
+                eventMapper.Add($"{eventType}_{historyItem["EventId"]}", new EventIndexDateMapping { Index = index, Name = (string)historyItem["Name"], Date = (DateTime)historyItem["Timestamp"] });
+            }
         }
 
-        private static void AddScheduledEventDataAndAggregate(ref Dictionary<string, EventIndexDateMapping> eventMapper, string prefix, JToken historyItem, List<int> indexList)
+        private static void AddScheduledEventDataAndAggregate(ref Dictionary<string, EventIndexDateMapping> eventMapper, string prefix, JToken historyItem, List<int> indexList, bool showHistoryInput)
         {
             if (eventMapper.TryGetValue($"{prefix}_{historyItem["TaskScheduledId"]}", out EventIndexDateMapping taskScheduledData))
             {
                 historyItem["ScheduledTime"] = taskScheduledData.Date;
                 historyItem["FunctionName"] = taskScheduledData.Name;
-                historyItem["Input"] = taskScheduledData.Input;
+                if (showHistoryInput)
+                {
+                    historyItem["Input"] = taskScheduledData.Input;
+                }
+
                 indexList.Add(taskScheduledData.Index);
             }
         }
