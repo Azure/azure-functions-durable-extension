@@ -3008,6 +3008,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task GetStatus_testfilter()
+        {
+            using (var host = TestHelpers.GetJobHost(
+                   this.loggerProvider,
+                   testName: "GetStatus_testfilter",
+                   enableExtendedSessions: false,
+                   storageProviderType: "azure_storage"))
+            {
+                await host.StartAsync();
+                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.SayHelloWithActivity), "foo", this.output);
+                await client.WaitForCompletionAsync(this.output);
+                var eventList = new List<string> { "TaskScheduled", "TaskCompleted" };
+                var status = await client.InnerClient.GetStatusAsync(client.InstanceId, showHistory: true, showHistoryOutput: false, showInput: false, eventList);
+
+                var eventType1 = status.History[0].Value<string>("EventType");
+                var eventType2 = status.History[1].Value<string>("EventType");
+                Assert.Equal("TaskScheduled", eventType1);
+                Assert.Equal("TaskCompleted", eventType2);
+
+                await host.StopAsync();
+            }
+        }
+
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]

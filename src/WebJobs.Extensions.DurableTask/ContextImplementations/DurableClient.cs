@@ -462,7 +462,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc />
-        async Task<DurableOrchestrationStatus> IDurableOrchestrationClient.GetStatusAsync(string instanceId, bool showHistory, bool showHistoryOutput, bool showInput)
+        async Task<DurableOrchestrationStatus> IDurableOrchestrationClient.GetStatusAsync(string instanceId, bool showHistory, bool showHistoryOutput, bool showInput, IEnumerable<string> filter)
         {
             IList<OrchestrationState> stateList;
             try
@@ -481,7 +481,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return null;
             }
 
-            return await GetDurableOrchestrationStatusAsync(state, this.client, showHistory, showHistoryOutput);
+            return await GetDurableOrchestrationStatusAsync(state, this.client, showHistory, showHistoryOutput, filter);
         }
 
         /// <inheritdoc />
@@ -817,7 +817,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return result;
         }
 
-        private static async Task<DurableOrchestrationStatus> GetDurableOrchestrationStatusAsync(OrchestrationState orchestrationState, TaskHubClient client, bool showHistory, bool showHistoryOutput)
+        private static async Task<DurableOrchestrationStatus> GetDurableOrchestrationStatusAsync(OrchestrationState orchestrationState, TaskHubClient client, bool showHistory, bool showHistoryOutput, IEnumerable<string> filter)
         {
             JArray historyArray = null;
             if (showHistory && orchestrationState.OrchestrationStatus != OrchestrationStatus.Pending)
@@ -914,12 +914,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         }
                     }
 
-                    var counter = 0;
-                    indexList.Sort();
-                    foreach (var indexValue in indexList)
+                    if (filter != null)
                     {
-                        historyArray.RemoveAt(indexValue - counter);
-                        counter++;
+                        for (int i = historyArray.Count - 1; i >= 0; i--)
+                        {
+                            var eventType = historyArray[i].Value<string>("EventType");
+                            if (!filter.Contains(eventType))
+                            {
+                                historyArray.Remove(historyArray[i]);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        var counter = 0;
+                        indexList.Sort();
+                        foreach (var indexValue in indexList)
+                        {
+                            historyArray.RemoveAt(indexValue - counter);
+                            counter++;
+                        }
                     }
                 }
             }
