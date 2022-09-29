@@ -33,6 +33,7 @@ using Newtonsoft.Json.Linq;
 using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
+using DurableTask.Core.History;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
@@ -3010,24 +3011,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task GetStatus_testfilter()
+        public async Task GetStatus_testeventTypes()
         {
             using (var host = TestHelpers.GetJobHost(
                    this.loggerProvider,
-                   testName: "GetStatus_testfilter",
-                   enableExtendedSessions: false,
-                   storageProviderType: "azure_storage"))
+                   testName: "GetStatus_testeventTypes",
+                   enableExtendedSessions: false))
             {
                 await host.StartAsync();
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.SayHelloWithActivity), "foo", this.output);
                 await client.WaitForCompletionAsync(this.output);
-                var eventList = new List<string> { "TaskScheduled", "TaskCompleted" };
+                var eventList = new List<EventType> { EventType.TaskScheduled, EventType.TaskCompleted };
                 var status = await client.InnerClient.GetStatusAsync(client.InstanceId, showHistory: true, showHistoryOutput: false, showInput: false, eventList);
 
-                var eventType1 = status.History[0].Value<string>("EventType");
-                var eventType2 = status.History[1].Value<string>("EventType");
-                Assert.Equal("TaskScheduled", eventType1);
-                Assert.Equal("TaskCompleted", eventType2);
+                var eventTypeName1 = status.History[0].Value<string>("EventType");
+                var eventType1 = (EventType)Enum.Parse(typeof(EventType), eventTypeName1, true);
+                var eventTypeName2 = status.History[1].Value<string>("EventType");
+                var eventType2 = (EventType)Enum.Parse(typeof(EventType), eventTypeName2, true);
+                Assert.Equal(EventType.TaskScheduled, eventType1);
+                Assert.Equal(EventType.TaskCompleted, eventType2);
 
                 await host.StopAsync();
             }

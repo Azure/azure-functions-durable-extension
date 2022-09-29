@@ -6,6 +6,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using DurableTask.Core;
+using DurableTask.Core.History;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
@@ -18,7 +19,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         public int Counter { get; set; }
 
-        Task<DurableOrchestrationStatus> IDurableOrchestrationClient.GetStatusAsync(string instanceId, bool showHistory, bool showHistoryOutput, bool showInput, IEnumerable<string> filter)
+        Task<DurableOrchestrationStatus> IDurableOrchestrationClient.GetStatusAsync(string instanceId, bool showHistory, bool showHistoryOutput, bool showInput, IEnumerable<EventType> eventTypes)
         {
             var runtimeStatus = OrchestrationRuntimeStatus.Running;
             switch (instanceId)

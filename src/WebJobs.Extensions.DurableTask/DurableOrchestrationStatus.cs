@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using DurableTask.Core.History;
 using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
@@ -11,7 +12,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// </summary>
     /// <remarks>
     /// An external client can fetch the status of an orchestration instance using
-    /// <see cref="IDurableOrchestrationClient.GetStatusAsync(string, bool, bool, bool, System.Collections.Generic.IEnumerable{string})"/>.
+    /// <see cref="IDurableOrchestrationClient.GetStatusAsync(string, bool, bool, bool, System.Collections.Generic.IEnumerable{EventType})"/>.
     /// </remarks>
     public class DurableOrchestrationStatus
     {
@@ -96,7 +97,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <remarks>
         /// The history log can be large and is therefore <c>null</c> by default.
         /// It is populated only when explicitly requested in the call to
-        /// <see cref="IDurableOrchestrationClient.GetStatusAsync(string, bool, bool, bool, System.Collections.Generic.IEnumerable{string})"/>.
+        /// <see cref="IDurableOrchestrationClient.GetStatusAsync(string, bool, bool, bool, System.Collections.Generic.IEnumerable{EventType})"/>.
         /// </remarks>
         /// <value>
         /// The output as a <c>JArray</c> object or <c>null</c>.

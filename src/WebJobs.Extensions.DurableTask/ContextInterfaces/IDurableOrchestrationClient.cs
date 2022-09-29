@@ -7,6 +7,7 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
+using DurableTask.Core.History;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -211,7 +212,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <para>
         /// A terminated instance will eventually transition into the <see cref="OrchestrationRuntimeStatus.Terminated"/> state.
         /// However, this transition will not happen immediately. Rather, the terminate operation will be queued in the task hub
-        /// along with other operations for that instance. You can use the <see cref="GetStatusAsync(string, bool, bool, bool, IEnumerable{string})"/>
+        /// along with other operations for that instance. You can use the <see cref="GetStatusAsync(string, bool, bool, bool, IEnumerable{EventType})"/>
         /// method to know when a terminated instance has actually reached the Terminated state.
         /// </para>
         /// <para>
@@ -258,9 +259,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="showHistory">Boolean marker for including execution history in the response.</param>
         /// <param name="showHistoryOutput">Boolean marker for including input and output in the execution history response.</param>
         /// <param name="showInput">If set, fetch and return the input for the orchestration instance.</param>
-        /// <param name="filter">If set, return the history with the event types filter included.</param>
+        /// <param name="eventTypes">If set, return the history with the event types filter included.</param>
         /// <returns>Returns a task which completes when the status has been fetched.</returns>
-        Task<DurableOrchestrationStatus> GetStatusAsync(string instanceId, bool showHistory = false, bool showHistoryOutput = false, bool showInput = true, IEnumerable<string> filter = null);
+        Task<DurableOrchestrationStatus> GetStatusAsync(string instanceId, bool showHistory = false, bool showHistoryOutput = false, bool showInput = true, IEnumerable<EventType> eventTypes = null);
 
         /// <summary>
         /// Gets the status of all orchestration instances that match the specified conditions.

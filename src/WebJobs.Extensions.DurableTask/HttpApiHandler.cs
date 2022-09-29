@@ -12,6 +12,7 @@ using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
+using DurableTask.Core.History;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Routing.Template;
 using Microsoft.Extensions.Logging;
@@ -46,6 +47,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private const string ShowHistoryParameter = "showHistory";
         private const string ShowHistoryOutputParameter = "showHistoryOutput";
         private const string ShowInputParameter = "showInput";
+        private const string EventTypesParameter = "eventTypes";
         private const string FetchStateParameter = "fetchState";
         private const string InstanceIdPrefixParameter = "instanceIdPrefix";
         private const string CreatedTimeFromParameter = "createdTimeFrom";
@@ -617,6 +619,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (!TryGetBooleanQueryParameterValue(queryNameValuePairs, ShowInputParameter, out bool showInput))
             {
                 showInput = true;
+            }
+
+            if (!TryGetIEnumerableQueryParameterValue(queryNameValuePairs, EventTypesParameter, out IEnumerable<EventType> eventTypes))
+            {
+                eventTypes = null;
             }
 
             bool finalReturnInternalServerErrorOnFailure;

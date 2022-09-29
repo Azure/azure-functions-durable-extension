@@ -462,7 +462,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc />
-        async Task<DurableOrchestrationStatus> IDurableOrchestrationClient.GetStatusAsync(string instanceId, bool showHistory, bool showHistoryOutput, bool showInput, IEnumerable<string> filter)
+        async Task<DurableOrchestrationStatus> IDurableOrchestrationClient.GetStatusAsync(string instanceId, bool showHistory, bool showHistoryOutput, bool showInput, IEnumerable<EventType> eventTypes)
         {
             IList<OrchestrationState> stateList;
             try
@@ -481,7 +481,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return null;
             }
 
-            return await GetDurableOrchestrationStatusAsync(state, this.client, showHistory, showHistoryOutput, filter);
+            return await GetDurableOrchestrationStatusAsync(state, this.client, showHistory, showHistoryOutput, eventTypes);
         }
 
         /// <inheritdoc />
@@ -817,7 +817,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return result;
         }
 
-        private static async Task<DurableOrchestrationStatus> GetDurableOrchestrationStatusAsync(OrchestrationState orchestrationState, TaskHubClient client, bool showHistory, bool showHistoryOutput, IEnumerable<string> filter)
+        private static async Task<DurableOrchestrationStatus> GetDurableOrchestrationStatusAsync(OrchestrationState orchestrationState, TaskHubClient client, bool showHistory, bool showHistoryOutput, IEnumerable<EventType> eventTypes)
         {
             JArray historyArray = null;
             if (showHistory && orchestrationState.OrchestrationStatus != OrchestrationStatus.Pending)
@@ -914,12 +914,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         }
                     }
 
-                    if (filter != null)
+                    if (eventTypes != null)
                     {
                         for (int i = historyArray.Count - 1; i >= 0; i--)
                         {
-                            var eventType = historyArray[i].Value<string>("EventType");
-                            if (!filter.Contains(eventType))
+                            var eventTypeName = historyArray[i].Value<string>("EventType");
+                            var eventType = (EventType)Enum.Parse(typeof(EventType), eventTypeName, true);
+                            if (!eventTypes.Contains(eventType))
                             {
                                 historyArray.Remove(historyArray[i]);
                             }
