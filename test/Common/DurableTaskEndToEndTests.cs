@@ -5758,12 +5758,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                    options))
             {
                 await host.StartAsync();
-                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.SayHelloWithActivity), "foo", this.output);
-                await client.WaitForCompletionAsync(this.output);
-                var status = await client.InnerClient.GetStatusAsync(client.InstanceId, showHistory: true, showHistoryInput: true);
+                var client1 = await host.StartOrchestratorAsync(nameof(TestOrchestrations.SayHelloWithActivity), "foo", this.output);
+                var client2 = await host.StartOrchestratorAsync(nameof(TestOrchestrations.SayHelloWithActivity), null, this.output);
+                await client1.WaitForCompletionAsync(this.output);
+                await client2.WaitForCompletionAsync(this.output);
+                var status1 = await client1.InnerClient.GetStatusAsync(client1.InstanceId, showHistory: true, showHistoryInput: true);
+                var status2 = await client2.InnerClient.GetStatusAsync(client2.InstanceId, showHistory: true, showHistoryInput: true);
 
-                var input = status.History[1].Value<string>("Input");
-                Assert.Equal("[\"foo\"]", input);
+                var input1 = status1.History[1].Value<string>("Input");
+                var input2 = status2.History[1].Value<string>("Input");
+                Assert.Equal("[\"foo\"]", input1);
+                Assert.Equal("[null]", input2);
 
                 await host.StopAsync();
             }

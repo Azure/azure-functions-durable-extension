@@ -840,7 +840,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             switch (eventType)
                             {
                                 case EventType.TaskScheduled:
-                                    TrackNameAndScheduledTime(historyItem, eventType, i, eventMapper, showHistoryInput);
+                                    TrackNameAndScheduledTime(historyItem, eventType, i, eventMapper);
                                     historyItem.Remove("Version");
                                     if (!showHistoryInput)
                                     {
@@ -865,7 +865,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                                     ConvertOutputToJToken(historyItem, showHistoryOutput && eventType == EventType.TaskCompleted);
                                     break;
                                 case EventType.SubOrchestrationInstanceCreated:
-                                    TrackNameAndScheduledTime(historyItem, eventType, i, eventMapper, showHistoryInput);
+                                    TrackNameAndScheduledTime(historyItem, eventType, i, eventMapper);
                                     historyItem.Remove("Version");
                                     if (!showHistoryInput)
                                     {
@@ -972,16 +972,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return this.httpApiHandler.CreateCheckStatusResponse(request, instanceId, attribute, returnInternalServerErrorOnFailure);
         }
 
-        private static void TrackNameAndScheduledTime(JObject historyItem, EventType eventType, int index, Dictionary<string, EventIndexDateMapping> eventMapper, bool showHistoryInput)
+        private static void TrackNameAndScheduledTime(JObject historyItem, EventType eventType, int index, Dictionary<string, EventIndexDateMapping> eventMapper)
         {
-            if (showHistoryInput)
-            {
-                eventMapper.Add($"{eventType}_{historyItem["EventId"]}", new EventIndexDateMapping { Index = index, Name = (string)historyItem["Name"], Date = (DateTime)historyItem["Timestamp"], Input = (string)historyItem["Input"] });
-            }
-            else
-            {
-                eventMapper.Add($"{eventType}_{historyItem["EventId"]}", new EventIndexDateMapping { Index = index, Name = (string)historyItem["Name"], Date = (DateTime)historyItem["Timestamp"] });
-            }
+            eventMapper.Add($"{eventType}_{historyItem["EventId"]}", new EventIndexDateMapping { Index = index, Name = (string)historyItem["Name"], Date = (DateTime)historyItem["Timestamp"], Input = (string)historyItem["Input"] });
         }
 
         private static void AddScheduledEventDataAndAggregate(ref Dictionary<string, EventIndexDateMapping> eventMapper, string prefix, JToken historyItem, List<int> indexList, bool showHistoryInput)
