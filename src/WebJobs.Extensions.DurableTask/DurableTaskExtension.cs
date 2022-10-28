@@ -193,7 +193,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // Starting with .NET isolated and Java, we have a more efficient out-of-process
             // function invocation protocol. Other languages will use the existing protocol.
             WorkerRuntimeType runtimeType = this.PlatformInformationService.GetWorkerRuntimeType();
-            if (runtimeType == WorkerRuntimeType.DotNetIsolated || runtimeType == WorkerRuntimeType.Java)
+            if (runtimeType == WorkerRuntimeType.DotNetIsolated ||
+                runtimeType == WorkerRuntimeType.Java ||
+                runtimeType == WorkerRuntimeType.Custom)
             {
                 this.OutOfProcProtocol = OutOfProcOrchestrationProtocol.MiddlewarePassthrough;
 #if FUNCTIONS_V3_OR_GREATER

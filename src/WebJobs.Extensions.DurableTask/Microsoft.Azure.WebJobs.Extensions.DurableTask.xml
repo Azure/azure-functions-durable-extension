@@ -3598,6 +3598,11 @@
             Java.
             </summary>
         </member>
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.WorkerRuntimeType.Custom">
+            <summary>
+            Custom handler (see https://learn.microsoft.com/en-us/azure/azure-functions/functions-custom-handlers).
+            </summary>
+        </member>
         <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.WorkerRuntimeType.Unknown">
             <summary>
             Unknown worker runtime.
