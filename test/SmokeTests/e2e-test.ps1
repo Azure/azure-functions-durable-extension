@@ -9,7 +9,7 @@ param(
 	[string]$ContainerName="app",
 	[switch]$NoSetup=$false,
 	[switch]$NoValidation=$false,
-	[string]$AzuriteVersion="3.15.0",
+	[string]$AzuriteVersion="3.20.1",
 	[int]$Sleep=30
 )
 

@@ -57,6 +57,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         Java,
 
         /// <summary>
+        /// Custom handler (see https://learn.microsoft.com/en-us/azure/azure-functions/functions-custom-handlers).
+        /// </summary>
+        Custom,
+
+        /// <summary>
         /// Unknown worker runtime.
         /// </summary>
         Unknown,
