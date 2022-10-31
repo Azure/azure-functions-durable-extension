@@ -170,6 +170,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.context.Name,
                     this.context.InstanceId,
                     isReplay: false));
+
+                this.Config.TraceHelper.OrchestratorStateChange(
+                    this.context.HubName,
+                    this.context.Name,
+                    this.context.InstanceId,
+                    FunctionType.Orchestrator,
+                    FunctionState.Failed,
+                    isReplay: false);
             }
         }
 

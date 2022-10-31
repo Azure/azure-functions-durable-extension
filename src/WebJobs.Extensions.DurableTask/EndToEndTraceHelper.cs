@@ -962,6 +962,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 resource, attempt, delayMs, hubName, LocalAppName, LocalSlotName, ExtensionVersion);
         }
 
+        public void OrchestratorStateChange(
+            string hubName,
+            string functionName,
+            string instanceId,
+            FunctionType functionType,
+            FunctionState functionState,
+            bool isReplay)
+        {
+            if (this.ShouldLogEvent(isReplay))
+            {
+                this.logger.LogInformation(
+                    "{instanceId}: Function '{functionName} ({functionType})' state changed to {functionState}. IsReplay: {isReplay}. State: {state}. FunctionState: {functionState}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
+                    instanceId, functionName, functionType, functionState, isReplay, functionState, functionState, hubName,
+                    LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++);
+            }
+        }
+
         private bool ShouldLogEvent(bool isReplay)
         {
             return this.traceReplayEvents || !isReplay;
