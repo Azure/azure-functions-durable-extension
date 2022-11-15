@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.Functions.Worker.Middleware;
 using Microsoft.DurableTask;
+using Microsoft.DurableTask.Worker.Grpc;
 using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
@@ -33,7 +34,7 @@ internal class DurableTaskFunctionsMiddleware : IFunctionsWorkerMiddleware
         }
 
         // Wrap the function implementation in a lambda orchestrator
-        string orchestratorOutput = OrchestrationRunner.LoadAndRun<object, object>(
+        string orchestratorOutput = GrpcOrchestrationRunner.LoadAndRun<object, object>(
             encodedOrchestratorState,
             async (orchestrationContext, input) =>
             {
@@ -114,6 +115,8 @@ internal class DurableTaskFunctionsMiddleware : IFunctionsWorkerMiddleware
 
         public override bool IsReplaying => this.innerContext.IsReplaying;
 
+        public override ParentOrchestrationInstance? Parent => this.innerContext.Parent;
+
         public override T GetInput<T>()
         {
             this.EnsureLegalAccess();
@@ -143,13 +146,10 @@ internal class DurableTaskFunctionsMiddleware : IFunctionsWorkerMiddleware
         }
 
         public override Task<TResult> CallSubOrchestratorAsync<TResult>(
-            TaskName orchestratorName,
-            string? instanceId = null,
-            object? input = null, 
-            TaskOptions? options = null)
+            TaskName orchestratorName, object? input = null, TaskOptions? options = null)
         {
             this.EnsureLegalAccess();
-            return this.innerContext.CallSubOrchestratorAsync<TResult>(orchestratorName, instanceId, input, options);
+            return this.innerContext.CallSubOrchestratorAsync<TResult>(orchestratorName, input, options);
         }
 
         public override void ContinueAsNew(object newInput, bool preserveUnprocessedEvents = true)
@@ -168,6 +168,12 @@ internal class DurableTaskFunctionsMiddleware : IFunctionsWorkerMiddleware
         {
             this.EnsureLegalAccess();
             this.innerContext.SetCustomStatus(customStatus);
+        }
+
+        public override void SendEvent(string instanceId, string eventName, object payload)
+        {
+            this.EnsureLegalAccess();
+            this.innerContext.SendEvent(instanceId, eventName, payload);
         }
 
         public override Task<T> WaitForExternalEvent<T>(string eventName, CancellationToken cancellationToken = default)
