@@ -74,11 +74,11 @@ internal class FunctionsDurableClientProvider : IDurableTaskClientProvider, IAsy
         this.sync.Dispose();
     }
 
-    public DurableTaskClient GetClient(string? name = null)
+    public DurableTaskClient GetClient(string? grpcEndpointUri)
     {
-        if (!Uri.TryCreate(name, UriKind.Absolute, out Uri uri))
+        if (!Uri.TryCreate(grpcEndpointUri, UriKind.Absolute, out Uri uri))
         {
-            throw new NotSupportedException("Client name must be a valid gRPC address.");
+            throw new ArgumentException("Client name must be a valid gRPC address.", nameof(grpcEndpointUri));
         }
 
         string address = $"{uri.Host}:{uri.Port}";
@@ -101,6 +101,11 @@ internal class FunctionsDurableClientProvider : IDurableTaskClientProvider, IAsy
         try
         {
             this.VerifyNotDisposed();
+            if (this.clients!.TryGetValue(address, out DurableTaskClient client))
+            {
+                return client;
+            }
+
             GrpcDurableTaskClientOptions options = new()
             {
                 Address = address,
@@ -108,7 +113,7 @@ internal class FunctionsDurableClientProvider : IDurableTaskClientProvider, IAsy
             };
 
             ILogger logger = this.loggerFactory.CreateLogger<GrpcDurableTaskClient>();
-            GrpcDurableTaskClient client = new(string.Empty, options, logger);
+            client = new GrpcDurableTaskClient(string.Empty, options, logger);
             this.clients[address] = client;
             return client;
         }
