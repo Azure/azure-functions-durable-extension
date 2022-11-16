@@ -1138,7 +1138,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var logMessages = logger.LogMessages.Where(
                     msg => msg.FormattedMessage.Contains(instanceId)).ToList();
 
-                int expectedLogMessageCount = extendedSessions ? 43 : 153;
+                int expectedLogMessageCount = extendedSessions ? 45 : 155;
                 Assert.Equal(expectedLogMessageCount, logMessages.Count);
             }
         }
