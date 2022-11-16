@@ -78,7 +78,7 @@ internal class FunctionsDurableClientProvider : IDurableTaskClientProvider, IAsy
     {
         if (!Uri.TryCreate(grpcEndpointUri, UriKind.Absolute, out Uri uri))
         {
-            throw new ArgumentException("Client name must be a valid gRPC address.", nameof(grpcEndpointUri));
+            throw new ArgumentException("Not a valid gRPC address.", nameof(grpcEndpointUri));
         }
 
         string address = $"{uri.Host}:{uri.Port}";
