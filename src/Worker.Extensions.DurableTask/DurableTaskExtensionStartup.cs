@@ -22,7 +22,7 @@ public sealed class DurableTaskExtensionStartup : WorkerExtensionStartup
     /// <inheritdoc/>
     public override void Configure(IFunctionsWorkerApplicationBuilder applicationBuilder)
     {
-        applicationBuilder.Services.AddSingleton<IDurableTaskClientProvider, FunctionsDurableClientProvider>();
+        applicationBuilder.Services.AddSingleton<FunctionsDurableClientProvider>();
         applicationBuilder.Services.AddOptions<DurableTaskClientOptions>()
             .PostConfigure<IServiceProvider>((opt, sp) =>
             {
