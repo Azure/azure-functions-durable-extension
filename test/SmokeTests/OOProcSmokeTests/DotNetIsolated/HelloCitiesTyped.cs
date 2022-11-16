@@ -42,9 +42,9 @@ public static class HelloCitiesTypedStarter
 /// that invokes the <see cref="OnRunAsync"/> method.
 /// </summary>
 [DurableTask(nameof(HelloCitiesTyped))]
-public class HelloCitiesTyped : TaskOrchestratorBase<string, string>
+public class HelloCitiesTyped : TaskOrchestrator<string?, string>
 {
-    protected async override Task<string?> OnRunAsync(TaskOrchestrationContext context, string? input)
+    public async override Task<string> RunAsync(TaskOrchestrationContext context, string? input)
     {
         // Source generators are used to generate the type-safe activity function
         // call extension methods on the context object. The names of these generated
@@ -63,7 +63,7 @@ public class HelloCitiesTyped : TaskOrchestratorBase<string, string>
 /// definition that creates an instance of this class and invokes its <see cref="OnRun"/> method.
 /// </summary>
 [DurableTask(nameof(SayHelloTyped))]
-public class SayHelloTyped : TaskActivityBase<string, string>
+public class SayHelloTyped : TaskActivity<string, string>
 {
     private readonly ILogger? logger;
 
@@ -81,9 +81,9 @@ public class SayHelloTyped : TaskActivityBase<string, string>
         this.logger = loggerFactory?.CreateLogger<SayHelloTyped>();
     }
 
-    protected override string OnRun(TaskActivityContext context, string? cityName)
+    public override Task<string> RunAsync(TaskActivityContext context, string cityName)
     {
         this.logger?.LogInformation("Saying hello to {name}", cityName);
-        return $"Hello, {cityName}!";
+        return Task.FromResult($"Hello, {cityName}!");
     }
 }
