@@ -59,6 +59,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return status;
         }
 
+        public async Task<DurableOrchestrationStatus> QueryStatusAsync(InstanceFilterOption instanceFilter = null)
+        {
+            DurableOrchestrationStatus status = await this.innerClient.QueryStatusAsync(this.instanceId, instanceFilter);
+
+            if (status != null)
+            {
+                // Validate the status before returning
+                Assert.Equal(this.functionName, status.Name);
+                Assert.Equal(this.instanceId, status.InstanceId);
+                Assert.True(status.CreatedTime >= this.instanceCreationTime);
+                Assert.True(status.CreatedTime <= DateTime.UtcNow);
+
+                // TODO: Emulator provider currently doesn't set status.LastUpdatedTime, so this assertion is not true.
+                // Assert.True(status.LastUpdatedTime >= status.CreatedTime);
+
+                Assert.True(status.LastUpdatedTime <= DateTime.UtcNow);
+            }
+
+            return status;
+        }
+
         public Task<OrchestrationStatusQueryResult> GetStatusAsync(OrchestrationStatusQueryCondition condition, CancellationToken cancellationToken)
         {
             return this.innerClient.ListInstancesAsync(condition, cancellationToken);

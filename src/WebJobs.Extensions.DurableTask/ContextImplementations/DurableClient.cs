@@ -462,6 +462,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc />
+        [Obsolete]
         async Task<DurableOrchestrationStatus> IDurableOrchestrationClient.GetStatusAsync(string instanceId, bool showHistory, bool showHistoryOutput, bool showInput, bool showHistoryInput)
         {
             IList<OrchestrationState> stateList;
@@ -482,6 +483,34 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             return await GetDurableOrchestrationStatusAsync(state, this.client, showHistory, showHistoryOutput, showHistoryInput);
+        }
+
+        /// <inheritdoc/>
+        async Task<DurableOrchestrationStatus> IDurableOrchestrationClient.QueryStatusAsync(string instanceId, InstanceFilterOption instanceFilterOption)
+        {
+            if (instanceFilterOption == null)
+            {
+                instanceFilterOption = new InstanceFilterOption();
+            }
+
+            IList<OrchestrationState> stateList;
+            try
+            {
+                stateList = await this.DurabilityProvider.GetOrchestrationStateWithInputsAsync(instanceId, instanceFilterOption.ShowInstanceInput);
+            }
+            catch (NotImplementedException)
+            {
+                // TODO: Ignore the show input flag. Should consider logging a warning.
+                stateList = await this.client.ServiceClient.GetOrchestrationStateAsync(instanceId, allExecutions: false);
+            }
+
+            OrchestrationState state = stateList?.FirstOrDefault();
+            if (state == null || state.OrchestrationInstance == null)
+            {
+                return null;
+            }
+
+            return await GetDurableOrchestrationStatusAsync(state, this.client, instanceFilterOption.ShowHistory, instanceFilterOption.ShowHistoryOutput, instanceFilterOption.ShowHistoryInput);
         }
 
         /// <inheritdoc />

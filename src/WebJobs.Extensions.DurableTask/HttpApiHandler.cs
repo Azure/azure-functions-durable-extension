@@ -47,6 +47,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private const string ShowHistoryOutputParameter = "showHistoryOutput";
         private const string ShowInputParameter = "showInput";
         private const string ShowHistoryInputParameter = "showHistoryInput";
+        private const string InstanceFilterOption = "instanceFilterOption";
         private const string FetchStateParameter = "fetchState";
         private const string InstanceIdPrefixParameter = "instanceIdPrefix";
         private const string CreatedTimeFromParameter = "createdTimeFrom";
@@ -604,25 +605,35 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             IDurableOrchestrationClient client = existingClient ?? this.GetClient(request);
             var queryNameValuePairs = request.GetQueryNameValuePairs();
+            var instanceFilterOption = new InstanceFilterOption();
 
             if (!TryGetBooleanQueryParameterValue(queryNameValuePairs, ShowHistoryParameter, out bool showHistory))
             {
                 showHistory = false;
+                instanceFilterOption.ShowHistory = showHistory;
             }
 
             if (!TryGetBooleanQueryParameterValue(queryNameValuePairs, ShowHistoryOutputParameter, out bool showHistoryOutput))
             {
                 showHistoryOutput = false;
+                instanceFilterOption.ShowHistoryOutput = showHistoryOutput;
             }
 
             if (!TryGetBooleanQueryParameterValue(queryNameValuePairs, ShowInputParameter, out bool showInput))
             {
                 showInput = true;
+                instanceFilterOption.ShowInstanceInput = showInput;
             }
 
             if (!TryGetBooleanQueryParameterValue(queryNameValuePairs, ShowHistoryInputParameter, out bool showHistoryInput))
             {
                 showHistoryInput = false;
+                instanceFilterOption.ShowHistoryInput = showHistoryInput;
+            }
+
+            if (!TryGetInstanceFilterOptionQueryParameterValue(queryNameValuePairs, InstanceFilterOption, out instanceFilterOption))
+            {
+                instanceFilterOption = null;
             }
 
             bool finalReturnInternalServerErrorOnFailure;
@@ -638,7 +649,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
             }
 
-            var status = await client.GetStatusAsync(instanceId, showHistory, showHistoryOutput, showInput, showHistoryInput);
+            var status = await client.QueryStatusAsync(instanceId, instanceFilterOption);
             if (status == null)
             {
                 return request.CreateResponse(HttpStatusCode.NotFound);
@@ -742,6 +753,33 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             return false;
+        }
+
+        private static bool TryGetInstanceFilterOptionQueryParameterValue(NameValueCollection queryStringNameValueCollection, string queryParameterName, out InstanceFilterOption instanceFilterOption)
+        {
+            instanceFilterOption = new InstanceFilterOption();
+            List<bool> collection = new List<bool>();
+
+            string[] parameters = queryStringNameValueCollection.GetValues(queryParameterName) ?? new string[] { };
+            if (!parameters.Any())
+            {
+                return false;
+            }
+
+            foreach (string value in parameters.SelectMany(x => x.Split(',')))
+            {
+                if (Enum.TryParse(value, out bool result))
+                {
+                    collection.Add(result);
+                }
+            }
+
+            instanceFilterOption.ShowHistory = collection[0];
+            instanceFilterOption.ShowHistoryOutput = collection[1];
+            instanceFilterOption.ShowHistoryInput = collection[2];
+            instanceFilterOption.ShowInstanceInput = collection[3];
+
+            return true;
         }
 
         private static bool TryGetStringQueryParameterValue(NameValueCollection queryStringNameValueCollection, string queryParameterName, out string stringValue)

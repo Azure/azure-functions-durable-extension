@@ -3028,6 +3028,60 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        public async Task QueryStatus_InstanceNotFound(string storageProvider)
+        {
+            using (ITestHost host = TestHelpers.GetJobHost(this.loggerProvider, nameof(this.QueryStatus_InstanceNotFound), false, storageProviderType: storageProvider))
+            {
+                await host.StartAsync();
+
+                // Start a dummy orchestration just to help us get a client object
+                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.SayHelloInline), null, this.output);
+                await client.WaitForCompletionAsync(this.output);
+
+                string bogusInstanceId = "BOGUS_" + Guid.NewGuid().ToString("N");
+                this.output.WriteLine($"Fetching status for fake instance: {bogusInstanceId}");
+                DurableOrchestrationStatus status = await client.InnerClient.QueryStatusAsync(instanceId: bogusInstanceId);
+                Assert.Null(status);
+            }
+        }
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        public async Task QueryStatus_ShowInputFalse(string storageProvider)
+        {
+            const string testName = nameof(this.QueryStatus_ShowInputFalse);
+            using (ITestHost host = TestHelpers.GetJobHost(this.loggerProvider, testName, false, storageProviderType: storageProvider))
+            {
+                await host.StartAsync();
+
+                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.Counter), 1, this.output);
+
+                DurableOrchestrationStatus status = await client.QueryStatusAsync(new InstanceFilterOption { ShowHistory = false, ShowHistoryOutput = false, ShowInstanceInput = false });
+                Assert.True(string.IsNullOrEmpty(status.Input.ToString()));
+            }
+        }
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        public async Task QueryStatus_ShowInputDefault(string storageProvider)
+        {
+            const string testName = nameof(this.QueryStatus_ShowInputDefault);
+            using (ITestHost host = TestHelpers.GetJobHost(this.loggerProvider, testName, false, storageProviderType: storageProvider))
+            {
+                await host.StartAsync();
+
+                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.Counter), 1, this.output);
+
+                DurableOrchestrationStatus status = await client.QueryStatusAsync(new InstanceFilterOption { ShowHistory = false, ShowHistoryOutput = false });
+                Assert.Equal("1", status.Input.ToString());
+            }
+        }
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task Deserialize_DurableOrchestrationStatus(string storageProvider)
         {
             using (ITestHost host = TestHelpers.GetJobHost(this.loggerProvider, nameof(this.Deserialize_DurableOrchestrationStatus), false, storageProviderType: storageProvider))
@@ -5759,11 +5813,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 await host.StartAsync();
                 var client1 = await host.StartOrchestratorAsync(nameof(TestOrchestrations.SayHelloWithActivity), "foo", this.output);
-                var client2 = await host.StartOrchestratorAsync(nameof(TestOrchestrations.SayHelloWithActivity), null, this.output);
+                var client2 = await host.StartOrchestratorAsync(nameof(TestOrchestrations.CallActivityWithNoInput), null, this.output);
                 await client1.WaitForCompletionAsync(this.output);
                 await client2.WaitForCompletionAsync(this.output);
-                var status1 = await client1.InnerClient.GetStatusAsync(client1.InstanceId, showHistory: true, showHistoryInput: true);
-                var status2 = await client2.InnerClient.GetStatusAsync(client2.InstanceId, showHistory: true, showHistoryInput: true);
+                var status1 = await client1.InnerClient.QueryStatusAsync(client1.InstanceId, new InstanceFilterOption { ShowHistory = true, ShowHistoryInput = true });
+                var status2 = await client2.InnerClient.QueryStatusAsync(client2.InstanceId, new InstanceFilterOption { ShowHistory = true, ShowHistoryInput = true });
 
                 var input1 = status1.History[1].Value<string>("Input");
                 var input2 = status2.History[1].Value<string>("Input");

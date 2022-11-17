@@ -19,6 +19,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return input;
         }
 
+        public static string ActivityWithNoInput([ActivityTrigger] IDurableActivityContext ctx)
+        {
+            return $"Hello!";
+        }
+
         public static string Hello([ActivityTrigger] IDurableActivityContext ctx)
         {
             string input = ctx.GetInput<string>();
