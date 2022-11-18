@@ -260,7 +260,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="showInput">If set, fetch and return the input for the orchestration instance.</param>
         /// <param name="showHistoryInput">Boolean marker for including input in the execution history response.</param>
         /// <returns>Returns a task which completes when the status has been fetched.</returns>
-        [Obsolete]
         Task<DurableOrchestrationStatus> GetStatusAsync(string instanceId, bool showHistory = false, bool showHistoryOutput = false, bool showInput = true, bool showHistoryInput = false);
 
         /// <summary>
