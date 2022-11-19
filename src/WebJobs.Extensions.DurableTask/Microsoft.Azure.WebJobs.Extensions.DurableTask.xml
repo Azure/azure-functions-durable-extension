@@ -196,11 +196,8 @@
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient.Microsoft#Azure#WebJobs#Extensions#DurableTask#IDurableOrchestrationClient#RewindAsync(System.String,System.String)">
             <inheritdoc />
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient.Microsoft#Azure#WebJobs#Extensions#DurableTask#IDurableOrchestrationClient#GetStatusAsync(System.String,System.Boolean,System.Boolean,System.Boolean,System.Boolean)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient.Microsoft#Azure#WebJobs#Extensions#DurableTask#IDurableOrchestrationClient#GetStatusAsync(System.String,System.Boolean,System.Boolean,System.Boolean,System.Boolean,Microsoft.Azure.WebJobs.Extensions.DurableTask.FilterOption)">
             <inheritdoc />
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient.Microsoft#Azure#WebJobs#Extensions#DurableTask#IDurableOrchestrationClient#QueryStatusAsync(System.String,Microsoft.Azure.WebJobs.Extensions.DurableTask.InstanceFilterOption)">
-            <inheritdoc/>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient.Microsoft#Azure#WebJobs#Extensions#DurableTask#IDurableOrchestrationClient#GetStatusAsync(System.Nullable{System.DateTime},System.Nullable{System.DateTime},System.Collections.Generic.IEnumerable{Microsoft.Azure.WebJobs.Extensions.DurableTask.OrchestrationRuntimeStatus},System.Threading.CancellationToken)">
             <inheritdoc />
@@ -1001,7 +998,7 @@
             <para>
             A terminated instance will eventually transition into the <see cref="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.OrchestrationRuntimeStatus.Terminated"/> state.
             However, this transition will not happen immediately. Rather, the terminate operation will be queued in the task hub
-            along with other operations for that instance. You can use the <see cref="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient.GetStatusAsync(System.String,System.Boolean,System.Boolean,System.Boolean,System.Boolean)"/>
+            along with other operations for that instance. You can use the <see cref="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient.GetStatusAsync(System.String,System.Boolean,System.Boolean,System.Boolean,System.Boolean,Microsoft.Azure.WebJobs.Extensions.DurableTask.FilterOption)"/>
             method to know when a terminated instance has actually reached the Terminated state.
             </para>
             <para>
@@ -1039,7 +1036,7 @@
             <param name="reason">The reason for rewinding the orchestration instance.</param>
             <returns>A task that completes when the rewind message is enqueued.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient.GetStatusAsync(System.String,System.Boolean,System.Boolean,System.Boolean,System.Boolean)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient.GetStatusAsync(System.String,System.Boolean,System.Boolean,System.Boolean,System.Boolean,Microsoft.Azure.WebJobs.Extensions.DurableTask.FilterOption)">
             <summary>
             Gets the status of the specified orchestration instance.
             </summary>
@@ -1048,14 +1045,7 @@
             <param name="showHistoryOutput">Boolean marker for including output in the execution history response.</param>
             <param name="showInput">If set, fetch and return the input for the orchestration instance.</param>
             <param name="showHistoryInput">Boolean marker for including input in the execution history response.</param>
-            <returns>Returns a task which completes when the status has been fetched.</returns>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient.QueryStatusAsync(System.String,Microsoft.Azure.WebJobs.Extensions.DurableTask.InstanceFilterOption)">
-            <summary>
-            Gets the status of the specified orchestration instance.
-            </summary>
-            <param name="instanceId">The ID of the orchestration instance to query.</param>
-            <param name="instanceFilterOption">Filter option settings for history and instance ouput. </param>
+            <param name="filterOption">Class for filter setting.</param>
             <returns>Returns a task which completes when the status has been fetched.</returns>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient.GetStatusAsync(System.Nullable{System.DateTime},System.Nullable{System.DateTime},System.Collections.Generic.IEnumerable{Microsoft.Azure.WebJobs.Extensions.DurableTask.OrchestrationRuntimeStatus},System.Threading.CancellationToken)">
@@ -2408,7 +2398,7 @@
             </summary>
             <remarks>
             An external client can fetch the status of an orchestration instance using
-            <see cref="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient.GetStatusAsync(System.String,System.Boolean,System.Boolean,System.Boolean,System.Boolean)"/>.
+            <see cref="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient.GetStatusAsync(System.String,System.Boolean,System.Boolean,System.Boolean,System.Boolean,Microsoft.Azure.WebJobs.Extensions.DurableTask.FilterOption)"/>.
             </remarks>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableOrchestrationStatus.Name">
@@ -2493,7 +2483,7 @@
             <remarks>
             The history log can be large and is therefore <c>null</c> by default.
             It is populated only when explicitly requested in the call to
-            <see cref="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient.GetStatusAsync(System.String,System.Boolean,System.Boolean,System.Boolean,System.Boolean)"/>.
+            <see cref="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient.GetStatusAsync(System.String,System.Boolean,System.Boolean,System.Boolean,System.Boolean,Microsoft.Azure.WebJobs.Extensions.DurableTask.FilterOption)"/>.
             </remarks>
             <value>
             The output as a <c>JArray</c> object or <c>null</c>.
@@ -3137,6 +3127,11 @@
             </summary>
             <param name="eventData">The EventSource event data, for logging.</param>
         </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.FilterOption">
+            <summary>
+            Filter option for IDurableOrchestrationClient.GetStatusAsync.
+            </summary>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionFailedException">
             <summary>
             The exception that is thrown when a sub-orchestrator or activity function fails
@@ -3559,31 +3554,6 @@
             Creates or retrieves <see cref="T:Newtonsoft.Json.JsonSerializerSettings"/> to be used throughout the extension for message serialization.
             </summary>
             <returns><see cref="T:Newtonsoft.Json.JsonSerializerSettings"/> to be used by the Durable Task Extension for message serialization.</returns>
-        </member>
-        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.InstanceFilterOption">
-            <summary>
-            Filter option setting for IDurableOrchestrationClient.GetStatusAsync.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.InstanceFilterOption.ShowHistory">
-            <summary>
-            Boolean marker for including execution history in the response.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.InstanceFilterOption.ShowHistoryOutput">
-            <summary>
-            Boolean marker for including output in the execution history response.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.InstanceFilterOption.ShowHistoryInput">
-            <summary>
-            Boolean marker for including input in the execution history response.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.InstanceFilterOption.ShowInstanceInput">
-            <summary>
-            If set, fetch and return the input for the orchestration instance.
-            </summary>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.OperatingSystem">
             <summary>

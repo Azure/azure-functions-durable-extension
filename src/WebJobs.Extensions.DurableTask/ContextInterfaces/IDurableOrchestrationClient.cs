@@ -211,7 +211,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <para>
         /// A terminated instance will eventually transition into the <see cref="OrchestrationRuntimeStatus.Terminated"/> state.
         /// However, this transition will not happen immediately. Rather, the terminate operation will be queued in the task hub
-        /// along with other operations for that instance. You can use the <see cref="GetStatusAsync(string, bool, bool, bool, bool)"/>
+        /// along with other operations for that instance. You can use the <see cref="GetStatusAsync(string, bool, bool, bool, bool, FilterOption)"/>
         /// method to know when a terminated instance has actually reached the Terminated state.
         /// </para>
         /// <para>
@@ -259,16 +259,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="showHistoryOutput">Boolean marker for including output in the execution history response.</param>
         /// <param name="showInput">If set, fetch and return the input for the orchestration instance.</param>
         /// <param name="showHistoryInput">Boolean marker for including input in the execution history response.</param>
+        /// <param name="filterOption">Class for filter setting.</param>
         /// <returns>Returns a task which completes when the status has been fetched.</returns>
-        Task<DurableOrchestrationStatus> GetStatusAsync(string instanceId, bool showHistory = false, bool showHistoryOutput = false, bool showInput = true, bool showHistoryInput = false);
-
-        /// <summary>
-        /// Gets the status of the specified orchestration instance.
-        /// </summary>
-        /// <param name="instanceId">The ID of the orchestration instance to query.</param>
-        /// <param name="instanceFilterOption">Filter option settings for history and instance ouput. </param>
-        /// <returns>Returns a task which completes when the status has been fetched.</returns>
-        Task<DurableOrchestrationStatus> QueryStatusAsync(string instanceId, InstanceFilterOption instanceFilterOption = null);
+        Task<DurableOrchestrationStatus> GetStatusAsync(string instanceId, bool showHistory = false, bool showHistoryOutput = false, bool showInput = true, bool showHistoryInput = false, FilterOption filterOption = null);
 
         /// <summary>
         /// Gets the status of all orchestration instances that match the specified conditions.
