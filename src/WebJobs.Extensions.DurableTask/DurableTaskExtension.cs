@@ -1396,7 +1396,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         await this.defaultDurabilityProvider.CreateIfNotExistsAsync();
                         await this.taskHubWorker.StartAsync();
 
-                        if (this.Options.StoreInputsInOrchestrationHistory == true)
+                        if (this.Options.StoreInputsInOrchestrationHistory)
                         {
                             this.taskHubWorker.TaskOrchestrationDispatcher.IncludeParameters = true;
                         }

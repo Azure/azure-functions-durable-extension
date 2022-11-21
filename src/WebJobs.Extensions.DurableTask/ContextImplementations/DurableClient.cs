@@ -842,7 +842,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                                 case EventType.TaskScheduled:
                                     TrackNameAndScheduledTime(historyItem, eventType, i, eventMapper);
                                     historyItem.Remove("Version");
-
                                     break;
                                 case EventType.TaskCompleted:
                                 case EventType.TaskFailed:
@@ -858,7 +857,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                                 case EventType.SubOrchestrationInstanceCreated:
                                     TrackNameAndScheduledTime(historyItem, eventType, i, eventMapper);
                                     historyItem.Remove("Version");
-
                                     break;
                                 case EventType.SubOrchestrationInstanceCompleted:
                                 case EventType.SubOrchestrationInstanceFailed:
@@ -879,7 +877,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                                     historyItem.Remove("ParentInstance");
                                     historyItem.Remove("Version");
                                     historyItem.Remove("Tags");
-
                                     break;
                                 case EventType.ExecutionCompleted:
                                     if (Enum.TryParse(historyItem["OrchestrationStatus"].Value<string>(), out OrchestrationStatus orchestrationStatus))
@@ -895,13 +892,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                                     ConvertOutputToJToken(historyItem, showHistoryOutput);
                                     break;
                                 case EventType.ExecutionTerminated:
-
                                     break;
                                 case EventType.TimerFired:
                                     historyItem.Remove("TimerId");
                                     break;
                                 case EventType.EventRaised:
-
                                     break;
                                 case EventType.OrchestratorStarted:
                                 case EventType.OrchestratorCompleted:
