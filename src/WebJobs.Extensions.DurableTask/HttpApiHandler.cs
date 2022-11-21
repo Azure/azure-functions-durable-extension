@@ -46,8 +46,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private const string ShowHistoryParameter = "showHistory";
         private const string ShowHistoryOutputParameter = "showHistoryOutput";
         private const string ShowInputParameter = "showInput";
-        private const string ShowHistoryInputParameter = "showHistoryInput";
-        private const string FilterOption = "filterOption";
         private const string FetchStateParameter = "fetchState";
         private const string InstanceIdPrefixParameter = "instanceIdPrefix";
         private const string CreatedTimeFromParameter = "createdTimeFrom";
@@ -605,7 +603,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             IDurableOrchestrationClient client = existingClient ?? this.GetClient(request);
             var queryNameValuePairs = request.GetQueryNameValuePairs();
-            var instanceFilterOption = new FilterOption();
 
             if (!TryGetBooleanQueryParameterValue(queryNameValuePairs, ShowHistoryParameter, out bool showHistory))
             {
@@ -622,16 +619,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 showInput = true;
             }
 
-            if (!TryGetBooleanQueryParameterValue(queryNameValuePairs, ShowHistoryInputParameter, out bool showHistoryInput))
-            {
-                showHistoryInput = false;
-            }
-
-            if (!TryGetInstanceFilterOptionQueryParameterValue(queryNameValuePairs, FilterOption, out FilterOption filterOption))
-            {
-                filterOption = null;
-            }
-
             bool finalReturnInternalServerErrorOnFailure;
             if (returnInternalServerErrorOnFailure.HasValue)
             {
@@ -645,7 +632,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
             }
 
-            var status = await client.GetStatusAsync(instanceId, showHistory, showHistoryOutput, showInput, showHistoryInput);
+            var status = await client.GetStatusAsync(instanceId, showHistory, showHistoryOutput, showInput);
             if (status == null)
             {
                 return request.CreateResponse(HttpStatusCode.NotFound);
@@ -749,28 +736,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             return false;
-        }
-
-        private static bool TryGetInstanceFilterOptionQueryParameterValue(NameValueCollection queryStringNameValueCollection, string queryParameterName, out FilterOption filterOption)
-        {
-            filterOption = new FilterOption();
-            List<bool> collection = new List<bool>();
-
-            string[] parameters = queryStringNameValueCollection.GetValues(queryParameterName) ?? new string[] { };
-            if (!parameters.Any())
-            {
-                return false;
-            }
-
-            foreach (string value in parameters.SelectMany(x => x.Split(',')))
-            {
-                if (Enum.TryParse(value, out bool result))
-                {
-                    collection.Add(result);
-                }
-            }
-
-            return true;
         }
 
         private static bool TryGetStringQueryParameterValue(NameValueCollection queryStringNameValueCollection, string queryParameterName, out string stringValue)
