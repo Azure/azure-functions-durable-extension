@@ -891,12 +891,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                                     ConvertOutputToJToken(historyItem, showHistoryOutput);
                                     break;
-                                case EventType.ExecutionTerminated:
-                                    break;
                                 case EventType.TimerFired:
                                     historyItem.Remove("TimerId");
-                                    break;
-                                case EventType.EventRaised:
                                     break;
                                 case EventType.OrchestratorStarted:
                                 case EventType.OrchestratorCompleted:
