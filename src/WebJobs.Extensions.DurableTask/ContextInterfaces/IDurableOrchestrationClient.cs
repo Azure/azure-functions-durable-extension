@@ -256,8 +256,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </summary>
         /// <param name="instanceId">The ID of the orchestration instance to query.</param>
         /// <param name="showHistory">Boolean marker for including execution history in the response.</param>
-        /// <param name="showHistoryOutput">Boolean marker for including input and output in the execution history response.</param>
-        /// <param name="showInput">If set, fetch and return the input for the orchestration instance.</param>
+        /// <param name="showHistoryOutput">Boolean marker for including output in the execution history response.</param>
+        /// <param name="showInput">If set, fetch and return the input for the orchestration instance. If both <c>showHistory</c> and <see cref = "DurableTaskOptions.StoreInputsInOrchestrationHistory" /> are also set to<c>true</c>, then the inputs for activity and sub-orchestration events in the orchestration history will also be returned.</param>
         /// <returns>Returns a task which completes when the status has been fetched.</returns>
         Task<DurableOrchestrationStatus> GetStatusAsync(string instanceId, bool showHistory = false, bool showHistoryOutput = false, bool showInput = true);
 

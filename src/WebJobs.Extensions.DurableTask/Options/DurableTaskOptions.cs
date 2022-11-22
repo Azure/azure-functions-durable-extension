@@ -204,6 +204,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public bool UseAppLease { get; set; } = true;
 
         /// <summary>
+        /// If <c>true</c>, the inputs of functions called by the orchestrator will be saved to the orchestration history, making them visible to debugging tools. The default value is <c>false</c>.
+        /// </summary>
+        public bool StoreInputsInOrchestrationHistory { get; set; } = false;
+
+        /// <summary>
         /// If UseAppLease is true, gets or sets the AppLeaaseOptions used for acquiring the lease to start the application.
         /// </summary>
         public AppLeaseOptions AppLeaseOptions { get; set; } = AppLeaseOptions.DefaultOptions;

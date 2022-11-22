@@ -41,6 +41,8 @@ Durable Functions supports a subset of languages supported by Azure Functions:
 
 Each language has its own language-specific SDK and programming model. Regardless of which language you use, the extension in this repo must be installed to enable the Durable Functions triggers.
 
+Samples for each SDK may be found in their respective repos, usually under a "/samples" directory. For example, the JavaScript samples may be found [here](https://github.com/Azure/azure-functions-durable-js/tree/dev/samples).
+
 ## Installation
 
 The Durable Functions NuGet package can be referenced directly in a Visual Studio project or can be installed using the [Azure Functions Core Tools](https://docs.microsoft.com/azure/azure-functions/functions-run-local) command-line:

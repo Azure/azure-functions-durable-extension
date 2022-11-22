@@ -194,6 +194,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return new P.TerminateResponse();
             }
 
+            public override async Task<P.SuspendResponse> SuspendInstance(P.SuspendRequest request, ServerCallContext context)
+            {
+                await this.durabilityProvider.SuspendTaskOrchestrationAsync(request.InstanceId, request.Reason);
+                return new P.SuspendResponse();
+            }
+
+            public override async Task<P.ResumeResponse> ResumeInstance(P.ResumeRequest request, ServerCallContext context)
+            {
+                await this.durabilityProvider.ResumeTaskOrchestrationAsync(request.InstanceId, request.Reason);
+                return new P.ResumeResponse();
+            }
+
+            public override async Task<P.RewindInstanceResponse> RewindInstance(P.RewindInstanceRequest request, ServerCallContext context)
+            {
+                await this.durabilityProvider.RewindAsync(request.InstanceId, request.Reason);
+                return new P.RewindInstanceResponse();
+            }
+
             public override async Task<P.GetInstanceResponse> GetInstance(P.GetInstanceRequest request, ServerCallContext context)
             {
                 OrchestrationState state = await this.durabilityProvider.GetOrchestrationStateAsync(request.InstanceId, executionId: null);

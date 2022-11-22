@@ -1,12 +1,13 @@
-## Bug Fixes
-- Correctly Serialize HostStoppingEvent in ActivityShim (https://github.com/Azure/azure-functions-durable-extension/pull/2178)
-- Fix NotImplementedException for management API calls from Java client (https://github.com/Azure/azure-functions-durable-extension/pull/2193)
-- Handle OOM and other exceptions in entity shim by aborting the session (https://github.com/Azure/azure-functions-durable-extension/pull/2234)
+# Release Notes
 
-## Enhancements
-- add optional 'instanceIdPrefix' query parameter to the HTTP API for instance queries
+## Updates
 
-## Dependencies
-- DurableTask.Core --> v2.10.*
-- DurableTask.AzureStorage --> v1.12.*
-- DurableTask.Analyzers --> 0.5.0
+* Updated Worker.Extensions.DurableTask to 1.0.0-rc.1 and Microsoft.DurableTask.* dependencies to the same.
+  * Includes breaking change adjustments as necessary.
+  * Microsoft.DurableTask.Generators is still preview and must now be explicitly referenced.
+    * This means that class-based syntax will remain a preview feature.
+    * Other code-gen are also remaining as preview features.
+* Added V2 middleware support for custom handlers.
+* Added suspend, resume, and rewind operation handling for V2 out-of-proc
+* Updated Microsoft.DurableTask.Sidecar.Protobuf dependency to v1.0.0
+* Updated Microsoft.Azure.DurableTask.Core dependency to 2.12.*

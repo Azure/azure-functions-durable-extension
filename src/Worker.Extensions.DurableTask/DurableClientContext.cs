@@ -3,7 +3,7 @@
 
 using Microsoft.Azure.Functions.Worker.Converters;
 using Microsoft.Azure.Functions.Worker.Http;
-using Microsoft.DurableTask;
+using Microsoft.DurableTask.Client;
 
 namespace Microsoft.Azure.Functions.Worker;
 
