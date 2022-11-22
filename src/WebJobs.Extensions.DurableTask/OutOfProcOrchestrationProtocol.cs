@@ -21,7 +21,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         /// <summary>
         /// Out-of-proc works by forwarding all outputs directly to the Durable Task Framework
-        /// without using any orchestrator "shims" or attemping any interpretation. This is
+        /// without using any orchestrator "shims" or attempting any interpretation. This is
         /// sometimes referred to as "out of proc v2".
         /// </summary>
         MiddlewarePassthrough = 1,
