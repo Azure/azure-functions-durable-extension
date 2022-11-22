@@ -264,11 +264,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <summary>
         /// Get the status of multiple instances.
         /// </summary>
-        /// <param name="instanceID"> List of multiple instance ID that needed to check that status.</param>
+        /// <param name="instanceID"> The instanceIDs to query.</param>
         /// <param name="showHistory">Boolean marker for including execution history in the response.</param>
         /// <param name="showHistoryOutput">Boolean marker for including input and output in the execution history response.</param>
-        /// <param name="showInput">If set, fetch and return the input for the orchestration instance.</param>
-        /// <returns>Returns a list of orchestration status values.</returns>
+        /// <param name="showInput">If set, fetch and return the input for the orchestration instance. If both <c>showHistory</c> and <see cref = "DurableTaskOptions.StoreInputsInOrchestrationHistory" /> are also set to<c>true</c>, then the inputs for activity and sub-orchestration events in the orchestration history will also be returned.</param>
+        /// <returns>Returns a list of orchestration statuses.</returns>
         Task<List<DurableOrchestrationStatus>> GetStatusAsync(IEnumerable<string> instanceID, bool showHistory = false, bool showHistoryOutput = false, bool showInput = false);
 
         /// <summary>
@@ -293,7 +293,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// Purge the history for multiple instances.
         /// </summary>
         /// <param name="instanceId">The IDs of the orchestration instance to purge.</param>
-        /// <returns>>Returns an instance of <see cref="PurgeHistoryResult"/>.</returns>
+        /// <returns>Returns an instance of <see cref="PurgeHistoryResult"/>.</returns>
         Task<PurgeHistoryResult> PurgeInstanceHistoryAsync(IEnumerable<string> instanceId);
 
         /// <summary>

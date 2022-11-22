@@ -4472,8 +4472,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StartAsync();
 
                 var client1 = await host.StartOrchestratorAsync(nameof(TestOrchestrations.SayHelloWithActivity), "foo", this.output);
+                await client1.WaitForCompletionAsync(this.output);
                 var client2 = await host.StartOrchestratorAsync(nameof(TestOrchestrations.SayHelloWithActivity), "bar", this.output);
+                await client2.WaitForCompletionAsync(this.output);
                 var client3 = await host.StartOrchestratorAsync(nameof(TestOrchestrations.SayHelloWithActivity), "baz", this.output);
+                await client3.WaitForCompletionAsync(this.output);
 
                 string firstInstanceId = client1.InstanceId;
                 string secondInstanceId = client2.InstanceId;

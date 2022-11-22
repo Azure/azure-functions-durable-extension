@@ -509,7 +509,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
                 else
                 {
-                    currenStatus = await GetDurableOrchestrationStatusAsync(state, this.client, showHistory, showHistoryOutput);
+                    currenStatus = await GetDurableOrchestrationStatusAsync(state, this.client, showHistory, showHistoryOutput, showInput);
                 }
 
                 results.Add(currenStatus);
