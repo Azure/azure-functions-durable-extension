@@ -983,7 +983,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                     if (showHistoryOutput)
                     {
-                        Assert.Null(status.History[0]["Input"]);
+                        Assert.NotNull(status.History[0]["Input"]);
                         Assert.NotNull(status.History[1]["Result"]);
                         Assert.Equal("Hello, World!", status.History[1]["Result"].ToString());
                         Assert.NotNull(status.History[2]["Result"]);
@@ -991,7 +991,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     }
                     else
                     {
-                        Assert.Null(status.History[0]["Input"]);
+                        Assert.NotNull(status.History[0]["Input"]);
                         Assert.Null(status.History[1]["Result"]);
                         Assert.Null(status.History[2]["Result"]);
                     }
@@ -2061,8 +2061,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                     if (showHistoryOutput)
                     {
-                        Assert.Null(status.History[0]["Input"]);
-                        Assert.Null(status.History[1]["Input"]);
+                        Assert.NotNull(status.History[0]["Input"]);
+                        Assert.NotNull(status.History[1]["Input"]);
                         Assert.NotNull(status.History[1]["Result"]);
                         var resultSubOrchestrationInstanceCompleted = JsonConvert.DeserializeObject<ComplexType>(status.History[1]["Result"].ToString());
                         CompareTwoComplexTypeObjects(complexTypeDataInput, resultSubOrchestrationInstanceCompleted);
@@ -2072,7 +2072,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     }
                     else
                     {
-                        Assert.Null(status.History[0]["Input"]);
+                        Assert.NotNull(status.History[0]["Input"]);
                         Assert.Null(status.History[1]["Result"]);
                         Assert.Null(status.History[2]["Result"]);
                     }
@@ -5771,6 +5771,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             // This will throw if the JSON is not valid
             JObject.Parse(configJson);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task TestStoreInputsInOrchestrationHistory()
+        {
+            DurableTaskOptions options = new DurableTaskOptions();
+            options.StoreInputsInOrchestrationHistory = true;
+
+            using (var host = TestHelpers.GetJobHostWithOptions(
+                   this.loggerProvider,
+                   options))
+            {
+                await host.StartAsync();
+                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.CallActivityWithorWithoutInput), null, this.output);
+                await client.WaitForCompletionAsync(this.output);
+                var status = await client.InnerClient.GetStatusAsync(client.InstanceId, showHistory: true, showInput: true);
+
+                var input1 = status.History[1].Value<string>("Input");
+                var input2 = status.History[2].Value<string>("Input");
+                Assert.Equal("[\"Tokyo\"]", input1);
+                Assert.Equal("[null]", input2);
+
+                await host.StopAsync();
+            }
         }
 
         private static StringBuilder GenerateMediumRandomStringPayload()
