@@ -26,6 +26,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return $"Hello, {input}!";
         }
 
+        public static async Task<string> CallActivityWithorWithoutInput([OrchestrationTrigger] IDurableOrchestrationContext ctx)
+        {
+            await ctx.CallActivityAsync<string>(nameof(TestActivities.Hello), "Tokyo");
+            await ctx.CallActivityAsync<string>(nameof(TestActivities.ActivityWithNoInput), null);
+            return "TaskCompleted";
+        }
+
         public static async Task<string> SayHelloWithActivity([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
             string input = ctx.GetInput<string>();

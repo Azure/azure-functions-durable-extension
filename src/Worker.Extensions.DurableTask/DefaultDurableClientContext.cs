@@ -7,13 +7,12 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.Azure.Functions.Worker.Converters;
 using Microsoft.Azure.Functions.Worker.Http;
-using Microsoft.DurableTask;
-using Microsoft.DurableTask.Grpc;
+using Microsoft.DurableTask.Client;
 
 namespace Microsoft.Azure.Functions.Worker;
 
 /// <summary>
-/// Concreate implementation of the <see cref="DurableClientContext"/> abstract class that
+/// Concrete implementation of the <see cref="DurableClientContext"/> abstract class that
 /// allows callers to start and manage orchestration instances.
 /// </summary>
 internal sealed class DefaultDurableClientContext : DurableClientContext
@@ -78,12 +77,12 @@ internal sealed class DefaultDurableClientContext : DurableClientContext
     /// </summary>
     internal class Converter : IInputConverter
     {
-        private readonly IServiceProvider? serviceProvider;
+        private readonly IDurableTaskClientProvider clientProvider;
 
         // Constructor parameters are optional DI-injected services.
-        public Converter(IServiceProvider? serviceProvider)
+        public Converter(IDurableTaskClientProvider clientProvider)
         {
-            this.serviceProvider = serviceProvider;
+            this.clientProvider = clientProvider ?? throw new ArgumentNullException(nameof(clientProvider));
         }
 
         public ValueTask<ConversionResult> ConvertAsync(ConverterContext converterContext)
@@ -104,24 +103,8 @@ internal sealed class DefaultDurableClientContext : DurableClientContext
 
             try
             {
-                DurableTaskGrpcClient.Builder builder = DurableTaskGrpcClient.CreateBuilder();
-                if (!Uri.TryCreate(inputData.rpcBaseUrl, UriKind.Absolute, out Uri? baseUriResult))
-                {
-                    InvalidOperationException exception = new($"Failed to parse the {nameof(inputData.rpcBaseUrl)} field from the input binding data.");
-                    return new ValueTask<ConversionResult>(ConversionResult.Failed(exception));
-                }
-
-                builder.UseAddress(baseUriResult.Host, baseUriResult.Port);
-                if (this.serviceProvider != null)
-                {
-                    // The builder will use the host's service provider to look up DI-registered
-                    // services, like IDataConverter, ILoggerFactory, IConfiguration, etc. This allows
-                    // it to use the default host services and also allows it to use services injected
-                    // by the application owner (e.g. IDataConverter for custom data conversion).
-                    builder.UseServices(this.serviceProvider);
-                }
-
-                DefaultDurableClientContext clientContext = new(builder.Build(), inputData);
+                DurableTaskClient client = this.clientProvider.GetClient(inputData?.rpcBaseUrl);
+                DefaultDurableClientContext clientContext = new(client, inputData!);
                 return new ValueTask<ConversionResult>(ConversionResult.Success(clientContext));
             }
             catch (Exception innerException)

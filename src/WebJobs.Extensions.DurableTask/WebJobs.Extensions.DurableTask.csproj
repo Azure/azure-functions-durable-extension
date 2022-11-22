@@ -5,8 +5,8 @@
     <AssemblyName>Microsoft.Azure.WebJobs.Extensions.DurableTask</AssemblyName>
     <RootNamespace>Microsoft.Azure.WebJobs.Extensions.DurableTask</RootNamespace>
     <MajorVersion>2</MajorVersion>
-    <MinorVersion>8</MinorVersion>
-    <PatchVersion>1</PatchVersion>
+    <MinorVersion>9</MinorVersion>
+    <PatchVersion>0</PatchVersion>
     <Version>$(MajorVersion).$(MinorVersion).$(PatchVersion)</Version>
     <FileVersion>$(MajorVersion).$(MinorVersion).$(PatchVersion)</FileVersion>
     <AssemblyVersion>$(MajorVersion).0.0.0</AssemblyVersion>
@@ -101,15 +101,14 @@
     <PackageReference Include="Microsoft.ApplicationInsights" Version="2.12.2" />
     <!-- Explicitly pinned transitive dependencies with CVE vulnerabilities.-->
     <PackageReference Include="Microsoft.AspNetCore.Server.Kestrel.Transport.Sockets" Version="2.2.1" />
-    <!-- The gRPC dependencies are not compatible with .NET Standard 2.0 and will fail at runtime -->
-    <PackageReference Include="Grpc" Version="2.38.0" />
-    <PackageReference Include="Microsoft.DurableTask.Sidecar.Protobuf" Version="0.3.1" />
+    <!-- The gRPC dependencies in this package are not compatible with older frameworks, like .NET Core 2.x -->
+    <PackageReference Include="Microsoft.DurableTask.Sidecar.Protobuf" Version="1.0.0" />
   </ItemGroup>
 
 
   <!-- Common dependencies across all targets -->
   <ItemGroup>
-    <PackageReference Include="Microsoft.Azure.DurableTask.Core" Version="2.11.*" />
+    <PackageReference Include="Microsoft.Azure.DurableTask.Core" Version="2.12.*" />
     <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" Version="1.13.*" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers" Version="0.5.*" />
     <!-- Build-time dependencies -->
