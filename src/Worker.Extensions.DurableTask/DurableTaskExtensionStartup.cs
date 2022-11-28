@@ -7,8 +7,13 @@ using Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
 using Microsoft.DurableTask;
 using Microsoft.DurableTask.Client;
 using Microsoft.DurableTask.Converters;
+using Microsoft.DurableTask.Worker;
+using Microsoft.DurableTask.Worker.Shims;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 [assembly: WorkerExtensionStartup(typeof(DurableTaskExtensionStartup))]
 
@@ -27,11 +32,28 @@ public sealed class DurableTaskExtensionStartup : WorkerExtensionStartup
             .PostConfigure<IServiceProvider>((opt, sp) =>
             {
                 if (sp.GetService<DataConverter>() is DataConverter converter
-                    && !ReferenceEquals(opt.DataConverter, JsonDataConverter.Default))
+                    && ReferenceEquals(opt.DataConverter, JsonDataConverter.Default))
                 {
                     opt.DataConverter = converter;
                 }
             });
+
+        applicationBuilder.Services.AddOptions<DurableTaskWorkerOptions>()
+            .PostConfigure<IServiceProvider>((opt, sp) =>
+            {
+                if (sp.GetService<DataConverter>() is DataConverter converter
+                    && ReferenceEquals(opt.DataConverter, JsonDataConverter.Default))
+                {
+                    opt.DataConverter = converter;
+                }
+            });
+
+        applicationBuilder.Services.TryAddSingleton(sp =>
+        {
+            DurableTaskWorkerOptions options = sp.GetRequiredService<IOptions<DurableTaskWorkerOptions>>().Value;
+            ILoggerFactory factory = sp.GetRequiredService<ILoggerFactory>();
+            return new DurableTaskShimFactory(options, factory); // For GrpcOrchestrationRunner
+        });
 
         applicationBuilder.UseMiddleware<DurableTaskFunctionsMiddleware>();
     }
