@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System;
+using Azure.Core.Serialization;
 using Microsoft.Azure.Functions.Worker.Core;
 using Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
 using Microsoft.DurableTask;
@@ -31,8 +32,7 @@ public sealed class DurableTaskExtensionStartup : WorkerExtensionStartup
         applicationBuilder.Services.AddOptions<DurableTaskClientOptions>()
             .PostConfigure<IServiceProvider>((opt, sp) =>
             {
-                if (sp.GetService<DataConverter>() is DataConverter converter
-                    && ReferenceEquals(opt.DataConverter, JsonDataConverter.Default))
+                if (GetConverter(sp) is DataConverter converter)
                 {
                     opt.DataConverter = converter;
                 }
@@ -41,8 +41,7 @@ public sealed class DurableTaskExtensionStartup : WorkerExtensionStartup
         applicationBuilder.Services.AddOptions<DurableTaskWorkerOptions>()
             .PostConfigure<IServiceProvider>((opt, sp) =>
             {
-                if (sp.GetService<DataConverter>() is DataConverter converter
-                    && ReferenceEquals(opt.DataConverter, JsonDataConverter.Default))
+                if (GetConverter(sp) is DataConverter converter)
                 {
                     opt.DataConverter = converter;
                 }
@@ -56,5 +55,11 @@ public sealed class DurableTaskExtensionStartup : WorkerExtensionStartup
         });
 
         applicationBuilder.UseMiddleware<DurableTaskFunctionsMiddleware>();
+    }
+
+    private static DataConverter? GetConverter(IServiceProvider services)
+    {
+        WorkerOptions? worker = services.GetRequiredService<IOptions<WorkerOptions>>()?.Value;
+        return worker?.Serializer is ObjectSerializer serializer ? new ObjectConverterShim(serializer) : null;
     }
 }
