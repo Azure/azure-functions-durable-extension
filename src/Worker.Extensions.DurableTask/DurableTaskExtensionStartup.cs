@@ -59,7 +59,11 @@ public sealed class DurableTaskExtensionStartup : WorkerExtensionStartup
 
     private static DataConverter? GetConverter(IServiceProvider services)
     {
+        // We intentionally do not consider a DataConverter in the DI provider, or if one was already set. This is to
+        // ensure serialization is consistent with the rest of Azure Functions. This is particularly important because
+        // TaskActivity bindings use ObjectSerializer directly for the time being. Due to this, allowing DataConverter
+        // to be set separately from ObjectSerializer would give an inconsistent serialization solution.
         WorkerOptions? worker = services.GetRequiredService<IOptions<WorkerOptions>>()?.Value;
-        return worker?.Serializer is ObjectSerializer serializer ? new ObjectConverterShim(serializer) : null;
+        return worker?.Serializer is not null ? new ObjectConverterShim(worker.Serializer) : null;
     }
 }
