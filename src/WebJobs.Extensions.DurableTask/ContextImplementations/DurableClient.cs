@@ -485,36 +485,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc />
-        async Task<List<DurableOrchestrationStatus>> IDurableOrchestrationClient.GetStatusAsync(IEnumerable<string> instanceID, bool showHistory, bool showHistoryOutput, bool showInput)
+        async Task<IList<DurableOrchestrationStatus>> IDurableOrchestrationClient.GetStatusAsync(IEnumerable<string> instanceIds, bool showHistory, bool showHistoryOutput, bool showInput)
         {
-            var results = new List<DurableOrchestrationStatus>();
-            foreach (string id in instanceID)
-            {
-                IList<OrchestrationState> stateList;
-                try
-                {
-                    stateList = await this.DurabilityProvider.GetOrchestrationStateWithInputsAsync(id, showInput);
-                }
-                catch (NotImplementedException)
-                {
-                    // TODO: Ignore the show input flag. Should consider logging a warning.
-                    stateList = await this.client.ServiceClient.GetOrchestrationStateAsync(id, allExecutions: false);
-                }
-
-                OrchestrationState state = stateList?.FirstOrDefault();
-                var currenStatus = new DurableOrchestrationStatus();
-                if (state == null || state.OrchestrationInstance == null)
-                {
-                    currenStatus = null;
-                }
-                else
-                {
-                    currenStatus = await GetDurableOrchestrationStatusAsync(state, this.client, showHistory, showHistoryOutput, showInput);
-                }
-
-                results.Add(currenStatus);
-            }
-
+            var tasks = instanceIds.Select(instanceId => ((IDurableOrchestrationClient)this).GetStatusAsync(instanceId));
+            var results = await Task.WhenAll(tasks);
             return results;
         }
 
@@ -597,25 +571,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return await this.DurabilityProvider.PurgeInstanceHistoryByInstanceId(instanceId);
         }
 
-        async Task<PurgeHistoryResult> IDurableOrchestrationClient.PurgeInstanceHistoryAsync(IEnumerable<string> instanceId)
+        async Task<PurgeHistoryResult> IDurableOrchestrationClient.PurgeInstanceHistoryAsync(IEnumerable<string> instanceIds)
         {
-            var tasks = new List<Task>();
-            int instanceDeleted = 0;
-            foreach (string id in instanceId)
+            var tasks = instanceIds.Select(instanceId => this.DurabilityProvider.PurgeInstanceHistoryByInstanceId(instanceId));
+            var results = await Task.WhenAll(tasks);
+            var instancesDeleted = 0;
+            foreach (var purgeHistoryResult in results)
             {
-                tasks.Add(Task.Run(async () =>
+                if (purgeHistoryResult.InstancesDeleted == 1)
                 {
-                    var purgeHistoryResult = await this.DurabilityProvider.PurgeInstanceHistoryByInstanceId(id);
-                    if (purgeHistoryResult.InstancesDeleted == 1)
-                    {
-                        instanceDeleted += 1;
-                    }
-                }));
+                    instancesDeleted += 1;
+                }
             }
 
-            await Task.WhenAll(tasks);
-            PurgeHistoryResult result = new PurgeHistoryResult(instancesDeleted: instanceDeleted);
+            PurgeHistoryResult result = new PurgeHistoryResult(instancesDeleted: instancesDeleted);
             return result;
+
         }
 
         /// <inheritdoc />
