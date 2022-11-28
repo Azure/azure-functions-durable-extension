@@ -586,7 +586,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             PurgeHistoryResult result = new PurgeHistoryResult(instancesDeleted: instancesDeleted);
             return result;
-
         }
 
         /// <inheritdoc />
