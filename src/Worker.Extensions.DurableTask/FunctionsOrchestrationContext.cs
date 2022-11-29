@@ -46,11 +46,17 @@ internal sealed partial class FunctionsOrchestrationContext : TaskOrchestrationC
     {
         this.EnsureLegalAccess();
 
+        object? input = this.innerContext.GetInput<object>();
+        if (input is T typed)
+        {
+            return typed;
+        }
+
         // The wrapped TaskOrchestrationContext is not actually dynamic with GetInput - it was set
         // once based on the declared input type of the orchestrator. Since we do not know the
         // desired input type upfront, we were initialized to object. So we must serialize and
         // deserialize again to convert to our desired type.
-        this.inputConverter ??= InputConverter.Create(this.innerContext.GetInput<object>(), this.options.DataConverter);
+        this.inputConverter ??= InputConverter.Create(input, this.options.DataConverter);
         return this.inputConverter.Get<T>();
     }
 
