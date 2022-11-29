@@ -578,10 +578,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             var instancesDeleted = 0;
             foreach (var purgeHistoryResult in results)
             {
-                if (purgeHistoryResult.InstancesDeleted == 1)
-                {
-                    instancesDeleted += 1;
-                }
+                    instancesDeleted += purgeHistoryResult.InstancesDeleted;
             }
 
             PurgeHistoryResult result = new PurgeHistoryResult(instancesDeleted: instancesDeleted);
