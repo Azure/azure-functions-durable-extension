@@ -26,17 +26,17 @@ steps:
   inputs:
     command: restore
     verbosityRestore: Minimal
+    feedsToUse: 'config'
+    nugetConfigPath: 'nuget.config'
     projects: 'src/Worker.Extensions.DurableTask/*.csproj'
 
 # Build just the .NET Isolated worker extension project
-- task: VSBuild@1
+- task: DotNetCoreCLI@2
   displayName: 'Build'
   inputs:
-    solution: 'src/Worker.Extensions.DurableTask/*.csproj'
-    vsVersion: 'latest'
-    logFileVerbosity: minimal
-    configuration: Release
-    msbuildArgs: /p:FileVersionRevision=$(Build.BuildId) /p:ContinuousIntegrationBuild=true
+    command: build
+    arguments: --no-restore -c release -p:FileVersionRevision=$(Build.BuildId) -p:ContinuousIntegrationBuild=true
+    projects: 'src/Worker.Extensions.DurableTask/*.csproj'
 
 # Authenticode sign all the DLLs with the Microsoft certificate.
 # This appears to be an in-place signing job, which is convenient.
