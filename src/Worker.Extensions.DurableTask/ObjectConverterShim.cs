@@ -28,7 +28,7 @@ internal class ObjectConverterShim : DataConverter
             return null;
         }
 
-        using MemoryStream stream = new(Encoding.Unicode.GetBytes(data), false);
+        using MemoryStream stream = new(Encoding.UTF8.GetBytes(data), false);
         return this.serializer.Deserialize(stream, targetType, default);
     }
 
@@ -39,9 +39,7 @@ internal class ObjectConverterShim : DataConverter
             return null;
         }
 
-        using MemoryStream stream = new();
-        this.serializer.Serialize(stream, value, value.GetType(), default);
-        using StreamReader reader = new(stream, Encoding.Unicode);
-        return reader.ReadToEnd();
+        BinaryData data = this.serializer.Serialize(value, value.GetType(), default);
+        return data.ToString();
     }
 }
