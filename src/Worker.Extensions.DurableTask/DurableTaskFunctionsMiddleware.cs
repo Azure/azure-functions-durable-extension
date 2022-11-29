@@ -7,8 +7,11 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.Functions.Worker.Middleware;
 using Microsoft.DurableTask;
+using Microsoft.DurableTask.Worker;
 using Microsoft.DurableTask.Worker.Grpc;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
 
@@ -98,11 +101,16 @@ internal class DurableTaskFunctionsMiddleware : IFunctionsWorkerMiddleware
     {
         private readonly TaskOrchestrationContext innerContext;
         private readonly FunctionContext functionContext;
-        
+
+        private readonly DurableTaskWorkerOptions options;
+        private string? serializedInput;
+
         public FunctionsOrchestrationContext(TaskOrchestrationContext innerContext, FunctionContext functionContext)
         {
             this.innerContext = innerContext;
             this.functionContext = functionContext;
+            this.options = this.functionContext.InstanceServices
+                .GetRequiredService<IOptions<DurableTaskWorkerOptions>>().Value;
         }
 
         public bool IsAccessed { get; private set; }
@@ -120,7 +128,24 @@ internal class DurableTaskFunctionsMiddleware : IFunctionsWorkerMiddleware
         public override T GetInput<T>()
         {
             this.EnsureLegalAccess();
-            return this.innerContext.GetInput<T>()!;
+
+            // TODO: address this hack.
+            // The default TaskOrchestrationContext is not actually dynamic with GetInput - it was set
+            // once based on the declared input type of the orchestrator. Since we do not know the
+            // desired input type upfront, we were initialized to object. So we must serialize and
+            // deserialize again to convert to our desired type.
+            if (this.serializedInput is null)
+            {
+                object? input = this.innerContext.GetInput<object>();
+                if (input is null)
+                {
+                    return default!;
+                }
+
+                this.serializedInput = this.options.DataConverter.Serialize(input);
+            }
+
+            return this.options.DataConverter.Deserialize<T>(this.serializedInput)!;
         }
 
         public override Guid NewGuid()
