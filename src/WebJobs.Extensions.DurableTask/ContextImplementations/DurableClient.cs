@@ -915,10 +915,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         for (int i = historyArray.Count - 1; i >= 0; i--)
                         {
                             var eventTypeName = historyArray[i].Value<string>("EventType");
-                            var eventType = (EventType)Enum.Parse(typeof(EventType), eventTypeName, true);
-                            if (!eventTypes.Contains(eventType))
+                            if (Enum.TryParse(eventTypeName, out EventType eventType))
                             {
-                                historyArray.Remove(historyArray[i]);
+                                if (!eventTypes.Contains(eventType))
+                                {
+                                    historyArray.Remove(historyArray[i]);
+                                }
                             }
                         }
                     }
