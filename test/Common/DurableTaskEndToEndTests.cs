@@ -3011,11 +3011,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task GetStatus_testeventTypes()
+        public async Task GetStatus_TestEventTypes()
         {
             using (var host = TestHelpers.GetJobHost(
                    this.loggerProvider,
-                   testName: "GetStatus_testeventTypes",
+                   testName: "GetStatus_TestEventTypes",
                    enableExtendedSessions: false))
             {
                 await host.StartAsync();
@@ -3028,6 +3028,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var eventType1 = (EventType)Enum.Parse(typeof(EventType), eventTypeName1, true);
                 var eventTypeName2 = status.History[1].Value<string>("EventType");
                 var eventType2 = (EventType)Enum.Parse(typeof(EventType), eventTypeName2, true);
+                Assert.Equal(2, status.History.Count);
                 Assert.Equal(EventType.TaskScheduled, eventType1);
                 Assert.Equal(EventType.TaskCompleted, eventType2);
 
