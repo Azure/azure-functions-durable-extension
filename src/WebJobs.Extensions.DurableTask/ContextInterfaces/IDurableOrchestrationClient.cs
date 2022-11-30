@@ -302,7 +302,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="createdTimeFrom">Start creation time for querying instances for purging.</param>
         /// <param name="createdTimeTo">End creation time for querying instances for purging.</param>
         /// <param name="runtimeStatus">List of runtime status for querying instances for purging. Only Completed, Terminated, or Failed will be processed.</param>
-        /// <returns>Returns an instance of <see cref="PurgeHistoryResult"/>.</returns>
+        /// <returns>
+        /// Returns a list of orchestration statuses. The length and order of the returned list will match the length and
+        /// order of <paramref name="instanceIds"/>. If any instance ID doesn't exist, a <c>null</c> value will be set in
+        /// the corresponding list element.
+        /// </returns>
         Task<PurgeHistoryResult> PurgeInstanceHistoryAsync(DateTime createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationStatus> runtimeStatus);
 
         /// <summary>

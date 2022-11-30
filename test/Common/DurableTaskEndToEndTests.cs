@@ -4481,19 +4481,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 string firstInstanceId = client1.InstanceId;
                 string secondInstanceId = client2.InstanceId;
                 string thirdInstanceId = client3.InstanceId;
-                var instanceIdList = new List<string> { firstInstanceId, secondInstanceId, thirdInstanceId };
+                string fourthInstanceId = "00000000";
+                var instanceIdList = new List<string> { firstInstanceId, secondInstanceId, thirdInstanceId, fourthInstanceId };
 
-                await client1.InnerClient.PurgeInstanceHistoryAsync(instanceIdList);
+                var purgeResult = await client1.InnerClient.PurgeInstanceHistoryAsync(instanceIdList);
 
-                var status = await client1.GetStatusAsync();
-                Assert.Null(status);
-
-                status = await client2.GetStatusAsync();
-                Assert.Null(status);
-
-                status = await client3.GetStatusAsync();
-                Assert.Null(status);
-
+                Assert.Equal("3", purgeResult.InstancesDeleted.ToString());
                 await host.StopAsync();
             }
         }
