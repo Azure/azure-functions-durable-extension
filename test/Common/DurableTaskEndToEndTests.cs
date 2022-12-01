@@ -4433,6 +4433,66 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        public async Task GetStatusAsync_MultipleInstances(string storageProvider)
+        {
+            const string testName = nameof(this.GetStatusAsync_MultipleInstances);
+            using (ITestHost host = TestHelpers.GetJobHost(this.loggerProvider, testName, false, storageProviderType: storageProvider))
+            {
+                await host.StartAsync();
+
+                var client1 = await host.StartOrchestratorAsync(nameof(TestOrchestrations.Counter), 1, this.output);
+                var client2 = await host.StartOrchestratorAsync(nameof(TestOrchestrations.Counter), 2, this.output);
+
+                string firstInstanceId = client1.InstanceId;
+                string secondInstanceId = client2.InstanceId;
+                string thirdInstanceId = "00000000";
+
+                var instanceIdList = new List<string> { firstInstanceId, secondInstanceId, thirdInstanceId };
+
+                IList<DurableOrchestrationStatus> statusList = new List<DurableOrchestrationStatus>();
+                statusList = await client1.InnerClient.GetStatusAsync(instanceIdList, showHistory: false, showHistoryOutput: false, showInput: true);
+                Assert.Equal("1", statusList[0].Input.ToString());
+                Assert.Equal("2", statusList[1].Input.ToString());
+                Assert.Null(statusList[2]);
+            }
+        }
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [MemberData(nameof(TestDataGenerator.GetBooleanAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        public async Task PurgeMultipleInstanceHistory(bool extendedSessions, string storageProvider)
+        {
+            using (ITestHost host = TestHelpers.GetJobHost(
+               this.loggerProvider,
+               nameof(this.PurgeMultipleInstanceHistory),
+               extendedSessions,
+               storageProviderType: storageProvider))
+            {
+                await host.StartAsync();
+
+                var client1 = await host.StartOrchestratorAsync(nameof(TestOrchestrations.SayHelloWithActivity), "foo", this.output);
+                await client1.WaitForCompletionAsync(this.output);
+                var client2 = await host.StartOrchestratorAsync(nameof(TestOrchestrations.SayHelloWithActivity), "bar", this.output);
+                await client2.WaitForCompletionAsync(this.output);
+                var client3 = await host.StartOrchestratorAsync(nameof(TestOrchestrations.SayHelloWithActivity), "baz", this.output);
+                await client3.WaitForCompletionAsync(this.output);
+
+                string firstInstanceId = client1.InstanceId;
+                string secondInstanceId = client2.InstanceId;
+                string thirdInstanceId = client3.InstanceId;
+                string fourthInstanceId = "00000000";
+                var instanceIdList = new List<string> { firstInstanceId, secondInstanceId, thirdInstanceId, fourthInstanceId };
+
+                var purgeResult = await client1.InnerClient.PurgeInstanceHistoryAsync(instanceIdList);
+
+                Assert.Equal("3", purgeResult.InstancesDeleted.ToString());
+                await host.StopAsync();
+            }
+        }
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [MemberData(nameof(TestDataGenerator.GetBooleanAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task Purge_All_History_By_TimePeriod(bool extendedSessions, string storageProvider)
         {

@@ -485,6 +485,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc />
+        async Task<IList<DurableOrchestrationStatus>> IDurableOrchestrationClient.GetStatusAsync(IEnumerable<string> instanceIds, bool showHistory, bool showHistoryOutput, bool showInput)
+        {
+            var tasks = instanceIds.Select(instanceId => ((IDurableOrchestrationClient)this).GetStatusAsync(instanceId));
+            var results = await Task.WhenAll(tasks);
+            return results;
+        }
+
+        /// <inheritdoc />
         async Task<IList<DurableOrchestrationStatus>> IDurableOrchestrationClient.GetStatusAsync(DateTime? createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationRuntimeStatus> runtimeStatus, CancellationToken cancellationToken)
         {
             return await this.GetAllStatusHelper(createdTimeFrom, createdTimeTo, runtimeStatus, cancellationToken);
@@ -561,6 +569,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         async Task<PurgeHistoryResult> IDurableOrchestrationClient.PurgeInstanceHistoryAsync(string instanceId)
         {
             return await this.DurabilityProvider.PurgeInstanceHistoryByInstanceId(instanceId);
+        }
+
+        async Task<PurgeHistoryResult> IDurableOrchestrationClient.PurgeInstanceHistoryAsync(IEnumerable<string> instanceIds)
+        {
+            var tasks = instanceIds.Select(instanceId => this.DurabilityProvider.PurgeInstanceHistoryByInstanceId(instanceId));
+            var results = await Task.WhenAll(tasks);
+            var instancesDeleted = 0;
+            foreach (var purgeHistoryResult in results)
+            {
+                instancesDeleted += purgeHistoryResult.InstancesDeleted;
+            }
+
+            PurgeHistoryResult result = new PurgeHistoryResult(instancesDeleted: instancesDeleted);
+            return result;
         }
 
         /// <inheritdoc />
