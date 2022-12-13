@@ -46,7 +46,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             OrchestrationRuntimeState? runtimeState = dispatchContext.GetProperty<OrchestrationRuntimeState>();
             if (runtimeState == null)
             {
-                // This should never happen, but it's almost certainly non-retriable if it does.
+                // This should never happen, but it's almost certainly non-retryable if it does.
                 dispatchContext.SetProperty(OrchestratorExecutionResult.ForFailure(
                     message: "Orchestration runtime state was missing!",
                     details: null));
@@ -56,7 +56,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             OrchestrationInstance? instance = dispatchContext.GetProperty<OrchestrationInstance>();
             if (instance == null)
             {
-                // This should never happen, but it's almost certainly non-retriable if it does.
+                // This should never happen, but it's almost certainly non-retryable if it does.
                 dispatchContext.SetProperty(OrchestratorExecutionResult.ForFailure(
                     message: "Instance ID metadata was missing!",
                     details: null));

@@ -31,6 +31,7 @@ _Due: <1-business-days-before-release>_
 **DTFx Release Completion (assigned to: )**
 _Due: <release-deadline>_
 - [ ] Publish DTFx packages to nuget (directly to nuget.org).
+- [ ] Delete `Microsoft.DurableTask.Sidecar.Protobuf` from MyGet, and publish it to NuGet _iff_ it was updated as an Extension dependency. 
 - [ ] Publish release notes for DTFx.
 - [ ] Patch increment DTFx packages that were released (either DT-AzureStorage only or if there were Core changes DT-AzureStorage, DT-Core, DT-Emulator, and DT-Redis)
 

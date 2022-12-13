@@ -199,6 +199,9 @@
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient.Microsoft#Azure#WebJobs#Extensions#DurableTask#IDurableOrchestrationClient#GetStatusAsync(System.String,System.Boolean,System.Boolean,System.Boolean)">
             <inheritdoc />
         </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient.Microsoft#Azure#WebJobs#Extensions#DurableTask#IDurableOrchestrationClient#GetStatusAsync(System.Collections.Generic.IEnumerable{System.String},System.Boolean,System.Boolean,System.Boolean)">
+            <inheritdoc />
+        </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient.Microsoft#Azure#WebJobs#Extensions#DurableTask#IDurableOrchestrationClient#GetStatusAsync(System.Nullable{System.DateTime},System.Nullable{System.DateTime},System.Collections.Generic.IEnumerable{Microsoft.Azure.WebJobs.Extensions.DurableTask.OrchestrationRuntimeStatus},System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
@@ -1042,9 +1045,19 @@
             </summary>
             <param name="instanceId">The ID of the orchestration instance to query.</param>
             <param name="showHistory">Boolean marker for including execution history in the response.</param>
-            <param name="showHistoryOutput">Boolean marker for including input and output in the execution history response.</param>
-            <param name="showInput">If set, fetch and return the input for the orchestration instance.</param>
+            <param name="showHistoryOutput">Boolean marker for including output in the execution history response.</param>
+            <param name="showInput">If set, fetch and return the input for the orchestration instance. If both <c>showHistory</c> and <see cref = "P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.StoreInputsInOrchestrationHistory" /> are also set to<c>true</c>, then the inputs for activity and sub-orchestration events in the orchestration history will also be returned.</param>
             <returns>Returns a task which completes when the status has been fetched.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient.GetStatusAsync(System.Collections.Generic.IEnumerable{System.String},System.Boolean,System.Boolean,System.Boolean)">
+            <summary>
+            Get the status of multiple instances.
+            </summary>
+            <param name="instanceIds"> The instanceIDs to query.</param>
+            <param name="showHistory">Boolean marker for including execution history in the response.</param>
+            <param name="showHistoryOutput">Boolean marker for including input and output in the execution history response.</param>
+            <param name="showInput">If set, fetch and return the input for the orchestration instance. If both <c>showHistory</c> and <see cref = "P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.StoreInputsInOrchestrationHistory" /> are also set to<c>true</c>, then the inputs for activity and sub-orchestration events in the orchestration history will also be returned.</param>
+            <returns>Returns a list of orchestration statuses.</returns>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient.GetStatusAsync(System.Nullable{System.DateTime},System.Nullable{System.DateTime},System.Collections.Generic.IEnumerable{Microsoft.Azure.WebJobs.Extensions.DurableTask.OrchestrationRuntimeStatus},System.Threading.CancellationToken)">
             <summary>
@@ -1062,6 +1075,17 @@
             </summary>
             <param name="instanceId">The ID of the orchestration instance to purge.</param>
             <returns>Returns an instance of <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.PurgeHistoryResult"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient.PurgeInstanceHistoryAsync(System.Collections.Generic.IEnumerable{System.String})">
+            <summary>
+            Purge the history for multiple instances.
+            </summary>
+            <param name="instanceIds">The IDs of the orchestration instances to purge.</param>
+            <returns>
+            Returns a list of orchestration statuses. The length and order of the returned list will match the length and
+            order of <paramref name="instanceIds"/>. If any instance ID doesn't exist, a <c>null</c> value will be set in
+            the corresponding list element.
+            </returns>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient.PurgeInstanceHistoryAsync(System.DateTime,System.Nullable{System.DateTime},System.Collections.Generic.IEnumerable{DurableTask.Core.OrchestrationStatus})">
             <summary>
@@ -3598,6 +3622,11 @@
             Java.
             </summary>
         </member>
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.WorkerRuntimeType.Custom">
+            <summary>
+            Custom handler (see https://learn.microsoft.com/en-us/azure/azure-functions/functions-custom-handlers).
+            </summary>
+        </member>
         <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.WorkerRuntimeType.Unknown">
             <summary>
             Unknown worker runtime.
@@ -4314,6 +4343,11 @@
             If true, takes a lease on the task hub container, allowing for only one app to process messages in a task hub at a time.
             </summary>
         </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.StoreInputsInOrchestrationHistory">
+            <summary>
+            If <c>true</c>, the inputs of functions called by the orchestrator will be saved to the orchestration history, making them visible to debugging tools. The default value is <c>false</c>.
+            </summary>
+        </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.AppLeaseOptions">
             <summary>
             If UseAppLease is true, gets or sets the AppLeaaseOptions used for acquiring the lease to start the application.
@@ -4609,7 +4643,7 @@
         <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationProtocol.MiddlewarePassthrough">
             <summary>
             Out-of-proc works by forwarding all outputs directly to the Durable Task Framework
-            without using any orchestrator "shims" or attemping any interpretation. This is
+            without using any orchestrator "shims" or attempting any interpretation. This is
             sometimes referred to as "out of proc v2".
             </summary>
         </member>
