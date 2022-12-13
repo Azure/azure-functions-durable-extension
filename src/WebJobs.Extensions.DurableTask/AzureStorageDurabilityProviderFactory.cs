@@ -201,6 +201,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 AppName = EndToEndTraceHelper.LocalAppName,
                 LoggerFactory = this.loggerFactory,
                 UseLegacyPartitionManagement = this.azureStorageOptions.UseLegacyPartitionManagement,
+                MemoryLimitBytes = AppServicesHostingUtility.GetMemoryLimitBytes(),
             };
 
             if (this.inConsumption)
