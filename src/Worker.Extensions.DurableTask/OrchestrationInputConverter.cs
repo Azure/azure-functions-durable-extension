@@ -32,8 +32,8 @@ internal class OrchestrationInputConverter : IInputConverter
     /// <inheritdoc />
     public ValueTask<ConversionResult> ConvertAsync(ConverterContext context)
     {
-        // We only bind if:
-        // 1. The "Source" is null - IE: there are no declared biding parameters.
+        // We only convert if:
+        // 1. The "Source" is null - IE: there are no declared binding parameters.
         // 2. We have a cached input.
         // 3. The TargetType matches our cached type.
         // If these are met, then we assume this parameter is the orchestration input.
