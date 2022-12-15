@@ -16,21 +16,21 @@ internal class FunctionsOrchestrator : ITaskOrchestrator
     private readonly FunctionContext functionContext;
     private readonly FunctionExecutionDelegate next;
     private readonly InputBindingData<object> contextBinding;
+    private readonly OrchestrationInputConverter.InputContext inputContext;
 
     public FunctionsOrchestrator(
         FunctionContext functionContext,
         FunctionExecutionDelegate next,
-        InputBindingData<object> contextBinding,
-        Type? inputType)
+        InputBindingData<object> contextBinding)
     {
         this.functionContext = functionContext;
         this.next = next;
         this.contextBinding = contextBinding;
-        this.InputType = inputType ?? typeof(object);
+        this.inputContext = OrchestrationInputConverter.GetInputContext(functionContext);
     }
 
     /// <inheritdoc />
-    public Type InputType { get; }
+    public Type InputType => this.inputContext.Type;
 
     /// <inheritdoc />
     public Type OutputType => typeof(object);
@@ -42,7 +42,7 @@ internal class FunctionsOrchestrator : ITaskOrchestrator
         // intercept any of the calls and inject our own logic or tracking.
         FunctionsOrchestrationContext wrapperContext = new(context, this.functionContext);
         this.contextBinding.Value = wrapperContext;
-        OrchestrationInputConverter.PrepareInput(this.functionContext, input);
+        this.inputContext.PrepareInput(input);
 
         // This method will advance to the next middleware and throw if it detects an asynchronous execution.
         await EnsureSynchronousExecution(this.functionContext, this.next, wrapperContext);

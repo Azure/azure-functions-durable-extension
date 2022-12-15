@@ -17,7 +17,7 @@ internal class DurableTaskFunctionsMiddleware : IFunctionsWorkerMiddleware
     /// <inheritdoc />
     public async Task Invoke(FunctionContext functionContext, FunctionExecutionDelegate next)
     {
-        if (!IsOrchestrationTrigger(functionContext, out BindingMetadata? triggerMetadata, out Type? inputType))
+        if (!IsOrchestrationTrigger(functionContext, out BindingMetadata? triggerMetadata))
         {
             await next(functionContext);
             return;
@@ -29,7 +29,7 @@ internal class DurableTaskFunctionsMiddleware : IFunctionsWorkerMiddleware
             throw new InvalidOperationException("Orchestration history state was either missing from the input or not a string value.");
         }
 
-        FunctionsOrchestrator orchestrator = new(functionContext, next, triggerInputData, inputType);
+        FunctionsOrchestrator orchestrator = new(functionContext, next, triggerInputData);
         string orchestratorOutput = GrpcOrchestrationRunner.LoadAndRun(
             encodedOrchestratorState, orchestrator, functionContext.InstanceServices);
 
@@ -38,38 +38,18 @@ internal class DurableTaskFunctionsMiddleware : IFunctionsWorkerMiddleware
     }
 
     private static bool IsOrchestrationTrigger(
-        FunctionContext context,
-        [NotNullWhen(true)] out BindingMetadata? orchestrationTriggerBinding,
-        out Type? inputType)
+        FunctionContext context, [NotNullWhen(true)] out BindingMetadata? orchestrationTriggerBinding)
     {
-        static Type? GetInputType(FunctionDefinition definition)
-        {
-            foreach (FunctionParameter parameter in definition.Parameters)
-            {
-                if (!definition.InputBindings.ContainsKey(parameter.Name)
-                    && !definition.OutputBindings.ContainsKey(parameter.Name))
-                {
-                    // We assume the first parameter with exactly 0 bindings is the input.
-                    return parameter.Type;
-                }
-            }
-
-            return null;
-        }
-
-        FunctionDefinition definition = context.FunctionDefinition;
-        foreach (BindingMetadata binding in definition.InputBindings.Values)
+        foreach (BindingMetadata binding in context.FunctionDefinition.InputBindings.Values)
         {
             if (string.Equals(binding.Type, "orchestrationTrigger"))
             {
                 orchestrationTriggerBinding = binding;
-                inputType = GetInputType(definition);
                 return true;
             }
         }
 
         orchestrationTriggerBinding = null;
-        inputType = null;
         return false;
     }
 }
