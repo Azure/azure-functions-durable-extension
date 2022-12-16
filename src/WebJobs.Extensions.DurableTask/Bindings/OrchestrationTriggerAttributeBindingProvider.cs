@@ -20,7 +20,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     {
         private readonly DurableTaskExtension config;
         private readonly string connectionName;
-        private static readonly JsonSerializer jsonSerializer = JsonSerializer.Create();
+        private static readonly JsonSerializer DefaultSerializer = JsonSerializer.Create();
 
         public OrchestrationTriggerAttributeBindingProvider(
             DurableTaskExtension config,
@@ -199,7 +199,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             private static string OrchestrationContextToString(DurableOrchestrationContext arg)
             {
-                var history = JArray.FromObject(arg.History, jsonSerializer);
+                var history = JArray.FromObject(arg.History, DefaultSerializer);
                 var input = arg.GetInputAsJson();
 
                 // due to Python only supporting up to SchemaVersion V2 from SDK versions 1.1.0 to 1.1.3,
