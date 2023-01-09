@@ -22,12 +22,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly string connectionName;
         private static readonly JsonSerializer DefaultSerializer = JsonSerializer.Create();
 
+#pragma warning disable CS0612 // Type or member is obsolete
+        private readonly IPlatformInformation platormInformation;
+#pragma warning restore CS0612 // Type or member is obsolete
+
         public OrchestrationTriggerAttributeBindingProvider(
             DurableTaskExtension config,
-            string connectionName)
+            string connectionName,
+#pragma warning disable CS0612 // Type or member is obsolete
+            IPlatformInformation platormInformationService)
+#pragma warning restore CS0612 // Type or member is obsolete
         {
             this.config = config;
             this.connectionName = connectionName;
+            this.platormInformation = platormInformationService;
         }
 
         public Task<ITriggerBinding?> TryCreateAsync(TriggerBindingProviderContext context)
@@ -59,31 +67,41 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             this.config.RegisterOrchestrator(orchestratorName, null);
-            var binding = new OrchestrationTriggerBinding(this.config, parameter, orchestratorName, this.connectionName);
+            var binding = new OrchestrationTriggerBinding(this.config, parameter, orchestratorName, this.connectionName, this.platormInformation);
             return Task.FromResult<ITriggerBinding?>(binding);
         }
 
         private class OrchestrationTriggerBinding : ITriggerBinding
         {
             private static readonly IReadOnlyDictionary<string, object?> EmptyBindingData = new Dictionary<string, object?>(capacity: 0);
-            private static readonly JsonSerializerSettings JsonSettings = new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.Auto };
+
+            private static readonly JsonSerializerSettings TypePreservingSerializerSettings = new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.Auto };
+            private static readonly JsonSerializer TypePreservingSerializer = JsonSerializer.Create(TypePreservingSerializerSettings);
 
             private readonly DurableTaskExtension config;
             private readonly ParameterInfo parameterInfo;
             private readonly FunctionName orchestratorName;
             private readonly string connectionName;
 
+#pragma warning disable CS0612 // Type or member is obsolete
+            private readonly IPlatformInformation platormInformation;
+#pragma warning restore CS0612 // Type or member is obsolete
+
             public OrchestrationTriggerBinding(
                 DurableTaskExtension config,
                 ParameterInfo parameterInfo,
                 FunctionName orchestratorName,
-                string connectionName)
+                string connectionName,
+#pragma warning disable CS0612 // Type or member is obsolete
+                IPlatformInformation platormInformationService)
+#pragma warning restore CS0612 // Type or member is obsolete
             {
                 this.config = config;
                 this.parameterInfo = parameterInfo;
                 this.orchestratorName = orchestratorName;
                 this.connectionName = connectionName;
                 this.BindingDataContract = GetBindingDataContract(parameterInfo);
+                this.platormInformation = platormInformationService;
             }
 
             // Out-of-proc V2 uses a different trigger value type
@@ -125,7 +143,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     }
                     else if (destinationType == typeof(string))
                     {
-                        convertedValue = OrchestrationContextToString(orchestrationContext);
+                        convertedValue = this.OrchestrationContextToString(orchestrationContext);
                     }
 
                     var contextValueProvider = new ObjectValueProvider(
@@ -197,10 +215,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return Task.FromResult<IListener>(listener);
             }
 
-            private static string OrchestrationContextToString(DurableOrchestrationContext arg)
+            private string OrchestrationContextToString(DurableOrchestrationContext arg)
             {
-                var history = JArray.FromObject(arg.History, DefaultSerializer);
                 var input = arg.GetInputAsJson();
+
+                var usesExternalDurableSDK = this.platormInformation.UsesExternalPowerShellSDK();
+                JsonSerializer serializer = usesExternalDurableSDK ? TypePreservingSerializer : DefaultSerializer;
+                var history = JArray.FromObject(arg.History, serializer);
 
                 // due to Python only supporting up to SchemaVersion V2 from SDK versions 1.1.0 to 1.1.3,
                 // we need a new upperSchemaVersion field  to track schema values larger than V2.

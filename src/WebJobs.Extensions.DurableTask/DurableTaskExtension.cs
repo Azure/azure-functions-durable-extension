@@ -418,7 +418,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 : null;
 
             context.AddBindingRule<OrchestrationTriggerAttribute>()
-                .BindToTrigger(new OrchestrationTriggerAttributeBindingProvider(this, connectionName));
+                .BindToTrigger(new OrchestrationTriggerAttributeBindingProvider(this, connectionName, this.PlatformInformationService));
 
             context.AddBindingRule<ActivityTriggerAttribute>()
                 .BindToTrigger(new ActivityTriggerAttributeBindingProvider(this, connectionName));
