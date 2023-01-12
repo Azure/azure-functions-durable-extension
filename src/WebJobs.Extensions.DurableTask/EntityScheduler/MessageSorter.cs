@@ -30,6 +30,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
         public DateTime SendHorizon { get; set; }
 
+        [JsonIgnore]
+        public int? NumMessages { get; set; }
+
+        [JsonIgnore]
+        public int? NumSources { get; set; }
+
+        [JsonIgnore]
+        public int? NumDestinations { get; set; }
+
         /// <summary>
         /// Used for testing purposes.
         /// </summary>
@@ -48,8 +57,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             DateTime timestamp = now;
 
+            bool countingEntries = false;
+            int destinationCount = 0;
+
             if (this.SendHorizon + reorderWindow + MinIntervalBetweenCollections < now)
             {
+                countingEntries = true;
+
                 this.SendHorizon = now - reorderWindow;
 
                 // clean out send clocks that are past the reorder window
@@ -64,6 +78,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         {
                             expired.Add(kvp.Key);
                         }
+                        else
+                        {
+                            destinationCount++;
+                        }
                     }
 
                     foreach (var t in expired)
@@ -71,11 +89,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         this.LastSentToInstance.Remove(t);
                     }
                 }
+
+                this.NumDestinations = destinationCount;
             }
 
             if (this.LastSentToInstance == null)
             {
                 this.LastSentToInstance = new Dictionary<string, DateTime>(StringComparer.OrdinalIgnoreCase);
+                destinationCount++;
             }
             else if (this.LastSentToInstance.TryGetValue(destination, out var last))
             {
@@ -87,9 +108,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     timestamp = new DateTime(last.Ticks + 1);
                 }
             }
+            else
+            {
+                destinationCount++;
+            }
 
             message.Timestamp = timestamp;
             this.LastSentToInstance[destination] = timestamp;
+
+            this.NumDestinations = countingEntries ? destinationCount : null;
         }
 
         /// <summary>
@@ -105,9 +132,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 yield break;
             }
 
+            bool countingEntries = false;
+            int sourceCount = 0;
+            int messageCount = 0;
+
             // advance the horizon based on the latest timestamp
             if (this.ReceiveHorizon + reorderWindow + MinIntervalBetweenCollections < message.Timestamp)
             {
+                countingEntries = true;
+
                 this.ReceiveHorizon = message.Timestamp - reorderWindow;
 
                 // deliver any messages that were held in the receive buffers
@@ -134,6 +167,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         {
                             emptyReceiveBuffers.Add(kvp.Key);
                         }
+                        else
+                        {
+                            sourceCount++;
+                            messageCount += kvp.Value.Buffered?.Count() ?? 0;
+                        }
                     }
 
                     foreach (var t in emptyReceiveBuffers)
@@ -153,6 +191,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 // Just pass the message through.
                 yield return message;
+
+                this.NumSources = countingEntries ? sourceCount : null;
+                this.NumMessages = countingEntries ? messageCount : null;
                 yield break;
             }
 
@@ -169,6 +210,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     ExecutionId = message.ParentExecutionId,
                 };
+
+                sourceCount++;
             }
             else if (receiveBuffer.ExecutionId != message.ParentExecutionId)
             {
@@ -178,6 +221,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     foreach (var kvp in receiveBuffer.Buffered)
                     {
                         yield return kvp.Value;
+                        messageCount--;
                     }
 
                     receiveBuffer.Buffered.Clear();
@@ -203,6 +247,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
 
                 receiveBuffer.Buffered[message.Timestamp] = message;
+                messageCount++;
             }
             else
             {
@@ -213,8 +258,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 while (this.TryDeliverNextMessage(receiveBuffer, out var next))
                 {
                     yield return next;
+                    messageCount--;
                 }
             }
+
+            this.NumSources = countingEntries ? sourceCount : null;
+            this.NumMessages = countingEntries ? messageCount : null;
         }
 
         private bool TryDeliverNextMessage(ReceiveBuffer buffer, out RequestMessage message)
