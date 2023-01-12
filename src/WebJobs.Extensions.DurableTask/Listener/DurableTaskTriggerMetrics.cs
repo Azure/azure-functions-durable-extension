@@ -5,7 +5,10 @@ using Microsoft.Azure.WebJobs.Host.Scale;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
-    internal class DurableTaskTriggerMetrics : ScaleMetrics
+    /// <summary>
+    /// Metrics used in scaling decisions for a Durable Task Trigger.
+    /// </summary>
+    public class DurableTaskTriggerMetrics : ScaleMetrics
     {
         /// <summary>
         /// The number of partitions in the task hub.

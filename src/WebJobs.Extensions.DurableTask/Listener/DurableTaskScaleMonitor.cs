@@ -14,7 +14,10 @@ using Newtonsoft.Json;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
-    internal sealed class DurableTaskScaleMonitor : IScaleMonitor<DurableTaskTriggerMetrics>
+    /// <summary>
+    /// Class used to monitor and make scale decisions for a DurableTask Trigger.
+    /// </summary>
+    public sealed class DurableTaskScaleMonitor : IScaleMonitor<DurableTaskTriggerMetrics>
     {
         private readonly string functionId;
         private readonly string functionName;
@@ -25,6 +28,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private DisconnectedPerformanceMonitor performanceMonitor;
 
+        /// <summary>
+        /// Creates an instance of the DurableTaskScaleMonitor class.
+        /// </summary>
+        /// <param name="functionId">The function id of the Durable function.</param>
+        /// <param name="functionName">The function name of the Durable function.</param>
+        /// <param name="hubName">Name of the hub used.</param>
+        /// <param name="storageAccount">Storage client used for Durable function backend.</param>
+        /// <param name="logger">Used to log events.</param>
+        /// <param name="performanceMonitor">Used to monitor performance of the Durable function.</param>
         public DurableTaskScaleMonitor(
             string functionId,
             string functionName,
