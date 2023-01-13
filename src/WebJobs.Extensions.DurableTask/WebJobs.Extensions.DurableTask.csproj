@@ -7,7 +7,7 @@
     <MajorVersion>2</MajorVersion>
     <MinorVersion>9</MinorVersion>
     <PatchVersion>1</PatchVersion>
-    <Version>$(MajorVersion).$(MinorVersion).$(PatchVersion)-preview</Version>
+    <Version>$(MajorVersion).$(MinorVersion).$(PatchVersion)-preview2</Version>
     <FileVersion>$(MajorVersion).$(MinorVersion).$(PatchVersion)</FileVersion>
     <AssemblyVersion>$(MajorVersion).0.0.0</AssemblyVersion>
     <Company>Microsoft Corporation</Company>
