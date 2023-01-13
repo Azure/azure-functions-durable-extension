@@ -841,8 +841,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             FunctionType functionType = FunctionType.Orchestrator;
 
-            //NOTE: we are disabling the event grid ETW events for now, so we can reuse the event ids
-            //EtwEventSource.Instance.EventGridNotificationCompleted(
+            // NOTE: we are disabling the event grid ETW events for now, so we can reuse the event ids
+            // EtwEventSource.Instance.EventGridNotificationCompleted(
             //    hubName,
             //    LocalAppName,
             //    LocalSlotName,
@@ -875,8 +875,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             FunctionType functionType = FunctionType.Orchestrator;
 
-            //NOTE: we are disabling the event grid ETW events for now, so we can reuse the event ids
-            //EtwEventSource.Instance.EventGridNotificationFailed(
+            // NOTE: we are disabling the event grid ETW events for now, so we can reuse the event ids
+            // EtwEventSource.Instance.EventGridNotificationFailed(
             //    hubName,
             //    LocalAppName,
             //    LocalSlotName,
@@ -909,8 +909,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             FunctionType functionType = FunctionType.Orchestrator;
 
-            //NOTE: we are disabling the event grid ETW events for now, so we can reuse the event ids
-            //EtwEventSource.Instance.EventGridNotificationException(
+            // NOTE: we are disabling the event grid ETW events for now, so we can reuse the event ids
+            // EtwEventSource.Instance.EventGridNotificationException(
             //    hubName,
             //    LocalAppName,
             //    LocalSlotName,

@@ -220,7 +220,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
         */
 
-
         [Event(210, Level = EventLevel.Informational, Version = 4)]
         public void EntityBatchCompleted(
             string TaskHub,
