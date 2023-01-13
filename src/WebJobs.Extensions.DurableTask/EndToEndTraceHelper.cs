@@ -841,20 +841,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             FunctionType functionType = FunctionType.Orchestrator;
 
-            EtwEventSource.Instance.EventGridNotificationCompleted(
-                hubName,
-                LocalAppName,
-                LocalSlotName,
-                functionName,
-                functionState,
-                instanceId,
-                details,
-                (int)statusCode,
-                reason,
-                functionType,
-                ExtensionVersion,
-                IsReplay: false,
-                latencyMs);
+            //NOTE: we are disabling the event grid ETW events for now, so we can reuse the event ids
+            //EtwEventSource.Instance.EventGridNotificationCompleted(
+            //    hubName,
+            //    LocalAppName,
+            //    LocalSlotName,
+            //    functionName,
+            //    functionState,
+            //    instanceId,
+            //    details,
+            //    (int)statusCode,
+            //    reason,
+            //    functionType,
+            //    ExtensionVersion,
+            //    IsReplay: false,
+            //    latencyMs);
 
             this.logger.LogInformation(
                 "{instanceId}: Function '{functionName} ({functionType})' sent a '{functionState}' notification event to Azure Event Grid. Status code: {statusCode}. Details: {details}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}. Latency: {latencyMs} ms.",
@@ -874,20 +875,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             FunctionType functionType = FunctionType.Orchestrator;
 
-            EtwEventSource.Instance.EventGridNotificationFailed(
-                hubName,
-                LocalAppName,
-                LocalSlotName,
-                functionName,
-                functionState,
-                instanceId,
-                details,
-                (int)statusCode,
-                reason,
-                functionType,
-                ExtensionVersion,
-                IsReplay: false,
-                latencyMs);
+            //NOTE: we are disabling the event grid ETW events for now, so we can reuse the event ids
+            //EtwEventSource.Instance.EventGridNotificationFailed(
+            //    hubName,
+            //    LocalAppName,
+            //    LocalSlotName,
+            //    functionName,
+            //    functionState,
+            //    instanceId,
+            //    details,
+            //    (int)statusCode,
+            //    reason,
+            //    functionType,
+            //    ExtensionVersion,
+            //    IsReplay: false,
+            //    latencyMs);
 
             this.logger.LogError(
                 "{instanceId}: Function '{functionName} ({functionType})' failed to send a '{functionState}' notification event to Azure Event Grid. Status code: {statusCode}. Details: {details}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}. Latency: {latencyMs} ms.",
@@ -907,21 +909,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             FunctionType functionType = FunctionType.Orchestrator;
 
-            EtwEventSource.Instance.EventGridNotificationException(
-                hubName,
-                LocalAppName,
-                LocalSlotName,
-                functionName,
-                functionState,
-                ExtensionVersion,
-                instanceId,
-                details,
-                exception.Message,
-                reason,
-                functionType,
-                ExtensionVersion,
-                IsReplay: false,
-                latencyMs);
+            //NOTE: we are disabling the event grid ETW events for now, so we can reuse the event ids
+            //EtwEventSource.Instance.EventGridNotificationException(
+            //    hubName,
+            //    LocalAppName,
+            //    LocalSlotName,
+            //    functionName,
+            //    functionState,
+            //    ExtensionVersion,
+            //    instanceId,
+            //    details,
+            //    exception.Message,
+            //    reason,
+            //    functionType,
+            //    ExtensionVersion,
+            //    IsReplay: false,
+            //    latencyMs);
 
             this.logger.LogError(
                 "{instanceId}: Function '{functionName} ({functionType})', failed to send a '{functionState}' notification event to Azure Event Grid. Exception message: {exceptionMessage}. Details: {details}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}. Latency: {latencyMs} ms.",
