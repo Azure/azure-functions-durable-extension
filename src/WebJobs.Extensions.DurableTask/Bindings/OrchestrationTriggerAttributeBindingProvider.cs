@@ -219,8 +219,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 var input = arg.GetInputAsJson();
 
-                var usesExternalDurableSDK = this.platormInformation.UsesExternalPowerShellSDK();
-                JsonSerializer serializer = usesExternalDurableSDK ? TypePreservingSerializer : DefaultSerializer;
+                var usesExternalPowerShellSDK = this.platormInformation.UsesExternalPowerShellSDK();
+                JsonSerializer serializer = usesExternalPowerShellSDK ? TypePreservingSerializer : DefaultSerializer;
                 var history = JArray.FromObject(arg.History, serializer);
 
                 // due to Python only supporting up to SchemaVersion V2 from SDK versions 1.1.0 to 1.1.3,
