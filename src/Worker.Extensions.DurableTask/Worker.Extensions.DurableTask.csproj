@@ -39,8 +39,8 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Core" Version="1.8.0" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Abstractions" Version="1.1.0" />
-    <PackageReference Include="Microsoft.DurableTask.Client.Grpc" Version="1.0.0-rc.1" />
-    <PackageReference Include="Microsoft.DurableTask.Worker.Grpc" Version="1.0.0-rc.1" />
+    <PackageReference Include="Microsoft.DurableTask.Client.Grpc" Version="1.0.0-rc.2" />
+    <PackageReference Include="Microsoft.DurableTask.Worker.Grpc" Version="1.0.0-rc.2" />
   </ItemGroup>
 
   <ItemGroup>
