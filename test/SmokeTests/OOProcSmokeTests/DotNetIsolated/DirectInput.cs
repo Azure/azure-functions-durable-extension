@@ -27,7 +27,7 @@ public static class DirectInput
         FunctionContext executionContext)
     {
         ILogger logger = executionContext.GetLogger(nameof(DirectInput));
-        Input? input = await req.ReadFromJsonAsync<Input>();
+        MyInput? input = await req.ReadFromJsonAsync<MyInput>();
         string orchestrationName = input!.DirectInput ? WithInputName : NoInputName;
         string instanceId = await durableContext.Client.ScheduleNewOrchestrationInstanceAsync(orchestrationName, input);
         logger.LogInformation("Created new orchestration with instance ID = {instanceId}", instanceId);
@@ -36,7 +36,7 @@ public static class DirectInput
 
     [Function(WithInputName)]
     public static Task<string> WithInputParameter(
-        [OrchestrationTrigger] TaskOrchestrationContext context, Input input, FunctionContext functionContext)
+        [OrchestrationTrigger] TaskOrchestrationContext context, MyInput input, FunctionContext functionContext)
     {
         return InputOrchestrationImpl(context, input, functionContext);
     }
@@ -45,12 +45,12 @@ public static class DirectInput
     public static Task<string> NoInputParameter(
         [OrchestrationTrigger] TaskOrchestrationContext context, FunctionContext functionContext)
     {
-        Input input = context.GetInput<Input>()!;
+        MyInput input = context.GetInput<MyInput>()!;
         return InputOrchestrationImpl(context, input, functionContext);
     }
 
     [Function(ActivityName)]
-    public static string Activity([ActivityTrigger] Input input, FunctionContext executionContext)
+    public static string Activity([ActivityTrigger] MyInput input, FunctionContext executionContext)
     {
         ILogger logger = executionContext.GetLogger(ActivityName);
         logger.LogInformation("Received input {input}", input);
@@ -58,12 +58,12 @@ public static class DirectInput
     }
 
     private static async Task<string> InputOrchestrationImpl(
-        TaskOrchestrationContext context, Input input, FunctionContext functionContext)
+        TaskOrchestrationContext context, MyInput input, FunctionContext functionContext)
     {
         string result = await context.CallActivityAsync<string>(ActivityName, input) + ", ";
-        result += await context.CallActivityAsync<string>(ActivityName, new Input(functionContext.FunctionId, 1, true));
+        result += await context.CallActivityAsync<string>(ActivityName, new MyInput(functionContext.FunctionId, 1, true));
         return result;
     }
 
-    public record Input(string PropA, int PropB, bool DirectInput);
+    public record MyInput(string PropA, int PropB, bool DirectInput);
 }

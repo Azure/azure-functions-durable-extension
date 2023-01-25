@@ -104,6 +104,7 @@ internal class OrchestrationInputConverter : IInputConverter
         /// <param name="input">The input.</param>
         public void PrepareInput(object? input)
         {
+            // Short circuit if there is no input for our converter to handle, or if we have already prepared it.
             if (this.type is null || input is null || this.context.Items.ContainsKey(OrchestrationInputKey))
             {
                 return;
