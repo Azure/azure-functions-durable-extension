@@ -6,6 +6,7 @@ using System.Net;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.Azure.Functions.Worker.Converters;
+using Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.DurableTask.Client;
 
@@ -77,10 +78,10 @@ internal sealed class DefaultDurableClientContext : DurableClientContext
     /// </summary>
     internal class Converter : IInputConverter
     {
-        private readonly IDurableTaskClientProvider clientProvider;
+        private readonly FunctionsDurableClientProvider clientProvider;
 
         // Constructor parameters are optional DI-injected services.
-        public Converter(IDurableTaskClientProvider clientProvider)
+        public Converter(FunctionsDurableClientProvider clientProvider)
         {
             this.clientProvider = clientProvider ?? throw new ArgumentNullException(nameof(clientProvider));
         }
@@ -91,25 +92,28 @@ internal sealed class DefaultDurableClientContext : DurableClientContext
             // It's never expected to be wrong, but we code defensively just in case.
             if (converterContext.Source is not string clientConfigText)
             {
-                return new ValueTask<ConversionResult>(ConversionResult.Failed(new InvalidOperationException($"Expected the Durable Task WebJobs SDK extension to send a string payload for {nameof(DurableClientAttribute)}.")));
-            }
-
-            DurableClientInputData? inputData = JsonSerializer.Deserialize<DurableClientInputData>(clientConfigText);
-            if (string.IsNullOrEmpty(inputData?.rpcBaseUrl))
-            {
-                InvalidOperationException exception = new("Failed to parse the input binding payload data");
-                return new ValueTask<ConversionResult>(ConversionResult.Failed(exception));
+                return new ValueTask<ConversionResult>(ConversionResult.Failed(
+                    new InvalidOperationException($"Expected the Durable Task WebJobs SDK extension to send a string payload for {nameof(DurableClientAttribute)}.")));
             }
 
             try
             {
-                DurableTaskClient client = this.clientProvider.GetClient(inputData?.rpcBaseUrl);
+                DurableClientInputData? inputData = JsonSerializer.Deserialize<DurableClientInputData>(clientConfigText);
+                if (string.IsNullOrEmpty(inputData?.rpcBaseUrl))
+                {
+                    throw new InvalidOperationException("Failed to parse the input binding payload data");
+                }
+
+                DurableTaskClient client = this.clientProvider.GetClient(
+                    inputData!.taskHubName ?? string.Empty, inputData!.rpcBaseUrl);
                 DefaultDurableClientContext clientContext = new(client, inputData!);
                 return new ValueTask<ConversionResult>(ConversionResult.Success(clientContext));
             }
             catch (Exception innerException)
             {
-                InvalidOperationException exception = new($"Failed to convert the input binding context data into a {nameof(DefaultDurableClientContext)} object. The data may have been delivered in an invalid format.", innerException);
+                InvalidOperationException exception = new(
+                    $"Failed to convert the input binding context data into a {nameof(DefaultDurableClientContext)} object. The data may have been delivered in an invalid format.",
+                    innerException);
                 return new ValueTask<ConversionResult>(ConversionResult.Failed(exception));
             }
         }
