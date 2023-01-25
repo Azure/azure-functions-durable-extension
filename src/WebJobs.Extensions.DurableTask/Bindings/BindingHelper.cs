@@ -39,7 +39,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 return JsonConvert.SerializeObject(new OrchestrationClientInputData
                 {
-                    TaskHubName = client.TaskHubName,
+                    TaskHubName = string.IsNullOrEmpty(attr.TaskHub) ? client.TaskHubName : attr.TaskHub,
+                    ConnectionName = attr.ConnectionName,
                     RpcBaseUrl = localRpcAddress,
                     RequiredQueryStringParameters = this.config.HttpApiHandler.GetUniversalQueryStrings(),
                 });
@@ -106,6 +107,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             [JsonProperty("taskHubName")]
             public string? TaskHubName { get; set; }
+
+            [JsonProperty("connectionName")]
+            public string? ConnectionName { get; set; }
 
             [JsonProperty("creationUrls")]
             public HttpCreationPayload? CreationUrls { get; set; }
