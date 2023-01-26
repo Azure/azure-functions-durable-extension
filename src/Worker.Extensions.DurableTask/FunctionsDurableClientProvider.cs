@@ -5,23 +5,30 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Grpc.Core;
 using Microsoft.DurableTask.Client;
 using Microsoft.DurableTask.Client.Grpc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+
+#if NET6_0_OR_GREATER
+using Grpc.Net.Client;
+#endif
+
+#if NETSTANDARD
+using GrpcChannel = Grpc.Core.Channel;
+#endif
 
 namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
 
 /// <summary>
 /// The functions implementation of the durable task client provider.
 /// </summary>
-internal class FunctionsDurableClientProvider : IAsyncDisposable
+internal partial class FunctionsDurableClientProvider : IAsyncDisposable
 {
     private readonly ReaderWriterLockSlim sync = new();
     private readonly ILoggerFactory loggerFactory;
     private readonly DurableTaskClientOptions options;
-    private Dictionary<(string Name, string Address), ClientHolder>? clients = new();
+    private Dictionary<ClientKey, ClientHolder>? clients = new();
 
     private bool disposed;
 
@@ -78,32 +85,22 @@ internal class FunctionsDurableClientProvider : IAsyncDisposable
     /// <summary>
     /// Gets a <see cref="DurableTaskClient" /> by name and gRPC endpoint.
     /// </summary>
-    /// <param name="taskHubName">
-    /// The name of the task hub this client is for. Can be <see cref="string.Empty" /> but not <c>null</c>.
-    /// </param>
-    /// <param name="grpcEndpointUri">The gRPC endpoint this client should connect to.</param>
+    /// <param name="endpoint">The gRPC endpoint this client should connect to.</param>
+    /// <param name="taskHub">The name of the task hub this client is for.</param>
+    /// <param name="connectionName">The name of the connection to use for the task-hub.</param>
     /// <returns>A <see cref="DurableTaskClient" />.</returns>
-    /// <exception cref="ArgumentNullException">If <paramref name="taskHubName" /> is null.</exception>
-    /// <exception cref="ArgumentException">If <paramref name="grpcEndpointUri" /> is an invalid URI.</exception>
-    public DurableTaskClient GetClient(string taskHubName, string grpcEndpointUri)
+    public DurableTaskClient GetClient(Uri endpoint, string? taskHub, string? connectionName)
     {
-        if (taskHubName is null)
-        {
-            throw new ArgumentNullException(nameof(taskHubName));
-        }
-
-        if (!Uri.TryCreate(grpcEndpointUri, UriKind.Absolute, out Uri uri))
-        {
-            throw new ArgumentException("Not a valid gRPC address.", nameof(grpcEndpointUri));
-        }
-
         this.VerifyNotDisposed();
         this.sync.EnterReadLock();
-        (string taskHubName, string address) key = (taskHubName, address);
+
+        taskHub ??= string.Empty;
+        connectionName ??= string.Empty;
+        ClientKey key = new(endpoint, taskHub, connectionName);
         try
         {
             this.VerifyNotDisposed();
-            if (this.clients!.TryGetValue(key, out ClientHolder holder))
+            if (this.clients!.TryGetValue(key, out ClientHolder? holder))
             {
                 return holder.Client;
             }
@@ -117,12 +114,12 @@ internal class FunctionsDurableClientProvider : IAsyncDisposable
         try
         {
             this.VerifyNotDisposed();
-            if (this.clients!.TryGetValue(key, out ClientHolder holder))
+            if (this.clients!.TryGetValue(key, out ClientHolder? holder))
             {
                 return holder.Client;
             }
 
-            Channel channel = new NamedClientChannel(taskHubName, address);
+            GrpcChannel channel = CreateChannel(key);
             GrpcDurableTaskClientOptions options = new()
             {
                 Channel = channel,
@@ -149,64 +146,12 @@ internal class FunctionsDurableClientProvider : IAsyncDisposable
         }
     }
 
-    // Custom channel to append our TaskHubName as a header.
-    private class NamedClientChannel : Channel
-    {
-        private readonly string name;
-
-        public NamedClientChannel(string name, string address)
-            : base(address, ChannelCredentials.Insecure)
-        {
-            this.name = name;
-        }
-
-        public override CallInvoker CreateCallInvoker()
-        {
-            return new NamedClientCallInvoker(this.name, this);
-        }
-    }
-
-    // Custom call invoker to append our TaskHubName as a header. Instantiated from NamedClientChannel.
-    private class NamedClientCallInvoker : DefaultCallInvoker
-    {
-        private readonly string name;
-
-        public NamedClientCallInvoker(string name, Channel channel)
-            : base(channel)
-        {
-            this.name = name;
-        }
-
-        protected override CallInvocationDetails<TRequest, TResponse> CreateCall<TRequest, TResponse>(
-            Method<TRequest, TResponse> method, string host, CallOptions options)
-        {
-            // Is there a better way to add a header to all calls from a channel?
-            options = options.WithHeaders(this.AddHeader(options.Headers));
-            return base.CreateCall(method, host, options);
-        }
-
-        private Metadata AddHeader(Metadata headers)
-        {
-            Metadata newHeaders = new();
-            if (headers is { Count: > 0 })
-            {
-                foreach (Metadata.Entry entry in headers)
-                {
-                    newHeaders.Add(entry);
-                }
-            }
-
-            newHeaders.Add("TaskHubName", this.name);
-            return newHeaders;
-        }
-    }
-
     // Wrapper class to conveniently dispose/shutdown the client and channel together.
     private class ClientHolder : IAsyncDisposable
     {
-        private readonly Channel channel;
+        private readonly GrpcChannel channel;
 
-        public ClientHolder(DurableTaskClient client, Channel channel)
+        public ClientHolder(DurableTaskClient client, GrpcChannel channel)
         {
             this.Client = client;
             this.channel = channel;
@@ -225,6 +170,32 @@ internal class FunctionsDurableClientProvider : IAsyncDisposable
             {
                 // dispose should not through and unsure how Channel multiple ShutdownAsync() calls behave.
             }
+        }
+    }
+
+    private record ClientKey(Uri Address, string? Name, string? Connection)
+    {
+        private readonly Dictionary<string, string> emptyHeaders = new();
+
+        public IReadOnlyDictionary<string, string> GetHeaders()
+        {
+            if (string.IsNullOrEmpty(this.Name) && string.IsNullOrEmpty(this.Connection))
+            {
+                return this.emptyHeaders;
+            }
+
+            Dictionary<string, string> headers = new();
+            if (!string.IsNullOrEmpty(this.Name))
+            {
+                headers["Durable-TaskHub"] = this.Name!;
+            }
+
+            if (!string.IsNullOrEmpty(this.Connection))
+            {
+                headers["Durable-ConnectionName"] = this.Connection!;
+            }
+
+            return headers;
         }
     }
 }
