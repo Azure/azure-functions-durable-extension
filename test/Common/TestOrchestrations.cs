@@ -1401,6 +1401,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
+        public static async Task<string> EntityWithPrivateSetter([OrchestrationTrigger] IDurableOrchestrationContext ctx)
+        {
+            var entityId = ctx.GetInput<EntityId>();
+
+            await ctx.CallEntityAsync(entityId, "Inc");
+
+            int result = await ctx.CallEntityAsync<int>(entityId, "Get");
+
+            if (result == 1)
+            {
+                return "ok";
+            }
+            else
+            {
+                return $"expected: 1 actual: {result}";
+            }
+        }
+
         public static async Task<bool> EntityProxyWithBindings([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
             var counter = ctx.GetInput<EntityId>();
