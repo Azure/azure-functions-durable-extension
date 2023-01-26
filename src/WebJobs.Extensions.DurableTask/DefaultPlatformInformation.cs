@@ -79,6 +79,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return string.Equals(value, "Dynamic", StringComparison.OrdinalIgnoreCase);
         }
 
+        public bool UsesExternalPowerShellSDK()
+        {
+            string? value = this.ReadEnviromentVariable("ExternalDurablePowerShellSDK");
+            var parsingSucceeded = bool.TryParse(value, out var usesExternalPowerShellSDK);
+            return parsingSucceeded ? usesExternalPowerShellSDK : false;
+        }
+
         public bool IsInConsumptionPlan()
         {
             return this.IsInLinuxConsumption() || this.IsInWindowsConsumption();
