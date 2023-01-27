@@ -23,7 +23,8 @@ internal sealed class FunctionsDurableTaskClient : DurableTaskClient
 
     public override ValueTask DisposeAsync()
     {
-        return this.inner.DisposeAsync();
+        // We do not dispose inner client as it has a longer life than this class.
+        return default;
     }
 
     public override AsyncPageable<OrchestrationMetadata> GetAllInstancesAsync(OrchestrationQuery? filter = null)
