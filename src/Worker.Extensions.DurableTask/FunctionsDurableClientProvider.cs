@@ -76,18 +76,18 @@ internal class FunctionsDurableClientProvider : IDurableTaskClientProvider, IAsy
 
     public DurableTaskClient GetClient(string? grpcEndpointUri)
     {
-        if (!Uri.TryCreate(grpcEndpointUri, UriKind.Absolute, out Uri uri))
+        if (!Uri.TryCreate(grpcEndpointUri, UriKind.Absolute, out Uri? uri))
         {
             throw new ArgumentException("Not a valid gRPC address.", nameof(grpcEndpointUri));
         }
 
-        string address = $"{uri.Host}:{uri.Port}";
+        string address = GetAddress(uri);
         this.VerifyNotDisposed();
         this.sync.EnterReadLock();
         try
         {
             this.VerifyNotDisposed();
-            if (this.clients!.TryGetValue(address, out DurableTaskClient client))
+            if (this.clients!.TryGetValue(address, out DurableTaskClient? client))
             {
                 return client;
             }
@@ -101,7 +101,7 @@ internal class FunctionsDurableClientProvider : IDurableTaskClientProvider, IAsy
         try
         {
             this.VerifyNotDisposed();
-            if (this.clients!.TryGetValue(address, out DurableTaskClient client))
+            if (this.clients!.TryGetValue(address, out DurableTaskClient? client))
             {
                 return client;
             }
@@ -121,6 +121,15 @@ internal class FunctionsDurableClientProvider : IDurableTaskClientProvider, IAsy
         {
             this.sync.ExitWriteLock();
         }
+    }
+
+    private static string GetAddress(Uri uri)
+    {
+#if NET6_0_OR_GREATER
+        return $"http://{uri.Host}:{uri.Port}";
+#else
+        return $"{uri.Host}:{uri.Port}";
+#endif
     }
 
     private void VerifyNotDisposed()

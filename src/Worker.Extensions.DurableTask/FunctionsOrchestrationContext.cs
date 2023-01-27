@@ -28,6 +28,7 @@ internal sealed partial class FunctionsOrchestrationContext : TaskOrchestrationC
         this.functionContext = functionContext;
         this.options = this.functionContext.InstanceServices
             .GetRequiredService<IOptions<DurableTaskWorkerOptions>>().Value;
+        this.LoggerFactory = functionContext.InstanceServices.GetRequiredService<ILoggerFactory>();
     }
 
     public bool IsAccessed { get; private set; }
@@ -41,6 +42,8 @@ internal sealed partial class FunctionsOrchestrationContext : TaskOrchestrationC
     public override bool IsReplaying => this.innerContext.IsReplaying;
 
     public override ParentOrchestrationInstance? Parent => this.innerContext.Parent;
+
+    protected override ILoggerFactory LoggerFactory { get; }
 
     public override T GetInput<T>()
     {
@@ -72,16 +75,6 @@ internal sealed partial class FunctionsOrchestrationContext : TaskOrchestrationC
         return this.innerContext.CallActivityAsync<T>(name, input, options);
     }
 
-    [Obsolete("Not yet supported")]
-    public override Task<T> CallActivityAsync<T>(
-        Func<object?, T> activityLambda,
-        object? input = null,
-        TaskOptions? options = null)
-    {
-        this.EnsureLegalAccess();
-        return this.innerContext.CallActivityAsync(activityLambda, input, options);
-    }
-
     public override Task<TResult> CallSubOrchestratorAsync<TResult>(
         TaskName orchestratorName, object? input = null, TaskOptions? options = null)
     {
@@ -89,7 +82,7 @@ internal sealed partial class FunctionsOrchestrationContext : TaskOrchestrationC
         return this.innerContext.CallSubOrchestratorAsync<TResult>(orchestratorName, input, options);
     }
 
-    public override void ContinueAsNew(object newInput, bool preserveUnprocessedEvents = true)
+    public override void ContinueAsNew(object? newInput = null, bool preserveUnprocessedEvents = true)
     {
         this.EnsureLegalAccess();
         this.innerContext.ContinueAsNew(newInput, preserveUnprocessedEvents);
