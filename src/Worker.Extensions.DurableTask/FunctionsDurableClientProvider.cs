@@ -168,7 +168,7 @@ internal partial class FunctionsDurableClientProvider : IAsyncDisposable
             }
             catch
             {
-                // dispose should not through and unsure how Channel multiple ShutdownAsync() calls behave.
+                // dispose should not throw and unsure how Channel multiple ShutdownAsync() calls behave.
             }
         }
     }

@@ -101,7 +101,8 @@ internal sealed class DefaultDurableClientContext : DurableClientContext
                 DurableClientInputData? inputData = JsonSerializer.Deserialize<DurableClientInputData>(clientConfigText);
                 if (!Uri.TryCreate(inputData?.rpcBaseUrl, UriKind.Absolute, out Uri? endpoint))
                 {
-                    throw new InvalidOperationException("Failed to parse the input binding payload data");
+                    return new ValueTask<ConversionResult>(ConversionResult.Failed(
+                        new InvalidOperationException("Failed to parse the input binding payload data")));
                 }
 
                 DurableTaskClient client = this.clientProvider.GetClient(endpoint, inputData?.taskHubName, inputData?.connectionName);
