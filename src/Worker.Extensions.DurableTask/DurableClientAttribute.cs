@@ -1,13 +1,16 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
+using Microsoft.Azure.Functions.Worker.Converters;
 using Microsoft.Azure.Functions.Worker.Extensions.Abstractions;
+using Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
 
 namespace Microsoft.Azure.Functions.Worker;
 
 /// <summary>
 /// Azure Functions attribute for binding a function parameter to a Durable Task client object.
 /// </summary>
+[InputConverter(typeof(DurableTaskClientConverter))]
 public sealed class DurableClientAttribute : InputBindingAttribute
 {
     /// <summary>
