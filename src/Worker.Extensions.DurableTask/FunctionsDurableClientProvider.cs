@@ -23,6 +23,9 @@ namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
 /// <summary>
 /// The functions implementation of the durable task client provider.
 /// </summary>
+/// <remarks>
+/// This class does NOT provide <see cref="FunctionsDurableTaskClient" /> is meant as a per-binding wrapper.
+/// </remarks>
 internal partial class FunctionsDurableClientProvider : IAsyncDisposable
 {
     private readonly ReaderWriterLockSlim sync = new();

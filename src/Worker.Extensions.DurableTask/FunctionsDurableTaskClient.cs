@@ -8,6 +8,10 @@ using Microsoft.DurableTask.Client;
 
 namespace Microsoft.Azure.Functions.Worker;
 
+/// <summary>
+/// A <b>per-binding</b> wrapper around an existing <see cref="DurableTaskClient" />. This is used to
+/// hold onto some binding-specific details for functions-specific features and behavior.
+/// </summary>
 internal sealed class FunctionsDurableTaskClient : DurableTaskClient
 {
     private readonly DurableTaskClient inner;
