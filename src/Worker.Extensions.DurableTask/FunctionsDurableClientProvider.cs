@@ -127,7 +127,7 @@ internal partial class FunctionsDurableClientProvider : IAsyncDisposable
             };
 
             ILogger logger = this.loggerFactory.CreateLogger<GrpcDurableTaskClient>();
-            GrpcDurableTaskClient client = new(string.Empty, options, logger);
+            GrpcDurableTaskClient client = new(taskHub, options, logger);
             holder = new(client, channel);
             this.clients[key] = holder;
             return client;
