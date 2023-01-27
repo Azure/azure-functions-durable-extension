@@ -4299,6 +4299,41 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
+        /// Test which validates that entity state deserialization
+        /// </summary>
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task DurableEntity_CustomIMessageSerializerSettingsFactory(bool classBased)
+        {
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.EntityWithPrivateSetter),
+            };
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.DurableEntity_CustomIMessageSerializerSettingsFactory),
+                enableExtendedSessions: false,
+                serializerSettings: new TestEntityClasses.CustomMessageSerializerSettingsFactory()))
+            {
+                await host.StartAsync();
+
+                string entityName = classBased ? nameof(TestEntities.EntityWithPrivateSetter_C) : nameof(TestEntities.EntityWithPrivateSetter_F);
+                var entityKey = new EntityId(entityName, Guid.NewGuid().ToString());
+
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], entityKey, this.output);
+
+                var status = await client.WaitForCompletionAsync(this.output);
+
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal("ok", status?.Output.ToString());
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
         /// Test which validates that orchestrations can call a timer after doing a continue as new.
         /// This is meant to catch regressions of azure/durabletask/#285.
         /// </summary>

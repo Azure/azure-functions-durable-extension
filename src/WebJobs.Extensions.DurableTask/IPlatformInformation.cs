@@ -112,5 +112,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </summary>
         /// <returns>The application container name.</returns>
         string GetContainerName();
+
+        /// <summary>
+        /// Determines whether the user has opted in to the external PowerShell SDK.
+        /// </summary>
+        /// <returns>True if the user has opted in to the external PowerShell SDK. False otherwise.</returns>
+        bool UsesExternalPowerShellSDK();
     }
 }

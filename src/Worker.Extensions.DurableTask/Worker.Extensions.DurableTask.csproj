@@ -30,7 +30,6 @@
 
     <!-- Version information -->
     <VersionPrefix>1.0.0</VersionPrefix>
-    <VersionSuffix>rc.1</VersionSuffix>
     <AssemblyVersion>$(VersionPrefix).0</AssemblyVersion>
     <!-- FileVersionRevision is expected to be set by the CI. -->
     <FileVersion Condition="'$(FileVersionRevision)' != ''">$(VersionPrefix).$(FileVersionRevision)</FileVersion>
@@ -39,8 +38,8 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Core" Version="1.8.0" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Abstractions" Version="1.1.0" />
-    <PackageReference Include="Microsoft.DurableTask.Client.Grpc" Version="1.0.0-rc.2" />
-    <PackageReference Include="Microsoft.DurableTask.Worker.Grpc" Version="1.0.0-rc.2" />
+    <PackageReference Include="Microsoft.DurableTask.Client.Grpc" Version="1.0.0" />
+    <PackageReference Include="Microsoft.DurableTask.Worker.Grpc" Version="1.0.0" />
   </ItemGroup>
 
   <ItemGroup>

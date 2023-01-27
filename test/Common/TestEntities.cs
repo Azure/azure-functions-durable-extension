@@ -345,5 +345,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 return (int)response.StatusCode;
             }
         }
+
+        //-------------- an entity that uses custom deserialization
+
+        public static Task EntityWithPrivateSetter_C([EntityTrigger(EntityName = "EntityWithPrivateSetter_C")] IDurableEntityContext context)
+        {
+            return context.DispatchAsync<TestEntityClasses.EntityWithPrivateSetter>();
+        }
+
+        public static Task EntityWithPrivateSetter_F([EntityTrigger(EntityName = "EntityWithPrivateSetter_F")] IDurableEntityContext context)
+        {
+            var state = context.GetState<TestEntityClasses.EntityWithPrivateSetter>(() => new TestEntityClasses.EntityWithPrivateSetter());
+
+            switch (context.OperationName)
+            {
+                case "Inc":
+                    state.Inc();
+                    context.SetState(state);
+                    break;
+
+                case "Get":
+                    context.Return(state.Get());
+                    break;
+            }
+
+            return Task.CompletedTask;
+        }
     }
 }
