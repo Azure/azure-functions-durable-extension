@@ -5,6 +5,7 @@ using Microsoft.DurableTask;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Logging;
+using Microsoft.DurableTask.Client;
 
 namespace DotNetIsolated.Typed;
 
@@ -14,13 +15,13 @@ public static class HelloCitiesTypedStarter
     /// HTTP-triggered function that starts the <see cref="HelloCitiesTyped"/> orchestration.
     /// </summary>
     /// <param name="req">The HTTP request that was used to trigger this function.</param>
-    /// <param name="durableContext">The Durable Functions client binding context object that is used to start and manage orchestration instances.</param>
+    /// <param name="client">The DurableTask client that is used to start and manage orchestration instances.</param>
     /// <param name="executionContext">The Azure Functions execution context, which is available to all function types.</param>
     /// <returns>Returns an HTTP response with more information about the started orchestration instance.</returns>
     [Function(nameof(StartHelloCitiesTyped))]
     public static async Task<HttpResponseData> StartHelloCitiesTyped(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestData req,
-        [DurableClient] DurableClientContext durableContext,
+        [DurableClient] DurableTaskClient client,
         FunctionContext executionContext)
     {
         ILogger logger = executionContext.GetLogger(nameof(StartHelloCitiesTyped));
@@ -29,10 +30,10 @@ public static class HelloCitiesTypedStarter
         // orchestrators that are defined in the current project. The name of the generated extension methods
         // are based on the names of the orchestrator classes. Note that the source generator will *not*
         // generate type-safe extension methods for non-class-based orchestrator functions.
-        string instanceId = await durableContext.Client.ScheduleNewHelloCitiesTypedInstanceAsync();
+        string instanceId = await client.ScheduleNewHelloCitiesTypedInstanceAsync();
         logger.LogInformation("Created new orchestration with instance ID = {instanceId}", instanceId);
 
-        return durableContext.CreateCheckStatusResponse(req, instanceId);
+        return client.CreateCheckStatusResponse(req, instanceId);
     }
 }
 

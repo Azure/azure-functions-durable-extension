@@ -23,6 +23,9 @@ namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
 /// <summary>
 /// The functions implementation of the durable task client provider.
 /// </summary>
+/// <remarks>
+/// This class does NOT provide <see cref="FunctionsDurableTaskClient" /> is meant as a per-binding wrapper.
+/// </remarks>
 internal partial class FunctionsDurableClientProvider : IAsyncDisposable
 {
     private readonly ReaderWriterLockSlim sync = new();
@@ -127,7 +130,7 @@ internal partial class FunctionsDurableClientProvider : IAsyncDisposable
             };
 
             ILogger logger = this.loggerFactory.CreateLogger<GrpcDurableTaskClient>();
-            GrpcDurableTaskClient client = new(string.Empty, options, logger);
+            GrpcDurableTaskClient client = new(taskHub, options, logger);
             holder = new(client, channel);
             this.clients[key] = holder;
             return client;

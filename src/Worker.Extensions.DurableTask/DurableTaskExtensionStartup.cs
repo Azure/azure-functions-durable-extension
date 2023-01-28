@@ -54,7 +54,12 @@ public sealed class DurableTaskExtensionStartup : WorkerExtensionStartup
             return new DurableTaskShimFactory(options, factory); // For GrpcOrchestrationRunner
         });
 
-        applicationBuilder.Services.Configure<WorkerOptions>(o => o.InputConverters.Register<OrchestrationInputConverter>());
+        applicationBuilder.Services.Configure<WorkerOptions>(o =>
+        {
+            o.InputConverters.RegisterAt<DurableTaskClientConverter>(0);
+            o.InputConverters.Register<OrchestrationInputConverter>();
+        });
+
         applicationBuilder.UseMiddleware<DurableTaskFunctionsMiddleware>();
     }
 

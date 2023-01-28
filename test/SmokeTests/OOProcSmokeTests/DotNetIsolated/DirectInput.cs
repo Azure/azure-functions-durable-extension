@@ -4,6 +4,7 @@
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.DurableTask;
+using Microsoft.DurableTask.Client;
 using Microsoft.Extensions.Logging;
 
 namespace DurableNetIsolated.Untyped;
@@ -23,15 +24,15 @@ public static class DirectInput
     [Function(nameof(DirectInput))]
     public static async Task<HttpResponseData> Start(
         [HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequestData req,
-        [DurableClient] DurableClientContext durableContext,
+        [DurableClient] DurableTaskClient client,
         FunctionContext executionContext)
     {
         ILogger logger = executionContext.GetLogger(nameof(DirectInput));
         MyInput? input = await req.ReadFromJsonAsync<MyInput>();
         string orchestrationName = input!.DirectInput ? WithInputName : NoInputName;
-        string instanceId = await durableContext.Client.ScheduleNewOrchestrationInstanceAsync(orchestrationName, input);
+        string instanceId = await client.ScheduleNewOrchestrationInstanceAsync(orchestrationName, input);
         logger.LogInformation("Created new orchestration with instance ID = {instanceId}", instanceId);
-        return durableContext.CreateCheckStatusResponse(req, instanceId);
+        return client.CreateCheckStatusResponse(req, instanceId);
     }
 
     [Function(WithInputName)]
