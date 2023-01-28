@@ -30,7 +30,9 @@ public static class DurableTaskClientExtensions
         HttpRequestData request,
         string instanceId,
         CancellationToken cancellation = default)
-        => client.CreateCheckStatusResponse(request, instanceId, HttpStatusCode.Accepted, cancellation);
+    {
+        return client.CreateCheckStatusResponse(request, instanceId, HttpStatusCode.Accepted, cancellation);
+    }
 
     /// <summary>
     /// Creates an HTTP response that is useful for checking the status of the specified instance.
