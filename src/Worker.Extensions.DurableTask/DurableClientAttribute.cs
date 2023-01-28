@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Functions.Worker;
 /// <summary>
 /// Azure Functions attribute for binding a function parameter to a Durable Task client object.
 /// </summary>
-[InputConverter(typeof(DurableTaskClientConverter))]
 public sealed class DurableClientAttribute : InputBindingAttribute
 {
     /// <summary>
