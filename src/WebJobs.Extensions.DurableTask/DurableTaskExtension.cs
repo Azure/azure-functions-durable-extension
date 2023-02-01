@@ -199,7 +199,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 this.OutOfProcProtocol = OutOfProcOrchestrationProtocol.MiddlewarePassthrough;
 #if FUNCTIONS_V3_OR_GREATER
-                this.localGrpcListener = new LocalGrpcListener(this, this.defaultDurabilityProvider);
+                this.localGrpcListener = new LocalGrpcListener(this);
                 this.HostLifetimeService.OnStopped.Register(this.StopLocalGrpcServer);
 #endif
             }
@@ -418,7 +418,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 : null;
 
             context.AddBindingRule<OrchestrationTriggerAttribute>()
-                .BindToTrigger(new OrchestrationTriggerAttributeBindingProvider(this, connectionName));
+                .BindToTrigger(new OrchestrationTriggerAttributeBindingProvider(this, connectionName, this.PlatformInformationService));
 
             context.AddBindingRule<ActivityTriggerAttribute>()
                 .BindToTrigger(new ActivityTriggerAttributeBindingProvider(this, connectionName));
@@ -484,6 +484,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #endif
 
             return this.HttpApiHandler.GetBaseUrl();
+        }
+
+        internal DurabilityProvider GetDurabilityProvider(DurableClientAttribute attribute)
+        {
+            return this.durabilityProviderFactory.GetDurabilityProvider(attribute);
         }
 
         /// <summary>

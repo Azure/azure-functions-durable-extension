@@ -262,6 +262,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         Task<DurableOrchestrationStatus> GetStatusAsync(string instanceId, bool showHistory = false, bool showHistoryOutput = false, bool showInput = true);
 
         /// <summary>
+        /// Get the status of multiple instances.
+        /// </summary>
+        /// <param name="instanceIds"> The instanceIDs to query.</param>
+        /// <param name="showHistory">Boolean marker for including execution history in the response.</param>
+        /// <param name="showHistoryOutput">Boolean marker for including input and output in the execution history response.</param>
+        /// <param name="showInput">If set, fetch and return the input for the orchestration instance. If both <c>showHistory</c> and <see cref = "DurableTaskOptions.StoreInputsInOrchestrationHistory" /> are also set to<c>true</c>, then the inputs for activity and sub-orchestration events in the orchestration history will also be returned.</param>
+        /// <returns>Returns a list of orchestration statuses.</returns>
+        Task<IList<DurableOrchestrationStatus>> GetStatusAsync(IEnumerable<string> instanceIds, bool showHistory = false, bool showHistoryOutput = false, bool showInput = false);
+
+        /// <summary>
         /// Gets the status of all orchestration instances that match the specified conditions.
         /// </summary>
         /// <param name="createdTimeFrom">If specified, return orchestration instances which were created after this DateTime.</param>
@@ -278,6 +288,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="instanceId">The ID of the orchestration instance to purge.</param>
         /// <returns>Returns an instance of <see cref="PurgeHistoryResult"/>.</returns>
         Task<PurgeHistoryResult> PurgeInstanceHistoryAsync(string instanceId);
+
+        /// <summary>
+        /// Purge the history for multiple instances.
+        /// </summary>
+        /// <param name="instanceIds">The IDs of the orchestration instances to purge.</param>
+        /// <returns>
+        /// Returns a list of orchestration statuses. The length and order of the returned list will match the length and
+        /// order of <paramref name="instanceIds"/>. If any instance ID doesn't exist, a <c>null</c> value will be set in
+        /// the corresponding list element.
+        /// </returns>
+        Task<PurgeHistoryResult> PurgeInstanceHistoryAsync(IEnumerable<string> instanceIds);
 
         /// <summary>
         /// Purge the orchestration history for instances that match the conditions.

@@ -302,7 +302,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 try
                 {
-                    JsonConvert.PopulateObject(this.State.EntityState, result);
+                    JsonConvert.PopulateObject(this.State.EntityState, result, this.messageDataConverter.JsonSettings);
                 }
                 catch (Exception e)
                 {

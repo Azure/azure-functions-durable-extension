@@ -4299,6 +4299,41 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
+        /// Test which validates that entity state deserialization
+        /// </summary>
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task DurableEntity_CustomIMessageSerializerSettingsFactory(bool classBased)
+        {
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.EntityWithPrivateSetter),
+            };
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.DurableEntity_CustomIMessageSerializerSettingsFactory),
+                enableExtendedSessions: false,
+                serializerSettings: new TestEntityClasses.CustomMessageSerializerSettingsFactory()))
+            {
+                await host.StartAsync();
+
+                string entityName = classBased ? nameof(TestEntities.EntityWithPrivateSetter_C) : nameof(TestEntities.EntityWithPrivateSetter_F);
+                var entityKey = new EntityId(entityName, Guid.NewGuid().ToString());
+
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], entityKey, this.output);
+
+                var status = await client.WaitForCompletionAsync(this.output);
+
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal("ok", status?.Output.ToString());
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
         /// Test which validates that orchestrations can call a timer after doing a continue as new.
         /// This is meant to catch regressions of azure/durabletask/#285.
         /// </summary>
@@ -4427,6 +4462,66 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 blobCount = await GetBlobCount($"{client.TaskHubName.ToLowerInvariant()}-largemessages", instanceId);
                 Assert.Equal(0, blobCount);
 
+                await host.StopAsync();
+            }
+        }
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        public async Task GetStatusAsync_MultipleInstances(string storageProvider)
+        {
+            const string testName = nameof(this.GetStatusAsync_MultipleInstances);
+            using (ITestHost host = TestHelpers.GetJobHost(this.loggerProvider, testName, false, storageProviderType: storageProvider))
+            {
+                await host.StartAsync();
+
+                var client1 = await host.StartOrchestratorAsync(nameof(TestOrchestrations.Counter), 1, this.output);
+                var client2 = await host.StartOrchestratorAsync(nameof(TestOrchestrations.Counter), 2, this.output);
+
+                string firstInstanceId = client1.InstanceId;
+                string secondInstanceId = client2.InstanceId;
+                string thirdInstanceId = "00000000";
+
+                var instanceIdList = new List<string> { firstInstanceId, secondInstanceId, thirdInstanceId };
+
+                IList<DurableOrchestrationStatus> statusList = new List<DurableOrchestrationStatus>();
+                statusList = await client1.InnerClient.GetStatusAsync(instanceIdList, showHistory: false, showHistoryOutput: false, showInput: true);
+                Assert.Equal("1", statusList[0].Input.ToString());
+                Assert.Equal("2", statusList[1].Input.ToString());
+                Assert.Null(statusList[2]);
+            }
+        }
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [MemberData(nameof(TestDataGenerator.GetBooleanAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        public async Task PurgeMultipleInstanceHistory(bool extendedSessions, string storageProvider)
+        {
+            using (ITestHost host = TestHelpers.GetJobHost(
+               this.loggerProvider,
+               nameof(this.PurgeMultipleInstanceHistory),
+               extendedSessions,
+               storageProviderType: storageProvider))
+            {
+                await host.StartAsync();
+
+                var client1 = await host.StartOrchestratorAsync(nameof(TestOrchestrations.SayHelloWithActivity), "foo", this.output);
+                await client1.WaitForCompletionAsync(this.output);
+                var client2 = await host.StartOrchestratorAsync(nameof(TestOrchestrations.SayHelloWithActivity), "bar", this.output);
+                await client2.WaitForCompletionAsync(this.output);
+                var client3 = await host.StartOrchestratorAsync(nameof(TestOrchestrations.SayHelloWithActivity), "baz", this.output);
+                await client3.WaitForCompletionAsync(this.output);
+
+                string firstInstanceId = client1.InstanceId;
+                string secondInstanceId = client2.InstanceId;
+                string thirdInstanceId = client3.InstanceId;
+                string fourthInstanceId = "00000000";
+                var instanceIdList = new List<string> { firstInstanceId, secondInstanceId, thirdInstanceId, fourthInstanceId };
+
+                var purgeResult = await client1.InnerClient.PurgeInstanceHistoryAsync(instanceIdList);
+
+                Assert.Equal("3", purgeResult.InstancesDeleted.ToString());
                 await host.StopAsync();
             }
         }
