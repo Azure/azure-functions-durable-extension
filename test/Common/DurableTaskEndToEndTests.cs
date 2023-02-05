@@ -24,8 +24,6 @@ using Microsoft.Diagnostics.Tracing;
 using Microsoft.Extensions.Hosting;
 using WebJobs.Extensions.DurableTask.Tests.V2;
 #endif
-using Microsoft.WindowsAzure.Storage;
-using Microsoft.WindowsAzure.Storage.Blob;
 using Moq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
@@ -33,6 +31,7 @@ using Newtonsoft.Json.Linq;
 using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
+using Azure.Storage.Blobs;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
@@ -4239,11 +4238,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             };
 
             string storageConnectionString = TestHelpers.GetStorageConnectionString();
-            CloudStorageAccount.TryParse(storageConnectionString, out CloudStorageAccount storageAccount);
-
-            CloudBlobClient cloudBlobClient = storageAccount.CreateCloudBlobClient();
-            CloudBlobContainer cloudBlobContainer = cloudBlobClient.GetContainerReference(TestEntityClasses.BlobContainerPath);
-            await cloudBlobContainer.CreateIfNotExistsAsync();
+            var blobServiceClient = new BlobServiceClient(storageConnectionString);
+            BlobContainerClient containerClient = blobServiceClient.GetBlobContainerClient(TestEntityClasses.BlobContainerPath);
+            await containerClient.CreateIfNotExistsAsync();
 
             using (var host = TestHelpers.GetJobHost(
                 this.loggerProvider,
@@ -5887,56 +5884,42 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         private static async Task<int> GetBlobCount(string containerName, string directoryName)
         {
             string storageConnectionString = TestHelpers.GetStorageConnectionString();
-            CloudStorageAccount storageAccount;
-            if (!CloudStorageAccount.TryParse(storageConnectionString, out storageAccount))
+            BlobServiceClient blobServiceClient;
+            try
+            {
+                blobServiceClient = new BlobServiceClient(storageConnectionString);
+            }
+            catch (ArgumentException)
             {
                 return 0;
             }
 
-            CloudBlobClient cloudBlobClient = storageAccount.CreateCloudBlobClient();
-
-            CloudBlobContainer cloudBlobContainer = cloudBlobClient.GetContainerReference(containerName);
-            await cloudBlobContainer.CreateIfNotExistsAsync();
-            CloudBlobDirectory instanceDirectory = cloudBlobContainer.GetDirectoryReference(directoryName);
-            int blobCount = 0;
-            BlobContinuationToken blobContinuationToken = null;
-            do
-            {
-                BlobResultSegment results = await instanceDirectory.ListBlobsSegmentedAsync(blobContinuationToken);
-                blobContinuationToken = results.ContinuationToken;
-                blobCount += results.Results.Count();
-            }
-            while (blobContinuationToken != null);
-
-            return blobCount;
+            BlobContainerClient containerClient = blobServiceClient.GetBlobContainerClient(containerName);
+            await containerClient.CreateIfNotExistsAsync();
+            return await containerClient.GetBlobsAsync().CountAsync();
         }
 
         private static async Task EnsureBlobContainerExists(string containerName)
         {
             var storageConnectionString = TestHelpers.GetStorageConnectionString();
-            var storageAccount = CloudStorageAccount.Parse(storageConnectionString);
-            var cloudBlobClient = storageAccount.CreateCloudBlobClient();
-            var cloudBlobContainer = cloudBlobClient.GetContainerReference(containerName);
-            await cloudBlobContainer.CreateIfNotExistsAsync();
+            var blobServiceClient = new BlobServiceClient(storageConnectionString);
+            var containerClient = blobServiceClient.GetBlobContainerClient(containerName);
+            await containerClient.CreateIfNotExistsAsync();
         }
 
         private static async Task ValidateBlobUrlAsync(string taskHubName, string instanceId, string value)
         {
-            CloudStorageAccount account = CloudStorageAccount.Parse(TestHelpers.GetStorageConnectionString());
-            Assert.StartsWith(account.BlobStorageUri.PrimaryUri.OriginalString, value);
+            var blobServiceClient = new BlobServiceClient(TestHelpers.GetStorageConnectionString());
+            Assert.StartsWith(blobServiceClient.Uri.OriginalString, value);
             Assert.Contains("/" + instanceId + "/", value);
             Assert.EndsWith(".json.gz", value);
 
             string containerName = $"{taskHubName.ToLowerInvariant()}-largemessages";
-            CloudBlobClient client = account.CreateCloudBlobClient();
-            CloudBlobContainer container = client.GetContainerReference(containerName);
-            Assert.True(await container.ExistsAsync(), $"Blob container {containerName} is expected to exist.");
-
-            await client.GetBlobReferenceFromServerAsync(new Uri(value));
-            CloudBlobDirectory instanceDirectory = container.GetDirectoryReference(instanceId);
+            BlobContainerClient containerClient = blobServiceClient.GetBlobContainerClient(containerName);
+            Assert.True(await containerClient.ExistsAsync(), $"Blob container {containerName} is expected to exist.");
 
             string blobName = value.Split('/').Last();
-            CloudBlob blob = instanceDirectory.GetBlobReference(blobName);
+            BlobClient blob = containerClient.GetBlobClient(instanceId + "/" + blobName);
             Assert.True(await blob.ExistsAsync(), $"Blob named {blob.Uri} is expected to exist.");
         }
 

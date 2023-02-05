@@ -4,15 +4,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using System.Threading.Tasks;
+using Azure;
 using DurableTask.AzureStorage;
 using DurableTask.AzureStorage.Monitoring;
 using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Microsoft.Azure.WebJobs.Logging;
 using Microsoft.Extensions.Logging;
-using Microsoft.WindowsAzure.Storage;
 using Moq;
 using Xunit;
 using Xunit.Abstractions;
@@ -88,12 +87,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var errorMsg = "Uh oh";
             this.performanceMonitor
                 .Setup(m => m.PulseAsync())
-                .Throws(new StorageException(errorMsg));
+                .Throws(new Exception("Failure", new RequestFailedException(errorMsg)));
 
             var metrics = await this.scaleMonitor.GetMetricsAsync();
 
-            var warning = this.loggerProvider.GetAllLogMessages().Last(p => p.Level == Microsoft.Extensions.Logging.LogLevel.Warning);
-            var expectedWarning = $"Microsoft.WindowsAzure.Storage.StorageException: {errorMsg}";
+            var warning = this.loggerProvider.GetAllLogMessages().Last(p => p.Level == LogLevel.Warning);
+            var expectedWarning = $"System.Exception: Failure ---> Azure.RequestFailedException: {errorMsg}";
             Assert.StartsWith(expectedWarning, warning.FormattedMessage);
         }
 

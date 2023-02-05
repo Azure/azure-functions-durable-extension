@@ -87,7 +87,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 DisconnectedPerformanceMonitor performanceMonitor = this.GetPerformanceMonitor();
                 heartbeat = await performanceMonitor.PulseAsync();
             }
-            catch (RequestFailedException e)
+            catch (Exception e) when (e.InnerException != null && e.InnerException.GetType() == typeof(RequestFailedException))
             {
                 this.logger.LogWarning("{details}. Function: {functionName}. HubName: {hubName}.", e.ToString(), this.functionName, this.hubName);
             }

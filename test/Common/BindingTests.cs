@@ -213,7 +213,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StartAsync();
 
                 string connectionString = TestHelpers.GetStorageConnectionString();
-                BlobServiceClient blobServiceClient = new BlobServiceClient(connectionString);
+                var blobServiceClient = new BlobServiceClient(connectionString);
                 this.output.WriteLine($"Using storage account: {blobServiceClient.AccountName}");
 
                 // Blob and container names need to be kept in sync with the activity code.
@@ -229,10 +229,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 string randomData = Guid.NewGuid().ToString("N");
 
-                using var buffer = new MemoryStream(Encoding.UTF8.GetBytes(randomData));
-                BlockBlobClient blob = containerClient.GetBlockBlobClient(OriginalBlobName);
-                await blob.UploadAsync(buffer);
-                this.output.WriteLine($"Uploaded text '{randomData}' to {blob.Name}.");
+                using (var buffer = new MemoryStream(Encoding.UTF8.GetBytes(randomData)))
+                {
+                    BlockBlobClient blob = containerClient.GetBlockBlobClient(OriginalBlobName);
+                    await blob.UploadAsync(buffer);
+                    this.output.WriteLine($"Uploaded text '{randomData}' to {blob.Name}.");
+                }
 
                 // Using StartOrchestrationArgs to start an activity function because it's easier than creating a new type.
                 var startArgs = new StartOrchestrationArgs();
@@ -265,7 +267,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StartAsync();
 
                 string connectionString = TestHelpers.GetStorageConnectionString();
-                BlobServiceClient blobServiceClient = new BlobServiceClient(connectionString);
+                var blobServiceClient = new BlobServiceClient(connectionString);
                 this.output.WriteLine($"Using storage account: {blobServiceClient.AccountName}");
 
                 // Blob and container names need to be kept in sync with the activity code.
@@ -287,12 +289,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 }
 
                 string randomData = Guid.NewGuid().ToString("N");
-
-                using var buffer = new MemoryStream(Encoding.UTF8.GetBytes(randomData));
-                this.output.WriteLine($"Creating blob named {outputBlobName}...");
-                BlockBlobClient blob = containerClient.GetBlockBlobClient(inputBlobName);
-                await blob.UploadAsync(buffer);
-                this.output.WriteLine($"Uploaded text '{randomData}' to {blob.Name}.");
+                using (var buffer = new MemoryStream(Encoding.UTF8.GetBytes(randomData)))
+                {
+                    this.output.WriteLine($"Creating blob named {outputBlobName}...");
+                    BlockBlobClient blob = containerClient.GetBlockBlobClient(inputBlobName);
+                    await blob.UploadAsync(buffer);
+                    this.output.WriteLine($"Uploaded text '{randomData}' to {blob.Name}.");
+                }
 
                 // Using StartOrchestrationArgs to start an activity function because it's easier than creating a new type.
                 var startArgs = new StartOrchestrationArgs();
