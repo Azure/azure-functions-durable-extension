@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Microsoft.ApplicationInsights.Channel;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
@@ -103,7 +104,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return new FunctionsV2HostWrapper(host, options, nameResolver);
         }
 
-        public static IHost CreateJobHostExternalEnvironment(IStorageAccountProvider storageAccountProvider)
+        public static IHost CreateJobHostExternalEnvironment(IAzureStorageAccountExplorer storageAccountProvider)
         {
             IHost host = new HostBuilder()
                 .ConfigureServices(

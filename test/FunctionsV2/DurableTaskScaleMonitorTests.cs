@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
+using DurableTask.AzureStorage;
 using DurableTask.AzureStorage.Monitoring;
 using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
@@ -23,7 +24,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         private readonly string functionId = "DurableTaskTriggerFunctionId";
         private readonly FunctionName functionName = new FunctionName("DurableTaskTriggerFunctionName");
         private readonly string hubName = "DurableTaskTriggerHubName";
-        private readonly CloudStorageAccount storageAccount = CloudStorageAccount.Parse(TestHelpers.GetStorageConnectionString());
+        private readonly StorageAccountClientProvider clientProvider = new StorageAccountClientProvider(TestHelpers.GetStorageConnectionString());
         private readonly ITestOutputHelper output;
         private readonly EndToEndTraceHelper traceHelper;
         private readonly LoggerFactory loggerFactory;
@@ -39,13 +40,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             this.loggerFactory.AddProvider(this.loggerProvider);
             ILogger logger = this.loggerFactory.CreateLogger(LogCategories.CreateTriggerCategory("DurableTask"));
             this.traceHelper = new EndToEndTraceHelper(logger, false);
-            this.performanceMonitor = new Mock<DisconnectedPerformanceMonitor>(MockBehavior.Strict, this.storageAccount, this.hubName, (int?)null);
+            this.performanceMonitor = new Mock<DisconnectedPerformanceMonitor>(MockBehavior.Strict, this.clientProvider, this.hubName, (int?)null);
 
             this.scaleMonitor = new DurableTaskScaleMonitor(
                 this.functionId,
                 this.functionName.Name,
                 this.hubName,
-                this.storageAccount,
+                this.clientProvider,
                 logger,
                 this.performanceMonitor.Object);
         }

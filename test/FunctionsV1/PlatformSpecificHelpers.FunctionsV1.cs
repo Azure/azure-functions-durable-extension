@@ -7,6 +7,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.ApplicationInsights.Channel;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -39,7 +40,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var config = new JobHostConfiguration { HostId = "durable-task-host" };
             config.TypeLocator = TestHelpers.GetTypeLocator();
 
-            var storageAccountProvider = new AzureStorageAccountProvider(new WebJobsConnectionInfoProvider());
+            var storageAccountExplorer = new AzureStorageAccountExplorer(new WebJobsConnectionInfoProvider());
 
             var loggerFactory = new LoggerFactory();
             loggerFactory.AddProvider(loggerProvider);
@@ -56,7 +57,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             IDurabilityProviderFactory orchestrationServiceFactory = new AzureStorageDurabilityProviderFactory(
                 options,
-                storageAccountProvider,
+                storageAccountExplorer,
                 nameResolver,
                 loggerFactory,
                 platformInformationService);
@@ -87,19 +88,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             config.LoggerFactory = loggerFactory;
 
             var host = new JobHost(config);
-            return new FunctionsV1HostWrapper(host, options, storageAccountProvider);
+            return new FunctionsV1HostWrapper(host, options, storageAccountExplorer);
         }
 
         private class FunctionsV1HostWrapper : ITestHost
         {
             private readonly JobHost innerHost;
             private readonly DurableTaskOptions options;
-            private readonly IStorageAccountProvider storageAccountProvider;
+            private readonly IAzureStorageAccountExplorer storageAccountProvider;
 
             public FunctionsV1HostWrapper(
                 JobHost innerHost,
                 IOptions<DurableTaskOptions> options,
-                IStorageAccountProvider storageAccountResolver)
+                IAzureStorageAccountExplorer storageAccountResolver)
             {
                 this.innerHost = innerHost ?? throw new ArgumentNullException(nameof(innerHost));
                 this.options = options.Value;

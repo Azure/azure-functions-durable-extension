@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using DurableTask.AzureStorage;
 using DurableTask.AzureStorage.Tracking;
 using DurableTask.Core;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
@@ -27,21 +28,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     internal class AzureStorageDurabilityProvider : DurabilityProvider
     {
         private readonly AzureStorageOrchestrationService serviceClient;
-        private readonly IStorageAccountProvider storageAccountProvider;
+        private readonly IAzureStorageAccountExplorer storageAccountExplorer;
         private readonly string connectionName;
         private readonly JObject storageOptionsJson;
         private readonly ILogger logger;
 
         public AzureStorageDurabilityProvider(
             AzureStorageOrchestrationService service,
-            IStorageAccountProvider storageAccountProvider,
+            IAzureStorageAccountExplorer storageAccountProvider,
             string connectionName,
             AzureStorageOptions options,
             ILogger logger)
             : base("Azure Storage", service, service, connectionName)
         {
             this.serviceClient = service;
-            this.storageAccountProvider = storageAccountProvider;
+            this.storageAccountExplorer = storageAccountProvider;
             this.connectionName = connectionName;
             this.storageOptionsJson = JObject.FromObject(
                 options,
@@ -210,7 +211,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 functionId,
                 functionName,
                 hubName,
-                this.storageAccountProvider.GetStorageAccountDetails(connectionName).ToCloudStorageAccount(),
+                this.storageAccountExplorer.GetClientProvider(connectionName),
                 this.logger);
             return true;
         }

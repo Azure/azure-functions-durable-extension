@@ -2,13 +2,15 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System.Collections.Generic;
+using Azure.Data.Tables;
+using Azure.Storage.Blobs;
+using Azure.Storage.Queues;
 using DurableTask.AzureStorage;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask;
-using Microsoft.WindowsAzure.Storage;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage;
 
 namespace WebJobs.Extensions.DurableTask.Tests.V2
 {
-    internal class CustomAccountStorageProvider : IStorageAccountProvider
+    internal class CustomAccountStorageProvider : IAzureStorageAccountExplorer
     {
         private readonly Dictionary<string, string> connectionStrings;
 
@@ -17,24 +19,13 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
             this.connectionStrings = connectionStrings;
         }
 
-        public CloudStorageAccount GetCloudStorageAccount(string name)
-        {
-            if (this.connectionStrings.TryGetValue(name, out string value))
-            {
-                return CloudStorageAccount.Parse(value);
-            }
+        public IStorageServiceClientProvider<BlobServiceClient, BlobClientOptions> GetBlobClientProvider(string connectionName) =>
+            this.connectionStrings.TryGetValue(connectionName, out string value) ? StorageServiceClientProvider.ForBlob(value) : null;
 
-            return null;
-        }
+        public IStorageServiceClientProvider<QueueServiceClient, QueueClientOptions> GetQueueClientProvider(string connectionName) =>
+            this.connectionStrings.TryGetValue(connectionName, out string value) ? StorageServiceClientProvider.ForQueue(value) : null;
 
-        public StorageAccountDetails GetStorageAccountDetails(string name)
-        {
-            if (this.connectionStrings.TryGetValue(name, out string value))
-            {
-                return new StorageAccountDetails { ConnectionString = value };
-            }
-
-            return null;
-        }
+        public IStorageServiceClientProvider<TableServiceClient, TableClientOptions> GetTableClientProvider(string connectionName) =>
+            this.connectionStrings.TryGetValue(connectionName, out string value) ? StorageServiceClientProvider.ForTable(value) : null;
     }
 }

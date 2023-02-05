@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -11,7 +12,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     {
         public AzureStorageShortenedTimerDurabilityProviderFactory(
             IOptions<DurableTaskOptions> options,
-            IStorageAccountProvider storageAccountProvider,
+            IAzureStorageAccountExplorer storageAccountProvider,
             INameResolver nameResolver,
             ILoggerFactory loggerFactory,
 #pragma warning disable CS0612 // Type or member is obsolete

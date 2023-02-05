@@ -1,17 +1,23 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using Azure.Data.Tables;
+using Azure.Storage.Blobs;
+using Azure.Storage.Queues;
 using DurableTask.AzureStorage;
-using Microsoft.WindowsAzure.Storage;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
-    internal class TestStorageAccountProvider : IStorageAccountProvider
+    internal class TestStorageAccountProvider : IAzureStorageAccountExplorer
     {
-        public CloudStorageAccount GetCloudStorageAccount(string name) =>
-            CloudStorageAccount.Parse(TestHelpers.GetStorageConnectionString());
+        public IStorageServiceClientProvider<BlobServiceClient, BlobClientOptions> GetBlobClientProvider(string connectionName) =>
+            StorageServiceClientProvider.ForBlob(TestHelpers.GetStorageConnectionString());
 
-        public StorageAccountDetails GetStorageAccountDetails(string name) =>
-            new StorageAccountDetails { ConnectionString = TestHelpers.GetStorageConnectionString() };
+        public IStorageServiceClientProvider<QueueServiceClient, QueueClientOptions> GetQueueClientProvider(string connectionName) =>
+            StorageServiceClientProvider.ForQueue(TestHelpers.GetStorageConnectionString());
+
+        public IStorageServiceClientProvider<TableServiceClient, TableClientOptions> GetTableClientProvider(string connectionName) =>
+            StorageServiceClientProvider.ForTable(TestHelpers.GetStorageConnectionString());
     }
 }

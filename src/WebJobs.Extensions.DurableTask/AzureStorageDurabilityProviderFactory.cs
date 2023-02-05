@@ -3,6 +3,7 @@
 
 using System;
 using DurableTask.AzureStorage;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -15,7 +16,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         internal const string ProviderName = "AzureStorage";
 
         private readonly DurableTaskOptions options;
-        private readonly IStorageAccountProvider storageAccountProvider;
+        private readonly IAzureStorageAccountExplorer storageAccountExplorer;
         private readonly AzureStorageOptions azureStorageOptions;
         private readonly INameResolver nameResolver;
         private readonly ILoggerFactory loggerFactory;
@@ -28,7 +29,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public AzureStorageDurabilityProviderFactory(
             IOptions<DurableTaskOptions> options,
-            IStorageAccountProvider storageAccountProvider,
+            IAzureStorageAccountExplorer storageAccountProvider,
             INameResolver nameResolver,
             ILoggerFactory loggerFactory,
 #pragma warning disable CS0612 // Type or member is obsolete
@@ -45,7 +46,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             this.options = options.Value;
-            this.storageAccountProvider = storageAccountProvider ?? throw new ArgumentNullException(nameof(storageAccountProvider));
+            this.storageAccountExplorer = storageAccountProvider ?? throw new ArgumentNullException(nameof(storageAccountProvider));
             this.nameResolver = nameResolver ?? throw new ArgumentNullException(nameof(nameResolver));
             this.loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
 
@@ -119,7 +120,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 ILogger logger = this.loggerFactory.CreateLogger(LoggerName);
                 this.defaultStorageProvider = new AzureStorageDurabilityProvider(
                     defaultService,
-                    this.storageAccountProvider,
+                    this.storageAccountExplorer,
                     this.DefaultConnectionName,
                     this.azureStorageOptions,
                     logger);
@@ -147,8 +148,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             // Need to check this.defaultStorageProvider != null for external clients that call GetDurabilityProvider(attribute)
             // which never initializes the defaultStorageProvider.
-            if (string.Equals(this.defaultSettings?.TaskHubName, settings.TaskHubName, StringComparison.OrdinalIgnoreCase) &&
-                string.Equals(this.defaultSettings?.StorageConnectionString, settings.StorageConnectionString, StringComparison.OrdinalIgnoreCase) &&
+            if (string.Equals(this.DefaultConnectionName, connectionName, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(this.options.HubName, settings.TaskHubName, StringComparison.OrdinalIgnoreCase) &&
                 this.defaultStorageProvider != null)
             {
                 // It's important that clients use the same AzureStorageOrchestrationService instance
@@ -161,7 +162,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 ILogger logger = this.loggerFactory.CreateLogger(LoggerName);
                 innerClient = new AzureStorageDurabilityProvider(
                     new AzureStorageOrchestrationService(settings),
-                    this.storageAccountProvider,
+                    this.storageAccountExplorer,
                     connectionName,
                     this.azureStorageOptions,
                     logger);
@@ -179,7 +180,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             var settings = new AzureStorageOrchestrationServiceSettings
             {
-                StorageAccountDetails = this.storageAccountProvider.GetStorageAccountDetails(connectionName ?? this.DefaultConnectionName),
+                StorageAccountClientProvider = this.storageAccountExplorer.GetClientProvider(connectionName ?? this.DefaultConnectionName),
                 TaskHubName = taskHubNameOverride ?? this.options.HubName,
                 PartitionCount = this.azureStorageOptions.PartitionCount,
                 ControlQueueBatchSize = this.azureStorageOptions.ControlQueueBatchSize,
@@ -191,8 +192,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 ExtendedSessionsEnabled = this.options.ExtendedSessionsEnabled,
                 ExtendedSessionIdleTimeout = extendedSessionTimeout,
                 MaxQueuePollingInterval = this.azureStorageOptions.MaxQueuePollingInterval,
-                TrackingStoreStorageAccountDetails = this.azureStorageOptions.TrackingStoreConnectionName != null
-                    ? this.storageAccountProvider.GetStorageAccountDetails(this.azureStorageOptions.TrackingStoreConnectionName)
+                TrackingServiceClientProvider = this.azureStorageOptions.TrackingStoreConnectionName != null
+                    ? this.storageAccountExplorer.GetTableClientProvider(this.azureStorageOptions.TrackingStoreConnectionName)
                     : null,
                 FetchLargeMessageDataEnabled = this.azureStorageOptions.FetchLargeMessagesAutomatically,
                 ThrowExceptionOnInvalidDedupeStatus = true,

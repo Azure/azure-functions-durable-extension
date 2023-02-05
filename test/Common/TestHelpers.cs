@@ -24,6 +24,7 @@ using Moq;
 using Newtonsoft.Json.Linq;
 using Xunit;
 using Xunit.Abstractions;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
@@ -208,7 +209,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
 #if !FUNCTIONS_V1
-        public static IHost GetJobHostExternalEnvironment(IStorageAccountProvider storageAccountProvider = null)
+        public static IHost GetJobHostExternalEnvironment(IAzureStorageAccountExplorer storageAccountProvider = null)
         {
             if (storageAccountProvider == null)
             {
@@ -218,7 +219,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return GetJobHostWithOptionsForDurableClientFactoryExternal(storageAccountProvider);
         }
 
-        public static IHost GetJobHostWithOptionsForDurableClientFactoryExternal(IStorageAccountProvider storageAccountProvider)
+        public static IHost GetJobHostWithOptionsForDurableClientFactoryExternal(IAzureStorageAccountExplorer storageAccountProvider)
         {
             return PlatformSpecificHelpers.CreateJobHostExternalEnvironment(storageAccountProvider);
         }
@@ -410,7 +411,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var settings = new AzureStorageOrchestrationServiceSettings
             {
                 TaskHubName = hubName,
-                StorageConnectionString = GetStorageConnectionString(),
+                StorageAccountClientProvider = new StorageAccountClientProvider(GetStorageConnectionString()),
             };
 
             var service = new AzureStorageOrchestrationService(settings);

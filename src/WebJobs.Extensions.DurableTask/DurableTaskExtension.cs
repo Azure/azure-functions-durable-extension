@@ -23,6 +23,7 @@ using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
 using Microsoft.Azure.WebJobs.Host.Scale;
 #endif
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage;
 using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.Host.Config;
 using Microsoft.Azure.WebJobs.Host.Executors;
@@ -606,7 +607,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.PlatformInformationService = new DefaultPlatformInformation(this.nameResolver, this.loggerFactory);
             this.durabilityProviderFactory = new AzureStorageDurabilityProviderFactory(
                 new OptionsWrapper<DurableTaskOptions>(this.Options),
-                new AzureStorageAccountProvider(this.connectionInfoResolver),
+                new AzureStorageAccountExplorer(this.connectionInfoResolver),
                 this.nameResolver,
                 this.loggerFactory,
                 this.PlatformInformationService);
