@@ -3,7 +3,7 @@ name: New release template
 about: Template for creating new releases of Durable Functions
 title: ''
 labels: ''
-assignees: comcmaho, amdeel, davidmrdavid, bachuv
+assignees: amdeel, davidmrdavid, bachuv, nytiannn
 
 ---
 
