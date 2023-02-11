@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
@@ -325,17 +326,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             if (!context.HasState)
             {
-                context.SetState(new Dictionary<string, int>());
+                context.SetState(new Dictionary<string, (int, long)>());
             }
 
-            Dictionary<string, int> callHistory = context.GetState<Dictionary<string, int>>();
+            Dictionary<string, (int, long)> callHistory = context.GetState<Dictionary<string, (int, long)>>();
 
             string requestUri = context.GetInput<string>();
 
             log.LogInformation($"Calling {requestUri}");
 
+            var stopwatch = Stopwatch.StartNew();
             int statusCode = await CallHttpAsync(requestUri);
-            callHistory.Add(requestUri, statusCode);
+            callHistory.Add(requestUri, (statusCode, stopwatch.ElapsedMilliseconds));
         }
 
         private static async Task<int> CallHttpAsync(string requestUri)

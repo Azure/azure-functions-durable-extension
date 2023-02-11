@@ -4007,24 +4007,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var entityId = new EntityId("HttpEntity", Guid.NewGuid().ToString("N"));
                 TestEntityClient client = await host.GetEntityClientAsync(entityId, this.output);
 
+                var stopwatch = Stopwatch.StartNew();
+
                 await client.SignalEntity(this.output, "get", "https://www.microsoft.com");
                 await client.SignalEntity(this.output, "get", "https://bing.com");
 
-                var state = await client.WaitForEntityState<IDictionary<string, string>>(this.output, TimeSpan.FromSeconds(10));
+                var state = await client.WaitForEntityState<IDictionary<string, (int status, long milliseconds)>>(this.output, TimeSpan.FromSeconds(Debugger.IsAttached ? 1000 : 30));
                 Assert.NotNull(state);
-
-                if (state.TryGetValue("error", out string error))
-                {
-                    throw new XunitException("Entity encountered an error: " + error);
-                }
+                long totalLatency = stopwatch.ElapsedMilliseconds;
 
                 Assert.True(state.ContainsKey("https://www.microsoft.com"));
-                Assert.Equal("200", state["https://www.microsoft.com"]);
+                Assert.Equal(200, state["https://www.microsoft.com"].status);
+                long latency1 = state["https://www.microsoft.com"].milliseconds;
 
                 Assert.True(state.ContainsKey("https://bing.com"));
-                Assert.Equal("200", state["https://bing.com"]);
+                Assert.Equal(200, state["https://bing.com"].status);
+                long latency2 = state["https://bing.com"].milliseconds;
 
                 Assert.Equal(2, state.Count);
+
+                this.output.WriteLine($"Latencies: latency1={latency1}ms latency2={latency2}ms total={totalLatency}ms");
+                Assert.True(totalLatency - latency1 - latency2 < 5000);
 
                 await host.StopAsync();
             }

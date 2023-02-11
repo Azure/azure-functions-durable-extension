@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using DurableTask.AzureStorage;
 using DurableTask.AzureStorage.Tracking;
 using DurableTask.Core;
+using DurableTask.Core.Entities;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
@@ -104,22 +105,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 && state.OrchestrationInstance != null
                 && state.Input != null)
             {
-                string serializedState;
+                string serializedSchedulerState;
 
                 if (state.Input.StartsWith("http"))
                 {
-                    serializedState = await this.serviceClient.DownloadBlobAsync(state.Input);
+                    serializedSchedulerState = await this.serviceClient.DownloadBlobAsync(state.Input);
                 }
                 else
                 {
-                    serializedState = state.Input;
+                    serializedSchedulerState = state.Input;
                 }
 
-                var schedulerState = JsonConvert.DeserializeObject<SchedulerState>(serializedState, serializerSettings);
-
-                if (schedulerState.EntityExists)
+                if (ClientEntityContext.TryGetEntityStateFromSerializedSchedulerState(serializedSchedulerState, out string serializedEntityState))
                 {
-                    return schedulerState.EntityState;
+                    return serializedEntityState;
                 }
             }
 

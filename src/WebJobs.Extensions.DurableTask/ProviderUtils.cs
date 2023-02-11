@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
+using DurableTask.Core.Entities;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -37,19 +38,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             if (state != null
                 && state.OrchestrationInstance != null
-                && state.Input != null)
+                && state.Input != null
+                && ClientEntityContext.TryGetEntityStateFromSerializedSchedulerState(state.Input, out string serializedEntityState))
             {
-                var schedulerState = JsonConvert.DeserializeObject<SchedulerState>(state.Input, serializerSettings);
-
-                if (schedulerState.EntityExists)
-                {
-                    result = schedulerState.EntityState;
-                    return true;
-                }
+                result = serializedEntityState;
+                return true;
             }
-
-            result = null;
-            return false;
+            else
+            {
+                result = null;
+                return false;
+            }
         }
 
         /// <summary>

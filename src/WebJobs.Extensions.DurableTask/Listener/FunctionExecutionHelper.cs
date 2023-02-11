@@ -135,5 +135,83 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener
                 }
             }
         }
+
+        public static async Task<WrappedFunctionResult> ExecuteFunctionInEntityMiddleware(
+            ITriggeredFunctionExecutor executor,
+            TriggeredFunctionData triggerInput,
+            TaskEntityShim shim,
+            DurableEntityContext context,
+            CancellationToken cancellationToken)
+        {
+#pragma warning disable CS0618 // InvokeHandler approved for use by this extension
+            if (triggerInput.InvokeHandler == null)
+            {
+                throw new ArgumentException(
+                    $"{nameof(ExecuteFunctionInEntityMiddleware)} should only be used when ${nameof(triggerInput)} has a value for ${nameof(TriggeredFunctionData.InvokeHandler)}");
+            }
+
+            try
+            {
+                context.ExecutorCalledBack = false;
+
+                FunctionResult result = await executor.TryExecuteAsync(triggerInput, cancellationToken);
+
+                if (result.Succeeded)
+                {
+                    return WrappedFunctionResult.Success();
+                }
+
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return WrappedFunctionResult.FunctionHostStoppingFailure(result.Exception);
+                }
+
+                if (context.ExecutorCalledBack)
+                {
+                    // the problem did happen while the function code was executing.
+                    // So it is either a user code failure or a function timeout.
+                    if (result.Exception is Microsoft.Azure.WebJobs.Host.FunctionTimeoutException)
+                    {
+                        shim.TimeoutTriggered(result.Exception);
+                        return WrappedFunctionResult.FunctionTimeoutFailure(result.Exception);
+                    }
+                    else
+                    {
+                        return WrappedFunctionResult.UserCodeFailure(result.Exception);
+                    }
+                }
+                else
+                {
+                    // The problem happened before the function code even got called.
+                    // This can happen if the constructor for a non-static function fails, for example.
+                    // We want this to appear as if the function code threw the exception.
+                    // So we execute the middleware directly, instead of via the executor.
+                    try
+                    {
+                        var exception = result.Exception ?? new InvalidOperationException("The function failed to start executing.");
+
+                        await triggerInput.InvokeHandler(() => Task.FromException<object>(exception));
+
+                        return WrappedFunctionResult.Success();
+                    }
+                    catch (Exception e) when (!cancellationToken.IsCancellationRequested)
+                    {
+                        return WrappedFunctionResult.UserCodeFailure(e);
+                    }
+                }
+#pragma warning restore CS0618
+            }
+            catch (Exception e)
+            {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return WrappedFunctionResult.FunctionHostStoppingFailure(e);
+                }
+                else
+                {
+                    return WrappedFunctionResult.FunctionRuntimeFailure(e);
+                }
+            }
+        }
     }
 }

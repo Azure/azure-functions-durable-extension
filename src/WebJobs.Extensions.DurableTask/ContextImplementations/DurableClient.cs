@@ -10,6 +10,8 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
+using DurableTask.Core.Entities;
+using DurableTask.Core.Entities.EventFormat;
 using DurableTask.Core.History;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -333,25 +335,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             var guid = Guid.NewGuid(); // unique id for this request
             var instanceId = EntityId.GetSchedulerIdFromEntityId(entityId);
             var instance = new OrchestrationInstance() { InstanceId = instanceId };
-            var request = new RequestMessage()
-            {
-                ParentInstanceId = null, // means this was sent by a client
-                ParentExecutionId = null,
-                Id = guid,
-                IsSignal = true,
-                Operation = operationName,
-                ScheduledTime = scheduledTimeUtc,
-            };
+
+            string serializedInput = null;
             if (operationInput != null)
             {
-                request.SetInput(operationInput, this.messageDataConverter);
+                serializedInput = OperationInputExtensions.SerializeOperationInput(operationName, operationInput, this.messageDataConverter);
             }
 
-            var jrequest = JToken.FromObject(request, this.messageDataConverter.JsonSerializer);
-            var eventName = scheduledTimeUtc.HasValue
-                ? EntityMessageEventNames.ScheduledRequestMessageEventName(request.GetAdjustedDeliveryTime(this.durabilityProvider))
-                : EntityMessageEventNames.RequestMessageEventName;
-            await durableClient.client.RaiseEventAsync(instance, eventName, jrequest);
+            (string name, object content) eventToSend = ClientEntityContext.EmitOperationSignal(
+                guid,
+                operationName,
+                serializedInput,
+                scheduledTimeUtc.HasValue ? this.durabilityProvider.GetCappedScheduledTime(DateTime.UtcNow, scheduledTimeUtc.Value) : null);
+
+            await durableClient.client.RaiseEventAsync(instance, eventToSend.name, eventToSend.content);
 
             this.traceHelper.FunctionScheduled(
                 hubName,
@@ -695,12 +692,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     if (!result.DurableOrchestrationState.Any(state => state.InstanceId == lockOwner))
                     {
                         // the owner is not a running orchestration. Send a lock release.
-                        var message = new ReleaseMessage()
-                        {
-                            ParentInstanceId = lockOwner,
-                            LockRequestId = "fix-orphaned-lock", // we don't know the original id but it does not matter
-                        };
-                        await this.RaiseEventInternalAsync(this.client, this.TaskHubName, status.InstanceId, EntityMessageEventNames.ReleaseMessageEventName, message);
+                        (string name, object content) eventToSend = ClientEntityContext.EmitUnlockForOrphanedLock(lockOwner);
+
+                        await this.RaiseEventInternalAsync(this.client, this.TaskHubName, status.InstanceId, eventToSend.name, eventToSend.content);
+
                         Interlocked.Increment(ref finalResult.NumberOfOrphanedLocksRemoved);
                     }
                 }

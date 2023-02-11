@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
+using DurableTask.Core.Entities;
 using DurableTask.Core.History;
 using DurableTask.Core.Query;
 using Newtonsoft.Json;
@@ -27,7 +28,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         IOrchestrationService,
         IOrchestrationServiceClient,
         IOrchestrationServiceQueryClient,
-        IOrchestrationServicePurgeClient
+        IOrchestrationServicePurgeClient,
+        EntityOptions.IOptionsProvider
     {
         internal const string NoConnectionDetails = "default";
 
@@ -517,6 +519,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <summary>
+        /// Retrieves the entity options from the inner orchestration service.
+        /// </summary>
+        /// <returns>The entity options.</returns>
+        public virtual EntityOptions GetEntityOptions()
+        {
+            return EntityOptions.GetEntityOptionsFromOrchestrationService(this.innerService);
+        }
+
+        /// <summary>
         /// Uses durability provider specific logic to verify whether a timespan for a timer, timeout
         /// or retry interval is allowed by the provider.
         /// </summary>
@@ -527,6 +538,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             errorMessage = null;
             return true;
+        }
+
+        internal (DateTime original, DateTime capped) GetCappedScheduledTime(DateTime nowUtc, DateTime scheduledUtcTime)
+        {
+            if ((scheduledUtcTime - nowUtc) <= this.MaximumDelayTime)
+            {
+                return (scheduledUtcTime, scheduledUtcTime);
+            }
+            else
+            {
+                return (scheduledUtcTime, nowUtc + this.LongRunningTimerIntervalLength);
+            }
         }
 
         /// <summary>

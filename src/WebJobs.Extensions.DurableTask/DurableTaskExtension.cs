@@ -22,6 +22,7 @@ using Microsoft.Azure.WebJobs.Description;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
 using Microsoft.Azure.WebJobs.Host.Scale;
 #endif
+using DurableTask.Core.Entities;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener;
 using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.Host.Config;
@@ -45,6 +46,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         IDisposable,
         IAsyncConverter<HttpRequestMessage, HttpResponseMessage>,
         INameVersionObjectManager<TaskOrchestration>,
+        INameVersionObjectManager<TaskEntity>,
         INameVersionObjectManager<TaskActivity>
     {
         private const string DefaultProvider = AzureStorageDurabilityProviderFactory.ProviderName;
@@ -426,7 +428,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             context.AddBindingRule<EntityTriggerAttribute>()
                 .BindToTrigger(new EntityTriggerAttributeBindingProvider(this, connectionName));
 
-            this.taskHubWorker = new TaskHubWorker(this.defaultDurabilityProvider, this, this, this.loggerFactory);
+            this.taskHubWorker = new TaskHubWorker(this.defaultDurabilityProvider, this, this, this, this.loggerFactory);
 
             // Add middleware to the DTFx dispatcher so that we can inject our own logic
             // into and customize the orchestration execution pipeline.
@@ -454,7 +456,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 // This is the older middleware implementation that is currently in use for in-process .NET
                 // and the older out-of-proc languages, like Node.js, Python, and PowerShell.
                 this.taskHubWorker.AddActivityDispatcherMiddleware(this.ActivityMiddleware);
-                this.taskHubWorker.AddOrchestrationDispatcherMiddleware(this.EntityMiddleware);
                 this.taskHubWorker.AddOrchestrationDispatcherMiddleware(this.OrchestrationMiddleware);
             }
 
@@ -668,14 +669,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <returns>An orchestration shim that delegates execution to an orchestrator function.</returns>
         TaskOrchestration INameVersionObjectManager<TaskOrchestration>.GetObject(string name, string version)
         {
-            if (name.StartsWith("@"))
-            {
-                return new TaskEntityShim(this, this.defaultDurabilityProvider, name);
-            }
-            else
-            {
-                return new TaskOrchestrationShim(this, this.defaultDurabilityProvider, name);
-            }
+            return new TaskOrchestrationShim(this, this.defaultDurabilityProvider, name);
+        }
+
+        /// <summary>
+        /// Called by the Durable Task Framework: Not used.
+        /// </summary>
+        /// <param name="creator">This parameter is not used.</param>
+        void INameVersionObjectManager<TaskEntity>.Add(ObjectCreator<TaskEntity> creator)
+        {
+            throw new InvalidOperationException("Entities should never be added explicitly.");
+        }
+
+        /// <summary>
+        /// Called by the Durable Task Framework: Returns the specified <see cref="TaskEntity"/>.
+        /// </summary>
+        /// <param name="name">The name of the entity to return.</param>
+        /// <param name="version">Not used.</param>
+        /// <returns>An entity shim that delegates execution to an entity function.</returns>
+        TaskEntity INameVersionObjectManager<TaskEntity>.GetObject(string name, string version)
+        {
+            return new TaskEntityShim(this, this.HostLifetimeService, name);
         }
 
         /// <summary>
@@ -847,290 +861,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             await context.RunDeferredTasks();
-        }
-
-        /// <summary>
-        /// This DTFx orchestration middleware (for entities) allows us to add context and set state
-        /// to the entity shim orchestration before it starts executing the actual entity logic.
-        /// </summary>
-        /// <param name="dispatchContext">A property bag containing useful DTFx context.</param>
-        /// <param name="next">The handler for running the next middleware in the pipeline.</param>
-        private async Task EntityMiddleware(DispatchMiddlewareContext dispatchContext, Func<Task> next)
-        {
-            var entityShim = dispatchContext.GetProperty<TaskOrchestration>() as TaskEntityShim;
-            if (entityShim == null)
-            {
-                // This is not an entity - skip.
-                await next();
-                return;
-            }
-
-            OrchestrationRuntimeState runtimeState = dispatchContext.GetProperty<OrchestrationRuntimeState>();
-            DurableEntityContext entityContext = (DurableEntityContext)entityShim.Context;
-            entityContext.InstanceId = runtimeState.OrchestrationInstance.InstanceId;
-            entityContext.ExecutionId = runtimeState.OrchestrationInstance.ExecutionId;
-            entityContext.History = runtimeState.Events;
-            entityContext.RawInput = runtimeState.Input;
-
-            Queue<RequestMessage> lockHolderMessages = null;
-
-            try
-            {
-                // 1. First time through the history
-                // we count events, add any under-lock op to the batch, and process lock releases
-                foreach (HistoryEvent e in runtimeState.Events)
-                {
-                    switch (e.EventType)
-                    {
-                        case EventType.ExecutionStarted:
-                            entityShim.Rehydrate(runtimeState.Input);
-                            break;
-
-                        case EventType.EventRaised:
-                            EventRaisedEvent eventRaisedEvent = (EventRaisedEvent)e;
-
-                            this.TraceHelper.DeliveringEntityMessage(
-                                entityContext.InstanceId,
-                                entityContext.ExecutionId,
-                                e.EventId,
-                                eventRaisedEvent.Name,
-                                eventRaisedEvent.Input);
-
-                            entityShim.NumberEventsToReceive++;
-
-                            if (EntityMessageEventNames.IsRequestMessage(eventRaisedEvent.Name))
-                            {
-                                // we are receiving an operation request or a lock request
-                                var requestMessage = this.MessageDataConverter.Deserialize<RequestMessage>(eventRaisedEvent.Input);
-
-                                IEnumerable<RequestMessage> deliverNow;
-
-                                if (requestMessage.ScheduledTime.HasValue)
-                                {
-                                    if ((requestMessage.ScheduledTime.Value - DateTime.UtcNow) > TimeSpan.FromMilliseconds(100))
-                                    {
-                                        // message was delivered too early. This can happen if the durability provider imposes
-                                        // a limit on the delay. We handle this by rescheduling the message instead of processing it.
-                                        deliverNow = Array.Empty<RequestMessage>();
-                                        entityShim.AddMessageToBeRescheduled(requestMessage);
-                                    }
-                                    else
-                                    {
-                                        // the message is scheduled to be delivered immediately.
-                                        // There are no FIFO guarantees for scheduled messages, so we skip the message sorter.
-                                        deliverNow = new RequestMessage[] { requestMessage };
-                                    }
-                                }
-                                else
-                                {
-                                    // run this through the message sorter to help with reordering and duplicate filtering
-                                    deliverNow = entityContext.State.MessageSorter.ReceiveInOrder(requestMessage, this.MessageReorderWindow);
-                                }
-
-                                foreach (var message in deliverNow)
-                                {
-                                    if (entityContext.State.LockedBy == message.ParentInstanceId)
-                                    {
-                                        if (lockHolderMessages == null)
-                                        {
-                                            lockHolderMessages = new Queue<RequestMessage>();
-                                        }
-
-                                        lockHolderMessages.Enqueue(message);
-                                    }
-                                    else
-                                    {
-                                        entityContext.State.Enqueue(message);
-                                    }
-                                }
-                            }
-                            else if (EntityMessageEventNames.IsReleaseMessage(eventRaisedEvent.Name))
-                            {
-                                // we are receiving a lock release
-                                var message = this.MessageDataConverter.Deserialize<ReleaseMessage>(eventRaisedEvent.Input);
-
-                                if (entityContext.State.LockedBy == message.ParentInstanceId)
-                                {
-                                    this.TraceHelper.EntityLockReleased(
-                                        entityContext.HubName,
-                                        entityContext.Name,
-                                        entityContext.InstanceId,
-                                        message.ParentInstanceId,
-                                        message.LockRequestId,
-                                        isReplay: false);
-
-                                    entityContext.State.LockedBy = null;
-                                }
-                            }
-                            else
-                            {
-                                // this is a continue message.
-                                // Resumes processing of previously queued operations, if any.
-                                entityContext.State.Suspended = false;
-                            }
-
-                            break;
-                    }
-                }
-
-                // lock holder messages go to the front of the queue
-                if (lockHolderMessages != null)
-                {
-                    entityContext.State.PutBack(lockHolderMessages);
-                }
-
-                if (!entityContext.State.Suspended)
-                {
-                    // 2. We add as many requests from the queue to the batch as possible,
-                    // stopping at lock requests or when the maximum batch size is reached
-                    while (entityContext.State.MayDequeue())
-                    {
-                        if (entityShim.OperationBatch.Count == this.Options.MaxEntityOperationBatchSize)
-                        {
-                            // we have reached the maximum batch size already
-                            // insert a delay after this batch to ensure write back
-                            entityShim.ToBeContinuedWithDelay();
-                            break;
-                        }
-
-                        var request = entityContext.State.Dequeue();
-
-                        if (request.IsLockRequest)
-                        {
-                            entityShim.AddLockRequestToBatch(request);
-                            break;
-                        }
-                        else
-                        {
-                            entityShim.AddOperationToBatch(request);
-                        }
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                entityContext.CaptureInternalError(e);
-            }
-
-            WrappedFunctionResult result;
-
-            if (entityShim.OperationBatch.Count > 0 && !this.HostLifetimeService.OnStopping.IsCancellationRequested)
-            {
-                // 3a. Start the functions invocation pipeline (billing, logging, bindings, and timeout tracking).
-                result = await FunctionExecutionHelper.ExecuteFunctionInOrchestrationMiddleware(
-                    entityShim.GetFunctionInfo().Executor,
-                    new TriggeredFunctionData
-                    {
-                        TriggerValue = entityShim.Context,
-#pragma warning disable CS0618 // Approved for use by this extension
-                        InvokeHandler = async userCodeInvoker =>
-                            {
-                                entityContext.ExecutorCalledBack = true;
-
-                                entityShim.SetFunctionInvocationCallback(userCodeInvoker);
-
-                                this.TraceHelper.FunctionStarting(
-                                    entityContext.HubName,
-                                    entityContext.Name,
-                                    entityContext.InstanceId,
-                                    this.GetIntputOutputTrace(runtimeState.Input),
-                                    FunctionType.Entity,
-                                    isReplay: false);
-
-                                // 3. Run all the operations in the batch
-                                if (entityContext.InternalError == null)
-                                {
-                                    try
-                                    {
-                                        await entityShim.ExecuteBatch(this.HostLifetimeService.OnStopping);
-                                    }
-                                    catch (Exception e)
-                                    {
-                                        entityContext.CaptureInternalError(e);
-                                    }
-                                }
-
-                                // 4. Run the DTFx orchestration to persist the effects,
-                                // send the outbox, and continue as new
-                                await next();
-
-                                // 5. If there were internal or application errors, trace them for DF
-                                if (entityContext.ErrorsPresent(out var description))
-                                {
-                                    this.TraceHelper.FunctionFailed(
-                                        entityContext.HubName,
-                                        entityContext.Name,
-                                        entityContext.InstanceId,
-                                        description,
-                                        functionType: FunctionType.Entity,
-                                        isReplay: false);
-                                }
-                                else
-                                {
-                                    this.TraceHelper.FunctionCompleted(
-                                        entityContext.HubName,
-                                        entityContext.Name,
-                                        entityContext.InstanceId,
-                                        this.GetIntputOutputTrace(entityContext.State.EntityState),
-                                        continuedAsNew: true,
-                                        functionType: FunctionType.Entity,
-                                        isReplay: false);
-                                }
-
-                                // 6. If there were internal or application errors, also rethrow them here so the functions host gets to see them
-                                entityContext.ThrowInternalExceptionIfAny();
-                                entityContext.ThrowApplicationExceptionsIfAny();
-                            },
-#pragma warning restore CS0618
-                    },
-                    entityShim,
-                    entityContext,
-                    this.HostLifetimeService.OnStopping);
-
-                if (result.ExecutionStatus == WrappedFunctionResult.FunctionResultStatus.FunctionTimeoutError)
-                {
-                    await entityShim.TimeoutTask;
-                }
-
-                if (result.ExecutionStatus == WrappedFunctionResult.FunctionResultStatus.FunctionsRuntimeError
-                    || result.ExecutionStatus == WrappedFunctionResult.FunctionResultStatus.FunctionsHostStoppingError)
-                {
-                    this.TraceHelper.FunctionAborted(
-                      this.Options.HubName,
-                      entityContext.FunctionName,
-                      entityContext.InstanceId,
-                      $"An internal error occurred while attempting to execute this function. The execution will be aborted and retried. Details: {result.Exception}",
-                      functionType: FunctionType.Entity);
-
-                    // This will abort the execution and cause the message to go back onto the queue for re-processing
-                    throw new SessionAbortedException(
-                        $"An internal error occurred while attempting to execute '{entityContext.FunctionName}'.",
-                        result.Exception);
-                }
-            }
-            else
-            {
-                // 3b. We do not need to call into user code because we are not going to run any operations.
-                // In this case we can execute without involving the functions runtime.
-                if (entityContext.InternalError == null)
-                {
-                    try
-                    {
-                        await entityShim.ExecuteBatch(this.HostLifetimeService.OnStopping);
-                        await next();
-                    }
-                    catch (Exception e)
-                    {
-                        entityContext.CaptureInternalError(e);
-                    }
-                }
-            }
-
-            // If there were internal errors, throw a SessionAbortedException
-            // here so DTFx can abort the batch and back off the work item
-            entityContext.AbortOnInternalError();
-
-            await entityContext.RunDeferredTasks();
         }
 
         internal string GetDefaultConnectionName()

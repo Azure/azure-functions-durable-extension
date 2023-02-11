@@ -108,7 +108,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
                 else if (destinationType == typeof(string))
                 {
-                    convertedValue = EntityContextToString(entityContext);
+                    // DRAFT
+                    // convertedValue = EntityContextToString(entityContext);
                 }
 
                 var inputValueProvider = new ObjectValueProvider(
@@ -151,29 +152,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return Task.FromResult<IListener>(listener);
             }
 
-            private static string EntityContextToString(DurableEntityContext arg)
-            {
-                // assemble the operation batch information
-                var operationBatch = new JArray();
-                foreach (var operation in arg.OperationBatch)
-                {
-                    operationBatch.Add(new JObject(
-                        new JProperty("name", operation.Operation),
-                        new JProperty("input", operation.Input),
-                        new JProperty("isSignal", operation.IsSignal)));
-                }
-
-                // assemble the entity state information
-                var contextObject = new JObject(
-                    new JProperty("self", new JObject(
-                        new JProperty("name", arg.Self.EntityName),
-                        new JProperty("key", arg.Self.EntityKey))),
-                    new JProperty("exists", arg.State.EntityExists),
-                    new JProperty("state", arg.State.EntityState),
-                    new JProperty("batch", operationBatch));
-
-                return contextObject.ToString();
-            }
+            // DRAFT deleted OOPROC format
         }
     }
 }

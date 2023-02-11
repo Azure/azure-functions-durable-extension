@@ -647,16 +647,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     LocalSlotName,
                     functionName,
                     instanceId,
-                    operationName,
-                    operationId,
+                    operationName ?? "",
+                    operationId ?? "",
                     FunctionType.Entity.ToString(),
                     ExtensionVersion,
                     isReplay);
 
-                this.logger.LogInformation(
-                    "{instanceId}: Function '{functionName} ({functionType})' created entity state in '{operationName}' operation {operationId}. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
-                    instanceId, functionName, functionType, operationName, operationId, FunctionState.EntityStateCreated, hubName,
-                    LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++);
+                if (operationName != null)
+                {
+                    this.logger.LogInformation(
+                        "{instanceId}: Function '{functionName} ({functionType})' created entity state in '{operationName}' operation {operationId}. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
+                        instanceId, functionName, functionType, operationName, operationId, FunctionState.EntityStateCreated, hubName,
+                        LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++);
+                }
+                else
+                {
+                    this.logger.LogInformation(
+                      "{instanceId}: Function '{functionName} ({functionType})' created entity state. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
+                      instanceId, functionName, functionType, FunctionState.EntityStateCreated, hubName,
+                      LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++);
+                }
             }
         }
 
@@ -678,16 +688,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     LocalSlotName,
                     functionName,
                     instanceId,
-                    operationName,
-                    operationId,
+                    operationName ?? "",
+                    operationId ?? "",
                     FunctionType.Entity.ToString(),
                     ExtensionVersion,
                     isReplay);
 
-                this.logger.LogInformation(
-                    "{instanceId}: Function '{functionName} ({functionType})' deleted entity state in '{operationName}' operation {operationId}. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
-                    instanceId, functionName, functionType, operationName, operationId, FunctionState.EntityStateDeleted, hubName,
-                    LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++);
+                if (operationName != null)
+                {
+                    this.logger.LogInformation(
+                        "{instanceId}: Function '{functionName} ({functionType})' deleted entity state in '{operationName}' operation {operationId}. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
+                        instanceId, functionName, functionType, operationName, operationId, FunctionState.EntityStateDeleted, hubName,
+                        LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++);
+                }
+                else
+                {
+                    this.logger.LogInformation(
+                        "{instanceId}: Function '{functionName} ({functionType})' deleted entity state. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
+                        instanceId, functionName, functionType, FunctionState.EntityStateDeleted, hubName,
+                        LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++);
+                }
             }
         }
 

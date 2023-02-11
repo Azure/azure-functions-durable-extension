@@ -9,63 +9,65 @@ using System.Runtime.ExceptionServices;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using DurableTask.Core.Common;
+using DurableTask.Core.Entities;
+using DurableTask.Core.Entities.OperationFormat;
 using DurableTask.Core.Exceptions;
 using Microsoft.Azure.WebJobs.Host.Bindings;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     /// <summary>
     /// Context object passed to application code executing entity operations.
     /// </summary>
-    internal class DurableEntityContext : DurableCommonContext, IDurableEntityContext
+    internal class DurableEntityContext : IDurableEntityContext
     {
         private readonly EntityId self;
-
         private readonly TaskEntityShim shim;
-
+        private readonly DurableTaskExtension config;
         private readonly MessagePayloadDataConverter messageDataConverter;
-
         private readonly MessagePayloadDataConverter errorDataConverter;
 
-        private readonly DurabilityProvider durabilityProvider;
-
-        private List<OutgoingMessage> outbox = new List<OutgoingMessage>();
-
-        public DurableEntityContext(DurableTaskExtension config, DurabilityProvider durabilityProvider, EntityId entity, TaskEntityShim shim)
-            : base(config, entity.EntityName)
+        public DurableEntityContext(DurableTaskExtension config, EntityId entity, TaskEntityShim shim)
         {
+            this.config = config ?? throw new ArgumentNullException(nameof(config));
+            this.FunctionName = entity.EntityName;
             this.messageDataConverter = config.MessageDataConverter;
             this.errorDataConverter = config.ErrorDataConverter;
-            this.durabilityProvider = durabilityProvider;
             this.self = entity;
             this.shim = shim;
         }
 
         // The last serialized checkpoint of the entity state is always stored in
-        // the fields this.State.EntityExists (a boolean) and this.State.EntityState (a string).
-        // The current state is determined by this.CurrentStateAccess and this.CurrentState.
+        // this. LastSerializedState. The current state is determined by this.CurrentStateAccess and this.CurrentState.
         internal enum StateAccess
         {
-            NotAccessed, // current state is stored in this.State (serialized)
+            NotAccessed, // current state is stored in this.StartingState (serialized)
             Accessed, // current state is stored in this.CurrentState (deserialized)
             Clean, // current state is stored in both this.CurrentState (deserialized) and in this.State (serialized)
             Deleted, // current state is deleted
         }
 
-        internal StateAccess CurrentStateAccess { get; set; }
+        internal string LastSerializedState
+        {
+            get { return this.shim.BatchResult.EntityState; }
+            set { this.shim.BatchResult.EntityState = value; }
+        }
+
+        private StateAccess CurrentStateAccess { get; set; }
+
+        internal string FunctionName { get; }
 
         internal object CurrentState { get; set; }
 
-        internal SchedulerState State { get; set; }
+        internal int CurrentOperationIndex { get; set; }
 
-        internal RequestMessage CurrentOperation { get; set; }
+        internal OperationRequest CurrentOperation { get; set; }
 
-        internal DateTime CurrentOperationStartTime { get; set; }
+        internal OperationResult CurrentOperationResult { get; set; }
 
-        internal ResponseMessage CurrentOperationResponse { get; set; }
-
-        internal bool IsNewlyConstructed { get; set; }
+        internal bool ExecutorCalledBack { get; set; }
 
         string IDurableEntityContext.EntityName => this.self.EntityName;
 
@@ -73,11 +75,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         EntityId IDurableEntityContext.EntityId => this.self;
 
-        int IDurableEntityContext.BatchPosition => this.shim.BatchPosition;
+        int IDurableEntityContext.BatchPosition => this.CurrentOperationIndex;
 
-        int IDurableEntityContext.BatchSize => this.shim.OperationBatch.Count;
-
-        internal List<RequestMessage> OperationBatch => this.shim.OperationBatch;
+        int IDurableEntityContext.BatchSize => this.shim.BatchRequest.Operations.Count;
 
         internal ExceptionDispatchInfo InternalError { get; set; }
 
@@ -108,12 +108,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     case StateAccess.Deleted:
                         return false;
 
-                    default: return this.State.EntityExists;
+                    default: return this.LastSerializedState != null;
                 }
             }
         }
-
-        internal int OutboxPosition => this.outbox.Count;
 
 #if !FUNCTIONS_V1
         public FunctionBindingContext FunctionBindingContext { get; set; }
@@ -189,7 +187,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        public void Rollback(int outboxPositionBeforeOperation)
+        public void Rollback(int positionBeforeCurrentOperation)
         {
             // We discard the current state, which means we go back to the last serialized one
             this.CurrentStateAccess = StateAccess.NotAccessed;
@@ -197,7 +195,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             // we also roll back the list of outgoing messages,
             // so any signals sent by this operation are discarded.
-            this.outbox.RemoveRange(outboxPositionBeforeOperation, this.outbox.Count - outboxPositionBeforeOperation);
+            this.shim.BatchResult.Actions.RemoveRange(positionBeforeCurrentOperation, this.shim.BatchResult.Actions.Count - positionBeforeCurrentOperation);
         }
 
         void IDurableEntityContext.DeleteState()
@@ -236,11 +234,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             TState result;
 
-            if (this.State.EntityExists && this.CurrentStateAccess != StateAccess.Deleted)
+            if (this.LastSerializedState != null && this.CurrentStateAccess != StateAccess.Deleted)
             {
                 try
                 {
-                    result = this.messageDataConverter.Deserialize<TState>(this.State.EntityState);
+                    result = this.messageDataConverter.Deserialize<TState>(this.LastSerializedState);
                 }
                 catch (Exception e)
                 {
@@ -297,12 +295,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new EntitySchedulerException($"Failed to construct entity state object: {e.Message}", e);
             }
 
-            if (this.State.EntityExists
+            if (this.LastSerializedState != null
                 && this.CurrentStateAccess != StateAccess.Deleted)
             {
                 try
                 {
-                    JsonConvert.PopulateObject(this.State.EntityState, result, this.messageDataConverter.JsonSettings);
+                    JsonConvert.PopulateObject(this.LastSerializedState, result, this.messageDataConverter.JsonSettings);
                 }
                 catch (Exception e)
                 {
@@ -323,54 +321,66 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.CurrentStateAccess = StateAccess.Accessed;
         }
 
-        internal bool TryWriteback(out ResponseMessage serializationErrorMessage, out Exception exception, string operationName = null, string operationId = null)
+        internal bool TryWriteback(out OperationResult serializationErrorMessage, out Exception exception, string operationName = null, string operationId = null)
         {
             serializationErrorMessage = null;
             exception = null;
+            bool entityExisted = this.LastSerializedState != null;
 
             if (this.CurrentStateAccess == StateAccess.Deleted)
             {
-                this.Config.TraceHelper.EntityStateDeleted(
-                    this.Config.Options.HubName,
-                    this.Name,
-                    this.InstanceId,
-                    operationName ?? "",
-                    operationId ?? "",
-                    isReplay: false);
-
-                this.State.EntityState = null;
-                this.State.EntityExists = false;
+                this.LastSerializedState = null;
                 this.CurrentStateAccess = StateAccess.NotAccessed;
+
+                if (entityExisted)
+                {
+                    this.config.TraceHelper.EntityStateDeleted(
+                        this.config.Options.HubName,
+                        this.shim.Name,
+                        this.shim.InstanceId,
+                        operationName,
+                        operationId,
+                        isReplay: false);
+                }
             }
             else if (this.CurrentStateAccess == StateAccess.Accessed)
             {
+                string serializedState = null;
+                Exception serializationException = null;
                 try
                 {
-                    this.State.EntityState = this.messageDataConverter.Serialize(this.CurrentState);
-
-                    if (!this.State.EntityExists)
-                    {
-                        this.Config.TraceHelper.EntityStateCreated(
-                            this.Config.Options.HubName,
-                            this.Name,
-                            this.InstanceId,
-                            operationName ?? "",
-                            operationId ?? "",
-                            isReplay: false);
-                    }
-
-                    this.State.EntityExists = true;
-                    this.CurrentStateAccess = StateAccess.Clean;
+                    serializedState = this.messageDataConverter.Serialize(this.CurrentState);
                 }
                 catch (Exception e)
                 {
+                    serializationException = e;
+                }
+
+                if (serializationException == null)
+                {
+                    this.LastSerializedState = serializedState;
+                    this.CurrentStateAccess = StateAccess.Clean;
+
+                    if (!entityExisted)
+                    {
+                        this.config.TraceHelper.EntityStateCreated(
+                            this.config.Options.HubName,
+                            this.shim.Name,
+                            this.shim.InstanceId,
+                            operationName,
+                            operationId,
+                            isReplay: false);
+                    }
+                }
+                else
+                {
                     // we cannot serialize the entity state - this is an application error.
-                    var serializationException = new EntitySchedulerException(
-                        $"Failed to serialize state of '{this.FunctionName}' entity: {e.Message}", e);
+                    serializationException = new EntitySchedulerException(
+                        $"Operation was rolled back because state for entity '{this.FunctionName}' could not be serialized: {serializationException.Message}", serializationException);
 
                     this.CaptureApplicationError(serializationException);
 
-                    serializationErrorMessage = new ResponseMessage();
+                    serializationErrorMessage = new OperationResult();
                     serializationErrorMessage.SetExceptionResult(serializationException, operationName, this.errorDataConverter);
                     exception = serializationException;
 
@@ -405,32 +415,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             string functionName = entity.EntityName;
-            this.Config.ThrowIfFunctionDoesNotExist(functionName, FunctionType.Entity);
+            this.config.ThrowIfFunctionDoesNotExist(functionName, FunctionType.Entity);
 
-            var target = new OrchestrationInstance()
+            var action = new SendSignalOperationAction()
             {
                 InstanceId = EntityId.GetSchedulerIdFromEntityId(entity),
-            };
-            var request = new RequestMessage()
-            {
-                ParentInstanceId = this.InstanceId,
-                ParentExecutionId = null, // for entities, message sorter persists across executions
-                Id = Guid.NewGuid(),
-                IsSignal = true,
-                Operation = operation,
+                Name = operation,
                 ScheduledTime = scheduledTimeUtc,
+                Input = null,
             };
+
             if (input != null)
             {
-                request.SetInput(input, this.messageDataConverter);
+                action.Input = OperationInputExtensions.SerializeOperationInput(operation, input, this.messageDataConverter);
             }
 
-            this.SendOperationMessage(target, request);
+            // add the action to the results, under a lock since user code may be concurrent
+            lock (this.shim.BatchResult.Actions)
+            {
+                this.shim.BatchResult.Actions.Add(action);
+            }
 
-            this.Config.TraceHelper.FunctionScheduled(
-                this.Config.Options.HubName,
+            this.config.TraceHelper.FunctionScheduled(
+                this.config.Options.HubName,
                 functionName,
-                this.InstanceId,
+                action.InstanceId,
                 reason: this.FunctionName,
                 functionType: FunctionType.Entity,
                 isReplay: false);
@@ -449,20 +458,43 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new ArgumentException(nameof(instanceId), "Orchestration instance ids must not start with @");
             }
 
-            lock (this.outbox)
+            var action = new StartNewOrchestrationOperationAction()
             {
-                this.outbox.Add(new FireAndForgetMessage()
+                InstanceId = instanceId,
+                Name = functionName,
+                Version = DurableOrchestrationContext.DefaultVersion,
+                Tags = new Dictionary<string, string>() { { OrchestrationTags.FireAndForget, "" } },
+            };
+
+            if (input != null)
+            {
+                try
                 {
-                    InstanceId = instanceId,
-                    FunctionName = functionName,
-                    Input = input,
-                });
+                    if (input is JToken jtoken)
+                    {
+                        action.Input = jtoken.ToString(Formatting.None);
+                    }
+                    else
+                    {
+                        action.Input = this.messageDataConverter.Serialize(input);
+                    }
+                }
+                catch (Exception e)
+                {
+                    throw new EntitySchedulerException($"Failed to serialize input for orchestration '{functionName}': {e.Message}", e);
+                }
             }
 
-            this.Config.TraceHelper.FunctionScheduled(
-                this.Config.Options.HubName,
+            // add the action to the results, under a lock since user code may be concurrent
+            lock (this.shim.BatchResult.Actions)
+            {
+                this.shim.BatchResult.Actions.Add(action);
+            }
+
+            this.config.TraceHelper.FunctionScheduled(
+                this.config.Options.HubName,
                 functionName,
-                this.InstanceId,
+                action.InstanceId,
                 reason: this.FunctionName,
                 functionType: FunctionType.Orchestrator,
                 isReplay: false);
@@ -540,7 +572,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         void IDurableEntityContext.Return(object result)
         {
             this.ThrowIfInvalidAccess();
-            this.CurrentOperationResponse.SetResult(result, this.messageDataConverter);
+            this.CurrentOperationResult.SetResult(result, this.messageDataConverter);
         }
 
         internal static MethodInfo FindMethodForContext<T>(IDurableEntityContext context)
@@ -567,172 +599,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        internal void SendOperationMessage(OrchestrationInstance target, RequestMessage requestMessage)
-        {
-            lock (this.outbox)
-            {
-                string eventName;
-
-                if (requestMessage.ScheduledTime.HasValue)
-                {
-                    DateTime adjustedDeliveryTime = requestMessage.GetAdjustedDeliveryTime(this.durabilityProvider);
-                    eventName = EntityMessageEventNames.ScheduledRequestMessageEventName(adjustedDeliveryTime);
-                }
-                else
-                {
-                    eventName = EntityMessageEventNames.RequestMessageEventName;
-                }
-
-                this.outbox.Add(new OperationMessage()
-                {
-                    Target = target,
-                    EventName = eventName,
-                    EventContent = requestMessage,
-                });
-            }
-        }
-
-        internal void SendResponseMessage(OrchestrationInstance target, Guid requestId, object message, bool isException)
-        {
-            lock (this.outbox)
-            {
-                this.outbox.Add(new ResultMessage()
-                {
-                    Target = target,
-                    EventName = EntityMessageEventNames.ResponseMessageEventName(requestId),
-                    EventContent = message,
-                    IsError = isException,
-                });
-            }
-        }
-
-        internal void SendLockRequestMessage(OrchestrationInstance target, object message)
-        {
-            lock (this.outbox)
-            {
-                this.outbox.Add(new LockMessage()
-                {
-                    Target = target,
-                    EventName = EntityMessageEventNames.RequestMessageEventName,
-                    EventContent = message,
-                });
-            }
-        }
-
-        internal void SendLockResponseMessage(OrchestrationInstance target, Guid requestId)
-        {
-            lock (this.outbox)
-            {
-                this.outbox.Add(new LockMessage()
-                {
-                    Target = target,
-                    EventName = EntityMessageEventNames.ResponseMessageEventName(requestId),
-                    EventContent = new ResponseMessage()
-                    {
-                        Result = "Lock Acquisition Completed", // ignored by receiver but shows up in traces
-                    },
-                });
-            }
-        }
-
-        internal void SendOutbox(OrchestrationContext innerContext, bool writeBackSuccessful, ResponseMessage serializationErrorMessage)
-        {
-            lock (this.outbox)
-            {
-                foreach (var message in this.outbox)
-                {
-                    if (message is LockMessage lockMessage)
-                    {
-                        this.Config.TraceHelper.SendingEntityMessage(
-                            this.InstanceId,
-                            this.ExecutionId,
-                            lockMessage.Target.InstanceId,
-                            lockMessage.EventName,
-                            lockMessage.EventContent);
-
-                        innerContext.SendEvent(lockMessage.Target, lockMessage.EventName, lockMessage.EventContent);
-                    }
-                    else if (message is ResultMessage resultMessage)
-                    {
-                        // Since for all of the operations in the batch, their effect on the entity state
-                        // is lost, we don't want the calling orchestrations to think everything is o.k.
-                        // They should be notified, so we replace all non-error operation results
-                        // with an exception result.
-                        if (!writeBackSuccessful && !resultMessage.IsError)
-                        {
-                            resultMessage.EventContent = serializationErrorMessage;
-                        }
-
-                        this.Config.TraceHelper.SendingEntityMessage(
-                            this.InstanceId,
-                            this.ExecutionId,
-                            resultMessage.Target.InstanceId,
-                            resultMessage.EventName,
-                            resultMessage.EventContent);
-
-                        innerContext.SendEvent(resultMessage.Target, resultMessage.EventName, resultMessage.EventContent);
-                    }
-                    else if (!writeBackSuccessful)
-                    {
-                        // all other messages (signals and fire-and-forget) are suppressed if the writeback failed
-                        // this helps to keep the observer pattern correct, for example.
-                    }
-                    else if (message is OperationMessage operationMessage)
-                    {
-                        if (!operationMessage.EventContent.ScheduledTime.HasValue)
-                        {
-                            this.State.MessageSorter.LabelOutgoingMessage(operationMessage.EventContent, operationMessage.Target.InstanceId, DateTime.UtcNow, this.Config.MessageReorderWindow);
-                        }
-
-                        this.Config.TraceHelper.SendingEntityMessage(
-                            this.InstanceId,
-                            this.ExecutionId,
-                            operationMessage.Target.InstanceId,
-                            operationMessage.EventName,
-                            operationMessage.EventContent);
-
-                        innerContext.SendEvent(operationMessage.Target, operationMessage.EventName, operationMessage.EventContent);
-                    }
-                    else if (message is FireAndForgetMessage fireAndForgetMessage)
-                    {
-                        var dummyTask = innerContext.CreateSubOrchestrationInstance<object>(
-                          fireAndForgetMessage.FunctionName,
-                          DurableOrchestrationContext.DefaultVersion,
-                          fireAndForgetMessage.InstanceId,
-                          fireAndForgetMessage.Input,
-                          new Dictionary<string, string>() { { OrchestrationTags.FireAndForget, "" } });
-
-                        System.Diagnostics.Debug.Assert(dummyTask.IsCompleted, "task should be fire-and-forget");
-                    }
-                }
-
-                this.outbox.Clear();
-            }
-        }
-
-        internal void RescheduleMessages(OrchestrationContext innerContext, List<RequestMessage> messages)
-        {
-            if (messages != null)
-            {
-                foreach (var message in messages)
-                {
-                    var instance = new OrchestrationInstance { InstanceId = this.InstanceId };
-                    DateTime adjustedDeliveryTime = message.GetAdjustedDeliveryTime(this.durabilityProvider);
-                    var eventName = EntityMessageEventNames.ScheduledRequestMessageEventName(adjustedDeliveryTime);
-                    innerContext.SendEvent(instance, eventName, message);
-                }
-
-                messages.Clear();
-            }
-        }
-
-        internal void SendContinue(OrchestrationContext innerContext)
-        {
-            var instance = new OrchestrationInstance { InstanceId = this.InstanceId };
-            var eventName = EntityMessageEventNames.ContinueMessageEventName;
-            innerContext.SendEvent(instance, eventName, null);
-        }
-
         /// <inheritdoc/>
         void IDurableEntityContext.SignalEntity<TEntityInterface>(string entityKey, Action<TEntityInterface> operation)
         {
@@ -754,48 +620,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         void IDurableEntityContext.SignalEntity<TEntityInterface>(EntityId entityId, DateTime scheduledTimeUtc, Action<TEntityInterface> operation)
         {
             operation(EntityProxyFactory.Create<TEntityInterface>(new EntityContextProxy(this, scheduledTimeUtc), entityId));
-        }
-
-        private abstract class OutgoingMessage
-        {
-        }
-
-        private class FireAndForgetMessage : OutgoingMessage
-        {
-            public string InstanceId { get; set; }
-
-            public string FunctionName { get; set; }
-
-            public object Input { get; set; }
-        }
-
-        private class OperationMessage : OutgoingMessage
-        {
-            public OrchestrationInstance Target { get; set; }
-
-            public string EventName { get; set; }
-
-            public RequestMessage EventContent { get; set; }
-        }
-
-        private class ResultMessage : OutgoingMessage
-        {
-            public OrchestrationInstance Target { get; set; }
-
-            public string EventName { get; set; }
-
-            public object EventContent { get; set; }
-
-            public bool IsError { get; set; }
-        }
-
-        private class LockMessage : OutgoingMessage
-        {
-            public OrchestrationInstance Target { get; set; }
-
-            public string EventName { get; set; }
-
-            public object EventContent { get; set; }
         }
     }
 }
