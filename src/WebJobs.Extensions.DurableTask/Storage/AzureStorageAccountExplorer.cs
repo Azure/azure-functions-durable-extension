@@ -26,6 +26,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage
             this.connectionInfoResolver = connectionInfoResolver ?? throw new ArgumentNullException(nameof(connectionInfoResolver));
             this.componentFactory = componentFactory ?? throw new ArgumentNullException(nameof(componentFactory));
             this.logForwarder = logForwarder ?? throw new ArgumentNullException(nameof(logForwarder));
+
+            this.logForwarder.Start();
         }
 #else
         public AzureStorageAccountExplorer(IConnectionInfoResolver connectionInfoResolver)

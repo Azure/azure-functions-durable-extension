@@ -104,13 +104,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return new FunctionsV2HostWrapper(host, options, nameResolver);
         }
 
-        public static IHost CreateJobHostExternalEnvironment(IAzureStorageAccountExplorer storageAccountProvider)
+        public static IHost CreateJobHostExternalEnvironment(IAzureStorageAccountExplorer storageAccountExplorer)
         {
             IHost host = new HostBuilder()
                 .ConfigureServices(
                     serviceCollection =>
                     {
-                        serviceCollection.AddSingleton(storageAccountProvider);
+                        serviceCollection.AddSingleton(storageAccountExplorer);
                         serviceCollection.AddDurableClientFactory();
                     })
                 .Build();

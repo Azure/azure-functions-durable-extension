@@ -252,9 +252,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 TaskHub = taskHubName,
             };
 
-            var storageAccountProvider = new CustomAccountStorageProvider(appSettings);
+            var storageAccountExplorer = new CustomAccountStorageExplorer(appSettings);
 
-            using (IHost clientHost = TestHelpers.GetJobHostExternalEnvironment(storageAccountProvider))
+            using (IHost clientHost = TestHelpers.GetJobHostExternalEnvironment(storageAccountExplorer))
             {
                 await clientHost.StartAsync();
                 IDurableClientFactory durableClientFactory = clientHost.Services.GetService(typeof(IDurableClientFactory)) as DurableClientFactory;
@@ -2489,9 +2489,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 TaskHub = taskHubName,
             };
 
-            var storageAccountProvider = new CustomAccountStorageProvider(appSettings);
+            var storageAccountExplorer = new CustomAccountStorageExplorer(appSettings);
 
-            using (IHost clientHost = TestHelpers.GetJobHostExternalEnvironment(storageAccountProvider))
+            using (IHost clientHost = TestHelpers.GetJobHostExternalEnvironment(storageAccountExplorer))
             {
                 using (var orchestrationHost = TestHelpers.GetJobHost(
                    this.loggerProvider,
@@ -2558,7 +2558,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 { "TestTaskHub", taskHub },
             };
 
-            var storageAccountProvider = new CustomAccountStorageProvider(taskHubAndStorageAppSetting);
+            var storageAccountExplorer = new CustomAccountStorageExplorer(taskHubAndStorageAppSetting);
 
             // create a new host without activity functions and see if the function fails
             using (ITestHost newHost = TestHelpers.GetJobHost(
@@ -2570,7 +2570,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 types: modifiedTypeArray))
             {
                 await newHost.StartAsync();
-                using (IHost clientHost = TestHelpers.GetJobHostExternalEnvironment(storageAccountProvider))
+                using (IHost clientHost = TestHelpers.GetJobHostExternalEnvironment(storageAccountExplorer))
                 {
                     DurableClientOptions durableClientOptions = new DurableClientOptions
                     {

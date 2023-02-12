@@ -29,7 +29,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public AzureStorageDurabilityProviderFactory(
             IOptions<DurableTaskOptions> options,
-            IAzureStorageAccountExplorer storageAccountProvider,
+            IAzureStorageAccountExplorer storageAccountExplorer,
             INameResolver nameResolver,
             ILoggerFactory loggerFactory,
 #pragma warning disable CS0612 // Type or member is obsolete
@@ -46,7 +46,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             this.options = options.Value;
-            this.storageAccountExplorer = storageAccountProvider ?? throw new ArgumentNullException(nameof(storageAccountProvider));
+            this.storageAccountExplorer = storageAccountExplorer ?? throw new ArgumentNullException(nameof(storageAccountExplorer));
             this.nameResolver = nameResolver ?? throw new ArgumentNullException(nameof(nameResolver));
             this.loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
 

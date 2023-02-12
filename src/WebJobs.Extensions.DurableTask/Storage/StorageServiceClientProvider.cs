@@ -16,15 +16,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage
     {
         private readonly IConfigurationSection connectionSection;
         private readonly AzureComponentFactory componentFactory;
-        private readonly AzureEventSourceLogForwarder logForwarder;
 
         protected StorageServiceClientProvider(IConfigurationSection connectionSection, AzureComponentFactory componentFactory, AzureEventSourceLogForwarder logForwarder)
         {
             this.connectionSection = connectionSection ?? throw new ArgumentNullException(nameof(connectionSection));
             this.componentFactory = componentFactory ?? throw new ArgumentNullException(nameof(componentFactory));
-            this.logForwarder = logForwarder ?? throw new ArgumentNullException(nameof(logForwarder));
-
-            this.logForwarder.Start();
         }
 
         public TClient CreateClient(TClientOptions options)

@@ -9,7 +9,7 @@ using Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
-    internal class TestStorageAccountProvider : IAzureStorageAccountExplorer
+    internal class TestStorageAccountExplorer : IAzureStorageAccountExplorer
     {
         public IStorageServiceClientProvider<BlobServiceClient, BlobClientOptions> GetBlobClientProvider(string connectionName) =>
             StorageServiceClientProvider.ForBlob(TestHelpers.GetStorageConnectionString());

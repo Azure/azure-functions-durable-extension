@@ -35,14 +35,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public AzureStorageDurabilityProvider(
             AzureStorageOrchestrationService service,
-            IAzureStorageAccountExplorer storageAccountProvider,
+            IAzureStorageAccountExplorer storageAccountExplorer,
             string connectionName,
             AzureStorageOptions options,
             ILogger logger)
             : base("Azure Storage", service, service, connectionName)
         {
             this.serviceClient = service;
-            this.storageAccountExplorer = storageAccountProvider;
+            this.storageAccountExplorer = storageAccountExplorer;
             this.connectionName = connectionName;
             this.storageOptionsJson = JObject.FromObject(
                 options,

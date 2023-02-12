@@ -95,16 +95,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             private readonly JobHost innerHost;
             private readonly DurableTaskOptions options;
-            private readonly IAzureStorageAccountExplorer storageAccountProvider;
+            private readonly IAzureStorageAccountExplorer storageAccountExplorer;
 
             public FunctionsV1HostWrapper(
                 JobHost innerHost,
                 IOptions<DurableTaskOptions> options,
-                IAzureStorageAccountExplorer storageAccountResolver)
+                IAzureStorageAccountExplorer storageAccountExplorer)
             {
                 this.innerHost = innerHost ?? throw new ArgumentNullException(nameof(innerHost));
                 this.options = options.Value;
-                this.storageAccountProvider = storageAccountResolver;
+                this.storageAccountExplorer = storageAccountExplorer;
             }
 
             public Task CallAsync(string methodName, IDictionary<string, object> args)

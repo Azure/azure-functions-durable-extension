@@ -123,7 +123,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             const string connectionName = "storage";
             var endpoint = new Uri($"https://{accountName}.blob.core.windows.net", UriKind.Absolute);
             var options = new AzureStorageAccountOptions { BlobServiceUri = endpoint };
-            AzureStorageAccountExplorer explorer = this.SetupStorageAccountProvider(connectionName, options);
+            AzureStorageAccountExplorer explorer = this.SetupStorageAccountExplorer(connectionName, options);
 
             IStorageServiceClientProvider<BlobServiceClient, BlobClientOptions> provider = explorer.GetBlobClientProvider(connectionName);
             BlobServiceClient actual = provider.CreateClient(provider.CreateOptions());
@@ -139,7 +139,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             const string connectionName = "storage";
             var endpoint = new Uri($"https://{accountName}.queue.core.windows.net", UriKind.Absolute);
             var options = new AzureStorageAccountOptions { QueueServiceUri = endpoint };
-            AzureStorageAccountExplorer explorer = this.SetupStorageAccountProvider(connectionName, options);
+            AzureStorageAccountExplorer explorer = this.SetupStorageAccountExplorer(connectionName, options);
 
             IStorageServiceClientProvider<QueueServiceClient, QueueClientOptions> provider = explorer.GetQueueClientProvider(connectionName);
             QueueServiceClient actual = provider.CreateClient(provider.CreateOptions());
@@ -155,7 +155,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             const string connectionName = "storage";
             var endpoint = new Uri($"https://{accountName}.table.core.windows.net", UriKind.Absolute);
             var options = new AzureStorageAccountOptions { TableServiceUri = endpoint };
-            AzureStorageAccountExplorer explorer = this.SetupStorageAccountProvider(connectionName, options);
+            AzureStorageAccountExplorer explorer = this.SetupStorageAccountExplorer(connectionName, options);
 
             IStorageServiceClientProvider<TableServiceClient, TableClientOptions> provider = explorer.GetTableClientProvider(connectionName);
             TableServiceClient actual = provider.CreateClient(provider.CreateOptions());
@@ -170,7 +170,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             const string accountName = "some-account";
             const string connectionName = "storage";
             var options = new AzureStorageAccountOptions { AccountName = accountName };
-            AzureStorageAccountExplorer explorer = this.SetupStorageAccountProvider(connectionName, options);
+            AzureStorageAccountExplorer explorer = this.SetupStorageAccountExplorer(connectionName, options);
 
             IStorageServiceClientProvider<BlobServiceClient, BlobClientOptions> provider = explorer.GetBlobClientProvider(connectionName);
             BlobServiceClient actual = provider.CreateClient(provider.CreateOptions());
@@ -185,7 +185,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             const string accountName = "some-account";
             const string connectionName = "storage";
             var options = new AzureStorageAccountOptions { AccountName = accountName };
-            AzureStorageAccountExplorer explorer = this.SetupStorageAccountProvider(connectionName, options);
+            AzureStorageAccountExplorer explorer = this.SetupStorageAccountExplorer(connectionName, options);
 
             IStorageServiceClientProvider<QueueServiceClient, QueueClientOptions> provider = explorer.GetQueueClientProvider(connectionName);
             QueueServiceClient actual = provider.CreateClient(provider.CreateOptions());
@@ -200,7 +200,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             const string accountName = "some-account";
             const string connectionName = "storage";
             var options = new AzureStorageAccountOptions { AccountName = accountName };
-            AzureStorageAccountExplorer explorer = this.SetupStorageAccountProvider(connectionName, options);
+            AzureStorageAccountExplorer explorer = this.SetupStorageAccountExplorer(connectionName, options);
 
             IStorageServiceClientProvider<TableServiceClient, TableClientOptions> provider = explorer.GetTableClientProvider(connectionName);
             TableServiceClient actual = provider.CreateClient(provider.CreateOptions());
@@ -208,7 +208,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(new Uri($"https://{accountName}.table.core.windows.net", UriKind.Absolute), actual.Uri);
         }
 
-        private AzureStorageAccountExplorer SetupStorageAccountProvider(string connectionName, AzureStorageAccountOptions options)
+        private AzureStorageAccountExplorer SetupStorageAccountExplorer(string connectionName, AzureStorageAccountOptions options)
         {
             IConfigurationSection config = new ConfigurationBuilder()
                 .AddInMemoryCollection(Serialize(options).Select(x => new KeyValuePair<string, string>(connectionName + ':' + x.Key, x.Value)))

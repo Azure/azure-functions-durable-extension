@@ -210,19 +210,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
 #if !FUNCTIONS_V1
-        public static IHost GetJobHostExternalEnvironment(IAzureStorageAccountExplorer storageAccountProvider = null)
+        public static IHost GetJobHostExternalEnvironment(IAzureStorageAccountExplorer storageAccountExplorer = null)
         {
-            if (storageAccountProvider == null)
+            if (storageAccountExplorer == null)
             {
-                storageAccountProvider = new TestStorageAccountProvider();
+                storageAccountExplorer = new TestStorageAccountExplorer();
             }
 
-            return GetJobHostWithOptionsForDurableClientFactoryExternal(storageAccountProvider);
+            return GetJobHostWithOptionsForDurableClientFactoryExternal(storageAccountExplorer);
         }
 
-        public static IHost GetJobHostWithOptionsForDurableClientFactoryExternal(IAzureStorageAccountExplorer storageAccountProvider)
+        public static IHost GetJobHostWithOptionsForDurableClientFactoryExternal(IAzureStorageAccountExplorer storageAccountExplorer)
         {
-            return PlatformSpecificHelpers.CreateJobHostExternalEnvironment(storageAccountProvider);
+            return PlatformSpecificHelpers.CreateJobHostExternalEnvironment(storageAccountExplorer);
         }
 
         public static ITestHost GetJobHostWithMultipleDurabilityProviders(
