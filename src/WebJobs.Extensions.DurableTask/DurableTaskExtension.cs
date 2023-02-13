@@ -439,6 +439,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 var ooprocMiddleware = new OutOfProcMiddleware(this);
                 this.taskHubWorker.AddActivityDispatcherMiddleware(ooprocMiddleware.CallActivityAsync);
                 this.taskHubWorker.AddOrchestrationDispatcherMiddleware(ooprocMiddleware.CallOrchestratorAsync);
+
+                // Instead of attempting to serialize and deserialize exceptions inside the framework (the default behavior),
+                // we create them as structured objects.
+                this.taskHubWorker.ErrorPropagationMode = ErrorPropagationMode.UseFailureDetails;
 #else
                 // This can happen if, for example, a Java user tries to use Durable Functions while targeting V2 or V3 extension bundles
                 // because those bundles target .NET Core 2.2, which doesn't support the gRPC libraries used in the modern out-of-proc implementation.
