@@ -926,7 +926,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                                 foreach (var message in deliverNow)
                                 {
-                                    if (entityContext.State.LockedBy == message.ParentInstanceId)
+                                    if (entityContext.State.LockedBy != null
+                                        && entityContext.State.LockedBy == message.ParentInstanceId)
                                     {
                                         if (lockHolderMessages == null)
                                         {
