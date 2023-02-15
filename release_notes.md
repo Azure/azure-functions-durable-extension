@@ -2,7 +2,11 @@
 
 ### New Features
 
+- Added more detail to entity batch processing instrumentation, to help diagnose issues
+
 ### Bug Fixes
+
+- Fix bug in entity batch processing that caused entity state size explosion
 
 ### Breaking Changes
 
