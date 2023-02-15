@@ -50,6 +50,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         [JsonIgnore]
         public bool IsEmpty => !this.EntityExists && (this.Queue == null || this.Queue.Count == 0) && this.LockedBy == null;
 
+        [JsonIgnore]
+        public int UserStateSize => this.EntityState?.Length ?? 0;
+
         internal void Enqueue(RequestMessage operationMessage)
         {
             if (this.Queue == null)

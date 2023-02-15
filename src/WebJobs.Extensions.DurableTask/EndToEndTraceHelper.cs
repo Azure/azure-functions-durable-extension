@@ -755,6 +755,79 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
+        public void EntityBatchCompleted(
+            string hubName,
+            string functionName,
+            string instanceId,
+            int eventsReceived,
+            int operationsInBatch,
+            int operationsExecuted,
+            int? outOfOrderMessages,
+            int queuedMessages,
+            int userStateSize,
+            int? sources,
+            int? destinations,
+            string lockedBy,
+            bool suspended,
+            string traceFlags)
+        {
+            FunctionType functionType = FunctionType.Entity;
+
+            EtwEventSource.Instance.EntityBatchCompleted(
+                hubName,
+                LocalAppName,
+                LocalSlotName,
+                functionName,
+                instanceId,
+                eventsReceived,
+                operationsInBatch,
+                operationsExecuted,
+                outOfOrderMessages?.ToString() ?? "",
+                queuedMessages,
+                userStateSize,
+                sources?.ToString() ?? "",
+                destinations?.ToString() ?? "",
+                lockedBy ?? "",
+                suspended,
+                traceFlags,
+                functionType.ToString(),
+                ExtensionVersion,
+                IsReplay: false);
+
+            this.logger.LogInformation(
+                "{instanceId}: Function '{functionName} ({functionType})' received {eventsReceived} events and processed {operationsExecuted}/{operationsInBatch} entity operations. OutOfOrderMessages: {outOfOrderMessages}. QueuedMessages: {queuedMessages}. UserStateSize: {userStateSize}. Sources: {sources}. Destinations: {destinations}. LockedBy: {lockedBy}. Suspended: {suspended}. TraceFlags: {traceFlags}. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
+                instanceId, functionName, functionType,
+                eventsReceived, operationsExecuted, operationsInBatch, outOfOrderMessages, queuedMessages, userStateSize, sources, destinations, lockedBy, suspended, traceFlags,
+                FunctionState.EntityBatch, hubName, LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++);
+        }
+
+        public void EntityBatchFailed(
+            string hubName,
+            string functionName,
+            string instanceId,
+            string traceFlags,
+            string details)
+        {
+            FunctionType functionType = FunctionType.Entity;
+
+            EtwEventSource.Instance.EntityBatchFailed(
+                hubName,
+                LocalAppName,
+                LocalSlotName,
+                functionName,
+                instanceId,
+                traceFlags,
+                details,
+                functionType.ToString(),
+                ExtensionVersion);
+
+            this.logger.LogError(
+                "{instanceId}: Function '{functionName} ({functionType})' failed. TraceFlags: {traceFlags}. Details: {details}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
+                instanceId, functionName, functionType,
+                traceFlags, details,
+                hubName, LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++);
+        }
+
         public void EventGridSuccess(
             string hubName,
             string functionName,
@@ -768,19 +841,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             FunctionType functionType = FunctionType.Orchestrator;
 
             EtwEventSource.Instance.EventGridNotificationCompleted(
-                hubName,
-                LocalAppName,
-                LocalSlotName,
-                functionName,
-                functionState,
-                instanceId,
-                details,
-                (int)statusCode,
-                reason,
-                functionType,
-                ExtensionVersion,
-                IsReplay: false,
-                latencyMs);
+               hubName,
+               LocalAppName,
+               LocalSlotName,
+               functionName,
+               functionState,
+               instanceId,
+               details,
+               (int)statusCode,
+               reason,
+               functionType,
+               ExtensionVersion,
+               IsReplay: false,
+               latencyMs);
 
             this.logger.LogInformation(
                 "{instanceId}: Function '{functionName} ({functionType})' sent a '{functionState}' notification event to Azure Event Grid. Status code: {statusCode}. Details: {details}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}. Latency: {latencyMs} ms.",
@@ -801,19 +874,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             FunctionType functionType = FunctionType.Orchestrator;
 
             EtwEventSource.Instance.EventGridNotificationFailed(
-                hubName,
-                LocalAppName,
-                LocalSlotName,
-                functionName,
-                functionState,
-                instanceId,
-                details,
-                (int)statusCode,
-                reason,
-                functionType,
-                ExtensionVersion,
-                IsReplay: false,
-                latencyMs);
+               hubName,
+               LocalAppName,
+               LocalSlotName,
+               functionName,
+               functionState,
+               instanceId,
+               details,
+               (int)statusCode,
+               reason,
+               functionType,
+               ExtensionVersion,
+               IsReplay: false,
+               latencyMs);
 
             this.logger.LogError(
                 "{instanceId}: Function '{functionName} ({functionType})' failed to send a '{functionState}' notification event to Azure Event Grid. Status code: {statusCode}. Details: {details}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}. Latency: {latencyMs} ms.",

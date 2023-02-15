@@ -21,5 +21,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         EntityStateCreated,
         EntityStateDeleted,
         Suspended,
+        EntityBatch,
     }
 }
