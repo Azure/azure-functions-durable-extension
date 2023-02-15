@@ -983,6 +983,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     entityContext.State.PutBack(lockHolderMessages);
                 }
 
+                // mitigation for ICM358210295 : un-suspend an entity if the last continue-as-new happened at least 10 seconds ago
+                if (entityContext.State.Suspended
+                    && runtimeState.ExecutionStartedEvent?.Timestamp < DateTime.UtcNow - TimeSpan.FromSeconds(10))
+                {
+                    entityContext.State.Suspended = false;
+                    entityShim.AddTraceFlag(EntityTraceFlags.MitigationResumed);
+                }
+
                 if (!entityContext.State.Suspended)
                 {
                     entityShim.AddTraceFlag('2');
