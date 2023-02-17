@@ -38,6 +38,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public void AddFlag(char flag)
         {
+            // we concatenate the trace flag characters, they serve as a 'trail of bread crumbs' to reconstruct code path
             (this.traceFlags ??= new StringBuilder()).Append(flag);
         }
     }

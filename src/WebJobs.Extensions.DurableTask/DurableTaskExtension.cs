@@ -876,7 +876,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             try
             {
-                entityShim.AddTraceFlag('1');
+                entityShim.AddTraceFlag('1'); // add a bread crumb for the entity batch tracing
 
                 // 1. First time through the history
                 // we count events, add any under-lock op to the batch, and process lock releases
@@ -983,7 +983,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     entityContext.State.PutBack(lockHolderMessages);
                 }
 
-                // mitigation for ICM358210295 : un-suspend an entity if the last continue-as-new happened at least 10 seconds ago
+                // mitigation for ICM358210295 : if an entity has been in suspended state for at least 10 seconds, resume
+                // (suspended state is never meant to last long, it is needed just so the history gets persisted to storage)
                 if (entityContext.State.Suspended
                     && runtimeState.ExecutionStartedEvent?.Timestamp < DateTime.UtcNow - TimeSpan.FromSeconds(10))
                 {
