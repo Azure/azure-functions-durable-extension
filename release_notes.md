@@ -1,13 +1,11 @@
 # Release Notes
 
-## Microsoft.Azure.Functions.Worker.Extensions.DurableTask
+### New Features
 
-1.0.0 GA release of Durable Functions for .NET isolated worker. This release includes support for running Orchestrations and Activities in the isolated worker. Entities are not supported yet.
+### Bug Fixes
 
-## Microsoft.Azure.WebJobs.Extensions.DurableTask
+### Breaking Changes
 
-- Added support for per-trigger named task hub and connections for gRPC based OOP workers.
+### Dependency Updates
 
-### Bug fixes
-
-- Fix deserialization of class-based entities to use custom serializer settings (resolves https://github.com/Azure/azure-functions-durable-extension/issues/2361)
+- Upgraded Microsoft.AspNetCore.Mvc.WebApiCompatShim from 2.1.0 to 2.2.0 (https://github.com/Azure/azure-functions-durable-extension/pull/2385)
