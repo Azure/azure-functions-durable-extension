@@ -27,7 +27,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     {
                         // special case for upper tier IsolatedV2 where GB per Core
                         // isn't cleanly linear
-                        memoryLimitBytes = (float)23 * BytesPerGB;
+                        memoryLimitBytes = 23F * BytesPerGB;
                     }
 
                     return (long)memoryLimitBytes;
@@ -40,9 +40,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private static int GetEffectiveCoresCount()
         {
-            // When not running on VMSS, the dynamic plan has some limits that mean that a given instance is using effectively a single core,
+            // The dynamic plan has some limits that mean that a given instance is using effectively a single core,
             // so we should not use Environment.Processor count in this case.
-            var effectiveCores = (IsConsumptionSku() && !IsVMSS()) ? 1 : Environment.ProcessorCount;
+            var effectiveCores = IsConsumptionSku() ? 1 : Environment.ProcessorCount;
             return effectiveCores;
         }
 
@@ -55,12 +55,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             string value = GetWebsiteSku();
             return string.Equals(value, "Dynamic", StringComparison.OrdinalIgnoreCase);
-        }
-
-        private static bool IsVMSS()
-        {
-            string value = Environment.GetEnvironmentVariable("RoleInstanceId");
-            return value != null && value.IndexOf("HostRole", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         internal static float GetMemoryGBPerCore(string sku)
