@@ -119,9 +119,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public FunctionBindingContext FunctionBindingContext { get; set; }
 #endif
 
-        public void CaptureInternalError(Exception e)
+        public void CaptureInternalError(Exception e, TaskEntityShim shim)
         {
+            // first, try to get a quick ETW message out to help us diagnose what happened
+            string details = Utils.IsFatal(e) ? e.GetType().Name : e.ToString();
+            this.Config.TraceHelper.EntityBatchFailed(
+                this.HubName,
+                this.Name,
+                this.InstanceId,
+                shim.TraceFlags,
+                details);
+
+            // then, record the error for additional reporting and tracking in other places
             this.InternalError = ExceptionDispatchInfo.Capture(e);
+            shim.AddTraceFlag(EntityTraceFlags.InternalError);
         }
 
         public void CaptureApplicationError(Exception e)
@@ -134,11 +145,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.ApplicationErrors.Add(ExceptionDispatchInfo.Capture(e));
         }
 
-        public void AbortOnInternalError()
+        public void AbortOnInternalError(string traceFlags)
         {
             if (this.InternalError != null)
             {
-                throw new SessionAbortedException($"Session aborted because of {this.InternalError.SourceException.GetType().Name}", this.InternalError.SourceException);
+                throw new SessionAbortedException($"Session aborted because of {this.InternalError.SourceException.GetType().Name}, traceFlags={traceFlags}", this.InternalError.SourceException);
             }
         }
 
