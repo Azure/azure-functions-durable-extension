@@ -1026,7 +1026,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 await ctx.CallEntityAsync<bool>(entityId, "deletewithoutreading");
 
-
                 await ProcessAllSignalsInSingleBatch(() =>
                 {
                     ctx.SignalEntity(entityId, "Set", 1);
