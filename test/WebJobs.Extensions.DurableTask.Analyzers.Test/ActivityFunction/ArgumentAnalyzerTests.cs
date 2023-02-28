@@ -334,10 +334,10 @@ namespace VSSample
                 Id = DiagnosticId,
                 Message = string.Format(Resources.ActivityArgumentAnalyzerMessageFormat, "Function_Takes_String", "string", "int"),
                 Severity = Severity,
-                Locations =
-                 new[] {
-                            new DiagnosticResultLocation("Test0.cs", 21, 82)
-                     }
+                Locations = new[]
+                {
+                    new DiagnosticResultLocation("Test0.cs", 18, 78)
+                }
             };
             VerifyCSharpDiagnostic(test, expectedDiagnostics);
         }
@@ -379,10 +379,10 @@ namespace VSSample
                 Id = DiagnosticId,
                 Message = string.Format(Resources.ActivityArgumentAnalyzerMessageFormat, "Function_Takes_String", "string", "int"),
                 Severity = Severity,
-                Locations =
-                 new[] {
-                            new DiagnosticResultLocation("Test0.cs", 21, 82)
-                     }
+                Locations = new[]
+                {
+                    new DiagnosticResultLocation("Test0.cs", 18, 78)
+                }
             };
             VerifyCSharpDiagnostic(test, expectedDiagnostics);
         }
@@ -425,10 +425,10 @@ namespace VSSample
                 Id = DiagnosticId,
                 Message = string.Format(Resources.ActivityArgumentAnalyzerMessageFormat, "Function_Takes_String", "string", "string[]"),
                 Severity = Severity,
-                Locations =
-                 new[] {
-                            new DiagnosticResultLocation("Test0.cs", 22, 82)
-                     }
+                Locations = new[]
+                {
+                    new DiagnosticResultLocation("Test0.cs", 19, 78)
+                }
             };
             VerifyCSharpDiagnostic(test, expectedDiagnostics);
         }
@@ -470,10 +470,10 @@ namespace VSSample
                 Id = DiagnosticId,
                 Message = string.Format(Resources.ActivityArgumentAnalyzerMessageFormatNotUsed, "Unused_Input"),
                 Severity = Severity,
-                Locations =
-                 new[] {
-                            new DiagnosticResultLocation("Test0.cs", 21, 73)
-                     }
+                Locations = new[]
+                {
+                    new DiagnosticResultLocation("Test0.cs", 18, 69)
+                }
             };
             VerifyCSharpDiagnostic(test, expectedDiagnostics);
         }
@@ -515,10 +515,10 @@ namespace VSSample
                 Id = DiagnosticId,
                 Message = string.Format(Resources.ActivityArgumentAnalyzerMessageFormatInvalidNull, "InvalidNullInput", "int"),
                 Severity = Severity,
-                Locations =
-                 new[] {
-                            new DiagnosticResultLocation("Test0.cs", 21, 77)
-                     }
+                Locations = new[]
+                {
+                    new DiagnosticResultLocation("Test0.cs", 18, 73)
+                }
             };
             VerifyCSharpDiagnostic(test, expectedDiagnostics);
         }
@@ -560,10 +560,10 @@ namespace VSSample
                 Id = DiagnosticId,
                 Message = string.Format(Resources.ActivityArgumentAnalyzerMessageFormatInvalidNull, "InvalidNullInput", "int"),
                 Severity = Severity,
-                Locations =
-                 new[] {
-                            new DiagnosticResultLocation("Test0.cs", 21, 77)
-                     }
+                Locations = new[]
+                {
+                    new DiagnosticResultLocation("Test0.cs", 18, 73)
+                }
             };
             VerifyCSharpDiagnostic(test, expectedDiagnostics);
         }

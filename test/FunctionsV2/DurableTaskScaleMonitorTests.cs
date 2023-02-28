@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Azure;
@@ -39,7 +40,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             this.loggerFactory.AddProvider(this.loggerProvider);
             ILogger logger = this.loggerFactory.CreateLogger(LogCategories.CreateTriggerCategory("DurableTask"));
             this.traceHelper = new EndToEndTraceHelper(logger, false);
-            this.performanceMonitor = new Mock<DisconnectedPerformanceMonitor>(MockBehavior.Strict, this.clientProvider, this.hubName, (int?)null);
+            this.performanceMonitor = new Mock<DisconnectedPerformanceMonitor>(
+                MockBehavior.Strict,
+                new AzureStorageOrchestrationServiceSettings
+                {
+                    StorageAccountClientProvider = this.clientProvider,
+                    TaskHubName = this.hubName,
+                });
 
             this.scaleMonitor = new DurableTaskScaleMonitor(
                 this.functionId,
@@ -92,7 +99,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var metrics = await this.scaleMonitor.GetMetricsAsync();
 
             var warning = this.loggerProvider.GetAllLogMessages().Last(p => p.Level == LogLevel.Warning);
-            var expectedWarning = $"System.Exception: Failure ---> Azure.RequestFailedException: {errorMsg}";
+            var expectedWarning = $"System.Exception: Failure{Environment.NewLine} ---> Azure.RequestFailedException: {errorMsg}";
             Assert.StartsWith(expectedWarning, warning.FormattedMessage);
         }
 

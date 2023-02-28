@@ -13,7 +13,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using DurableTask.AzureStorage;
+using Azure.Storage.Blobs;
 using DurableTask.Core;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
@@ -24,14 +24,12 @@ using Microsoft.Diagnostics.Tracing;
 using Microsoft.Extensions.Hosting;
 using WebJobs.Extensions.DurableTask.Tests.V2;
 #endif
-using Moq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
 using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
-using Azure.Storage.Blobs;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
@@ -42,8 +40,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         private readonly TestLoggerProvider loggerProvider;
         private readonly bool useTestLogger = IsLogFriendlyPlatform();
         private readonly LogEventTraceListener eventSourceListener;
-
-        private static readonly string InstrumentationKey = Environment.GetEnvironmentVariable("APPINSIGHTS_INSTRUMENTATIONKEY");
 
         public DurableTaskEndToEndTests(ITestOutputHelper output)
         {

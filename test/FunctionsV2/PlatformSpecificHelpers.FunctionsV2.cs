@@ -66,7 +66,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                             webJobsBuilder.AddDurableTask(options, storageProvider, durabilityProviderFactoryType);
                         }
 
-                        webJobsBuilder.AddAzureStorage();
+                        webJobsBuilder.AddAzureStorageBlobs();
                     })
                 .ConfigureServices(
                     serviceCollection =>
