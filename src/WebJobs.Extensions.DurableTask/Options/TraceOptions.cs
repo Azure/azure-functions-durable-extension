@@ -65,7 +65,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public string DistributedTracingProtocol { get; set; } = "HttpCorrelationProtocol";
 
         /// <summary>
-        /// Gets or sets a flag indicating whether to enable distributed tracing.
+        /// Gets or sets a flag indicating whether to enable the new version of distributed tracing
+        /// that is built using OpenTelemetry.
         /// The default value is false.
         /// </summary>
         public bool NewDistributedTracingEnabled { get; set; } = false;
