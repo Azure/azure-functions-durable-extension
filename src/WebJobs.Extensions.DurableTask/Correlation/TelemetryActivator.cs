@@ -39,17 +39,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
         /// </summary>
         public Action<ITelemetry> OnSend { get; set; } = null;
 
+        /// <inheritdoc/>
+        public TelemetryConfiguration Configuration { get; private set; }
+
         /// <summary>
         /// Initialize is initialize the telemetry client.
         /// </summary>
         public void Initialize(ILogger logger)
         {
             this.SetUpDistributedTracing();
-            if (CorrelationSettings.Current.EnableDistributedTracing)
+            if (CorrelationSettings.Current.EnableDistributedTracing || this.options.Tracing.NewDistributedTracingEnabled)
             {
                 this.endToEndTraceHelper = new EndToEndTraceHelper(logger, this.options.Tracing.TraceReplayEvents);
                 this.SetUpTelemetryClient();
-                this.SetUpTelemetryCallbacks();
+
+                if (CorrelationSettings.Current.EnableDistributedTracing)
+                {
+                    this.SetUpTelemetryCallbacks();
+                }
             }
         }
 
@@ -129,6 +136,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
                     message: "'APPINSIGHTS_INSTRUMENTATIONKEY' isn't defined in the current environment variables, but Distributed Tracing is enabled. Please set 'APPINSIGHTS_INSTRUMENTATIONKEY' to use Distributed Tracing.");
             }
 
+            this.Configuration = config;
             this.telemetryClient = new TelemetryClient(config);
         }
     }

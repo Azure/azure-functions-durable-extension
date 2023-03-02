@@ -17,6 +17,7 @@ using DurableTask.Core;
 using DurableTask.Core.Exceptions;
 using DurableTask.Core.History;
 using DurableTask.Core.Middleware;
+using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.Azure.WebJobs.Description;
 #if !FUNCTIONS_V1
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
@@ -69,6 +70,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #if FUNCTIONS_V2_OR_GREATER
 #pragma warning disable CS0169
         private readonly ITelemetryActivator telemetryActivator;
+        private readonly ITelemetryModule telemetryModule;
 #pragma warning restore CS0169
 #endif
 #if FUNCTIONS_V3_OR_GREATER
@@ -136,7 +138,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #pragma warning disable CS0618 // Type or member is obsolete
             IWebHookProvider webhookProvider = null,
 #pragma warning restore CS0618 // Type or member is obsolete
-            ITelemetryActivator telemetryActivator = null)
+            ITelemetryActivator telemetryActivator = null,
+            ITelemetryModule telemetryModule = null)
 #else
             IErrorSerializerSettingsFactory errorSerializerSettingsFactory = null)
 #endif
@@ -188,6 +191,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.HostLifetimeService.OnStopped.Register(this.StopLocalHttpServer);
             this.telemetryActivator = telemetryActivator;
             this.telemetryActivator?.Initialize(logger);
+
+            this.telemetryModule = telemetryModule;
+            this.telemetryModule.Initialize(this.telemetryActivator.Configuration);
 #endif
 
             // Starting with .NET isolated and Java, we have a more efficient out-of-process

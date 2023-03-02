@@ -64,6 +64,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </summary>
         public string DistributedTracingProtocol { get; set; } = "HttpCorrelationProtocol";
 
+        /// <summary>
+        /// Gets or sets a flag indicating whether to enable distributed tracing.
+        /// The default value is false.
+        /// </summary>
+        public bool NewDistributedTracingEnabled { get; set; } = false;
+
 #endif
         internal void AddToDebugString(StringBuilder builder)
         {
