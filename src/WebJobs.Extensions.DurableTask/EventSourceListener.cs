@@ -18,6 +18,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly LinuxAppServiceLogger logger;
         private readonly bool disableVerbose;
         private readonly string durabilityProviderEventSourceName;
+        private readonly Guid extensionGuid;
         private EndToEndTraceHelper traceHelper;
 
         private List<EventSource> pendingEventSources = new List<EventSource>();
@@ -30,12 +31,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="enableVerbose">If true, durableTask.Core verbose logs are enabled. The opposite if false.</param>
         /// <param name="traceHelper">A tracing client to log exceptions.</param>
         /// <param name="durabilityProviderEventSourceName">The durability provider's event source name.</param>
-        public EventSourceListener(LinuxAppServiceLogger logger, bool enableVerbose, EndToEndTraceHelper traceHelper, string durabilityProviderEventSourceName)
+        /// <param name="extensionGuid">A GUID identifying the extension hosting this object.</param>
+        public EventSourceListener(LinuxAppServiceLogger logger, bool enableVerbose, EndToEndTraceHelper traceHelper, string durabilityProviderEventSourceName, Guid extensionGuid)
         {
             this.logger = logger;
             this.disableVerbose = !enableVerbose; // We track the opposite value ro simplify logic later
             this.traceHelper = traceHelper;
             this.durabilityProviderEventSourceName = durabilityProviderEventSourceName;
+            this.extensionGuid = extensionGuid;
 
             // Check to see if any event sources were created before we knew the event source
             // name for the durability provider and enable that provider.
@@ -93,7 +96,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 try
                 {
-                    this.logger.Log(eventData);
+                    this.logger.Log(eventData, this.extensionGuid);
                 }
                 catch (Exception)
                 {
