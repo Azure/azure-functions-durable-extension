@@ -66,8 +66,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             new ConcurrentDictionary<FunctionName, RegisteredFunctionInfo>();
 
         private readonly AsyncLock taskHubLock = new AsyncLock();
-        private static readonly SemaphoreSlim InitializationSempahore = new SemaphoreSlim(initialCount: 1, maxCount: 1);
-
 #if FUNCTIONS_V2_OR_GREATER
 #pragma warning disable CS0169
         private readonly ITelemetryActivator telemetryActivator;
@@ -337,10 +335,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// Internal initialization call from the WebJobs host.
         /// </summary>
         /// <param name="context">Extension context provided by WebJobs.</param>
-        async void IExtensionConfigProvider.Initialize(ExtensionConfigContext context)
+        void IExtensionConfigProvider.Initialize(ExtensionConfigContext context)
         {
-            await InitializationSempahore.WaitAsync(); // only allow 1 initialization at a time
-
 #if !FUNCTIONS_V1
             // Functions V1 is not supported in linux, so this is conditionally compiled
             // We initialize linux logging early on in case any initialization steps below were to trigger a log event.
@@ -479,7 +475,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.StartLocalHttpServer();
             }
 #endif
-            InitializationSempahore.Release();
         }
 
         internal string GetLocalRpcAddress()
