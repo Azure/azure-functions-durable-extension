@@ -109,7 +109,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 { "Pid", this.procID },
                 { "Tid", Thread.CurrentThread.ManagedThreadId },
                 { "Level", (int)eventData.Level },
-                { "WorkerName", extensionGuid },
+                { "ExtensionGUID", extensionGuid },
             };
 
             if (!string.IsNullOrEmpty(this.stamp) && !string.IsNullOrEmpty(this.primaryStamp))
