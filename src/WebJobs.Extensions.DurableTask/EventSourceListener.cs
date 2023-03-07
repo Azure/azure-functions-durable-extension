@@ -98,13 +98,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     this.logger.Log(eventData, this.extensionGuid);
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
                     this.traceHelper.ExtensionWarningEvent(
                         hubName: string.Empty,
                         instanceId: string.Empty,
                         functionName: string.Empty,
-                        message: $"The Linux Logger failed to log, logs might be lost.");
+                        message: $"The Linux Logger failed to log, logs might be lost. Exception: {ex}");
                     throw;
                 }
             }
