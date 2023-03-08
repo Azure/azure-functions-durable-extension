@@ -77,9 +77,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     this.InternalRpcUri = new Uri($"http://127.0.0.1:{listeningPort}/durabletask/");
                     var listenUri = new Uri(this.InternalRpcUri.GetLeftPart(UriPartial.Authority));
-                    this.localWebHost = new WebHostBuilder()
-                        .UseKestrel()
-                        .ConfigureKestrel(o =>
+                    this.localWebHost = new WebHostBuilder().UseKestrel(o =>
                         {
                             // remove request's Content size limits
                             o.Limits.MaxRequestBodySize = null;
