@@ -876,6 +876,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             try
             {
+                entityShim.AddTraceFlag('1'); // add a bread crumb for the entity batch tracing
+
                 // 1. First time through the history
                 // we count events, add any under-lock op to the batch, and process lock releases
                 foreach (HistoryEvent e in runtimeState.Events)
@@ -929,7 +931,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                                 foreach (var message in deliverNow)
                                 {
-                                    if (entityContext.State.LockedBy == message.ParentInstanceId)
+                                    if (entityContext.State.LockedBy != null
+                                        && entityContext.State.LockedBy == message.ParentInstanceId)
                                     {
                                         if (lockHolderMessages == null)
                                         {
@@ -967,6 +970,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                                 // this is a continue message.
                                 // Resumes processing of previously queued operations, if any.
                                 entityContext.State.Suspended = false;
+                                entityShim.AddTraceFlag(EntityTraceFlags.Resumed);
                             }
 
                             break;
@@ -979,8 +983,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     entityContext.State.PutBack(lockHolderMessages);
                 }
 
+                // mitigation for ICM358210295 : if an entity has been in suspended state for at least 10 seconds, resume
+                // (suspended state is never meant to last long, it is needed just so the history gets persisted to storage)
+                if (entityContext.State.Suspended
+                    && runtimeState.ExecutionStartedEvent?.Timestamp < DateTime.UtcNow - TimeSpan.FromSeconds(10))
+                {
+                    entityContext.State.Suspended = false;
+                    entityShim.AddTraceFlag(EntityTraceFlags.MitigationResumed);
+                }
+
                 if (!entityContext.State.Suspended)
                 {
+                    entityShim.AddTraceFlag('2');
+
                     // 2. We add as many requests from the queue to the batch as possible,
                     // stopping at lock requests or when the maximum batch size is reached
                     while (entityContext.State.MayDequeue())
@@ -989,6 +1004,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         {
                             // we have reached the maximum batch size already
                             // insert a delay after this batch to ensure write back
+                            entityShim.AddTraceFlag(EntityTraceFlags.BatchSizeLimit);
                             entityShim.ToBeContinuedWithDelay();
                             break;
                         }
@@ -1009,14 +1025,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             catch (Exception e)
             {
-                entityContext.CaptureInternalError(e);
+                entityContext.CaptureInternalError(e, entityShim);
             }
 
             WrappedFunctionResult result;
 
             if (entityShim.OperationBatch.Count > 0 && !this.HostLifetimeService.OnStopping.IsCancellationRequested)
             {
-                // 3a. Start the functions invocation pipeline (billing, logging, bindings, and timeout tracking).
+                // 3a. (function execution) Start the functions invocation pipeline (billing, logging, bindings, and timeout tracking).
                 result = await FunctionExecutionHelper.ExecuteFunctionInOrchestrationMiddleware(
                     entityShim.GetFunctionInfo().Executor,
                     new TriggeredFunctionData
@@ -1037,6 +1053,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                                     FunctionType.Entity,
                                     isReplay: false);
 
+                                entityShim.AddTraceFlag('3');
+
                                 // 3. Run all the operations in the batch
                                 if (entityContext.InternalError == null)
                                 {
@@ -1046,9 +1064,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                                     }
                                     catch (Exception e)
                                     {
-                                        entityContext.CaptureInternalError(e);
+                                        entityContext.CaptureInternalError(e, entityShim);
                                     }
                                 }
+
+                                entityShim.AddTraceFlag('4');
 
                                 // 4. Run the DTFx orchestration to persist the effects,
                                 // send the outbox, and continue as new
@@ -1110,7 +1130,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             else
             {
-                // 3b. We do not need to call into user code because we are not going to run any operations.
+                entityShim.AddTraceFlag(EntityTraceFlags.DirectExecution);
+
+                // 3b. (direct execution) We do not need to call into user code because we are not going to run any operations.
                 // In this case we can execute without involving the functions runtime.
                 if (entityContext.InternalError == null)
                 {
@@ -1121,14 +1143,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     }
                     catch (Exception e)
                     {
-                        entityContext.CaptureInternalError(e);
+                        entityContext.CaptureInternalError(e, entityShim);
                     }
                 }
             }
 
             // If there were internal errors, throw a SessionAbortedException
             // here so DTFx can abort the batch and back off the work item
-            entityContext.AbortOnInternalError();
+            entityContext.AbortOnInternalError(entityShim.TraceFlags);
 
             await entityContext.RunDeferredTasks();
         }

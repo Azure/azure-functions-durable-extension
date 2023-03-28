@@ -156,6 +156,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             Name = request.Name,
                             Version = request.Version,
                             OrchestrationInstance = instance,
+                            ScheduledStartTime = request.ScheduledStartTimestamp?.ToDateTime(),
                         },
                         OrchestrationInstance = instance,
                     });

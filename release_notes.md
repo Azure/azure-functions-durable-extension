@@ -2,7 +2,12 @@
 
 ### New Features
 
+- Added more detail to entity batch processing instrumentation, to help diagnose issues
+
 ### Bug Fixes
+
+- Fix bug in entity batch processing that caused entity state size explosion
+- Fix orchestration scheduled start time not being respected for gRPC-based workers.
 
 ### Breaking Changes
 
