@@ -8,6 +8,7 @@
 
 - Fix bug in entity batch processing that caused entity state size explosion
 - Fix orchestration scheduled start time not being respected for gRPC-based workers.
+- Fix connection exhaustion and memory leak due to incorrect caching of `DurableTaskClient`'s in dotnet isolated extension.
 
 ### Breaking Changes
 
