@@ -18,6 +18,8 @@ using Grpc.Net.Client;
 using GrpcChannel = Grpc.Core.Channel;
 #endif
 
+using ClientKey = System.ValueTuple<System.Uri, System.String, System.String>;
+
 namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
 
 /// <summary>
@@ -178,13 +180,13 @@ internal partial class FunctionsDurableClientProvider : IAsyncDisposable
 
     private record ClientKey(Uri Address, string? Name, string? Connection)
     {
-        private readonly Dictionary<string, string> emptyHeaders = new();
+        private static readonly Dictionary<string, string> EmptyHeaders = new();
 
         public IReadOnlyDictionary<string, string> GetHeaders()
         {
             if (string.IsNullOrEmpty(this.Name) && string.IsNullOrEmpty(this.Connection))
             {
-                return this.emptyHeaders;
+                return EmptyHeaders;
             }
 
             Dictionary<string, string> headers = new();
