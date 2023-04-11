@@ -116,7 +116,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             message.Timestamp = timestamp;
             this.LastSentToInstance[destination] = timestamp;
 
-            this.NumDestinations = countingEntries ? destinationCount : null;
+            this.NumDestinations = countingEntries ? destinationCount : (int?)null;
         }
 
         /// <summary>
@@ -192,8 +192,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 // Just pass the message through.
                 yield return message;
 
-                this.NumSources = countingEntries ? sourceCount : null;
-                this.NumMessages = countingEntries ? messageCount : null;
+                this.NumSources = countingEntries ? sourceCount : (int?)null;
+                this.NumMessages = countingEntries ? messageCount : (int?)null;
                 yield break;
             }
 
@@ -262,8 +262,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
             }
 
-            this.NumSources = countingEntries ? sourceCount : null;
-            this.NumMessages = countingEntries ? messageCount : null;
+            this.NumSources = countingEntries ? sourceCount : (int?)null;
+            this.NumMessages = countingEntries ? messageCount : (int?)null;
         }
 
         private bool TryDeliverNextMessage(ReceiveBuffer buffer, out RequestMessage message)
