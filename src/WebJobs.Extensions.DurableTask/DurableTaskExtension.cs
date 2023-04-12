@@ -75,6 +75,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly LocalGrpcListener localGrpcListener;
 #endif
         private readonly bool isOptionsConfigured;
+        private readonly Guid extensionGuid;
+
 #pragma warning disable CS0612 // Type or member is obsolete
 #pragma warning disable SA1401 // Fields should be private
         internal IPlatformInformation PlatformInformationService;
@@ -141,6 +143,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             IErrorSerializerSettingsFactory errorSerializerSettingsFactory = null)
 #endif
         {
+            this.extensionGuid = Guid.NewGuid();
+
             // Options will be null in Functions v1 runtime - populated later.
             this.Options = options?.Value ?? new DurableTaskOptions();
             this.nameResolver = nameResolver ?? throw new ArgumentNullException(nameof(nameResolver));
@@ -515,7 +519,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // Since our logging payload can be quite large, linux telemetry by default
             // disables verbose-level telemetry to avoid a performance hit.
             bool enableVerbose = this.Options.Tracing.AllowVerboseLinuxTelemetry;
-            this.eventSourceListener = new EventSourceListener(linuxLogger, enableVerbose, this.TraceHelper, this.defaultDurabilityProvider.EventSourceName);
+            this.eventSourceListener = new EventSourceListener(linuxLogger, enableVerbose, this.TraceHelper, this.defaultDurabilityProvider.EventSourceName, this.extensionGuid);
         }
 
         /// <inheritdoc />
@@ -1418,7 +1422,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             this.Options.HubName,
                             instanceId: string.Empty,
                             functionName: string.Empty,
-                            message: "Starting task hub worker",
+                            message: $"Starting task hub worker. Extension GUID {this.extensionGuid}",
                             writeToUserLogs: true);
 
                         Stopwatch sw = Stopwatch.StartNew();
@@ -1434,7 +1438,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             this.Options.HubName,
                             instanceId: string.Empty,
                             functionName: string.Empty,
-                            message: $"Task hub worker started. Latency: {sw.Elapsed}",
+                            message: $"Task hub worker started. Latency: {sw.Elapsed}. Extension GUID {this.extensionGuid}",
                             writeToUserLogs: true);
 
                         // Enable flowing exception information from activities
@@ -1477,7 +1481,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         this.Options.HubName,
                         instanceId: string.Empty,
                         functionName: string.Empty,
-                        message: $"Stopping task hub worker. IsGracefulStop: {isGracefulStop}",
+                        message: $"Stopping task hub worker. IsGracefulStop: {isGracefulStop}. Extension GUID {this.extensionGuid}",
                         writeToUserLogs: true);
 
                     Stopwatch sw = Stopwatch.StartNew();
@@ -1488,7 +1492,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         this.Options.HubName,
                         instanceId: string.Empty,
                         functionName: string.Empty,
-                        message: $"Task hub worker stopped. IsGracefulStop: {isGracefulStop}. Latency: {sw.Elapsed}",
+                        message: $"Task hub worker stopped. IsGracefulStop: {isGracefulStop}. Latency: {sw.Elapsed}. Extension GUID {this.extensionGuid}",
                         writeToUserLogs: true);
 
                     return true;
