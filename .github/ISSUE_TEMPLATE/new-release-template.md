@@ -3,13 +3,14 @@ name: New release template
 about: Template for creating new releases of Durable Functions
 title: ''
 labels: ''
-assignees: comcmaho, amdeel, davidmrdavid, bachuv
+assignees: amdeel, davidmrdavid, bachuv, nytiannn
 
 ---
 
 **Prep DTFx Release: (assigned to:)**
 _Due: <2-3-business-days-before-release>_
 - [ ] Check DTFx package versions (either DT-AzureStorage only or if there were Core changes DT-AzureStorage, DT-Core, DT-Emulator, and DT-Redis)
+- [ ] Review the [DTFx Dependabot vulnerability alerts](https://github.com/Azure/durabletask/security/dependabot) and address them. Note: code samples / test projects _may_ be excluded from this check.
 - [ ] Delete DTFx test packages from staging myget.
 - [ ] Run the [DTFx release pipeline](https://durabletaskframework.visualstudio.com/Durable%20Task%20Framework%20CI/_build?definitionId=21) ([defined here](https://github.com/Azure/durabletask/blob/main/azure-pipelines-release.yml)) to obtain new packages.
 - [ ] Publish DTFx packages to staging myget (https://www.myget.org/feed/Packages/azure-appservice) for testing.
@@ -18,6 +19,7 @@ _Due: <2-3-business-days-before-release>_
 _Due: <2-business-days-before-release>_
 - [ ] Update Durable Functions references (Analyzer? DTFx?) and check current version.
 - [ ] Locally, run `dotnet list package --vulnerable` to ensure the release is not affected by any vulnerable dependencies.
+- [ ] Review the [Dependabot vulnerability alerts](https://github.com/Azure/azure-functions-durable-extension/security/dependabot) and address them. Note: code samples / test projects _may_ be excluded from this check.
 - [ ] Add Durable Functions package to myget staging feed.
 - [ ] Check for package size, make sure it's not surprisingly heavier than a previous release.
 - [ ] Merge dev into main. Person performing validation must approve PR. Important: Merge NOT Squash merge.

@@ -38,6 +38,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private List<RequestMessage> toBeRescheduled;
         private bool suspendAndContinueWithDelay;
 
+        private EntityTraceFlags entityTraceInfo;
+        private int eventsReceived;
+
         public TaskEntityShim(DurableTaskExtension config, DurabilityProvider durabilityProvider, string schedulerId)
             : base(config)
         {
@@ -63,6 +66,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         internal int BatchPosition { get; private set; }
 
         public bool RollbackFailedOperations => this.context.Config.Options.RollbackEntityOperationsOnExceptions;
+
+        public string TraceFlags => this.entityTraceInfo.TraceFlags;
 
         public void AddOperationToBatch(RequestMessage operationMessage)
         {
@@ -143,6 +148,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
+        public void AddTraceFlag(char flag)
+        {
+            this.entityTraceInfo.AddFlag(flag);
+        }
+
         internal void Rehydrate(string serializedInput)
         {
             if (serializedInput == null)
@@ -171,6 +181,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.context.InstanceId,
                     isReplay: false));
             }
+
+            this.AddTraceFlag(EntityTraceFlags.Rehydrated);
         }
 
         // This code is executed via the middleware
@@ -193,6 +205,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     && (this.toBeRescheduled == null || this.toBeRescheduled.Count == 0)
                     && !this.suspendAndContinueWithDelay)
                 {
+                    this.AddTraceFlag(EntityTraceFlags.WaitForEvents);
+
                     // we are idle after a ContinueAsNew - the batch is empty.
                     // Wait for more messages to get here (via extended sessions)
                     await this.doneProcessingMessages.Task;
@@ -216,7 +230,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 // Commit the effects of this batch, if
                 // we have not already run into an internal error
                 // (in which case we will abort the batch instead of committing it)
-                if (this.context.InternalError == null)
+                if (this.context.InternalError != null)
+                {
+                    this.Config.TraceHelper.EntityBatchFailed(
+                        this.context.HubName,
+                        this.context.Name,
+                        this.context.InstanceId,
+                        this.entityTraceInfo.TraceFlags,
+                        this.context.InternalError.ToString());
+                }
+                else
                 {
                     bool writeBackSuccessful = true;
                     ResponseMessage serializationErrorMessage = null;
@@ -242,6 +265,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     // send a continue signal
                     if (this.suspendAndContinueWithDelay)
                     {
+                        this.AddTraceFlag(EntityTraceFlags.Suspended);
                         this.context.SendContinue(innerContext);
                         this.suspendAndContinueWithDelay = false;
                         this.context.State.Suspended = true;
@@ -259,13 +283,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         var jstate = JToken.FromObject(this.context.State);
                         innerContext.ContinueAsNew(jstate);
                     }
+
+                    // trace the completion of this entity execution batch
+                    this.Config.TraceHelper.EntityBatchCompleted(
+                        this.context.HubName,
+                        this.context.Name,
+                        this.context.InstanceId,
+                        this.eventsReceived,
+                        this.OperationBatch.Count,
+                        this.BatchPosition,
+                        this.context.State.MessageSorter.NumMessages,
+                        this.context.State.Queue?.Count ?? 0,
+                        this.context.State.UserStateSize,
+                        this.context.State.MessageSorter.NumSources,
+                        this.context.State.MessageSorter.NumDestinations,
+                        this.context.State.LockedBy,
+                        this.context.State.Suspended,
+                        this.entityTraceInfo.TraceFlags);
                 }
             }
             catch (Exception e)
             {
                 // we must catch unexpected exceptions here, otherwise entity goes into permanent failed state
                 // for example, there can be an OOM thrown during serialization https://github.com/Azure/azure-functions-durable-extension/issues/2166
-                this.context.CaptureInternalError(e);
+                this.context.CaptureInternalError(e, this);
             }
 
             // The return value is not used.
@@ -290,9 +331,32 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     for (this.BatchPosition = 0; this.BatchPosition < this.operationBatch.Count; this.BatchPosition++)
                     {
                         // first, check if we should stop here and not execute the rest of the batch
-                        if (onHostStopping.IsCancellationRequested // host is shutting down
-                            || this.TimeoutTask.IsCompleted // we have timed out
-                            || stopwatch.Elapsed > TimeSpan.FromMinutes(1)) // we have spent significant time in this batch
+                        bool InterruptBatchProcessing()
+                        {
+                            if (onHostStopping.IsCancellationRequested)
+                            {
+                                // host is shutting down
+                                return true;
+                            }
+                            else if (this.TimeoutTask.IsCompleted)
+                            {
+                                // we timed out
+                                this.AddTraceFlag(EntityTraceFlags.TimedOut);
+                                return true;
+                            }
+                            else if (stopwatch.Elapsed > TimeSpan.FromMinutes(3))
+                            {
+                                // we have spent a significant time on this batch already
+                                this.AddTraceFlag(EntityTraceFlags.SignificantTimeElapsed);
+                                return true;
+                            }
+                            else
+                            {
+                                return false;
+                            }
+                        }
+
+                        if (InterruptBatchProcessing())
                         {
                             // put the requests back into the request queue
                             var queue = new Queue<RequestMessage>();
@@ -308,18 +372,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             }
 
                             this.context.State.PutBack(queue);
-
                             this.ToBeContinuedWithDelay();
-
-                            return;
+                            break;
                         }
-
-                        // execute the operation
-                        var request = this.operationBatch[this.BatchPosition];
-                        await this.ProcessOperationRequestAsync(request);
+                        else
+                        {
+                            // execute the operation
+                            var request = this.operationBatch[this.BatchPosition];
+                            await this.ProcessOperationRequestAsync(request);
+                        }
                     }
                 }
             }
+
+            this.eventsReceived = this.NumberEventsToReceive;
 
             // process the operations, if any.
             if (this.operationBatch.Count > 0)
@@ -337,6 +403,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // if the host is shutting down, take note that we want to suspend processing
             if (onHostStopping.IsCancellationRequested)
             {
+                this.AddTraceFlag(EntityTraceFlags.HostShutdown);
                 this.ToBeContinuedWithDelay();
             }
         }
@@ -608,6 +675,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.context.SendResponseMessage(target, request.Id, responseMessage, !result.IsError);
                 }
             }
+
+            this.BatchPosition = this.OperationBatch.Count;
 
             // send signal messages
             foreach (var signal in outOfProcResult.Signals)

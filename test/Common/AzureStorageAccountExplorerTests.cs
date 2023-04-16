@@ -6,6 +6,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 #endif
+using System.Linq.Expressions;
+using System.Reflection;
 using Azure.Data.Tables;
 using Azure.Storage.Blobs;
 using Azure.Storage.Queues;
@@ -29,6 +31,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
     public class AzureStorageAccountExplorerTests
     {
+        // TODO: Replace this with the Uri property when the Table package can be updated
+        private static readonly Func<TableServiceClient, Uri> GetEndpointFunc = CreateGetEndpointFunc();
+
 #if !FUNCTIONS_V1
         private readonly AzureComponentFactory componentFactory;
         private readonly AzureEventSourceLogForwarder logForwarder;
@@ -110,7 +115,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             IStorageServiceClientProvider<TableServiceClient, TableClientOptions> provider = explorer.GetTableClientProvider(connectionName);
             TableServiceClient actual = provider.CreateClient(provider.CreateOptions());
-            Assert.Equal(new Uri("http://127.0.0.1:10002/devstoreaccount1", UriKind.Absolute), actual.Uri);
+            Assert.Equal(new Uri("http://127.0.0.1:10002/devstoreaccount1", UriKind.Absolute), GetEndpointFunc(actual));
         }
 
 #if !FUNCTIONS_V1
@@ -160,7 +165,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             IStorageServiceClientProvider<TableServiceClient, TableClientOptions> provider = explorer.GetTableClientProvider(connectionName);
             TableServiceClient actual = provider.CreateClient(provider.CreateOptions());
             Assert.Equal(accountName, actual.AccountName);
-            Assert.Equal(endpoint, actual.Uri);
+            Assert.Equal(endpoint, GetEndpointFunc(actual));
         }
 
         [Fact]
@@ -205,7 +210,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             IStorageServiceClientProvider<TableServiceClient, TableClientOptions> provider = explorer.GetTableClientProvider(connectionName);
             TableServiceClient actual = provider.CreateClient(provider.CreateOptions());
             Assert.Equal(accountName, actual.AccountName);
-            Assert.Equal(new Uri($"https://{accountName}.table.core.windows.net", UriKind.Absolute), actual.Uri);
+            Assert.Equal(new Uri($"https://{accountName}.table.core.windows.net", UriKind.Absolute), GetEndpointFunc(actual));
         }
 
         private AzureStorageAccountExplorer SetupStorageAccountExplorer(string connectionName, AzureStorageAccountOptions options)
@@ -244,6 +249,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 #else
             return new AzureStorageAccountExplorer(mock.Object, this.componentFactory, this.logForwarder);
 #endif
+        }
+
+        private static Func<TableServiceClient, Uri> CreateGetEndpointFunc()
+        {
+            Type tableClientType = typeof(TableServiceClient);
+            ParameterExpression clientParam = Expression.Parameter(typeof(TableServiceClient), "client");
+            FieldInfo endpointField = tableClientType.GetField("_endpoint", BindingFlags.Instance | BindingFlags.NonPublic);
+
+            return Expression
+                .Lambda<Func<TableServiceClient, Uri>>(Expression.Field(clientParam, endpointField), clientParam)
+                .Compile();
         }
 
         private sealed class AzureStorageAccountOptions

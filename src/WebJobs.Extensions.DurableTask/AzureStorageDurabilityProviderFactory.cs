@@ -193,7 +193,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 ExtendedSessionIdleTimeout = extendedSessionTimeout,
                 MaxQueuePollingInterval = this.azureStorageOptions.MaxQueuePollingInterval,
                 TrackingServiceClientProvider = this.azureStorageOptions.TrackingStoreConnectionName != null
-                    ? this.storageAccountExplorer.GetTableClientProvider(this.azureStorageOptions.TrackingStoreConnectionName)
+                    ? this.storageAccountExplorer.GetTrackingClientProvider(this.azureStorageOptions.TrackingStoreConnectionName)
                     : null,
                 FetchLargeMessageDataEnabled = this.azureStorageOptions.FetchLargeMessagesAutomatically,
                 ThrowExceptionOnInvalidDedupeStatus = true,

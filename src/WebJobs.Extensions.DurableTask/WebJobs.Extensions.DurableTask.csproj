@@ -70,7 +70,7 @@
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
     <PackageReference Include="Azure.Identity" Version="1.5.0" />
     <PackageReference Include="Microsoft.Azure.WebJobs" Version="3.0.31" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.WebApiCompatShim" Version="2.1.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.WebApiCompatShim" Version="2.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Routing" Version="2.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Server.Kestrel" Version="2.2.0" />
     <PackageReference Include="Microsoft.Extensions.Azure" Version="1.1.1" />
@@ -91,7 +91,7 @@
   <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.1'">
     <PackageReference Include="Azure.Identity" Version="1.5.0" />
     <PackageReference Include="Microsoft.Azure.WebJobs" Version="3.0.31" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.WebApiCompatShim" Version="2.1.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.WebApiCompatShim" Version="2.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Routing" Version="2.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Server.Kestrel" Version="2.2.0" />
     <PackageReference Include="Microsoft.Extensions.Azure" Version="1.1.1" />
@@ -103,15 +103,18 @@
     <PackageReference Include="Microsoft.DurableTask.Sidecar.Protobuf" Version="1.0.0" />
   </ItemGroup>
 
+  <!-- The below versions must align with the Functions Host -->
+  <ItemGroup>
+    <PackageReference Include="Azure.Core" Version="1.25.0" />
+    <PackageReference Include="Azure.Storage.Blobs" Version="12.13.0" />
+  </ItemGroup>
+
   <!-- Common dependencies across all targets -->
   <ItemGroup>
-    <PackageReference Include="Azure.Core" Version="1.27.0" />
-    <PackageReference Include="Azure.Data.Tables" Version="12.7.1" />
-    <!-- The below version of Azure.Storage.Blobs must align with the Functions Host -->
-    <PackageReference Include="Azure.Storage.Blobs" Version="12.13.0" />
+    <PackageReference Include="Azure.Data.Tables" Version="12.6.1" />
     <PackageReference Include="Azure.Storage.Queues" Version="12.12.0" />
-    <PackageReference Include="Microsoft.Azure.DurableTask.Core" Version="2.12.1" />
-    <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" Version="2.0.0-preview.1" />
+    <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" Version="2.0.0-preview.2" />
+    <PackageReference Include="Microsoft.Azure.DurableTask.Core" Version="2.13.*" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers" Version="0.5.*" />
     <!-- Build-time dependencies -->
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.*" PrivateAssets="All" />

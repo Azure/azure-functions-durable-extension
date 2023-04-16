@@ -162,6 +162,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 context.DeleteState();
                 return Task.CompletedTask;
             }
+            else if (context.OperationName == "delay")
+            {
+                return Task.Delay(TimeSpan.FromSeconds(context.GetInput<int>()));
+            }
 
             return context.DispatchAsync<FaultyEntity>();
         }
@@ -178,6 +182,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 case "deletewithoutreading":
                     context.DeleteState();
                     break;
+
+                case "delay":
+                    return Task.Delay(TimeSpan.FromSeconds(context.GetInput<int>()));
 
                 case "Get":
                     if (!context.HasState)

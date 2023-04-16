@@ -20,5 +20,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage
                 explorer.GetQueueClientProvider(connectionName),
                 explorer.GetTableClientProvider(connectionName));
         }
+
+        public static TrackingServiceClientProvider GetTrackingClientProvider(this IAzureStorageAccountExplorer explorer, string connectionName)
+        {
+            if (explorer == null)
+            {
+                throw new ArgumentNullException(nameof(explorer));
+            }
+
+            return new TrackingServiceClientProvider(
+                explorer.GetBlobClientProvider(connectionName),
+                explorer.GetTableClientProvider(connectionName));
+        }
     }
 }
