@@ -51,11 +51,21 @@
     <!-- Don't increase below versions without significantly testing on Functions V1!
          Increasing these versions increments some dependencies that have binding redirects in Functions V1. -->
     <PackageReference Include="Azure.Identity" Version="1.1.1" />
-    <PackageReference Include="Microsoft.Azure.WebJobs" Version="2.3.0" />
-    <PackageReference Include="Microsoft.Extensions.Options" Version="1.0.2" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="1.0.2" />
-    <PackageReference Include="Microsoft.AspNetCore.Routing" Version="1.0.4" />
+    <PackageReference Include="Microsoft.AspNetCore.Hosting.Abstractions" Version="1.0.3" />
+    <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="1.0.3" />
+    <PackageReference Include="Microsoft.AspNetCore.Http.Features" Version="1.0.3" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Abstractions" Version="1.0.4" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Core" Version="1.0.4" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.WebApiCompatShim" Version="1.0.4" />
+    <PackageReference Include="Microsoft.AspNetCore.Routing" Version="1.0.4" />
+    <PackageReference Include="Microsoft.AspNetCore.Routing.Abstractions" Version="1.0.4" />
+    <PackageReference Include="Microsoft.Azure.WebJobs" Version="2.3.0" />
+    <PackageReference Include="Microsoft.Azure.WebJobs.Core" Version="2.3.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="1.0.2" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="1.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="1.1.1" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="1.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Primitives" Version="1.0.1" />
   </ItemGroup>
 
   <!-- 
