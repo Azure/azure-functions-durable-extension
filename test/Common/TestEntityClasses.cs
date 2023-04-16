@@ -6,10 +6,16 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+#if !FUNCTIONS_V1
 using System.Text;
+#endif
 using System.Threading.Tasks;
+#if !FUNCTIONS_V1
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Specialized;
+#else
+using Microsoft.WindowsAzure.Storage.Blob;
+#endif
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
@@ -135,9 +141,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [FunctionName(nameof(StorageBackedCounter))]
-        public static Task StorageBackedCounterFunction([EntityTrigger] IDurableEntityContext context, [Blob(BlobContainerPath)] BlobContainerClient blobContainerClient)
+        public static Task StorageBackedCounterFunction(
+            [EntityTrigger] IDurableEntityContext context,
+#if FUNCTIONS_V1
+            [Blob(BlobContainerPath)] CloudBlobContainer blobContainer)
+#else
+            [Blob(BlobContainerPath)] BlobContainerClient blobContainer)
+#endif
         {
-            return context.DispatchAsync<StorageBackedCounter>(blobContainerClient);
+            return context.DispatchAsync<StorageBackedCounter>(blobContainer);
         }
 
         [FunctionName(nameof(SelfSchedulingEntity))]
@@ -555,12 +567,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [JsonObject(MemberSerialization = MemberSerialization.OptIn)]
         public class StorageBackedCounter : IAsyncCounter
         {
-            private readonly BlobContainerClient blobContainerClient;
-            private readonly string blobName = "counter";
+            private const string BlobName = "counter";
 
-            public StorageBackedCounter(BlobContainerClient blobContainerClient)
+#if FUNCTIONS_V1
+            private readonly CloudBlobContainer blobContainer;
+
+            public StorageBackedCounter(CloudBlobContainer blobContainer)
+#else
+            private readonly BlobContainerClient blobContainer;
+
+            public StorageBackedCounter(BlobContainerClient blobContainer)
+#endif
             {
-                this.blobContainerClient = blobContainerClient;
+                this.blobContainer = blobContainer;
             }
 
             [JsonProperty("value")]
@@ -579,7 +598,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             public async Task<int> Get()
             {
-                BlockBlobClient environmentVariableBlob = this.blobContainerClient.GetBlockBlobClient(this.blobName);
+#if FUNCTIONS_V1
+                CloudBlockBlob environmentVariableBlob = this.blobContainer.GetBlockBlobReference(BlobName);
+#else
+                BlockBlobClient environmentVariableBlob = this.blobContainer.GetBlockBlobClient(BlobName);
+#endif
                 if (await environmentVariableBlob.ExistsAsync())
                 {
                     var readStream = await environmentVariableBlob.OpenReadAsync();
@@ -604,12 +627,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             public async Task Set(int newValue)
             {
                 this.Value = newValue;
-                BlockBlobClient environmentVariableBlob = this.blobContainerClient.GetBlockBlobClient(this.blobName);
-
+#if FUNCTIONS_V1
+                CloudBlockBlob environmentVariableBlob = this.blobContainer.GetBlockBlobReference(BlobName);
+                await environmentVariableBlob.UploadTextAsync(newValue.ToString());
+#else
+                BlockBlobClient environmentVariableBlob = this.blobContainer.GetBlockBlobClient(BlobName);
                 using (var buffer = new MemoryStream(Encoding.UTF8.GetBytes(newValue.ToString())))
                 {
                     await environmentVariableBlob.UploadAsync(buffer);
                 }
+#endif
             }
 
             public void Delete()
