@@ -37,9 +37,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (!this.cachedEnviromentVariables.TryGetValue(variableName, out value))
             {
                 value = this.nameResolver.Resolve(variableName);
-                if (!this.cachedEnviromentVariables.ContainsKey(variableName))
+                try
                 {
                     this.cachedEnviromentVariables.Add(variableName, value);
+                }
+                catch
+                {
+                    // The environment variable was already added. This could happen in the case of concurrent reads.
                 }
             }
 
