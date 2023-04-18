@@ -41,7 +41,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     this.cachedEnviromentVariables.Add(variableName, value);
                 }
-                catch
+                catch (ArgumentException)
                 {
                     // The environment variable was already added. This could happen in the case of concurrent reads.
                 }
