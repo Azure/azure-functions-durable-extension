@@ -37,7 +37,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (!this.cachedEnviromentVariables.TryGetValue(variableName, out value))
             {
                 value = this.nameResolver.Resolve(variableName);
-                this.cachedEnviromentVariables.Add(variableName, value);
+                this.cachedEnviromentVariables.TryAdd(variableName, value);
             }
 
             return value;
