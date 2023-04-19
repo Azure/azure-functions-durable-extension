@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using DurableTask.AzureStorage.Monitoring;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener;
 using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Extensions.Logging;
 using Microsoft.WindowsAzure.Storage;
@@ -22,6 +23,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly CloudStorageAccount storageAccount;
         private readonly ScaleMonitorDescriptor scaleMonitorDescriptor;
         private readonly ILogger logger;
+        private readonly DurableTaskMetricsProvider durableTaskMetricsProvider;
 
         private DisconnectedPerformanceMonitor performanceMonitor;
 
@@ -40,6 +42,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.logger = logger;
             this.performanceMonitor = performanceMonitor;
             this.scaleMonitorDescriptor = new ScaleMonitorDescriptor($"{this.functionId}-DurableTaskTrigger-{this.hubName}".ToLower());
+            this.durableTaskMetricsProvider = new DurableTaskMetricsProvider(this.functionName, this.hubName, this.logger, this.performanceMonitor, this.storageAccount);
         }
 
         public ScaleMonitorDescriptor Descriptor
@@ -72,33 +75,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public async Task<DurableTaskTriggerMetrics> GetMetricsAsync()
         {
-            DurableTaskTriggerMetrics metrics = new DurableTaskTriggerMetrics();
-
-            // Durable stores its own metrics, so we just collect them here
-            PerformanceHeartbeat heartbeat = null;
-            try
-            {
-                DisconnectedPerformanceMonitor performanceMonitor = this.GetPerformanceMonitor();
-                heartbeat = await performanceMonitor.PulseAsync();
-            }
-            catch (StorageException e)
-            {
-                this.logger.LogWarning("{details}. Function: {functionName}. HubName: {hubName}.", e.ToString(), this.functionName, this.hubName);
-            }
-
-            if (heartbeat != null)
-            {
-                metrics.PartitionCount = heartbeat.PartitionCount;
-                metrics.ControlQueueLengths = JsonConvert.SerializeObject(heartbeat.ControlQueueLengths);
-                metrics.ControlQueueLatencies = JsonConvert.SerializeObject(heartbeat.ControlQueueLatencies);
-                metrics.WorkItemQueueLength = heartbeat.WorkItemQueueLength;
-                if (heartbeat.WorkItemQueueLatency > TimeSpan.Zero)
-                {
-                    metrics.WorkItemQueueLatency = heartbeat.WorkItemQueueLatency.ToString();
-                }
-            }
-
-            return metrics;
+            return await this.durableTaskMetricsProvider.GetMetricsAsync().ConfigureAwait(false);
         }
 
         ScaleStatus IScaleMonitor.GetScaleStatus(ScaleStatusContext context)

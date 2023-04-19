@@ -2,12 +2,9 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using DurableTask.AzureStorage.Monitoring;
-using Microsoft.Azure.WebJobs.Host.Executors;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener;
 using Microsoft.Azure.WebJobs.Host.Listeners;
 #if !FUNCTIONS_V1
 using Microsoft.Azure.WebJobs.Host.Scale;
@@ -16,7 +13,7 @@ using Microsoft.Azure.WebJobs.Host.Scale;
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
 #if !FUNCTIONS_V1
-    internal sealed class DurableTaskListener : IListener, IScaleMonitorProvider
+    internal sealed class DurableTaskListener : IListener, IScaleMonitorProvider, ITargetScalerProvider
 #else
     internal sealed class DurableTaskListener : IListener
 #endif
@@ -28,6 +25,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly string connectionName;
 #if !FUNCTIONS_V1
         private readonly Lazy<IScaleMonitor> scaleMonitor;
+        private readonly Lazy<DurableTaskTargetScaler> targetScaler;
 #endif
 
         public DurableTaskListener(
@@ -54,6 +52,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.functionId,
                     this.functionName,
                     this.connectionName));
+
+            this.targetScaler = new Lazy<DurableTaskTargetScaler>(
+                () => new DurableTaskTargetScaler(
+                    ));
 #endif
         }
 
@@ -96,6 +98,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public IScaleMonitor GetMonitor()
         {
             return this.scaleMonitor.Value;
+        }
+
+        public ITargetScaler GetTargetScaler()
+        {
+            return this.targetScaler.Value;
         }
 #endif
     }
