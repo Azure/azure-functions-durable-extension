@@ -7,9 +7,12 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.AzureStorage;
+using DurableTask.AzureStorage.Monitoring;
 using DurableTask.AzureStorage.Tracking;
 using DurableTask.Core;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener;
 using Microsoft.Extensions.Logging;
+using Microsoft.WindowsAzure.Storage;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
@@ -198,6 +201,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
 #if !FUNCTIONS_V1
+
+        internal DurableTaskMetricsProvider GetMetricsProvider(
+            string functionName,
+            string hubName,
+            CloudStorageAccount storageAccount,
+            ILogger logger,
+            DisconnectedPerformanceMonitor performanceMonitor = null)
+        {
+            var metricsProvider = new DurableTaskMetricsProvider(functionName, hubName, logger, performanceMonitor, storageAccount);
+            return metricsProvider;
+        }
+
         /// <inheritdoc/>
         public override bool TryGetScaleMonitor(
             string functionId,
@@ -206,12 +221,28 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string connectionName,
             out IScaleMonitor scaleMonitor)
         {
+            var storageAccount = this.storageAccountProvider.GetStorageAccountDetails(connectionName).ToCloudStorageAccount();
+            var metricsProvider = this.GetMetricsProvider(functionName, hubName, storageAccount, this.logger);
             scaleMonitor = new DurableTaskScaleMonitor(
                 functionId,
                 functionName,
                 hubName,
-                this.storageAccountProvider.GetStorageAccountDetails(connectionName).ToCloudStorageAccount(),
-                this.logger);
+                storageAccount,
+                this.logger,
+                metricsProvider);
+            return true;
+        }
+
+        public override bool TryGetTargetScaler(
+            string functionId,
+            string functionName,
+            string hubName,
+            string connectionName,
+            out ITargetScaler targetScaler)
+        {
+            var storageAccount = this.storageAccountProvider.GetStorageAccountDetails(connectionName).ToCloudStorageAccount();
+            var metricsProvider = this.GetMetricsProvider(functionName, hubName, storageAccount, this.logger);
+            targetScaler = new DurableTaskTargetScaler(functionId, metricsProvider, this);
             return true;
         }
 #endif

@@ -7,6 +7,7 @@ using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using DurableTask.AzureStorage.Monitoring;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener;
 using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Microsoft.Azure.WebJobs.Logging;
@@ -40,14 +41,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             ILogger logger = this.loggerFactory.CreateLogger(LogCategories.CreateTriggerCategory("DurableTask"));
             this.traceHelper = new EndToEndTraceHelper(logger, false);
             this.performanceMonitor = new Mock<DisconnectedPerformanceMonitor>(MockBehavior.Strict, this.storageAccount, this.hubName, (int?)null);
-
+            var metricsProvider = new DurableTaskMetricsProvider(this.functionName.Name, this.hubName, logger, this.performanceMonitor.Object, this.storageAccount);
             this.scaleMonitor = new DurableTaskScaleMonitor(
                 this.functionId,
                 this.functionName.Name,
                 this.hubName,
                 this.storageAccount,
                 logger,
-                this.performanceMonitor.Object);
+                metricsProvider,
+                this.performanceMonitor.Object
+                );
         }
 
         [Fact]

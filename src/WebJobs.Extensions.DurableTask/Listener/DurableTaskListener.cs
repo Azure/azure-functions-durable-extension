@@ -25,7 +25,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly string connectionName;
 #if !FUNCTIONS_V1
         private readonly Lazy<IScaleMonitor> scaleMonitor;
-        private readonly Lazy<DurableTaskTargetScaler> targetScaler;
+        private readonly Lazy<ITargetScaler> targetScaler;
 #endif
 
         public DurableTaskListener(
@@ -47,15 +47,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.functionType = functionType;
             this.connectionName = connectionName;
 #if !FUNCTIONS_V1
+
             this.scaleMonitor = new Lazy<IScaleMonitor>(() =>
                 this.config.GetScaleMonitor(
                     this.functionId,
                     this.functionName,
                     this.connectionName));
 
-            this.targetScaler = new Lazy<DurableTaskTargetScaler>(
-                () => new DurableTaskTargetScaler(
-                    ));
+            this.targetScaler = new Lazy<ITargetScaler>(() =>
+                this.config.GetTargetScaler(
+                    this.functionId,
+                    this.functionName,
+                    this.connectionName));
 #endif
         }
 

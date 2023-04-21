@@ -33,6 +33,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string hubName,
             CloudStorageAccount storageAccount,
             ILogger logger,
+            DurableTaskMetricsProvider durableTaskMetricsProvider,
             DisconnectedPerformanceMonitor performanceMonitor = null)
         {
             this.functionId = functionId;
@@ -41,8 +42,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.storageAccount = storageAccount;
             this.logger = logger;
             this.performanceMonitor = performanceMonitor;
-            this.scaleMonitorDescriptor = new ScaleMonitorDescriptor($"{this.functionId}-DurableTaskTrigger-{this.hubName}".ToLower());
-            this.durableTaskMetricsProvider = new DurableTaskMetricsProvider(this.functionName, this.hubName, this.logger, this.performanceMonitor, this.storageAccount);
+            this.scaleMonitorDescriptor = new ScaleMonitorDescriptor($"{this.functionId}-DurableTaskTrigger-{this.hubName}".ToLower(), this.functionId);
+            this.durableTaskMetricsProvider = durableTaskMetricsProvider;
         }
 
         public ScaleMonitorDescriptor Descriptor
@@ -51,6 +52,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 return this.scaleMonitorDescriptor;
             }
+        }
+
+        public DurableTaskMetricsProvider GetMetricsProvider()
+        {
+            return this.durableTaskMetricsProvider;
         }
 
         private DisconnectedPerformanceMonitor GetPerformanceMonitor()

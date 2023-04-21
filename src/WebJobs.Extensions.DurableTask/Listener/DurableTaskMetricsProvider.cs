@@ -48,6 +48,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener
             if (heartbeat != null)
             {
                 metrics.PartitionCount = heartbeat.PartitionCount;
+                metrics.ControlQueueLengthsNumbers = heartbeat.ControlQueueLengths;
                 metrics.ControlQueueLengths = JsonConvert.SerializeObject(heartbeat.ControlQueueLengths);
                 metrics.ControlQueueLatencies = JsonConvert.SerializeObject(heartbeat.ControlQueueLatencies);
                 metrics.WorkItemQueueLength = heartbeat.WorkItemQueueLength;

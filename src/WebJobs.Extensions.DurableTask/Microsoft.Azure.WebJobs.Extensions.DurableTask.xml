@@ -2227,6 +2227,17 @@
             <param name="scaleMonitor">The scale monitor.</param>
             <returns>True if autoscaling is supported, false otherwise.</returns>
         </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.TryGetTargetScaler(System.String,System.String,System.String,System.String,Microsoft.Azure.WebJobs.Host.Scale.ITargetScaler@)">
+            <summary>
+            Tries to obtain a scaler for target based scaling.
+            </summary>
+            <param name="functionId">Function id.</param>
+            <param name="functionName">Function name.</param>
+            <param name="hubName">Task hub name.</param>
+            <param name="connectionName">The name of the storage-specific connection settings.</param>
+            <param name="targetScaler">The target-based scaler.</param>
+            <returns>True if target-based scaling is supported, false otherwise.</returns>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClientAttribute">
             <summary>
             Attribute used to bind a function parameter to a <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableClient"/>, <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableEntityClient"/>, or <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient"/> instance.
@@ -2629,11 +2640,12 @@
             see discussion https://github.com/Azure/azure-functions-durable-extension/pull/1009/files#r341767018.
             </summary>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.NoOpScaleMonitor.#ctor(System.String)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.NoOpScaleMonitor.#ctor(System.String,System.String)">
             <summary>
             Construct a placeholder scale monitor.
             </summary>
             <param name="name">A descriptive name.</param>
+            <param name="functionId">The function ID.</param>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.NoOpScaleMonitor.Descriptor">
             <summary>
@@ -3778,6 +3790,11 @@
             <summary>
             The number of messages across control queues. This will
             be in the form of a serialized array of ints, e.g. "[1,2,3,4]".
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskTriggerMetrics.ControlQueueLengthsNumbers">
+            <summary>
+            The number of messages across control queues.
             </summary>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskTriggerMetrics.ControlQueueLatencies">

@@ -1,6 +1,7 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 #if !FUNCTIONS_V1
+using System.Collections.Generic;
 using Microsoft.Azure.WebJobs.Host.Scale;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
@@ -17,6 +18,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// be in the form of a serialized array of ints, e.g. "[1,2,3,4]".
         /// </summary>
         public string ControlQueueLengths { get; set; }
+
+        /// <summary>
+        /// The number of messages across control queues.
+        /// </summary>
+        public IReadOnlyList<int> ControlQueueLengthsNumbers { get; set; }
 
         /// <summary>
         /// The latency of messages across control queues. This will

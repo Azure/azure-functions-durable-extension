@@ -1589,7 +1589,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 // the durability provider does not support runtime scaling.
                 // Create an empty scale monitor to avoid exceptions (unless runtime scaling is actually turned on).
-                return new NoOpScaleMonitor($"{functionId}-DurableTaskTrigger-{this.Options.HubName}".ToLower());
+                return new NoOpScaleMonitor($"{functionId}-DurableTaskTrigger-{this.Options.HubName}".ToLower(), functionId);
+            }
+        }
+
+        internal ITargetScaler GetTargetScaler(string functionId, FunctionName functionName, string connectionName)
+        {
+            if (this.defaultDurabilityProvider.TryGetTargetScaler(
+                    functionId,
+                    functionName.Name,
+                    this.Options.HubName,
+                    connectionName,
+                    out ITargetScaler targetScaler))
+            {
+                return targetScaler;
+            }
+            else
+            {
+                // the durability provider does not support runtime scaling.
+                // Create an empty scale monitor to avoid exceptions (unless runtime scaling is actually turned on).
+                // return new NoOpScaleMonitor($"{functionId}-DurableTaskTrigger-{this.Options.HubName}".ToLower(), functionId);
+                throw new NotImplementedException();
             }
         }
 
@@ -1604,9 +1624,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             /// Construct a placeholder scale monitor.
             /// </summary>
             /// <param name="name">A descriptive name.</param>
-            public NoOpScaleMonitor(string name)
+            /// <param name="functionId">The function ID.</param>
+            public NoOpScaleMonitor(string name, string functionId)
             {
-                this.Descriptor = new ScaleMonitorDescriptor(name);
+                this.Descriptor = new ScaleMonitorDescriptor(name, functionId);
             }
 
             /// <summary>
