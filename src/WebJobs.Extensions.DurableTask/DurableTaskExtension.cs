@@ -1606,10 +1606,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             else
             {
-                // the durability provider does not support runtime scaling.
-                // Create an empty scale monitor to avoid exceptions (unless runtime scaling is actually turned on).
-                // return new NoOpScaleMonitor($"{functionId}-DurableTaskTrigger-{this.Options.HubName}".ToLower(), functionId);
-                throw new NotImplementedException();
+                // the durability provider does not support target-based scaling.
+                // Create an empty target scaler to avoid exceptions (unless runtime scaling is actually turned on).
+                return new NoOpTargetScaler(functionId);
             }
         }
 
@@ -1645,6 +1644,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             ScaleStatus IScaleMonitor.GetScaleStatus(ScaleStatusContext context)
             {
                 throw new InvalidOperationException("The current DurableTask backend configuration does not support runtime scaling");
+            }
+        }
+
+        private sealed class NoOpTargetScaler : ITargetScaler
+        {
+            /// <summary>
+            /// Construct a placeholder target scaler.
+            /// </summary>
+            /// <param name="functionId">The function ID.</param>
+            public NoOpTargetScaler(string functionId)
+            {
+                this.TargetScalerDescriptor = new TargetScalerDescriptor(functionId);
+            }
+
+            public TargetScalerDescriptor TargetScalerDescriptor { get; private set; }
+
+            public Task<TargetScalerResult> GetScaleResultAsync(TargetScalerContext context)
+            {
+                throw new NotImplementedException();
             }
         }
 #endif
