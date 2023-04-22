@@ -4292,7 +4292,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
-        /// Test which validates that entity state deserialization
+        /// Test which validates that entity state deserialization.
         /// </summary>
         [Theory]
         [InlineData(true)]
