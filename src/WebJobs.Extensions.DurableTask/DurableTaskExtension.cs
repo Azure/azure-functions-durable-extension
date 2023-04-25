@@ -1592,42 +1592,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return new NoOpScaleMonitor($"{functionId}-DurableTaskTrigger-{this.Options.HubName}".ToLower(), functionId);
             }
         }
-
-        /// <summary>
-        /// A placeholder scale monitor, can be used by durability providers that do not support runtime scaling.
-        /// This is required to allow operation of those providers even if runtime scaling is turned off
-        /// see discussion https://github.com/Azure/azure-functions-durable-extension/pull/1009/files#r341767018.
-        /// </summary>
-        private sealed class NoOpScaleMonitor : IScaleMonitor
-        {
-            /// <summary>
-            /// Construct a placeholder scale monitor.
-            /// </summary>
-            /// <param name="name">A descriptive name.</param>
-            /// <param name="functionId">The function ID.</param>
-            public NoOpScaleMonitor(string name, string functionId)
-            {
-                this.Descriptor = new ScaleMonitorDescriptor(name, functionId);
-            }
-
-            /// <summary>
-            /// A descriptive name.
-            /// </summary>
-            public ScaleMonitorDescriptor Descriptor { get; private set; }
-
-            /// <inheritdoc/>
-            Task<ScaleMetrics> IScaleMonitor.GetMetricsAsync()
-            {
-                throw new InvalidOperationException("The current DurableTask backend configuration does not support runtime scaling");
-            }
-
-            /// <inheritdoc/>
-            ScaleStatus IScaleMonitor.GetScaleStatus(ScaleStatusContext context)
-            {
-                throw new InvalidOperationException("The current DurableTask backend configuration does not support runtime scaling");
-            }
-        }
-
 #endif
 #if FUNCTIONS_V3_OR_GREATER
 
@@ -1668,6 +1632,44 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new NotImplementedException("The current DurableTask backend configuration does not support target-based scaling");
             }
         }
+#endif
+
+#if !FUNCTIONS_V1
+        /// <summary>
+        /// A placeholder scale monitor, can be used by durability providers that do not support runtime scaling.
+        /// This is required to allow operation of those providers even if runtime scaling is turned off
+        /// see discussion https://github.com/Azure/azure-functions-durable-extension/pull/1009/files#r341767018.
+        /// </summary>
+        private sealed class NoOpScaleMonitor : IScaleMonitor
+        {
+            /// <summary>
+            /// Construct a placeholder scale monitor.
+            /// </summary>
+            /// <param name="name">A descriptive name.</param>
+            /// <param name="functionId">The function ID.</param>
+            public NoOpScaleMonitor(string name, string functionId)
+            {
+                this.Descriptor = new ScaleMonitorDescriptor(name, functionId);
+            }
+
+            /// <summary>
+            /// A descriptive name.
+            /// </summary>
+            public ScaleMonitorDescriptor Descriptor { get; private set; }
+
+            /// <inheritdoc/>
+            Task<ScaleMetrics> IScaleMonitor.GetMetricsAsync()
+            {
+                throw new InvalidOperationException("The current DurableTask backend configuration does not support runtime scaling");
+            }
+
+            /// <inheritdoc/>
+            ScaleStatus IScaleMonitor.GetScaleStatus(ScaleStatusContext context)
+            {
+                throw new InvalidOperationException("The current DurableTask backend configuration does not support runtime scaling");
+            }
+        }
+
 #endif
     }
 }
