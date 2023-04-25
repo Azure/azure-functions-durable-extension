@@ -1649,7 +1649,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             /// <param name="functionId">The function ID.</param>
             public NoOpScaleMonitor(string name, string functionId)
             {
+#if FUNCTIONS_V3_OR_GREATER
                 this.Descriptor = new ScaleMonitorDescriptor(name, functionId);
+#else
+#pragma warning disable CS0618 // Type or member is obsolete
+                this.Descriptor = new ScaleMonitorDescriptor(name);
+#pragma warning restore CS0618 // Type or member is obsolete
+#endif
             }
 
             /// <summary>
