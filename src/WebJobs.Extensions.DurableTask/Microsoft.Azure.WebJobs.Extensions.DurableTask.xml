@@ -2227,17 +2227,6 @@
             <param name="scaleMonitor">The scale monitor.</param>
             <returns>True if autoscaling is supported, false otherwise.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.TryGetTargetScaler(System.String,System.String,System.String,System.String,Microsoft.Azure.WebJobs.Host.Scale.ITargetScaler@)">
-            <summary>
-            Tries to obtain a scaler for target based scaling.
-            </summary>
-            <param name="functionId">Function id.</param>
-            <param name="functionName">Function name.</param>
-            <param name="hubName">Task hub name.</param>
-            <param name="connectionName">The name of the storage-specific connection settings.</param>
-            <param name="targetScaler">The target-based scaler.</param>
-            <returns>True if target-based scaling is supported, false otherwise.</returns>
-        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClientAttribute">
             <summary>
             Attribute used to bind a function parameter to a <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableClient"/>, <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableEntityClient"/>, or <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient"/> instance.
@@ -2657,12 +2646,6 @@
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.NoOpScaleMonitor.Microsoft#Azure#WebJobs#Host#Scale#IScaleMonitor#GetScaleStatus(Microsoft.Azure.WebJobs.Host.Scale.ScaleStatusContext)">
             <inheritdoc/>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.NoOpTargetScaler.#ctor(System.String)">
-            <summary>
-            Construct a placeholder target scaler.
-            </summary>
-            <param name="functionId">The function ID.</param>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskJobHostConfigurationExtensions">
             <summary>

@@ -1593,25 +1593,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        internal ITargetScaler GetTargetScaler(string functionId, FunctionName functionName, string connectionName)
-        {
-            if (this.defaultDurabilityProvider.TryGetTargetScaler(
-                    functionId,
-                    functionName.Name,
-                    this.Options.HubName,
-                    connectionName,
-                    out ITargetScaler targetScaler))
-            {
-                return targetScaler;
-            }
-            else
-            {
-                // the durability provider does not support target-based scaling.
-                // Create an empty target scaler to avoid exceptions (unless runtime scaling is actually turned on).
-                return new NoOpTargetScaler(functionId);
-            }
-        }
-
         /// <summary>
         /// A placeholder scale monitor, can be used by durability providers that do not support runtime scaling.
         /// This is required to allow operation of those providers even if runtime scaling is turned off
@@ -1644,6 +1625,28 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             ScaleStatus IScaleMonitor.GetScaleStatus(ScaleStatusContext context)
             {
                 throw new InvalidOperationException("The current DurableTask backend configuration does not support runtime scaling");
+            }
+        }
+
+#endif
+#if FUNCTIONS_V3_OR_GREATER
+
+        internal ITargetScaler GetTargetScaler(string functionId, FunctionName functionName, string connectionName)
+        {
+            if (this.defaultDurabilityProvider.TryGetTargetScaler(
+                    functionId,
+                    functionName.Name,
+                    this.Options.HubName,
+                    connectionName,
+                    out ITargetScaler targetScaler))
+            {
+                return targetScaler;
+            }
+            else
+            {
+                // the durability provider does not support target-based scaling.
+                // Create an empty target scaler to avoid exceptions (unless runtime scaling is actually turned on).
+                return new NoOpTargetScaler(functionId);
             }
         }
 

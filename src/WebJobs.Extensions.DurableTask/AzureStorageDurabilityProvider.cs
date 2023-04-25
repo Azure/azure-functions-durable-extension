@@ -233,6 +233,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return true;
         }
 
+#endif
+#if FUNCTIONS_V3_OR_GREATER
         public override bool TryGetTargetScaler(
             string functionId,
             string functionName,

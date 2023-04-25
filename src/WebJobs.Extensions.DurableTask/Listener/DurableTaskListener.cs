@@ -12,8 +12,10 @@ using Microsoft.Azure.WebJobs.Host.Scale;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
-#if !FUNCTIONS_V1
+#if FUNCTIONS_V3_OR_GREATER
     internal sealed class DurableTaskListener : IListener, IScaleMonitorProvider, ITargetScalerProvider
+#elif FUNCTIONS_V2_OR_GREATER
+    internal sealed class DurableTaskListener : IListener, IScaleMonitorProvider
 #else
     internal sealed class DurableTaskListener : IListener
 #endif
@@ -23,8 +25,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly FunctionName functionName;
         private readonly FunctionType functionType;
         private readonly string connectionName;
+
 #if !FUNCTIONS_V1
         private readonly Lazy<IScaleMonitor> scaleMonitor;
+#endif
+
+#if FUNCTIONS_V3_OR_GREATER
         private readonly Lazy<ITargetScaler> targetScaler;
 #endif
 
@@ -54,6 +60,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.functionName,
                     this.connectionName));
 
+#endif
+#if FUNCTIONS_V3_OR_GREATER
             this.targetScaler = new Lazy<ITargetScaler>(() =>
                 this.config.GetTargetScaler(
                     this.functionId,
@@ -102,7 +110,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             return this.scaleMonitor.Value;
         }
+#endif
 
+#if FUNCTIONS_V3_OR_GREATER
         public ITargetScaler GetTargetScaler()
         {
             return this.targetScaler.Value;
