@@ -42,8 +42,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.storageAccount = storageAccount;
             this.logger = logger;
             this.performanceMonitor = performanceMonitor;
-            this.scaleMonitorDescriptor = new ScaleMonitorDescriptor($"{this.functionId}-DurableTaskTrigger-{this.hubName}".ToLower(), this.functionId);
             this.durableTaskMetricsProvider = durableTaskMetricsProvider;
+
+#if FUNCTIONS_V3_OR_GREATER
+            this.scaleMonitorDescriptor = new ScaleMonitorDescriptor($"{this.functionId}-DurableTaskTrigger-{this.hubName}".ToLower(), this.functionId);
+#else
+#pragma warning disable CS0618 // Type or member is obsolete
+            this.scaleMonitorDescriptor = new ScaleMonitorDescriptor($"{this.functionId}-DurableTaskTrigger-{this.hubName}".ToLower());
+#pragma warning restore CS0618 // Type or member is obsolete
+#endif
         }
 
         public ScaleMonitorDescriptor Descriptor
