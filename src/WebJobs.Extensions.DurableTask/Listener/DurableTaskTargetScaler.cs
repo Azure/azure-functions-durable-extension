@@ -17,32 +17,36 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener
     {
         private readonly DurableTaskMetricsProvider metricsProvider;
         private readonly TargetScalerResult cachedTargetScaler;
-        private readonly int maxConcurrentActivities;
-        private readonly int maxConcurrentOrchestrators;
+        private readonly DurabilityProvider durabilityProvider;
 
         public DurableTaskTargetScaler(string functionId, DurableTaskMetricsProvider metricsProvider, DurabilityProvider durabilityProvider)
         {
             this.metricsProvider = metricsProvider;
             this.cachedTargetScaler = new TargetScalerResult();
             this.TargetScalerDescriptor = new TargetScalerDescriptor(functionId);
-            this.maxConcurrentActivities = durabilityProvider.MaxConcurrentTaskActivityWorkItems;
-            this.maxConcurrentOrchestrators = durabilityProvider.MaxConcurrentTaskOrchestrationWorkItems;
+            this.durabilityProvider = durabilityProvider;
         }
 
         public TargetScalerDescriptor TargetScalerDescriptor { get; private set; }
+
+        private int MaxConcurrentActivities => this.durabilityProvider.MaxConcurrentTaskActivityWorkItems;
+
+        private int MaxConcurrentOrchestrators => this.durabilityProvider.MaxConcurrentTaskOrchestrationWorkItems;
 
         public async Task<TargetScalerResult> GetScaleResultAsync(TargetScalerContext context)
         {
             var metrics = await this.metricsProvider.GetMetricsAsync();
 
             var workItemQueueLength = metrics.WorkItemQueueLength;
-            double activityWorkers = Math.Ceiling((double)(workItemQueueLength / this.maxConcurrentActivities));
+            double activityWorkers = Math.Ceiling(workItemQueueLength / (double)this.MaxConcurrentActivities);
 
-            var controlQueueLengths = metrics.ControlQueueLengthsNumbers;
+            var serializedControlQueueLengths = metrics.ControlQueueLengths;
+            var controlQueueLengths = JsonConvert.DeserializeObject<IReadOnlyList<int>>(serializedControlQueueLengths);
+
             var controlQueueMessages = controlQueueLengths.Sum();
             var activeControlQueues = controlQueueLengths.Count(x => x > 0);
 
-            var upperBoundControlWorkers = Math.Ceiling((double)(controlQueueMessages / this.maxConcurrentOrchestrators));
+            var upperBoundControlWorkers = Math.Ceiling(controlQueueMessages / (double)this.MaxConcurrentOrchestrators);
             var orchestratorWorkers = Math.Min(activeControlQueues, upperBoundControlWorkers);
 
             int numWorkersToRequest = (int)Math.Max(activityWorkers, orchestratorWorkers);

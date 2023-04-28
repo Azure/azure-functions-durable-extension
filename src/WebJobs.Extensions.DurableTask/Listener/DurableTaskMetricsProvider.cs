@@ -29,7 +29,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener
             this.storageAccount = storageAccount;
         }
 
-        public async Task<DurableTaskTriggerMetrics> GetMetricsAsync()
+        public virtual async Task<DurableTaskTriggerMetrics> GetMetricsAsync()
         {
             DurableTaskTriggerMetrics metrics = new DurableTaskTriggerMetrics();
 
@@ -48,7 +48,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener
             if (heartbeat != null)
             {
                 metrics.PartitionCount = heartbeat.PartitionCount;
-                metrics.ControlQueueLengthsNumbers = heartbeat.ControlQueueLengths;
                 metrics.ControlQueueLengths = JsonConvert.SerializeObject(heartbeat.ControlQueueLengths);
                 metrics.ControlQueueLatencies = JsonConvert.SerializeObject(heartbeat.ControlQueueLatencies);
                 metrics.WorkItemQueueLength = heartbeat.WorkItemQueueLength;

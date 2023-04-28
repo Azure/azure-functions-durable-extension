@@ -17,12 +17,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// The number of messages across control queues. This will
         /// be in the form of a serialized array of ints, e.g. "[1,2,3,4]".
         /// </summary>
-        public string ControlQueueLengths { get; set; }
-
-        /// <summary>
-        /// The number of messages across control queues.
-        /// </summary>
-        public IReadOnlyList<int> ControlQueueLengthsNumbers { get; set; }
+        public virtual string ControlQueueLengths { get; set; }
 
         /// <summary>
         /// The latency of messages across control queues. This will
@@ -34,7 +29,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <summary>
         /// The number of messages in the work-item queue.
         /// </summary>
-        public int WorkItemQueueLength { get; set; }
+        public virtual int WorkItemQueueLength { get; set; }
 
         /// <summary>
         /// The approximate age of the first work-item queue message. This
