@@ -16,13 +16,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener
     internal class DurableTaskTargetScaler : ITargetScaler
     {
         private readonly DurableTaskMetricsProvider metricsProvider;
-        private readonly TargetScalerResult cachedTargetScaler;
+        private readonly TargetScalerResult scaleResult;
         private readonly DurabilityProvider durabilityProvider;
 
         public DurableTaskTargetScaler(string functionId, DurableTaskMetricsProvider metricsProvider, DurabilityProvider durabilityProvider)
         {
             this.metricsProvider = metricsProvider;
-            this.cachedTargetScaler = new TargetScalerResult();
+            this.scaleResult = new TargetScalerResult();
             this.TargetScalerDescriptor = new TargetScalerDescriptor(functionId);
             this.durabilityProvider = durabilityProvider;
         }
@@ -37,6 +37,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener
         {
             var metrics = await this.metricsProvider.GetMetricsAsync();
 
+            // compute activityWorkers: the number of workers we need to process all activity messages
             var workItemQueueLength = metrics.WorkItemQueueLength;
             double activityWorkers = Math.Ceiling(workItemQueueLength / (double)this.MaxConcurrentActivities);
 
@@ -46,12 +47,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener
             var controlQueueMessages = controlQueueLengths.Sum();
             var activeControlQueues = controlQueueLengths.Count(x => x > 0);
 
+            // compute orchestratorWorkers: the number of workers we need to process all orchestrator messages.
+            // We bound this result to be no larger than the partition count
             var upperBoundControlWorkers = Math.Ceiling(controlQueueMessages / (double)this.MaxConcurrentOrchestrators);
             var orchestratorWorkers = Math.Min(activeControlQueues, upperBoundControlWorkers);
 
             int numWorkersToRequest = (int)Math.Max(activityWorkers, orchestratorWorkers);
-            this.cachedTargetScaler.TargetWorkerCount = numWorkersToRequest;
-            return this.cachedTargetScaler;
+            this.scaleResult.TargetWorkerCount = numWorkersToRequest;
+            return this.scaleResult;
         }
     }
 }

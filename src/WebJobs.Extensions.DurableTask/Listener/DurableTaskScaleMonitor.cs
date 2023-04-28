@@ -88,7 +88,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public async Task<DurableTaskTriggerMetrics> GetMetricsAsync()
         {
-            return await this.durableTaskMetricsProvider.GetMetricsAsync().ConfigureAwait(false);
+            return await this.durableTaskMetricsProvider.GetMetricsAsync();
         }
 
         ScaleStatus IScaleMonitor.GetScaleStatus(ScaleStatusContext context)

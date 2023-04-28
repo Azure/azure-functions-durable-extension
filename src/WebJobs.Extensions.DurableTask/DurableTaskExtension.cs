@@ -1609,7 +1609,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             else
             {
                 // the durability provider does not support target-based scaling.
-                // Create an empty target scaler to avoid exceptions (unless runtime scaling is actually turned on).
+                // Create an empty target scaler to avoid exceptions (unless target-based scaling is actually turned on).
                 return new NoOpTargetScaler(functionId);
             }
         }
