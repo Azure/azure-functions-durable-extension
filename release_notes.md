@@ -4,7 +4,9 @@
 
 ### Bug Fixes
 
-- Fix connection exhaustion and memory leak due to incorrect caching of `DurableTaskClient`'s in dotnet isolated extension.
+- Fix handling of in-flight orchestrations and activities during host shutdown.
+    - Previously these were considered "failed", now they will be retried.
+    - This only affected dotnet-isolated and java workers.
 
 ### Breaking Changes
 

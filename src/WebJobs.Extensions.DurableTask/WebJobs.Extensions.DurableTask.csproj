@@ -68,7 +68,7 @@
     <PackageReference Include="Microsoft.Extensions.Primitives" Version="1.0.1" />
   </ItemGroup>
 
-  <!-- 
+  <!--
     .NET Standard 2.0 settings: These are for Functions V2 and above but may not contain some V3+ settings.
     This is also the target for extension bundles V2 and V3.
   -->
