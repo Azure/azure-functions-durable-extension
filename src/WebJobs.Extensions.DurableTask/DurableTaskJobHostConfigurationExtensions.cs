@@ -8,6 +8,7 @@ using System.Threading;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Extensions.Azure;
@@ -109,6 +110,33 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             return builder;
         }
+
+#if FUNCTIONS_V3_OR_GREATER
+        /// <summary>
+        /// Adds the IScaleMonitor and ITargetScaler providers for the Durable Triggers.<see cref="IWebJobsBuilder"/>.
+        /// </summary>
+        /// <param name="builder">The <see cref="IWebJobsBuilder"/> to configure.</param>
+        /// <returns>Returns the provided <see cref="IWebJobsBuilder"/>.</returns>
+        public static IWebJobsBuilder AddDurableScaleForTrigger(this IWebJobsBuilder builder, TriggerMetadata triggerMetadata)
+        {
+            IServiceProvider serviceProvider = null;
+            var scalerProvider = new Lazy<DurableTaskTriggersScaleProvider>(() => new DurableTaskTriggersScaleProvider(serviceProvider, triggerMetadata));
+
+            builder.Services.AddSingleton<IScaleMonitorProvider>(resolvedServiceProvider =>
+            {
+                serviceProvider = serviceProvider ?? resolvedServiceProvider;
+                return scalerProvider.Value;
+            });
+
+            builder.Services.AddSingleton<ITargetScalerProvider>(resolvedServiceProvider =>
+            {
+                serviceProvider = serviceProvider ?? resolvedServiceProvider;
+                return scalerProvider.Value;
+            });
+
+            return builder;
+        }
+#endif
 
         /// <summary>
         /// Adds the Durable Task extension to the provided <see cref="IWebJobsBuilder"/>.

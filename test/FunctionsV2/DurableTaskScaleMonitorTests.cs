@@ -55,8 +55,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 this.storageAccount,
                 logger,
                 metricsProvider,
-                this.performanceMonitor.Object
-                );
+                this.performanceMonitor.Object);
         }
 
         [Fact]
