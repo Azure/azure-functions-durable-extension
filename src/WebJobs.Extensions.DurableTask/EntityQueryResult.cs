@@ -14,31 +14,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// </summary>
     public class EntityQueryResult
     {
-        internal EntityQueryResult() { }
-
-        internal EntityQueryResult(OrchestrationStatusQueryResult orchestrationResult, bool includeDeleted)
-        {
-            if (includeDeleted)
-            {
-                this.Entities = orchestrationResult.DurableOrchestrationState
-                    .Select(status => new DurableEntityStatus(status))
-                    .ToList();
-            }
-            else
-            {
-                this.Entities = orchestrationResult.DurableOrchestrationState
-                    .Where(status => status?.CustomStatus is JObject jobject
-                            && jobject != null
-                            && jobject.TryGetValue("entityExists", out var s)
-                            && s.Type == JTokenType.Boolean
-                            && (bool)s)
-                    .Select(status => new DurableEntityStatus(status))
-                    .ToList();
-            }
-
-            this.ContinuationToken = orchestrationResult.ContinuationToken;
-        }
-
         /// <summary>
         /// Gets or sets a collection of statuses of entity instances matching the query description.
         /// </summary>

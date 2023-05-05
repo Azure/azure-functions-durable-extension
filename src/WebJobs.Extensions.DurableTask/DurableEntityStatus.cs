@@ -16,22 +16,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     [DataContract]
     public class DurableEntityStatus
     {
-        internal DurableEntityStatus() { }
-
-        internal DurableEntityStatus(DurableOrchestrationStatus orchestrationStatus)
-        {
-            this.EntityId = EntityId.GetEntityIdFromSchedulerId(orchestrationStatus.InstanceId);
-            this.LastOperationTime = orchestrationStatus.LastUpdatedTime;
-
-            if (orchestrationStatus?.Input is JObject input)
-            {
-                if (ClientEntityContext.TryGetEntityStateFromSchedulerState(input, out JToken state))
-                {
-                    this.State = state;
-                }
-            }
-        }
-
         /// <summary>
         /// Gets the EntityId of the queried entity instance.
         /// </summary>

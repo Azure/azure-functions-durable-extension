@@ -116,7 +116,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     serializedSchedulerState = state.Input;
                 }
 
-                if (ClientEntityContext.TryGetEntityStateFromSerializedSchedulerState(serializedSchedulerState, out string serializedEntityState))
+                if (ClientEntityHelpers.TryGetEntityStateFromSerializedSchedulerState(serializedSchedulerState, out string serializedEntityState))
                 {
                     return serializedEntityState;
                 }

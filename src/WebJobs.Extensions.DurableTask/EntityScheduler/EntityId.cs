@@ -3,6 +3,7 @@
 
 using System;
 using Newtonsoft.Json;
+using DTEntities = DurableTask.Core.Entities;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
@@ -63,6 +64,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             var entityName = schedulerId.Substring(1, pos - 1);
             var entityKey = schedulerId.Substring(pos + 1);
             return new EntityId(entityName, entityKey);
+        }
+
+        internal DTEntities.EntityId ToDurableTaskCoreEntityId()
+        {
+            return new DTEntities.EntityId(this.EntityName, this.EntityKey);
+        }
+
+        internal static EntityId FromDurableTaskCoreEntityId(DTEntities.EntityId entityId)
+        {
+            return new EntityId(entityId.Name, entityId.Key);
         }
 
         /// <inheritdoc/>

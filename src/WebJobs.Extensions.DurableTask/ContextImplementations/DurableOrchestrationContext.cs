@@ -144,8 +144,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             => this.entityContext ?? (this.entityContext = new OrchestrationEntityContext(
                 this.InstanceId,
                 this.ExecutionId,
-                this.InnerContext,
-                this.durabilityProvider.GetEntityOptions()));
+                this.InnerContext));
 
         /// <summary>
         /// Returns the orchestrator function input as a raw JSON string value.
@@ -473,8 +472,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         bool IDurableOrchestrationContext.IsLocked(out IReadOnlyList<EntityId> ownedLocks)
         {
             ownedLocks = this.EntityContext
-                .GetLocks()
-                .Select(x => new EntityId(x.entityName, x.entityKey))
+                .GetAvailableEntities()
+                .Select(x => new EntityId(x.Name, x.Key))
                 .ToList();
 
             return ownedLocks.Count > 0;
@@ -678,8 +677,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         serializedInput = OperationInputExtensions.SerializeOperationInput(operationName, input, this.messageDataConverter);
                     }
 
-                    (string name, object content) eventToSend
-                        = this.EntityContext.EmitRequestMessage(
+                    var eventToSend = this.EntityContext.EmitRequestMessage(
                             target,
                             operationName,
                             oneWay,
@@ -693,12 +691,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             this.InstanceId,
                             this.ExecutionId,
                             target.InstanceId,
-                            eventToSend.name,
-                            eventToSend.content);
+                            eventToSend.EventName,
+                            eventToSend.EventContent);
                     }
 
                     this.IncrementActionsOrThrowException();
-                    this.InnerContext.SendEvent(target, eventToSend.name, eventToSend.content);
+                    this.InnerContext.SendEvent(eventToSend.TargetInstance, eventToSend.EventName, eventToSend.EventContent);
 
                     if (!oneWay)
                     {
@@ -1097,7 +1095,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             // use a deterministically replayable unique ID for this lock request, and to receive the response
-            var lockRequestId = this.NewGuid();
+            var criticalSectionId = this.NewGuid();
 
             // convert type of entity ids for use with DurableTask Core
             var dtEntities = new DurableTaskCore_EntityId[entities.Length];
@@ -1107,25 +1105,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             // send a message to the first entity to be acquired
-            (OrchestrationInstance target, string name, object content) eventToSend =
-                this.EntityContext.EmitAcquireMessage(lockRequestId, dtEntities);
+            var eventToSend = this.EntityContext.EmitAcquireMessage(criticalSectionId, dtEntities);
 
             if (!this.IsReplaying)
             {
                 this.Config.TraceHelper.SendingEntityMessage(
                     this.InstanceId,
                     this.ExecutionId,
-                    eventToSend.target.InstanceId,
-                    eventToSend.name,
-                    eventToSend.content);
+                    eventToSend.TargetInstance.InstanceId,
+                    eventToSend.EventName,
+                    eventToSend.EventContent);
             }
 
             this.IncrementActionsOrThrowException();
-            this.InnerContext.SendEvent(eventToSend.target, eventToSend.name, eventToSend.content);
+            this.InnerContext.SendEvent(eventToSend.TargetInstance, eventToSend.EventName, eventToSend.EventContent);
 
-            var result = await this.WaitForExternalEvent<OperationResult>(lockRequestId.ToString(), "LockAcquisitionCompleted");
+            var result = await this.WaitForExternalEvent<OperationResult>(criticalSectionId.ToString(), "LockAcquisitionCompleted");
 
-            this.EntityContext.CompleteAcquire(result);
+            this.EntityContext.CompleteAcquire(result, criticalSectionId);
 
             // return an IDisposable that releases the lock
             this.lockReleaser = new LockReleaser(this);
@@ -1135,7 +1132,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public void ReleaseLocks()
         {
-            if (this.entityContext == null)
+            if (this.EntityContext == null)
             {
                 return; // orchestration did not call, lock, or signal any entities
             }
@@ -1147,13 +1144,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.Config.TraceHelper.SendingEntityMessage(
                         this.InstanceId,
                         this.ExecutionId,
-                        releaseMessage.target.InstanceId,
-                        releaseMessage.eventName,
-                        releaseMessage.eventContent);
+                        releaseMessage.TargetInstance.InstanceId,
+                        releaseMessage.EventName,
+                        releaseMessage.EventContent);
                 }
 
                 this.IncrementActionsOrThrowException();
-                this.InnerContext.SendEvent(releaseMessage.target, releaseMessage.eventName, releaseMessage.eventContent);
+                this.InnerContext.SendEvent(releaseMessage.TargetInstance, releaseMessage.EventName, releaseMessage.EventContent);
             }
 
             this.lockReleaser = null;

@@ -39,7 +39,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (state != null
                 && state.OrchestrationInstance != null
                 && state.Input != null
-                && ClientEntityContext.TryGetEntityStateFromSerializedSchedulerState(state.Input, out string serializedEntityState))
+                && ClientEntityHelpers.TryGetEntityStateFromSerializedSchedulerState(state.Input, out string serializedEntityState))
             {
                 result = serializedEntityState;
                 return true;

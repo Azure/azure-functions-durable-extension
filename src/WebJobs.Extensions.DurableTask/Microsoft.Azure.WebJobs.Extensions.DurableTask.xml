@@ -2200,6 +2200,18 @@
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.DurableTask#Core#IOrchestrationServicePurgeClient#PurgeInstanceStateAsync(DurableTask.Core.PurgeInstanceFilter)">
             <inheritdoc />
         </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.GetEntityBackendProperties">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.ProcessEntitiesSeparately">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.LockNextOrchestrationWorkItemAsync(System.TimeSpan,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.LockNextEntityWorkItemAsync(System.TimeSpan,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.ValidateDelayTime(System.TimeSpan,System.String@)">
             <summary>
             Uses durability provider specific logic to verify whether a timespan for a timer, timeout
@@ -2568,6 +2580,20 @@
             <param name="version">Not used.</param>
             <returns>An orchestration shim that delegates execution to an orchestrator function.</returns>
         </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DurableTask#Core#INameVersionObjectManager{DurableTask#Core#Entities#TaskEntity}#Add(DurableTask.Core.ObjectCreator{DurableTask.Core.Entities.TaskEntity})">
+            <summary>
+            Called by the Durable Task Framework: Not used.
+            </summary>
+            <param name="creator">This parameter is not used.</param>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DurableTask#Core#INameVersionObjectManager{DurableTask#Core#Entities#TaskEntity}#GetObject(System.String,System.String)">
+            <summary>
+            Called by the Durable Task Framework: Returns the specified <see cref="T:DurableTask.Core.Entities.TaskEntity"/>.
+            </summary>
+            <param name="name">The name of the entity to return.</param>
+            <param name="version">Not used.</param>
+            <returns>An entity shim that delegates execution to an entity function.</returns>
+        </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.DurableTask#Core#INameVersionObjectManager{DurableTask#Core#TaskActivity}#Add(DurableTask.Core.ObjectCreator{DurableTask.Core.TaskActivity})">
             <summary>
             Called by the durable task framework: Not used.
@@ -2594,14 +2620,6 @@
             <summary>
             This DTFx orchestration middleware allows us to initialize Durable Functions-specific context
             and make the execution happen in a way that plays nice with the Azure Functions execution pipeline.
-            </summary>
-            <param name="dispatchContext">A property bag containing useful DTFx context.</param>
-            <param name="next">The handler for running the next middleware in the pipeline.</param>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.EntityMiddleware(DurableTask.Core.Middleware.DispatchMiddlewareContext,System.Func{System.Threading.Tasks.Task})">
-            <summary>
-            This DTFx orchestration middleware (for entities) allows us to add context and set state
-            to the entity shim orchestration before it starts executing the actual entity logic.
             </summary>
             <param name="dispatchContext">A property bag containing useful DTFx context.</param>
             <param name="next">The handler for running the next middleware in the pipeline.</param>
@@ -2825,11 +2843,6 @@
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.EntityId.CompareTo(System.Object)">
             <inheritdoc/>
         </member>
-        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.EntityMessageEventNames">
-            <summary>
-            Determines event names to use for messages sent to and from entities.
-            </summary>
-        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.EntitySchedulerException">
             <summary>
             Exception used to describe various issues encountered by the entity scheduler.
@@ -2899,27 +2912,6 @@
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.LockingRulesViolationException">
             <summary>
             The exception that is thrown when application code violates the locking rules.
-            </summary>
-        </member>
-        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.MessageSorter">
-            <summary>
-            provides message ordering and deduplication of request messages (operations or lock requests)
-            that are sent to entities, from other entities, or from orchestrations.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.MessageSorter.NumberBufferedRequests">
-            <summary>
-            Used for testing purposes.
-            </summary>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.MessageSorter.LabelOutgoingMessage(Microsoft.Azure.WebJobs.Extensions.DurableTask.RequestMessage,System.String,System.DateTime,System.TimeSpan)">
-            <summary>
-            Called on the sending side, to fill in timestamp and predecessor fields.
-            </summary>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.MessageSorter.ReceiveInOrder(Microsoft.Azure.WebJobs.Extensions.DurableTask.RequestMessage,System.TimeSpan)">
-            <summary>
-            Called on the receiving side, to reorder and deduplicate within the window.
             </summary>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.OperationErrorException">
@@ -3013,105 +3005,6 @@
             <param name="entityId">Entity id.</param>
             <param name="operationName">Entity operation name.</param>
             <param name="operationInput">Entity input value.</param>
-        </member>
-        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.RequestMessage">
-            <summary>
-            A message sent to an entity, such as operation, signal, lock, release, or continue messages.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.RequestMessage.Operation">
-            <summary>
-            The name of the operation being called (if this is an operation message) or <c>null</c>
-            (if this is a lock request).
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.RequestMessage.IsSignal">
-            <summary>
-            Whether or not this is a one-way message.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.RequestMessage.Input">
-            <summary>
-            The operation input.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.RequestMessage.Id">
-            <summary>
-            A unique identifier for this operation.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.RequestMessage.ParentInstanceId">
-            <summary>
-            The parent instance that called this operation.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.RequestMessage.ParentExecutionId">
-            <summary>
-            The parent instance that called this operation.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.RequestMessage.ScheduledTime">
-            <summary>
-            Optionally, a scheduled time at which to start the operation.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.RequestMessage.Timestamp">
-            <summary>
-            A timestamp for this request.
-            Used for duplicate filtering and in-order delivery.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.RequestMessage.Predecessor">
-            <summary>
-            A timestamp for the predecessor request in the stream, or DateTime.MinValue if none.
-            Used for duplicate filtering and in-order delivery.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.RequestMessage.LockSet">
-            <summary>
-            For lock requests, the set of locks being acquired. Is sorted,
-            contains at least one element, and has no repetitions.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.RequestMessage.Position">
-            <summary>
-            For lock requests involving multiple locks, the message number.
-            </summary>
-        </member>
-        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.SchedulerState">
-            <summary>
-            The persisted state of an entity scheduler, as handed forward between ContinueAsNew instances.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.SchedulerState.EntityExists">
-            <summary>
-            Whether this entity exists or not.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.SchedulerState.EntityState">
-            <summary>
-            The last serialized entity state.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.SchedulerState.Queue">
-            <summary>
-            The queue of waiting operations, or null if none.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.SchedulerState.LockedBy">
-            <summary>
-            The instance id of the orchestration that currently holds the lock of this entity.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.SchedulerState.Suspended">
-            <summary>
-            Whether processing on this entity is currently suspended.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.SchedulerState.MessageSorter">
-            <summary>
-            The metadata used for reordering and deduplication of messages sent to entities.
-            </summary>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.EtwEventSource">
             <summary>
@@ -3853,79 +3746,7 @@
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskEntityShim">
             <summary>
-            Implements the entity scheduler as a looping orchestration.
-            There is one such orchestration per entity.
-            The orchestration terminates if the entity is deleted and idle.
-            The orchestration calls ContinueAsNew when it is idle, but not deleted.
-            </summary>
-        </member>
-        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskEntityShim.OutOfProcResult">
-            <summary>
-            The results of executing a batch of operations on the entity out of process.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskEntityShim.OutOfProcResult.EntityExists">
-            <summary>
-            Whether the entity exists after executing the batch.
-            This is false if the last operation in the batch deletes the entity,
-            and true otherwise.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskEntityShim.OutOfProcResult.EntityState">
-            <summary>
-            The state of the entity after executing the batch.
-            Should be null if <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskEntityShim.OutOfProcResult.EntityExists"/> is false.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskEntityShim.OutOfProcResult.Results">
-            <summary>
-            The results of executing the operations. The length of this list must always match
-            the size of the batch, even if there were exceptions.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskEntityShim.OutOfProcResult.Signals">
-            <summary>
-            The list of signals sent by the entity. Can be empty.
-            </summary>
-        </member>
-        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskEntityShim.OutOfProcResult.OperationResult">
-            <summary>
-            The results of executing an operation.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskEntityShim.OutOfProcResult.OperationResult.Result">
-            <summary>
-            The returned value or error/exception.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskEntityShim.OutOfProcResult.OperationResult.IsError">
-            <summary>
-            Determines whether <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskEntityShim.OutOfProcResult.OperationResult.Result"/> is a normal result, or an error/exception.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskEntityShim.OutOfProcResult.OperationResult.DurationInMilliseconds">
-            <summary>
-            The measured duration of this operation's execution, in milliseconds.
-            </summary>
-        </member>
-        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskEntityShim.OutOfProcResult.Signal">
-            <summary>
-            Describes a signal that was emitted by one of the operations in the batch.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskEntityShim.OutOfProcResult.Signal.Target">
-            <summary>
-            The destination of the signal.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskEntityShim.OutOfProcResult.Signal.Name">
-            <summary>
-            The name of the operation being signaled.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskEntityShim.OutOfProcResult.Signal.Input">
-            <summary>
-            The input of the operation being signaled.
+            Implements the durable entity.
             </summary>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskOrchestrationShim">

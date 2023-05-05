@@ -26,10 +26,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// </summary>
     public class DurabilityProvider :
         IOrchestrationService,
+        IEntityOrchestrationService,
         IOrchestrationServiceClient,
         IOrchestrationServiceQueryClient,
-        IOrchestrationServicePurgeClient,
-        EntityOptions.IOptionsProvider
+        IOrchestrationServicePurgeClient
     {
         internal const string NoConnectionDetails = "default";
 
@@ -38,6 +38,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly string name;
         private readonly IOrchestrationService innerService;
         private readonly IOrchestrationServiceClient innerServiceClient;
+        private readonly IEntityOrchestrationService innerEntityService;
         private readonly string connectionName;
 
         /// <summary>
@@ -54,6 +55,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.name = storageProviderName ?? throw new ArgumentNullException(nameof(storageProviderName));
             this.innerService = service ?? throw new ArgumentNullException(nameof(service));
             this.innerServiceClient = serviceClient ?? throw new ArgumentNullException(nameof(serviceClient));
+            this.innerEntityService = service as IEntityOrchestrationService;
             this.connectionName = connectionName ?? throw new ArgumentNullException(connectionName);
         }
 
@@ -518,13 +520,43 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        /// <summary>
-        /// Retrieves the entity options from the inner orchestration service.
-        /// </summary>
-        /// <returns>The entity options.</returns>
-        public virtual EntityOptions GetEntityOptions()
+        /// <inheritdoc />
+        public virtual EntityBackendProperties GetEntityBackendProperties()
         {
-            return EntityOptions.GetEntityOptionsFromOrchestrationService(this.innerService);
+            return this.innerEntityService?.GetEntityBackendProperties();
+        }
+
+        /// <inheritdoc />
+        public void ProcessEntitiesSeparately()
+        {
+            if (this.innerEntityService == null)
+            {
+                throw new NotSupportedException($"The storage provider does not implement {nameof(IEntityOrchestrationService)}");
+            }
+
+            this.innerEntityService.ProcessEntitiesSeparately();
+        }
+
+        /// <inheritdoc />
+        public Task<TaskOrchestrationWorkItem> LockNextOrchestrationWorkItemAsync(TimeSpan receiveTimeout, CancellationToken cancellationToken)
+        {
+            if (this.innerEntityService == null)
+            {
+                throw new NotSupportedException($"The storage provider does not implement {nameof(IEntityOrchestrationService)}");
+            }
+
+            return this.innerEntityService.LockNextOrchestrationWorkItemAsync(receiveTimeout, cancellationToken);
+        }
+
+        /// <inheritdoc />
+        public Task<TaskOrchestrationWorkItem> LockNextEntityWorkItemAsync(TimeSpan receiveTimeout, CancellationToken cancellationToken)
+        {
+            if (this.innerEntityService == null)
+            {
+                throw new NotSupportedException($"The storage provider does not implement {nameof(IEntityOrchestrationService)}");
+            }
+
+            return this.innerEntityService.LockNextEntityWorkItemAsync(receiveTimeout, cancellationToken);
         }
 
         /// <summary>

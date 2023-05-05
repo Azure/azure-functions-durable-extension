@@ -18,7 +18,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// </summary>
     internal class TaskEntityShim : TaskEntity
     {
-        private readonly DurableEntityContext context;
+        private readonly string functionName;
         private readonly DurableTaskExtension config;
         private readonly IApplicationLifetimeWrapper hostServiceLifetime;
         private readonly RegisteredFunctionInfo functionInfo;
@@ -26,32 +26,32 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly MessagePayloadDataConverter errorDataConverter;
         private readonly TaskCompletionSource<Exception> timeoutTaskCompletionSource = new TaskCompletionSource<Exception>();
 
+        private DurableEntityContext context;
         private OperationBatchRequest batchRequest;
         private OperationBatchResult batchResult;
         private Func<Task> functionInvocationCallback;
+        private EntityExecutionOptions entityExecutionOptions;
 
         public TaskEntityShim(
             DurableTaskExtension config,
             IApplicationLifetimeWrapper hostServiceLifetime,
-            string schedulerId)
+            string entityName)
         {
             this.config = config ?? throw new ArgumentNullException(nameof(config));
             this.hostServiceLifetime = hostServiceLifetime;
             this.messageDataConverter = config.MessageDataConverter;
             this.errorDataConverter = config.ErrorDataConverter;
-            this.InstanceId = schedulerId;
-            this.EntityId = EntityId.GetEntityIdFromSchedulerId(schedulerId);
-            this.context = new DurableEntityContext(config, this.EntityId, this);
+            this.functionName = entityName;
 
-            FunctionName entityFunction = new FunctionName(this.context.FunctionName);
+            FunctionName entityFunction = new FunctionName(this.functionName);
             this.functionInfo = this.config.GetEntityInfo(entityFunction);
         }
 
-        public string InstanceId { get; }
+        public string InstanceId { get; private set; }
 
-        public EntityId EntityId { get; }
+        public EntityId EntityId { get; private set; }
 
-        public bool RollbackFailedOperations => this.config.Options.RollbackEntityOperationsOnExceptions;
+        private bool RollbackFailedOperations => this.config.Options.RollbackEntityOperationsOnExceptions;
 
         internal OperationBatchRequest BatchRequest => this.batchRequest;
 
@@ -59,7 +59,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal string HubName => this.config.Options.HubName;
 
-        internal string Name => this.context.FunctionName;
+        internal string Name => this.functionName;
 
         internal Task<Exception> TimeoutTask => this.timeoutTaskCompletionSource.Task;
 
@@ -68,8 +68,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.timeoutTaskCompletionSource.TrySetResult(exception);
         }
 
-        public override async Task<OperationBatchResult> ExecuteOperationBatchAsync(OperationBatchRequest batchRequest)
+        public override async Task<OperationBatchResult> ExecuteOperationBatchAsync(
+            OperationBatchRequest batchRequest,
+            EntityExecutionOptions entityExecutionOptions)
         {
+            this.InstanceId = batchRequest.InstanceId;
+            this.EntityId = EntityId.GetEntityIdFromSchedulerId(this.InstanceId);
+            this.context = new DurableEntityContext(this.config, this.EntityId, this);
+            this.entityExecutionOptions = entityExecutionOptions;
+
             this.batchRequest = batchRequest;
             this.batchResult = new OperationBatchResult()
             {

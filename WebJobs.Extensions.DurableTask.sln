@@ -98,6 +98,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "PerfTests", "PerfTests", "{
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DFPerfScenariosV4", "test\DFPerfScenarios\DFPerfScenariosV4.csproj", "{FC8AD123-F949-4D21-B817-E5A4BBF7F69B}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DurableTask.Core", "..\durabletask\src\DurableTask.Core\DurableTask.Core.csproj", "{225D2FD1-EC71-4872-A679-10C2997D50AD}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DurableTask.AzureStorage", "..\durabletask\src\DurableTask.AzureStorage\DurableTask.AzureStorage.csproj", "{572C0A94-319E-45C6-926B-8E5F3E42B21A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -182,6 +186,14 @@ Global
 		{FC8AD123-F949-4D21-B817-E5A4BBF7F69B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FC8AD123-F949-4D21-B817-E5A4BBF7F69B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FC8AD123-F949-4D21-B817-E5A4BBF7F69B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{225D2FD1-EC71-4872-A679-10C2997D50AD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{225D2FD1-EC71-4872-A679-10C2997D50AD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{225D2FD1-EC71-4872-A679-10C2997D50AD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{225D2FD1-EC71-4872-A679-10C2997D50AD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{572C0A94-319E-45C6-926B-8E5F3E42B21A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{572C0A94-319E-45C6-926B-8E5F3E42B21A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{572C0A94-319E-45C6-926B-8E5F3E42B21A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{572C0A94-319E-45C6-926B-8E5F3E42B21A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

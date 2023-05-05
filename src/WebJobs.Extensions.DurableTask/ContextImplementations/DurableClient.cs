@@ -37,6 +37,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             = new OrchestrationRuntimeStatus[] { OrchestrationRuntimeStatus.Running };
 
         private readonly TaskHubClient client;
+        private readonly TaskHubEntityClient entityClient;
         private readonly string hubName;
         private readonly DurabilityProvider durabilityProvider;
         private readonly HttpApiHandler httpApiHandler;
@@ -56,8 +57,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             DurableTaskOptions durableTaskOptions)
         {
             this.messageDataConverter = messageDataConverter;
-
             this.client = new TaskHubClient(serviceClient, this.messageDataConverter);
+            this.entityClient = new TaskHubEntityClient(this.client);
             this.durabilityProvider = serviceClient;
             this.traceHelper = traceHelper;
             this.httpApiHandler = httpHandler;
@@ -332,23 +333,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.config?.ThrowIfFunctionDoesNotExist(entityId.EntityName, FunctionType.Entity);
             }
 
-            var guid = Guid.NewGuid(); // unique id for this request
-            var instanceId = EntityId.GetSchedulerIdFromEntityId(entityId);
-            var instance = new OrchestrationInstance() { InstanceId = instanceId };
-
-            string serializedInput = null;
-            if (operationInput != null)
-            {
-                serializedInput = OperationInputExtensions.SerializeOperationInput(operationName, operationInput, this.messageDataConverter);
-            }
-
-            (string name, object content) eventToSend = ClientEntityContext.EmitOperationSignal(
-                guid,
-                operationName,
-                serializedInput,
-                scheduledTimeUtc.HasValue ? this.durabilityProvider.GetCappedScheduledTime(DateTime.UtcNow, scheduledTimeUtc.Value) : null);
-
-            await durableClient.client.RaiseEventAsync(instance, eventToSend.name, eventToSend.content);
+            await this.entityClient.SignalEntityAsync(entityId.ToDurableTaskCoreEntityId(), operationName, operationInput, scheduledTimeUtc);
 
             this.traceHelper.FunctionScheduled(
                 hubName,
@@ -616,96 +601,43 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <inheritdoc />
         async Task<EntityQueryResult> IDurableEntityClient.ListEntitiesAsync(EntityQuery query, CancellationToken cancellationToken)
         {
-            var condition = new OrchestrationStatusQueryCondition(query);
-            EntityQueryResult entityResult;
-            Stopwatch stopwatch = new Stopwatch();
-            stopwatch.Start();
-
-            do
+            var innerQuery = new TaskHubEntityClient.Query()
             {
-                var result = await ((IDurableClient)this).ListInstancesAsync(condition, cancellationToken);
-                entityResult = new EntityQueryResult(result, query.IncludeDeleted);
-                condition.ContinuationToken = entityResult.ContinuationToken;
-            }
-            while ( // run multiple queries if no records are found, but never in excess of 100ms
-                entityResult.ContinuationToken != null
-                && !entityResult.Entities.Any()
-                && stopwatch.ElapsedMilliseconds <= 100);
+                EntityName = query.EntityName?.ToLowerInvariant(),
+                FetchState = query.FetchState,
+                IncludeDeleted = query.IncludeDeleted,
+                LastOperationFrom = (query.LastOperationFrom == DateTime.MinValue) ? null : query.LastOperationFrom,
+                LastOperationTo = query.LastOperationTo,
+                PageSize = query.PageSize,
+                ContinuationToken = query.ContinuationToken,
+                InstanceIdPrefix = null,
+                TaskHubNames = null,
+            };
 
-            return entityResult;
+            var result = await this.entityClient.ListEntitiesAsync(innerQuery, cancellationToken);
+
+            return new EntityQueryResult()
+            {
+                Entities = result.Entities.Select(e => new DurableEntityStatus()
+                {
+                    EntityId = EntityId.FromDurableTaskCoreEntityId(e.EntityId),
+                    LastOperationTime = e.LastOperationTime,
+                    State = DurableClient.ParseToJToken(e.State),
+                }),
+                ContinuationToken = result.ContinuationToken,
+            };
         }
 
         /// <inheritdoc />
         async Task<CleanEntityStorageResult> IDurableEntityClient.CleanEntityStorageAsync(bool removeEmptyEntities, bool releaseOrphanedLocks, CancellationToken cancellationToken)
         {
-            DateTime now = DateTime.UtcNow;
-            CleanEntityStorageResult finalResult = default;
+            var result = await this.entityClient.CleanEntityStorageAsync(removeEmptyEntities, releaseOrphanedLocks, cancellationToken);
 
-            var condition = new OrchestrationStatusQueryCondition()
+            return new CleanEntityStorageResult()
             {
-                InstanceIdPrefix = "@",
-                ShowInput = false,
+                NumberOfEmptyEntitiesRemoved = result.NumberOfEmptyEntitiesRemoved,
+                NumberOfOrphanedLocksRemoved = result.NumberOfOrphanedLocksRemoved,
             };
-
-            // list all entities (without fetching the input) and for each one that requires action,
-            // perform that action. Waits for all actions to finish after each page.
-            do
-            {
-                var page = await this.DurabilityProvider.GetOrchestrationStateWithPagination(condition, cancellationToken);
-
-                List<Task> tasks = new List<Task>();
-                foreach (var state in page.DurableOrchestrationState)
-                {
-                    EntityStatus status = this.messageDataConverter.Deserialize<EntityStatus>(state.CustomStatus.ToString());
-                    if (releaseOrphanedLocks && status.LockedBy != null)
-                    {
-                         tasks.Add(CheckForOrphanedLockAndFixIt(state, status.LockedBy));
-                    }
-
-                    if (removeEmptyEntities)
-                    {
-                        bool isEmptyEntity = !status.EntityExists && status.LockedBy == null && status.QueueSize == 0;
-                        bool safeToRemoveWithoutBreakingMessageSorterLogic = this.durabilityProvider.GuaranteesOrderedDelivery ?
-                            true : (now - state.LastUpdatedTime > TimeSpan.FromMinutes(this.durableTaskOptions.EntityMessageReorderWindowInMinutes));
-                        if (isEmptyEntity && safeToRemoveWithoutBreakingMessageSorterLogic)
-                        {
-                            tasks.Add(DeleteIdleOrchestrationEntity(state));
-                        }
-                    }
-                }
-
-                async Task DeleteIdleOrchestrationEntity(DurableOrchestrationStatus status)
-                {
-                    await this.DurabilityProvider.PurgeInstanceHistoryByInstanceId(status.InstanceId);
-                    Interlocked.Increment(ref finalResult.NumberOfEmptyEntitiesRemoved);
-                }
-
-                async Task CheckForOrphanedLockAndFixIt(DurableOrchestrationStatus status, string lockOwner)
-                {
-                    var findRunningOwner = new OrchestrationStatusQueryCondition()
-                    {
-                        InstanceIdPrefix = lockOwner,
-                        ShowInput = false,
-                        RuntimeStatus = RunningStatus,
-                    };
-                    var result = await this.DurabilityProvider.GetOrchestrationStateWithPagination(findRunningOwner, cancellationToken);
-                    if (!result.DurableOrchestrationState.Any(state => state.InstanceId == lockOwner))
-                    {
-                        // the owner is not a running orchestration. Send a lock release.
-                        (string name, object content) eventToSend = ClientEntityContext.EmitUnlockForOrphanedLock(lockOwner);
-
-                        await this.RaiseEventInternalAsync(this.client, this.TaskHubName, status.InstanceId, eventToSend.name, eventToSend.content);
-
-                        Interlocked.Increment(ref finalResult.NumberOfOrphanedLocksRemoved);
-                    }
-                }
-
-                await Task.WhenAll(tasks);
-                condition.ContinuationToken = page.ContinuationToken;
-            }
-            while (condition.ContinuationToken != null);
-
-            return finalResult;
         }
 
         private async Task<OrchestrationState> GetOrchestrationInstanceStateAsync(string instanceId)
