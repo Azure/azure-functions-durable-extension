@@ -2622,31 +2622,6 @@
             This metadata will show up in Application Insights, if enabled.
             </summary>
         </member>
-        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.NoOpScaleMonitor">
-            <summary>
-            A placeholder scale monitor, can be used by durability providers that do not support runtime scaling.
-            This is required to allow operation of those providers even if runtime scaling is turned off
-            see discussion https://github.com/Azure/azure-functions-durable-extension/pull/1009/files#r341767018.
-            </summary>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.NoOpScaleMonitor.#ctor(System.String,System.String)">
-            <summary>
-            Construct a placeholder scale monitor.
-            </summary>
-            <param name="name">A descriptive name.</param>
-            <param name="functionId">The function ID.</param>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.NoOpScaleMonitor.Descriptor">
-            <summary>
-            A descriptive name.
-            </summary>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.NoOpScaleMonitor.Microsoft#Azure#WebJobs#Host#Scale#IScaleMonitor#GetMetricsAsync">
-            <inheritdoc/>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.NoOpScaleMonitor.Microsoft#Azure#WebJobs#Host#Scale#IScaleMonitor#GetScaleStatus(Microsoft.Azure.WebJobs.Host.Scale.ScaleStatusContext)">
-            <inheritdoc/>
-        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskJobHostConfigurationExtensions">
             <summary>
             Extension for registering a Durable Functions configuration with <c>JobHostConfiguration</c>.
@@ -4782,6 +4757,31 @@
             <value>
             The delegate to handle exception to determine if retries should proceed.
             </value>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.ScaleUtils.NoOpScaleMonitor">
+            <summary>
+            A placeholder scale monitor, can be used by durability providers that do not support runtime scaling.
+            This is required to allow operation of those providers even if runtime scaling is turned off
+            see discussion https://github.com/Azure/azure-functions-durable-extension/pull/1009/files#r341767018.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.ScaleUtils.NoOpScaleMonitor.#ctor(System.String,System.String)">
+            <summary>
+            Construct a placeholder scale monitor.
+            </summary>
+            <param name="name">A descriptive name.</param>
+            <param name="functionId">The function ID.</param>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.ScaleUtils.NoOpScaleMonitor.Descriptor">
+            <summary>
+            A descriptive name.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.ScaleUtils.NoOpScaleMonitor.Microsoft#Azure#WebJobs#Host#Scale#IScaleMonitor#GetMetricsAsync">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.ScaleUtils.NoOpScaleMonitor.Microsoft#Azure#WebJobs#Host#Scale#IScaleMonitor#GetScaleStatus(Microsoft.Azure.WebJobs.Host.Scale.ScaleStatusContext)">
+            <inheritdoc/>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.StandardConnectionInfoProvider">
             <summary>
