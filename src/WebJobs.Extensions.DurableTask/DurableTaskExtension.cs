@@ -90,7 +90,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private bool isTaskHubWorkerStarted;
         private HttpClient durableHttpClient;
         private EventSourceListener eventSourceListener;
-        private string connectionName;
 
 #if FUNCTIONS_V1
         private IConnectionInfoResolver connectionInfoResolver;
@@ -335,11 +334,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return this.defaultDurabilityProvider.GetBackendInfo();
         }
 
-        internal string GetConnectionName()
-        {
-            return this.connectionName;
-        }
-
         /// <summary>
         /// Internal initialization call from the WebJobs host.
         /// </summary>
@@ -425,18 +419,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 backwardsCompRule.Bind(new TypedDurableClientBindingProvider(this.TypedCodeProvider, this.GetClient));
             }
 
-            this.connectionName = this.durabilityProviderFactory is AzureStorageDurabilityProviderFactory azureStorageDurabilityProviderFactory
+            string connectionName = this.durabilityProviderFactory is AzureStorageDurabilityProviderFactory azureStorageDurabilityProviderFactory
                 ? azureStorageDurabilityProviderFactory.DefaultConnectionName
                 : null;
 
             context.AddBindingRule<OrchestrationTriggerAttribute>()
-                .BindToTrigger(new OrchestrationTriggerAttributeBindingProvider(this, this.connectionName, this.PlatformInformationService));
+                .BindToTrigger(new OrchestrationTriggerAttributeBindingProvider(this, connectionName, this.PlatformInformationService));
 
             context.AddBindingRule<ActivityTriggerAttribute>()
-                .BindToTrigger(new ActivityTriggerAttributeBindingProvider(this, this.connectionName));
+                .BindToTrigger(new ActivityTriggerAttributeBindingProvider(this, connectionName));
 
             context.AddBindingRule<EntityTriggerAttribute>()
-                .BindToTrigger(new EntityTriggerAttributeBindingProvider(this, this.connectionName));
+                .BindToTrigger(new EntityTriggerAttributeBindingProvider(this, connectionName));
 
             this.taskHubWorker = new TaskHubWorker(this.defaultDurabilityProvider, this, this, this.loggerFactory);
 
