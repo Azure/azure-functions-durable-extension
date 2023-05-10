@@ -14,7 +14,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
     internal class ScaleUtils
     {
 #if !FUNCTIONS_V1
-        internal IScaleMonitor GetScaleMonitor(DurabilityProvider durabilityProvider, string functionId, FunctionName functionName, string connectionName, string hubName)
+        internal IScaleMonitor GetScaleMonitor(DurabilityProvider durabilityProvider, string functionId, FunctionName functionName, string? connectionName, string hubName)
         {
             if (durabilityProvider.TryGetScaleMonitor(
                     functionId,
@@ -76,7 +76,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
 #endif
 
 #if FUNCTIONS_V3_OR_GREATER
-        internal ITargetScaler GetTargetScaler(DurabilityProvider durabilityProvider, string functionId, FunctionName functionName, string connectionName, string hubName)
+#pragma warning disable SA1201 // Elements should appear in the correct order
+        internal ITargetScaler GetTargetScaler(DurabilityProvider durabilityProvider, string functionId, FunctionName functionName, string? connectionName, string hubName)
+#pragma warning restore SA1201 // Elements should appear in the correct order
         {
             if (durabilityProvider.TryGetTargetScaler(
                     functionId,
