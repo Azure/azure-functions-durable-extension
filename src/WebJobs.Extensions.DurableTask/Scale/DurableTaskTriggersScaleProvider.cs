@@ -65,7 +65,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
             // The property `taskHubName` is always expected in the SyncTriggers payload
             options.HubName = metadata?.TaskHubName ?? throw new Exception($"Expected `taskHubName` property in SyncTriggers payload but found none. Payload: {metadataString}");
 
-            // `MaxConcurrentActivityFunctions` and `MaxConcurrentOrchestratorFunctions` are not guaranteed on the SyncTriggers payload
             if (metadata?.MaxConcurrentActivityFunctions != null)
             {
                 options.MaxConcurrentActivityFunctions = metadata?.MaxConcurrentActivityFunctions;
@@ -74,6 +73,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
             if (metadata?.MaxConcurrentOrchestratorFunctions != null)
             {
                 options.MaxConcurrentOrchestratorFunctions = metadata?.MaxConcurrentOrchestratorFunctions;
+            }
+
+            if (metadata?.StorageProvider != null)
+            {
+                options.StorageProvider = metadata?.StorageProvider;
             }
 
             DurableTaskOptions.ResolveAppSettingOptions(options, nameResolver);
@@ -114,6 +118,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
             [JsonProperty(DefaultValueHandling = DefaultValueHandling.Populate)]
             [DefaultValue(null)]
             public int? MaxConcurrentActivityFunctions { get; set; }
+
+            [JsonProperty(DefaultValueHandling = DefaultValueHandling.Populate)]
+            [DefaultValue(null)]
+            public IDictionary<string, object>? StorageProvider { get; set; }
         }
     }
 }
