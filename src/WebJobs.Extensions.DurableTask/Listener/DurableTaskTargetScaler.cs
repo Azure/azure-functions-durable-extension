@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Castle.Components.DictionaryAdapter;
 using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -18,13 +17,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener
         private readonly DurableTaskMetricsProvider metricsProvider;
         private readonly TargetScalerResult scaleResult;
         private readonly DurabilityProvider durabilityProvider;
+        private readonly ILogger logger;
+        private readonly string functionId;
 
-        public DurableTaskTargetScaler(string functionId, DurableTaskMetricsProvider metricsProvider, DurabilityProvider durabilityProvider)
+        public DurableTaskTargetScaler(string functionId, DurableTaskMetricsProvider metricsProvider, DurabilityProvider durabilityProvider, ILogger logger)
         {
+            this.functionId = functionId;
             this.metricsProvider = metricsProvider;
             this.scaleResult = new TargetScalerResult();
-            this.TargetScalerDescriptor = new TargetScalerDescriptor(functionId);
+            this.TargetScalerDescriptor = new TargetScalerDescriptor(this.functionId);
             this.durabilityProvider = durabilityProvider;
+            this.logger = logger;
         }
 
         public TargetScalerDescriptor TargetScalerDescriptor { get; private set; }
@@ -54,6 +57,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener
 
             int numWorkersToRequest = (int)Math.Max(activityWorkers, orchestratorWorkers);
             this.scaleResult.TargetWorkerCount = numWorkersToRequest;
+
+            // When running on ScaleController V3, ILogger logs are forwarded to Kusto.
+            var scaleControllerLog = $"Target worker count for {this.functionId}: {numWorkersToRequest}. " +
+                $"Metrics used: workItemQueueLength={workItemQueueLength}. controlQueueLengths={serializedControlQueueLengths}. " +
+                $"maxConcurrentOrchestrators={this.MaxConcurrentOrchestrators}. maxConcurrentActivities={this.MaxConcurrentActivities}";
+
+            // target worker count should never be negative
+            if (numWorkersToRequest < 0)
+            {
+                scaleControllerLog = "Tried to request a negative worker count." + scaleControllerLog;
+                this.logger.LogError(scaleControllerLog);
+                throw new Exception(scaleControllerLog);
+            }
+
+            this.logger.LogDebug(scaleControllerLog);
             return this.scaleResult;
         }
     }
