@@ -58,7 +58,8 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
             this.targetScaler = new DurableTaskTargetScaler(
                 "FunctionId",
                 this.metricsProviderMock.Object,
-                durabilityProviderMock.Object);
+                durabilityProviderMock.Object,
+                logger);
         }
 
         [Theory]
