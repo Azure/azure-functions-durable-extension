@@ -209,8 +209,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             ILogger logger,
             DisconnectedPerformanceMonitor performanceMonitor = null)
         {
-            var metricsProvider = new DurableTaskMetricsProvider(functionName, hubName, logger, performanceMonitor, storageAccount);
-            return metricsProvider;
+            return new DurableTaskMetricsProvider(functionName, hubName, logger, performanceMonitor, storageAccount);
         }
 
         /// <inheritdoc/>
