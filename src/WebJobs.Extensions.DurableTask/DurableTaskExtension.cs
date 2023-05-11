@@ -1675,7 +1675,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new InvalidOperationException("The current DurableTask backend configuration does not support runtime scaling");
             }
         }
-
 #endif
     }
 }
