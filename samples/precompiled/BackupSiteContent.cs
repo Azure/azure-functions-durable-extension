@@ -20,7 +20,7 @@ namespace VSSample
             string rootDirectory = backupContext.GetInput<string>()?.Trim();
             if (string.IsNullOrEmpty(rootDirectory))
             {
-                rootDirectory = Directory.GetParent(typeof(BackupSiteContent).Assembly.Location).FullName;
+                rootDirectory = Directory.GetParent(typeof(E2_BackupSiteContent).Assembly.Location).FullName;
             }
 
             string[] files = await backupContext.CallActivityAsync<string[]>(
