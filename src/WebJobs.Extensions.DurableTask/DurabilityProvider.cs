@@ -8,9 +8,9 @@ using System.Threading.Tasks;
 using DurableTask.Core;
 using DurableTask.Core.History;
 using DurableTask.Core.Query;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using Microsoft.Extensions.Logging;
 #if !FUNCTIONS_V1
 using Microsoft.Azure.WebJobs.Host.Scale;
 #endif
