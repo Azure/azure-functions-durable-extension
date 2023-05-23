@@ -4,6 +4,7 @@
 
 using System;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 #if !FUNCTIONS_V1
 using Microsoft.Azure.WebJobs.Host.Scale;
@@ -13,6 +14,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
 {
     internal class ScaleUtils
     {
+        private readonly ILogger? scaleControllerILogger;
+
+        internal ScaleUtils(ILogger? scaleControllerILogger = null)
+        {
+            this.scaleControllerILogger = scaleControllerILogger;
+        }
+
 #if !FUNCTIONS_V1
         internal IScaleMonitor GetScaleMonitor(DurabilityProvider durabilityProvider, string functionId, FunctionName functionName, string? connectionName, string hubName)
         {
@@ -85,6 +93,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
                     functionName.Name,
                     hubName,
                     connectionName,
+                    this.scaleControllerILogger,
                     out ITargetScaler targetScaler))
             {
                 return targetScaler;

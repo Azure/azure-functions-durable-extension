@@ -28,14 +28,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
 
             var options = this.GetOptions(serviceProvider, triggerMetadata);
 
-            var durabilityProviderFactory = this.GetDurabilityProviderFactory(serviceProvider, options);
+            var durabilityProviderFactory = this.GetDurabilityProviderFactory(serviceProvider, options, out var scaleControllerILogger);
             var defaultDurabilityProvider = durabilityProviderFactory.GetDurabilityProvider();
 
             var connectionName = durabilityProviderFactory is AzureStorageDurabilityProviderFactory azureStorageDurabilityProviderFactory
                 ? azureStorageDurabilityProviderFactory.DefaultConnectionName
                 : null;
 
-            var scaleUtils = new ScaleUtils();
+            var scaleUtils = new ScaleUtils(scaleControllerILogger);
 
             this.targetScaler = scaleUtils.GetTargetScaler(
                 defaultDurabilityProvider,
@@ -64,7 +64,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
 
             // The property `taskHubName` is always expected in the SyncTriggers payload
             options.HubName = metadata?.TaskHubName ?? throw new Exception($"Expected `taskHubName` property in SyncTriggers payload but found none. Payload: {metadataString}");
-
             if (metadata?.MaxConcurrentActivityFunctions != null)
             {
                 options.MaxConcurrentActivityFunctions = metadata?.MaxConcurrentActivityFunctions;
@@ -84,11 +83,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
             return options;
         }
 
-        private IDurabilityProviderFactory GetDurabilityProviderFactory(IServiceProvider serviceProvider, DurableTaskOptions options)
+        private IDurabilityProviderFactory GetDurabilityProviderFactory(IServiceProvider serviceProvider, DurableTaskOptions options, out ILogger logger)
         {
             var orchestrationServiceFactories = serviceProvider.GetService<IEnumerable<IDurabilityProviderFactory>>();
             var loggerFactory = serviceProvider.GetService<ILoggerFactory>();
-            var logger = loggerFactory.CreateLogger(DurableTaskExtension.LoggerCategoryName);
+            logger = loggerFactory.CreateLogger<DurableTaskTriggersScaleProvider>();
             var durabilityProviderFactory = DurableTaskExtension.GetDurabilityProviderFactory(options, logger, orchestrationServiceFactories);
             return durabilityProviderFactory;
         }
