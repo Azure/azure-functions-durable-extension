@@ -4,12 +4,7 @@
 
 ### Bug Fixes
 
-
 #### Microsoft.Azure.WebJobs.Extensions.DurableTask
-
-- Fix handling of in-flight orchestrations and activities during host shutdown.
-    - Previously these were considered "failed", now they will be retried.
-    - This only affected dotnet-isolated and java workers.
   
 #### Microsoft.Azure.Functions.Worker.Extensions.DurableTask
 
