@@ -24,6 +24,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
         private EndToEndTraceHelper endToEndTraceHelper;
         private TelemetryClient telemetryClient;
         private IAsyncDisposable disposable;
+        private TelemetryConfiguration telemetryConfiguration;
 
         /// <summary>
         /// Constructor for initializing Distributed Tracing.
@@ -43,9 +44,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
         public Action<ITelemetry> OnSend { get; set; } = null;
 
         /// <inheritdoc/>
-        public TelemetryConfiguration Configuration { get; private set; }
-
-        /// <inheritdoc/>
         public ValueTask DisposeAsync()
         {
             return this.disposable?.DisposeAsync() ?? default;
@@ -63,7 +61,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
                 if (this.options.Tracing.NewDistributedTracingEnabled)
                 {
                     DurableTelemetryModule module = new DurableTelemetryModule();
-                    module.Initialize(this.Configuration);
+                    module.Initialize(this.telemetryConfiguration);
                     this.disposable = module;
                 }
                 else
@@ -126,10 +124,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
                     message: "Setting up the telemetry client...",
                     writeToUserLogs: true);
 
-            this.telemetryClient = new TelemetryClient(this.Configuration);
+            this.telemetryClient = new TelemetryClient(this.telemetryConfiguration);
         }
 
-        private TelemetryConfiguration SetupTelemetryConfiguration()
+        private void SetupTelemetryConfiguration()
         {
             TelemetryConfiguration config = TelemetryConfiguration.CreateDefault();
             if (this.OnSend != null)
@@ -160,7 +158,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
                     message: "'APPINSIGHTS_INSTRUMENTATIONKEY' isn't defined in the current environment variables, but Distributed Tracing is enabled. Please set 'APPINSIGHTS_INSTRUMENTATIONKEY' to use Distributed Tracing.");
             }
 
-            return config;
+            this.telemetryConfiguration = config;
         }
     }
 }

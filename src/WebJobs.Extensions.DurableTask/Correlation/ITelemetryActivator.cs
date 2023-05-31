@@ -12,11 +12,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
     public interface ITelemetryActivator
     {
         /// <summary>
-        /// Configuration used for Application Insights.
-        /// </summary>
-        TelemetryConfiguration Configuration { get; }
-
-        /// <summary>
         /// Initialize is initialize the telemetry client.
         /// </summary>
         void Initialize(ILogger logger);

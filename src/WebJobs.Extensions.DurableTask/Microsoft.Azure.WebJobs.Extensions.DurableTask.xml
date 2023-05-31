@@ -1787,11 +1787,6 @@
             ITelemetryActivator is an interface.
             </summary>
         </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.ITelemetryActivator.Configuration">
-            <summary>
-            Configuration used for Application Insights.
-            </summary>
-        </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.ITelemetryActivator.Initialize(Microsoft.Extensions.Logging.ILogger)">
             <summary>
             Initialize is initialize the telemetry client.
@@ -1869,9 +1864,6 @@
             OnSend is an action that enable to hook of sending telemetry.
             You can use this property for testing.
             </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.TelemetryActivator.Configuration">
-            <inheritdoc/>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.TelemetryActivator.DisposeAsync">
             <inheritdoc/>
