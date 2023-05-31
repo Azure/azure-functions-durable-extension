@@ -1873,6 +1873,9 @@
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.TelemetryActivator.Configuration">
             <inheritdoc/>
         </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.TelemetryActivator.DisposeAsync">
+            <inheritdoc/>
+        </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.TelemetryActivator.Initialize(Microsoft.Extensions.Logging.ILogger)">
             <summary>
             Initialize is initialize the telemetry client.
@@ -2524,7 +2527,7 @@
             Configuration for the Durable Functions extension.
             </summary>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.#ctor(Microsoft.Extensions.Options.IOptions{Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions},Microsoft.Extensions.Logging.ILoggerFactory,Microsoft.Azure.WebJobs.INameResolver,System.Collections.Generic.IEnumerable{Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurabilityProviderFactory},Microsoft.Azure.WebJobs.Extensions.DurableTask.IApplicationLifetimeWrapper,Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableHttpMessageHandlerFactory,Microsoft.Azure.WebJobs.Extensions.DurableTask.ILifeCycleNotificationHelper,Microsoft.Azure.WebJobs.Extensions.DurableTask.IMessageSerializerSettingsFactory,Microsoft.Azure.WebJobs.Extensions.DurableTask.IPlatformInformation,Microsoft.Azure.WebJobs.Extensions.DurableTask.IErrorSerializerSettingsFactory,Microsoft.Azure.WebJobs.Host.Config.IWebHookProvider,Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.ITelemetryActivator,Microsoft.ApplicationInsights.Extensibility.ITelemetryModule)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension.#ctor(Microsoft.Extensions.Options.IOptions{Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions},Microsoft.Extensions.Logging.ILoggerFactory,Microsoft.Azure.WebJobs.INameResolver,System.Collections.Generic.IEnumerable{Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurabilityProviderFactory},Microsoft.Azure.WebJobs.Extensions.DurableTask.IApplicationLifetimeWrapper,Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableHttpMessageHandlerFactory,Microsoft.Azure.WebJobs.Extensions.DurableTask.ILifeCycleNotificationHelper,Microsoft.Azure.WebJobs.Extensions.DurableTask.IMessageSerializerSettingsFactory,Microsoft.Azure.WebJobs.Extensions.DurableTask.IPlatformInformation,Microsoft.Azure.WebJobs.Extensions.DurableTask.IErrorSerializerSettingsFactory,Microsoft.Azure.WebJobs.Host.Config.IWebHookProvider,Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.ITelemetryActivator)">
             <summary>
             Initializes a new instance of the <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskExtension"/>.
             </summary>
@@ -4513,7 +4516,8 @@
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.TraceOptions.NewDistributedTracingEnabled">
             <summary>
-            Gets or sets a flag indicating whether to enable distributed tracing.
+            Gets or sets a flag indicating whether to enable the new version of distributed tracing
+            that is built using OpenTelemetry.
             The default value is false.
             </summary>
         </member>

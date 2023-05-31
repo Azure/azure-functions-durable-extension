@@ -2,6 +2,8 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Threading.Tasks;
+using DurableTask.ApplicationInsights;
 using DurableTask.Core;
 using DurableTask.Core.Settings;
 using Microsoft.ApplicationInsights;
@@ -15,12 +17,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
     /// <summary>
     /// TelemetryActivator initializes Distributed Tracing. This class only works for netstandard2.0.
     /// </summary>
-    public class TelemetryActivator : ITelemetryActivator
+    public class TelemetryActivator : ITelemetryActivator, IAsyncDisposable
     {
         private readonly DurableTaskOptions options;
-        private TelemetryClient telemetryClient;
+        private readonly INameResolver nameResolver;
         private EndToEndTraceHelper endToEndTraceHelper;
-        private INameResolver nameResolver;
+        private TelemetryClient telemetryClient;
+        private IAsyncDisposable disposable;
 
         /// <summary>
         /// Constructor for initializing Distributed Tracing.
@@ -42,20 +45,39 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
         /// <inheritdoc/>
         public TelemetryConfiguration Configuration { get; private set; }
 
+        /// <inheritdoc/>
+        public ValueTask DisposeAsync()
+        {
+            return this.disposable?.DisposeAsync() ?? default;
+        }
+
         /// <summary>
         /// Initialize is initialize the telemetry client.
         /// </summary>
         public void Initialize(ILogger logger)
         {
-            this.SetUpDistributedTracing();
-            if (CorrelationSettings.Current.EnableDistributedTracing || this.options.Tracing.NewDistributedTracingEnabled)
+            if (this.options.Tracing.DistributedTracingEnabled || this.options.Tracing.NewDistributedTracingEnabled)
             {
                 this.endToEndTraceHelper = new EndToEndTraceHelper(logger, this.options.Tracing.TraceReplayEvents);
-                this.SetUpTelemetryClient();
-
-                if (CorrelationSettings.Current.EnableDistributedTracing)
+                this.SetupTelemetryConfiguration();
+                if (this.options.Tracing.NewDistributedTracingEnabled)
                 {
-                    this.SetUpTelemetryCallbacks();
+                    DurableTelemetryModule module = new DurableTelemetryModule();
+                    module.Initialize(this.Configuration);
+                    this.disposable = module;
+                }
+                else
+                {
+                    this.SetUpDistributedTracing();
+                    if (CorrelationSettings.Current.EnableDistributedTracing)
+                    {
+                        this.SetUpTelemetryClient();
+
+                        if (CorrelationSettings.Current.EnableDistributedTracing)
+                        {
+                            this.SetUpTelemetryCallbacks();
+                        }
+                    }
                 }
             }
         }
@@ -104,16 +126,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
                     message: "Setting up the telemetry client...",
                     writeToUserLogs: true);
 
+            this.telemetryClient = new TelemetryClient(this.Configuration);
+        }
+
+        private TelemetryConfiguration SetupTelemetryConfiguration()
+        {
             TelemetryConfiguration config = TelemetryConfiguration.CreateDefault();
             if (this.OnSend != null)
             {
                 config.TelemetryChannel = new NoOpTelemetryChannel { OnSend = this.OnSend };
             }
-
-            var telemetryInitializer = new DurableTaskCorrelationTelemetryInitializer();
-
-            telemetryInitializer.ExcludeComponentCorrelationHttpHeadersOnDomains.Add("127.0.0.1");
-            config.TelemetryInitializers.Add(telemetryInitializer);
 
             string resolvedInstrumentationKey = this.nameResolver.Resolve("APPINSIGHTS_INSTRUMENTATIONKEY");
             if (!string.IsNullOrEmpty(resolvedInstrumentationKey))
@@ -125,7 +147,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
                     message: "Reading APPINSIGHTS_INSTRUMENTATIONKEY...",
                     writeToUserLogs: true);
 
+#pragma warning disable CS0618 // Type or member is obsolete
                 config.InstrumentationKey = resolvedInstrumentationKey;
+#pragma warning restore CS0618 // Type or member is obsolete
             }
             else
             {
@@ -136,8 +160,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
                     message: "'APPINSIGHTS_INSTRUMENTATIONKEY' isn't defined in the current environment variables, but Distributed Tracing is enabled. Please set 'APPINSIGHTS_INSTRUMENTATIONKEY' to use Distributed Tracing.");
             }
 
-            this.Configuration = config;
-            this.telemetryClient = new TelemetryClient(config);
+            return config;
         }
     }
 }
