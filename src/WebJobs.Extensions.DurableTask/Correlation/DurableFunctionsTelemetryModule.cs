@@ -11,7 +11,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
     {
         private readonly DurableTaskOptions options;
 
-        public DurableFunctionsTelemetryModule(IOptions<DurableTaskOptions> options, INameResolver nameResolver)
+        public DurableFunctionsTelemetryModule(IOptions<DurableTaskOptions> options)
         {
             this.options = options.Value;
         }
