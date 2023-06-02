@@ -23,8 +23,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
         private readonly INameResolver nameResolver;
         private EndToEndTraceHelper endToEndTraceHelper;
         private TelemetryClient telemetryClient;
-        private IAsyncDisposable disposable;
-        private TelemetryConfiguration telemetryConfiguration;
+        private IAsyncDisposable telemetryModule;
 
         /// <summary>
         /// Constructor for initializing Distributed Tracing.
@@ -46,7 +45,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
         /// <inheritdoc/>
         public ValueTask DisposeAsync()
         {
-            return this.disposable?.DisposeAsync() ?? default;
+            return this.telemetryModule?.DisposeAsync() ?? default;
         }
 
         /// <summary>
@@ -57,19 +56,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
             if (this.options.Tracing.DistributedTracingEnabled || this.options.Tracing.NewDistributedTracingEnabled)
             {
                 this.endToEndTraceHelper = new EndToEndTraceHelper(logger, this.options.Tracing.TraceReplayEvents);
-                this.SetupTelemetryConfiguration();
+                TelemetryConfiguration telemetryConfiguration = this.SetupTelemetryConfiguration();
                 if (this.options.Tracing.NewDistributedTracingEnabled)
                 {
                     DurableTelemetryModule module = new DurableTelemetryModule();
-                    module.Initialize(this.telemetryConfiguration);
-                    this.disposable = module;
+                    module.Initialize(telemetryConfiguration);
+                    this.telemetryModule = module;
                 }
                 else
                 {
-                    this.SetUpDistributedTracing();
+                    this.SetUpDeprecatedDistributedTracing();
                     if (CorrelationSettings.Current.EnableDistributedTracing)
                     {
-                        this.SetUpTelemetryClient();
+                        this.SetUpTelemetryClient(telemetryConfiguration);
 
                         if (CorrelationSettings.Current.EnableDistributedTracing)
                         {
@@ -80,7 +79,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
             }
         }
 
-        private void SetUpDistributedTracing()
+        private void SetUpDeprecatedDistributedTracing()
         {
             DurableTaskOptions durableTaskOptions = this.options;
             CorrelationSettings.Current.EnableDistributedTracing =
@@ -115,7 +114,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
                 });
         }
 
-        private void SetUpTelemetryClient()
+        private void SetUpTelemetryClient(TelemetryConfiguration telemetryConfiguration)
         {
             this.endToEndTraceHelper.ExtensionInformationalEvent(
                     hubName: this.options.HubName,
@@ -124,10 +123,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
                     message: "Setting up the telemetry client...",
                     writeToUserLogs: true);
 
-            this.telemetryClient = new TelemetryClient(this.telemetryConfiguration);
+            this.telemetryClient = new TelemetryClient(telemetryConfiguration);
         }
 
-        private void SetupTelemetryConfiguration()
+        private TelemetryConfiguration SetupTelemetryConfiguration()
         {
             TelemetryConfiguration config = TelemetryConfiguration.CreateDefault();
             if (this.OnSend != null)
@@ -158,7 +157,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
                     message: "'APPINSIGHTS_INSTRUMENTATIONKEY' isn't defined in the current environment variables, but Distributed Tracing is enabled. Please set 'APPINSIGHTS_INSTRUMENTATIONKEY' to use Distributed Tracing.");
             }
 
-            this.telemetryConfiguration = config;
+            return config;
         }
     }
 }
