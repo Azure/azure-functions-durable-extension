@@ -159,7 +159,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             ScheduledStartTime = request.ScheduledStartTimestamp?.ToDateTime(),
                         },
                         OrchestrationInstance = instance,
-                    });
+                    },
+                    this.GetStatusesNotToOverride());
 
                 return new P.CreateInstanceResponse
                 {
@@ -331,6 +332,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 string? connectionName = context.RequestHeaders.GetValue("Durable-ConnectionName");
                 var attribute = new DurableClientAttribute() { TaskHub = taskHub, ConnectionName = connectionName };
                 return this.extension.GetDurabilityProvider(attribute);
+            }
+
+            private OrchestrationStatus[] GetStatusesNotToOverride()
+            {
+                OverridableStates overridableStates = this.extension.Options.OverridableExistingInstanceStates;
+                return overridableStates.ToDedupeStatuses();
             }
         }
     }

@@ -1,6 +1,9 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using System;
+using DurableTask.Core;
+
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     /// <summary>
@@ -20,5 +23,34 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// instance is in a terminated, failed, or completed state.
         /// </summary>
         NonRunningStates,
+    }
+
+    /// <summary>
+    /// Extension methods for <see cref="OverridableStates"/>.
+    /// </summary>
+#pragma warning disable SA1649 // File name should match first type name Justification: pairing extension methods with enum.
+    internal static class OverridableStatesExtensions
+#pragma warning restore SA1649 // File name should match first type name
+    {
+        private static readonly OrchestrationStatus[] NonRunning = new OrchestrationStatus[]
+        {
+            OrchestrationStatus.Running,
+            OrchestrationStatus.ContinuedAsNew,
+            OrchestrationStatus.Pending,
+        };
+
+        /// <summary>
+        /// Gets the dedupe <see cref="OrchestrationStatus"/> for a given <see cref="OverridableStates"/>.
+        /// </summary>
+        /// <param name="states">The overridable states.</param>
+        /// <returns>An array of statuses to dedupe.</returns>
+        public static OrchestrationStatus[] ToDedupeStatuses(this OverridableStates states)
+        {
+            return states switch
+            {
+                OverridableStates.NonRunningStates => NonRunning,
+                _ => Array.Empty<OrchestrationStatus>(),
+            };
+        }
     }
 }
