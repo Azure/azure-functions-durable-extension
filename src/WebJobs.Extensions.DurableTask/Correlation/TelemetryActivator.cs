@@ -65,7 +65,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
                 }
                 else
                 {
-                    this.SetUpDeprecatedDistributedTracing();
+                    this.SetUpV1DistributedTracing();
                     if (CorrelationSettings.Current.EnableDistributedTracing)
                     {
                         this.SetUpTelemetryClient(telemetryConfiguration);
@@ -79,7 +79,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
             }
         }
 
-        private void SetUpDeprecatedDistributedTracing()
+        private void SetUpV1DistributedTracing()
         {
             DurableTaskOptions durableTaskOptions = this.options;
             CorrelationSettings.Current.EnableDistributedTracing =
