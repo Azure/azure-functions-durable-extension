@@ -53,11 +53,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
         /// </summary>
         public void Initialize(ILogger logger)
         {
-            if (this.options.Tracing.DistributedTracingEnabled || this.options.Tracing.NewDistributedTracingEnabled)
+            if (this.options.Tracing.DistributedTracingEnabled || this.options.Tracing.DurableDistributedTracingVersion == Options.DurableDistributedTracingVersion.V2)
             {
                 this.endToEndTraceHelper = new EndToEndTraceHelper(logger, this.options.Tracing.TraceReplayEvents);
                 TelemetryConfiguration telemetryConfiguration = this.SetupTelemetryConfiguration();
-                if (this.options.Tracing.NewDistributedTracingEnabled)
+                if (this.options.Tracing.DurableDistributedTracingVersion == Options.DurableDistributedTracingVersion.V2)
                 {
                     DurableTelemetryModule module = new DurableTelemetryModule();
                     module.Initialize(telemetryConfiguration);

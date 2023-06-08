@@ -4032,6 +4032,22 @@
                 Default is true.
             </remarks>
         </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.DurableDistributedTracingVersion">
+            <summary>
+            Represents various options for Distributed Tracing in Durable Functions.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.DurableDistributedTracingVersion.V1">
+            <summary>
+            Original implementation of Distributed Tracing in Durable Functions
+            that can be configured to use HttpCorrelationProtocol or W3CTraceContext.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.DurableDistributedTracingVersion.V2">
+            <summary>
+            OpenTelemetry compatible version of Distributed Tracing in Durable Functions.
+            </summary>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageOptions">
             <summary>
             Configuration options for the Azure Storage storage provider.
@@ -4504,9 +4520,10 @@
             Gets or sets a protocol for distributed Tracing.
             Possible values are "HttpCorrelationProtocol" and "W3CTraceContext".
             The default value is "HttpCorrelationProtocol".
+            This setting is only used when <see cref="!:DistributedTracingVersion" /> is `DurableDistributedTracingVersion.V1`.
             </summary>
         </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.TraceOptions.NewDistributedTracingEnabled">
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.TraceOptions.DurableDistributedTracingVersion">
             <summary>
             Gets or sets a flag indicating whether to enable the new version of distributed tracing
             that is built using OpenTelemetry.

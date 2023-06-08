@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System.Text;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
@@ -61,15 +62,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// Gets or sets a protocol for distributed Tracing.
         /// Possible values are "HttpCorrelationProtocol" and "W3CTraceContext".
         /// The default value is "HttpCorrelationProtocol".
+        /// This setting is only used when <see cref="DistributedTracingVersion"/> is `DurableDistributedTracingVersion.V1`.
         /// </summary>
         public string DistributedTracingProtocol { get; set; } = "HttpCorrelationProtocol";
 
         /// <summary>
-        /// Gets or sets a flag indicating whether to enable the new version of distributed tracing
-        /// that is built using OpenTelemetry.
-        /// The default value is false.
+        /// Gets or sets a <see cref="DistributedTracingVersion" /> value indicating which version of distributed tracing to use.
+        /// The default value is 'DurableDistributedTracingVersion.V1'.
         /// </summary>
-        public bool NewDistributedTracingEnabled { get; set; } = false;
+        public DurableDistributedTracingVersion DurableDistributedTracingVersion { get; set; } = DurableDistributedTracingVersion.V1;
 
 #endif
         internal void AddToDebugString(StringBuilder builder)
