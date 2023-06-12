@@ -37,6 +37,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             OrchestrationStatus.Running,
             OrchestrationStatus.ContinuedAsNew,
             OrchestrationStatus.Pending,
+            OrchestrationStatus.Suspended,
         };
 
         /// <summary>
