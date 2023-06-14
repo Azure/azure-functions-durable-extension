@@ -9,14 +9,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Options
     public enum DurableDistributedTracingVersion
     {
         /// <summary>
+        /// Distributed Tracing is disabled.
+        /// </summary>
+        None = 0,
+
+        /// <summary>
         /// Original implementation of Distributed Tracing in Durable Functions
         /// that can be configured to use HttpCorrelationProtocol or W3CTraceContext.
         /// </summary>
-        V1 = 0,
+        V1 = 1,
 
         /// <summary>
         /// OpenTelemetry compatible version of Distributed Tracing in Durable Functions.
         /// </summary>
-        V2 = 1,
+        V2 = 2,
     }
 }
