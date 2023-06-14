@@ -288,6 +288,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     timeout: Timeout.InfiniteTimeSpan,
                     context.CancellationToken);
 
+                if (state == null)
+                {
+                    return new P.GetInstanceResponse() { Exists = false };
+                }
+
                 return CreateGetInstanceResponse(state, request);
             }
 
