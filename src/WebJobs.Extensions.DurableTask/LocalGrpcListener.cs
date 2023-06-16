@@ -148,24 +148,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     ExecutionId = Guid.NewGuid().ToString(),
                 };
 
-                await this.GetDurabilityProvider(context).CreateTaskOrchestrationAsync(
-                    new TaskMessage
-                    {
-                        Event = new ExecutionStartedEvent(-1, request.Input)
-                        {
-                            Name = request.Name,
-                            Version = request.Version,
-                            OrchestrationInstance = instance,
-                            ScheduledStartTime = request.ScheduledStartTimestamp?.ToDateTime(),
-                        },
-                        OrchestrationInstance = instance,
-                    },
-                    this.GetStatusesNotToOverride());
-
-                return new P.CreateInstanceResponse
+                try
                 {
-                    InstanceId = instance.InstanceId,
-                };
+                    await this.GetDurabilityProvider(context).CreateTaskOrchestrationAsync(
+                        new TaskMessage
+                        {
+                            Event = new ExecutionStartedEvent(-1, request.Input)
+                            {
+                                Name = request.Name,
+                                Version = request.Version,
+                                OrchestrationInstance = instance,
+                                ScheduledStartTime = request.ScheduledStartTimestamp?.ToDateTime(),
+                            },
+                            OrchestrationInstance = instance,
+                        },
+                        this.GetStatusesNotToOverride());
+
+                    return new P.CreateInstanceResponse
+                    {
+                        InstanceId = instance.InstanceId,
+                    };
+                }
+                catch (InvalidOperationException)
+                {
+                    throw new RpcException(new Status(StatusCode.AlreadyExists, $"An Orchestration instance with the ID {instance.InstanceId} already exists."));
+                }
             }
 
             public async override Task<P.RaiseEventResponse> RaiseEvent(P.RaiseEventRequest request, ServerCallContext context)
