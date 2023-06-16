@@ -4674,6 +4674,18 @@
             instance is in a terminated, failed, or completed state.
             </summary>
         </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.OverridableStatesExtensions">
+            <summary>
+            Extension methods for <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.OverridableStates"/>.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.OverridableStatesExtensions.ToDedupeStatuses(Microsoft.Azure.WebJobs.Extensions.DurableTask.OverridableStates)">
+            <summary>
+            Gets the dedupe <see cref="T:DurableTask.Core.OrchestrationStatus"/> for a given <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.OverridableStates"/>.
+            </summary>
+            <param name="states">The overridable states.</param>
+            <returns>An array of statuses to dedupe.</returns>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.ProviderUtils">
             <summary>
             Provides access to internal functionality for the purpose of implementing durability providers.
