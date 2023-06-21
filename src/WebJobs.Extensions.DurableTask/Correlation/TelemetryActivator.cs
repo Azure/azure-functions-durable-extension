@@ -141,7 +141,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
             }
 
             string resolvedInstrumentationKey = this.nameResolver.Resolve("APPINSIGHTS_INSTRUMENTATIONKEY");
-            if (!string.IsNullOrEmpty(resolvedInstrumentationKey))
+            string resolvedConnectionString = this.nameResolver.Resolve("APPLICATIONINSIGHTS_CONNECTION_STRING");
+
+            bool instrumentationKeyProvided = !string.IsNullOrEmpty(resolvedInstrumentationKey);
+            bool connectionStringProvided = !string.IsNullOrEmpty(resolvedConnectionString);
+
+            if (instrumentationKeyProvided && connectionStringProvided)
+            {
+                this.endToEndTraceHelper.ExtensionWarningEvent(
+                    hubName: this.options.HubName,
+                    functionName: string.Empty,
+                    instanceId: string.Empty,
+                    message: "Both 'APPINSIGHTS_INSTRUMENTATIONKEY' and 'APPLICATIONINSIGHTS_CONNECTION_STRING' are defined in the current environment variables. Please specify one. We recommend specifying 'APPLICATIONINSIGHTS_CONNECTION_STRING'.");
+            }
+
+            if (!instrumentationKeyProvided && !connectionStringProvided)
+            {
+                this.endToEndTraceHelper.ExtensionWarningEvent(
+                    hubName: this.options.HubName,
+                    functionName: string.Empty,
+                    instanceId: string.Empty,
+                    message: "'APPINSIGHTS_INSTRUMENTATIONKEY' or 'APPLICATIONINSIGHTS_CONNECTION_STRING' were not defined in the current environment variables, but distributed tracing is enabled. Please specify one. We recommend specifying 'APPLICATIONINSIGHTS_CONNECTION_STRING'.");
+            }
+
+            if (instrumentationKeyProvided)
             {
                 this.endToEndTraceHelper.ExtensionInformationalEvent(
                     hubName: this.options.HubName,
@@ -154,13 +177,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
                 config.InstrumentationKey = resolvedInstrumentationKey;
 #pragma warning restore CS0618 // Type or member is obsolete
             }
-            else
+
+            if (connectionStringProvided)
             {
-                this.endToEndTraceHelper.ExtensionWarningEvent(
+                this.endToEndTraceHelper.ExtensionInformationalEvent(
                     hubName: this.options.HubName,
                     functionName: string.Empty,
                     instanceId: string.Empty,
-                    message: "'APPINSIGHTS_INSTRUMENTATIONKEY' isn't defined in the current environment variables, but Distributed Tracing is enabled. Please set 'APPINSIGHTS_INSTRUMENTATIONKEY' to use Distributed Tracing.");
+                    message: "Reading APPLICATIONINSIGHTS_CONNECTION_STRING...",
+                    writeToUserLogs: true);
+
+                config.ConnectionString = resolvedConnectionString;
             }
 
             return config;
