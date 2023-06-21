@@ -17,7 +17,6 @@ using DurableTask.Core;
 using DurableTask.Core.Exceptions;
 using DurableTask.Core.History;
 using DurableTask.Core.Middleware;
-using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.Azure.WebJobs.Description;
 #if !FUNCTIONS_V1
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
