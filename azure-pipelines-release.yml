@@ -12,7 +12,7 @@ variables:
 steps:
 
 - task: PowerShell@2
-  displayName: 'Set Package Version Type'
+  displayName: 'Populating PackageSuffix iff source branch is not dev'
   inputs:
     targetType: 'inline'
     script: |
