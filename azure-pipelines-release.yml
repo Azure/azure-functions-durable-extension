@@ -6,7 +6,21 @@ pool:
   demands:
     - ImageOverride -equals MMS2022TLS
 
+variables:
+  BuildVersion: ''
+
 steps:
+
+- task: PowerShell@2
+  displayName: 'Set Package Version Type'
+  inputs:
+    targetType: 'inline'
+    script: |
+      # if trigger branch is not dev then populate BuildVersion environment variable
+      if($Env:BUILD_SOURCEBRANCHNAME -ne 'dev'){
+        $buildNumber = $(Build.BuildNumber)
+        Write-Host "##vso[task.setvariable variable=BuildVersion;]$buildNumber"
+      }
 
 # Configure all the .NET SDK versions we need
 - task: UseDotNet@2
