@@ -7,7 +7,7 @@
     <MajorVersion>2</MajorVersion>
     <MinorVersion>9</MinorVersion>
     <PatchVersion>6</PatchVersion>
-    <VersionSuffix>$(PreviewPackageSuffix)</VersionSuffix>
+    <VersionSuffix>$(PackageSuffix)</VersionSuffix>
     <FileVersion>$(MajorVersion).$(MinorVersion).$(PatchVersion)</FileVersion>
     <AssemblyVersion>$(MajorVersion).0.0.0</AssemblyVersion>
     <Company>Microsoft Corporation</Company>
@@ -21,10 +21,13 @@
     <NoWarn>NU5125;SA0001</NoWarn>
   </PropertyGroup>
 
+  <!-- VersionSuffix is populated with the BuildVersion iff the CI is not triggered from the dev branch-->
   <PropertyGroup Condition="$(VersionSuffix) == ''">
+    <!-- Generating a release candidate from dev branch-->
     <Version>$(MajorVersion).$(MinorVersion).$(PatchVersion)</Version>
   </PropertyGroup>
   <PropertyGroup Condition="$(VersionSuffix) != ''">
+    <!-- Generating private/preview package -->
     <Version>$(MajorVersion).$(MinorVersion).$(PatchVersion)-preview.$(VersionSuffix)</Version>
   </PropertyGroup>
 

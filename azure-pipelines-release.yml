@@ -7,8 +7,7 @@ pool:
     - ImageOverride -equals MMS2022TLS
 
 variables:
-  # the build version will become the preview package version suffix
-  PreviewPackageSuffix: ''
+  PackageSuffix: ''
 
 steps:
 
@@ -17,11 +16,11 @@ steps:
   inputs:
     targetType: 'inline'
     script: |
-      # if source branch is not dev then we're generating a preview package
-      # therefore, we populate the environment variable "PreviewPackageSuffix"
+      # if source branch is not dev then we're generating a preview package.
+      # In that case, we populate the environment variable "PackageSuffix"
       if($Env:BUILD_SOURCEBRANCHNAME -ne 'dev'){
         $buildNumber = $(Build.BuildNumber)
-        Write-Host "##vso[task.setvariable variable=PreviewPackageSuffix;]$buildNumber"
+        Write-Host "##vso[task.setvariable variable=PackageSuffix;]$buildNumber"
       }
 
 # Configure all the .NET SDK versions we need
