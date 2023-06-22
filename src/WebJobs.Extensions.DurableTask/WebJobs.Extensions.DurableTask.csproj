@@ -7,7 +7,7 @@
     <MajorVersion>2</MajorVersion>
     <MinorVersion>9</MinorVersion>
     <PatchVersion>6</PatchVersion>
-    <VersionSuffix>$(BuildVersion)</VersionSuffix>
+    <VersionSuffix>$(PreviewPackageSuffix)</VersionSuffix>
     <FileVersion>$(MajorVersion).$(MinorVersion).$(PatchVersion)</FileVersion>
     <AssemblyVersion>$(MajorVersion).0.0.0</AssemblyVersion>
     <Company>Microsoft Corporation</Company>
@@ -25,7 +25,7 @@
     <Version>$(MajorVersion).$(MinorVersion).$(PatchVersion)</Version>
   </PropertyGroup>
   <PropertyGroup Condition="$(VersionSuffix) != ''">
-    <Version>$(MajorVersion).$(MinorVersion).$(PatchVersion)-$(VersionSuffix)</Version>
+    <Version>$(MajorVersion).$(MinorVersion).$(PatchVersion)-preview.$(VersionSuffix)</Version>
   </PropertyGroup>
 
   <!-- NuGet Publishing Metadata -->

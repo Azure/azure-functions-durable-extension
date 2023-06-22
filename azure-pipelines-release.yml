@@ -7,7 +7,8 @@ pool:
     - ImageOverride -equals MMS2022TLS
 
 variables:
-  BuildVersion: ''
+  # the build version will become the preview package version suffix
+  PreviewPackageSuffix: ''
 
 steps:
 
@@ -16,10 +17,11 @@ steps:
   inputs:
     targetType: 'inline'
     script: |
-      # if trigger branch is not dev then populate BuildVersion environment variable
+      # if source branch is not dev then we're generating a preview package
+      # therefore, we populate the environment variable "PreviewPackageSuffix"
       if($Env:BUILD_SOURCEBRANCHNAME -ne 'dev'){
         $buildNumber = $(Build.BuildNumber)
-        Write-Host "##vso[task.setvariable variable=BuildVersion;]$buildNumber"
+        Write-Host "##vso[task.setvariable variable=PreviewPackageSuffix;]$buildNumber"
       }
 
 # Configure all the .NET SDK versions we need
@@ -63,38 +65,38 @@ steps:
     configuration: Release
 
 # Authenticode sign all the DLLs with the Microsoft certificate.
-# - task: EsrpCodeSigning@1
-#   inputs:
-#     ConnectedServiceName: 'ESRP Service'
-#     FolderPath: 'src/WebJobs.Extensions.DurableTask/bin/Release'
-#     Pattern: '*DurableTask.dll'
-#     signConfigType: 'inlineSignParams'
-#     inlineOperation: |
-#       [    
-#           {
-#             "KeyCode": "CP-230012",
-#             "OperationCode": "SigntoolSign",
-#             "Parameters": {
-#               "OpusName": "Microsoft",
-#               "OpusInfo": "http://www.microsoft.com",
-#               "FileDigest": "/fd \"SHA256\"",
-#               "PageHash": "/NPH",
-#               "TimeStamp": "/tr \"http://rfc3161.gtm.corp.microsoft.com/TSS/HttpTspServer\" /td sha256"
-#             },
-#             "ToolName": "sign",
-#             "ToolVersion": "1.0"
-#           },
-#           {
-#             "KeyCode": "CP-230012",
-#             "OperationCode": "SigntoolVerify",
-#             "Parameters": {},
-#             "ToolName": "sign",
-#             "ToolVersion": "1.0"
-#           }
-#       ]
-#     SessionTimeout: '60'
-#     MaxConcurrency: '50'
-#     MaxRetryAttempts: '5'
+- task: EsrpCodeSigning@1
+  inputs:
+    ConnectedServiceName: 'ESRP Service'
+    FolderPath: 'src/WebJobs.Extensions.DurableTask/bin/Release'
+    Pattern: '*DurableTask.dll'
+    signConfigType: 'inlineSignParams'
+    inlineOperation: |
+      [    
+          {
+            "KeyCode": "CP-230012",
+            "OperationCode": "SigntoolSign",
+            "Parameters": {
+              "OpusName": "Microsoft",
+              "OpusInfo": "http://www.microsoft.com",
+              "FileDigest": "/fd \"SHA256\"",
+              "PageHash": "/NPH",
+              "TimeStamp": "/tr \"http://rfc3161.gtm.corp.microsoft.com/TSS/HttpTspServer\" /td sha256"
+            },
+            "ToolName": "sign",
+            "ToolVersion": "1.0"
+          },
+          {
+            "KeyCode": "CP-230012",
+            "OperationCode": "SigntoolVerify",
+            "Parameters": {},
+            "ToolName": "sign",
+            "ToolVersion": "1.0"
+          }
+      ]
+    SessionTimeout: '60'
+    MaxConcurrency: '50'
+    MaxRetryAttempts: '5'
 
 # SBOM generator task for additional supply chain protection
 - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
