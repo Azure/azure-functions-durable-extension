@@ -175,8 +175,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.context.HubName,
                     this.context.Name,
                     this.context.InstanceId,
-                    FunctionType.Orchestrator,
-                    FunctionState.Failed,
+                    FunctionType.Entity,
+                    FunctionState.EntityStateCreated,
                     isReplay: false);
             }
         }

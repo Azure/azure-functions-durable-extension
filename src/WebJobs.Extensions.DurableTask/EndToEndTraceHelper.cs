@@ -973,8 +973,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (this.ShouldLogEvent(isReplay))
             {
                 this.logger.LogInformation(
-                    "{instanceId}: Function '{functionName} ({functionType})' state changed to {functionState}. IsReplay: {isReplay}. State: {state}. FunctionState: {functionState}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
-                    instanceId, functionName, functionType, functionState, isReplay, functionState, functionState, hubName,
+                    "{instanceId}: Function '{functionName} ({functionType})' state changed to {functionState}. IsReplay: {isReplay}. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
+                    instanceId, functionName, functionType, functionState, isReplay, functionState, hubName,
                     LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++);
             }
         }
