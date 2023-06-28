@@ -5,10 +5,14 @@ import urllib.parse
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 
+# this repo is an exception to our labeling system, so we store it in a different variable to detect it later
+powershell_worker_repo = "Azure/azure-functions-powershell-worker"
 REPOS = [
-    "Azure/azure-functions-durable-extension",
     "Azure/durabletask",
+    "Azure/azure-functions-durable-extension",
+    "Azure/azure-functions-durable-js",
     "Azure/azure-functions-durable-python",
+    powershell_worker_repo,
     "microsoft/durabletask-java",
     "microsoft/durabletask-dotnet",
     "microsoft/durabletask-mssql",
@@ -37,11 +41,11 @@ def get_triage_issues(repository):
 }
 
     payload_str = urllib.parse.urlencode(payload, safe=':+')
-    print(payload_str)
-
     # Define the GitHub API endpoint
     api_endpoint = f"https://api.github.com/repos/{repository}/issues"
-    query_str = "?labels=Needs%3A%20Triage%20%3Amag%3A" # the mag% segment represents the emoji on the label
+    query_str1 = "?labels=Needs%3A%20Triage%20%3Amag%3A"
+    query_str2 = "?labels=Needs%3A%20Triage%20%28Functions%29"
+    query_str = query_str2 if repository == powershell_worker_repo else query_str1
 
     # Send a GET request to the API
     response = requests.get(api_endpoint + query_str)
