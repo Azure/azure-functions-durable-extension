@@ -2,7 +2,7 @@
 
 ## What is it?
 
-An serverless app that automatically lists all issues to be triaged across Durable Functions repos.
+A serverless app that automatically lists all issues to be triaged across Durable Functions repos.
 
 ## How to use it?
 
