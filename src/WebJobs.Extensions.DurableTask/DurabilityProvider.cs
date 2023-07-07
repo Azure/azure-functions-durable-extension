@@ -82,6 +82,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public virtual bool SupportsImplicitEntityDeletion => false;
 
         /// <summary>
+        /// Whether or not to check the instance status before raising an event.
+        /// </summary>
+        public virtual bool CheckStatusBeforeRaiseEvent => true;
+
+        /// <summary>
         /// JSON representation of configuration to emit in telemetry.
         /// </summary>
         public virtual JObject ConfigurationJson => EmptyConfig;
