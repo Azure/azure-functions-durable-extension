@@ -173,11 +173,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public bool UseLegacyPartitionManagement { get; set; } = false;
 
         /// <summary>
-        /// Determines whether or not to use the table partition management strategy.
-        /// The table-storage partition manager that help reduce costs for Azure Storage V2 account.
-        /// Note: Managed identity is not supported in this strategy for now.
+        /// Determines whether to use the table partition management strategy.
+        /// This strategy reduces expected costs for an Azure Storage V2 account.
         /// </summary>
-        /// /// <value>A boolean indicating whether we use the table partition strategy. Defaults to true.</value>
+        /// /// <value>A boolean indicating whether to use the table partition strategy. Defaults to false.</value>
         public bool UseTablePartitionManagement { get; set; } = false;
 
         /// <summary>
