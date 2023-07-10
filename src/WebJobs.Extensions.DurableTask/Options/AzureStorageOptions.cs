@@ -174,10 +174,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         /// <summary>
         /// Determines whether or not to use the table partition management strategy.
-        /// The new partition manager is based on Azure Storage V2. And it's recommneded to use the new partition manager for Azure Storage V2.
+        /// The table-storage partition manager that help reduces costs for Azure Storage V2 account.
         /// </summary>
         /// /// <value>A boolean indicating whether we use the table partition strategy. Defaults to true.</value>
-        public bool UseTablePartitionManagement { get; set; } = true;
+        public bool UseTablePartitionManagement { get; set; } = false;
 
         /// <summary>
         /// Throws an exception if the provided hub name violates any naming conventions for the storage provider.
