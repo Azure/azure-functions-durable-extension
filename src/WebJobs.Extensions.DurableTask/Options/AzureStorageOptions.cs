@@ -176,7 +176,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// Determines whether to use the table partition management strategy.
         /// This strategy reduces expected costs for an Azure Storage V2 account.
         /// </summary>
-        /// /// <value>A boolean indicating whether to use the table partition strategy. Defaults to false.</value>
+        /// <value>A boolean indicating whether to use the table partition strategy. Defaults to false.</value>
         public bool UseTablePartitionManagement { get; set; } = false;
 
         /// <summary>
