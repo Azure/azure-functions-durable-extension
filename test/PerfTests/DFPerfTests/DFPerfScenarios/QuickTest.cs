@@ -15,7 +15,7 @@ namespace DFPerfScenarios.DFPerfScenarios
     {
         [FunctionName("QuickTest")]
         public static async Task<HttpResponseMessage> Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)]HttpRequestMessage req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)] HttpRequestMessage req,
             [DurableClient] IDurableOrchestrationClient starter)
         {
             var testObject = new
