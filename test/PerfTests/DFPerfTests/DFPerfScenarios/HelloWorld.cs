@@ -23,7 +23,7 @@ namespace DFPerfScenarios.DFPerfScenarios
 
         [FunctionName("FailedActivity")]
         public string FailedActivity(
-    [ActivityTrigger] IDurableActivityContext ctx)
+        [ActivityTrigger] IDurableActivityContext ctx)
         {
             return null;
         }

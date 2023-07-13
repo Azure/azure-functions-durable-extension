@@ -11,18 +11,18 @@ using Newtonsoft.Json;
 namespace DFPerfScenarios
 {
     public static class CounterTest
-	{
-		[FunctionName("StartCounter")]
-		public static async Task<HttpResponseMessage> Start(
+    {
+        [FunctionName("StartCounter")]
+        public static async Task<HttpResponseMessage> Start(
             [HttpTrigger(AuthorizationLevel.Function, methods: "post", Route = "StartCounter")] HttpRequestMessage req,
             [DurableClient] IDurableClient starter,
             ILogger log)
-		{
-			Input input = await req.Content.ReadAsAsync<Input>();
-			if (input == null || input.EventCount <= 0)
-			{
-				return req.CreateErrorResponse(HttpStatusCode.BadRequest, "A positive integer was expected for EventCount.");
-			}
+        {
+            Input input = await req.Content.ReadAsAsync<Input>();
+            if (input == null || input.EventCount <= 0)
+            {
+                return req.CreateErrorResponse(HttpStatusCode.BadRequest, "A positive integer was expected for EventCount.");
+            }
 
             var entityId = new EntityId("Counter", Guid.NewGuid().ToString("N"));
 
@@ -32,13 +32,12 @@ namespace DFPerfScenarios
                 MaxDegreeOfParallelism = 200
             };
 
-            Parallel.For(0, input.EventCount, parallelOptions, delegate (int i)
-            {
+            Parallel.For(0, input.EventCount, parallelOptions, delegate (int i) {
                 starter.SignalEntityAsync(entityId, "add", 1).GetAwaiter().GetResult();
             });
 
             return req.CreateResponse(HttpStatusCode.Accepted);
-		}
+        }
 
         private class Input
         {
