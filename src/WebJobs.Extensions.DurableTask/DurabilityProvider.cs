@@ -84,7 +84,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <summary>
         /// Whether or not to check the instance status before raising an event.
         /// </summary>
-        public virtual bool CheckStatusBeforeRaiseEvent => true;
+        public virtual bool CheckStatusBeforeRaiseEvent => false;
 
         /// <summary>
         /// JSON representation of configuration to emit in telemetry.
