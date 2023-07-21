@@ -98,6 +98,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         string IDurableEntityClient.TaskHubName => this.TaskHubName;
 
+        private bool CheckStatusBeforeRaiseEvent
+            => this.durableTaskOptions.ThrowStatusExceptionsOnRaiseEvent ?? this.durabilityProvider.CheckStatusBeforeRaiseEvent;
+
         private IDurableClient GetDurableClient(string taskHubName, string connectionName)
         {
             if (string.Equals(this.TaskHubName, taskHubName, StringComparison.OrdinalIgnoreCase)
@@ -231,7 +234,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new ArgumentNullException(nameof(eventName));
             }
 
-            return this.RaiseEventInternalAsync(this.client, this.TaskHubName, instanceId, eventName, eventData, this.durabilityProvider.CheckStatusBeforeRaiseEvent);
+            return this.RaiseEventInternalAsync(this.client, this.TaskHubName, instanceId, eventName, eventData, this.CheckStatusBeforeRaiseEvent);
         }
 
         /// <inheritdoc />
@@ -256,7 +259,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             DurableClient durableClient = (DurableClient)this.GetDurableClient(taskHubName, connectionName);
             TaskHubClient taskHubClient = durableClient.client;
 
-            return this.RaiseEventInternalAsync(taskHubClient, taskHubName, instanceId, eventName, eventData, this.durabilityProvider.CheckStatusBeforeRaiseEvent);
+            return this.RaiseEventInternalAsync(taskHubClient, taskHubName, instanceId, eventName, eventData, this.CheckStatusBeforeRaiseEvent);
         }
 
         /// <inheritdoc />
