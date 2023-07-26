@@ -4,7 +4,9 @@ The second version of distributed tracing for Durable Functions is in a preview 
 
 #### Benefits
 1. All three Durable Functions storage providers are supported: Azure Storage, Netherite, and Microsoft SQL Server.
-2. It provides additional information in terms of spans and tags. 
+2. It provides additional information in terms of spans and tags.
+
+![Trace](images/TraceWithProperties.png)
 
 ### Enabling Distributed Tracing V2
 To use Distributed Tracing V2, all you will need to do is update your app's host.json and add an environment variable for the Application Insights resource.
