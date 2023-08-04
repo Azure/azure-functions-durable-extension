@@ -123,7 +123,7 @@
   <ItemGroup>
     <PackageReference Include="Azure.Data.Tables" Version="12.6.1" />
     <PackageReference Include="Azure.Storage.Queues" Version="12.12.0" />
-    <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" Version="2.0.0-preview.2" />
+    <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" Version="2.0.0-preview.3" />
     <PackageReference Include="Microsoft.Azure.DurableTask.Core" Version="2.13.*" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers" Version="0.5.*" />
     <!-- Build-time dependencies -->
