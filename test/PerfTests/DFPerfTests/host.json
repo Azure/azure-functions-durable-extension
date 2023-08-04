@@ -1,0 +1,27 @@
+{
+  "version": "2.0",
+  "extensions": {
+    "http": {
+      "routePrefix": "tests"
+    },
+    "durableTask": {
+      "hubName": "DFPerfHub",
+      "maxConcurrentActivityFunctions": 400,
+      "maxConcurrentOrchestratorFunctions": 400,
+      "extendedSessionsEnabled": true,
+      "extendedSessionIdleTimeoutInSeconds": 30,
+      "controlQueueBufferThreshold": 1000,
+      "storageProvider": {
+        "partitionCount": 6,
+      }
+    }
+  },
+  "logging": {
+    "applicationInsights": {
+      "samplingSettings": {
+        "isEnabled": true,
+        "excludedTypes": "Request"
+      }
+    }
+  }
+}
