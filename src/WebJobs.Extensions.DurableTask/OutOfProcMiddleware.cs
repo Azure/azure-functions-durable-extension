@@ -46,7 +46,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             OrchestrationRuntimeState? runtimeState = dispatchContext.GetProperty<OrchestrationRuntimeState>();
             if (runtimeState == null)
             {
-                // This should never happen, but it's almost certainly non-retriable if it does.
+                // This should never happen, but it's almost certainly non-retryable if it does.
                 dispatchContext.SetProperty(OrchestratorExecutionResult.ForFailure(
                     message: "Orchestration runtime state was missing!",
                     details: null));
@@ -56,7 +56,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             OrchestrationInstance? instance = dispatchContext.GetProperty<OrchestrationInstance>();
             if (instance == null)
             {
-                // This should never happen, but it's almost certainly non-retriable if it does.
+                // This should never happen, but it's almost certainly non-retryable if it does.
                 dispatchContext.SetProperty(OrchestratorExecutionResult.ForFailure(
                     message: "Instance ID metadata was missing!",
                     details: null));
@@ -135,8 +135,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     context.SetResult(
                         response.Actions.Select(ProtobufUtils.ToOrchestratorAction),
                         response.CustomStatus);
-#pragma warning restore CS0618 // Type or member is obsolete (not intended for general public use)
                 },
+#pragma warning restore CS0618 // Type or member is obsolete (not intended for general public use)
             };
 
             FunctionResult functionResult;
@@ -145,6 +145,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 functionResult = await function.Executor.TryExecuteAsync(
                     input,
                     cancellationToken: this.HostLifetimeService.OnStopping);
+                if (!functionResult.Succeeded)
+                {
+                    // Shutdown can surface as a completed invocation in a failed state.
+                    // Re-throw so we can abort this invocation.
+                    this.HostLifetimeService.OnStopping.ThrowIfCancellationRequested();
+                }
             }
             catch (Exception hostRuntimeException)
             {
@@ -295,6 +301,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 result = await function.Executor.TryExecuteAsync(
                     triggerInput,
                     cancellationToken: this.HostLifetimeService.OnStopping);
+                if (!result.Succeeded)
+                {
+                    // Shutdown can surface as a completed invocation in a failed state.
+                    // Re-throw so we can abort this invocation.
+                    this.HostLifetimeService.OnStopping.ThrowIfCancellationRequested();
+                }
             }
             catch (Exception hostRuntimeException)
             {

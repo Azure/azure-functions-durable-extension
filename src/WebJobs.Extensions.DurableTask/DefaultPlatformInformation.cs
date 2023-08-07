@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 #nullable enable
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
 
@@ -16,7 +17,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #pragma warning restore CS0612 // Type or member is obsolete
     {
         private readonly INameResolver nameResolver;
-        private readonly Dictionary<string, string> cachedEnviromentVariables;
+        private readonly ConcurrentDictionary<string, string> cachedEnviromentVariables;
         private readonly EndToEndTraceHelper traceHelper;
 
         private WorkerRuntimeType? workerRuntimeType;
@@ -28,7 +29,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             ILogger logger = loggerFactory.CreateLogger(DurableTaskExtension.LoggerCategoryName);
             this.traceHelper = new EndToEndTraceHelper(logger, traceReplayEvents: false);
 
-            this.cachedEnviromentVariables = new Dictionary<string, string>();
+            this.cachedEnviromentVariables = new ConcurrentDictionary<string, string>();
         }
 
         private string? ReadEnviromentVariable(string variableName)
@@ -37,7 +38,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (!this.cachedEnviromentVariables.TryGetValue(variableName, out value))
             {
                 value = this.nameResolver.Resolve(variableName);
-                this.cachedEnviromentVariables.Add(variableName, value);
+                this.cachedEnviromentVariables.TryAdd(variableName, value);
             }
 
             return value;
@@ -77,6 +78,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             string? value = this.ReadEnviromentVariable("WEBSITE_SKU");
             return string.Equals(value, "Dynamic", StringComparison.OrdinalIgnoreCase);
+        }
+
+        public bool UsesExternalPowerShellSDK()
+        {
+            string? value = this.ReadEnviromentVariable("ExternalDurablePowerShellSDK");
+            var parsingSucceeded = bool.TryParse(value, out var usesExternalPowerShellSDK);
+            return parsingSucceeded ? usesExternalPowerShellSDK : false;
         }
 
         public bool IsInConsumptionPlan()

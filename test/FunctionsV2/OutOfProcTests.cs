@@ -321,6 +321,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [InlineData("python", true, "http RPC")]
         [InlineData("dotnet", false, null)]
         [InlineData("dotnet-isolated", true, "gRPC")]
+        [InlineData("custom", true, "gRPC")]
         public async Task TestLocalRcpEndpointRuntimeVersion(string runtimeVersion, bool enabledExpected, string expectedProtocol)
         {
             INameResolver nameResolver = new SimpleNameResolver(

@@ -57,6 +57,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         Java,
 
         /// <summary>
+        /// Custom handler (see https://learn.microsoft.com/en-us/azure/azure-functions/functions-custom-handlers).
+        /// </summary>
+        Custom,
+
+        /// <summary>
         /// Unknown worker runtime.
         /// </summary>
         Unknown,
@@ -107,5 +112,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </summary>
         /// <returns>The application container name.</returns>
         string GetContainerName();
+
+        /// <summary>
+        /// Determines whether the user has opted in to the external PowerShell SDK.
+        /// </summary>
+        /// <returns>True if the user has opted in to the external PowerShell SDK. False otherwise.</returns>
+        bool UsesExternalPowerShellSDK();
     }
 }

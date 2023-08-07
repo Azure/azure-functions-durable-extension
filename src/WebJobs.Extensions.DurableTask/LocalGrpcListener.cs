@@ -28,17 +28,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private const int MaxPort = 31000;
 
         private readonly DurableTaskExtension extension;
-        private readonly DurabilityProvider durabilityProvider;
 
         private readonly Random portGenerator;
         private readonly HashSet<int> attemptedPorts;
 
         private Server? grpcServer;
 
-        public LocalGrpcListener(DurableTaskExtension extension, DurabilityProvider durabilityProvider)
+        public LocalGrpcListener(DurableTaskExtension extension)
         {
             this.extension = extension ?? throw new ArgumentNullException(nameof(extension));
-            this.durabilityProvider = durabilityProvider ?? throw new ArgumentNullException(nameof(durabilityProvider));
 
             this.portGenerator = new Random();
             this.attemptedPorts = new HashSet<int>();
@@ -118,28 +116,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private class TaskHubGrpcServer : P.TaskHubSidecarService.TaskHubSidecarServiceBase
         {
-            private readonly DurabilityProvider durabilityProvider;
+            private readonly DurableTaskExtension extension;
 
             public TaskHubGrpcServer(LocalGrpcListener listener)
             {
-                this.durabilityProvider = listener.durabilityProvider;
+                this.extension = listener.extension;
             }
 
-            public override Task<Empty> Hello(Empty request, ServerCallContext context) => Task.FromResult(new Empty());
+            public override Task<Empty> Hello(Empty request, ServerCallContext context)
+            {
+                return Task.FromResult(new Empty());
+            }
 
             public override Task<P.CreateTaskHubResponse> CreateTaskHub(P.CreateTaskHubRequest request, ServerCallContext context)
             {
-                this.durabilityProvider.CreateAsync(request.RecreateIfExists);
+                this.GetDurabilityProvider(context).CreateAsync(request.RecreateIfExists);
                 return Task.FromResult(new P.CreateTaskHubResponse());
             }
 
             public override Task<P.DeleteTaskHubResponse> DeleteTaskHub(P.DeleteTaskHubRequest request, ServerCallContext context)
             {
-                this.durabilityProvider.DeleteAsync();
+                this.GetDurabilityProvider(context).DeleteAsync();
                 return Task.FromResult(new P.DeleteTaskHubResponse());
             }
 
-            public override async Task<P.CreateInstanceResponse> StartInstance(P.CreateInstanceRequest request, ServerCallContext context)
+            public async override Task<P.CreateInstanceResponse> StartInstance(P.CreateInstanceRequest request, ServerCallContext context)
             {
                 var instance = new OrchestrationInstance
                 {
@@ -147,27 +148,36 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     ExecutionId = Guid.NewGuid().ToString(),
                 };
 
-                await this.durabilityProvider.CreateTaskOrchestrationAsync(
-                    new TaskMessage
-                    {
-                        Event = new ExecutionStartedEvent(-1, request.Input)
+                try
+                {
+                    await this.GetDurabilityProvider(context).CreateTaskOrchestrationAsync(
+                        new TaskMessage
                         {
-                            Name = request.Name,
-                            Version = request.Version,
+                            Event = new ExecutionStartedEvent(-1, request.Input)
+                            {
+                                Name = request.Name,
+                                Version = request.Version,
+                                OrchestrationInstance = instance,
+                                ScheduledStartTime = request.ScheduledStartTimestamp?.ToDateTime(),
+                            },
                             OrchestrationInstance = instance,
                         },
-                        OrchestrationInstance = instance,
-                    });
+                        this.GetStatusesNotToOverride());
 
-                return new P.CreateInstanceResponse
+                    return new P.CreateInstanceResponse
+                    {
+                        InstanceId = instance.InstanceId,
+                    };
+                }
+                catch (InvalidOperationException)
                 {
-                    InstanceId = instance.InstanceId,
-                };
+                    throw new RpcException(new Status(StatusCode.AlreadyExists, $"An Orchestration instance with the ID {instance.InstanceId} already exists."));
+                }
             }
 
-            public override async Task<P.RaiseEventResponse> RaiseEvent(P.RaiseEventRequest request, ServerCallContext context)
+            public async override Task<P.RaiseEventResponse> RaiseEvent(P.RaiseEventRequest request, ServerCallContext context)
             {
-                await this.durabilityProvider.SendTaskOrchestrationMessageAsync(
+                await this.GetDurabilityProvider(context).SendTaskOrchestrationMessageAsync(
                     new TaskMessage
                     {
                         Event = new EventRaisedEvent(-1, request.Input)
@@ -184,9 +194,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return new P.RaiseEventResponse();
             }
 
-            public override async Task<P.TerminateResponse> TerminateInstance(P.TerminateRequest request, ServerCallContext context)
+            public async override Task<P.TerminateResponse> TerminateInstance(P.TerminateRequest request, ServerCallContext context)
             {
-                await this.durabilityProvider.ForceTerminateTaskOrchestrationAsync(
+                await this.GetDurabilityProvider(context).ForceTerminateTaskOrchestrationAsync(
                     request.InstanceId,
                     request.Output);
 
@@ -194,9 +204,28 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return new P.TerminateResponse();
             }
 
-            public override async Task<P.GetInstanceResponse> GetInstance(P.GetInstanceRequest request, ServerCallContext context)
+            public async override Task<P.SuspendResponse> SuspendInstance(P.SuspendRequest request, ServerCallContext context)
             {
-                OrchestrationState state = await this.durabilityProvider.GetOrchestrationStateAsync(request.InstanceId, executionId: null);
+                await this.GetDurabilityProvider(context).SuspendTaskOrchestrationAsync(request.InstanceId, request.Reason);
+                return new P.SuspendResponse();
+            }
+
+            public async override Task<P.ResumeResponse> ResumeInstance(P.ResumeRequest request, ServerCallContext context)
+            {
+                await this.GetDurabilityProvider(context).ResumeTaskOrchestrationAsync(request.InstanceId, request.Reason);
+                return new P.ResumeResponse();
+            }
+
+            public async override Task<P.RewindInstanceResponse> RewindInstance(P.RewindInstanceRequest request, ServerCallContext context)
+            {
+                await this.GetDurabilityProvider(context).RewindAsync(request.InstanceId, request.Reason);
+                return new P.RewindInstanceResponse();
+            }
+
+            public async override Task<P.GetInstanceResponse> GetInstance(P.GetInstanceRequest request, ServerCallContext context)
+            {
+                OrchestrationState state = await this.GetDurabilityProvider(context)
+                    .GetOrchestrationStateAsync(request.InstanceId, executionId: null);
                 if (state == null)
                 {
                     return new P.GetInstanceResponse() { Exists = false };
@@ -205,17 +234,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return CreateGetInstanceResponse(state, request);
             }
 
-            public override async Task<P.QueryInstancesResponse> QueryInstances(P.QueryInstancesRequest request, ServerCallContext context)
+            public async override Task<P.QueryInstancesResponse> QueryInstances(P.QueryInstancesRequest request, ServerCallContext context)
             {
-                OrchestrationQuery query = ProtobufUtils.ToOrchestrationQuery(request);
-                var queryClient = (IOrchestrationServiceQueryClient)this.durabilityProvider;
+                var query = ProtobufUtils.ToOrchestrationQuery(request);
+                var queryClient = (IOrchestrationServiceQueryClient)this.GetDurabilityProvider(context);
                 OrchestrationQueryResult result = await queryClient.GetOrchestrationWithQueryAsync(query, context.CancellationToken);
                 return ProtobufUtils.CreateQueryInstancesResponse(result, request);
             }
 
-            public override async Task<P.PurgeInstancesResponse> PurgeInstances(P.PurgeInstancesRequest request, ServerCallContext context)
+            public async override Task<P.PurgeInstancesResponse> PurgeInstances(P.PurgeInstancesRequest request, ServerCallContext context)
             {
-                var purgeClient = (IOrchestrationServicePurgeClient)this.durabilityProvider;
+                var purgeClient = (IOrchestrationServicePurgeClient)this.GetDurabilityProvider(context);
 
                 PurgeResult result;
                 switch (request.RequestCase)
@@ -225,7 +254,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         break;
 
                     case P.PurgeInstancesRequest.RequestOneofCase.PurgeInstanceFilter:
-                        PurgeInstanceFilter purgeInstanceFilter = ProtobufUtils.ToPurgeInstanceFilter(request);
+                        var purgeInstanceFilter = ProtobufUtils.ToPurgeInstanceFilter(request);
                         result = await purgeClient.PurgeInstanceStateAsync(purgeInstanceFilter);
                         break;
 
@@ -236,13 +265,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return ProtobufUtils.CreatePurgeInstancesResponse(result);
             }
 
-            public override async Task<P.GetInstanceResponse> WaitForInstanceStart(P.GetInstanceRequest request, ServerCallContext context)
+            public async override Task<P.GetInstanceResponse> WaitForInstanceStart(P.GetInstanceRequest request, ServerCallContext context)
             {
                 int retryCount = 0;
                 while (true)
                 {
                     // Keep fetching the status until we get one of the states we care about
-                    OrchestrationState state = await this.durabilityProvider.GetOrchestrationStateAsync(request.InstanceId, executionId: null);
+                    OrchestrationState state = await this.GetDurabilityProvider(context)
+                        .GetOrchestrationStateAsync(request.InstanceId, executionId: null);
                     if (state != null && state.OrchestrationStatus != OrchestrationStatus.Pending)
                     {
                         return CreateGetInstanceResponse(state, request);
@@ -251,19 +281,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     // Increase the delay time by 1 second every 10 seconds up to 10 seconds.
                     // The cancellation token is what will break us out of this loop if the orchestration
                     // never leaves the "Pending" state.
-                    TimeSpan delay = TimeSpan.FromSeconds(Math.Min(10, (retryCount / 10) + 1));
+                    var delay = TimeSpan.FromSeconds(Math.Min(10, (retryCount / 10) + 1));
                     await Task.Delay(delay, context.CancellationToken);
                     retryCount++;
                 }
             }
 
-            public override async Task<P.GetInstanceResponse> WaitForInstanceCompletion(P.GetInstanceRequest request, ServerCallContext context)
+            public async override Task<P.GetInstanceResponse> WaitForInstanceCompletion(P.GetInstanceRequest request, ServerCallContext context)
             {
-                OrchestrationState state = await this.durabilityProvider.WaitForOrchestrationAsync(
+                OrchestrationState state = await this.GetDurabilityProvider(context).WaitForOrchestrationAsync(
                     request.InstanceId,
                     executionId: null,
                     timeout: Timeout.InfiniteTimeSpan,
                     context.CancellationToken);
+
+                if (state == null)
+                {
+                    return new P.GetInstanceResponse() { Exists = false };
+                }
 
                 return CreateGetInstanceResponse(state, request);
             }
@@ -301,6 +336,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     ErrorMessage = failureDetails.ErrorMessage,
                     StackTrace = failureDetails.StackTrace,
                 };
+            }
+
+            private DurabilityProvider GetDurabilityProvider(ServerCallContext context)
+            {
+                string? taskHub = context.RequestHeaders.GetValue("Durable-TaskHub");
+                string? connectionName = context.RequestHeaders.GetValue("Durable-ConnectionName");
+                var attribute = new DurableClientAttribute() { TaskHub = taskHub, ConnectionName = connectionName };
+                return this.extension.GetDurabilityProvider(attribute);
+            }
+
+            private OrchestrationStatus[] GetStatusesNotToOverride()
+            {
+                OverridableStates overridableStates = this.extension.Options.OverridableExistingInstanceStates;
+                return overridableStates.ToDedupeStatuses();
             }
         }
     }

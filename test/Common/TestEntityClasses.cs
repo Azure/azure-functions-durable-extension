@@ -5,10 +5,12 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.WindowsAzure.Storage.Blob;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Serialization;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
@@ -158,6 +160,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 context.DeleteState();
                 return Task.CompletedTask;
             }
+            else if (context.OperationName == "delay")
+            {
+                return Task.Delay(TimeSpan.FromSeconds(context.GetInput<int>()));
+            }
 
             return context.DispatchAsync<FaultyEntity>();
         }
@@ -174,6 +180,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 case "deletewithoutreading":
                     context.DeleteState();
                     break;
+
+                case "delay":
+                    return Task.Delay(TimeSpan.FromSeconds(context.GetInput<int>()));
 
                 case "Get":
                     if (!context.HasState)
@@ -636,6 +645,47 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             [EntityTrigger] IDurableEntityContext context)
             {
                 return context.DispatchAsync<JobWithProxyMultiInterface>();
+            }
+        }
+
+        //-------------- an entity that requires custom deserialization settings to work
+
+        public class EntityWithPrivateSetter
+        {
+            public int Value { get; private set; }
+
+            public int Get() => this.Value;
+
+            public void Inc() => this.Value++;
+        }
+
+        public class PrivateResolver : DefaultContractResolver
+        {
+            protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization)
+            {
+                JsonProperty prop = base.CreateProperty(member, memberSerialization);
+
+                if (!prop.Writable)
+                {
+                    var property = member as PropertyInfo;
+                    var hasPrivateSetter = property?.GetSetMethod(true) != null;
+                    prop.Writable = hasPrivateSetter;
+                }
+
+                return prop;
+            }
+        }
+
+        internal class CustomMessageSerializerSettingsFactory : IMessageSerializerSettingsFactory
+        {
+            public JsonSerializerSettings CreateJsonSerializerSettings()
+            {
+                return new JsonSerializerSettings()
+                {
+                    ContractResolver = new PrivateResolver(),
+                    TypeNameHandling = TypeNameHandling.None,
+                    DateParseHandling = DateParseHandling.None,
+                };
             }
         }
     }

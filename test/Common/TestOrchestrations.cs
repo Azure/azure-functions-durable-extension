@@ -26,6 +26,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return $"Hello, {input}!";
         }
 
+        public static async Task<string> CallActivityWithorWithoutInput([OrchestrationTrigger] IDurableOrchestrationContext ctx)
+        {
+            await ctx.CallActivityAsync<string>(nameof(TestActivities.Hello), "Tokyo");
+            await ctx.CallActivityAsync<string>(nameof(TestActivities.ActivityWithNoInput), null);
+            return "TaskCompleted";
+        }
+
         public static async Task<string> SayHelloWithActivity([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
             string input = ctx.GetInput<string>();
@@ -929,10 +936,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     Assert.True(await ctx.CallEntityAsync<bool>(entityId, "exists"));
                 }
 
-                // send batch
-                ctx.SignalEntity(entityId, "Set", 42);
-                ctx.SignalEntity(entityId, "SetThenThrow", 333);
-                ctx.SignalEntity(entityId, "DeleteThenThrow");
+                // we use this utility function to try to enforce that a bunch of signals is delivered as a single batch.
+                // This is required for some of the tests here to work, since the batching affects the entity state management.
+                // The "enforcement" mechanism we use is not 100% failsafe (it still makes timing assumptions about the provider)
+                // but it should be more reliable than the original version of this test which failed quite frequently, as it was
+                // simply assuming that signals that are sent at the same time are always processed as a batch.
+                async Task ProcessAllSignalsInSingleBatch(Action sendSignals)
+                {
+                    // first issue a signal that, when delivered, keeps the entity busy for a second
+                    ctx.SignalEntity(entityId, "delay", 1);
+
+                    // we now need to yield briefly so that the delay signal is sent before the others
+                    await ctx.CreateTimer(ctx.CurrentUtcDateTime + TimeSpan.FromMilliseconds(1), CancellationToken.None);
+
+                    // now send the signals in the batch. These should all arrive and get queued (inside the storage provider)
+                    // while the entity is executing the delay operation. Therefore, after the delay operation finishes,
+                    // all of the signals are processed in a single batch.
+                    sendSignals();
+                }
+
+                await ProcessAllSignalsInSingleBatch(() =>
+                {
+                    ctx.SignalEntity(entityId, "Set", 42);
+                    ctx.SignalEntity(entityId, "SetThenThrow", 333);
+                    ctx.SignalEntity(entityId, "DeleteThenThrow");
+                });
 
                 if (rollbackOnException)
                 {
@@ -944,12 +972,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     ctx.SignalEntity(entityId, "Set", 42);
                 }
 
-                // send batch
-                ctx.SignalEntity(entityId, "Get");
-                ctx.SignalEntity(entityId, "Set", 42);
-                ctx.SignalEntity(entityId, "Delete");
-                ctx.SignalEntity(entityId, "Set", 43);
-                ctx.SignalEntity(entityId, "DeleteThenThrow");
+                await ProcessAllSignalsInSingleBatch(() =>
+                {
+                    ctx.SignalEntity(entityId, "Get");
+                    ctx.SignalEntity(entityId, "Set", 42);
+                    ctx.SignalEntity(entityId, "Delete");
+                    ctx.SignalEntity(entityId, "Set", 43);
+                    ctx.SignalEntity(entityId, "DeleteThenThrow");
+                });
 
                 if (rollbackOnException)
                 {
@@ -960,9 +990,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     Assert.False(await ctx.CallEntityAsync<bool>(entityId, "exists"));
                 }
 
-                // send batch
-                ctx.SignalEntity(entityId, "Set", 55);
-                ctx.SignalEntity(entityId, "SetToUnserializable");
+                await ProcessAllSignalsInSingleBatch(() =>
+                {
+                    ctx.SignalEntity(entityId, "Set", 55);
+                    ctx.SignalEntity(entityId, "SetToUnserializable");
+                });
 
                 if (rollbackOnException)
                 {
@@ -974,11 +1006,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     await ctx.CallEntityAsync<bool>(entityId, "deletewithoutreading");
                 }
 
-                // send batch
-                ctx.SignalEntity(entityId, "Set", 56);
-                ctx.SignalEntity(entityId, "SetToUnDeserializable");
-                ctx.SignalEntity(entityId, "Set", 12);
-                ctx.SignalEntity(entityId, "SetThenThrow", 999);
+                await ProcessAllSignalsInSingleBatch(() =>
+                {
+                    ctx.SignalEntity(entityId, "Set", 56);
+                    ctx.SignalEntity(entityId, "SetToUnDeserializable");
+                    ctx.SignalEntity(entityId, "Set", 12);
+                    ctx.SignalEntity(entityId, "SetThenThrow", 999);
+                });
 
                 if (rollbackOnException)
                 {
@@ -992,11 +1026,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 await ctx.CallEntityAsync<bool>(entityId, "deletewithoutreading");
 
-                ctx.SignalEntity(entityId, "Set", 1);
-                ctx.SignalEntity(entityId, "Delete");
-                ctx.SignalEntity(entityId, "Set", 2);
-                ctx.SignalEntity(entityId, "Delete");
-                ctx.SignalEntity(entityId, "SetThenThrow", 3);
+                await ProcessAllSignalsInSingleBatch(() =>
+                {
+                    ctx.SignalEntity(entityId, "Set", 1);
+                    ctx.SignalEntity(entityId, "Delete");
+                    ctx.SignalEntity(entityId, "Set", 2);
+                    ctx.SignalEntity(entityId, "Delete");
+                    ctx.SignalEntity(entityId, "SetThenThrow", 3);
+                });
 
                 if (rollbackOnException)
                 {
@@ -1391,6 +1428,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             else
             {
                 return "error";
+            }
+        }
+
+        public static async Task<string> EntityWithPrivateSetter([OrchestrationTrigger] IDurableOrchestrationContext ctx)
+        {
+            var entityId = ctx.GetInput<EntityId>();
+
+            await ctx.CallEntityAsync(entityId, "Inc");
+
+            int result = await ctx.CallEntityAsync<int>(entityId, "Get");
+
+            if (result == 1)
+            {
+                return "ok";
+            }
+            else
+            {
+                return $"expected: 1 actual: {result}";
             }
         }
 

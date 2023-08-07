@@ -5,7 +5,7 @@
     <AssemblyName>Microsoft.Azure.WebJobs.Extensions.DurableTask</AssemblyName>
     <RootNamespace>Microsoft.Azure.WebJobs.Extensions.DurableTask</RootNamespace>
     <MajorVersion>2</MajorVersion>
-    <MinorVersion>26</MinorVersion>
+    <MinorVersion>10</MinorVersion>
     <PatchVersion>0</PatchVersion>
     <Version>$(MajorVersion).$(MinorVersion).$(PatchVersion)</Version>
     <FileVersion>$(MajorVersion).$(MinorVersion).$(PatchVersion)</FileVersion>
@@ -37,7 +37,6 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
 
-
   <!--
     .NET Framework 4.x settings: These are specifically for Functions V1.
   -->
@@ -57,8 +56,7 @@
     <PackageReference Include="Microsoft.AspNetCore.Routing" Version="1.0.4" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.WebApiCompatShim" Version="1.0.4" />
   </ItemGroup>
-  
-  
+
   <!-- 
     .NET Standard 2.0 settings: These are for Functions V2 and above but may not contain some V3+ settings.
     This is also the target for extension bundles V2 and V3.
@@ -71,7 +69,7 @@
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
     <PackageReference Include="Azure.Identity" Version="1.5.0" />
     <PackageReference Include="Microsoft.Azure.WebJobs" Version="3.0.31" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.WebApiCompatShim" Version="2.1.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.WebApiCompatShim" Version="2.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Routing" Version="2.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Server.Kestrel" Version="2.2.0" />
     <PackageReference Include="Microsoft.Extensions.Azure" Version="1.1.1" />
@@ -82,7 +80,6 @@
     <PackageReference Include="Microsoft.AspNetCore.Server.Kestrel.Transport.Sockets" Version="2.2.1" />
   </ItemGroup>
 
-  
   <!--
     .NET Core 3.1 settings: These are for Functions V3 and above.
     This is the target for extension bundles V4 and above.
@@ -93,7 +90,7 @@
   <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.1'">
     <PackageReference Include="Azure.Identity" Version="1.5.0" />
     <PackageReference Include="Microsoft.Azure.WebJobs" Version="3.0.31" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.WebApiCompatShim" Version="2.1.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.WebApiCompatShim" Version="2.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Routing" Version="2.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Server.Kestrel" Version="2.2.0" />
     <PackageReference Include="Microsoft.Extensions.Azure" Version="1.1.1" />
@@ -101,16 +98,14 @@
     <PackageReference Include="Microsoft.ApplicationInsights" Version="2.12.2" />
     <!-- Explicitly pinned transitive dependencies with CVE vulnerabilities.-->
     <PackageReference Include="Microsoft.AspNetCore.Server.Kestrel.Transport.Sockets" Version="2.2.1" />
-    <!-- The gRPC dependencies are not compatible with .NET Standard 2.0 and will fail at runtime -->
-    <PackageReference Include="Grpc" Version="2.38.0" />
-    <PackageReference Include="Microsoft.DurableTask.Sidecar.Protobuf" Version="0.3.1" />
+    <!-- The gRPC dependencies in this package are not compatible with older frameworks, like .NET Core 2.x -->
+    <PackageReference Include="Microsoft.DurableTask.Sidecar.Protobuf" Version="1.0.0" />
   </ItemGroup>
-
 
   <!-- Common dependencies across all targets -->
   <ItemGroup>
     <PackageReference Include="Microsoft.Azure.DurableTask.Core" Version="2.13.*" />
-    <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" Version="1.13.*" />
+    <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" Version="1.14.*" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers" Version="0.5.*" />
     <!-- Build-time dependencies -->
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.*" PrivateAssets="All" />

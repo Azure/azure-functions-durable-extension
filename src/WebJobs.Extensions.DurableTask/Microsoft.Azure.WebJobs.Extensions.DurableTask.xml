@@ -199,6 +199,9 @@
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient.Microsoft#Azure#WebJobs#Extensions#DurableTask#IDurableOrchestrationClient#GetStatusAsync(System.String,System.Boolean,System.Boolean,System.Boolean)">
             <inheritdoc />
         </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient.Microsoft#Azure#WebJobs#Extensions#DurableTask#IDurableOrchestrationClient#GetStatusAsync(System.Collections.Generic.IEnumerable{System.String},System.Boolean,System.Boolean,System.Boolean)">
+            <inheritdoc />
+        </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableClient.Microsoft#Azure#WebJobs#Extensions#DurableTask#IDurableOrchestrationClient#GetStatusAsync(System.Nullable{System.DateTime},System.Nullable{System.DateTime},System.Collections.Generic.IEnumerable{Microsoft.Azure.WebJobs.Extensions.DurableTask.OrchestrationRuntimeStatus},System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
@@ -1042,9 +1045,19 @@
             </summary>
             <param name="instanceId">The ID of the orchestration instance to query.</param>
             <param name="showHistory">Boolean marker for including execution history in the response.</param>
-            <param name="showHistoryOutput">Boolean marker for including input and output in the execution history response.</param>
-            <param name="showInput">If set, fetch and return the input for the orchestration instance.</param>
+            <param name="showHistoryOutput">Boolean marker for including output in the execution history response.</param>
+            <param name="showInput">If set, fetch and return the input for the orchestration instance. If both <c>showHistory</c> and <see cref = "P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.StoreInputsInOrchestrationHistory" /> are also set to<c>true</c>, then the inputs for activity and sub-orchestration events in the orchestration history will also be returned.</param>
             <returns>Returns a task which completes when the status has been fetched.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient.GetStatusAsync(System.Collections.Generic.IEnumerable{System.String},System.Boolean,System.Boolean,System.Boolean)">
+            <summary>
+            Get the status of multiple instances.
+            </summary>
+            <param name="instanceIds"> The instanceIDs to query.</param>
+            <param name="showHistory">Boolean marker for including execution history in the response.</param>
+            <param name="showHistoryOutput">Boolean marker for including input and output in the execution history response.</param>
+            <param name="showInput">If set, fetch and return the input for the orchestration instance. If both <c>showHistory</c> and <see cref = "P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.StoreInputsInOrchestrationHistory" /> are also set to<c>true</c>, then the inputs for activity and sub-orchestration events in the orchestration history will also be returned.</param>
+            <returns>Returns a list of orchestration statuses.</returns>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient.GetStatusAsync(System.Nullable{System.DateTime},System.Nullable{System.DateTime},System.Collections.Generic.IEnumerable{Microsoft.Azure.WebJobs.Extensions.DurableTask.OrchestrationRuntimeStatus},System.Threading.CancellationToken)">
             <summary>
@@ -1062,6 +1075,17 @@
             </summary>
             <param name="instanceId">The ID of the orchestration instance to purge.</param>
             <returns>Returns an instance of <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.PurgeHistoryResult"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient.PurgeInstanceHistoryAsync(System.Collections.Generic.IEnumerable{System.String})">
+            <summary>
+            Purge the history for multiple instances.
+            </summary>
+            <param name="instanceIds">The IDs of the orchestration instances to purge.</param>
+            <returns>
+            Returns a list of orchestration statuses. The length and order of the returned list will match the length and
+            order of <paramref name="instanceIds"/>. If any instance ID doesn't exist, a <c>null</c> value will be set in
+            the corresponding list element.
+            </returns>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient.PurgeInstanceHistoryAsync(System.DateTime,System.Nullable{System.DateTime},System.Collections.Generic.IEnumerable{DurableTask.Core.OrchestrationStatus})">
             <summary>
@@ -3100,7 +3124,7 @@
             that we use to capture their data and log it in Linux App Service plans.
             </summary>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.EventSourceListener.#ctor(Microsoft.Azure.WebJobs.Extensions.DurableTask.LinuxAppServiceLogger,System.Boolean,Microsoft.Azure.WebJobs.Extensions.DurableTask.EndToEndTraceHelper,System.String)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.EventSourceListener.#ctor(Microsoft.Azure.WebJobs.Extensions.DurableTask.LinuxAppServiceLogger,System.Boolean,Microsoft.Azure.WebJobs.Extensions.DurableTask.EndToEndTraceHelper,System.String,System.Guid)">
             <summary>
             Create an EventSourceListener to capture and log Durable EventSource
             data in Linux.
@@ -3109,6 +3133,7 @@
             <param name="enableVerbose">If true, durableTask.Core verbose logs are enabled. The opposite if false.</param>
             <param name="traceHelper">A tracing client to log exceptions.</param>
             <param name="durabilityProviderEventSourceName">The durability provider's event source name.</param>
+            <param name="extensionGuid">A GUID identifying the extension hosting this object.</param>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.EventSourceListener.OnEventSourceCreated(System.Diagnostics.Tracing.EventSource)">
             <summary>
@@ -3598,6 +3623,11 @@
             Java.
             </summary>
         </member>
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.WorkerRuntimeType.Custom">
+            <summary>
+            Custom handler (see https://learn.microsoft.com/en-us/azure/azure-functions/functions-custom-handlers).
+            </summary>
+        </member>
         <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.WorkerRuntimeType.Unknown">
             <summary>
             Unknown worker runtime.
@@ -3647,6 +3677,12 @@
             Returns the application container name when running on linux.
             </summary>
             <returns>The application container name.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IPlatformInformation.UsesExternalPowerShellSDK">
+            <summary>
+            Determines whether the user has opted in to the external PowerShell SDK.
+            </summary>
+            <returns>True if the user has opted in to the external PowerShell SDK. False otherwise.</returns>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IStorageAccountProvider">
             <summary>
@@ -3718,18 +3754,20 @@
             <param name="tenant">The app's tenant.</param>
             <param name="stampName">The app's stamp.</param>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.LinuxAppServiceLogger.GenerateLogStr(System.Diagnostics.Tracing.EventWrittenEventArgs)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.LinuxAppServiceLogger.GenerateLogStr(System.Diagnostics.Tracing.EventWrittenEventArgs,System.Guid)">
             <summary>
             Given EventSource message data, we generate a JSON-string that we can log.
             </summary>
             <param name="eventData">An EventSource message, usually generated by an EventListener.</param>
+            <param name="extensionGuid">A GUID of the extension hosting this object.</param>
             <returns>A JSON-formatted string representing the input.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.LinuxAppServiceLogger.Log(System.Diagnostics.Tracing.EventWrittenEventArgs)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.LinuxAppServiceLogger.Log(System.Diagnostics.Tracing.EventWrittenEventArgs,System.Guid)">
             <summary>
             Log EventSource message data in Linux AppService.
             </summary>
             <param name="eventData">An EventSource message, usually generated by an EventListener.</param>
+            <param name="extensionGuid">A GUID identifying the extension hosting this object.</param>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskTriggerMetrics.PartitionCount">
             <summary>
@@ -4142,6 +4180,13 @@
             </summary>
             <value>A boolean indicating whether we use the legacy partition strategy. Defaults to false.</value>
         </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageOptions.UseTablePartitionManagement">
+            <summary>
+            Determines whether to use the table partition management strategy.
+            This strategy reduces expected costs for an Azure Storage V2 account.
+            </summary>
+            <value>A boolean indicating whether to use the table partition strategy. Defaults to false.</value>
+        </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageOptions.ValidateHubName(System.String)">
             <summary>
             Throws an exception if the provided hub name violates any naming conventions for the storage provider.
@@ -4312,6 +4357,11 @@
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.UseAppLease">
             <summary>
             If true, takes a lease on the task hub container, allowing for only one app to process messages in a task hub at a time.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.StoreInputsInOrchestrationHistory">
+            <summary>
+            If <c>true</c>, the inputs of functions called by the orchestrator will be saved to the orchestration history, making them visible to debugging tools. The default value is <c>false</c>.
             </summary>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.AppLeaseOptions">
@@ -4609,7 +4659,7 @@
         <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationProtocol.MiddlewarePassthrough">
             <summary>
             Out-of-proc works by forwarding all outputs directly to the Durable Task Framework
-            without using any orchestrator "shims" or attemping any interpretation. This is
+            without using any orchestrator "shims" or attempting any interpretation. This is
             sometimes referred to as "out of proc v2".
             </summary>
         </member>
@@ -4630,6 +4680,18 @@
             Option to only start a new orchestrator instance with an existing instance Id when the existing
             instance is in a terminated, failed, or completed state.
             </summary>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.OverridableStatesExtensions">
+            <summary>
+            Extension methods for <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.OverridableStates"/>.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.OverridableStatesExtensions.ToDedupeStatuses(Microsoft.Azure.WebJobs.Extensions.DurableTask.OverridableStates)">
+            <summary>
+            Gets the dedupe <see cref="T:DurableTask.Core.OrchestrationStatus"/> for a given <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.OverridableStates"/>.
+            </summary>
+            <param name="states">The overridable states.</param>
+            <returns>An array of statuses to dedupe.</returns>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.ProviderUtils">
             <summary>

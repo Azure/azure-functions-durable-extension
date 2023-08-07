@@ -204,6 +204,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         },
                     };
                     break;
+                case EventType.ExecutionSuspended:
+                    var suspendedEvent = (ExecutionSuspendedEvent)e;
+                    payload.ExecutionSuspended = new P.ExecutionSuspendedEvent
+                    {
+                        Input = suspendedEvent.Reason,
+                    };
+                    break;
+                case EventType.ExecutionResumed:
+                    var resumedEvent = (ExecutionResumedEvent)e;
+                    payload.ExecutionResumed = new P.ExecutionResumedEvent
+                    {
+                        Input = resumedEvent.Reason,
+                    };
+                    break;
                 default:
                     throw new NotSupportedException($"Found unsupported history event '{e.EventType}'.");
             }

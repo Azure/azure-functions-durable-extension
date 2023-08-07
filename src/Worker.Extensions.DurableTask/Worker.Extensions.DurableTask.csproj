@@ -2,7 +2,7 @@
 
   <!-- Core compiler settings -->
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFrameworks>netstandard2.0;net6.0</TargetFrameworks>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
     <DebugType>embedded</DebugType>
@@ -29,17 +29,17 @@
     <AssemblyOriginatorKeyFile>..\..\sign.snk</AssemblyOriginatorKeyFile>
 
     <!-- Version information -->
-    <VersionPrefix>0.4.1</VersionPrefix>
-    <VersionSuffix>beta</VersionSuffix>
+    <VersionPrefix>1.0.2</VersionPrefix>
     <AssemblyVersion>$(VersionPrefix).0</AssemblyVersion>
     <!-- FileVersionRevision is expected to be set by the CI. -->
     <FileVersion Condition="'$(FileVersionRevision)' != ''">$(VersionPrefix).$(FileVersionRevision)</FileVersion>
   </PropertyGroup>
   
   <ItemGroup>
-    <PackageReference Include="Microsoft.Azure.Functions.Worker.Core" Version="1.6.0-preview3" />
+    <PackageReference Include="Microsoft.Azure.Functions.Worker.Core" Version="1.8.0" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Abstractions" Version="1.1.0" />
-    <PackageReference Include="Microsoft.DurableTask.Client" Version="0.4.1-beta" />
+    <PackageReference Include="Microsoft.DurableTask.Client.Grpc" Version="1.0.2" />
+    <PackageReference Include="Microsoft.DurableTask.Worker.Grpc" Version="1.0.2" />
   </ItemGroup>
 
   <ItemGroup>

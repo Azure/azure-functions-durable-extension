@@ -1,7 +1,8 @@
 # Durable Functions
 
-[![Build status](https://ci.appveyor.com/api/projects/status/rsoa2rrjxmd9h8i1?svg=true)](https://ci.appveyor.com/project/appsvc/azure-functions-durable-extension)
-[![Build Status](https://durabletaskframework.visualstudio.com/Durable%20Task%20Framework%20CI/_apis/build/status/Azure.azure-functions-durable-extension?branchName=dev)](https://durabletaskframework.visualstudio.com/Durable%20Task%20Framework%20CI/_build/latest?definitionId=15&branchName=dev)
+|Branch|Status|
+|---|---|
+|dev|[![Build Status](https://durabletaskframework.visualstudio.com/Durable%20Task%20Framework%20CI/_apis/build/status/Azure.azure-functions-durable-extension?branchName=dev)](https://durabletaskframework.visualstudio.com/Durable%20Task%20Framework%20CI/_build/latest?definitionId=15&branchName=dev)|
 
 Durable Functions is an extension that helps developers build reliable, stateful apps on the [Azure Functions](https://functions.azure.com) platform.
 
@@ -40,6 +41,8 @@ Durable Functions supports a subset of languages supported by Azure Functions:
 | Java       | Public Preview | [Microsoft/durabletask-java](https://github.com/microsoft/durabletask-java) |
 
 Each language has its own language-specific SDK and programming model. Regardless of which language you use, the extension in this repo must be installed to enable the Durable Functions triggers.
+
+Samples for each SDK may be found in their respective repos, usually under a "/samples" directory. For example, the JavaScript samples may be found [here](https://github.com/Azure/azure-functions-durable-js/tree/dev/samples).
 
 ## Installation
 
