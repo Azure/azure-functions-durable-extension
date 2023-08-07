@@ -422,6 +422,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 var instance = new OrchestrationInstance { InstanceId = instanceId };
                 await this.client.SuspendInstanceAsync(instance, reason);
+
+                this.traceHelper.OrchestratorStateChange(
+                    this.TaskHubName,
+                    state.Name,
+                    instanceId,
+                    FunctionType.Orchestrator,
+                    FunctionState.Suspended,
+                    isReplay: false);
             }
             else
             {
