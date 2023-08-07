@@ -102,14 +102,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     functionName.Name,
                     instance.InstanceId,
                     isReplay: false);
-
-                this.TraceHelper.OrchestratorStateChange(
-                    this.Options.HubName,
-                    functionName.Name,
-                    instance.InstanceId,
-                    FunctionType.Orchestrator,
-                    FunctionState.Started,
-                    isReplaying);
             }
 
             var context = new RemoteOrchestratorContext(runtimeState);
@@ -197,14 +189,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         instance.InstanceId,
                         context.ContinuedAsNew,
                         isReplay: false);
-
-                    this.TraceHelper.OrchestratorStateChange(
-                        this.Options.HubName,
-                        functionName.Name,
-                        instance.InstanceId,
-                        FunctionType.Orchestrator,
-                        FunctionState.Completed,
-                        isReplay: false);
                 }
                 else
                 {
@@ -233,14 +217,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     functionName.Name,
                     instance.InstanceId,
                     exceptionDetails,
-                    isReplay: false);
-
-                this.TraceHelper.OrchestratorStateChange(
-                    this.Options.HubName,
-                    functionName.Name,
-                    instance.InstanceId,
-                    FunctionType.Orchestrator,
-                    FunctionState.Failed,
                     isReplay: false);
 
                 orchestratorResult = OrchestratorExecutionResult.ForFailure(

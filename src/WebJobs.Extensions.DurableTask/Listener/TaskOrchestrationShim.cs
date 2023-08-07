@@ -99,14 +99,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.context.Name,
                     this.context.InstanceId,
                     this.context.IsReplaying));
-
-                this.Config.TraceHelper.OrchestratorStateChange(
-                    this.context.HubName,
-                    this.context.Name,
-                    this.context.InstanceId,
-                    FunctionType.Orchestrator,
-                    FunctionState.Started,
-                    this.context.IsReplaying);
             }
 
             await this.InvokeUserCodeAndHandleResults(orchestratorInfo, innerContext);
@@ -135,14 +127,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.context.InstanceId,
                     this.context.ContinuedAsNew,
                     this.context.IsReplaying));
-
-                this.Config.TraceHelper.OrchestratorStateChange(
-                    this.context.HubName,
-                    this.context.Name,
-                    this.context.InstanceId,
-                    FunctionType.Orchestrator,
-                    FunctionState.Completed,
-                    this.context.IsReplaying);
             }
 #if !FUNCTIONS_V1
             DurableTaskExtension.TagActivityWithOrchestrationStatus(status, this.context.InstanceId);
@@ -247,14 +231,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         this.context.InstanceId,
                         exceptionDetails,
                         this.context.IsReplaying));
-
-                this.Config.TraceHelper.OrchestratorStateChange(
-                    this.context.HubName,
-                    this.context.Name,
-                    this.context.InstanceId,
-                    FunctionType.Orchestrator,
-                    FunctionState.Failed,
-                    this.context.IsReplaying);
             }
         }
 
