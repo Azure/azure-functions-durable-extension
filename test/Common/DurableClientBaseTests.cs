@@ -67,32 +67,54 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             await Assert.ThrowsAnyAsync<ArgumentException>(async () => await durableClient.SignalEntityAsync(entityId, "test"));
         }
 
-        [Fact]
+        [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task RaiseEventAsync_InvalidInstanceId_ThrowsException()
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task RaiseEventAsync_InvalidInstanceId_ThrowsException(bool checkStatusBeforeRaiseEvent)
         {
             var instanceId = Guid.NewGuid().ToString();
             var orchestrationServiceClientMock = new Mock<IOrchestrationServiceClient>();
             orchestrationServiceClientMock.Setup(x => x.GetOrchestrationStateAsync(It.IsAny<string>(), It.IsAny<bool>())).ReturnsAsync(GetInvalidInstanceState());
-            var storageProvider = new DurabilityProvider("test", new Mock<IOrchestrationService>().Object, orchestrationServiceClientMock.Object, "test");
+            var storageProvider = new DurabilityProvider("test", new Mock<IOrchestrationService>().Object, orchestrationServiceClientMock.Object, "test", checkStatusBeforeRaiseEvent);
             var durableExtension = GetDurableTaskConfig();
             var durableOrchestrationClient = (IDurableOrchestrationClient)new DurableClient(storageProvider, durableExtension, durableExtension.HttpApiHandler, new DurableClientAttribute { });
-            await Assert.ThrowsAnyAsync<ArgumentException>(async () => await durableOrchestrationClient.RaiseEventAsync("invalid_instance_id", "anyEvent", new { message = "any message" }));
+            Task RaiseEvent() => durableOrchestrationClient.RaiseEventAsync("invalid_instance_id", "anyEvent", new { message = "any message" });
+
+            if (checkStatusBeforeRaiseEvent)
+            {
+                await Assert.ThrowsAnyAsync<ArgumentException>(RaiseEvent);
+            }
+            else
+            {
+                await RaiseEvent(); // no exception
+            }
         }
 
-        [Fact]
+        [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task RaiseEventAsync_NonRunningFunction_ThrowsException()
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task RaiseEventAsync_NonRunningFunction_ThrowsException(bool checkStatusBeforeRaiseEvent)
         {
             var instanceId = Guid.NewGuid().ToString();
             var orchestrationServiceClientMock = new Mock<IOrchestrationServiceClient>();
             orchestrationServiceClientMock.Setup(x => x.GetOrchestrationStateAsync(It.IsAny<string>(), It.IsAny<bool>()))
                 .ReturnsAsync(GetInstanceState(OrchestrationStatus.Completed));
-            var storageProvider = new DurabilityProvider("test", new Mock<IOrchestrationService>().Object, orchestrationServiceClientMock.Object, "test");
+            var storageProvider = new DurabilityProvider("test", new Mock<IOrchestrationService>().Object, orchestrationServiceClientMock.Object, "test", checkStatusBeforeRaiseEvent);
             var durableExtension = GetDurableTaskConfig();
             var durableOrchestrationClient = (IDurableOrchestrationClient)new DurableClient(storageProvider, durableExtension, durableExtension.HttpApiHandler, new DurableClientAttribute { });
 
-            await Assert.ThrowsAnyAsync<InvalidOperationException>(async () => await durableOrchestrationClient.RaiseEventAsync("valid_instance_id", "anyEvent", new { message = "any message" }));
+            Task RaiseEvent() => durableOrchestrationClient.RaiseEventAsync("valid_instance_id", "anyEvent", new { message = "any message" });
+
+            if (checkStatusBeforeRaiseEvent)
+            {
+                await Assert.ThrowsAnyAsync<InvalidOperationException>(RaiseEvent);
+            }
+            else
+            {
+                await RaiseEvent(); // no exception
+            }
         }
 
         [Fact]
@@ -341,6 +363,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 new TestHostShutdownNotificationService(),
                 new DurableHttpMessageHandlerFactory(),
                 platformInformationService: platformInformationService);
+        }
+
+        // wraps the durability provider class so we can configure the CheckStatusBeforeRaiseEvent property
+        private class DurabilityProvider : Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider
+        {
+            private readonly bool checkStatusBeforeRaiseEvent;
+
+            public DurabilityProvider(string storageProviderName, IOrchestrationService service, IOrchestrationServiceClient serviceClient, string connectionName, bool checkStatusBeforeRaiseEvent = true)
+                : base(storageProviderName, service, serviceClient, connectionName)
+            {
+                this.checkStatusBeforeRaiseEvent = checkStatusBeforeRaiseEvent;
+            }
+
+            public override bool CheckStatusBeforeRaiseEvent => this.checkStatusBeforeRaiseEvent;
         }
     }
 }
