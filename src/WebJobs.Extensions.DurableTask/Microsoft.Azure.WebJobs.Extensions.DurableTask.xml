@@ -981,7 +981,8 @@
             event named <paramref name="eventName"/> using the
             <see cref="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationContext.WaitForExternalEvent``1(System.String)"/> API.
             </para><para>
-            If the specified instance is not found or not running, this operation will throw an exception.
+            If the specified instance is not found or not running, an exception may be thrown. This behavior depends on the selected storage provider
+            and the configuration setting <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.ThrowStatusExceptionsOnRaiseEvent"/>.
             </para>
             </remarks>
             <exception cref="T:System.ArgumentException">The instance id does not corespond to a valid orchestration instance.</exception>
@@ -1977,6 +1978,11 @@
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.SupportsImplicitEntityDeletion">
             <summary>
             Specifies whether this backend supports implicit deletion of entities.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.CheckStatusBeforeRaiseEvent">
+            <summary>
+            Whether or not to check the instance status before raising an event.
             </summary>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.ConfigurationJson">
@@ -4352,6 +4358,15 @@
             This setting can affect serialization overhead: if true, the entity state is serialized
             after each individual operation. If false, the entity state is serialized
             only after an entire batch of operations completes.
+            </remarks>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.ThrowStatusExceptionsOnRaiseEvent">
+            <summary>
+            Controls the behavior of <see cref="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient.RaiseEventAsync(System.String,System.String,System.Object)"/> in situations where the specified orchestration
+            does not exist, or is not in a running state. If set to true, an exception is thrown. If set to false, the event is silently discarded.
+            </summary>
+            <remarks>
+            The default behavior depends on the selected storage provider.
             </remarks>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.UseAppLease">
