@@ -148,22 +148,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     ExecutionId = Guid.NewGuid().ToString(),
                 };
 
-                await this.GetDurabilityProvider(context).CreateTaskOrchestrationAsync(
-                    new TaskMessage
-                    {
-                        Event = new ExecutionStartedEvent(-1, request.Input)
+                try
+                {
+                    await this.GetDurabilityProvider(context).CreateTaskOrchestrationAsync(
+                        new TaskMessage
                         {
-                            Name = request.Name,
-                            Version = request.Version,
+                            Event = new ExecutionStartedEvent(-1, request.Input)
+                            {
+                                Name = request.Name,
+                                Version = request.Version,
+                                OrchestrationInstance = instance,
+                                ScheduledStartTime = request.ScheduledStartTimestamp?.ToDateTime(),
+                            },
                             OrchestrationInstance = instance,
                         },
-                        OrchestrationInstance = instance,
-                    });
+                        this.GetStatusesNotToOverride());
 
-                return new P.CreateInstanceResponse
+                    return new P.CreateInstanceResponse
+                    {
+                        InstanceId = instance.InstanceId,
+                    };
+                }
+                catch (InvalidOperationException)
                 {
-                    InstanceId = instance.InstanceId,
-                };
+                    throw new RpcException(new Status(StatusCode.AlreadyExists, $"An Orchestration instance with the ID {instance.InstanceId} already exists."));
+                }
             }
 
             public async override Task<P.RaiseEventResponse> RaiseEvent(P.RaiseEventRequest request, ServerCallContext context)
@@ -286,6 +295,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     timeout: Timeout.InfiniteTimeSpan,
                     context.CancellationToken);
 
+                if (state == null)
+                {
+                    return new P.GetInstanceResponse() { Exists = false };
+                }
+
                 return CreateGetInstanceResponse(state, request);
             }
 
@@ -330,6 +344,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 string? connectionName = context.RequestHeaders.GetValue("Durable-ConnectionName");
                 var attribute = new DurableClientAttribute() { TaskHub = taskHub, ConnectionName = connectionName };
                 return this.extension.GetDurabilityProvider(attribute);
+            }
+
+            private OrchestrationStatus[] GetStatusesNotToOverride()
+            {
+                OverridableStates overridableStates = this.extension.Options.OverridableExistingInstanceStates;
+                return overridableStates.ToDedupeStatuses();
             }
         }
     }

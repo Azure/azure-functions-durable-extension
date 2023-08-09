@@ -30,6 +30,7 @@ internal partial class FunctionsDurableClientProvider : IAsyncDisposable
 {
     private readonly ReaderWriterLockSlim sync = new();
     private readonly ILoggerFactory loggerFactory;
+    private readonly ILogger logger;
     private readonly DurableTaskClientOptions options;
     private Dictionary<ClientKey, ClientHolder>? clients = new();
 
@@ -43,6 +44,7 @@ internal partial class FunctionsDurableClientProvider : IAsyncDisposable
     public FunctionsDurableClientProvider(ILoggerFactory loggerFactory, IOptions<DurableTaskClientOptions> options)
     {
         this.loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
+        this.logger = loggerFactory.CreateLogger<FunctionsDurableClientProvider>();
         this.options = options?.Value ?? throw new ArgumentNullException(nameof(options));
     }
 
@@ -105,6 +107,7 @@ internal partial class FunctionsDurableClientProvider : IAsyncDisposable
             this.VerifyNotDisposed();
             if (this.clients!.TryGetValue(key, out ClientHolder? holder))
             {
+                this.logger.LogTrace("DurableTaskClient resolved from cache");
                 return holder.Client;
             }
         }
@@ -119,9 +122,15 @@ internal partial class FunctionsDurableClientProvider : IAsyncDisposable
             this.VerifyNotDisposed();
             if (this.clients!.TryGetValue(key, out ClientHolder? holder))
             {
+                this.logger.LogTrace("DurableTaskClient resolved from cache");
                 return holder.Client;
             }
 
+            this.logger.LogTrace(
+                "DurableTaskClient cache miss, constructing for Endpoint: '{Endpoint}', TaskHub: '{TaskHub}', ConnectionName: '{ConnectionName}'",
+                endpoint,
+                taskHub,
+                connectionName);
             GrpcChannel channel = CreateChannel(key);
             GrpcDurableTaskClientOptions options = new()
             {
@@ -178,13 +187,13 @@ internal partial class FunctionsDurableClientProvider : IAsyncDisposable
 
     private record ClientKey(Uri Address, string? Name, string? Connection)
     {
-        private readonly Dictionary<string, string> emptyHeaders = new();
+        private static readonly Dictionary<string, string> EmptyHeaders = new();
 
         public IReadOnlyDictionary<string, string> GetHeaders()
         {
             if (string.IsNullOrEmpty(this.Name) && string.IsNullOrEmpty(this.Connection))
             {
-                return this.emptyHeaders;
+                return EmptyHeaders;
             }
 
             Dictionary<string, string> headers = new();

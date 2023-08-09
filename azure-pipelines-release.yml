@@ -146,11 +146,3 @@ steps:
 - publish: '$(System.DefaultWorkingDirectory)/azure-functions-durable-extension'
   displayName: 'Publish nuget packages to Artifacts'
   artifact: PackageOutput
-
-- task: NuGetCommand@2
-  displayName: 'NuGet push'
-  inputs:
-    command: push
-    packagesToPush: 'Microsoft.Azure.WebJobs.Extensions.DurableTask.*.nupkg'
-    nuGetFeedType: external
-    publishFeedCredentials: 'Connor Credentials MyGet Staging'
