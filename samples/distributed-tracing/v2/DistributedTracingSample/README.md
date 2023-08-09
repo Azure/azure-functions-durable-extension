@@ -6,7 +6,7 @@ The second version of distributed tracing for Durable Functions is in a preview 
 1. All three Durable Functions storage providers are supported: Azure Storage, Netherite, and Microsoft SQL Server.
 2. It provides additional information in terms of spans and tags.
 
-![Trace](images/TraceWithProperties.png)
+![Trace](images/FunctionChaining.png)
 
 ### Enabling Distributed Tracing V2
 To use Distributed Tracing V2, all you will need to do is update your app's host.json and add an environment variable for the Application Insights resource.
@@ -27,3 +27,24 @@ To use Distributed Tracing V2, please update your host.json settings to include 
 You will also need to specify an Application Insights resource in the environment variables. If you haven't done so already, please follow [these instructions](https://learn.microsoft.com/en-us/azure/azure-monitor/app/create-workspace-resource#copy-the-connection-string) to create an Application Insights resource.
 
 Next, you'll need to copy the connection string or instrumentation key for that resource to add in the environment variables. We recommend adding the `APPLICATIONINSIGHTS_CONNECTION_STRING` environment variable, but you can also add `APPINSIGHTS_INSTRUMENTATIONKEY`. If you are running your app locally, then add this environment variable in `local.settings.json`. If you are running the app in Azure, then add it under `Configuration` as an application setting.
+
+#### Run the sample
+The sample shows the function patterns that are traced using Distributed Tracing V2 by running the different orchestrators.
+
+- Function Chaining
+![Function Chaining](images/FunctionChaining.png)
+
+- Fan Out Fan In
+
+![Fan Out Fan In](images/FanOutFanIn.png)
+
+- Async HTTP APIs (currently not shown in traces)
+- 
+- Monitoring
+![Monitoring](images/Monitoring.png)
+
+- Human Interation
+![HumanInteraction1](images/HumanInteraction1.png)
+![HumanInteraction2](images/HumanInteraction2.png)
+
+- Entities (currently not supported)
