@@ -109,7 +109,6 @@
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers" Version="0.5.*" />
     <!-- Build-time dependencies -->
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.*" PrivateAssets="All" />
-    <PackageReference Include="Nunit3TestAdapter" Version="4.5.0" />
     <PackageReference Include="StyleCop.Analyzers" Version="1.1.*" PrivateAssets="All" />
     <!-- StyleCop artifacts (CONSDER: we should remove stylecop and standardize on .editorconfig) -->
     <AdditionalFiles Include="..\..\.stylecop\stylecop.json" />
