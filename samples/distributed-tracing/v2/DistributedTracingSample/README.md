@@ -6,7 +6,7 @@ The second version of distributed tracing for Durable Functions is in a preview 
 1. All three Durable Functions storage providers are supported: Azure Storage, Netherite, and Microsoft SQL Server.
 2. It provides additional information in terms of spans and tags.
 
-![Trace](images/FunctionChaining.png)
+![Trace](../images/FunctionChaining.png)
 
 ### Enabling Distributed Tracing V2
 To use Distributed Tracing V2, all you will need to do is update your app's host.json and add an environment variable for the Application Insights resource.
@@ -32,19 +32,18 @@ Next, you'll need to copy the connection string or instrumentation key for that 
 The sample shows the function patterns that are traced using Distributed Tracing V2 by running the different orchestrators.
 
 - Function Chaining
-![Function Chaining](images/FunctionChaining.png)
+![Function Chaining](../images/FunctionChaining.png)
 
 - Fan Out Fan In
-
-![Fan Out Fan In](images/FanOutFanIn.png)
+![Fan Out Fan In](../images/FanOutFanIn.png)
 
 - Async HTTP APIs (currently not shown in traces)
-- 
+
 - Monitoring
-![Monitoring](images/Monitoring.png)
+![Monitoring](../images/Monitoring.png)
 
 - Human Interation
-![HumanInteraction1](images/HumanInteraction1.png)
-![HumanInteraction2](images/HumanInteraction2.png)
+![HumanInteraction1](../images/HumanInteraction1.png)
+![HumanInteraction2](../images/HumanInteraction2.png)
 
 - Entities (currently not supported)
