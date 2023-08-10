@@ -98,6 +98,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         string IDurableEntityClient.TaskHubName => this.TaskHubName;
 
+        private bool CheckStatusBeforeRaiseEvent
+            => this.durableTaskOptions.ThrowStatusExceptionsOnRaiseEvent ?? this.durabilityProvider.CheckStatusBeforeRaiseEvent;
+
         private IDurableClient GetDurableClient(string taskHubName, string connectionName)
         {
             if (string.Equals(this.TaskHubName, taskHubName, StringComparison.OrdinalIgnoreCase)
@@ -231,7 +234,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new ArgumentNullException(nameof(eventName));
             }
 
-            return this.RaiseEventInternalAsync(this.client, this.TaskHubName, instanceId, eventName, eventData);
+            return this.RaiseEventInternalAsync(this.client, this.TaskHubName, instanceId, eventName, eventData, this.CheckStatusBeforeRaiseEvent);
         }
 
         /// <inheritdoc />
@@ -256,7 +259,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             DurableClient durableClient = (DurableClient)this.GetDurableClient(taskHubName, connectionName);
             TaskHubClient taskHubClient = durableClient.client;
 
-            return this.RaiseEventInternalAsync(taskHubClient, taskHubName, instanceId, eventName, eventData);
+            return this.RaiseEventInternalAsync(taskHubClient, taskHubName, instanceId, eventName, eventData, this.CheckStatusBeforeRaiseEvent);
         }
 
         /// <inheritdoc />
@@ -690,7 +693,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             ParentInstanceId = lockOwner,
                             LockRequestId = "fix-orphaned-lock", // we don't know the original id but it does not matter
                         };
-                        await this.RaiseEventInternalAsync(this.client, this.TaskHubName, status.InstanceId, EntityMessageEventNames.ReleaseMessageEventName, message);
+                        await this.RaiseEventInternalAsync(this.client, this.TaskHubName, status.InstanceId, EntityMessageEventNames.ReleaseMessageEventName, message, checkStatusFirst: false);
                         Interlocked.Increment(ref finalResult.NumberOfOrphanedLocksRemoved);
                     }
                 }
@@ -729,38 +732,48 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string taskHubName,
             string instanceId,
             string eventName,
-            object eventData)
+            object eventData,
+            bool checkStatusFirst)
         {
-            OrchestrationState status = await GetOrchestrationInstanceStateAsync(taskHubClient, instanceId);
-            if (status == null)
+            if (checkStatusFirst)
             {
-                return;
-            }
+                OrchestrationState status = await GetOrchestrationInstanceStateAsync(taskHubClient, instanceId);
+                if (status == null)
+                {
+                    return;
+                }
 
-            if (IsOrchestrationRunning(status))
-            {
-                // External events are not supposed to target any particular execution ID.
-                // We need to clear it to avoid sending messages to an expired ContinueAsNew instance.
-                status.OrchestrationInstance.ExecutionId = null;
+                if (IsOrchestrationRunning(status))
+                {
+                    // External events are not supposed to target any particular execution ID.
+                    // We need to clear it to avoid sending messages to an expired ContinueAsNew instance.
+                    status.OrchestrationInstance.ExecutionId = null;
 
-                await taskHubClient.RaiseEventAsync(status.OrchestrationInstance, eventName, eventData);
+                    await taskHubClient.RaiseEventAsync(status.OrchestrationInstance, eventName, eventData);
 
-                this.traceHelper.FunctionScheduled(
-                    taskHubName,
-                    status.Name,
-                    instanceId,
-                    reason: "RaiseEvent:" + eventName,
-                    functionType: FunctionType.Orchestrator,
-                    isReplay: false);
+                    this.traceHelper.FunctionScheduled(
+                        taskHubName,
+                        status.Name,
+                        instanceId,
+                        reason: "RaiseEvent:" + eventName,
+                        functionType: FunctionType.Orchestrator,
+                        isReplay: false);
+                }
+                else
+                {
+                    this.traceHelper.ExtensionWarningEvent(
+                        hubName: taskHubName,
+                        functionName: status.Name,
+                        instanceId: instanceId,
+                        message: $"Cannot raise event for instance in {status.OrchestrationStatus} state");
+                    throw new InvalidOperationException($"Cannot raise event {eventName} for orchestration instance {instanceId} because instance is in {status.OrchestrationStatus} state");
+                }
             }
             else
             {
-                this.traceHelper.ExtensionWarningEvent(
-                    hubName: taskHubName,
-                    functionName: status.Name,
-                    instanceId: instanceId,
-                    message: $"Cannot raise event for instance in {status.OrchestrationStatus} state");
-                throw new InvalidOperationException($"Cannot raise event {eventName} for orchestration instance {instanceId} because instance is in {status.OrchestrationStatus} state");
+                // fast path: always raise the event (it will be silently discarded
+                // if the instance does not exist or is not running)
+                await taskHubClient.RaiseEventAsync(new OrchestrationInstance() { InstanceId = instanceId }, eventName, eventData);
             }
         }
 
