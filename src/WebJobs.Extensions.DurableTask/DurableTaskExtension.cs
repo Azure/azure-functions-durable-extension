@@ -439,10 +439,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
 #if FUNCTIONS_V3_OR_GREATER
                 // This is a newer, more performant flavor of orchestration/activity middleware that is being
-                // enabled for newer language runtimes. Support for entities in this model is TBD.
+                // enabled for newer language runtimes.
                 var ooprocMiddleware = new OutOfProcMiddleware(this);
                 this.taskHubWorker.AddActivityDispatcherMiddleware(ooprocMiddleware.CallActivityAsync);
                 this.taskHubWorker.AddOrchestrationDispatcherMiddleware(ooprocMiddleware.CallOrchestratorAsync);
+                this.taskHubWorker.AddEntityDispatcherMiddleware(ooprocMiddleware.CallEntityAsync);
 #else
                 // This can happen if, for example, a Java user tries to use Durable Functions while targeting V2 or V3 extension bundles
                 // because those bundles target .NET Core 2.2, which doesn't support the gRPC libraries used in the modern out-of-proc implementation.

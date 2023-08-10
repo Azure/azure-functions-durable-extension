@@ -7,10 +7,12 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading.Tasks;
 using DurableTask.Core;
+using DurableTask.Core.Entities.OperationFormat;
 using DurableTask.Core.Exceptions;
 using DurableTask.Core.History;
 using DurableTask.Core.Middleware;
 using Microsoft.Azure.WebJobs.Host.Executors;
+using Newtonsoft.Json;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
@@ -233,6 +235,148 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // Send the result of the orchestrator function to the DTFx dispatch pipeline.
             // This allows us to bypass the default, in-process execution and process the given results immediately.
             dispatchContext.SetProperty(orchestratorResult);
+        }
+
+        /// <summary>
+        /// Durable Task Framework entity middleware that invokes an out-of-process orchestrator function.
+        /// </summary>
+        /// <param name="dispatchContext">This middleware context provided by the framework that contains information about the entity.</param>
+        /// <param name="next">The next middleware handler in the pipeline.</param>
+        /// <exception cref="SessionAbortedException">Thrown if there is a recoverable error in the Functions runtime that's expected to be handled gracefully.</exception>
+        public async Task CallEntityAsync(DispatchMiddlewareContext dispatchContext, Func<Task> next)
+        {
+            OperationBatchRequest? batchRequest = dispatchContext.GetProperty<OperationBatchRequest>();
+            if (batchRequest == null)
+            {
+                // This should never happen, and there's no good response we can return if it does.
+                throw new InvalidOperationException($"An entity was scheduled but no {nameof(OperationBatchRequest)} was found!");
+            }
+
+            if (batchRequest.InstanceId == null)
+            {
+                // This should never happen, and there's no good response we can return if it does.
+                throw new InvalidOperationException($"An entity was scheduled but InstanceId is null!");
+            }
+
+            EntityId entityId = EntityId.GetEntityIdFromSchedulerId(batchRequest.InstanceId);
+            FunctionName functionName = new FunctionName(entityId.EntityName);
+            RegisteredFunctionInfo functionInfo = this.extension.GetEntityInfo(functionName);
+
+            if (functionInfo == null)
+            {
+                // Fail the operations with an error explaining that the function name is invalid.
+                string errorMessage = this.extension.GetInvalidEntityFunctionMessage(functionName.Name);
+                FailAllOperations(errorMessage);
+                return;
+            }
+
+            this.TraceHelper.FunctionStarting(
+                this.Options.HubName,
+                functionName.Name,
+                batchRequest.InstanceId,
+                this.extension.GetIntputOutputTrace(batchRequest.EntityState),
+                functionType: FunctionType.Entity,
+                isReplay: false);
+
+            var context = new RemoteEntityContext(batchRequest);
+
+            var input = new TriggeredFunctionData
+            {
+                TriggerValue = context,
+#pragma warning disable CS0618 // Type or member is obsolete (not intended for general public use)
+                InvokeHandler = async functionInvoker =>
+                {
+                    // Invoke the function and look for a return value. Trigger return values are an undocumented feature that we depend on.
+                    Task invokeTask = functionInvoker();
+                    if (invokeTask is not Task<object> invokeTaskWithResult)
+                    {
+                        // This should never happen
+                        throw new InvalidOperationException("The internal function invoker returned a task that does not support return values!");
+                    }
+
+                    // The return value is expected to be a JSON string of a well-known schema.
+                    string? triggerReturnValue = (await invokeTaskWithResult) as string;
+                    if (string.IsNullOrEmpty(triggerReturnValue))
+                    {
+                        throw new InvalidOperationException(
+                            "The function invocation resulted in a null response. This means that either the entity function was implemented " +
+                            "incorrectly, the Durable Task language SDK was implemented incorrectly, or that the destination language worker is not " +
+                            "sending the function result back to the host.");
+                    }
+
+                    OperationBatchResult? result = JsonConvert.DeserializeObject<OperationBatchResult>(triggerReturnValue);
+                    context.Result = result;
+#pragma warning restore CS0618 // Type or member is obsolete (not intended for general public use)
+                },
+            };
+
+            FunctionResult functionResult;
+            try
+            {
+                functionResult = await functionInfo.Executor.TryExecuteAsync(
+                    input,
+                    cancellationToken: this.HostLifetimeService.OnStopping);
+            }
+            catch (Exception hostRuntimeException)
+            {
+                string reason = this.HostLifetimeService.OnStopping.IsCancellationRequested ?
+                    "The Functions/WebJobs runtime is shutting down!" :
+                    $"Unhandled exception in the Functions/WebJobs runtime: {hostRuntimeException}";
+
+                this.TraceHelper.FunctionAborted(
+                    this.Options.HubName,
+                    functionName.Name,
+                    batchRequest.InstanceId,
+                    reason,
+                    functionType: FunctionType.Entity);
+
+                // This will abort the current execution and force an durable retry
+                throw new SessionAbortedException(reason);
+            }
+
+            if (!functionResult.Succeeded)
+            {
+                string exceptionMessage = $"Function '{functionName}' failed with an unhandled exception.";
+                string exceptionDetails = functionResult.Exception.ToString();
+
+                this.TraceHelper.FunctionFailed(
+                    this.Options.HubName,
+                    functionName.Name,
+                    batchRequest.InstanceId,
+                    exceptionDetails,
+                    FunctionType.Orchestrator,
+                    isReplay: false);
+
+                FailAllOperations(exceptionMessage, exceptionDetails);
+                return;
+            }
+
+            OperationBatchResult batchResult = context.Result
+                ?? throw new InvalidOperationException($"The entity function executed successfully but {nameof(context.Result)} is still null!");
+
+            this.TraceHelper.FunctionCompleted(
+                       this.Options.HubName,
+                       functionName.Name,
+                       batchRequest.InstanceId,
+                       this.extension.GetIntputOutputTrace(batchRequest.EntityState),
+                       batchRequest.EntityState != null,
+                       FunctionType.Entity,
+                       isReplay: false);
+
+            // Send the result of the orchestrator function to the DTFx dispatch pipeline.
+            // This allows us to bypass the default, in-process execution and process the given results immediately.
+            dispatchContext.SetProperty(batchResult);
+
+            void FailAllOperations(string errorMessage, string errorDetails = null)
+            {
+                var failureResult = new OperationResult() { ErrorMessage = errorMessage, Result = errorDetails };
+                dispatchContext.SetProperty(new OperationBatchResult()
+                {
+                    Actions = { },
+                    EntityState = batchRequest!.EntityState,
+                    Results = Enumerable.Repeat(failureResult, batchRequest.Operations?.Count ?? 0).ToList(),
+                });
+            }
         }
 
         /// <summary>
