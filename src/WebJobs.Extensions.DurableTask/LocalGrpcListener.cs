@@ -305,20 +305,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 };
             }
 
-            private DurabilityProvider GetDurabilityProvider(ServerCallContext context)
+            private DurableClientAttribute GetAttribute(ServerCallContext context)
             {
                 string? taskHub = context.RequestHeaders.GetValue("Durable-TaskHub");
                 string? connectionName = context.RequestHeaders.GetValue("Durable-ConnectionName");
-                var attribute = new DurableClientAttribute() { TaskHub = taskHub, ConnectionName = connectionName };
-                return this.extension.GetDurabilityProvider(attribute);
+                return new DurableClientAttribute() { TaskHub = taskHub, ConnectionName = connectionName };
+            }
+
+            private DurabilityProvider GetDurabilityProvider(ServerCallContext context)
+            {
+                return this.extension.GetDurabilityProvider(this.GetAttribute(context));
             }
 
             private IDurableClient GetClient(ServerCallContext context)
             {
-                string? taskHub = context.RequestHeaders.GetValue("Durable-TaskHub");
-                string? connectionName = context.RequestHeaders.GetValue("Durable-ConnectionName");
-                var attribute = new DurableClientAttribute() { TaskHub = taskHub, ConnectionName = connectionName };
-                return this.extension.GetClient(attribute);
+                return this.extension.GetClient(this.GetAttribute(context));
             }
         }
     }
