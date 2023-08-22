@@ -9,7 +9,7 @@ RUN cd /root/test/SmokeTests/OOProcSmokeTests/durablePy && \
     dotnet build -o bin
 
 # Step 2: Deploy and run pip install to get the Durable Functions SDK
-FROM mcr.microsoft.com/azure-functions/python:2.0-python3.7
+FROM mcr.microsoft.com/azure-functions/python:4-python3.7
 COPY --from=build-env /root/test/SmokeTests/OOProcSmokeTests/durablePy /home/site/wwwroot
 ENV AzureWebJobsScriptRoot=/home/site/wwwroot \
     AzureFunctionsJobHost__Logging__Console__IsEnabled=true

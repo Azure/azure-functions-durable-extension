@@ -89,7 +89,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "pipelines", "pipelines", "{
 		.github\workflows\smoketest-dotnet-v2.yml = .github\workflows\smoketest-dotnet-v2.yml
 		.github\workflows\smoketest-dotnet-v3.yml = .github\workflows\smoketest-dotnet-v3.yml
 		.github\workflows\smoketest-node14-v4.yml = .github\workflows\smoketest-node14-v4.yml
-		.github\workflows\smoketest-python37-v2.yml = .github\workflows\smoketest-python37-v2.yml
+		.github\workflows\smoketest-python37-v4.yml = .github\workflows\smoketest-python37-v4.yml
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DFPerfScenariosV1", "test\DFPerfScenariosV1\DFPerfScenariosV1.csproj", "{65F904AA-0F6F-48CB-BE19-593B7D68152A}"
