@@ -60,14 +60,14 @@ configuration:
     - if:
       - payloadType: Issues
       - and:
-            - isOpen
-            - not:
-                and:
-                - isAssignedToSomeone
-                - isLabeled
-        then:
+        - isOpen
+        - not:
+           and:
+             - isAssignedToSomeone
+             - isLabeled
+      then:
         - addLabel:
-            label: "Needs: Triage :mag:"
+          label: "Needs: Triage :mag:"
     - if:
       - payloadType: Issue_Comment
       - isAction:
