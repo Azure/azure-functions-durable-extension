@@ -118,7 +118,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
                     message: "Reading APPINSIGHTS_INSTRUMENTATIONKEY...",
                     writeToUserLogs: true);
 
+#pragma warning disable CS0618 // Type or member is obsolete
                 config.InstrumentationKey = resolvedInstrumentationKey;
+#pragma warning restore CS0618 // Type or member is obsolete
             }
             else
             {
