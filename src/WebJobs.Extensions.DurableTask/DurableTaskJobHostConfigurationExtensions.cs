@@ -4,7 +4,6 @@
 using System;
 using System.Net.Http;
 using System.Threading;
-using Microsoft.ApplicationInsights.Extensibility;
 #if !FUNCTIONS_V1
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations;
