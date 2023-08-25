@@ -17,7 +17,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
     /// <summary>
     /// TelemetryActivator initializes Distributed Tracing. This class only works for netstandard2.0.
     /// </summary>
-    public class TelemetryActivator : ITelemetryActivator, IAsyncDisposable
+    public class TelemetryActivator : ITelemetryActivator, IAsyncDisposable, IDisposable
     {
         private readonly DurableTaskOptions options;
         private readonly INameResolver nameResolver;
@@ -46,6 +46,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
         public ValueTask DisposeAsync()
         {
             return this.telemetryModule?.DisposeAsync() ?? default;
+        }
+
+        /// <inheritdoc/>
+        public void Dispose()
+        {
+            this.telemetryModule?.DisposeAsync().AsTask().GetAwaiter().GetResult();
         }
 
         /// <summary>
