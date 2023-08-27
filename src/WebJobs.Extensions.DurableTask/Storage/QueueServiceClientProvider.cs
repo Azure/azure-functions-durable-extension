@@ -1,6 +1,6 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-
+#nullable enable
 using System;
 using Azure.Core;
 using Azure.Storage.Queues;
@@ -12,8 +12,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage
 {
     internal sealed class QueueServiceClientProvider : StorageServiceClientProvider<QueueServiceClient, QueueClientOptions, QueueServiceClientProvider.ConnectionOptions>
     {
-        public QueueServiceClientProvider(IConfigurationSection connectionSection, AzureComponentFactory componentFactory, AzureEventSourceLogForwarder logForwarder)
-            : base(connectionSection, componentFactory, logForwarder)
+        public QueueServiceClientProvider(IConfigurationSection connectionSection, AzureComponentFactory componentFactory)
+            : base(connectionSection, componentFactory)
         {
         }
 
@@ -24,9 +24,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage
 
         internal sealed class ConnectionOptions : StorageServiceConnectionOptions
         {
-            public Uri QueueServiceUri { get; set; }
+            public Uri? QueueServiceUri { get; set; }
 
-            public override Uri ServiceUri => this.QueueServiceUri ?? base.ServiceUri;
+            public override Uri? ServiceUri => this.QueueServiceUri ?? base.ServiceUri;
 
             protected override string ServiceName => "queue";
         }

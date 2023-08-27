@@ -347,11 +347,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             options.WebhookUriProviderOverride = () => new Uri("https://sampleurl.net");
             var wrappedOptions = new OptionsWrapper<DurableTaskOptions>(options);
             var nameResolver = TestHelpers.GetTestNameResolver();
-            var storageAccountExplorer = new TestStorageAccountExplorer();
+            var clientProviderFactory = new TestStorageServiceClientProviderFactory();
             var platformInformationService = TestHelpers.GetMockPlatformInformationService();
             var serviceFactory = new AzureStorageDurabilityProviderFactory(
                 wrappedOptions,
-                storageAccountExplorer,
+                clientProviderFactory,
                 nameResolver,
                 NullLoggerFactory.Instance,
                 platformInformationService);

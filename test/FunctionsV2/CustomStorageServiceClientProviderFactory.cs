@@ -10,11 +10,11 @@ using Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage;
 
 namespace WebJobs.Extensions.DurableTask.Tests.V2
 {
-    internal class CustomAccountStorageExplorer : IAzureStorageAccountExplorer
+    internal class CustomStorageServiceClientProviderFactory : IStorageServiceClientProviderFactory
     {
         private readonly Dictionary<string, string> connectionStrings;
 
-        public CustomAccountStorageExplorer(Dictionary<string, string> connectionStrings)
+        public CustomStorageServiceClientProviderFactory(Dictionary<string, string> connectionStrings)
         {
             this.connectionStrings = connectionStrings;
         }

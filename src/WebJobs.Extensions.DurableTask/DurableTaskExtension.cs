@@ -611,7 +611,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.PlatformInformationService = new DefaultPlatformInformation(this.nameResolver, this.loggerFactory);
             this.durabilityProviderFactory = new AzureStorageDurabilityProviderFactory(
                 new OptionsWrapper<DurableTaskOptions>(this.Options),
-                new AzureStorageAccountExplorer(this.connectionInfoResolver),
+                new StorageServiceClientProviderFactory(this.connectionInfoResolver),
                 this.nameResolver,
                 this.loggerFactory,
                 this.PlatformInformationService);

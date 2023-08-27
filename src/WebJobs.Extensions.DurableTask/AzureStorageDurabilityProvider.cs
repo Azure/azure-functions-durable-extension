@@ -28,21 +28,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     internal class AzureStorageDurabilityProvider : DurabilityProvider
     {
         private readonly AzureStorageOrchestrationService serviceClient;
-        private readonly IAzureStorageAccountExplorer storageAccountExplorer;
+        private readonly IStorageServiceClientProviderFactory clientProviderFactory;
         private readonly string connectionName;
         private readonly JObject storageOptionsJson;
         private readonly ILogger logger;
 
         public AzureStorageDurabilityProvider(
             AzureStorageOrchestrationService service,
-            IAzureStorageAccountExplorer storageAccountExplorer,
+            IStorageServiceClientProviderFactory clientProviderFactory,
             string connectionName,
             AzureStorageOptions options,
             ILogger logger)
             : base("Azure Storage", service, service, connectionName)
         {
             this.serviceClient = service;
-            this.storageAccountExplorer = storageAccountExplorer;
+            this.clientProviderFactory = clientProviderFactory;
             this.connectionName = connectionName;
             this.storageOptionsJson = JObject.FromObject(
                 options,
@@ -213,7 +213,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 functionId,
                 functionName,
                 hubName,
-                this.storageAccountExplorer.GetClientProvider(connectionName),
+                this.clientProviderFactory.GetClientProvider(connectionName),
                 this.logger);
             return true;
         }

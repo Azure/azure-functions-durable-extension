@@ -1,6 +1,6 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-
+#nullable enable
 using Azure.Data.Tables;
 using Azure.Storage.Blobs;
 using Azure.Storage.Queues;
@@ -9,9 +9,9 @@ using DurableTask.AzureStorage;
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage
 {
     /// <summary>
-    /// Defines methods for retrieving client providers.
+    /// Defines methods for retrieving service client providers based on the connection name.
     /// </summary>
-    internal interface IAzureStorageAccountExplorer
+    internal interface IStorageServiceClientProviderFactory
     {
         /// <summary>
         /// Gets the <see cref="IStorageServiceClientProvider{BlobServiceClient, BlobClientOptions}"/> used

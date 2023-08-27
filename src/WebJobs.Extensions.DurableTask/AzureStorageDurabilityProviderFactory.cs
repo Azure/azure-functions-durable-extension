@@ -16,7 +16,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         internal const string ProviderName = "AzureStorage";
 
         private readonly DurableTaskOptions options;
-        private readonly IAzureStorageAccountExplorer storageAccountExplorer;
+        private readonly IStorageServiceClientProviderFactory clientProviderFactory;
         private readonly AzureStorageOptions azureStorageOptions;
         private readonly INameResolver nameResolver;
         private readonly ILoggerFactory loggerFactory;
@@ -29,7 +29,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public AzureStorageDurabilityProviderFactory(
             IOptions<DurableTaskOptions> options,
-            IAzureStorageAccountExplorer storageAccountExplorer,
+            IStorageServiceClientProviderFactory clientProviderFactory,
             INameResolver nameResolver,
             ILoggerFactory loggerFactory,
 #pragma warning disable CS0612 // Type or member is obsolete
@@ -46,7 +46,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             this.options = options.Value;
-            this.storageAccountExplorer = storageAccountExplorer ?? throw new ArgumentNullException(nameof(storageAccountExplorer));
+            this.clientProviderFactory = clientProviderFactory ?? throw new ArgumentNullException(nameof(clientProviderFactory));
             this.nameResolver = nameResolver ?? throw new ArgumentNullException(nameof(nameResolver));
             this.loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
 
@@ -120,7 +120,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 ILogger logger = this.loggerFactory.CreateLogger(LoggerName);
                 this.defaultStorageProvider = new AzureStorageDurabilityProvider(
                     defaultService,
-                    this.storageAccountExplorer,
+                    this.clientProviderFactory,
                     this.DefaultConnectionName,
                     this.azureStorageOptions,
                     logger);
@@ -162,7 +162,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 ILogger logger = this.loggerFactory.CreateLogger(LoggerName);
                 innerClient = new AzureStorageDurabilityProvider(
                     new AzureStorageOrchestrationService(settings),
-                    this.storageAccountExplorer,
+                    this.clientProviderFactory,
                     connectionName,
                     this.azureStorageOptions,
                     logger);
@@ -180,7 +180,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             var settings = new AzureStorageOrchestrationServiceSettings
             {
-                StorageAccountClientProvider = this.storageAccountExplorer.GetClientProvider(connectionName ?? this.DefaultConnectionName),
+                StorageAccountClientProvider = this.clientProviderFactory.GetClientProvider(connectionName ?? this.DefaultConnectionName),
                 TaskHubName = taskHubNameOverride ?? this.options.HubName,
                 PartitionCount = this.azureStorageOptions.PartitionCount,
                 ControlQueueBatchSize = this.azureStorageOptions.ControlQueueBatchSize,
@@ -193,7 +193,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 ExtendedSessionIdleTimeout = extendedSessionTimeout,
                 MaxQueuePollingInterval = this.azureStorageOptions.MaxQueuePollingInterval,
                 TrackingServiceClientProvider = this.azureStorageOptions.TrackingStoreConnectionName != null
-                    ? this.storageAccountExplorer.GetTrackingClientProvider(this.azureStorageOptions.TrackingStoreConnectionName)
+                    ? this.clientProviderFactory.GetTrackingClientProvider(this.azureStorageOptions.TrackingStoreConnectionName)
                     : null,
                 FetchLargeMessageDataEnabled = this.azureStorageOptions.FetchLargeMessagesAutomatically,
                 ThrowExceptionOnInvalidDedupeStatus = true,

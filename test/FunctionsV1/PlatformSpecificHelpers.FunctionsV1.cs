@@ -40,7 +40,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var config = new JobHostConfiguration { HostId = "durable-task-host" };
             config.TypeLocator = TestHelpers.GetTypeLocator();
 
-            var storageAccountExplorer = new AzureStorageAccountExplorer(new WebJobsConnectionInfoProvider());
+            var clientProviderFactory = new StorageServiceClientProviderFactory(new WebJobsConnectionInfoProvider());
 
             var loggerFactory = new LoggerFactory();
             loggerFactory.AddProvider(loggerProvider);
@@ -57,7 +57,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             IDurabilityProviderFactory orchestrationServiceFactory = new AzureStorageDurabilityProviderFactory(
                 options,
-                storageAccountExplorer,
+                clientProviderFactory,
                 nameResolver,
                 loggerFactory,
                 platformInformationService);
@@ -88,23 +88,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             config.LoggerFactory = loggerFactory;
 
             var host = new JobHost(config);
-            return new FunctionsV1HostWrapper(host, options, storageAccountExplorer);
+            return new FunctionsV1HostWrapper(host, options, clientProviderFactory);
         }
 
         private class FunctionsV1HostWrapper : ITestHost
         {
             private readonly JobHost innerHost;
             private readonly DurableTaskOptions options;
-            private readonly IAzureStorageAccountExplorer storageAccountExplorer;
+            private readonly IStorageServiceClientProviderFactory clientProviderFactory;
 
             public FunctionsV1HostWrapper(
                 JobHost innerHost,
                 IOptions<DurableTaskOptions> options,
-                IAzureStorageAccountExplorer storageAccountExplorer)
+                IStorageServiceClientProviderFactory clientProviderFactory)
             {
                 this.innerHost = innerHost ?? throw new ArgumentNullException(nameof(innerHost));
                 this.options = options.Value;
-                this.storageAccountExplorer = storageAccountExplorer;
+                this.clientProviderFactory = clientProviderFactory;
             }
 
             public Task CallAsync(string methodName, IDictionary<string, object> args)

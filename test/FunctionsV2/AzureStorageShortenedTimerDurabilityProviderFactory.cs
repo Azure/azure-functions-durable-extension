@@ -12,13 +12,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     {
         public AzureStorageShortenedTimerDurabilityProviderFactory(
             IOptions<DurableTaskOptions> options,
-            IAzureStorageAccountExplorer storageAccountExplorer,
+            IStorageServiceClientProviderFactory clientProviderFactory,
             INameResolver nameResolver,
             ILoggerFactory loggerFactory,
 #pragma warning disable CS0612 // Type or member is obsolete
             IPlatformInformation platformInformationService)
 #pragma warning restore CS0612 // Type or member is obsolete
-            : base(options, storageAccountExplorer, nameResolver, loggerFactory, platformInformationService)
+            : base(options, clientProviderFactory, nameResolver, loggerFactory, platformInformationService)
         {
         }
 

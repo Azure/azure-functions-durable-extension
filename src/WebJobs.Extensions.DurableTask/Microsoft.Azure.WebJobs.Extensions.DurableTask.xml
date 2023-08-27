@@ -4176,6 +4176,33 @@
             OpenTelemetry compatible version of Distributed Tracing in Durable Functions.
             </summary>
         </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.StorageServiceConnectionOptions">
+            <summary>
+            Represents the base connection options for all Azure Storage Service clients.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.StorageServiceConnectionOptions.AccountName">
+            <summary>
+            Gets or sets the optional account name.
+            </summary>
+            <value>The Azure Storage account name if specified; otherwise <see langword="null"/>.</value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.StorageServiceConnectionOptions.ServiceUri">
+            <summary>
+            Gets the optional service URI, if it can be derived from <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.StorageServiceConnectionOptions.AccountName"/>.
+            </summary>
+            <remarks>
+            This value is overridden by the derived classes, as each client has its own name for the
+            service URI, like <c>"BlobServiceUri"</c>.
+            </remarks>
+            <value>The service URI if specified; otherwise <see langword="null"/>.</value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.StorageServiceConnectionOptions.ServiceName">
+            <summary>
+            Gets the name of the Azure Storage service represented by the options.
+            </summary>
+            <value>The name of the service used within the service URI.</value>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions">
             <summary>
             Configuration options for the Durable Task extension.
@@ -4920,21 +4947,12 @@
             JSON object representing history for an orchestration execution.
             </summary>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage.AzureStorageAccountExplorer.GetBlobClientProvider(System.String)">
-            <inheritdoc />
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage.AzureStorageAccountExplorer.GetQueueClientProvider(System.String)">
-            <inheritdoc />
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage.AzureStorageAccountExplorer.GetTableClientProvider(System.String)">
-            <inheritdoc />
-        </member>
-        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage.IAzureStorageAccountExplorer">
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage.IStorageServiceClientProviderFactory">
             <summary>
-            Defines methods for retrieving client providers.
+            Defines methods for retrieving service client providers based on the connection name.
             </summary>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage.IAzureStorageAccountExplorer.GetBlobClientProvider(System.String)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage.IStorageServiceClientProviderFactory.GetBlobClientProvider(System.String)">
             <summary>
             Gets the <see cref="T:DurableTask.AzureStorage.IStorageServiceClientProvider`2"/> used
             for accessing the Azure Storage Blob Service associated with the <paramref name="connectionName"/>.
@@ -4942,7 +4960,7 @@
             <param name="connectionName">The name associated with the connection information.</param>
             <returns>The corresponding <see cref="T:DurableTask.AzureStorage.IStorageServiceClientProvider`2"/>.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage.IAzureStorageAccountExplorer.GetQueueClientProvider(System.String)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage.IStorageServiceClientProviderFactory.GetQueueClientProvider(System.String)">
             <summary>
             Gets the <see cref="T:DurableTask.AzureStorage.IStorageServiceClientProvider`2"/> used
             for accessing the Azure Storage Queue Service associated with the <paramref name="connectionName"/>.
@@ -4950,13 +4968,28 @@
             <param name="connectionName">The name associated with the connection information.</param>
             <returns>The corresponding <see cref="T:DurableTask.AzureStorage.IStorageServiceClientProvider`2"/>.</returns>
         </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage.IAzureStorageAccountExplorer.GetTableClientProvider(System.String)">
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage.IStorageServiceClientProviderFactory.GetTableClientProvider(System.String)">
             <summary>
             Gets the <see cref="T:DurableTask.AzureStorage.IStorageServiceClientProvider`2"/> used
             for accessing the Azure Storage Table Service associated with the <paramref name="connectionName"/>.
             </summary>
             <param name="connectionName">The name associated with the connection information.</param>
             <returns>The corresponding <see cref="T:DurableTask.AzureStorage.IStorageServiceClientProvider`2"/>.</returns>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage.StorageServiceClientProvider`3">
+            <inheritdoc cref="T:DurableTask.AzureStorage.IStorageServiceClientProvider`2"/>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage.StorageServiceClientProviderFactory">
+            <inheritdoc cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage.IStorageServiceClientProviderFactory"/>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage.StorageServiceClientProviderFactory.GetBlobClientProvider(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage.StorageServiceClientProviderFactory.GetQueueClientProvider(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage.StorageServiceClientProviderFactory.GetTableClientProvider(System.String)">
+            <inheritdoc />
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.ActivityTriggerAttribute">
             <summary>
