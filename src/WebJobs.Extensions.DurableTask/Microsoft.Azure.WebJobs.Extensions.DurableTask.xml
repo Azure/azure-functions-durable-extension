@@ -1824,6 +1824,12 @@
             You can use this property for testing.
             </summary>
         </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.TelemetryActivator.DisposeAsync">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.TelemetryActivator.Dispose">
+            <inheritdoc/>
+        </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.TelemetryActivator.Initialize(Microsoft.Extensions.Logging.ILogger)">
             <summary>
             Initialize is initialize the telemetry client.
@@ -4149,6 +4155,27 @@
                 Default is true.
             </remarks>
         </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.DurableDistributedTracingVersion">
+            <summary>
+            Represents configuration options for Distributed Tracing in Durable Functions.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.DurableDistributedTracingVersion.None">
+            <summary>
+            Distributed Tracing is disabled.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.DurableDistributedTracingVersion.V1">
+            <summary>
+            Original implementation of Distributed Tracing in Durable Functions
+            that can be configured to use HttpCorrelationProtocol or W3CTraceContext.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.DurableDistributedTracingVersion.V2">
+            <summary>
+            OpenTelemetry compatible version of Distributed Tracing in Durable Functions.
+            </summary>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions">
             <summary>
             Configuration options for the Durable Task extension.
@@ -4472,6 +4499,13 @@
             Gets or sets a protocol for distributed Tracing.
             Possible values are "HttpCorrelationProtocol" and "W3CTraceContext".
             The default value is "HttpCorrelationProtocol".
+            This setting is only used when <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.TraceOptions.Version"/> is `DurableDistributedTracingVersion.V1`.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.TraceOptions.Version">
+            <summary>
+            Gets or sets a <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.TraceOptions.Version" /> value indicating which version of distributed tracing to use.
+            The default value is 'DurableDistributedTracingVersion.V1'.
             </summary>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.OrchestrationClientAttribute">
