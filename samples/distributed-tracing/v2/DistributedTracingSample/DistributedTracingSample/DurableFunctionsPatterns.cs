@@ -30,6 +30,7 @@ namespace AddingConfigDistTracingTesting
             [OrchestrationTrigger] IDurableOrchestrationContext context)
         {
             var tasks = new List<Task<string>>();
+
             tasks.Add(context.CallActivityAsync<string>(nameof(SayHelloActivity), "Tokyo"));
             tasks.Add(context.CallActivityAsync<string>(nameof(SayHelloActivity), "Seattle"));
             tasks.Add(context.CallActivityAsync<string>(nameof(SayHelloActivity), "London"));
