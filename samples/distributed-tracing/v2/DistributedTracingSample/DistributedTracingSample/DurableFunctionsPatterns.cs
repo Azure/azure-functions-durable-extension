@@ -29,11 +29,10 @@ namespace AddingConfigDistTracingTesting
         public static async Task<string[]> FanOutFanIn(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
         {
-            var tasks = new Task<string>[3];
-
-            tasks[0] = context.CallActivityAsync<string>(nameof(SayHelloActivity), "Tokyo");
-            tasks[1] = context.CallActivityAsync<string>(nameof(SayHelloActivity), "Seattle");
-            tasks[2] = context.CallActivityAsync<string>(nameof(SayHelloActivity), "London");
+            var tasks = new List<Task<string>>();
+            tasks.Add(context.CallActivityAsync<string>(nameof(SayHelloActivity), "Tokyo"));
+            tasks.Add(context.CallActivityAsync<string>(nameof(SayHelloActivity), "Seattle"));
+            tasks.Add(context.CallActivityAsync<string>(nameof(SayHelloActivity), "London"));
 
             return await Task.WhenAll(tasks);
         }

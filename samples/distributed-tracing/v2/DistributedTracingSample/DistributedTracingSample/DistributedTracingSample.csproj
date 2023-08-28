@@ -4,8 +4,8 @@
     <AzureFunctionsVersion>v4</AzureFunctionsVersion>
   </PropertyGroup>
   <ItemGroup>
-	  <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask" Version="2.10.0-distributed-tracing-preview" />
-	  <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="4.1.1" />
+	<PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask" Version="2.11.0" />
+	<PackageReference Include="Microsoft.NET.Sdk.Functions" Version="4.1.1" />
   </ItemGroup>
   <ItemGroup>
     <None Update="host.json">

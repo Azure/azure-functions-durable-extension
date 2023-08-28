@@ -1,6 +1,6 @@
 ## Distributed Tracing V2 for Durable Functions
 
-The second version of distributed tracing for Durable Functions is in a preview state.
+The second version of distributed tracing for Durable Functions is in preview.
 
 #### Benefits
 1. All three Durable Functions storage providers are supported: Azure Storage, Netherite, and Microsoft SQL Server.
@@ -29,7 +29,7 @@ You will also need to specify an Application Insights resource in the environmen
 Next, you'll need to copy the connection string or instrumentation key for that resource to add in the environment variables. We recommend adding the `APPLICATIONINSIGHTS_CONNECTION_STRING` environment variable, but you can also add `APPINSIGHTS_INSTRUMENTATIONKEY`. If you are running your app locally, then add this environment variable in `local.settings.json`. If you are running the app in Azure, then add it under `Configuration` as an application setting.
 
 #### Run the sample
-The sample shows the function patterns that are traced using Distributed Tracing V2 by running the different orchestrators.
+The sample shows how Distributed Tracing V2 improves the observability of some flagship Durable Functions patterns.
 
 - Function Chaining
 ![Function Chaining](../images/FunctionChaining.png)
