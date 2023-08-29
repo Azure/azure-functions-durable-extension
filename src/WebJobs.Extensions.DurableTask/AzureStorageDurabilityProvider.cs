@@ -55,6 +55,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public override bool SupportsEntities => true;
 
+        public override bool CheckStatusBeforeRaiseEvent => true;
+
         /// <summary>
         /// The app setting containing the Azure Storage connection string.
         /// </summary>

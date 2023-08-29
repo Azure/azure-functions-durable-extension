@@ -1161,7 +1161,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (!OrchestrationContext.IsOrchestratorThread)
             {
                 throw new InvalidOperationException(
-                    "Multithreaded execution was detected. This can happen if the orchestrator function code awaits on a task that was not created by a DurableOrchestrationContext method. More details can be found in this article https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-checkpointing-and-replay#orchestrator-code-constraints.");
+                    "Multithreaded execution was detected. This can happen if the orchestrator function code awaits on a task that was not created by a DurableOrchestrationContext method. More details can be found in this article https://learn.microsoft.com/azure/azure-functions/durable/durable-functions-code-constraints.");
             }
         }
 

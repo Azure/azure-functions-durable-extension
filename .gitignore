@@ -296,3 +296,4 @@ functions-extensions/
 
 .vscode/
 .ionide/
+/src/WebJobs.Extensions.DurableTask/Microsoft.Azure.WebJobs.Extensions.DurableTask.xml
