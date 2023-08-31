@@ -801,6 +801,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             TimeSpan retryInterval,
             bool returnInternalServerErrorOnFailure)
         {
+            if (this.httpApiHandler == null)
+            {
+                throw new InvalidOperationException("IDurableClient.WaitForCompletionOrCreateCheckStatusResponseAsync is not supported for IDurableClient instances created outside of a Durable Functions application.");
+            }
+
             return await this.httpApiHandler.WaitForCompletionOrCreateCheckStatusResponseAsync(
                 request,
                 instanceId,
