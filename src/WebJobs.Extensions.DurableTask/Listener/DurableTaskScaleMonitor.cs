@@ -40,7 +40,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.storageAccountClientProvider = storageAccountClientProvider;
             this.logger = logger;
             this.performanceMonitor = performanceMonitor;
+#pragma warning disable CS0618 // Type or member is obsolete
             this.scaleMonitorDescriptor = new ScaleMonitorDescriptor($"{this.functionId}-DurableTaskTrigger-{this.hubName}".ToLower());
+#pragma warning restore CS0618 // Type or member is obsolete
         }
 
         public ScaleMonitorDescriptor Descriptor
