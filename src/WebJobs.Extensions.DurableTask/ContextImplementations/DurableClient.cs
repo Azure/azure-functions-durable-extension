@@ -565,7 +565,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             else
             {
-                return LegacyImplementationOfReadEntityStateAsync(provider, entityId);
+                return await this.LegacyImplementationOfReadEntityStateAsync<T>(provider, entityId);
             }
         }
 
