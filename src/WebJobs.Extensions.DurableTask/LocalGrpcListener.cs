@@ -5,14 +5,17 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
+using DurableTask.Core.Entities;
 using DurableTask.Core.History;
 using DurableTask.Core.Query;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using Microsoft.Extensions.Hosting;
+using DTCore = DurableTask.Core;
 using P = Microsoft.DurableTask.Protobuf;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
@@ -194,6 +197,93 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return new P.RaiseEventResponse();
             }
 
+            public async override Task<P.SignalEntityResponse> SignalEntity(P.SignalEntityRequest request, ServerCallContext context)
+            {
+                this.CheckEntitySupport(context, out var durabilityProvider, out var entityOrchestrationService);
+
+                EntityMessageEvent eventToSend = ClientEntityHelpers.EmitOperationSignal(
+                    new OrchestrationInstance() { InstanceId = request.InstanceId },
+                    new Guid(request.Guid.ToByteArray()),
+                    request.Name,
+                    request.Input,
+                    EntityMessageEvent.GetCappedScheduledTime(
+                        request.ScheduledTime.ToDateTime(),
+                        entityOrchestrationService.EntityBackendProperties.MaximumSignalDelayTime,
+                        DateTime.UtcNow));
+
+                await durabilityProvider.SendTaskOrchestrationMessageAsync(eventToSend.AsTaskMessage());
+
+                // No fields in the response
+                return new P.SignalEntityResponse();
+            }
+
+            public async override Task<P.GetEntityResponse> GetEntity(P.GetEntityRequest request, ServerCallContext context)
+            {
+                this.CheckEntitySupport(context, out var durabilityProvider, out var entityOrchestrationService);
+
+                EntityBackendQueries.EntityMetadata? metaData = await entityOrchestrationService.EntityBackendQueries.GetEntityAsync(
+                    DTCore.Entities.EntityId.FromString(request.InstanceId),
+                    request.IncludeState,
+                    includeDeleted: false,
+                    context.CancellationToken);
+
+                return new P.GetEntityResponse()
+                {
+                    Exists = metaData.HasValue,
+                    Entity = metaData.HasValue ? this.ConvertEntityMetadata(metaData.Value) : default,
+                };
+            }
+
+            public async override Task<P.QueryEntitiesResponse> QueryEntities(P.QueryEntitiesRequest request, ServerCallContext context)
+            {
+                this.CheckEntitySupport(context, out var durabilityProvider, out var entityOrchestrationService);
+
+                P.EntityQuery query = request.Query;
+                EntityBackendQueries.EntityQueryResult result = await entityOrchestrationService.EntityBackendQueries.QueryEntitiesAsync(
+                    new EntityBackendQueries.EntityQuery()
+                    {
+                         InstanceIdStartsWith = query.InstanceIdStartsWith,
+                         LastModifiedFrom = (query.LastModifiedFrom == default) ? null : query.LastModifiedFrom.ToDateTime(),
+                         LastModifiedTo = (query.LastModifiedTo == default) ? null : query.LastModifiedTo.ToDateTime(),
+                         IncludeDeleted = false,
+                         IncludeState = query.IncludeState,
+                         ContinuationToken = query.ContinuationToken,
+                         PageSize = query.PageSize == default ? null : query.PageSize,
+                    },
+                    context.CancellationToken);
+
+                var response = new P.QueryEntitiesResponse()
+                {
+                    ContinuationToken = result.ContinuationToken,
+                };
+
+                foreach (EntityBackendQueries.EntityMetadata entityMetadata in result.Results)
+                {
+                    response.Entities.Add(this.ConvertEntityMetadata(entityMetadata));
+                }
+
+                return response;
+            }
+
+            public async override Task<P.CleanEntityStorageResponse> CleanEntityStorage(P.CleanEntityStorageRequest request, ServerCallContext context)
+            {
+                this.CheckEntitySupport(context, out var durabilityProvider, out var entityOrchestrationService);
+
+                EntityBackendQueries.CleanEntityStorageResult result = await entityOrchestrationService.EntityBackendQueries.CleanEntityStorageAsync(
+                    new EntityBackendQueries.CleanEntityStorageRequest()
+                    {
+                        RemoveEmptyEntities = request.RemoveEmptyEntities,
+                        ReleaseOrphanedLocks = request.ReleaseOrphanedLocks,
+                    },
+                    context.CancellationToken);
+
+                return new P.CleanEntityStorageResponse()
+                {
+                    EmptyEntitiesRemoved = result.EmptyEntitiesRemoved,
+                    OrphanedLocksReleased = result.OrphanedLocksReleased,
+                };
+            }
+
             public async override Task<P.TerminateResponse> TerminateInstance(P.TerminateRequest request, ServerCallContext context)
             {
                 await this.GetDurabilityProvider(context).ForceTerminateTaskOrchestrationAsync(
@@ -350,6 +440,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 OverridableStates overridableStates = this.extension.Options.OverridableExistingInstanceStates;
                 return overridableStates.ToDedupeStatuses();
+            }
+
+            private void CheckEntitySupport(ServerCallContext context, out DurabilityProvider durabilityProvider, out IEntityOrchestrationService entityOrchestrationService)
+            {
+                durabilityProvider = this.GetDurabilityProvider(context);
+                entityOrchestrationService = durabilityProvider.EntityOrchestrationService;
+                if (entityOrchestrationService == null)
+                {
+                    throw new NotSupportedException($"The provider '{durabilityProvider.GetType().Name}' does not support entities.");
+                }
+            }
+
+            private P.EntityMetadata ConvertEntityMetadata(EntityBackendQueries.EntityMetadata metaData)
+            {
+                return new P.EntityMetadata()
+                {
+                    InstanceId = metaData.ToString(),
+                    LastModifiedTime = metaData.LastModifiedTime.ToTimestamp(),
+                    SerializedState = metaData.SerializedState,
+                };
             }
         }
     }
