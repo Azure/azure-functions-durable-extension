@@ -478,7 +478,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 Operation = operationRequest.Operation,
                 Input = operationRequest.Input,
-                RequestId = ByteString.FromStream(new MemoryStream(operationRequest.Id.ToByteArray())),
+                RequestId = operationRequest.Id.ToString(),
             };
         }
 
@@ -525,7 +525,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         Name = operationAction.SendSignal.Name,
                         Input = operationAction.SendSignal.Input,
                         InstanceId = operationAction.SendSignal.InstanceId,
-                        ScheduledTime = operationAction.SendSignal.HasScheduledTime ? operationAction.SendSignal.ScheduledTime.ToDateTime() : null,
+                        ScheduledTime = operationAction.SendSignal.ScheduledTime?.ToDateTime(),
                     };
 
                 case P.OperationAction.OperationActionTypeOneofCase.StartNewOrchestration:
@@ -555,12 +555,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return null;
             }
 
-            return new OperationResult()
+            switch (operationResult.ResultTypeCase)
             {
-                Result = operationResult.Result,
-                ErrorMessage = operationResult.ErrorCategory,
-                FailureDetails = GetFailureDetails(operationResult.FailureDetails),
-            };
+                case P.OperationResult.ResultTypeOneofCase.Success:
+                    return new OperationResult()
+                    {
+                        Result = operationResult.Success.Result,
+                    };
+
+                case P.OperationResult.ResultTypeOneofCase.Failure:
+                    return new OperationResult()
+                    {
+                        FailureDetails = GetFailureDetails(operationResult.Failure.FailureDetails),
+                    };
+
+                default:
+                    throw new NotSupportedException($"Deserialization of {operationResult.ResultTypeCase} is not supported.");
+            }
         }
     }
 }
