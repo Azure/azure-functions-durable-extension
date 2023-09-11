@@ -335,6 +335,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 functionResult = await functionInfo.Executor.TryExecuteAsync(
                     input,
                     cancellationToken: this.HostLifetimeService.OnStopping);
+
+                if (!functionResult.Succeeded)
+                {
+                    // Shutdown can surface as a completed invocation in a failed state.
+                    // Re-throw so we can abort this invocation.
+                    this.HostLifetimeService.OnStopping.ThrowIfCancellationRequested();
+                }
             }
             catch (Exception hostRuntimeException)
             {
