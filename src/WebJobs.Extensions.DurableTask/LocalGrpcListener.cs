@@ -203,13 +203,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 EntityMessageEvent eventToSend = ClientEntityHelpers.EmitOperationSignal(
                     new OrchestrationInstance() { InstanceId = request.InstanceId },
-                    new Guid(request.RequestId.ToByteArray()),
+                    Guid.Parse(request.RequestId),
                     request.Name,
                     request.Input,
                     EntityMessageEvent.GetCappedScheduledTime(
-                        request.ScheduledTime.ToDateTime(),
+                        DateTime.UtcNow,
                         entityOrchestrationService.EntityBackendProperties.MaximumSignalDelayTime,
-                        DateTime.UtcNow));
+                        request.ScheduledTime?.ToDateTime()));
 
                 await durabilityProvider.SendTaskOrchestrationMessageAsync(eventToSend.AsTaskMessage());
 
@@ -243,12 +243,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     new EntityBackendQueries.EntityQuery()
                     {
                          InstanceIdStartsWith = query.InstanceIdStartsWith,
-                         LastModifiedFrom = (query.LastModifiedFrom == default) ? null : query.LastModifiedFrom.ToDateTime(),
-                         LastModifiedTo = (query.LastModifiedTo == default) ? null : query.LastModifiedTo.ToDateTime(),
+                         LastModifiedFrom = query.LastModifiedFrom?.ToDateTime(),
+                         LastModifiedTo = query.LastModifiedTo?.ToDateTime(),
                          IncludeDeleted = false,
                          IncludeState = query.IncludeState,
                          ContinuationToken = query.ContinuationToken,
-                         PageSize = query.PageSize == default ? null : query.PageSize,
+                         PageSize = query.PageSize,
                     },
                     context.CancellationToken);
 
