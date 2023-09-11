@@ -6,11 +6,11 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
+using DurableTask.Core.Entities;
 using DurableTask.Core.History;
 using DurableTask.Core.Query;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using DurableTask.Core.Entities;
 #if !FUNCTIONS_V1
 using Microsoft.Azure.WebJobs.Host.Scale;
 #endif
