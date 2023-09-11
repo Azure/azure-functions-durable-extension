@@ -203,7 +203,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 EntityMessageEvent eventToSend = ClientEntityHelpers.EmitOperationSignal(
                     new OrchestrationInstance() { InstanceId = request.InstanceId },
-                    new Guid(request.Guid.ToByteArray()),
+                    new Guid(request.RequestId.ToByteArray()),
                     request.Name,
                     request.Input,
                     EntityMessageEvent.GetCappedScheduledTime(
@@ -274,6 +274,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     {
                         RemoveEmptyEntities = request.RemoveEmptyEntities,
                         ReleaseOrphanedLocks = request.ReleaseOrphanedLocks,
+                        ContinuationToken = request.ContinuationToken,
                     },
                     context.CancellationToken);
 
@@ -281,6 +282,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     EmptyEntitiesRemoved = result.EmptyEntitiesRemoved,
                     OrphanedLocksReleased = result.OrphanedLocksReleased,
+                    ContinuationToken = result.ContinuationToken,
                 };
             }
 
