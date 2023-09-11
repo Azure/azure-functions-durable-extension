@@ -478,7 +478,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 Operation = operationRequest.Operation,
                 Input = operationRequest.Input,
-                Guid = ByteString.FromStream(new MemoryStream(operationRequest.Id.ToByteArray())),
+                RequestId = ByteString.FromStream(new MemoryStream(operationRequest.Id.ToByteArray())),
             };
         }
 
