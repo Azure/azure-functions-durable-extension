@@ -565,11 +565,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             else
             {
-                return await this.LegacyImplementationOfReadEntityStateAsync<T>(provider, entityId);
+                return await this.ReadEntityStateLegacyAsync<T>(provider, entityId);
             }
         }
 
-        private async Task<EntityStateResponse<T>> LegacyImplementationOfReadEntityStateAsync<T>(DurabilityProvider provider, EntityId entityId)
+        private async Task<EntityStateResponse<T>> ReadEntityStateLegacyAsync<T>(DurabilityProvider provider, EntityId entityId)
         {
             string entityState = await provider.RetrieveSerializedEntityState(entityId, this.messageDataConverter.JsonSettings);
 
@@ -662,11 +662,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             else
             {
-                return await this.LegacyImplementationOfListEntitiesAsync(query, cancellationToken);
+                return await this.ListEntitiesLegacyAsync(query, cancellationToken);
             }
         }
 
-        private async Task<EntityQueryResult> LegacyImplementationOfListEntitiesAsync(EntityQuery query, CancellationToken cancellationToken)
+        private async Task<EntityQueryResult> ListEntitiesLegacyAsync(EntityQuery query, CancellationToken cancellationToken)
         {
             var condition = new OrchestrationStatusQueryCondition(query);
             EntityQueryResult entityResult;
@@ -708,11 +708,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             else
             {
-                return await LegacyImplementationOfCleanEntityStorageAsync(removeEmptyEntities, releaseOrphanedLocks, cancellationToken);
+                return await CleanEntityStorageLegacyAsync(removeEmptyEntities, releaseOrphanedLocks, cancellationToken);
             }
         }
 
-        private async Task<CleanEntityStorageResult> LegacyImplementationOfCleanEntityStorageAsync(bool removeEmptyEntities, bool releaseOrphanedLocks, CancellationToken cancellationToken)
+        private async Task<CleanEntityStorageResult> CleanEntityStorageLegacyAsync(bool removeEmptyEntities, bool releaseOrphanedLocks, CancellationToken cancellationToken)
         {
             DateTime now = DateTime.UtcNow;
             CleanEntityStorageResult finalResult = default;
