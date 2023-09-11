@@ -9,6 +9,7 @@ using Microsoft.Azure.WebJobs.Host.Bindings;
 using Microsoft.Azure.WebJobs.Host.Listeners;
 using Microsoft.Azure.WebJobs.Host.Protocols;
 using Microsoft.Azure.WebJobs.Host.Triggers;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
@@ -57,6 +58,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private class EntityTriggerBinding : ITriggerBinding
         {
+            private static readonly IReadOnlyDictionary<string, object?> EmptyBindingData = new Dictionary<string, object?>(capacity: 0);
+
             private readonly DurableTaskExtension config;
             private readonly ParameterInfo parameterInfo;
             private readonly FunctionName entityName;
@@ -95,15 +98,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             public Task<ITriggerData> BindAsync(object value, ValueBindingContext context)
             {
-                var entityContext = (DurableEntityContext)value;
-                Type destinationType = this.parameterInfo.ParameterType;
-
-                object? convertedValue = null;
-                if (destinationType == typeof(IDurableEntityContext))
+                if (value is DurableEntityContext entityContext)
                 {
-                    convertedValue = entityContext;
+                    Type destinationType = this.parameterInfo.ParameterType;
+
+                    object? convertedValue = null;
+                    if (destinationType == typeof(IDurableEntityContext))
+                    {
+                        convertedValue = entityContext;
 #if !FUNCTIONS_V1
-                    ((IDurableEntityContext)value).FunctionBindingContext = context.FunctionContext;
+                        ((IDurableEntityContext)value).FunctionBindingContext = context.FunctionContext;
 #endif
                 }
                 else if (destinationType == typeof(string))
@@ -111,15 +115,35 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     convertedValue = EntityContextToString(entityContext);
                 }
 
-                var inputValueProvider = new ObjectValueProvider(
-                    convertedValue ?? value,
-                    this.parameterInfo.ParameterType);
+                    var inputValueProvider = new ObjectValueProvider(
+                        convertedValue ?? value,
+                        this.parameterInfo.ParameterType);
 
-                var bindingData = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
-                bindingData[this.parameterInfo.Name!] = convertedValue;
+                    var bindingData = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+                    bindingData[this.parameterInfo.Name!] = convertedValue;
 
-                var triggerData = new TriggerData(inputValueProvider, bindingData);
-                return Task.FromResult<ITriggerData>(triggerData);
+                    var triggerData = new TriggerData(inputValueProvider, bindingData);
+                    return Task.FromResult<ITriggerData>(triggerData);
+                }
+#if FUNCTIONS_V3_OR_GREATER
+                else if (value is RemoteEntityContext remoteContext)
+                {
+                    // Generate a byte array which is the serialized protobuf payload
+                    // https://developers.google.com/protocol-buffers/docs/csharptutorial#parsing_and_serialization
+                    var entityBatchRequest = remoteContext.Request.ToEntityBatchRequest();
+
+                    // We convert the binary payload into a base64 string because that seems to be the most commonly supported
+                    // format for Azure Functions language workers. Attempts to send unencoded byte[] payloads were unsuccessful.
+                    string encodedRequest = ProtobufUtils.Base64Encode(entityBatchRequest);
+                    var contextValueProvider = new ObjectValueProvider(encodedRequest, typeof(string));
+                    var triggerData = new TriggerData(contextValueProvider, EmptyBindingData);
+                    return Task.FromResult<ITriggerData>(triggerData);
+                }
+#endif
+                else
+                {
+                    throw new ArgumentException($"Don't know how to bind to {value?.GetType().Name ?? "null"}.", nameof(value));
+                }
             }
 
             public ParameterDescriptor ToParameterDescriptor()
