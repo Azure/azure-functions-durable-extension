@@ -10,12 +10,14 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
+using DurableTask.Core.Entities;
 using DurableTask.Core.History;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.WebApiCompatShim;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using DTCore = DurableTask.Core;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
@@ -549,6 +551,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private async Task<EntityStateResponse<T>> ReadEntityStateAsync<T>(DurabilityProvider provider, EntityId entityId)
         {
+            if (this.HasNativeEntityQuerySupport(this.durabilityProvider, out var entityBackendQueries))
+            {
+                EntityBackendQueries.EntityMetadata? metaData = await entityBackendQueries.GetEntityAsync(
+                    new DTCore.Entities.EntityId(entityId.EntityName, entityId.EntityKey),
+                    cancellation: default);
+
+                return new EntityStateResponse<T>()
+                {
+                    EntityExists = metaData.HasValue,
+                    EntityState = metaData.HasValue ? this.messageDataConverter.Deserialize<T>(metaData.Value.SerializedState) : default,
+                };
+            }
+            else
+            {
+                return await this.ReadEntityStateLegacyAsync<T>(provider, entityId);
+            }
+        }
+
+        private async Task<EntityStateResponse<T>> ReadEntityStateLegacyAsync<T>(DurabilityProvider provider, EntityId entityId)
+        {
             string entityState = await provider.RetrieveSerializedEntityState(entityId, this.messageDataConverter.JsonSettings);
 
             return new EntityStateResponse<T>()
@@ -612,6 +634,40 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <inheritdoc />
         async Task<EntityQueryResult> IDurableEntityClient.ListEntitiesAsync(EntityQuery query, CancellationToken cancellationToken)
         {
+            if (this.HasNativeEntityQuerySupport(this.durabilityProvider, out var entityBackendQueries))
+            {
+                var result = await entityBackendQueries.QueryEntitiesAsync(
+                    new EntityBackendQueries.EntityQuery()
+                    {
+                        InstanceIdStartsWith = query.EntityName != null ? $"${query.EntityName}" : null,
+                        IncludeDeleted = query.IncludeDeleted,
+                        IncludeState = query.FetchState,
+                        LastModifiedFrom = query.LastOperationFrom == DateTime.MinValue ? null : query.LastOperationFrom,
+                        LastModifiedTo = query.LastOperationTo,
+                        PageSize = query.PageSize,
+                        ContinuationToken = query.ContinuationToken,
+                    },
+                    cancellationToken);
+
+                return new EntityQueryResult()
+                {
+                    Entities = result.Results.Select(ConvertEntityMetadata).ToList(),
+                    ContinuationToken = result.ContinuationToken,
+                };
+
+                DurableEntityStatus ConvertEntityMetadata(EntityBackendQueries.EntityMetadata metadata)
+                {
+                    return new DurableEntityStatus(metadata);
+                }
+            }
+            else
+            {
+                return await this.ListEntitiesLegacyAsync(query, cancellationToken);
+            }
+        }
+
+        private async Task<EntityQueryResult> ListEntitiesLegacyAsync(EntityQuery query, CancellationToken cancellationToken)
+        {
             var condition = new OrchestrationStatusQueryCondition(query);
             EntityQueryResult entityResult;
             Stopwatch stopwatch = new Stopwatch();
@@ -633,6 +689,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         /// <inheritdoc />
         async Task<CleanEntityStorageResult> IDurableEntityClient.CleanEntityStorageAsync(bool removeEmptyEntities, bool releaseOrphanedLocks, CancellationToken cancellationToken)
+        {
+            if (this.HasNativeEntityQuerySupport(this.durabilityProvider, out var entityBackendQueries))
+            {
+                var result = await entityBackendQueries.CleanEntityStorageAsync(
+                    new EntityBackendQueries.CleanEntityStorageRequest()
+                    {
+                        RemoveEmptyEntities = removeEmptyEntities,
+                        ReleaseOrphanedLocks = releaseOrphanedLocks,
+                    },
+                    cancellationToken);
+
+                return new CleanEntityStorageResult()
+                {
+                    NumberOfEmptyEntitiesRemoved = result.EmptyEntitiesRemoved,
+                    NumberOfOrphanedLocksRemoved = result.OrphanedLocksReleased,
+                };
+            }
+            else
+            {
+                return await CleanEntityStorageLegacyAsync(removeEmptyEntities, releaseOrphanedLocks, cancellationToken);
+            }
+        }
+
+        private async Task<CleanEntityStorageResult> CleanEntityStorageLegacyAsync(bool removeEmptyEntities, bool releaseOrphanedLocks, CancellationToken cancellationToken)
         {
             DateTime now = DateTime.UtcNow;
             CleanEntityStorageResult finalResult = default;
@@ -704,6 +784,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             while (condition.ContinuationToken != null);
 
             return finalResult;
+        }
+
+        private bool HasNativeEntityQuerySupport(DurabilityProvider provider, out EntityBackendQueries entityBackendQueries)
+        {
+            entityBackendQueries = provider.EntityOrchestrationService?.EntityBackendQueries;
+            return entityBackendQueries != null;
         }
 
         private async Task<OrchestrationState> GetOrchestrationInstanceStateAsync(string instanceId)
