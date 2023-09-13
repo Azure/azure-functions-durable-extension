@@ -28,7 +28,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         IOrchestrationService,
         IOrchestrationServiceClient,
         IOrchestrationServiceQueryClient,
-        IOrchestrationServicePurgeClient
+        IOrchestrationServicePurgeClient,
+        IEntityOrchestrationService
     {
         internal const string NoConnectionDetails = "default";
 
@@ -67,7 +68,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <summary>
         /// Specifies whether the durability provider supports Durable Entities.
         /// </summary>
-        public virtual bool SupportsEntities => this.entityOrchestrationService != null;
+        public virtual bool SupportsEntities => this.entityOrchestrationService?.EntityBackendProperties != null;
 
         /// <summary>
         /// Specifies whether the backend's WaitForOrchestration is implemented without polling.
@@ -105,11 +106,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public virtual TimeSpan LongRunningTimerIntervalLength { get; set; }
 
         /// <summary>
-        ///  Returns the entity orchestration service, if this provider supports entities, or null otherwise.
-        /// </summary>
-        public virtual IEntityOrchestrationService EntityOrchestrationService => this.entityOrchestrationService;
-
-        /// <summary>
         /// Event source name (e.g. DurableTask-AzureStorage).
         /// </summary>
         public virtual string EventSourceName { get; set; }
@@ -128,6 +124,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         /// <inheritdoc/>
         public int MaxConcurrentTaskActivityWorkItems => this.GetOrchestrationService().MaxConcurrentTaskActivityWorkItems;
+
+        /// <inheritdoc/>
+        EntityBackendProperties IEntityOrchestrationService.EntityBackendProperties => this.entityOrchestrationService?.EntityBackendProperties;
+
+        /// <inheritdoc/>
+        EntityBackendQueries IEntityOrchestrationService.EntityBackendQueries => this.entityOrchestrationService?.EntityBackendQueries;
+
+        /// <inheritdoc/>
+        Task<TaskOrchestrationWorkItem> IEntityOrchestrationService.LockNextOrchestrationWorkItemAsync(TimeSpan receiveTimeout, CancellationToken cancellationToken)
+            => this.entityOrchestrationService.LockNextOrchestrationWorkItemAsync(receiveTimeout, cancellationToken);
+
+        /// <inheritdoc/>
+        Task<TaskOrchestrationWorkItem> IEntityOrchestrationService.LockNextEntityWorkItemAsync(TimeSpan receiveTimeout, CancellationToken cancellationToken)
+            => this.entityOrchestrationService.LockNextEntityWorkItemAsync(receiveTimeout, cancellationToken);
 
         internal string GetBackendInfo()
         {

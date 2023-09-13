@@ -788,7 +788,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private bool HasNativeEntityQuerySupport(DurabilityProvider provider, out EntityBackendQueries entityBackendQueries)
         {
-            entityBackendQueries = provider.EntityOrchestrationService?.EntityBackendQueries;
+            entityBackendQueries = (provider as IEntityOrchestrationService)?.EntityBackendQueries;
             return entityBackendQueries != null;
         }
 
