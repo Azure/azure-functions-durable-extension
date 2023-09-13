@@ -428,7 +428,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 return new P.EntityMetadata()
                 {
-                    InstanceId = metaData.ToString(),
+                    InstanceId = metaData.EntityId.ToString(),
                     LastModifiedTime = metaData.LastModifiedTime.ToTimestamp(),
                     SerializedState = metaData.SerializedState,
                 };
