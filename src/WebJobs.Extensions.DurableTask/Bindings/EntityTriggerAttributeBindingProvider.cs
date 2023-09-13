@@ -78,7 +78,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.BindingDataContract = GetBindingDataContract(parameterInfo);
             }
 
-            public Type TriggerValueType => typeof(IDurableEntityContext);
+            // Out-of-proc V2 uses a different trigger value type
+            public Type TriggerValueType => this.config.OutOfProcProtocol == OutOfProcOrchestrationProtocol.MiddlewarePassthrough ?
+                typeof(RemoteEntityContext) :
+                typeof(IDurableEntityContext);
 
             public IReadOnlyDictionary<string, Type> BindingDataContract { get; }
 
