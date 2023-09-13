@@ -555,6 +555,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 EntityBackendQueries.EntityMetadata? metaData = await entityBackendQueries.GetEntityAsync(
                     new DTCore.Entities.EntityId(entityId.EntityName, entityId.EntityKey),
+                    includeState: true,
+                    includeDeleted: false,
                     cancellation: default);
 
                 return new EntityStateResponse<T>()
