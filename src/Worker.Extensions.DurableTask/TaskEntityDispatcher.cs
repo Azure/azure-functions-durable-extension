@@ -10,6 +10,9 @@ namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
 /// <summary>
 /// Represents a task entity dispatch invocation.
 /// </summary>
+/// <remarks>
+/// This type is used to aid in dispatching a <see cref="EntityTriggerAttribute"/> to the operation reciever object.
+/// </remarks>
 public sealed class TaskEntityDispatcher
 {
     private readonly string request;
@@ -42,15 +45,15 @@ public sealed class TaskEntityDispatcher
     /// <para>Dispatches the entity trigger to an instance of the provided <typeparamref name="T"/>.</para>
     /// <para>
     /// If <typeparamref name="T"/> is <see cref="ITaskEntity"/>, it will be activated from <see cref="IServiceProvider"/>
-    /// and then be ran.
+    /// and then be dispatched to.
     /// </para>
     /// <para>
     /// If <typeparamref name="T"/> is not <see cref="ITaskEntity"/>, it is assumed the type represents the entity state
     /// and it will be deserialized and dispatched directly to the state.
     /// </para>
     /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <returns></returns>
+    /// <typeparam name="T">The type to dispatch to.</typeparam>
+    /// <returns>A task that completes when the dispatch has finished.</returns>
     public Task DispatchAsync<T>()
     {
         if (typeof(ITaskEntity).IsAssignableFrom(typeof(T)))

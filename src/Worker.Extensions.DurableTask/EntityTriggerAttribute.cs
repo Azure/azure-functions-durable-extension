@@ -4,12 +4,16 @@
 using System;
 using System.Diagnostics;
 using Microsoft.Azure.Functions.Worker.Extensions.Abstractions;
+using Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
 
 namespace Microsoft.Azure.Functions.Worker;
 
 /// <summary>
 /// Trigger attribute used for durable entity functions.
 /// </summary>
+/// <remarks>
+/// Entity triggers must bind to <see cref="TaskEntityDispatcher"/>.
+/// </remarks>
 [AttributeUsage(AttributeTargets.Parameter)]
 [DebuggerDisplay("{EntityName}")]
 public sealed class EntityTriggerAttribute : TriggerBindingAttribute
