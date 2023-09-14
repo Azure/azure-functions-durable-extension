@@ -6,10 +6,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Azure;
+using DurableTask.AzureStorage;
 using DurableTask.AzureStorage.Monitoring;
 using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Extensions.Logging;
-using Microsoft.WindowsAzure.Storage;
 using Newtonsoft.Json;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
@@ -19,7 +20,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly string functionId;
         private readonly string functionName;
         private readonly string hubName;
-        private readonly CloudStorageAccount storageAccount;
+        private readonly StorageAccountClientProvider storageAccountClientProvider;
         private readonly ScaleMonitorDescriptor scaleMonitorDescriptor;
         private readonly ILogger logger;
 
@@ -29,17 +30,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string functionId,
             string functionName,
             string hubName,
-            CloudStorageAccount storageAccount,
+            StorageAccountClientProvider storageAccountClientProvider,
             ILogger logger,
             DisconnectedPerformanceMonitor performanceMonitor = null)
         {
             this.functionId = functionId;
             this.functionName = functionName;
             this.hubName = hubName;
-            this.storageAccount = storageAccount;
+            this.storageAccountClientProvider = storageAccountClientProvider;
             this.logger = logger;
             this.performanceMonitor = performanceMonitor;
+#pragma warning disable CS0618 // Type or member is obsolete
             this.scaleMonitorDescriptor = new ScaleMonitorDescriptor($"{this.functionId}-DurableTaskTrigger-{this.hubName}".ToLower());
+#pragma warning restore CS0618 // Type or member is obsolete
         }
 
         public ScaleMonitorDescriptor Descriptor
@@ -54,12 +57,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             if (this.performanceMonitor == null)
             {
-                if (this.storageAccount == null)
+                if (this.storageAccountClientProvider == null)
                 {
-                    throw new ArgumentNullException(nameof(this.storageAccount));
+                    throw new ArgumentNullException(nameof(this.storageAccountClientProvider));
                 }
 
-                this.performanceMonitor = new DisconnectedPerformanceMonitor(this.storageAccount, this.hubName);
+                this.performanceMonitor = new DisconnectedPerformanceMonitor(
+                    new AzureStorageOrchestrationServiceSettings
+                    {
+                        StorageAccountClientProvider = this.storageAccountClientProvider,
+                        TaskHubName = this.hubName,
+                    });
             }
 
             return this.performanceMonitor;
@@ -81,7 +89,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 DisconnectedPerformanceMonitor performanceMonitor = this.GetPerformanceMonitor();
                 heartbeat = await performanceMonitor.PulseAsync();
             }
-            catch (StorageException e)
+            catch (Exception e) when (e.InnerException is RequestFailedException)
             {
                 this.logger.LogWarning("{details}. Function: {functionName}. HubName: {hubName}.", e.ToString(), this.functionName, this.hubName);
             }
