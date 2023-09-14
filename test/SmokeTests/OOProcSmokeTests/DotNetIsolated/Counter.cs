@@ -24,7 +24,7 @@ public class Counter
     [DataMember]
     public int CurrentValue { get; set; }
 
-    public void Add(int amount, TaskEntityContext context)
+    public void Add(int amount)
     {
         this.CurrentValue += amount;
     }
