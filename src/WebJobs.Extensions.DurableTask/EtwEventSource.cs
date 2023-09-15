@@ -159,7 +159,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.WriteEvent(209, TaskHub, AppName, SlotName, FunctionName, InstanceId, Reason, FunctionType, ExtensionVersion, IsReplay);
         }
 
-        [Event(210, Level = EventLevel.Informational, Version = 3)]
+        [Event(233, Level = EventLevel.Informational, Version = 3)]
         public void EventGridNotificationCompleted(
             string TaskHub,
             string AppName,
@@ -178,7 +178,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.WriteEvent(210, TaskHub, AppName, SlotName, FunctionName, FunctionState, InstanceId, Details, StatusCode, Reason, FunctionType, ExtensionVersion, IsReplay, LatencyMs);
         }
 
-        [Event(211, Level = EventLevel.Error, Version = 3)]
+        [Event(234, Level = EventLevel.Error, Version = 3)]
         public void EventGridNotificationFailed(
             string TaskHub,
             string AppName,
@@ -514,7 +514,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.WriteEvent(232, TaskHub, AppName, SlotName, FunctionName, InstanceId, Reason, FunctionType, ExtensionVersion, IsReplay);
         }
 
-        [Event(233, Level = EventLevel.Informational, Version = 4)]
+        [Event(210, Level = EventLevel.Informational, Version = 4)]
         public void EntityBatchCompleted(
             string TaskHub,
             string AppName,
@@ -539,7 +539,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.WriteEvent(233, TaskHub, AppName, SlotName, FunctionName, InstanceId, EventsReceived, OperationsInBatch, OperationsExecuted, OutOfOrderMessages, QueuedMessages, UserStateSize, Sources, Destinations, LockedBy, Suspended, TraceFlags, FunctionType, ExtensionVersion, IsReplay);
         }
 
-        [Event(234, Level = EventLevel.Error, Version = 4)]
+        [Event(211, Level = EventLevel.Error, Version = 4)]
         public void EntityBatchFailed(
             string TaskHub,
             string AppName,
