@@ -175,7 +175,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             bool IsReplay,
             long LatencyMs)
         {
-            this.WriteEvent(210, TaskHub, AppName, SlotName, FunctionName, FunctionState, InstanceId, Details, StatusCode, Reason, FunctionType, ExtensionVersion, IsReplay, LatencyMs);
+            this.WriteEvent(233, TaskHub, AppName, SlotName, FunctionName, FunctionState, InstanceId, Details, StatusCode, Reason, FunctionType, ExtensionVersion, IsReplay, LatencyMs);
         }
 
         [Event(234, Level = EventLevel.Error, Version = 3)]
@@ -194,7 +194,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             bool IsReplay,
             long LatencyMs)
         {
-            this.WriteEvent(211, TaskHub, AppName, SlotName, FunctionName, FunctionState, InstanceId, Details, StatusCode, Reason, FunctionType, ExtensionVersion, IsReplay, LatencyMs);
+            this.WriteEvent(234, TaskHub, AppName, SlotName, FunctionName, FunctionState, InstanceId, Details, StatusCode, Reason, FunctionType, ExtensionVersion, IsReplay, LatencyMs);
         }
 
         [Event(212, Level = EventLevel.Error)]
