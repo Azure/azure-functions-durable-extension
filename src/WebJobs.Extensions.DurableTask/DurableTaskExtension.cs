@@ -911,6 +911,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                                 IEnumerable<RequestMessage> deliverNow;
 
+                                if (entityContext.State.ShouldApplyBackPressure())
+                                {
+                                    // apply backpressure
+                                    entityShim.AddMessageToBeRescheduled(requestMessage);
+                                    continue;
+                                }
+
                                 if (requestMessage.ScheduledTime.HasValue)
                                 {
                                     if ((requestMessage.ScheduledTime.Value - DateTime.UtcNow) > TimeSpan.FromMilliseconds(100))

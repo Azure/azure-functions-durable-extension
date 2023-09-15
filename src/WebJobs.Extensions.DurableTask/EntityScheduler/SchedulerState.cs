@@ -63,6 +63,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.Queue.Enqueue(operationMessage);
         }
 
+        internal bool ShouldApplyBackPressure()
+        {
+            if (this.Queue == null)
+            {
+                return false;
+            }
+
+            var maxInternalQueueSize = 10000;
+            return this.Queue.Count > maxInternalQueueSize;
+        }
+
         internal void PutBack(Queue<RequestMessage> messages)
         {
             if (this.Queue != null)
