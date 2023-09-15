@@ -7,7 +7,7 @@
     <MajorVersion>2</MajorVersion>
     <MinorVersion>11</MinorVersion>
     <PatchVersion>4</PatchVersion>
-    <Version>$(MajorVersion).$(MinorVersion).$(PatchVersion)-entity-logs-1</Version>
+    <Version>$(MajorVersion).$(MinorVersion).$(PatchVersion)-entity-logs-2</Version>
     <FileVersion>$(MajorVersion).$(MinorVersion).$(PatchVersion)</FileVersion>
     <AssemblyVersion>$(MajorVersion).0.0.0</AssemblyVersion>
     <Company>Microsoft Corporation</Company>
