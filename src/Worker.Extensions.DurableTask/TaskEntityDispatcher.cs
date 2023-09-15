@@ -3,15 +3,17 @@
 
 using System;
 using System.Threading.Tasks;
+using Microsoft.DurableTask.Entities;
+using Microsoft.DurableTask.Worker.Grpc;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
+namespace Microsoft.Azure.Functions.Worker;
 
 /// <summary>
 /// Represents a task entity dispatch invocation.
 /// </summary>
 /// <remarks>
-/// This type is used to aid in dispatching a <see cref="EntityTriggerAttribute"/> to the operation reciever object.
+/// This type is used to aid in dispatching a <see cref="EntityTriggerAttribute"/> to the operation receiver object.
 /// </remarks>
 public sealed class TaskEntityDispatcher
 {
@@ -35,7 +37,7 @@ public sealed class TaskEntityDispatcher
     {
         if (entity == null)
         {
-            throw ArgumentNullException(nameof(entity));
+            throw new ArgumentNullException(nameof(entity));
         }
 
         this.Result = await GrpcEntityRunner.LoadAndRunAsync(this.request, entity);
@@ -44,12 +46,12 @@ public sealed class TaskEntityDispatcher
     /// <summary>
     /// <para>Dispatches the entity trigger to an instance of the provided <typeparamref name="T"/>.</para>
     /// <para>
-    /// If <typeparamref name="T"/> is <see cref="ITaskEntity"/>, it will be activated from <see cref="IServiceProvider"/>
-    /// and then be dispatched to.
+    /// If <typeparamref name="T"/> is a <see cref="ITaskEntity"/>, it will be activated from
+    /// <see cref="IServiceProvider"/> and then be dispatched to.
     /// </para>
     /// <para>
-    /// If <typeparamref name="T"/> is not <see cref="ITaskEntity"/>, it is assumed the type represents the entity state
-    /// and it will be deserialized and dispatched directly to the state.
+    /// If <typeparamref name="T"/> is not <see cref="ITaskEntity"/>, it is assumed the <typeparamref name="T"/>
+    /// represents the entity state and it will be deserialized and dispatched directly to the state.
     /// </para>
     /// </summary>
     /// <typeparam name="T">The type to dispatch to.</typeparam>
@@ -67,6 +69,6 @@ public sealed class TaskEntityDispatcher
 
     private class StateEntity<T> : TaskEntity<T>
     {
-        public override AllowStateDispatch => true;
+        public override bool AllowStateDispatch => true;
     }
 }
