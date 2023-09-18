@@ -1,7 +1,6 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
-using System.Runtime.Serialization;
 using System.Text;
 using Azure.Core;
 using Microsoft.Azure.Functions.Worker;
@@ -18,10 +17,8 @@ namespace DotNetIsolated;
 /// <summary>
 /// A simple counter, demonstrating entity use.
 /// </summary>
-[DataContract]
 public class Counter
 {
-    [DataMember]
     public int CurrentValue { get; set; }
 
     public void Add(int amount)
@@ -133,6 +130,7 @@ public static class CounterTest
         var entityId = new EntityInstanceId("Counter", id);
         logger.LogInformation($"Deleting {entityId}...");
 
+        // All entities have a "delete" operation built in, so we can just send a signal
         await client.Entities.SignalEntityAsync(entityId, "delete");
 
         logger.LogInformation($"Sent deletion signal to {entityId}.");
