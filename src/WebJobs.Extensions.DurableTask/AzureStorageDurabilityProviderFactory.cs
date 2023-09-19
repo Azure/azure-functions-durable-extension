@@ -19,7 +19,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly AzureStorageOptions azureStorageOptions;
         private readonly INameResolver nameResolver;
         private readonly ILoggerFactory loggerFactory;
-        private readonly bool useSeparateQueriesForEntities;
         private readonly bool useSeparateQueueForEntityWorkItems;
         private readonly bool inConsumption; // If true, optimize defaults for consumption
         private AzureStorageDurabilityProvider defaultStorageProvider;
@@ -79,7 +78,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 runtimeType == WorkerRuntimeType.Java ||
                 runtimeType == WorkerRuntimeType.Custom)
             {
-                this.useSeparateQueriesForEntities = true;
                 this.useSeparateQueueForEntityWorkItems = true;
             }
 
@@ -216,7 +214,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 LoggerFactory = this.loggerFactory,
                 UseLegacyPartitionManagement = this.azureStorageOptions.UseLegacyPartitionManagement,
                 UseTablePartitionManagement = this.azureStorageOptions.UseTablePartitionManagement,
-                UseSeparateQueriesForEntities = this.useSeparateQueriesForEntities,
                 UseSeparateQueueForEntityWorkItems = this.useSeparateQueueForEntityWorkItems,
             };
 

@@ -366,6 +366,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 ContinuationToken = request.Query.ContinuationToken,
                 InstanceIdPrefix = request.Query.InstanceIdPrefix,
                 FetchInputsAndOutputs = request.Query.FetchInputsAndOutputs,
+                ExcludeEntities = true,
             };
 
             // Empty lists are not allowed by the underlying code that takes in an OrchestrationQuery. However,
