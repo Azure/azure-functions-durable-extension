@@ -500,6 +500,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 Actions = entityBatchResult.Actions.Select(operationAction => operationAction!.ToOperationAction()).ToList(),
                 EntityState = entityBatchResult.EntityState,
                 Results = entityBatchResult.Results.Select(operationResult => operationResult!.ToOperationResult()).ToList(),
+                FailureDetails = GetFailureDetails(entityBatchResult.FailureDetails),
             };
         }
 

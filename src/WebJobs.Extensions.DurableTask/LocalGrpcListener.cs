@@ -417,8 +417,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             private void CheckEntitySupport(ServerCallContext context, out DurabilityProvider durabilityProvider, out IEntityOrchestrationService entityOrchestrationService)
             {
                 durabilityProvider = this.GetDurabilityProvider(context);
-                entityOrchestrationService = durabilityProvider.EntityOrchestrationService;
-                if (entityOrchestrationService == null)
+                entityOrchestrationService = durabilityProvider as IEntityOrchestrationService;
+                if (entityOrchestrationService?.EntityBackendProperties == null)
                 {
                     throw new NotSupportedException($"The provider '{durabilityProvider.GetType().Name}' does not support entities.");
                 }
@@ -428,7 +428,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 return new P.EntityMetadata()
                 {
-                    InstanceId = metaData.ToString(),
+                    InstanceId = metaData.EntityId.ToString(),
                     LastModifiedTime = metaData.LastModifiedTime.ToTimestamp(),
                     SerializedState = metaData.SerializedState,
                 };

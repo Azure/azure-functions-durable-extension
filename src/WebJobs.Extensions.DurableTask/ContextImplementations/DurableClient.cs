@@ -555,6 +555,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 EntityBackendQueries.EntityMetadata? metaData = await entityBackendQueries.GetEntityAsync(
                     new DTCore.Entities.EntityId(entityId.EntityName, entityId.EntityKey),
+                    includeState: true,
+                    includeDeleted: false,
                     cancellation: default);
 
                 return new EntityStateResponse<T>()
@@ -788,7 +790,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private bool HasNativeEntityQuerySupport(DurabilityProvider provider, out EntityBackendQueries entityBackendQueries)
         {
-            entityBackendQueries = provider.EntityOrchestrationService?.EntityBackendQueries;
+            entityBackendQueries = (provider as IEntityOrchestrationService)?.EntityBackendQueries;
             return entityBackendQueries != null;
         }
 

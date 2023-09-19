@@ -3,6 +3,7 @@
 #nullable enable
 #if FUNCTIONS_V3_OR_GREATER
 using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading.Tasks;
@@ -269,9 +270,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 // and with failure details that explain what error was encountered.
                 dispatchContext.SetProperty(new EntityBatchResult()
                 {
-                    Actions = { },
+                    Actions = new List<OperationAction>(),
+                    Results = new List<OperationResult>(),
                     EntityState = batchRequest!.EntityState,
-                    Results = { },
                     FailureDetails = failureDetails,
                 });
             }
