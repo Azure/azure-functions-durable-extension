@@ -14,6 +14,7 @@ _Due: <2-3-business-days-before-release>_
 - [ ] Delete DTFx test packages from the [ADO feed](https://dev.azure.com/durabletaskframework/Durable%20Task%20Framework%20CI/_artifacts/feed/durabletask).
 - [ ] Run the [DTFx release pipeline](https://durabletaskframework.visualstudio.com/Durable%20Task%20Framework%20CI/_build?definitionId=21) ([defined here](https://github.com/Azure/durabletask/blob/main/azure-pipelines-release.yml)) to obtain new packages.
 - [ ] Publish DTFx packages to the [ADO feed](https://dev.azure.com/durabletaskframework/Durable%20Task%20Framework%20CI/_artifacts/feed/durabletask) for testing.
+- [ ] Keep branch `azure-storage-v12` updated with branch `main`.
 
 **Prep Release (assigned to: )**
 _Due: <2-business-days-before-release>_
@@ -23,6 +24,7 @@ _Due: <2-business-days-before-release>_
 - [ ] Add the Durable Functions package to the [ADO test feed](https://dev.azure.com/durabletaskframework/Durable%20Task%20Framework%20CI/_artifacts/feed/durabletask-test).
 - [ ] Check for package size, make sure it's not surprisingly heavier than a previous release.
 - [ ] Merge (**choose create a merge commit, NOT squash merge**) dev into main. Person performing validation must approve PR.
+- [ ] Keep branch `v3.x` updated with branch `dev`. Do not merge PRs that are sepecific to Durable Functions v2.
 
 **Validation**
 _Due: <1-business-days-before-release>_
