@@ -981,7 +981,8 @@
             event named <paramref name="eventName"/> using the
             <see cref="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationContext.WaitForExternalEvent``1(System.String)"/> API.
             </para><para>
-            If the specified instance is not found or not running, this operation will throw an exception.
+            If the specified instance is not found or not running, an exception may be thrown. This behavior depends on the selected storage provider
+            and the configuration setting <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.ThrowStatusExceptionsOnRaiseEvent"/>.
             </para>
             </remarks>
             <exception cref="T:System.ArgumentException">The instance id does not corespond to a valid orchestration instance.</exception>
@@ -1865,6 +1866,12 @@
             You can use this property for testing.
             </summary>
         </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.TelemetryActivator.DisposeAsync">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.TelemetryActivator.Dispose">
+            <inheritdoc/>
+        </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation.TelemetryActivator.Initialize(Microsoft.Extensions.Logging.ILogger)">
             <summary>
             Initialize is initialize the telemetry client.
@@ -1977,6 +1984,11 @@
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.SupportsImplicitEntityDeletion">
             <summary>
             Specifies whether this backend supports implicit deletion of entities.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.CheckStatusBeforeRaiseEvent">
+            <summary>
+            Whether or not to check the instance status before raising an event.
             </summary>
         </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.ConfigurationJson">
@@ -4033,6 +4045,27 @@
                 Default is true.
             </remarks>
         </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.DurableDistributedTracingVersion">
+            <summary>
+            Represents configuration options for Distributed Tracing in Durable Functions.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.DurableDistributedTracingVersion.None">
+            <summary>
+            Distributed Tracing is disabled.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.DurableDistributedTracingVersion.V1">
+            <summary>
+            Original implementation of Distributed Tracing in Durable Functions
+            that can be configured to use HttpCorrelationProtocol or W3CTraceContext.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.DurableDistributedTracingVersion.V2">
+            <summary>
+            OpenTelemetry compatible version of Distributed Tracing in Durable Functions.
+            </summary>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageOptions">
             <summary>
             Configuration options for the Azure Storage storage provider.
@@ -4180,6 +4213,13 @@
             of scale out performance.
             </summary>
             <value>A boolean indicating whether we use the legacy partition strategy. Defaults to false.</value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageOptions.UseTablePartitionManagement">
+            <summary>
+            Determines whether to use the table partition management strategy.
+            This strategy reduces expected costs for an Azure Storage V2 account.
+            </summary>
+            <value>A boolean indicating whether to use the table partition strategy. Defaults to false.</value>
         </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageOptions.ValidateHubName(System.String)">
             <summary>
@@ -4348,6 +4388,15 @@
             only after an entire batch of operations completes.
             </remarks>
         </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.ThrowStatusExceptionsOnRaiseEvent">
+            <summary>
+            Controls the behavior of <see cref="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient.RaiseEventAsync(System.String,System.String,System.Object)"/> in situations where the specified orchestration
+            does not exist, or is not in a running state. If set to true, an exception is thrown. If set to false, the event is silently discarded.
+            </summary>
+            <remarks>
+            The default behavior depends on the selected storage provider.
+            </remarks>
+        </member>
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.UseAppLease">
             <summary>
             If true, takes a lease on the task hub container, allowing for only one app to process messages in a task hub at a time.
@@ -4505,6 +4554,13 @@
             Gets or sets a protocol for distributed Tracing.
             Possible values are "HttpCorrelationProtocol" and "W3CTraceContext".
             The default value is "HttpCorrelationProtocol".
+            This setting is only used when <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.TraceOptions.Version"/> is `DurableDistributedTracingVersion.V1`.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.TraceOptions.Version">
+            <summary>
+            Gets or sets a <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.TraceOptions.Version" /> value indicating which version of distributed tracing to use.
+            The default value is 'DurableDistributedTracingVersion.V1'.
             </summary>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.OrchestrationClientAttribute">
@@ -4674,6 +4730,18 @@
             Option to only start a new orchestrator instance with an existing instance Id when the existing
             instance is in a terminated, failed, or completed state.
             </summary>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.OverridableStatesExtensions">
+            <summary>
+            Extension methods for <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.OverridableStates"/>.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.OverridableStatesExtensions.ToDedupeStatuses(Microsoft.Azure.WebJobs.Extensions.DurableTask.OverridableStates)">
+            <summary>
+            Gets the dedupe <see cref="T:DurableTask.Core.OrchestrationStatus"/> for a given <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.OverridableStates"/>.
+            </summary>
+            <param name="states">The overridable states.</param>
+            <returns>An array of statuses to dedupe.</returns>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.ProviderUtils">
             <summary>

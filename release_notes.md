@@ -4,9 +4,7 @@
 
 ### Bug Fixes
 
-- Fix handling of in-flight orchestrations and activities during host shutdown.
-    - Previously these were considered "failed", now they will be retried.
-    - This only affected dotnet-isolated and java workers.
+- Address input issues when using .NET isolated (#2581)[https://github.com/Azure/azure-functions-durable-extension/issues/2581]
 
 ### Breaking Changes
 
