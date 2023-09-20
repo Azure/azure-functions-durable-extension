@@ -14,10 +14,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
 {
     internal class ScaleUtils
     {
-        internal ScaleUtils()
-        {
-        }
-
 #if !FUNCTIONS_V1
         internal IScaleMonitor GetScaleMonitor(DurabilityProvider durabilityProvider, string functionId, FunctionName functionName, string? connectionName, string hubName)
         {
