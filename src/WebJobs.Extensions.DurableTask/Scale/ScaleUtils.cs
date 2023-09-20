@@ -4,7 +4,6 @@
 
 using System;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
 
 #if !FUNCTIONS_V1
 using Microsoft.Azure.WebJobs.Host.Scale;
