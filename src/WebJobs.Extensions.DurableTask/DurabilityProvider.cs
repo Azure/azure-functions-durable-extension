@@ -570,7 +570,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="functionName">Function name.</param>
         /// <param name="hubName">Task hub name.</param>
         /// <param name="connectionName">The name of the storage-specific connection settings.</param>
-        /// <param name="scaleControllerILogger">ILogger used by scale controller.</param>
         /// <param name="targetScaler">The target-based scaler.</param>
         /// <returns>True if target-based scaling is supported, false otherwise.</returns>
         public virtual bool TryGetTargetScaler(
@@ -578,7 +577,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string functionName,
             string hubName,
             string connectionName,
-            ILogger scaleControllerILogger,
             out ITargetScaler targetScaler)
         {
             targetScaler = null;

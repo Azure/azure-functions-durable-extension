@@ -159,6 +159,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             else
             {
                 ILogger logger = this.loggerFactory.CreateLogger(LoggerName);
+                logger.LogDebug("booop");
                 innerClient = new AzureStorageDurabilityProvider(
                     new AzureStorageOrchestrationService(settings),
                     this.storageAccountProvider,

@@ -239,13 +239,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string functionName,
             string hubName,
             string connectionName,
-            ILogger scaleControllerILogger,
             out ITargetScaler targetScaler)
         {
             var storageAccount = this.storageAccountProvider.GetStorageAccountDetails(connectionName).ToCloudStorageAccount();
-            var logger = scaleControllerILogger ?? this.logger;
-            var metricsProvider = this.GetMetricsProvider(functionName, hubName, storageAccount, logger);
-            targetScaler = new DurableTaskTargetScaler(functionId, metricsProvider, this, logger);
+            var metricsProvider = this.GetMetricsProvider(functionName, hubName, storageAccount, this.logger);
+            targetScaler = new DurableTaskTargetScaler(functionId, metricsProvider, this, this.logger);
             return true;
         }
 #endif

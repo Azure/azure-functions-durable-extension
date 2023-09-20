@@ -14,11 +14,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
 {
     internal class ScaleUtils
     {
-        private readonly ILogger? scaleControllerILogger;
-
-        internal ScaleUtils(ILogger? scaleControllerILogger = null)
+        internal ScaleUtils()
         {
-            this.scaleControllerILogger = scaleControllerILogger;
         }
 
 #if !FUNCTIONS_V1
@@ -93,7 +90,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
                     functionName.Name,
                     hubName,
                     connectionName,
-                    this.scaleControllerILogger,
                     out ITargetScaler targetScaler))
             {
                 return targetScaler;

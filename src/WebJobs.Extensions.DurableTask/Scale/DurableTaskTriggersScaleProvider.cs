@@ -28,14 +28,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
 
             var options = this.GetOptions(serviceProvider, triggerMetadata);
 
-            var durabilityProviderFactory = this.GetDurabilityProviderFactory(serviceProvider, options, out var scaleControllerILogger);
+            var durabilityProviderFactory = this.GetDurabilityProviderFactory(serviceProvider, options);
             var defaultDurabilityProvider = durabilityProviderFactory.GetDurabilityProvider();
 
             var connectionName = durabilityProviderFactory is AzureStorageDurabilityProviderFactory azureStorageDurabilityProviderFactory
                 ? azureStorageDurabilityProviderFactory.DefaultConnectionName
                 : null;
 
-            var scaleUtils = new ScaleUtils(scaleControllerILogger);
+            var scaleUtils = new ScaleUtils();
 
             this.targetScaler = scaleUtils.GetTargetScaler(
                 defaultDurabilityProvider,
@@ -83,11 +83,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
             return options;
         }
 
-        private IDurabilityProviderFactory GetDurabilityProviderFactory(IServiceProvider serviceProvider, DurableTaskOptions options, out ILogger logger)
+        private IDurabilityProviderFactory GetDurabilityProviderFactory(IServiceProvider serviceProvider, DurableTaskOptions options)
         {
             var orchestrationServiceFactories = serviceProvider.GetService<IEnumerable<IDurabilityProviderFactory>>();
             var loggerFactory = serviceProvider.GetService<ILoggerFactory>();
-            logger = loggerFactory.CreateLogger<DurableTaskTriggersScaleProvider>();
+            var logger = loggerFactory.CreateLogger<DurableTaskTriggersScaleProvider>();
             var durabilityProviderFactory = DurableTaskExtension.GetDurabilityProviderFactory(options, logger, orchestrationServiceFactories);
             return durabilityProviderFactory;
         }
