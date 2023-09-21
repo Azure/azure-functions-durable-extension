@@ -38,6 +38,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public async Task<TargetScalerResult> GetScaleResultAsync(TargetScalerContext context)
         {
+            // This method is only invoked by the ScaleController, so it doesn't run in the Functions Host process.
             var metrics = await this.metricsProvider.GetMetricsAsync();
 
             // compute activityWorkers: the number of workers we need to process all activity messages
@@ -59,6 +60,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.scaleResult.TargetWorkerCount = numWorkersToRequest;
 
             // When running on ScaleController V3, ILogger logs are forwarded to the ScaleController's Kusto table.
+            // This works because this code does not execute in the Functions Host process, but in the ScaleController process,
+            // and the ScaleController is injecting it's own custom ILogger implementation that forwards logs to Kusto.
             var scaleControllerLog = $"Target worker count for {this.functionId}: {numWorkersToRequest}. " +
                 $"Metrics used: workItemQueueLength={workItemQueueLength}. controlQueueLengths={serializedControlQueueLengths}. " +
                 $"maxConcurrentOrchestrators={this.MaxConcurrentOrchestrators}. maxConcurrentActivities={this.MaxConcurrentActivities}";
@@ -68,6 +71,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 scaleControllerLog = "Tried to request a negative worker count." + scaleControllerLog;
                 this.logger.LogError(scaleControllerLog);
+                // Throw exception so ScaleController can handle the error.
                 throw new Exception(scaleControllerLog);
             }
 

@@ -240,6 +240,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string connectionName,
             out ITargetScaler targetScaler)
         {
+            // This is only called by the ScaleController, it doesn't run in the Functions Host process.
             CloudStorageAccount storageAccount = this.storageAccountProvider.GetStorageAccountDetails(connectionName).ToCloudStorageAccount();
             DurableTaskMetricsProvider metricsProvider = this.GetMetricsProvider(functionName, hubName, storageAccount, this.logger);
             targetScaler = new DurableTaskTargetScaler(functionId, metricsProvider, this, this.logger);
