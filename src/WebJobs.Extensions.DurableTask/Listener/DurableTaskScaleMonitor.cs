@@ -67,21 +67,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return this.durableTaskMetricsProvider;
         }
 
-        private DisconnectedPerformanceMonitor GetPerformanceMonitor()
-        {
-            if (this.performanceMonitor == null)
-            {
-                if (this.storageAccount == null)
-                {
-                    throw new ArgumentNullException(nameof(this.storageAccount));
-                }
-
-                this.performanceMonitor = new DisconnectedPerformanceMonitor(this.storageAccount, this.hubName);
-            }
-
-            return this.performanceMonitor;
-        }
-
         async Task<ScaleMetrics> IScaleMonitor.GetMetricsAsync()
         {
             return await this.GetMetricsAsync();
@@ -142,7 +127,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
             }
 
-            DisconnectedPerformanceMonitor performanceMonitor = this.GetPerformanceMonitor();
+            DisconnectedPerformanceMonitor performanceMonitor = this.durableTaskMetricsProvider.GetPerformanceMonitor();
             var scaleRecommendation = performanceMonitor.MakeScaleRecommendation(workerCount, heartbeats.ToArray());
 
             bool writeToUserLogs = false;
