@@ -10,7 +10,7 @@ using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
-namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener
+namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     internal class DurableTaskTargetScaler : ITargetScaler
     {
@@ -30,7 +30,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener
             this.logger = logger;
         }
 
-        public TargetScalerDescriptor TargetScalerDescriptor { get; private set; }
+        public TargetScalerDescriptor TargetScalerDescriptor { get; }
 
         private int MaxConcurrentActivities => this.durabilityProvider.MaxConcurrentTaskActivityWorkItems;
 
@@ -58,7 +58,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener
             int numWorkersToRequest = (int)Math.Max(activityWorkers, orchestratorWorkers);
             this.scaleResult.TargetWorkerCount = numWorkersToRequest;
 
-            // When running on ScaleController V3, ILogger logs are forwarded to Kusto.
+            // When running on ScaleController V3, ILogger logs are forwarded to the ScaleController's Kusto table.
             var scaleControllerLog = $"Target worker count for {this.functionId}: {numWorkersToRequest}. " +
                 $"Metrics used: workItemQueueLength={workItemQueueLength}. controlQueueLengths={serializedControlQueueLengths}. " +
                 $"maxConcurrentOrchestrators={this.MaxConcurrentOrchestrators}. maxConcurrentActivities={this.MaxConcurrentActivities}";

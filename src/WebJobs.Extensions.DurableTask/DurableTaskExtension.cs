@@ -1625,7 +1625,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.TargetScalerDescriptor = new TargetScalerDescriptor(functionId);
             }
 
-            public TargetScalerDescriptor TargetScalerDescriptor { get; private set; }
+            public TargetScalerDescriptor TargetScalerDescriptor { get; }
 
             public Task<TargetScalerResult> GetScaleResultAsync(TargetScalerContext context)
             {
