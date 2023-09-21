@@ -200,6 +200,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public bool RollbackEntityOperationsOnExceptions { get; set; } = true;
 
         /// <summary>
+        /// Controls the behavior of <see cref="IDurableOrchestrationClient.RaiseEventAsync(string,string,object)"/> in situations where the specified orchestration
+        /// does not exist, or is not in a running state. If set to true, an exception is thrown. If set to false, the event is silently discarded.
+        /// </summary>
+        /// <remarks>
+        /// The default behavior depends on the selected storage provider.
+        /// </remarks>
+        public bool? ThrowStatusExceptionsOnRaiseEvent { get; set; } = null;
+
+        /// <summary>
         /// If true, takes a lease on the task hub container, allowing for only one app to process messages in a task hub at a time.
         /// </summary>
         public bool UseAppLease { get; set; } = true;

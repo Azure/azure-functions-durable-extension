@@ -7,10 +7,8 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.AzureStorage;
-using DurableTask.AzureStorage.Monitoring;
 using DurableTask.AzureStorage.Tracking;
 using DurableTask.Core;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener;
 using Microsoft.Extensions.Logging;
 using Microsoft.WindowsAzure.Storage;
 using Newtonsoft.Json;
@@ -57,6 +55,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         public override bool SupportsEntities => true;
+
+        public override bool CheckStatusBeforeRaiseEvent => true;
 
         /// <summary>
         /// The app setting containing the Azure Storage connection string.
@@ -206,10 +206,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string functionName,
             string hubName,
             CloudStorageAccount storageAccount,
-            ILogger logger,
-            DisconnectedPerformanceMonitor performanceMonitor)
+            ILogger logger)
         {
-            return new DurableTaskMetricsProvider(functionName, hubName, logger, performanceMonitor, storageAccount);
+            return new DurableTaskMetricsProvider(functionName, hubName, logger, performanceMonitor: null, storageAccount);
         }
 
         /// <inheritdoc/>
@@ -221,7 +220,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             out IScaleMonitor scaleMonitor)
         {
             CloudStorageAccount storageAccount = this.storageAccountProvider.GetStorageAccountDetails(connectionName).ToCloudStorageAccount();
-            DurableTaskMetricsProvider metricsProvider = this.GetMetricsProvider(functionName, hubName, storageAccount, this.logger, performanceMonitor: null);
+            DurableTaskMetricsProvider metricsProvider = this.GetMetricsProvider(functionName, hubName, storageAccount, this.logger);
             scaleMonitor = new DurableTaskScaleMonitor(
                 functionId,
                 functionName,
@@ -241,8 +240,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string connectionName,
             out ITargetScaler targetScaler)
         {
+            // This is only called by the ScaleController, it doesn't run in the Functions Host process.
             CloudStorageAccount storageAccount = this.storageAccountProvider.GetStorageAccountDetails(connectionName).ToCloudStorageAccount();
-            DurableTaskMetricsProvider metricsProvider = this.GetMetricsProvider(functionName, hubName, storageAccount, this.logger, performanceMonitor: null);
+            DurableTaskMetricsProvider metricsProvider = this.GetMetricsProvider(functionName, hubName, storageAccount, this.logger);
             targetScaler = new DurableTaskTargetScaler(functionId, metricsProvider, this, this.logger);
             return true;
         }

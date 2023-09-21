@@ -21,3 +21,5 @@ resolves #issue_for_this_pr
     * [ ] Otherwise: major or minor version updates are reflected in `/src/Worker.Extensions.DurableTask/AssemblyInfo.cs`
 * [ ] My changes **do not** add EventIds to our EventSource logs
     * [ ] Otherwise: Ensure the EventIds are within the supported range in our existing Windows infrastructure. You may validate this with a deployed app's telemetry. You may also extend the range by completing a PR such as [this one](https://msazure.visualstudio.com/One/_git/AAPT-Antares-Websites/pullrequest/7463263?_a=files).
+* [ ] My changes **should** be added to v3.x branch.
+    * [ ] Otherwise: This change only applies to Durable Functions v2.x and **will not** be merged to branch v3.x.

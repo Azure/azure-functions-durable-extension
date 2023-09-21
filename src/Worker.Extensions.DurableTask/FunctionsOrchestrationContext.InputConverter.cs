@@ -12,11 +12,12 @@ internal sealed partial class FunctionsOrchestrationContext
     {
         public abstract T Get<T>();
 
-        public static InputConverter Create(object? baseInput, DataConverter converter)
+        public static InputConverter Create(
+            object? baseInput, DataConverter converter, JsonSerializerOptions jsonOptions)
         {
             return baseInput switch
             {
-                JsonElement json => new JsonElementInputConverter(json),
+                JsonElement json => new JsonElementInputConverter(json, jsonOptions),
                 null => NullInputConverter.Instance,
                 _ => new DefaultInputConverter(baseInput, converter),
             };
@@ -43,15 +44,17 @@ internal sealed partial class FunctionsOrchestrationContext
     private class JsonElementInputConverter : InputConverter
     {
         private readonly JsonElement json;
+        private readonly JsonSerializerOptions jsonOptions;
 
-        public JsonElementInputConverter(JsonElement json)
+        public JsonElementInputConverter(JsonElement json, JsonSerializerOptions jsonOptions)
         {
             this.json = json;
+            this.jsonOptions = jsonOptions;
         }
 
         public override T Get<T>()
         {
-            return this.json.Deserialize<T>()!;
+            return this.json.Deserialize<T>(this.jsonOptions)!;
         }
     }
 

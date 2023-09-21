@@ -60,7 +60,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return metrics;
         }
 
-        private DisconnectedPerformanceMonitor GetPerformanceMonitor()
+        internal DisconnectedPerformanceMonitor GetPerformanceMonitor()
         {
             if (this.performanceMonitor == null)
             {
