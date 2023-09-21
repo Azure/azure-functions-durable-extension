@@ -11,7 +11,7 @@ using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
-namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener
+namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     internal class DurableTaskTargetScaler : ITargetScaler
     {
@@ -31,7 +31,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener
             this.logger = logger;
         }
 
-        public TargetScalerDescriptor TargetScalerDescriptor { get; private set; }
+        public TargetScalerDescriptor TargetScalerDescriptor { get; }
 
         private int MaxConcurrentActivities => this.durabilityProvider.MaxConcurrentTaskActivityWorkItems;
 

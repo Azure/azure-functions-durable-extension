@@ -207,7 +207,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string hubName,
             CloudStorageAccount storageAccount,
             ILogger logger,
-            DisconnectedPerformanceMonitor performanceMonitor = null)
+            DisconnectedPerformanceMonitor performanceMonitor)
         {
             return new DurableTaskMetricsProvider(functionName, hubName, logger, performanceMonitor, storageAccount);
         }
@@ -220,8 +220,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string connectionName,
             out IScaleMonitor scaleMonitor)
         {
-            var storageAccount = this.storageAccountProvider.GetStorageAccountDetails(connectionName).ToCloudStorageAccount();
-            var metricsProvider = this.GetMetricsProvider(functionName, hubName, storageAccount, this.logger);
+            CloudStorageAccount storageAccount = this.storageAccountProvider.GetStorageAccountDetails(connectionName).ToCloudStorageAccount();
+            DurableTaskMetricsProvider metricsProvider = this.GetMetricsProvider(functionName, hubName, storageAccount, this.logger, performanceMonitor: null);
             scaleMonitor = new DurableTaskScaleMonitor(
                 functionId,
                 functionName,
@@ -241,8 +241,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string connectionName,
             out ITargetScaler targetScaler)
         {
-            var storageAccount = this.storageAccountProvider.GetStorageAccountDetails(connectionName).ToCloudStorageAccount();
-            var metricsProvider = this.GetMetricsProvider(functionName, hubName, storageAccount, this.logger);
+            CloudStorageAccount storageAccount = this.storageAccountProvider.GetStorageAccountDetails(connectionName).ToCloudStorageAccount();
+            DurableTaskMetricsProvider metricsProvider = this.GetMetricsProvider(functionName, hubName, storageAccount, this.logger, performanceMonitor: null);
             targetScaler = new DurableTaskTargetScaler(functionId, metricsProvider, this, this.logger);
             return true;
         }

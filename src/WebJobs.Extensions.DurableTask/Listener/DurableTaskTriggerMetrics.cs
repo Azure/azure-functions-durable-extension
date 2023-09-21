@@ -11,7 +11,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <summary>
         /// The number of partitions in the task hub.
         /// </summary>
-        public int PartitionCount { get; set; }
+        public virtual int PartitionCount { get; set; }
 
         /// <summary>
         /// The number of messages across control queues. This will
