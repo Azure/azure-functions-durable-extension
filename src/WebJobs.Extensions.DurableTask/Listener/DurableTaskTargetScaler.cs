@@ -71,6 +71,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 scaleControllerLog = "Tried to request a negative worker count." + scaleControllerLog;
                 this.logger.LogError(scaleControllerLog);
+
                 // Throw exception so ScaleController can handle the error.
                 throw new Exception(scaleControllerLog);
             }
