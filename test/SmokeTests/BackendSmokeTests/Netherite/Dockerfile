@@ -5,7 +5,7 @@ FROM mcr.microsoft.com/dotnet/core/sdk:3.1 AS build-env
 
 # Build the app
 COPY . /root
-RUN cd /root/test/SmokeTests/BackendSmokeTests\Netherite && \
+RUN cd /root/test/SmokeTests/BackendSmokeTests/Netherite && \
     mkdir -p /home/site/wwwroot && \
     dotnet publish -c Release --output /home/site/wwwroot
 
