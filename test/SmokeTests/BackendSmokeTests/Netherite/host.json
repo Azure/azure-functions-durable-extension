@@ -16,7 +16,7 @@
         "type": "Netherite",
         "partitionCount": 12,
         "StorageConnectionName": "AzureWebJobsStorage",
-        "EventHubsConnectionName": "EventHubsConnection"
+        "EventHubsConnectionName": "SingleHost"
       }
     }
   }
