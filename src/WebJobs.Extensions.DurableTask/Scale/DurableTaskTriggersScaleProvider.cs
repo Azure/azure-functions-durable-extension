@@ -16,8 +16,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
 {
     internal class DurableTaskTriggersScaleProvider : IScaleMonitorProvider, ITargetScalerProvider
     {
-        private IScaleMonitor monitor;
-        private ITargetScaler targetScaler;
+        private readonly IScaleMonitor monitor;
+        private readonly ITargetScaler targetScaler;
 
         public DurableTaskTriggersScaleProvider(
             IServiceProvider serviceProvider,
@@ -26,25 +26,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
             string functionId = triggerMetadata.FunctionName;
             FunctionName functionName = new FunctionName(functionId);
 
-            var options = this.GetOptions(serviceProvider, triggerMetadata);
+            DurableTaskOptions options = this.GetOptions(serviceProvider, triggerMetadata);
 
-            var durabilityProviderFactory = this.GetDurabilityProviderFactory(serviceProvider, options);
-            var defaultDurabilityProvider = durabilityProviderFactory.GetDurabilityProvider();
+            IDurabilityProviderFactory durabilityProviderFactory = this.GetDurabilityProviderFactory(serviceProvider, options);
+            DurabilityProvider defaultDurabilityProvider = durabilityProviderFactory.GetDurabilityProvider();
 
-            var connectionName = durabilityProviderFactory is AzureStorageDurabilityProviderFactory azureStorageDurabilityProviderFactory
+            string? connectionName = durabilityProviderFactory is AzureStorageDurabilityProviderFactory azureStorageDurabilityProviderFactory
                 ? azureStorageDurabilityProviderFactory.DefaultConnectionName
                 : null;
 
-            var scaleUtils = new ScaleUtils();
-
-            this.targetScaler = scaleUtils.GetTargetScaler(
+            this.targetScaler = ScaleUtils.GetTargetScaler(
                 defaultDurabilityProvider,
                 functionId,
                 functionName,
                 connectionName,
                 options.HubName);
 
-            this.monitor = scaleUtils.GetScaleMonitor(
+            this.monitor = ScaleUtils.GetScaleMonitor(
                 defaultDurabilityProvider,
                 functionId,
                 functionName,
@@ -57,13 +55,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
             var nameResolver = serviceProvider.GetService<INameResolver>();
 
             // the metadata is the sync triggers payload
-            var metadataString = triggerMetadata.Metadata.ToString();
-            var metadata = JsonConvert.DeserializeObject<DurableTaskMetadata>(metadataString);
+            var metadata = triggerMetadata.Metadata.ToObject<DurableTaskMetadata>();
 
             var options = serviceProvider.GetService<IOptions<DurableTaskOptions>>().Value;
 
             // The property `taskHubName` is always expected in the SyncTriggers payload
-            options.HubName = metadata?.TaskHubName ?? throw new Exception($"Expected `taskHubName` property in SyncTriggers payload but found none. Payload: {metadataString}");
+            options.HubName = metadata?.TaskHubName ?? throw new Exception($"Expected `taskHubName` property in SyncTriggers payload but found none. Payload: {triggerMetadata.Metadata}");
             if (metadata?.MaxConcurrentActivityFunctions != null)
             {
                 options.MaxConcurrentActivityFunctions = metadata?.MaxConcurrentActivityFunctions;
