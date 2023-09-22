@@ -33,7 +33,7 @@ namespace Company.Function
             return $"Hello {name}!";
         }
 
-        [FunctionName("DurableFunctionsOrchestrationCSharp_HttpStart")]
+        [FunctionName("DurableFunctionsHttpStart")]
         public static async Task<HttpResponseMessage> HttpStart(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestMessage req,
             [DurableClient] IDurableOrchestrationClient starter,
