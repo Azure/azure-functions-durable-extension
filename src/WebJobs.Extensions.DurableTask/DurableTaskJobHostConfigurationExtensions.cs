@@ -111,7 +111,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
 #if FUNCTIONS_V3_OR_GREATER
         /// <summary>
-        /// Adds the IScaleMonitor and ITargetScaler providers for the Durable Triggers.<see cref="IWebJobsBuilder"/>.
+        /// Adds the <see cref="IScaleMonitor"/> and <see cref="ITargetScaler"/> providers for the Durable Triggers.
         /// </summary>
         /// <param name="builder">The <see cref="IWebJobsBuilder"/> to configure.</param>
         /// <returns>Returns the provided <see cref="IWebJobsBuilder"/>.</returns>
