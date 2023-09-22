@@ -42,6 +42,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             DurableTaskTriggerMetrics? metrics = null;
             try
             {
+                // This method is only invoked by the ScaleController, so it doesn't run in the Functions Host process.
                 metrics = await this.metricsProvider.GetMetricsAsync();
 
                 // compute activityWorkers: the number of workers we need to process all activity messages
@@ -62,7 +63,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 int numWorkersToRequest = (int)Math.Max(activityWorkers, orchestratorWorkers);
                 this.scaleResult.TargetWorkerCount = numWorkersToRequest;
 
-                // When running on ScaleController V3, ILogger logs are forwarded to Kusto.
+                // When running on ScaleController V3, ILogger logs are forwarded to the ScaleController's Kusto table.
+                // This works because this code does not execute in the Functions Host process, but in the ScaleController process,
+                // and the ScaleController is injecting it's own custom ILogger implementation that forwards logs to Kusto.
                 var metricsLog = $"Metrics: workItemQueueLength={workItemQueueLength}. controlQueueLengths={serializedControlQueueLengths}. " +
                     $"maxConcurrentOrchestrators={this.MaxConcurrentOrchestrators}. maxConcurrentActivities={this.MaxConcurrentActivities}";
                 var scaleControllerLog = $"Target worker count for '{this.functionId}' is '{numWorkersToRequest}'. " +
