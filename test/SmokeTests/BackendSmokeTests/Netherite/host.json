@@ -1,0 +1,24 @@
+{
+  "version": "2.0",
+  "logging": {
+    "applicationInsights": {
+      "samplingSettings": {
+        "isEnabled": true,
+        "excludedTypes": "Request"
+      },
+      "enableLiveMetricsFilters": true
+    }
+  },
+  "extensions": {
+    "durableTask": {
+      "hubName": "",
+      "useGracefulShutdown": true,
+      "storageProvider": {
+        "type": "Netherite",
+        "partitionCount": 12,
+        "StorageConnectionName": "AzureWebJobsStorage",
+        "EventHubsConnectionName": "EventHubsConnection"
+      }
+    }
+  }
+}
