@@ -1,0 +1,22 @@
+name: Smoke Test - .NET in-proc w/ Netherite on Functions V4
+
+on:
+  push:
+    branches: [ main, dev ]
+    paths:
+      - 'src/**'
+      - 'test/SmokeTests/BackendSmokeTests/Netherite/**'
+  pull_request:
+    branches: [ main, dev ]
+    paths:
+      - 'src/**'
+      - 'test/SmokeTests/BackendSmokeTests/Netherite/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Run V4 .NET in-proc w/ Netherite Smoke Test
+      run: test/SmokeTests/e2e-test.ps1 -DockerfilePath test/SmokeTests/BackendSmokeTests/Netherite/Dockerfile -HttpStartPath api/DurableFunctionsHttpStart -ContainerName pyApp
+      shell: pwsh
