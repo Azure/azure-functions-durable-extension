@@ -11,7 +11,6 @@
   },
   "extensions": {
     "durableTask": {
-      "hubName": "",
       "useGracefulShutdown": true,
       "storageProvider": {
         "type": "Netherite",
