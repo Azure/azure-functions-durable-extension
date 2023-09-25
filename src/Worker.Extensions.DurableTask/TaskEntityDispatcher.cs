@@ -69,6 +69,6 @@ public sealed class TaskEntityDispatcher
 
     private class StateEntity<T> : TaskEntity<T>
     {
-        public override bool AllowStateDispatch => true;
+        protected override bool AllowStateDispatch => true;
     }
 }
