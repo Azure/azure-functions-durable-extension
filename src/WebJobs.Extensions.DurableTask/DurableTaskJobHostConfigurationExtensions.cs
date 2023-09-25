@@ -115,23 +115,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </summary>
         /// <param name="builder">The <see cref="IWebJobsBuilder"/> to configure.</param>
         /// <returns>Returns the provided <see cref="IWebJobsBuilder"/>.</returns>
-        public static IWebJobsBuilder AddDurableScaleForTrigger(this IWebJobsBuilder builder, TriggerMetadata triggerMetadata)
+        internal static IWebJobsBuilder AddDurableScaleForTrigger(this IWebJobsBuilder builder, TriggerMetadata triggerMetadata)
         {
-            IServiceProvider serviceProvider = null;
-            var scalerProvider = new Lazy<DurableTaskTriggersScaleProvider>(() => new DurableTaskTriggersScaleProvider(serviceProvider, triggerMetadata));
-
-            builder.Services.AddSingleton<IScaleMonitorProvider>(resolvedServiceProvider =>
-            {
-                serviceProvider = serviceProvider ?? resolvedServiceProvider;
-                return scalerProvider.Value;
-            });
-
-            builder.Services.AddSingleton<ITargetScalerProvider>(resolvedServiceProvider =>
-            {
-                serviceProvider = serviceProvider ?? resolvedServiceProvider;
-                return scalerProvider.Value;
-            });
-
+            // this segment adheres to the followings pattern: https://github.com/Azure/azure-sdk-for-net/pull/38673/files
+            builder.Services.AddSingleton(serviceProvider => new DurableTaskTriggersScaleProvider(serviceProvider, triggerMetadata));
+            builder.Services.AddSingleton<IScaleMonitorProvider>(serviceProvider => serviceProvider.GetRequiredService<DurableTaskTriggersScaleProvider>());
+            builder.Services.AddSingleton<ITargetScalerProvider>(serviceProvider => serviceProvider.GetRequiredService<DurableTaskTriggersScaleProvider>());
             return builder;
         }
 #endif
