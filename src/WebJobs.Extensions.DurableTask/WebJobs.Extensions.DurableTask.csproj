@@ -6,8 +6,8 @@
     <RootNamespace>Microsoft.Azure.WebJobs.Extensions.DurableTask</RootNamespace>
     <MajorVersion>2</MajorVersion>
     <MinorVersion>10</MinorVersion>
-    <PatchVersion>0</PatchVersion>
-    <Version>$(MajorVersion).$(MinorVersion).$(PatchVersion)</Version>
+    <PatchVersion>1</PatchVersion>
+    <Version>$(MajorVersion).$(MinorVersion).$(PatchVersion)-preview</Version>
     <FileVersion>$(MajorVersion).$(MinorVersion).$(PatchVersion)</FileVersion>
     <AssemblyVersion>$(MajorVersion).0.0.0</AssemblyVersion>
     <Company>Microsoft Corporation</Company>
