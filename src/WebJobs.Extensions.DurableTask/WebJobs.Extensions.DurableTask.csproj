@@ -115,10 +115,6 @@
 
   <!-- Common dependencies across all targets -->
   <ItemGroup>
-    <PackageReference Include="Azure.Core" Version="1.35.0" />
-    <PackageReference Include="Azure.Data.Tables" Version="12.8.1" />
-    <PackageReference Include="Azure.Storage.Blobs" Version="12.18.0" />
-    <PackageReference Include="Azure.Storage.Queues" Version="12.16.0" />
     <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" Version="2.0.0-preview.5" />
     <PackageReference Include="Microsoft.Azure.DurableTask.Core" Version="2.14.*" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers" Version="0.5.*" />
