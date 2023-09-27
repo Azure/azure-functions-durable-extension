@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
@@ -208,7 +207,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     request.Input,
                     EntityMessageEvent.GetCappedScheduledTime(
                         DateTime.UtcNow,
-                        entityOrchestrationService.EntityBackendProperties.MaximumSignalDelayTime,
+                        entityOrchestrationService.EntityBackendProperties!.MaximumSignalDelayTime,
                         request.ScheduledTime?.ToDateTime()));
 
                 await durabilityProvider.SendTaskOrchestrationMessageAsync(eventToSend.AsTaskMessage());
@@ -221,7 +220,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 this.CheckEntitySupport(context, out var durabilityProvider, out var entityOrchestrationService);
 
-                EntityBackendQueries.EntityMetadata? metaData = await entityOrchestrationService.EntityBackendQueries.GetEntityAsync(
+                EntityBackendQueries.EntityMetadata? metaData = await entityOrchestrationService.EntityBackendQueries!.GetEntityAsync(
                     DTCore.Entities.EntityId.FromString(request.InstanceId),
                     request.IncludeState,
                     includeDeleted: false,
@@ -239,7 +238,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.CheckEntitySupport(context, out var durabilityProvider, out var entityOrchestrationService);
 
                 P.EntityQuery query = request.Query;
-                EntityBackendQueries.EntityQueryResult result = await entityOrchestrationService.EntityBackendQueries.QueryEntitiesAsync(
+                EntityBackendQueries.EntityQueryResult result = await entityOrchestrationService.EntityBackendQueries!.QueryEntitiesAsync(
                     new EntityBackendQueries.EntityQuery()
                     {
                          InstanceIdStartsWith = query.InstanceIdStartsWith,
@@ -269,7 +268,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 this.CheckEntitySupport(context, out var durabilityProvider, out var entityOrchestrationService);
 
-                EntityBackendQueries.CleanEntityStorageResult result = await entityOrchestrationService.EntityBackendQueries.CleanEntityStorageAsync(
+                EntityBackendQueries.CleanEntityStorageResult result = await entityOrchestrationService.EntityBackendQueries!.CleanEntityStorageAsync(
                     new EntityBackendQueries.CleanEntityStorageRequest()
                     {
                         RemoveEmptyEntities = request.RemoveEmptyEntities,
@@ -447,10 +446,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             private void CheckEntitySupport(ServerCallContext context, out DurabilityProvider durabilityProvider, out IEntityOrchestrationService entityOrchestrationService)
             {
                 durabilityProvider = this.GetDurabilityProvider(context);
-                entityOrchestrationService = durabilityProvider as IEntityOrchestrationService;
+                entityOrchestrationService = durabilityProvider;
                 if (entityOrchestrationService?.EntityBackendProperties == null)
                 {
-                    throw new NotSupportedException($"The provider '{durabilityProvider.GetType().Name}' does not support entities.");
+                    throw new NotSupportedException($"The provider '{durabilityProvider.GetBackendInfo()}' does not support entities.");
                 }
             }
 
