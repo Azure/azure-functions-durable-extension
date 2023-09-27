@@ -177,7 +177,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// This strategy reduces expected costs for an Azure Storage V2 account.
         /// </summary>
         /// <value>A boolean indicating whether to use the table partition strategy. Defaults to false.</value>
-        public bool UseTablePartitionManagement { get; set; } = false;
+        public bool UseTablePartitionManagement { get; set; } = true;
 
         /// <summary>
         /// Throws an exception if the provided hub name violates any naming conventions for the storage provider.
