@@ -40,12 +40,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             bool addDurableClientFactory,
             ITypeLocator typeLocator)
         {
-            // Unless otherwise specified, use legacy partition management for tests as it makes the task hubs start up faster.
+            // Unless specified, use table partition management for tests as it makes the task hubs start up faster.
             // These tests run on a single task hub workers, so they don't test partition management anyways, and that is tested
             // in the DTFx repo.
-            if (!options.Value.StorageProvider.ContainsKey(nameof(AzureStorageOptions.UseLegacyPartitionManagement)))
+            if (options.Value.StorageProvider.ContainsKey(nameof(AzureStorageOptions.UseLegacyPartitionManagement)))
             {
-                options.Value.StorageProvider.Add(nameof(AzureStorageOptions.UseLegacyPartitionManagement), true);
                 options.Value.StorageProvider.Add(nameof(AzureStorageOptions.UseTablePartitionManagement), false);
             }
 
