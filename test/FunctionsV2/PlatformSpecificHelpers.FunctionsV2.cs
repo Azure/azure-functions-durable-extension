@@ -46,6 +46,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             if (!options.Value.StorageProvider.ContainsKey(nameof(AzureStorageOptions.UseLegacyPartitionManagement)))
             {
                 options.Value.StorageProvider.Add(nameof(AzureStorageOptions.UseLegacyPartitionManagement), true);
+                options.Value.StorageProvider.Add(nameof(AzureStorageOptions.UseTablePartitionManagement), false);
             }
 
             IHost host = new HostBuilder()
