@@ -198,7 +198,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             public async override Task<P.SignalEntityResponse> SignalEntity(P.SignalEntityRequest request, ServerCallContext context)
             {
-                this.CheckEntitySupport(context, out var durabilityProvider, out var entityOrchestrationService);
+                this.CheckEntitySupport(context, out var durabilityProvider, out var backendProperties, out var backendQueries);
 
                 EntityMessageEvent eventToSend = ClientEntityHelpers.EmitOperationSignal(
                     new OrchestrationInstance() { InstanceId = request.InstanceId },
@@ -207,7 +207,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     request.Input,
                     EntityMessageEvent.GetCappedScheduledTime(
                         DateTime.UtcNow,
-                        entityOrchestrationService.EntityBackendProperties!.MaximumSignalDelayTime,
+                        backendProperties.MaximumSignalDelayTime,
                         request.ScheduledTime?.ToDateTime()));
 
                 await durabilityProvider.SendTaskOrchestrationMessageAsync(eventToSend.AsTaskMessage());
@@ -218,9 +218,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             public async override Task<P.GetEntityResponse> GetEntity(P.GetEntityRequest request, ServerCallContext context)
             {
-                this.CheckEntitySupport(context, out var durabilityProvider, out var entityOrchestrationService);
+                this.CheckEntitySupport(context, out var durabilityProvider, out var backendProperties, out var backendQueries);
 
-                EntityBackendQueries.EntityMetadata? metaData = await entityOrchestrationService.EntityBackendQueries!.GetEntityAsync(
+                EntityBackendQueries.EntityMetadata? metaData = await backendQueries.GetEntityAsync(
                     DTCore.Entities.EntityId.FromString(request.InstanceId),
                     request.IncludeState,
                     includeDeleted: false,
@@ -235,10 +235,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             public async override Task<P.QueryEntitiesResponse> QueryEntities(P.QueryEntitiesRequest request, ServerCallContext context)
             {
-                this.CheckEntitySupport(context, out var durabilityProvider, out var entityOrchestrationService);
+                this.CheckEntitySupport(context, out var durabilityProvider, out var backendProperties, out var backendQueries);
 
                 P.EntityQuery query = request.Query;
-                EntityBackendQueries.EntityQueryResult result = await entityOrchestrationService.EntityBackendQueries!.QueryEntitiesAsync(
+                EntityBackendQueries.EntityQueryResult result = await backendQueries.QueryEntitiesAsync(
                     new EntityBackendQueries.EntityQuery()
                     {
                          InstanceIdStartsWith = query.InstanceIdStartsWith,
@@ -266,9 +266,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             public async override Task<P.CleanEntityStorageResponse> CleanEntityStorage(P.CleanEntityStorageRequest request, ServerCallContext context)
             {
-                this.CheckEntitySupport(context, out var durabilityProvider, out var entityOrchestrationService);
+                this.CheckEntitySupport(context, out var durabilityProvider, out var backendProperties, out var backendQueries);
 
-                EntityBackendQueries.CleanEntityStorageResult result = await entityOrchestrationService.EntityBackendQueries!.CleanEntityStorageAsync(
+                EntityBackendQueries.CleanEntityStorageResult result = await backendQueries.CleanEntityStorageAsync(
                     new EntityBackendQueries.CleanEntityStorageRequest()
                     {
                         RemoveEmptyEntities = request.RemoveEmptyEntities,
@@ -443,14 +443,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return overridableStates.ToDedupeStatuses();
             }
 
-            private void CheckEntitySupport(ServerCallContext context, out DurabilityProvider durabilityProvider, out IEntityOrchestrationService entityOrchestrationService)
+            private void CheckEntitySupport(
+                ServerCallContext context,
+                out DurabilityProvider durabilityProvider,
+                out EntityBackendProperties entityBackendProperties,
+                out EntityBackendQueries entityBackendQueries)
             {
                 durabilityProvider = this.GetDurabilityProvider(context);
-                entityOrchestrationService = durabilityProvider;
-                if (entityOrchestrationService?.EntityBackendProperties == null)
+                var entityOrchestrationService = durabilityProvider as IEntityOrchestrationService;
+                var properties = entityOrchestrationService?.EntityBackendProperties;
+                var queries = entityOrchestrationService?.EntityBackendQueries;
+
+                if (properties == null || queries == null)
                 {
                     throw new NotSupportedException($"The provider '{durabilityProvider.GetBackendInfo()}' does not support entities.");
                 }
+
+                entityBackendProperties = properties;
+                entityBackendQueries = queries;
             }
 
             private P.EntityMetadata ConvertEntityMetadata(EntityBackendQueries.EntityMetadata metaData)

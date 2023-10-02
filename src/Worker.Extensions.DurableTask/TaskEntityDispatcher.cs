@@ -60,7 +60,7 @@ public sealed class TaskEntityDispatcher
     {
         if (typeof(ITaskEntity).IsAssignableFrom(typeof(T)))
         {
-            ITaskEntity entity = (ITaskEntity)ActivatorUtilities.GetServiceOrCreateInstance<T>(this.services);
+            ITaskEntity entity = (ITaskEntity)ActivatorUtilities.GetServiceOrCreateInstance<T>(this.services)!;
             return this.DispatchAsync(entity);
         }
 
