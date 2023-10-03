@@ -112,7 +112,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
 
             public Task<TargetScalerResult> GetScaleResultAsync(TargetScalerContext context)
             {
-                throw new NotImplementedException("The current DurableTask backend configuration does not support target-based scaling");
+                throw new NotSupportedException("The current DurableTask backend configuration does not support target-based scaling");
             }
         }
 #endif

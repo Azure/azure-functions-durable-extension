@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Collections.Generic;
 #if !FUNCTIONS_V1
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations;
@@ -12,6 +13,7 @@ using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 #else
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations;
@@ -118,7 +120,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         internal static IWebJobsBuilder AddDurableScaleForTrigger(this IWebJobsBuilder builder, TriggerMetadata triggerMetadata)
         {
             // this segment adheres to the followings pattern: https://github.com/Azure/azure-sdk-for-net/pull/38673/files
-            builder.Services.AddSingleton(serviceProvider => new DurableTaskTriggersScaleProvider(serviceProvider, triggerMetadata));
+            builder.Services.AddSingleton(serviceProvider => new DurableTaskTriggersScaleProvider(serviceProvider.GetService<IOptions<DurableTaskOptions>>(), serviceProvider.GetService<INameResolver>(), serviceProvider.GetService<ILoggerFactory>(), serviceProvider.GetService<IEnumerable<IDurabilityProviderFactory>>(), triggerMetadata));
             builder.Services.AddSingleton<IScaleMonitorProvider>(serviceProvider => serviceProvider.GetRequiredService<DurableTaskTriggersScaleProvider>());
             builder.Services.AddSingleton<ITargetScalerProvider>(serviceProvider => serviceProvider.GetRequiredService<DurableTaskTriggersScaleProvider>());
             return builder;

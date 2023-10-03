@@ -18,17 +18,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
     {
         private readonly IScaleMonitor monitor;
         private readonly ITargetScaler targetScaler;
+        private readonly DurableTaskOptions options;
+        private readonly INameResolver nameResolver;
+        private readonly ILoggerFactory loggerFactory;
+        private readonly IEnumerable<IDurabilityProviderFactory> durabilityProviderFactories;
 
         public DurableTaskTriggersScaleProvider(
-            IServiceProvider serviceProvider,
+            IOptions<DurableTaskOptions> durableTaskOptions,
+            INameResolver nameResolver,
+            ILoggerFactory loggerFactory,
+            IEnumerable<IDurabilityProviderFactory> durabilityProviderFactories,
             TriggerMetadata triggerMetadata)
         {
+            this.options = durableTaskOptions.Value;
+            this.nameResolver = nameResolver;
+            this.loggerFactory = loggerFactory;
+            this.durabilityProviderFactories = durabilityProviderFactories;
+
             string functionId = triggerMetadata.FunctionName;
             FunctionName functionName = new FunctionName(functionId);
 
-            DurableTaskOptions options = this.GetOptions(serviceProvider, triggerMetadata);
+            this.GetOptions(triggerMetadata);
 
-            IDurabilityProviderFactory durabilityProviderFactory = this.GetDurabilityProviderFactory(serviceProvider, options);
+            IDurabilityProviderFactory durabilityProviderFactory = this.GetDurabilityProviderFactory();
             DurabilityProvider defaultDurabilityProvider = durabilityProviderFactory.GetDurabilityProvider();
 
             string? connectionName = durabilityProviderFactory is AzureStorageDurabilityProviderFactory azureStorageDurabilityProviderFactory
@@ -40,52 +52,45 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
                 functionId,
                 functionName,
                 connectionName,
-                options.HubName);
+                this.options.HubName);
 
             this.monitor = ScaleUtils.GetScaleMonitor(
                 defaultDurabilityProvider,
                 functionId,
                 functionName,
                 connectionName,
-                options.HubName);
+                this.options.HubName);
         }
 
-        private DurableTaskOptions GetOptions(IServiceProvider serviceProvider, TriggerMetadata triggerMetadata)
+        private void GetOptions(TriggerMetadata triggerMetadata)
         {
-            var nameResolver = serviceProvider.GetService<INameResolver>();
-
             // the metadata is the sync triggers payload
             var metadata = triggerMetadata.Metadata.ToObject<DurableTaskMetadata>();
 
-            var options = serviceProvider.GetService<IOptions<DurableTaskOptions>>().Value;
-
             // The property `taskHubName` is always expected in the SyncTriggers payload
-            options.HubName = metadata?.TaskHubName ?? throw new Exception($"Expected `taskHubName` property in SyncTriggers payload but found none. Payload: {triggerMetadata.Metadata}");
+            this.options.HubName = metadata?.TaskHubName ?? throw new InvalidOperationException($"Expected `taskHubName` property in SyncTriggers payload but found none. Payload: {triggerMetadata.Metadata}");
             if (metadata?.MaxConcurrentActivityFunctions != null)
             {
-                options.MaxConcurrentActivityFunctions = metadata?.MaxConcurrentActivityFunctions;
+                this.options.MaxConcurrentActivityFunctions = metadata?.MaxConcurrentActivityFunctions;
             }
 
             if (metadata?.MaxConcurrentOrchestratorFunctions != null)
             {
-                options.MaxConcurrentOrchestratorFunctions = metadata?.MaxConcurrentOrchestratorFunctions;
+                this.options.MaxConcurrentOrchestratorFunctions = metadata?.MaxConcurrentOrchestratorFunctions;
             }
 
             if (metadata?.StorageProvider != null)
             {
-                options.StorageProvider = metadata?.StorageProvider;
+                this.options.StorageProvider = metadata?.StorageProvider;
             }
 
-            DurableTaskOptions.ResolveAppSettingOptions(options, nameResolver);
-            return options;
+            DurableTaskOptions.ResolveAppSettingOptions(this.options, this.nameResolver);
         }
 
-        private IDurabilityProviderFactory GetDurabilityProviderFactory(IServiceProvider serviceProvider, DurableTaskOptions options)
+        private IDurabilityProviderFactory GetDurabilityProviderFactory()
         {
-            var orchestrationServiceFactories = serviceProvider.GetService<IEnumerable<IDurabilityProviderFactory>>();
-            var loggerFactory = serviceProvider.GetService<ILoggerFactory>();
-            var logger = loggerFactory.CreateLogger<DurableTaskTriggersScaleProvider>();
-            var durabilityProviderFactory = DurableTaskExtension.GetDurabilityProviderFactory(options, logger, orchestrationServiceFactories);
+            var logger = this.loggerFactory.CreateLogger<DurableTaskTriggersScaleProvider>();
+            var durabilityProviderFactory = DurableTaskExtension.GetDurabilityProviderFactory(this.options, logger, this.durabilityProviderFactories);
             return durabilityProviderFactory;
         }
 
