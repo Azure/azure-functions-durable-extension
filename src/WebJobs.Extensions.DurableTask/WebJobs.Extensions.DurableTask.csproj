@@ -100,6 +100,7 @@
     <PackageReference Include="Microsoft.AspNetCore.Server.Kestrel.Transport.Sockets" Version="2.2.1" />
     <!-- The gRPC dependencies in this package are not compatible with older frameworks, like .NET Core 2.x -->
     <PackageReference Include="Microsoft.DurableTask.Grpc" Version="1.1.0-entities-preview.1" />
+    <PackageReference Include="Grpc.Core" Version="2.46.6" /> <!-- Bring this in until we move to hosted RPC -->
   </ItemGroup>
 
   <!-- Common dependencies across all targets -->
