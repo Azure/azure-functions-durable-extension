@@ -8,6 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading.Tasks;
 using DurableTask.Core;
+using DurableTask.Core.Entities;
 using DurableTask.Core.Entities.OperationFormat;
 using DurableTask.Core.Exceptions;
 using DurableTask.Core.History;
@@ -86,6 +87,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return;
             }
 
+            TaskOrchestrationEntityParameters? entityParameters = dispatchContext.GetProperty<TaskOrchestrationEntityParameters>();
+
             bool isReplaying = runtimeState.PastEvents.Any();
 
             this.TraceHelper.FunctionStarting(
@@ -107,7 +110,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     isReplay: false);
             }
 
-            var context = new RemoteOrchestratorContext(runtimeState);
+            var context = new RemoteOrchestratorContext(runtimeState, entityParameters);
 
             var input = new TriggeredFunctionData
             {
