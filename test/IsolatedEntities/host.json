@@ -1,0 +1,16 @@
+{
+  "version": "2.0",
+  "logging": {
+    "applicationInsights": {
+      "samplingSettings": {
+        "isEnabled": true,
+        "excludedTypes": "Request"
+      }
+    }
+  },
+  "extensions": {
+    "durableTask": {
+      "entityMessageReorderWindowInMinutes": 0 // need this just for testing the CleanEntityStorage
+    }
+  }
+}
