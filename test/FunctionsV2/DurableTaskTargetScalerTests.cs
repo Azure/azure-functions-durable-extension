@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using DurableTask.AzureStorage.Monitoring;
 using DurableTask.Core;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests;
 using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
@@ -14,6 +15,7 @@ using Microsoft.WindowsAzure.Storage;
 using Moq;
 using Xunit;
 using Xunit.Abstractions;
+using static Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.ScaleUtils;
 
 namespace WebJobs.Extensions.DurableTask.Tests.V2
 {
@@ -24,6 +26,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         private readonly Mock<DurableTaskMetricsProvider> metricsProviderMock;
         private readonly Mock<DurableTaskTriggerMetrics> triggerMetricsMock;
         private readonly Mock<IOrchestrationService> orchestrationServiceMock;
+        private readonly Mock<DurabilityProvider> durabilityProviderMock;
 
         public DurableTaskTargetScalerTests(ITestOutputHelper output)
         {
@@ -47,7 +50,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
             this.triggerMetricsMock = new Mock<DurableTaskTriggerMetrics>(MockBehavior.Strict);
             this.orchestrationServiceMock = new Mock<IOrchestrationService>(MockBehavior.Strict);
 
-            var durabilityProviderMock = new Mock<DurabilityProvider>(
+            this.durabilityProviderMock = new Mock<DurabilityProvider>(
                 MockBehavior.Strict,
                 "storageProviderName",
                 this.orchestrationServiceMock.Object,
@@ -57,7 +60,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
             this.targetScaler = new DurableTaskTargetScaler(
                 "FunctionId",
                 this.metricsProviderMock.Object,
-                durabilityProviderMock.Object,
+                this.durabilityProviderMock.Object,
                 logger);
         }
 
@@ -83,6 +86,47 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
             var scaleResult = await this.targetScaler.GetScaleResultAsync(this.scalerContext);
             var targetWorkerCount = scaleResult.TargetWorkerCount;
             Assert.Equal(expectedWorkerCount, targetWorkerCount);
+        }
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void TestGetTargetScaler(bool supportsTBS)
+        {
+            ITargetScaler targetScaler = new Mock<ITargetScaler>().Object;
+            this.durabilityProviderMock.Setup(m => m.TryGetTargetScaler(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), out targetScaler))
+                .Returns(supportsTBS);
+
+            var scaler = ScaleUtils.GetTargetScaler(this.durabilityProviderMock.Object, "FunctionId", new FunctionName("FunctionName"), "connectionName", "HubName");
+            if (supportsTBS) {
+                Assert.IsType<NoOpTargetScaler>(scaler);
+            }
+            else
+            {
+                Assert.Equal(targetScaler, scaler);
+            }
+        }
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void TestGetScaleMonitor(bool supportsScaleMonitor)
+        {
+            IScaleMonitor scaleMonitor = new Mock<IScaleMonitor>().Object;
+            this.durabilityProviderMock.Setup(m => m.TryGetScaleMonitor(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), out scaleMonitor))
+                .Returns(supportsScaleMonitor);
+
+            var monitor = ScaleUtils.GetScaleMonitor(this.durabilityProviderMock.Object, "FunctionId", new FunctionName("FunctionName"), "connectionName", "HubName");
+            if (supportsScaleMonitor)
+            {
+                Assert.IsType<NoOpScaleMonitor>(monitor);
+            }
+            else
+            {
+                Assert.Equal(scaleMonitor, monitor);
+            }
         }
     }
 }

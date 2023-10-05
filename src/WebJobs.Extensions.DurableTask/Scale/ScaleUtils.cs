@@ -38,7 +38,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
         /// This is required to allow operation of those providers even if runtime scaling is turned off
         /// see discussion https://github.com/Azure/azure-functions-durable-extension/pull/1009/files#r341767018.
         /// </summary>
-        private sealed class NoOpScaleMonitor : IScaleMonitor
+        internal sealed class NoOpScaleMonitor : IScaleMonitor
         {
             /// <summary>
             /// Construct a placeholder scale monitor.
@@ -97,7 +97,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
             }
         }
 
-        private sealed class NoOpTargetScaler : ITargetScaler
+        internal sealed class NoOpTargetScaler : ITargetScaler
         {
             /// <summary>
             /// Construct a placeholder target scaler.
