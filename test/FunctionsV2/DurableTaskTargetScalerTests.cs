@@ -101,7 +101,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
                 .Returns(supportsTBS);
 
             var scaler = ScaleUtils.GetTargetScaler(this.durabilityProviderMock.Object, "FunctionId", new FunctionName("FunctionName"), "connectionName", "HubName");
-            if (supportsTBS) {
+            if (!supportsTBS) {
                 Assert.IsType<NoOpTargetScaler>(scaler);
                 Assert.ThrowsAsync<NotSupportedException>(() => scaler.GetScaleResultAsync(context: null));
             }
@@ -122,7 +122,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
                 .Returns(supportsScaleMonitor);
 
             var monitor = ScaleUtils.GetScaleMonitor(this.durabilityProviderMock.Object, "FunctionId", new FunctionName("FunctionName"), "connectionName", "HubName");
-            if (supportsScaleMonitor)
+            if (!supportsScaleMonitor)
             {
                 Assert.IsType<NoOpScaleMonitor>(monitor);
                 Assert.Throws<InvalidOperationException>(() => monitor.GetScaleStatus(context: null));
