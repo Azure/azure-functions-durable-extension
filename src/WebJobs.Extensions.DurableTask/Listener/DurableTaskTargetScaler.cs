@@ -82,9 +82,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             catch (Exception ex)
             {
+                // We want to augment the exception with metrics information for investigation purposes
                 var metricsLog = $"Metrics: workItemQueueLength={metrics?.WorkItemQueueLength}. controlQueueLengths={metrics?.ControlQueueLengths}. " +
                     $"maxConcurrentOrchestrators={this.MaxConcurrentOrchestrators}. maxConcurrentActivities={this.MaxConcurrentActivities}";
-                var errorLog = $"Error: target worker count for '{this.functionId}' resulted in exception. " + metricsLog + $". Exception: {ex}";
+                var errorLog = $"Error: target worker count for '{this.functionId}' resulted in exception. " + metricsLog;
                 throw new Exception(errorLog, ex);
             }
         }
