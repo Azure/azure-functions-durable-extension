@@ -74,7 +74,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 // target worker count should never be negative
                 if (numWorkersToRequest < 0)
                 {
-                    throw new ArithmeticException("Number of workers to request cannot be negative");
+                    throw new InvalidOperationException("Number of workers to request cannot be negative");
                 }
 
                 this.logger.LogInformation(scaleControllerLog);
