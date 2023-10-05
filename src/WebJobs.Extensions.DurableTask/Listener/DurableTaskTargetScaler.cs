@@ -74,10 +74,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 // target worker count should never be negative
                 if (numWorkersToRequest < 0)
                 {
-                    scaleControllerLog = $"Error: target worker count for '{this.functionId}' was negative: '{this.functionId}'." +
-                        "An exception was thrown." + metricsLog;
-                    this.logger.LogError(scaleControllerLog);
-                    throw new Exception(scaleControllerLog);
+                    throw new ArithmeticException("Number of workers to request cannot be negative");
                 }
 
                 this.logger.LogInformation(scaleControllerLog);
@@ -88,8 +85,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 var metricsLog = $"Metrics: workItemQueueLength={metrics?.WorkItemQueueLength}. controlQueueLengths={metrics?.ControlQueueLengths}. " +
                     $"maxConcurrentOrchestrators={this.MaxConcurrentOrchestrators}. maxConcurrentActivities={this.MaxConcurrentActivities}";
                 var errorLog = $"Error: target worker count for '{this.functionId}' resulted in exception." + metricsLog + $"Exception: {ex}";
-                this.logger.LogError(errorLog);
-                throw;
+                throw new Exception(errorLog, ex);
             }
         }
     }
