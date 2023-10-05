@@ -556,7 +556,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 EntityBackendQueries.EntityMetadata? metaData = await entityBackendQueries.GetEntityAsync(
                     new DTCore.Entities.EntityId(entityId.EntityName, entityId.EntityKey),
                     includeState: true,
-                    includeDeleted: false,
+                    includeStateless: false,
                     cancellation: default);
 
                 return new EntityStateResponse<T>()
@@ -642,7 +642,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     new EntityBackendQueries.EntityQuery()
                     {
                         InstanceIdStartsWith = query.EntityName != null ? $"${query.EntityName}" : null,
-                        IncludeDeleted = query.IncludeDeleted,
+                        IncludeStateless = query.IncludeDeleted,
                         IncludeState = query.FetchState,
                         LastModifiedFrom = query.LastOperationFrom == DateTime.MinValue ? null : query.LastOperationFrom,
                         LastModifiedTo = query.LastOperationTo,

@@ -6,6 +6,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DurableTask;
+using Microsoft.DurableTask.Entities;
 using Microsoft.DurableTask.Worker;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -47,6 +48,8 @@ internal sealed partial class FunctionsOrchestrationContext : TaskOrchestrationC
     public override ParentOrchestrationInstance? Parent => this.innerContext.Parent;
 
     protected override ILoggerFactory LoggerFactory { get; }
+
+    public override TaskOrchestrationEntityFeature Entities => this.innerContext.Entities;
 
     public override T GetInput<T>()
     {
