@@ -1,6 +1,8 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using System;
+using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.AzureStorage.Monitoring;
 using DurableTask.Core;
@@ -101,6 +103,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
             var scaler = ScaleUtils.GetTargetScaler(this.durabilityProviderMock.Object, "FunctionId", new FunctionName("FunctionName"), "connectionName", "HubName");
             if (supportsTBS) {
                 Assert.IsType<NoOpTargetScaler>(scaler);
+                Assert.ThrowsAsync<InvalidOperationException>(() => scaler.GetScaleResultAsync(context: null));
             }
             else
             {
@@ -122,6 +125,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
             if (supportsScaleMonitor)
             {
                 Assert.IsType<NoOpScaleMonitor>(monitor);
+                Assert.Throws<InvalidOperationException>(() => monitor.GetScaleStatus(context: null));
             }
             else
             {
