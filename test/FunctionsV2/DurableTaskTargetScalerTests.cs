@@ -103,7 +103,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
             var scaler = ScaleUtils.GetTargetScaler(this.durabilityProviderMock.Object, "FunctionId", new FunctionName("FunctionName"), "connectionName", "HubName");
             if (supportsTBS) {
                 Assert.IsType<NoOpTargetScaler>(scaler);
-                Assert.ThrowsAsync<InvalidOperationException>(() => scaler.GetScaleResultAsync(context: null));
+                Assert.ThrowsAsync<NotSupportedException>(() => scaler.GetScaleResultAsync(context: null));
             }
             else
             {
