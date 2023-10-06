@@ -4,6 +4,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale;
 using Microsoft.Azure.WebJobs.Host.Listeners;
 #if !FUNCTIONS_V1
 using Microsoft.Azure.WebJobs.Host.Scale;
@@ -51,21 +52,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.functionName = functionName;
             this.functionType = functionType;
             this.connectionName = connectionName;
-#if !FUNCTIONS_V1
 
+#if !FUNCTIONS_V1
             this.scaleMonitor = new Lazy<IScaleMonitor>(() =>
-                this.config.GetScaleMonitor(
+                ScaleUtils.GetScaleMonitor(
+                    this.config.DefaultDurabilityProvider,
                     this.functionId,
                     this.functionName,
-                    this.connectionName));
+                    this.connectionName,
+                    this.config.Options.HubName));
 
 #endif
 #if FUNCTIONS_V3_OR_GREATER
             this.targetScaler = new Lazy<ITargetScaler>(() =>
-                this.config.GetTargetScaler(
+                ScaleUtils.GetTargetScaler(
+                    this.config.DefaultDurabilityProvider,
                     this.functionId,
                     this.functionName,
-                    this.connectionName));
+                    this.connectionName,
+                    this.config.Options.HubName));
 #endif
         }
 
