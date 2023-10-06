@@ -17,11 +17,13 @@ using DurableTask.AzureStorage;
 using Microsoft.ApplicationInsights.Channel;
 #if !FUNCTIONS_V1
 using Microsoft.Extensions.Hosting;
+using Microsoft.Azure.WebJobs.Host.Scale;
 #endif
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.WindowsAzure.Storage;
 using Moq;
 using Newtonsoft.Json.Linq;
 using Xunit;
@@ -69,6 +71,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             int entityMessageReorderWindowInMinutes = 30,
             string exactTaskHubName = null,
             bool addDurableClientFactory = false,
+#if !FUNCTIONS_V1
+            Action<ScaleOptions> configureScaleOptions = null,
+#endif
             Type[] types = null)
         {
             switch (storageProviderType)
@@ -162,6 +167,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 #if !FUNCTIONS_V1
                 addDurableClientFactory: addDurableClientFactory,
                 types: types,
+                configureScaleOptions: configureScaleOptions,
 #endif
                 durabilityProviderFactoryType: durabilityProviderFactoryType);
         }
@@ -177,6 +183,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Action<ITelemetry> onSend = null,
             Type durabilityProviderFactoryType = null,
             bool addDurableClientFactory = false,
+#if !FUNCTIONS_V1
+            Action<ScaleOptions> configureScaleOptions = null,
+#endif
             Type[] types = null)
         {
             if (serializerSettings == null)
@@ -200,6 +209,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 durabilityProviderFactoryType: durabilityProviderFactoryType,
                 addDurableClientFactory: addDurableClientFactory,
                 typeLocator: typeLocator,
+                configureScaleOptions: configureScaleOptions,
 #endif
                 loggerProvider: loggerProvider,
                 nameResolver: testNameResolver,

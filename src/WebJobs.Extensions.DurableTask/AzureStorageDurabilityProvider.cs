@@ -11,6 +11,7 @@ using DurableTask.AzureStorage.Tracking;
 using DurableTask.Core;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage;
 using Microsoft.Extensions.Logging;
+using Microsoft.WindowsAzure.Storage;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
@@ -201,6 +202,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
 #if !FUNCTIONS_V1
+
+        internal DurableTaskMetricsProvider GetMetricsProvider(
+            string functionName,
+            string hubName,
+            CloudStorageAccount storageAccount,
+            ILogger logger)
+        {
+            return new DurableTaskMetricsProvider(functionName, hubName, logger, performanceMonitor: null, storageAccount);
+        }
+
         /// <inheritdoc/>
         public override bool TryGetScaleMonitor(
             string functionId,
@@ -209,12 +220,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string connectionName,
             out IScaleMonitor scaleMonitor)
         {
+            CloudStorageAccount storageAccount = this.storageAccountProvider.GetStorageAccountDetails(connectionName).ToCloudStorageAccount();
+            DurableTaskMetricsProvider metricsProvider = this.GetMetricsProvider(functionName, hubName, storageAccount, this.logger);
             scaleMonitor = new DurableTaskScaleMonitor(
                 functionId,
                 functionName,
                 hubName,
-                this.clientProviderFactory.GetClientProvider(connectionName),
-                this.logger);
+                storageAccount,
+                this.logger,
+                metricsProvider);
+            return true;
+        }
+
+#endif
+#if FUNCTIONS_V3_OR_GREATER
+        public override bool TryGetTargetScaler(
+            string functionId,
+            string functionName,
+            string hubName,
+            string connectionName,
+            out ITargetScaler targetScaler)
+        {
+            // This is only called by the ScaleController, it doesn't run in the Functions Host process.
+            CloudStorageAccount storageAccount = this.storageAccountProvider.GetStorageAccountDetails(connectionName).ToCloudStorageAccount();
+            DurableTaskMetricsProvider metricsProvider = this.GetMetricsProvider(functionName, hubName, storageAccount, this.logger);
+            targetScaler = new DurableTaskTargetScaler(functionId, metricsProvider, this, this.logger);
             return true;
         }
 #endif

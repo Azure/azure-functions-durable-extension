@@ -10,6 +10,7 @@ using Microsoft.ApplicationInsights.Channel;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage;
+using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
@@ -38,7 +39,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             IMessageSerializerSettingsFactory serializerSettingsFactory,
             Action<ITelemetry> onSend,
             bool addDurableClientFactory,
-            ITypeLocator typeLocator)
+            ITypeLocator typeLocator,
+            Action<ScaleOptions> configureScaleOptions = null)
         {
             // Unless specified, use table partition management for tests as it makes the task hubs start up faster.
             // These tests run on a single task hub workers, so they don't test partition management anyways, and that is tested
@@ -48,7 +50,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 options.Value.StorageProvider.Add(nameof(AzureStorageOptions.UseTablePartitionManagement), false);
             }
 
-            IHost host = new HostBuilder()
+            var hostBuilder = new HostBuilder()
                 .ConfigureLogging(
                     loggingBuilder =>
                     {
@@ -98,9 +100,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                                 return telemetryActivator;
                             });
                         }
-                    })
-                .Build();
+                    });
 
+            // if a configureScaleOptions action is provided, then we're probably trying to test the host's scaling logic
+            // we configure WebJobsScale and set the minimum logging level to `Debug`, as scaling logs are usually at the `Debug` level
+            if (configureScaleOptions != null)
+            {
+                hostBuilder.ConfigureWebJobsScale(
+                    (context, builder) =>
+                    {
+                        // ignore
+                    },
+                    configureScaleOptions)
+                    .ConfigureLogging(builder => builder.SetMinimumLevel(LogLevel.Debug));
+            }
+
+            var host = hostBuilder.Build();
             return new FunctionsV2HostWrapper(host, options, nameResolver);
         }
 
@@ -217,7 +232,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         internal class FunctionsV2HostWrapper : ITestHost
         {
-            private readonly IHost innerHost;
+            internal readonly IHost InnerHost;
             private readonly JobHost innerWebJobsHost;
             private readonly DurableTaskOptions options;
             private readonly INameResolver nameResolver;
@@ -227,8 +242,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 IOptions<DurableTaskOptions> options,
                 INameResolver nameResolver)
             {
-                this.innerHost = innerHost ?? throw new ArgumentNullException(nameof(innerHost));
-                this.innerWebJobsHost = (JobHost)this.innerHost.Services.GetService<IJobHost>();
+                this.InnerHost = innerHost ?? throw new ArgumentNullException(nameof(innerHost));
+                this.innerWebJobsHost = (JobHost)this.InnerHost.Services.GetService<IJobHost>();
                 this.options = options.Value;
                 this.nameResolver = nameResolver;
             }
@@ -237,8 +252,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 IHost innerHost,
                 IOptions<DurableTaskOptions> options)
             {
-                this.innerHost = innerHost;
-                this.innerWebJobsHost = (JobHost)this.innerHost.Services.GetService<IJobHost>();
+                this.InnerHost = innerHost;
+                this.innerWebJobsHost = (JobHost)this.InnerHost.Services.GetService<IJobHost>();
                 this.options = options.Value;
             }
 
@@ -250,16 +265,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             public void Dispose()
             {
-                this.innerHost.Dispose();
+                this.InnerHost.Dispose();
             }
 
-            public Task StartAsync() => this.innerHost.StartAsync();
+            public Task StartAsync() => this.InnerHost.StartAsync();
 
             public async Task StopAsync()
             {
                 try
                 {
-                    await this.innerHost.StopAsync();
+                    await this.InnerHost.StopAsync();
                 }
                 catch (OperationCanceledException)
                 {
