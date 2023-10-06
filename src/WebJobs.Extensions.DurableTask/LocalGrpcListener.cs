@@ -223,7 +223,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 EntityBackendQueries.EntityMetadata? metaData = await entityOrchestrationService.EntityBackendQueries!.GetEntityAsync(
                     DTCore.Entities.EntityId.FromString(request.InstanceId),
                     request.IncludeState,
-                    includeDeleted: false,
+                    includeStateless: false,
                     context.CancellationToken);
 
                 return new P.GetEntityResponse()
@@ -244,7 +244,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                          InstanceIdStartsWith = query.InstanceIdStartsWith,
                          LastModifiedFrom = query.LastModifiedFrom?.ToDateTime(),
                          LastModifiedTo = query.LastModifiedTo?.ToDateTime(),
-                         IncludeDeleted = false,
+                         IncludeStateless = query.IncludeStateless,
                          IncludeState = query.IncludeState,
                          ContinuationToken = query.ContinuationToken,
                          PageSize = query.PageSize,
@@ -459,6 +459,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     InstanceId = metaData.EntityId.ToString(),
                     LastModifiedTime = metaData.LastModifiedTime.ToTimestamp(),
+                    BacklogQueueSize = metaData.BacklogQueueSize,
+                    LockedBy = metaData.LockedBy,
                     SerializedState = metaData.SerializedState,
                 };
             }

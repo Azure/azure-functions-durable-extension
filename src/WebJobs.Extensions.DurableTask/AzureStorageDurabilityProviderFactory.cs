@@ -215,6 +215,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 UseLegacyPartitionManagement = this.azureStorageOptions.UseLegacyPartitionManagement,
                 UseTablePartitionManagement = this.azureStorageOptions.UseTablePartitionManagement,
                 UseSeparateQueueForEntityWorkItems = this.useSeparateQueueForEntityWorkItems,
+                EntityMessageReorderWindowInMinutes = this.options.EntityMessageReorderWindowInMinutes,
+                MaxEntityOperationBatchSize = this.options.MaxEntityOperationBatchSize,
             };
 
             if (this.inConsumption)

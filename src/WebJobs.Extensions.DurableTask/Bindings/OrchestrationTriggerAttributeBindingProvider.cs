@@ -170,6 +170,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         InstanceId = remoteContext.InstanceId,
                         PastEvents = { remoteContext.PastEvents.Select(ProtobufUtils.ToHistoryEventProto) },
                         NewEvents = { remoteContext.NewEvents.Select(ProtobufUtils.ToHistoryEventProto) },
+                        EntityParameters = remoteContext.EntityParameters.ToProtobuf(),
                     };
 
                     // We convert the binary payload into a base64 string because that seems to be the most commonly supported

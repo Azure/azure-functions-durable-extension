@@ -301,6 +301,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
+        [return: NotNullIfNotNull("parameters")]
+        public static P.OrchestratorEntityParameters? ToProtobuf(this TaskOrchestrationEntityParameters? parameters)
+        {
+            if (parameters == null)
+            {
+                return null;
+            }
+
+            return new P.OrchestratorEntityParameters
+            {
+                EntityMessageReorderWindow = Duration.FromTimeSpan(parameters.EntityMessageReorderWindow),
+            };
+        }
+
         public static string Base64Encode(IMessage message)
         {
             // Create a serialized payload using lower-level protobuf APIs. We do this to avoid allocating
