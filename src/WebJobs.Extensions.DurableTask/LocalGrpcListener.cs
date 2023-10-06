@@ -244,7 +244,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                          InstanceIdStartsWith = query.InstanceIdStartsWith,
                          LastModifiedFrom = query.LastModifiedFrom?.ToDateTime(),
                          LastModifiedTo = query.LastModifiedTo?.ToDateTime(),
-                         IncludeStateless = query.IncludeStateless,
+                         IncludeTransient = query.IncludeTransient,
                          IncludeState = query.IncludeState,
                          ContinuationToken = query.ContinuationToken,
                          PageSize = query.PageSize,
