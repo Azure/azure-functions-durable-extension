@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using DurableTask.AzureStorage.Partitioning;
+using Microsoft.Azure.WebJobs.Host;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
@@ -228,6 +229,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         // This is just a way for tests to overwrite the webhook url, since there is no easy way
         // to mock the value from ExtensionConfigContext. It should not be used in production code paths.
         internal Func<Uri> WebhookUriProviderOverride { get; set; }
+
+        internal static void ResolveAppSettingOptions(DurableTaskOptions options, INameResolver nameResolver)
+        {
+            if (options == null)
+            {
+                throw new InvalidOperationException($"{nameof(options)} must be set before resolving app settings.");
+            }
+
+            if (nameResolver == null)
+            {
+                throw new InvalidOperationException($"{nameof(nameResolver)} must be set before resolving app settings.");
+            }
+
+            if (nameResolver.TryResolveWholeString(options.HubName, out string taskHubName))
+            {
+                // use the resolved task hub name
+                options.HubName = taskHubName;
+            }
+        }
 
         /// <summary>
         /// Sets HubName to a value that is considered a default value.

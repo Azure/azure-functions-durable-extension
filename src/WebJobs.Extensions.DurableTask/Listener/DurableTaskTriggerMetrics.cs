@@ -1,6 +1,7 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 #if !FUNCTIONS_V1
+using System.Collections.Generic;
 using Microsoft.Azure.WebJobs.Host.Scale;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
@@ -10,13 +11,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <summary>
         /// The number of partitions in the task hub.
         /// </summary>
-        public int PartitionCount { get; set; }
+        public virtual int PartitionCount { get; set; }
 
         /// <summary>
         /// The number of messages across control queues. This will
         /// be in the form of a serialized array of ints, e.g. "[1,2,3,4]".
         /// </summary>
-        public string ControlQueueLengths { get; set; }
+        public virtual string ControlQueueLengths { get; set; }
 
         /// <summary>
         /// The latency of messages across control queues. This will
@@ -28,7 +29,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <summary>
         /// The number of messages in the work-item queue.
         /// </summary>
-        public int WorkItemQueueLength { get; set; }
+        public virtual int WorkItemQueueLength { get; set; }
 
         /// <summary>
         /// The approximate age of the first work-item queue message. This
