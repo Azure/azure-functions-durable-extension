@@ -60,15 +60,45 @@ public sealed class TaskEntityDispatcher
     {
         if (typeof(ITaskEntity).IsAssignableFrom(typeof(T)))
         {
-            ITaskEntity entity = (ITaskEntity)ActivatorUtilities.GetServiceOrCreateInstance<T>(this.services);
+            ITaskEntity entity = (ITaskEntity)ActivatorUtilities.GetServiceOrCreateInstance<T>(this.services)!;
             return this.DispatchAsync(entity);
         }
 
         return this.DispatchAsync(new StateEntity<T>());
     }
 
+    /// <summary>
+    /// Dispatches the entity trigger to the provided callback.
+    /// </summary>
+    /// <param name="handler">The callback to handle the entity operation(s).</param>
+    /// <returns>A task that completes when the operation(s) have finished.</returns>
+    public Task DispatchAsync(Func<TaskEntityOperation, ValueTask<object?>> handler)
+    {
+        if (handler is null)
+        {
+            throw new ArgumentNullException(nameof(handler));
+        }
+
+        return this.DispatchAsync(new DelegateEntity(handler));
+    }
+
     private class StateEntity<T> : TaskEntity<T>
     {
         protected override bool AllowStateDispatch => true;
+    }
+
+    private class DelegateEntity : ITaskEntity
+    {
+        readonly Func<TaskEntityOperation, ValueTask<object?>> handler;
+
+        public DelegateEntity(Func<TaskEntityOperation, ValueTask<object?>> handler)
+        {
+            this.handler = handler;
+        }
+
+        public ValueTask<object?> RunAsync(TaskEntityOperation operation)
+        {
+            return this.handler(operation);
+        }
     }
 }
