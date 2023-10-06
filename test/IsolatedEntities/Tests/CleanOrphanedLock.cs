@@ -24,7 +24,7 @@ class CleanOrphanedLock : Test
     public override async Task RunAsync(TestContext context)
     {
         // clean the storage before starting the test so we start from a clean slate
-        await context.Client.Entities.CleanEntityStorageAsync(new());
+        await context.Client.Entities.CleanEntityStorageAsync();
 
         DateTime startTime = DateTime.UtcNow;
 
@@ -58,7 +58,7 @@ class CleanOrphanedLock : Test
             new Microsoft.DurableTask.Client.Entities.EntityQuery()
             {
                 InstanceIdStartsWith = orphanedEntityId.ToString(),
-                IncludeStateless = true,
+                IncludeTransient = true,
                 IncludeState = true,
             }).ToListAsync();
         Assert.Equal(1, results.Count);
@@ -70,7 +70,7 @@ class CleanOrphanedLock : Test
         DateTimeOffset lastModified = results[0].LastModifiedTime;
 
         // clean the entity storage to remove the orphaned lock
-        var cleaningResponse = await context.Client.Entities.CleanEntityStorageAsync(new());
+        var cleaningResponse = await context.Client.Entities.CleanEntityStorageAsync();
         Assert.Equal(0, cleaningResponse.EmptyEntitiesRemoved);
         Assert.Equal(1, cleaningResponse.OrphanedLocksReleased);
 
@@ -80,7 +80,7 @@ class CleanOrphanedLock : Test
         Assert.Equal("ok", metadata.ReadOutputAs<string>());
 
         // clean the entity storage again, this time there should be nothing left to clean
-        cleaningResponse = await context.Client.Entities.CleanEntityStorageAsync(new());
+        cleaningResponse = await context.Client.Entities.CleanEntityStorageAsync();
         Assert.Equal(0, cleaningResponse.EmptyEntitiesRemoved);
         Assert.Equal(0, cleaningResponse.OrphanedLocksReleased);
 
@@ -89,7 +89,7 @@ class CleanOrphanedLock : Test
             new Microsoft.DurableTask.Client.Entities.EntityQuery()
             {
                 InstanceIdStartsWith = orphanedEntityId.ToString(),
-                IncludeStateless = true,
+                IncludeTransient = true,
                 IncludeState = true,
             }).ToListAsync();
         Assert.Equal(1, results.Count);

@@ -39,7 +39,7 @@ class EntityQueries2 : Test
 
         // check that everything is completely blank, there are no entities, not even stateless ones
 
-        var e = context.Client.Entities.GetAllEntitiesAsync(new EntityQuery() { IncludeStateless = true }).GetAsyncEnumerator();
+        var e = context.Client.Entities.GetAllEntitiesAsync(new EntityQuery() { IncludeTransient = true }).GetAsyncEnumerator();
         Assert.False(await e.MoveNextAsync());
 
         // ----- next, run a number of orchestrations in order to create and/or delete specific instances
@@ -95,7 +95,7 @@ class EntityQueries2 : Test
 
             (new EntityQuery
             {
-                IncludeStateless = true,
+                IncludeTransient = true,
             },
             result =>
             {
@@ -114,7 +114,7 @@ class EntityQueries2 : Test
 
             (new EntityQuery
             {
-                IncludeStateless = true,
+                IncludeTransient = true,
                 PageSize = 3,
             },
             result =>
@@ -139,7 +139,7 @@ class EntityQueries2 : Test
 
         context.Logger.LogInformation("starting storage cleaning");
 
-        var cleaningResponse = await context.Client.Entities.CleanEntityStorageAsync(new CleanEntityStorageRequest());
+        var cleaningResponse = await context.Client.Entities.CleanEntityStorageAsync();
 
         Assert.Equal(4, cleaningResponse.EmptyEntitiesRemoved);
         Assert.Equal(0, cleaningResponse.OrphanedLocksReleased);
