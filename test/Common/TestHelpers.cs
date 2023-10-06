@@ -24,6 +24,7 @@ using Moq;
 using Newtonsoft.Json.Linq;
 using Xunit;
 using Xunit.Abstractions;
+using Microsoft.Azure.WebJobs.Host.Scale;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
@@ -67,7 +68,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             int entityMessageReorderWindowInMinutes = 30,
             string exactTaskHubName = null,
             bool addDurableClientFactory = false,
-            Type[] types = null)
+            Type[] types = null,
+            Action<ScaleOptions> configureScaleOptions = null)
         {
             switch (storageProviderType)
             {
@@ -160,6 +162,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 #if !FUNCTIONS_V1
                 addDurableClientFactory: addDurableClientFactory,
                 types: types,
+                configureScaleOptions: configureScaleOptions,
 #endif
                 durabilityProviderFactoryType: durabilityProviderFactoryType);
         }
@@ -175,7 +178,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Action<ITelemetry> onSend = null,
             Type durabilityProviderFactoryType = null,
             bool addDurableClientFactory = false,
-            Type[] types = null)
+            Type[] types = null,
+            Action<ScaleOptions> configureScaleOptions = null)
         {
             if (serializerSettings == null)
             {
@@ -198,6 +202,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 durabilityProviderFactoryType: durabilityProviderFactoryType,
                 addDurableClientFactory: addDurableClientFactory,
                 typeLocator: typeLocator,
+                configureScaleOptions: configureScaleOptions,
 #endif
                 loggerProvider: loggerProvider,
                 nameResolver: testNameResolver,

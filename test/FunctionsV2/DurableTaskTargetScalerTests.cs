@@ -2,7 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
-using System.Threading;
+using System.Linq;
 using System.Threading.Tasks;
 using DurableTask.AzureStorage.Monitoring;
 using DurableTask.Core;
@@ -12,12 +12,14 @@ using Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests;
 using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Microsoft.Azure.WebJobs.Logging;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.WindowsAzure.Storage;
 using Moq;
 using Xunit;
 using Xunit.Abstractions;
 using static Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.ScaleUtils;
+using static Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests.PlatformSpecificHelpers;
 
 namespace WebJobs.Extensions.DurableTask.Tests.V2
 {
@@ -29,14 +31,16 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         private readonly Mock<DurableTaskTriggerMetrics> triggerMetricsMock;
         private readonly Mock<IOrchestrationService> orchestrationServiceMock;
         private readonly Mock<DurabilityProvider> durabilityProviderMock;
+        private readonly TestLoggerProvider loggerProvider;
+        private readonly ITestOutputHelper output;
 
         public DurableTaskTargetScalerTests(ITestOutputHelper output)
         {
             this.scalerContext = new TargetScalerContext();
-
+            this.output = output;
             var loggerFactory = new LoggerFactory();
-            var loggerProvider = new TestLoggerProvider(output);
-            loggerFactory.AddProvider(loggerProvider);
+            this.loggerProvider = new TestLoggerProvider(this.output);
+            loggerFactory.AddProvider(this.loggerProvider);
             ILogger logger = loggerFactory.CreateLogger(LogCategories.CreateTriggerCategory("DurableTask"));
 
             DisconnectedPerformanceMonitor nullPerformanceMonitorMock = null;
@@ -101,7 +105,8 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
                 .Returns(supportsTBS);
 
             var scaler = ScaleUtils.GetTargetScaler(this.durabilityProviderMock.Object, "FunctionId", new FunctionName("FunctionName"), "connectionName", "HubName");
-            if (!supportsTBS) {
+            if (!supportsTBS)
+            {
                 Assert.IsType<NoOpTargetScaler>(scaler);
                 Assert.ThrowsAsync<NotSupportedException>(() => scaler.GetScaleResultAsync(context: null));
             }
@@ -130,6 +135,44 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
             else
             {
                 Assert.Equal(scaleMonitor, monitor);
+            }
+        }
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async void ScaleHostE2ETest(bool isTbsEnabled)
+        {
+            Action<ScaleOptions> configureScaleOptions = (scaleOptions) =>
+            {
+                scaleOptions.IsTargetScalingEnabled = isTbsEnabled;
+                scaleOptions.MetricsPurgeEnabled = false;
+                scaleOptions.ScaleMetricsMaxAge = TimeSpan.FromMinutes(4);
+                scaleOptions.IsRuntimeScalingEnabled = true;
+                scaleOptions.ScaleMetricsSampleInterval = TimeSpan.FromSeconds(1);
+            };
+            using (FunctionsV2HostWrapper host = (FunctionsV2HostWrapper)TestHelpers.GetJobHost(this.loggerProvider, nameof(this.ScaleHostE2ETest), enableExtendedSessions: false, configureScaleOptions: configureScaleOptions))
+            {
+                await host.StartAsync();
+
+                IScaleStatusProvider scaleManager = host.InnerHost.Services.GetService<IScaleStatusProvider>();
+                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.FanOutFanIn), 50, this.output);
+                var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(400));
+                var scaleStatus = await scaleManager.GetScaleStatusAsync(new ScaleStatusContext());
+                await host.StopAsync();
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+
+                // We inspect the Host's logs for evidence that the Host is correctly sampling our scaling requests.
+                // the expected logs depend on whether TBS is enabled or not
+                var expectedSubString = "scale monitors to sample";
+                if (isTbsEnabled)
+                {
+                    expectedSubString = "target scalers to sample";
+                }
+
+                bool containsExpectedLog = this.loggerProvider.GetAllLogMessages().Select(p => p.FormattedMessage ?? "").Any(p => p.Contains(expectedSubString));
+                Assert.True(containsExpectedLog);
             }
         }
     }
