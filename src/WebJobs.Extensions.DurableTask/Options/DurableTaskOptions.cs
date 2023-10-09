@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using DurableTask.AzureStorage.Partitioning;
+using Microsoft.Azure.WebJobs.Host;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
@@ -199,6 +200,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public bool RollbackEntityOperationsOnExceptions { get; set; } = true;
 
         /// <summary>
+        /// Controls the behavior of <see cref="IDurableOrchestrationClient.RaiseEventAsync(string,string,object)"/> in situations where the specified orchestration
+        /// does not exist, or is not in a running state. If set to true, an exception is thrown. If set to false, the event is silently discarded.
+        /// </summary>
+        /// <remarks>
+        /// The default behavior depends on the selected storage provider.
+        /// </remarks>
+        public bool? ThrowStatusExceptionsOnRaiseEvent { get; set; } = null;
+
+        /// <summary>
         /// If true, takes a lease on the task hub container, allowing for only one app to process messages in a task hub at a time.
         /// </summary>
         public bool UseAppLease { get; set; } = true;
@@ -219,6 +229,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         // This is just a way for tests to overwrite the webhook url, since there is no easy way
         // to mock the value from ExtensionConfigContext. It should not be used in production code paths.
         internal Func<Uri> WebhookUriProviderOverride { get; set; }
+
+        internal static void ResolveAppSettingOptions(DurableTaskOptions options, INameResolver nameResolver)
+        {
+            if (options == null)
+            {
+                throw new InvalidOperationException($"{nameof(options)} must be set before resolving app settings.");
+            }
+
+            if (nameResolver == null)
+            {
+                throw new InvalidOperationException($"{nameof(nameResolver)} must be set before resolving app settings.");
+            }
+
+            if (nameResolver.TryResolveWholeString(options.HubName, out string taskHubName))
+            {
+                // use the resolved task hub name
+                options.HubName = taskHubName;
+            }
+        }
 
         /// <summary>
         /// Sets HubName to a value that is considered a default value.

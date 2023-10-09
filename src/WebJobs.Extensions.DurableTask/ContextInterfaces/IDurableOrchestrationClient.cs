@@ -190,7 +190,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// event named <paramref name="eventName"/> using the
         /// <see cref="IDurableOrchestrationContext.WaitForExternalEvent{T}(string)"/> API.
         /// </para><para>
-        /// If the specified instance is not found or not running, this operation will throw an exception.
+        /// If the specified instance is not found or not running, an exception may be thrown. This behavior depends on the selected storage provider
+        /// and the configuration setting <see cref="DurableTaskOptions.ThrowStatusExceptionsOnRaiseEvent"/>.
         /// </para>
         /// </remarks>
         /// <exception cref="ArgumentException">The instance id does not corespond to a valid orchestration instance.</exception>

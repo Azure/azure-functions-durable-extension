@@ -226,11 +226,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
          */
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [InlineData(false, false)]
-        [InlineData(false, true)]
-        [InlineData(true, false)]
-        [InlineData(true, true)]
-        public void TelemetryClientSetup_AppInsightsInstrumentationKey_Warning(bool keyIsSet, bool extendedSessions)
+        [InlineData(false, false, false)]
+        [InlineData(false, false, true)]
+        [InlineData(true, false, false)]
+        [InlineData(true, false, true)]
+        [InlineData(false, true, false)]
+        [InlineData(false, true, true)]
+        [InlineData(true, true, false)]
+        [InlineData(true, true, true)]
+        public async void TelemetryClientSetup_AppInsights_Warnings(bool instrumentationKeyIsSet, bool connStringIsSet, bool extendedSessions)
         {
             TraceOptions traceOptions = new TraceOptions()
             {
@@ -241,11 +245,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             DurableTaskOptions options = new DurableTaskOptions();
             options.Tracing = traceOptions;
 
-            string environmentVariableName = "APPINSIGHTS_INSTRUMENTATIONKEY";
-            string environmentVariableValue = "test key";
-            var mockNameResolver = keyIsSet
-                ? GetNameResolverMock(new[] { (environmentVariableName, environmentVariableValue) })
-                : GetNameResolverMock(new[] { (environmentVariableName, string.Empty) });
+            string instKeyEnvVarName = "APPINSIGHTS_INSTRUMENTATIONKEY";
+            string connStringEnvVarName = "APPLICATIONINSIGHTS_CONNECTION_STRING";
+            string environmentVariableValue = "test value";
+            string connStringValue = "InstrumentationKey=xxxx;IngestionEndpoint =https://xxxx.applicationinsights.azure.com/;LiveEndpoint=https://xxxx.livediagnostics.monitor.azure.com/";
+
+            var mockNameResolver = GetNameResolverMock(new[] { (instKeyEnvVarName, string.Empty), (connStringEnvVarName, string.Empty) });
+
+            if (instrumentationKeyIsSet && connStringIsSet)
+            {
+                mockNameResolver = GetNameResolverMock(new[] { (instKeyEnvVarName, environmentVariableValue), (connStringEnvVarName, connStringValue) });
+            }
+            else if (instrumentationKeyIsSet)
+            {
+                mockNameResolver = GetNameResolverMock(new[] { (instKeyEnvVarName, environmentVariableValue), (connStringEnvVarName, String.Empty) });
+            }
+            else if (connStringIsSet)
+            {
+                mockNameResolver = GetNameResolverMock(new[] { (instKeyEnvVarName, String.Empty), (connStringEnvVarName, connStringValue) });
+            }
 
             using (var host = TestHelpers.GetJobHost(
                 this.loggerProvider,
@@ -254,8 +272,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 nameResolver: mockNameResolver.Object,
                 options: options))
             {
-                string warningMessage = "'APPINSIGHTS_INSTRUMENTATIONKEY' isn't defined in the current environment variables, but Distributed Tracing is enabled. Please set 'APPINSIGHTS_INSTRUMENTATIONKEY' to use Distributed Tracing.";
-                var warningLogMessage = this.loggerProvider.GetAllLogMessages().Where(l => l.FormattedMessage.StartsWith(warningMessage));
+                string bothSettingsSetWarningMessage = "Both 'APPINSIGHTS_INSTRUMENTATIONKEY' and 'APPLICATIONINSIGHTS_CONNECTION_STRING' are defined in the current environment variables. Please specify one. We recommend specifying 'APPLICATIONINSIGHTS_CONNECTION_STRING'.";
+                var bothSettingsSetWarningLogMessage = this.loggerProvider.GetAllLogMessages().Where(l => l.FormattedMessage.StartsWith(bothSettingsSetWarningMessage));
+
+                string neitherSettingsSetWarningMessage = "'APPINSIGHTS_INSTRUMENTATIONKEY' or 'APPLICATIONINSIGHTS_CONNECTION_STRING' were not defined in the current environment variables, but distributed tracing is enabled. Please specify one. We recommend specifying 'APPLICATIONINSIGHTS_CONNECTION_STRING'.";
+                var neitherSettingsSetWarningLogMessage = this.loggerProvider.GetAllLogMessages().Where(l => l.FormattedMessage.StartsWith(neitherSettingsSetWarningMessage));
 
                 string settingUpTelemetryClientMessage = "Setting up the telemetry client...";
                 var settingUpTelemetryClientLogMessage = this.loggerProvider.GetAllLogMessages().Where(l => l.FormattedMessage.StartsWith(settingUpTelemetryClientMessage));
@@ -263,17 +284,40 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 string readingInstrumentationKeyMessage = "Reading APPINSIGHTS_INSTRUMENTATIONKEY...";
                 var readingInstrumentationKeyLogMessage = this.loggerProvider.GetAllLogMessages().Where(l => l.FormattedMessage.StartsWith(readingInstrumentationKeyMessage));
 
-                if (keyIsSet)
+                string readingConnStringMessage = "Reading APPLICATIONINSIGHTS_CONNECTION_STRING...";
+                var readingConnStringLogMessage = this.loggerProvider.GetAllLogMessages().Where(l => l.FormattedMessage.StartsWith(readingConnStringMessage));
+
+                if (instrumentationKeyIsSet && connStringIsSet)
                 {
+                    Assert.Single(bothSettingsSetWarningLogMessage);
+                    Assert.Empty(neitherSettingsSetWarningLogMessage);
                     Assert.Single(settingUpTelemetryClientLogMessage);
                     Assert.Single(readingInstrumentationKeyLogMessage);
-                    Assert.Empty(warningLogMessage);
+                    Assert.Single(readingConnStringLogMessage);
+                }
+                else if (instrumentationKeyIsSet && !connStringIsSet)
+                {
+                    Assert.Empty(bothSettingsSetWarningLogMessage);
+                    Assert.Empty(neitherSettingsSetWarningLogMessage);
+                    Assert.Single(settingUpTelemetryClientLogMessage);
+                    Assert.Single(readingInstrumentationKeyLogMessage);
+                    Assert.Empty(readingConnStringLogMessage);
+                }
+                else if (!instrumentationKeyIsSet && connStringIsSet)
+                {
+                    Assert.Empty(bothSettingsSetWarningLogMessage);
+                    Assert.Empty(neitherSettingsSetWarningLogMessage);
+                    Assert.Single(settingUpTelemetryClientLogMessage);
+                    Assert.Empty(readingInstrumentationKeyLogMessage);
+                    Assert.Single(readingConnStringLogMessage);
                 }
                 else
                 {
+                    Assert.Empty(bothSettingsSetWarningLogMessage);
+                    Assert.Single(neitherSettingsSetWarningLogMessage);
                     Assert.Single(settingUpTelemetryClientLogMessage);
                     Assert.Empty(readingInstrumentationKeyLogMessage);
-                    Assert.Single(warningLogMessage);
+                    Assert.Empty(readingConnStringLogMessage);
                 }
             }
         }
