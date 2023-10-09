@@ -30,6 +30,7 @@ public sealed class DurableTaskExtensionStartup : WorkerExtensionStartup
     {
         applicationBuilder.Services.AddSingleton<FunctionsDurableClientProvider>();
         applicationBuilder.Services.AddOptions<DurableTaskClientOptions>()
+            .Configure(options => options.EnableEntitySupport = true)
             .PostConfigure<IServiceProvider>((opt, sp) =>
             {
                 if (GetConverter(sp) is DataConverter converter)
@@ -39,6 +40,7 @@ public sealed class DurableTaskExtensionStartup : WorkerExtensionStartup
             });
 
         applicationBuilder.Services.AddOptions<DurableTaskWorkerOptions>()
+            .Configure(options => options.EnableEntitySupport = true)
             .PostConfigure<IServiceProvider>((opt, sp) =>
             {
                 if (GetConverter(sp) is DataConverter converter)
