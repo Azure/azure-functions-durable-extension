@@ -330,7 +330,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             this.logger.LogInformation(
                 "{instanceId}: Resuming function '{functionName} ({functionType})'. Reason: {reason}. State: {state}. RuntimeStatus: {runtimeStatus}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
-                instanceId, functionName, functionType, reason, FunctionState.Scheduled, OrchestrationRuntimeStatus.Pending, hubName,
+                instanceId, functionName, functionType, reason, FunctionState.Scheduled, OrchestrationRuntimeStatus.Running, hubName,
                 LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++);
         }
 
