@@ -490,8 +490,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             if (testName.Equals("TimerCancellation", StringComparison.OrdinalIgnoreCase) ||
                 testName.Equals("TimerExpiration", StringComparison.OrdinalIgnoreCase))
             {
-                // It is assumed that the 5th log message is a timer message.
-                timeStamp = GetTimerTimestamp(logMessages[4].FormattedMessage);
+                // It is assumed that the 4th log message is a timer message.
+                timeStamp = GetTimerTimestamp(logMessages[3].FormattedMessage);
             }
             else if (testName.Equals("Orchestration_OnValidOrchestrator", StringComparison.OrdinalIgnoreCase) ||
                      testName.Equals("Orchestration_Activity", StringComparison.OrdinalIgnoreCase))
