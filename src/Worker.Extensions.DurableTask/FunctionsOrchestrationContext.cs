@@ -23,6 +23,7 @@ internal sealed partial class FunctionsOrchestrationContext : TaskOrchestrationC
     private readonly DurableTaskWorkerOptions options;
 
     private InputConverter? inputConverter;
+    private EntityFeature? entities;
 
     public FunctionsOrchestrationContext(TaskOrchestrationContext innerContext, FunctionContext functionContext)
     {
@@ -47,7 +48,8 @@ internal sealed partial class FunctionsOrchestrationContext : TaskOrchestrationC
 
     protected override ILoggerFactory LoggerFactory { get; }
 
-    public override TaskOrchestrationEntityFeature Entities => this.innerContext.Entities;
+    public override TaskOrchestrationEntityFeature Entities =>
+        this.entities ??= new EntityFeature(this, this.innerContext.Entities);
 
     public override T GetInput<T>()
     {
