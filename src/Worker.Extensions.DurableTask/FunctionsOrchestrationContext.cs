@@ -35,8 +35,6 @@ internal sealed partial class FunctionsOrchestrationContext : TaskOrchestrationC
         this.LoggerFactory = functionContext.InstanceServices.GetRequiredService<ILoggerFactory>();
     }
 
-    public bool IsAccessed { get; private set; }
-
     public override TaskName Name => this.innerContext.Name;
 
     public override string InstanceId => this.innerContext.InstanceId;
@@ -53,7 +51,7 @@ internal sealed partial class FunctionsOrchestrationContext : TaskOrchestrationC
 
     public override T GetInput<T>()
     {
-        this.EnsureLegalAccess();
+        this.ThrowIfIllegalAccess();
 
         object? input = this.innerContext.GetInput<object>();
         if (input is T typed)
@@ -71,60 +69,51 @@ internal sealed partial class FunctionsOrchestrationContext : TaskOrchestrationC
 
     public override Guid NewGuid()
     {
-        this.EnsureLegalAccess();
+        this.ThrowIfIllegalAccess();
         return this.innerContext.NewGuid();
     }
 
     public override Task<T> CallActivityAsync<T>(TaskName name, object? input = null, TaskOptions? options = null)
     {
-        this.EnsureLegalAccess();
+        this.ThrowIfIllegalAccess();
         return this.innerContext.CallActivityAsync<T>(name, input, options);
     }
 
     public override Task<TResult> CallSubOrchestratorAsync<TResult>(
         TaskName orchestratorName, object? input = null, TaskOptions? options = null)
     {
-        this.EnsureLegalAccess();
+        this.ThrowIfIllegalAccess();
         return this.innerContext.CallSubOrchestratorAsync<TResult>(orchestratorName, input, options);
     }
 
     public override void ContinueAsNew(object? newInput = null, bool preserveUnprocessedEvents = true)
     {
-        this.EnsureLegalAccess();
+        this.ThrowIfIllegalAccess();
         this.innerContext.ContinueAsNew(newInput, preserveUnprocessedEvents);
     }
 
     public override Task CreateTimer(DateTime fireAt, CancellationToken cancellationToken)
     {
-        this.EnsureLegalAccess();
+        this.ThrowIfIllegalAccess();
         return this.innerContext.CreateTimer(fireAt, cancellationToken);
     }
 
     public override void SetCustomStatus(object? customStatus)
     {
-        this.EnsureLegalAccess();
+        this.ThrowIfIllegalAccess();
         this.innerContext.SetCustomStatus(customStatus);
     }
 
     public override void SendEvent(string instanceId, string eventName, object payload)
     {
-        this.EnsureLegalAccess();
+        this.ThrowIfIllegalAccess();
         this.innerContext.SendEvent(instanceId, eventName, payload);
     }
 
     public override Task<T> WaitForExternalEvent<T>(string eventName, CancellationToken cancellationToken = default)
     {
-        this.EnsureLegalAccess();
-        return this.innerContext.WaitForExternalEvent<T>(eventName, cancellationToken);
-    }
-
-    /// <summary>
-    /// Throws if accessed by a non-orchestrator thread or marks the current object as accessed successfully.
-    /// </summary>
-    private void EnsureLegalAccess()
-    {
         this.ThrowIfIllegalAccess();
-        this.IsAccessed = true;
+        return this.innerContext.WaitForExternalEvent<T>(eventName, cancellationToken);
     }
 
     internal void ThrowIfIllegalAccess()

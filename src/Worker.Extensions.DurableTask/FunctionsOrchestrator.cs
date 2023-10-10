@@ -58,14 +58,6 @@ internal class FunctionsOrchestrator : ITaskOrchestrator
         FunctionsOrchestrationContext orchestrationContext)
     {
         Task orchestratorTask = next(functionContext);
-        if (!orchestratorTask.IsCompleted && !orchestrationContext.IsAccessed)
-        {
-            // If the middleware returns before the orchestrator function's context object was accessed and before
-            // it completes its execution, then we know that either some middleware component went async or that the
-            // orchestrator function did some illegal await as its very first action.
-            throw new InvalidOperationException(Constants.IllegalAwaitErrorMessage);
-        }
-
         await orchestratorTask;
 
         // This will throw if either the orchestrator performed an illegal await or if some middleware ahead of this
