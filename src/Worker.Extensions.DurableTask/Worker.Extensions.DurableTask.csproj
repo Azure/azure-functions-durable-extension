@@ -30,7 +30,7 @@
 
     <!-- Version information -->
     <VersionPrefix>1.1.0</VersionPrefix>
-    <VersionSuffix>entities-preview.2</VersionSuffix>
+    <VersionSuffix>entities-preview.3</VersionSuffix>
     <AssemblyVersion>$(VersionPrefix).0</AssemblyVersion>
     <!-- FileVersionRevision is expected to be set by the CI. -->
     <FileVersion Condition="'$(FileVersionRevision)' != ''">$(VersionPrefix).$(FileVersionRevision)</FileVersion>
