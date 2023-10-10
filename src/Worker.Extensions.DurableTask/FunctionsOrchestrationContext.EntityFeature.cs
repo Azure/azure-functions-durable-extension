@@ -25,33 +25,33 @@ internal sealed partial class FunctionsOrchestrationContext
         public override Task<TResult> CallEntityAsync<TResult>(
             EntityInstanceId id, string operationName, object? input = null, CallEntityOptions? options = null)
         {
-            this.parent.ThrowIfIllegalAccess();
+            this.parent.EnsureLegalAccess();
             return this.inner.CallEntityAsync<TResult>(id, operationName, input, options);
         }
 
         public override Task CallEntityAsync(
             EntityInstanceId id, string operationName, object? input = null, CallEntityOptions? options = null)
         {
-            this.parent.ThrowIfIllegalAccess();
+            this.parent.EnsureLegalAccess();
             return this.inner.CallEntityAsync(id, operationName, input, options);
         }
 
         public override Task SignalEntityAsync(
             EntityInstanceId id, string operationName, object? input = null, SignalEntityOptions? options = null)
         {
-            this.parent.ThrowIfIllegalAccess();
+            this.parent.EnsureLegalAccess();
             return this.inner.SignalEntityAsync(id, operationName, input, options);
         }
 
         public override bool InCriticalSection([NotNullWhen(true)] out IReadOnlyList<EntityInstanceId>? entityIds)
         {
-            this.parent.ThrowIfIllegalAccess();
+            this.parent.EnsureLegalAccess();
             return this.inner.InCriticalSection(out entityIds);
         }
 
         public override Task<IAsyncDisposable> LockEntitiesAsync(IEnumerable<EntityInstanceId> entityIds)
         {
-            this.parent.ThrowIfIllegalAccess();
+            this.parent.EnsureLegalAccess();
             return this.inner.LockEntitiesAsync(entityIds);
         }
     }
