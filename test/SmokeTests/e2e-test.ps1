@@ -86,7 +86,7 @@ try {
 
 	# Dump the docker logs to make debugging the issue easier
 	Write-Host "Below are the docker logs for the app container:" -ForegroundColor Red
-	docker logs $ContainerName
+	docker logs --tail all $ContainerName
 
 	# Rethrow the original exception
 	throw
