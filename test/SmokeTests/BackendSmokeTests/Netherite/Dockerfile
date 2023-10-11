@@ -14,7 +14,7 @@ RUN cd /root/test/SmokeTests/BackendSmokeTests/Netherite && \
 # the latest Host. Our Netherite tests will fail without an up to date host.
 # Therefore, we're pinning to a more up to date tag than 4.0, but we should
 # eventually move to a 'floating tag' again.
-FROM mcr.microsoft.com/azure-functions/dotnet:4.22.0
+FROM mcr.microsoft.com/azure-functions/dotnet:4
 ENV AzureWebJobsScriptRoot=/home/site/wwwroot \
     AzureFunctionsJobHost__Logging__Console__IsEnabled=true
 COPY --from=build-env ["/home/site/wwwroot", "/home/site/wwwroot"]
