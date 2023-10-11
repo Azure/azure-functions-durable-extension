@@ -5,11 +5,13 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection.Metadata.Ecma335;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using DurableTask.Core.History;
 using DurableTask.Core.Query;
+using DurableTask.Core.Serializing.Internal;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using Microsoft.Extensions.Hosting;
@@ -142,83 +144,50 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             public async override Task<P.CreateInstanceResponse> StartInstance(P.CreateInstanceRequest request, ServerCallContext context)
             {
-                var instance = new OrchestrationInstance
-                {
-                    InstanceId = request.InstanceId ?? Guid.NewGuid().ToString("N"),
-                    ExecutionId = Guid.NewGuid().ToString(),
-                };
-
                 try
                 {
-                    await this.GetDurabilityProvider(context).CreateTaskOrchestrationAsync(
-                        new TaskMessage
-                        {
-                            Event = new ExecutionStartedEvent(-1, request.Input)
-                            {
-                                Name = request.Name,
-                                Version = request.Version,
-                                OrchestrationInstance = instance,
-                                ScheduledStartTime = request.ScheduledStartTimestamp?.ToDateTime(),
-                            },
-                            OrchestrationInstance = instance,
-                        },
-                        this.GetStatusesNotToOverride());
-
+                    string instanceId = await this.GetClient(context).StartNewAsync(
+                        request.Name, request.InstanceId, Raw(request.Input));
                     return new P.CreateInstanceResponse
                     {
-                        InstanceId = instance.InstanceId,
+                        InstanceId = instanceId,
                     };
                 }
                 catch (InvalidOperationException)
                 {
-                    throw new RpcException(new Status(StatusCode.AlreadyExists, $"An Orchestration instance with the ID {instance.InstanceId} already exists."));
+                    throw new RpcException(new Status(StatusCode.AlreadyExists, $"An Orchestration instance with the ID {request.InstanceId} already exists."));
                 }
             }
 
             public async override Task<P.RaiseEventResponse> RaiseEvent(P.RaiseEventRequest request, ServerCallContext context)
             {
-                await this.GetDurabilityProvider(context).SendTaskOrchestrationMessageAsync(
-                    new TaskMessage
-                    {
-                        Event = new EventRaisedEvent(-1, request.Input)
-                        {
-                            Name = request.Name,
-                        },
-                        OrchestrationInstance = new OrchestrationInstance
-                        {
-                            InstanceId = request.InstanceId,
-                        },
-                    });
-
-                // No fields in the response
+                await this.GetClient(context).RaiseEventAsync(request.InstanceId, request.Name, Raw(request.Input));
                 return new P.RaiseEventResponse();
             }
 
             public async override Task<P.TerminateResponse> TerminateInstance(P.TerminateRequest request, ServerCallContext context)
             {
-                await this.GetDurabilityProvider(context).ForceTerminateTaskOrchestrationAsync(
-                    request.InstanceId,
-                    request.Output);
-
-                // No fields in the response
+                await this.GetClient(context).TerminateAsync(request.InstanceId, request.Output);
                 return new P.TerminateResponse();
             }
 
             public async override Task<P.SuspendResponse> SuspendInstance(P.SuspendRequest request, ServerCallContext context)
             {
-                await this.GetDurabilityProvider(context).SuspendTaskOrchestrationAsync(request.InstanceId, request.Reason);
+                await this.GetClient(context).SuspendAsync(request.InstanceId, request.Reason);
                 return new P.SuspendResponse();
             }
 
             public async override Task<P.ResumeResponse> ResumeInstance(P.ResumeRequest request, ServerCallContext context)
             {
-                await this.GetDurabilityProvider(context).ResumeTaskOrchestrationAsync(request.InstanceId, request.Reason);
+                await this.GetClient(context).ResumeAsync(request.InstanceId, request.Reason);
                 return new P.ResumeResponse();
             }
 
             public async override Task<P.RewindInstanceResponse> RewindInstance(P.RewindInstanceRequest request, ServerCallContext context)
             {
-                await this.GetDurabilityProvider(context).RewindAsync(request.InstanceId, request.Reason);
+#pragma warning disable CS0618 // Type or member is obsolete
+                await this.GetClient(context).RewindAsync(request.InstanceId, request.Reason);
+#pragma warning restore CS0618 // Type or member is obsolete
                 return new P.RewindInstanceResponse();
             }
 
@@ -303,6 +272,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return CreateGetInstanceResponse(state, request);
             }
 
+#pragma warning disable CS0618 // Type or member is obsolete -- 'internal' usage.
+            private static RawInput Raw(string input)
+            {
+                return new RawInput(input);
+            }
+#pragma warning restore CS0618 // Type or member is obsolete
+
             private static P.GetInstanceResponse CreateGetInstanceResponse(OrchestrationState state, P.GetInstanceRequest request)
             {
                 return new P.GetInstanceResponse
@@ -338,18 +314,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 };
             }
 
-            private DurabilityProvider GetDurabilityProvider(ServerCallContext context)
+            private DurableClientAttribute GetAttribute(ServerCallContext context)
             {
                 string? taskHub = context.RequestHeaders.GetValue("Durable-TaskHub");
                 string? connectionName = context.RequestHeaders.GetValue("Durable-ConnectionName");
-                var attribute = new DurableClientAttribute() { TaskHub = taskHub, ConnectionName = connectionName };
-                return this.extension.GetDurabilityProvider(attribute);
+                return new DurableClientAttribute() { TaskHub = taskHub, ConnectionName = connectionName };
             }
 
-            private OrchestrationStatus[] GetStatusesNotToOverride()
+            private DurabilityProvider GetDurabilityProvider(ServerCallContext context)
             {
-                OverridableStates overridableStates = this.extension.Options.OverridableExistingInstanceStates;
-                return overridableStates.ToDedupeStatuses();
+                return this.extension.GetDurabilityProvider(this.GetAttribute(context));
+            }
+
+            private IDurableClient GetClient(ServerCallContext context)
+            {
+                return this.extension.GetClient(this.GetAttribute(context));
             }
         }
     }
