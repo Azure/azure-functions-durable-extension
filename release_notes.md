@@ -4,7 +4,7 @@
 
 ### Bug Fixes
 
-- Address input issues when using .NET isolated (#2581)[https://github.com/Azure/azure-functions-durable-extension/issues/2581]
+- Fix support for distributed tracing v2 in dotnet-isolated and Java (https://github.com/Azure/azure-functions-durable-extension/pull/2634)
 
 ### Breaking Changes
 
