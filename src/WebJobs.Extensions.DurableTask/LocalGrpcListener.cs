@@ -449,7 +449,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 entityOrchestrationService = durabilityProvider;
                 if (entityOrchestrationService?.EntityBackendProperties == null)
                 {
-                    throw new NotSupportedException($"The provider '{durabilityProvider.GetBackendInfo()}' does not support entities.");
+                    throw new RpcException(new Grpc.Core.Status(
+                        Grpc.Core.StatusCode.Unimplemented,
+                        $"Missing entity support for storage backend '{durabilityProvider.GetBackendInfo()}'. Entity support" +
+                        $" may have not been implemented yet, or the selected package version is too old."));
                 }
             }
 
