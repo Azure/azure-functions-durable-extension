@@ -23,7 +23,7 @@ jobs:
         command: 'restore'
         projects: 'test/FunctionsV1/*.csproj'
         feedsToUse: 'config'
-        nugetConfigPath: '.nuget/nuget.config'
+        nugetConfigPath: 'nuget.config'
 
     - task: DotNetCoreCLI@2
       inputs:
@@ -72,7 +72,7 @@ jobs:
         command: 'restore'
         projects: 'test/FunctionsV2/*.csproj'
         feedsToUse: 'config'
-        nugetConfigPath: '.nuget/nuget.config'
+        nugetConfigPath: 'nuget.config'
 
     - task: DotNetCoreCLI@2
       inputs:
@@ -119,7 +119,7 @@ jobs:
         command: 'restore'
         projects: 'test/WebJobs.Extensions.DurableTask.Analyzers.Test/*.csproj'
         feedsToUse: 'config'
-        nugetConfigPath: '.nuget/nuget.config'
+        nugetConfigPath: 'nuget.config'
 
     - task: DotNetCoreCLI@2
       inputs:
