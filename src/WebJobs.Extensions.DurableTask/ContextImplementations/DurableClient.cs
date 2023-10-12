@@ -642,7 +642,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     new EntityBackendQueries.EntityQuery()
                     {
                         InstanceIdStartsWith = query.EntityName != null ? $"${query.EntityName}" : null,
-                        IncludeStateless = query.IncludeDeleted,
+                        IncludeTransient = query.IncludeDeleted,
                         IncludeState = query.FetchState,
                         LastModifiedFrom = query.LastOperationFrom == DateTime.MinValue ? null : query.LastOperationFrom,
                         LastModifiedTo = query.LastOperationTo,

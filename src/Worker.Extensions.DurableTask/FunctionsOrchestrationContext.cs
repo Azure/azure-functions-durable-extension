@@ -23,6 +23,7 @@ internal sealed partial class FunctionsOrchestrationContext : TaskOrchestrationC
     private readonly DurableTaskWorkerOptions options;
 
     private InputConverter? inputConverter;
+    private EntityFeature? entities;
 
     public FunctionsOrchestrationContext(TaskOrchestrationContext innerContext, FunctionContext functionContext)
     {
@@ -49,7 +50,8 @@ internal sealed partial class FunctionsOrchestrationContext : TaskOrchestrationC
 
     protected override ILoggerFactory LoggerFactory { get; }
 
-    public override TaskOrchestrationEntityFeature Entities => this.innerContext.Entities;
+    public override TaskOrchestrationEntityFeature Entities =>
+        this.entities ??= new EntityFeature(this, this.innerContext.Entities);
 
     public override T GetInput<T>()
     {
@@ -118,15 +120,6 @@ internal sealed partial class FunctionsOrchestrationContext : TaskOrchestrationC
         return this.innerContext.WaitForExternalEvent<T>(eventName, cancellationToken);
     }
 
-    /// <summary>
-    /// Throws if accessed by a non-orchestrator thread or marks the current object as accessed successfully.
-    /// </summary>
-    private void EnsureLegalAccess()
-    {
-        this.ThrowIfIllegalAccess();
-        this.IsAccessed = true;
-    }
-
     internal void ThrowIfIllegalAccess()
     {
         // Only the orchestrator thread is allowed to run the task continuation. If we detect that some other thread
@@ -147,5 +140,14 @@ internal sealed partial class FunctionsOrchestrationContext : TaskOrchestrationC
                 throw;
             }
         }
+    }
+
+    /// <summary>
+    /// Throws if accessed by a non-orchestrator thread or marks the current object as accessed successfully.
+    /// </summary>
+    private void EnsureLegalAccess()
+    {
+        this.ThrowIfIllegalAccess();
+        this.IsAccessed = true;
     }
 }

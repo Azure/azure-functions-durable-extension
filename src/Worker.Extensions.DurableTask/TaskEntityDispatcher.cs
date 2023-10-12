@@ -89,7 +89,7 @@ public sealed class TaskEntityDispatcher
 
     private class DelegateEntity : ITaskEntity
     {
-        readonly Func<TaskEntityOperation, ValueTask<object?>> handler;
+        private readonly Func<TaskEntityOperation, ValueTask<object?>> handler;
 
         public DelegateEntity(Func<TaskEntityOperation, ValueTask<object?>> handler)
         {

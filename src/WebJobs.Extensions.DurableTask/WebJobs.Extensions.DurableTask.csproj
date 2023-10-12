@@ -99,14 +99,14 @@
     <!-- Explicitly pinned transitive dependencies with CVE vulnerabilities.-->
     <PackageReference Include="Microsoft.AspNetCore.Server.Kestrel.Transport.Sockets" Version="2.2.1" />
     <!-- The gRPC dependencies in this package are not compatible with older frameworks, like .NET Core 2.x -->
-    <PackageReference Include="Microsoft.DurableTask.Grpc" Version="1.1.0-entities-preview.1" />
+    <PackageReference Include="Microsoft.DurableTask.Grpc" Version="1.1.0-entities-preview.2" />
     <PackageReference Include="Grpc.Core" Version="2.46.6" /> <!-- Bring this in until we move to hosted RPC -->
   </ItemGroup>
 
   <!-- Common dependencies across all targets -->
   <ItemGroup>
-    <PackageReference Include="Microsoft.Azure.DurableTask.Core" Version="2.15.0-entities-preview.1" />
-    <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" Version="1.16.0-entities-preview.1" />
+    <PackageReference Include="Microsoft.Azure.DurableTask.Core" Version="2.15.0-entities-preview.2" />
+    <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" Version="1.16.0-entities-preview.2" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers" Version="0.5.*" />
     <!-- Build-time dependencies -->
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.*" PrivateAssets="All" />

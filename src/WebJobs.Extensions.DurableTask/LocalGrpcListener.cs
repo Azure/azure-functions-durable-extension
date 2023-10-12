@@ -244,7 +244,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                          InstanceIdStartsWith = query.InstanceIdStartsWith,
                          LastModifiedFrom = query.LastModifiedFrom?.ToDateTime(),
                          LastModifiedTo = query.LastModifiedTo?.ToDateTime(),
-                         IncludeStateless = query.IncludeStateless,
+                         IncludeTransient = query.IncludeTransient,
                          IncludeState = query.IncludeState,
                          ContinuationToken = query.ContinuationToken,
                          PageSize = query.PageSize,
@@ -449,7 +449,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 entityOrchestrationService = durabilityProvider;
                 if (entityOrchestrationService?.EntityBackendProperties == null)
                 {
-                    throw new NotSupportedException($"The provider '{durabilityProvider.GetBackendInfo()}' does not support entities.");
+                    throw new RpcException(new Grpc.Core.Status(
+                        Grpc.Core.StatusCode.Unimplemented,
+                        $"Missing entity support for storage backend '{durabilityProvider.GetBackendInfo()}'. Entity support" +
+                        $" may have not been implemented yet, or the selected package version is too old."));
                 }
             }
 

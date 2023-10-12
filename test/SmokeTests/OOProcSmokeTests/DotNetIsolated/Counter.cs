@@ -103,7 +103,14 @@ public static class CounterTest
 
         logger.LogInformation($"Reading state of {entityId}...");
         var response = await client.Entities.GetEntityAsync(entityId, includeState: true);
-        logger.LogInformation($"Read state of {entityId}: {response?.SerializedState ?? "(null: entity does not exist)"}");
+        if (response?.IncludesState ?? false)
+        {
+            logger.LogInformation("Entity does not exist.");
+        }
+        else
+        {
+            logger.LogInformation("Entity state is: {State}", response!.State.Value);
+        }
 
         if (response == null)
         {
@@ -111,7 +118,7 @@ public static class CounterTest
         }
         else
         {
-            int currentValue = response.ReadStateAs<Counter>()!.CurrentValue;
+            int currentValue = response.State.ReadAs<Counter>()!.CurrentValue;
             var httpResponse = request.CreateResponse(System.Net.HttpStatusCode.OK);
             httpResponse.Headers.Add("Content-Type", "text/plain; charset=utf-8");
             httpResponse.WriteString($"{currentValue}\n");
