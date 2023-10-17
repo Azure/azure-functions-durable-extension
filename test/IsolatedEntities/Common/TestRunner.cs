@@ -16,7 +16,7 @@ internal static class TestRunner
 {
     public static async Task<string> RunAsync(TestContext context, string? filter = null, bool listOnly = false)
     {
-        var sb = new StringBuilder();
+        var output = new StringBuilder();
 
         foreach (var test in All.GetAllTests())
         {
@@ -24,7 +24,7 @@ internal static class TestRunner
             {
                 if (listOnly)
                 {
-                    sb.AppendLine(test.Name);
+                    output.AppendLine(test.Name);
                 }
                 else
                 {
@@ -40,18 +40,18 @@ internal static class TestRunner
                     try
                     {
                         await test.RunAsync(context);
-                        sb.AppendLine($"PASSED {test.Name}");
+                        output.AppendLine($"PASSED {test.Name}");
                     }
                     catch (Exception ex)
                     {
                         context.Logger.LogError(ex, "test {testName} failed", test.Name);
-                        sb.AppendLine($"FAILED {test.Name} {ex.ToString()}");
+                        output.AppendLine($"FAILED {test.Name} {ex.ToString()}");
                         break;
                     }
                 }
             }
         }
 
-        return sb.ToString();
+        return output.ToString();
     }
 }

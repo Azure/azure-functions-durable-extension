@@ -38,7 +38,7 @@ class SetAndGet : Test
         int state = await context.WaitForEntityStateAsync<int>(entityId);
         Assert.Equal(1, state);
 
-        // entity still exists
+        // if we query the entity state again it should still be the same
         result = await context.Client.Entities.GetEntityAsync<int>(entityId);
 
         Assert.NotNull(result);
