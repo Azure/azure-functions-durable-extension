@@ -29,7 +29,7 @@
     <AssemblyOriginatorKeyFile>..\..\sign.snk</AssemblyOriginatorKeyFile>
 
     <!-- Version information -->
-    <VersionPrefix>1.0.3</VersionPrefix>
+    <VersionPrefix>1.0.4</VersionPrefix>
     <AssemblyVersion>$(VersionPrefix).0</AssemblyVersion>
     <!-- FileVersionRevision is expected to be set by the CI. -->
     <FileVersion Condition="'$(FileVersionRevision)' != ''">$(VersionPrefix).$(FileVersionRevision)</FileVersion>
@@ -38,8 +38,8 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Core" Version="1.8.0" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Abstractions" Version="1.1.0" />
-    <PackageReference Include="Microsoft.DurableTask.Client.Grpc" Version="1.0.3" />
-    <PackageReference Include="Microsoft.DurableTask.Worker.Grpc" Version="1.0.3" />
+    <PackageReference Include="Microsoft.DurableTask.Client.Grpc" Version="1.0.5" />
+    <PackageReference Include="Microsoft.DurableTask.Worker.Grpc" Version="1.0.5" />
   </ItemGroup>
 
   <ItemGroup>
