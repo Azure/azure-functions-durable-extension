@@ -583,5 +583,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return false;
         }
 #endif
+
+#if FUNCTIONS_V3_OR_GREATER
+        /// <summary>
+        /// Tries to obtain a scaler for target based scaling.
+        /// </summary>
+        /// <param name="functionId">Function id.</param>
+        /// <param name="functionName">Function name.</param>
+        /// <param name="hubName">Task hub name.</param>
+        /// <param name="connectionName">The name of the storage-specific connection settings.</param>
+        /// <param name="targetScaler">The target-based scaler.</param>
+        /// <returns>True if target-based scaling is supported, false otherwise.</returns>
+        public virtual bool TryGetTargetScaler(
+            string functionId,
+            string functionName,
+            string hubName,
+            string connectionName,
+            out ITargetScaler targetScaler)
+        {
+            targetScaler = null;
+            return false;
+        }
+#endif
     }
 }
