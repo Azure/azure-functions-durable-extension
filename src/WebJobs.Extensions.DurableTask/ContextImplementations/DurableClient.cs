@@ -644,7 +644,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         InstanceIdStartsWith = query.EntityName != null ? $"${query.EntityName}" : null,
                         IncludeTransient = query.IncludeDeleted,
                         IncludeState = query.FetchState,
-                        LastModifiedFrom = query.LastOperationFrom == DateTime.MinValue ? null : query.LastOperationFrom,
+                        LastModifiedFrom = query.LastOperationFrom == DateTime.MinValue ? (DateTime?)null : (DateTime?)query.LastOperationFrom,
                         LastModifiedTo = query.LastOperationTo,
                         PageSize = query.PageSize,
                         ContinuationToken = query.ContinuationToken,
