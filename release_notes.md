@@ -4,14 +4,28 @@
 
 ### New Features
 
-- Updates to take advantage of new core-entity support
-- Support entities for Isolated
+- Support entities for .NET isolated
 
 ### Bug Fixes
-
-- Address input issues when using .NET isolated (#2581)[https://github.com/Azure/azure-functions-durable-extension/issues/2581]
-- No longer fail orchestrations which return before accessing the `TaskOrchestrationContext`.
 
 ### Breaking Changes
 
 ### Dependency Updates
+
+`Microsoft.DurableTask.*` to `1.1.0-preview.1`
+
+## Microsoft.Azure.WebJobs.Extensions.DurableTask v2.12.0-preview.1
+
+### New Features
+
+- Updates to take advantage of new core-entity support
+
+### Bug Fixes
+
+### Breaking Changes
+
+### Dependency Updates
+
+`Microsoft.Azure.DurableTask.Core` to `2.16.0-preview.1`
+`Microsoft.Azure.DurableTask.AzureStorage` to `1.16.0-preview.1`
+
