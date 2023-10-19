@@ -1,12 +1,31 @@
 # Release Notes
 
+## Microsoft.Azure.Functions.Worker.Extensions.DurableTask v1.1.0-preview.1
+
 ### New Features
 
-### Bug Fixes
+- Support entities for .NET isolated
 
-- Fix support for distributed tracing v2 in dotnet-isolated and Java (https://github.com/Azure/azure-functions-durable-extension/pull/2634)
-- Update Microsoft.DurableTask.\* dependencies to v1.0.5
+### Bug Fixes
 
 ### Breaking Changes
 
 ### Dependency Updates
+
+`Microsoft.DurableTask.*` to `1.1.0-preview.1`
+
+## Microsoft.Azure.WebJobs.Extensions.DurableTask v2.12.0-preview.1
+
+### New Features
+
+- Updates to take advantage of new core-entity support
+
+### Bug Fixes
+
+### Breaking Changes
+
+### Dependency Updates
+
+`Microsoft.Azure.DurableTask.Core` to `2.16.0-preview.2`
+`Microsoft.Azure.DurableTask.AzureStorage` to `1.16.0-preview.2`
+

@@ -2026,6 +2026,18 @@
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.MaxConcurrentTaskActivityWorkItems">
             <inheritdoc/>
         </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.DurableTask#Core#Entities#IEntityOrchestrationService#EntityBackendProperties">
+            <inheritdoc/>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.DurableTask#Core#Entities#IEntityOrchestrationService#EntityBackendQueries">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.DurableTask#Core#Entities#IEntityOrchestrationService#LockNextOrchestrationWorkItemAsync(System.TimeSpan,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.DurableTask#Core#Entities#IEntityOrchestrationService#LockNextEntityWorkItemAsync(System.TimeSpan,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
         <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider.AbandonTaskActivityWorkItemAsync(DurableTask.Core.TaskActivityWorkItem)">
             <inheritdoc/>
         </member>
@@ -4259,6 +4271,18 @@
             <summary>
             Gets or sets the maximum number of orchestrator functions that can be processed concurrently on a single host instance.
             </summary>
+            <value>
+            A positive integer configured by the host.
+            </value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.MaxConcurrentEntityFunctions">
+            <summary>
+            Gets or sets the maximum number of entity functions that can be processed concurrently on a single host instance.
+            </summary>
+            <remarks>
+            Increasing entity function concurrency can result in increased throughput but can
+            also increase the total CPU and memory usage on a single worker instance.
+            </remarks>
             <value>
             A positive integer configured by the host.
             </value>

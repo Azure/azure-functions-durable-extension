@@ -15,26 +15,19 @@ namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
 internal class DurableTaskFunctionsMiddleware : IFunctionsWorkerMiddleware
 {
     /// <inheritdoc />
-    public async Task Invoke(FunctionContext functionContext, FunctionExecutionDelegate next)
+    public Task Invoke(FunctionContext functionContext, FunctionExecutionDelegate next)
     {
-        if (!IsOrchestrationTrigger(functionContext, out BindingMetadata? triggerMetadata))
+        if (IsOrchestrationTrigger(functionContext, out BindingMetadata? triggerBinding))
         {
-            await next(functionContext);
-            return;
+            return RunOrchestrationAsync(functionContext, triggerBinding, next);
         }
 
-        InputBindingData<object> triggerInputData = await functionContext.BindInputAsync<object>(triggerMetadata);
-        if (triggerInputData?.Value is not string encodedOrchestratorState)
+        if (IsEntityTrigger(functionContext, out triggerBinding))
         {
-            throw new InvalidOperationException("Orchestration history state was either missing from the input or not a string value.");
+            return RunEntityAsync(functionContext, triggerBinding, next);
         }
 
-        FunctionsOrchestrator orchestrator = new(functionContext, next, triggerInputData);
-        string orchestratorOutput = GrpcOrchestrationRunner.LoadAndRun(
-            encodedOrchestratorState, orchestrator, functionContext.InstanceServices);
-
-        // Send the encoded orchestrator output as the return value seen by the functions host extension
-        functionContext.GetInvocationResult().Value = orchestratorOutput;
+        return next(functionContext);
     }
 
     private static bool IsOrchestrationTrigger(
@@ -42,7 +35,7 @@ internal class DurableTaskFunctionsMiddleware : IFunctionsWorkerMiddleware
     {
         foreach (BindingMetadata binding in context.FunctionDefinition.InputBindings.Values)
         {
-            if (string.Equals(binding.Type, "orchestrationTrigger"))
+            if (string.Equals(binding.Type, "orchestrationTrigger", StringComparison.OrdinalIgnoreCase))
             {
                 orchestrationTriggerBinding = binding;
                 return true;
@@ -51,5 +44,54 @@ internal class DurableTaskFunctionsMiddleware : IFunctionsWorkerMiddleware
 
         orchestrationTriggerBinding = null;
         return false;
+    }
+
+    static async Task RunOrchestrationAsync(
+        FunctionContext context, BindingMetadata triggerBinding, FunctionExecutionDelegate next)
+    {
+        InputBindingData<object> triggerInputData = await context.BindInputAsync<object>(triggerBinding);
+        if (triggerInputData?.Value is not string encodedOrchestratorState)
+        {
+            throw new InvalidOperationException("Orchestration history state was either missing from the input or not a string value.");
+        }
+
+        FunctionsOrchestrator orchestrator = new(context, next, triggerInputData);
+        string orchestratorOutput = GrpcOrchestrationRunner.LoadAndRun(
+            encodedOrchestratorState, orchestrator, context.InstanceServices);
+
+        // Send the encoded orchestrator output as the return value seen by the functions host extension
+        context.GetInvocationResult().Value = orchestratorOutput;
+    }
+
+    private static bool IsEntityTrigger(
+        FunctionContext context, [NotNullWhen(true)] out BindingMetadata? entityTriggerBinding)
+    {
+        foreach (BindingMetadata binding in context.FunctionDefinition.InputBindings.Values)
+        {
+            if (string.Equals(binding.Type, "entityTrigger", StringComparison.OrdinalIgnoreCase))
+            {
+                entityTriggerBinding = binding;
+                return true;
+            }
+        }
+
+        entityTriggerBinding = null;
+        return false;
+    }
+
+    static async Task RunEntityAsync(
+        FunctionContext context, BindingMetadata triggerBinding, FunctionExecutionDelegate next)
+    {
+        InputBindingData<object> triggerInputData = await context.BindInputAsync<object>(triggerBinding);
+        if (triggerInputData?.Value is not string encodedEntityBatch)
+        {
+            throw new InvalidOperationException("Entity batch was either missing from the input or not a string value.");
+        }
+
+        TaskEntityDispatcher dispatcher = new(encodedEntityBatch, context.InstanceServices);
+        triggerInputData.Value = dispatcher;
+
+        await next(context);
+        context.GetInvocationResult().Value = dispatcher.Result;
     }
 }
