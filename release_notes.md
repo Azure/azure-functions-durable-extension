@@ -26,6 +26,6 @@
 
 ### Dependency Updates
 
-`Microsoft.Azure.DurableTask.Core` to `2.16.0-preview.1`
-`Microsoft.Azure.DurableTask.AzureStorage` to `1.16.0-preview.1`
+`Microsoft.Azure.DurableTask.Core` to `2.16.0-preview.2`
+`Microsoft.Azure.DurableTask.AzureStorage` to `1.16.0-preview.2`
 
