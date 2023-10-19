@@ -5110,50 +5110,48 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
-        // We temporarily disable this test for entity preview since it contains a known bug.
-        //
-        // [Theory]
-        // [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        // [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
-        // public async Task DurableEntity_CleanEntityStorage_Many(string storageProvider)
-        // {
-        //    using (ITestHost host = TestHelpers.GetJobHost(
-        //        this.loggerProvider,
-        //        nameof(this.DurableEntity_CleanEntityStorage_Many),
-        //        enableExtendedSessions: false, // we use a failing replay to create the orphaned lock
-        //        entityMessageReorderWindowInMinutes: 0, // need to set this to zero so deleted entities can be removed immediately
-        //        storageProviderType: storageProvider))
-        //    {
-        //        await host.StartAsync();
-        //
-        //        int numReps = 120; // is above the default page size for queries
-        //
-        //        // construct unique names for this test
-        //        string prefix = Guid.NewGuid().ToString("N").Substring(0, 6);
-        //        EntityId[] entityIds = new EntityId[numReps];
-        //        for (int i = 0; i < entityIds.Length; i++)
-        //        {
-        //            entityIds[i] = new EntityId("Counter", $"{prefix}-{i:D3}");
-        //        }
-        //
-        //        // create the empty entities
-        //        var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.CreateEmptyEntities), entityIds, this.output);
-        //        var status = await client.WaitForCompletionAsync(this.output);
-        //
-        //        if (storageProvider == TestHelpers.AzureStorageProviderType)
-        //        {
-        //            // account for delay in updating instance tables
-        //            await Task.Delay(TimeSpan.FromSeconds(20));
-        //        }
-        //
-        //        // remove all empty entities
-        //        var response = await client.InnerClient.CleanEntityStorageAsync(true, true, CancellationToken.None);
-        //        Assert.Equal(0, response.NumberOfOrphanedLocksRemoved);
-        //        Assert.Equal(numReps, response.NumberOfEmptyEntitiesRemoved);
-        //
-        //        await host.StopAsync();
-        //    }
-        // }
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        public async Task DurableEntity_CleanEntityStorage_Many(string storageProvider)
+        {
+            using (ITestHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.DurableEntity_CleanEntityStorage_Many),
+                enableExtendedSessions: false, // we use a failing replay to create the orphaned lock
+                entityMessageReorderWindowInMinutes: 0, // need to set this to zero so deleted entities can be removed immediately
+                storageProviderType: storageProvider))
+            {
+                await host.StartAsync();
+
+                int numReps = 120; // is above the default page size for queries
+
+                // construct unique names for this test
+                string prefix = Guid.NewGuid().ToString("N").Substring(0, 6);
+                EntityId[] entityIds = new EntityId[numReps];
+                for (int i = 0; i < entityIds.Length; i++)
+                {
+                    entityIds[i] = new EntityId("Counter", $"{prefix}-{i:D3}");
+                }
+
+                // create the empty entities
+                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.CreateEmptyEntities), entityIds, this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
+
+                if (storageProvider == TestHelpers.AzureStorageProviderType)
+                {
+                    // account for delay in updating instance tables
+                    await Task.Delay(TimeSpan.FromSeconds(20));
+                }
+
+                // remove all empty entities
+                var response = await client.InnerClient.CleanEntityStorageAsync(true, true, CancellationToken.None);
+                Assert.Equal(0, response.NumberOfOrphanedLocksRemoved);
+                Assert.Equal(numReps, response.NumberOfEmptyEntitiesRemoved);
+
+                await host.StopAsync();
+            }
+        }
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
