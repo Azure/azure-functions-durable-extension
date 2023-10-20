@@ -38,7 +38,7 @@ steps:
     command: restore
     projects: '**/**/*.csproj'
     feedsToUse: config
-    nugetConfigPath: '.nuget/nuget.config'
+    nugetConfigPath: 'nuget.config'
 
 # Build durable-extension
 - task: VSBuild@1

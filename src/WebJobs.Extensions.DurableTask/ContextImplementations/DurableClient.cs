@@ -641,10 +641,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 var result = await entityBackendQueries.QueryEntitiesAsync(
                     new EntityBackendQueries.EntityQuery()
                     {
-                        InstanceIdStartsWith = query.EntityName != null ? $"${query.EntityName}" : null,
+                        InstanceIdStartsWith = query.EntityName != null ? $"@{query.EntityName.ToLowerInvariant()}@" : null,
                         IncludeTransient = query.IncludeDeleted,
                         IncludeState = query.FetchState,
-                        LastModifiedFrom = query.LastOperationFrom == DateTime.MinValue ? null : query.LastOperationFrom,
+                        LastModifiedFrom = query.LastOperationFrom == DateTime.MinValue ? (DateTime?)null : (DateTime?)query.LastOperationFrom,
                         LastModifiedTo = query.LastOperationTo,
                         PageSize = query.PageSize,
                         ContinuationToken = query.ContinuationToken,
