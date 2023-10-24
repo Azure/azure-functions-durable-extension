@@ -2,11 +2,25 @@
 
 ## Microsoft.Azure.Functions.Worker.Extensions.DurableTask v1.1.0-preview.2
 
+### New Features
+
+### Bug Fixes
+
+### Breaking Changes
+
 ### Dependency Updates
 
 `Microsoft.DurableTask.*` to `1.1.0-preview.2`
 
-## Microsoft.Azure.WebJobs.Extensions.DurableTask v2.12.0-preview.2
+## Microsoft.Azure.WebJobs.Extensions.DurableTask v2.12.0-preview.1
+
+### New Features
+
+- Updates to take advantage of new core-entity support
+
+### Bug Fixes
+
+### Breaking Changes
 
 ### Dependency Updates
 
