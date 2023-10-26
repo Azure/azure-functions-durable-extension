@@ -4,6 +4,7 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using DurableTask.AzureStorage;
 using DurableTask.AzureStorage.Monitoring;
 using DurableTask.Core;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
@@ -14,7 +15,6 @@ using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Microsoft.Azure.WebJobs.Logging;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.WindowsAzure.Storage;
 using Moq;
 using Xunit;
 using Xunit.Abstractions;
@@ -44,14 +44,14 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
             ILogger logger = loggerFactory.CreateLogger(LogCategories.CreateTriggerCategory("DurableTask"));
 
             DisconnectedPerformanceMonitor nullPerformanceMonitorMock = null;
-            CloudStorageAccount nullCloudStorageAccountMock = null;
+            StorageAccountClientProvider storageAccountClientProvider = null;
             this.metricsProviderMock = new Mock<DurableTaskMetricsProvider>(
                 MockBehavior.Strict,
                 "FunctionName",
                 "HubName",
                 logger,
                 nullPerformanceMonitorMock,
-                nullCloudStorageAccountMock);
+                storageAccountClientProvider);
 
             this.triggerMetricsMock = new Mock<DurableTaskTriggerMetrics>(MockBehavior.Strict);
             this.orchestrationServiceMock = new Mock<IOrchestrationService>(MockBehavior.Strict);
