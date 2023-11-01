@@ -3,14 +3,18 @@
 #nullable enable
 #if FUNCTIONS_V3_OR_GREATER
 using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using DurableTask.Core.Exceptions;
 using DurableTask.Core.History;
 using DurableTask.Core.Middleware;
 using Microsoft.Azure.WebJobs.Host.Executors;
+using Microsoft.Extensions.Primitives;
+using Newtonsoft.Json;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
@@ -250,6 +254,45 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new InvalidOperationException($"An activity was scheduled but no {nameof(TaskScheduledEvent)} was found!");
             }
 
+            if (!string.IsNullOrEmpty(scheduledEvent.Name) && scheduledEvent.Name.StartsWith("BuiltIn::HttpActivity"))
+            {
+                try
+                {
+                    if (dispatchContext.GetProperty<TaskActivity>() is TaskHttpActivityShim shim)
+                    {
+                        OrchestrationInstance orchestrationInstance = dispatchContext.GetProperty<OrchestrationInstance>();
+                        TaskContext context = new TaskContext(orchestrationInstance);
+
+                        // convert the DurableHttpRequest
+                        DurableHttpRequest? req = ConvertDurableHttpRequest(scheduledEvent.Input);
+                        IList<DurableHttpRequest> list = new List<DurableHttpRequest>() { req };
+                        string serializedRequest = JsonConvert.SerializeObject(list);
+
+                        string? output = await shim.RunAsync(context, serializedRequest);
+                        dispatchContext.SetProperty(new ActivityExecutionResult
+                        {
+                            ResponseEvent = new TaskCompletedEvent(
+                            eventId: -1,
+                            taskScheduledId: scheduledEvent.EventId,
+                            result: output),
+                        });
+                        return;
+                    }
+                }
+                catch (Exception e)
+                {
+                    dispatchContext.SetProperty(new ActivityExecutionResult
+                    {
+                        ResponseEvent = new TaskFailedEvent(
+                        eventId: -1,
+                        taskScheduledId: scheduledEvent.EventId,
+                        reason: $"Function failed",
+                        details: e.Message),
+                    });
+                    return;
+                }
+            }
+
             FunctionName functionName = new FunctionName(scheduledEvent.Name);
 
             OrchestrationInstance? instance = dispatchContext.GetProperty<OrchestrationInstance>();
@@ -372,6 +415,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // Send the result of the activity function to the DTFx dispatch pipeline.
             // This allows us to bypass the default, in-process execution and process the given results immediately.
             dispatchContext.SetProperty(activityResult);
+        }
+
+        private static DurableHttpRequest? ConvertDurableHttpRequest(string? inputString)
+        {
+            IList<dynamic>? input = JsonConvert.DeserializeObject<IList<dynamic>>(inputString);
+            dynamic? dynamicRequest = input[0];
+
+            HttpMethod httpMethod = dynamicRequest.method.ToObject<HttpMethod>();
+            Uri uri = dynamicRequest.uri.ToObject<Uri>();
+            string content = dynamicRequest.content.ToString();
+
+            JsonSerializerSettings settings = new JsonSerializerSettings { Converters = new List<JsonConverter> { new HttpHeadersConverter() } };
+            Dictionary<string, StringValues> headers = JsonConvert.DeserializeObject<Dictionary<string, StringValues>>(dynamicRequest.headers.ToString(), settings);
+
+            DurableHttpRequest request = new DurableHttpRequest(httpMethod, uri, headers, content);
+
+            return request;
         }
 
         private static FailureDetails GetFailureDetails(Exception e)
