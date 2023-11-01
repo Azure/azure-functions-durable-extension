@@ -274,7 +274,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             ResponseEvent = new TaskCompletedEvent(
                             eventId: -1,
                             taskScheduledId: scheduledEvent.EventId,
-                            result: output),
+                            result: JsonConvert.SerializeObject(output)),
                         });
                         return;
                     }
