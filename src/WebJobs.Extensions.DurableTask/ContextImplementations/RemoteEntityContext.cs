@@ -3,6 +3,8 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using System.Reflection;
+using DurableTask.Core.Entities;
 using DurableTask.Core.Entities.OperationFormat;
 using DurableTask.Core.Exceptions;
 using Newtonsoft.Json;
@@ -31,8 +33,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             if (this.Result.FailureDetails is { } f)
             {
-                // TODO: use an entity specific exception type.
-                throw new OrchestrationFailureException(f.ErrorMessage);
+                throw new EntityFailureException(f.ErrorMessage);
             }
 
             List<Exception>? errors = null;
@@ -43,7 +44,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     if (result.FailureDetails is { } failure)
                     {
                         errors ??= new List<Exception>();
-                        errors.Add(new OrchestrationFailureException(failure.ErrorMessage));
+                        errors.Add(new EntityFailureException(failure.ErrorMessage));
                     }
                 }
             }
