@@ -150,13 +150,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.nameResolver = nameResolver ?? throw new ArgumentNullException(nameof(nameResolver));
             this.loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
             this.PlatformInformationService = platformInformationService ?? throw new ArgumentNullException(nameof(platformInformationService));
-            this.ResolveAppSettingOptions();
+            DurableTaskOptions.ResolveAppSettingOptions(this.Options, this.nameResolver);
 
             ILogger logger = loggerFactory.CreateLogger(LoggerCategoryName);
 
             this.TraceHelper = new EndToEndTraceHelper(logger, this.Options.Tracing.TraceReplayEvents);
             this.LifeCycleNotificationHelper = lifeCycleNotificationHelper ?? this.CreateLifeCycleNotificationHelper();
-            this.durabilityProviderFactory = this.GetDurabilityProviderFactory(this.Options, logger, orchestrationServiceFactories);
+            this.durabilityProviderFactory = GetDurabilityProviderFactory(this.Options, logger, orchestrationServiceFactories);
             this.defaultDurabilityProvider = this.durabilityProviderFactory.GetDurabilityProvider();
             this.isOptionsConfigured = true;
 
@@ -249,6 +249,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal DurableTaskOptions Options { get; }
 
+        internal DurabilityProvider DefaultDurabilityProvider => this.defaultDurabilityProvider;
+
         internal HttpApiHandler HttpApiHandler { get; private set; }
 
         internal ILifeCycleNotificationHelper LifeCycleNotificationHelper { get; private set; }
@@ -296,7 +298,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return new MessagePayloadDataConverter(errorSerializerSettingsFactory.CreateJsonSerializerSettings(), isDefault);
         }
 
-        private IDurabilityProviderFactory GetDurabilityProviderFactory(DurableTaskOptions options, ILogger logger, IEnumerable<IDurabilityProviderFactory> orchestrationServiceFactories)
+        internal static IDurabilityProviderFactory GetDurabilityProviderFactory(DurableTaskOptions options, ILogger logger, IEnumerable<IDurabilityProviderFactory> orchestrationServiceFactories)
         {
             bool storageTypeIsConfigured = options.StorageProvider.TryGetValue("type", out object storageType);
 
@@ -439,10 +441,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
 #if FUNCTIONS_V3_OR_GREATER
                 // This is a newer, more performant flavor of orchestration/activity middleware that is being
-                // enabled for newer language runtimes. Support for entities in this model is TBD.
+                // enabled for newer language runtimes.
                 var ooprocMiddleware = new OutOfProcMiddleware(this);
                 this.taskHubWorker.AddActivityDispatcherMiddleware(ooprocMiddleware.CallActivityAsync);
                 this.taskHubWorker.AddOrchestrationDispatcherMiddleware(ooprocMiddleware.CallOrchestratorAsync);
+                this.taskHubWorker.AddEntityDispatcherMiddleware(ooprocMiddleware.CallEntityAsync);
 #else
                 // This can happen if, for example, a Java user tries to use Durable Functions while targeting V2 or V3 extension bundles
                 // because those bundles target .NET Core 2.2, which doesn't support the gRPC libraries used in the modern out-of-proc implementation.
@@ -578,32 +581,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 #endif
 
-        private void ResolveAppSettingOptions()
-        {
-            if (this.Options == null)
-            {
-                throw new InvalidOperationException($"{nameof(this.Options)} must be set before resolving app settings.");
-            }
-
-            if (this.nameResolver == null)
-            {
-                throw new InvalidOperationException($"{nameof(this.nameResolver)} must be set before resolving app settings.");
-            }
-
-            if (this.nameResolver.TryResolveWholeString(this.Options.HubName, out string taskHubName))
-            {
-                // use the resolved task hub name
-                this.Options.HubName = taskHubName;
-            }
-        }
-
         private void InitializeForFunctionsV1(ExtensionConfigContext context)
         {
 #if FUNCTIONS_V1
             context.ApplyConfig(this.Options, "DurableTask");
             this.nameResolver = context.Config.NameResolver;
             this.loggerFactory = context.Config.LoggerFactory;
-            this.ResolveAppSettingOptions();
+            DurableTaskOptions.ResolveAppSettingOptions(this.Options, this.nameResolver);
             ILogger logger = this.loggerFactory.CreateLogger(LoggerCategoryName);
             this.TraceHelper = new EndToEndTraceHelper(logger, this.Options.Tracing.TraceReplayEvents);
             this.connectionInfoResolver = new WebJobsConnectionInfoProvider();
@@ -1571,59 +1555,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 activity.AddTag("DurableFunctionsType", functionsType);
                 activity.AddTag("DurableFunctionsInstanceId", instanceId);
                 activity.AddTag("DurableFunctionsRuntimeStatus", statusStr);
-            }
-        }
-
-        internal IScaleMonitor GetScaleMonitor(string functionId, FunctionName functionName, string connectionName)
-        {
-            if (this.defaultDurabilityProvider.TryGetScaleMonitor(
-                    functionId,
-                    functionName.Name,
-                    this.Options.HubName,
-                    connectionName,
-                    out IScaleMonitor scaleMonitor))
-            {
-                return scaleMonitor;
-            }
-            else
-            {
-                // the durability provider does not support runtime scaling.
-                // Create an empty scale monitor to avoid exceptions (unless runtime scaling is actually turned on).
-                return new NoOpScaleMonitor($"{functionId}-DurableTaskTrigger-{this.Options.HubName}".ToLower());
-            }
-        }
-
-        /// <summary>
-        /// A placeholder scale monitor, can be used by durability providers that do not support runtime scaling.
-        /// This is required to allow operation of those providers even if runtime scaling is turned off
-        /// see discussion https://github.com/Azure/azure-functions-durable-extension/pull/1009/files#r341767018.
-        /// </summary>
-        private sealed class NoOpScaleMonitor : IScaleMonitor
-        {
-            /// <summary>
-            /// Construct a placeholder scale monitor.
-            /// </summary>
-            /// <param name="name">A descriptive name.</param>
-            public NoOpScaleMonitor(string name)
-            {
-                this.Descriptor = new ScaleMonitorDescriptor(name);
-            }
-
-            /// <summary>
-            /// A descriptive name.
-            /// </summary>
-            public ScaleMonitorDescriptor Descriptor { get; private set; }
-
-            /// <inheritdoc/>
-            Task<ScaleMetrics> IScaleMonitor.GetMetricsAsync()
-            {
-                throw new InvalidOperationException("The current DurableTask backend configuration does not support runtime scaling");
-            }
-
-            /// <inheritdoc/>
-            ScaleStatus IScaleMonitor.GetScaleStatus(ScaleStatusContext context)
-            {
-                throw new InvalidOperationException("The current DurableTask backend configuration does not support runtime scaling");
             }
         }
 #endif

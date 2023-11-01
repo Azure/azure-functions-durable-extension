@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using DurableTask.Core;
 using DurableTask.Core.Command;
+using DurableTask.Core.Entities;
 using DurableTask.Core.History;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -17,9 +18,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private OrchestratorExecutionResult? executionResult;
 
-        public RemoteOrchestratorContext(OrchestrationRuntimeState runtimeState)
+        public RemoteOrchestratorContext(OrchestrationRuntimeState runtimeState, TaskOrchestrationEntityParameters? entityParameters)
         {
             this.runtimeState = runtimeState ?? throw new ArgumentNullException(nameof(runtimeState));
+            this.EntityParameters = entityParameters;
         }
 
         [JsonProperty("instanceId")]
@@ -42,6 +44,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         [JsonIgnore]
         internal string? SerializedOutput { get; private set; }
+
+        [JsonIgnore]
+        internal TaskOrchestrationEntityParameters? EntityParameters { get; private set; }
 
         internal void SetResult(IEnumerable<OrchestratorAction> actions, string customStatus)
         {

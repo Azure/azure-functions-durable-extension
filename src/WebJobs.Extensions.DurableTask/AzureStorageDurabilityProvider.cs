@@ -9,7 +9,9 @@ using System.Threading.Tasks;
 using DurableTask.AzureStorage;
 using DurableTask.AzureStorage.Tracking;
 using DurableTask.Core;
+using DurableTask.Core.Entities;
 using Microsoft.Extensions.Logging;
+using Microsoft.WindowsAzure.Storage;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
@@ -18,6 +20,7 @@ using Newtonsoft.Json.Serialization;
 using Microsoft.Azure.WebJobs.Host.Scale;
 #endif
 using AzureStorage = DurableTask.AzureStorage;
+using DTCore = DurableTask.Core;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
@@ -52,8 +55,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 });
             this.logger = logger;
         }
-
-        public override bool SupportsEntities => true;
 
         public override bool CheckStatusBeforeRaiseEvent => true;
 
@@ -97,6 +98,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         /// <inheritdoc/>
         public async override Task<string> RetrieveSerializedEntityState(EntityId entityId, JsonSerializerSettings serializerSettings)
+        {
+            EntityBackendQueries entityBackendQueries = (this.serviceClient as IEntityOrchestrationService)?.EntityBackendQueries;
+
+            if (entityBackendQueries != null) // entity queries are natively supported
+            {
+                var entity = await entityBackendQueries.GetEntityAsync(new DTCore.Entities.EntityId(entityId.EntityName, entityId.EntityKey), cancellation: default);
+
+                if (entity == null)
+                {
+                    return null;
+                }
+                else
+                {
+                    return entity.Value.SerializedState;
+                }
+            }
+            else // fall back to old implementation
+            {
+                return await this.LegacyImplementationOfRetrieveSerializedEntityState(entityId, serializerSettings);
+            }
+        }
+
+        private async Task<string> LegacyImplementationOfRetrieveSerializedEntityState(EntityId entityId, JsonSerializerSettings serializerSettings)
         {
             var instanceId = EntityId.GetSchedulerIdFromEntityId(entityId);
             IList<OrchestrationState> stateList = await this.serviceClient.GetOrchestrationStateAsync(instanceId, false);
@@ -200,6 +224,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
 #if !FUNCTIONS_V1
+
+        internal DurableTaskMetricsProvider GetMetricsProvider(
+            string functionName,
+            string hubName,
+            CloudStorageAccount storageAccount,
+            ILogger logger)
+        {
+            return new DurableTaskMetricsProvider(functionName, hubName, logger, performanceMonitor: null, storageAccount);
+        }
+
         /// <inheritdoc/>
         public override bool TryGetScaleMonitor(
             string functionId,
@@ -208,12 +242,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string connectionName,
             out IScaleMonitor scaleMonitor)
         {
+            CloudStorageAccount storageAccount = this.storageAccountProvider.GetStorageAccountDetails(connectionName).ToCloudStorageAccount();
+            DurableTaskMetricsProvider metricsProvider = this.GetMetricsProvider(functionName, hubName, storageAccount, this.logger);
             scaleMonitor = new DurableTaskScaleMonitor(
                 functionId,
                 functionName,
                 hubName,
-                this.storageAccountProvider.GetStorageAccountDetails(connectionName).ToCloudStorageAccount(),
-                this.logger);
+                storageAccount,
+                this.logger,
+                metricsProvider);
+            return true;
+        }
+
+#endif
+#if FUNCTIONS_V3_OR_GREATER
+        public override bool TryGetTargetScaler(
+            string functionId,
+            string functionName,
+            string hubName,
+            string connectionName,
+            out ITargetScaler targetScaler)
+        {
+            // This is only called by the ScaleController, it doesn't run in the Functions Host process.
+            CloudStorageAccount storageAccount = this.storageAccountProvider.GetStorageAccountDetails(connectionName).ToCloudStorageAccount();
+            DurableTaskMetricsProvider metricsProvider = this.GetMetricsProvider(functionName, hubName, storageAccount, this.logger);
+            targetScaler = new DurableTaskTargetScaler(functionId, metricsProvider, this, this.logger);
             return true;
         }
 #endif

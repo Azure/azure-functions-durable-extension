@@ -13,9 +13,8 @@ using DurableTask.AzureStorage;
 using Microsoft.ApplicationInsights.Channel;
 #if !FUNCTIONS_V1
 using Microsoft.Extensions.Hosting;
+using Microsoft.Azure.WebJobs.Host.Scale;
 #endif
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -67,6 +66,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             int entityMessageReorderWindowInMinutes = 30,
             string exactTaskHubName = null,
             bool addDurableClientFactory = false,
+#if !FUNCTIONS_V1
+            Action<ScaleOptions> configureScaleOptions = null,
+#endif
             Type[] types = null)
         {
             switch (storageProviderType)
@@ -160,6 +162,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 #if !FUNCTIONS_V1
                 addDurableClientFactory: addDurableClientFactory,
                 types: types,
+                configureScaleOptions: configureScaleOptions,
 #endif
                 durabilityProviderFactoryType: durabilityProviderFactoryType);
         }
@@ -175,6 +178,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Action<ITelemetry> onSend = null,
             Type durabilityProviderFactoryType = null,
             bool addDurableClientFactory = false,
+#if !FUNCTIONS_V1
+            Action<ScaleOptions> configureScaleOptions = null,
+#endif
             Type[] types = null)
         {
             if (serializerSettings == null)
@@ -198,6 +204,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 durabilityProviderFactoryType: durabilityProviderFactoryType,
                 addDurableClientFactory: addDurableClientFactory,
                 typeLocator: typeLocator,
+                configureScaleOptions: configureScaleOptions,
 #endif
                 loggerProvider: loggerProvider,
                 nameResolver: testNameResolver,
@@ -608,9 +615,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             var list = new List<string>()
             {
-                $"{messageId}: Function '{functionNames[0]} ({FunctionType.Orchestrator})' scheduled. Reason: NewInstance. IsReplay: False. State: Scheduled.",
-                $"{messageId}: Function '{functionNames[0]} ({FunctionType.Orchestrator})' started. IsReplay: False. Input: \"World\". State: Started.",
-                $"{messageId}: Function '{functionNames[0]} ({FunctionType.Orchestrator})' completed. ContinuedAsNew: False. IsReplay: False. Output: \"Hello, World!\". State: Completed.",
+                $"{messageId}: Function '{functionNames[0]} ({FunctionType.Orchestrator})' scheduled. Reason: NewInstance. IsReplay: False. State: Scheduled. RuntimeStatus: Pending.",
+                $"{messageId}: Function '{functionNames[0]} ({FunctionType.Orchestrator})' started. IsReplay: False. Input: \"World\". State: Started. RuntimeStatus: Running.",
+                $"{messageId}: Function '{functionNames[0]} ({FunctionType.Orchestrator})' completed. ContinuedAsNew: False. IsReplay: False. Output: \"Hello, World!\". State: Completed. RuntimeStatus: Completed.",
                 $"{messageId}: Function '{functionNames[0]} ({FunctionType.Orchestrator})' failed to send a 'Started' notification event to Azure Event Grid. Status code: 500. Details: {{\"message\":\"Exception has been thrown\"}}. ",
                 $"{messageId}: Function '{functionNames[0]} ({FunctionType.Orchestrator})' failed to send a 'Completed' notification event to Azure Event Grid. Status code: 500. Details: {{\"message\":\"Exception has been thrown\"}}. ",
             };

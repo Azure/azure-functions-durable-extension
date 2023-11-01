@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using DurableTask.AzureStorage.Partitioning;
+using Microsoft.Azure.WebJobs.Host;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
@@ -97,6 +98,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// A positive integer configured by the host.
         /// </value>
         public int? MaxConcurrentOrchestratorFunctions { get; set; } = null;
+
+        /// <summary>
+        /// Gets or sets the maximum number of entity functions that can be processed concurrently on a single host instance.
+        /// </summary>
+        /// <remarks>
+        /// Increasing entity function concurrency can result in increased throughput but can
+        /// also increase the total CPU and memory usage on a single worker instance.
+        /// </remarks>
+        /// <value>
+        /// A positive integer configured by the host.
+        /// </value>
+        public int? MaxConcurrentEntityFunctions { get; set; } = null;
 
         /// <summary>
         /// Gets or sets a value indicating whether to enable the local RPC endpoint managed by this extension.
@@ -229,6 +242,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         // to mock the value from ExtensionConfigContext. It should not be used in production code paths.
         internal Func<Uri> WebhookUriProviderOverride { get; set; }
 
+        internal static void ResolveAppSettingOptions(DurableTaskOptions options, INameResolver nameResolver)
+        {
+            if (options == null)
+            {
+                throw new InvalidOperationException($"{nameof(options)} must be set before resolving app settings.");
+            }
+
+            if (nameResolver == null)
+            {
+                throw new InvalidOperationException($"{nameof(nameResolver)} must be set before resolving app settings.");
+            }
+
+            if (nameResolver.TryResolveWholeString(options.HubName, out string taskHubName))
+            {
+                // use the resolved task hub name
+                options.HubName = taskHubName;
+            }
+        }
+
         /// <summary>
         /// Sets HubName to a value that is considered a default value.
         /// </summary>
@@ -306,6 +338,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (this.MaxConcurrentOrchestratorFunctions <= 0)
             {
                 throw new InvalidOperationException($"{nameof(this.MaxConcurrentOrchestratorFunctions)} must be a positive integer value.");
+            }
+
+            if (this.MaxConcurrentEntityFunctions <= 0)
+            {
+                throw new InvalidOperationException($"{nameof(this.MaxConcurrentEntityFunctions)} must be a positive integer value.");
             }
 
             if (this.MaxEntityOperationBatchSize <= 0)
