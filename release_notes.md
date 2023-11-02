@@ -1,6 +1,6 @@
 # Release Notes
 
-## Microsoft.Azure.Functions.Worker.Extensions.DurableTask v1.1.0-preview.2
+## Microsoft.Azure.Functions.Worker.Extensions.DurableTask <version>
 
 ### New Features
 
@@ -10,20 +10,14 @@
 
 ### Dependency Updates
 
-`Microsoft.DurableTask.*` to `1.1.0-preview.2`
-
-## Microsoft.Azure.WebJobs.Extensions.DurableTask v2.12.0-preview.1
+## Microsoft.Azure.WebJobs.Extensions.DurableTask <version>
 
 ### New Features
 
-- Updates to take advantage of new core-entity support
-
 ### Bug Fixes
+
+- Fix issue where json token input (not a json object) was unwrapped before sending to an out-of-proc worker. This could then lead to deserialization issues as the wrapping quotes were missing.
 
 ### Breaking Changes
 
 ### Dependency Updates
-
-`Microsoft.Azure.DurableTask.Core` to `2.16.0-preview.2`
-`Microsoft.Azure.DurableTask.AzureStorage` to `1.16.0-preview.2`
-
