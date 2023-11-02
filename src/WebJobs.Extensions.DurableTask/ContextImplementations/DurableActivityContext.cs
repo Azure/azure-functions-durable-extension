@@ -15,6 +15,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         DurableActivityContextBase // for v1 legacy compatibility.
 #pragma warning restore 618
     {
+        private readonly bool isOutOfProc;
         private readonly string functionName;
         private readonly string serializedInput;
         private readonly string instanceId;
@@ -26,6 +27,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal DurableActivityContext(DurableTaskExtension config, string instanceId, string serializedInput, string functionName)
         {
+            this.isOutOfProc = config.PlatformInformationService.GetWorkerRuntimeType() != WorkerRuntimeType.DotNet;
             this.messageDataConverter = config.MessageDataConverter;
             this.instanceId = instanceId;
             this.serializedInput = serializedInput;
@@ -116,8 +118,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return null;
             }
 
-            var value = jToken as JValue;
-            if (value != null)
+            if (!this.isOutOfProc && jToken is JValue value)
             {
                 return value.ToObject(destinationType);
             }
@@ -129,7 +130,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // MessagePayloadDataConverter to throw an exception. This is a workaround for that case. All other
             // inputs with destination System.String (in-proc: JSON and not JSON; out-of-proc: not-JSON) inputs with
             // destination System.String should cast to JValues and be handled above.)
-            if (destinationType.Equals(typeof(string)))
+            if (this.isOutOfProc)
             {
                 return serializedValue;
             }
