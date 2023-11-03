@@ -583,17 +583,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private static DurableHttpRequest? ConvertDurableHttpRequest(string? inputString)
         {
-            IList<dynamic>? input = JsonConvert.DeserializeObject<IList<dynamic>>(inputString);
-            dynamic? dynamicRequest = input[0];
-
-            HttpMethod httpMethod = dynamicRequest.method.ToObject<HttpMethod>();
-            Uri uri = dynamicRequest.uri.ToObject<Uri>();
-            string content = dynamicRequest.content.ToString();
-
-            JsonSerializerSettings settings = new JsonSerializerSettings { Converters = new List<JsonConverter> { new HttpHeadersConverter() } };
-            Dictionary<string, StringValues> headers = JsonConvert.DeserializeObject<Dictionary<string, StringValues>>(dynamicRequest.headers.ToString(), settings);
-
-            DurableHttpRequest request = new DurableHttpRequest(httpMethod, uri, headers, content);
+            IList<DurableHttpRequest>? input = JsonConvert.DeserializeObject<IList<DurableHttpRequest>>(inputString);
+            DurableHttpRequest? request = input?.First();
 
             return request;
         }

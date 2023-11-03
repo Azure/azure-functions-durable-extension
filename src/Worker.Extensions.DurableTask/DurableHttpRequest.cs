@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Functions.Worker;
 /// <summary>
 /// Request used to make an HTTP call through Durable Functions.
 /// </summary>
+[JsonConverter(typeof(DurableHttpRequestConverter))]
 public class DurableHttpRequest
 {
     /// <summary>
@@ -21,12 +22,18 @@ public class DurableHttpRequest
         HttpMethod method,
         Uri uri,
         IDictionary<string, StringValues>? headers = null,
-        string? content = null)
+        string? content = null,
+        bool asynchronousPatternEnabled = true,
+        TimeSpan? timeout = null,
+        HttpRetryOptions httpRetryOptions = null)
     {
         this.Method = method;
         this.Uri = uri;
         this.Headers = HttpHeadersConverter.CreateCopy(headers);
         this.Content = content;
+        this.AsynchronousPatternEnabled = asynchronousPatternEnabled;
+        this.Timeout = timeout;
+        this.HttpRetryOptions = httpRetryOptions;
     }
 
     /// <summary>
@@ -54,17 +61,24 @@ public class DurableHttpRequest
     [JsonPropertyName("content")]
     public string? Content { get; }
 
-    internal static IDictionary<string, StringValues> CreateCopy(IDictionary<string, StringValues> input)
-    {
-        var copy = new Dictionary<string, StringValues>(StringComparer.OrdinalIgnoreCase);
-        if (input != null)
-        {
-            foreach (var pair in input)
-            {
-                copy[pair.Key] = pair.Value;
-            }
-        }
+    /// <summary>
+    /// Specifies whether the Durable HTTP APIs should automatically
+    /// handle the asynchronous HTTP pattern.
+    /// </summary>
+    [JsonPropertyName("asynchronousPatternEnabled")]
+    public bool AsynchronousPatternEnabled { get; }
 
-        return copy;
-    }
+    /// <summary>
+    /// Defines retry policy for handling of failures in making the HTTP Request. These could be non-successful HTTP status codes
+    /// in the response, a timeout in making the HTTP call, or an exception raised from the HTTP Client library.
+    /// </summary>
+    [JsonPropertyName("retryOptions")]
+    public HttpRetryOptions HttpRetryOptions { get; }
+
+    /// <summary>
+    /// The total timeout for the original HTTP request and any
+    /// asynchronous polling.
+    /// </summary>
+    [JsonPropertyName("timeout")]
+    public TimeSpan? Timeout { get; }
 }

@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Functions.Worker;
 /// <summary>
 /// Response received from the HTTP request made by the Durable Function.
 /// </summary>
+[JsonConverter(typeof(DurableHttpResponseConverter))]
 public class DurableHttpResponse
 {
     /// <summary>
