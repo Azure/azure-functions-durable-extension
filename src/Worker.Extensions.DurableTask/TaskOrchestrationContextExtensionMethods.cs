@@ -3,6 +3,7 @@
 
 using System.Text.Json;
 using System.Threading.Tasks;
+using Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
 using Microsoft.DurableTask;
 
 namespace Microsoft.Azure.Functions.Worker;
@@ -17,11 +18,11 @@ public static class TaskOrchestrationContextExtensionMethods
     /// </summary>
     /// <param name="context">The task orchestration context.</param>
     /// <param name="req">The DurableHttpRequest used to make the HTTP call.</param>
-    /// <returns></returns>
+    /// <returns>DurableHttpResponse</returns>
     public static async Task<DurableHttpResponse> CallHttpAsync(this TaskOrchestrationContext context, DurableHttpRequest req)
     {
-        string responseString = await context.CallActivityAsync<string>("BuiltIn::HttpActivity", req);
-
+        string responseString = await context.CallActivityAsync<string>(Constants.HttpTaskActivityReservedName, req);
+        
         DurableHttpResponse? response = JsonSerializer.Deserialize<DurableHttpResponse>(responseString);
 
         return response;

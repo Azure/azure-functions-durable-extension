@@ -9,4 +9,6 @@ internal static class Constants
     public const string IllegalAwaitErrorMessage =
         "An invalid asynchronous invocation was detected. This can be caused by awaiting non-durable tasks " +
         "in an orchestrator function's implementation or by middleware that invokes asynchronous code.";
+
+    public const string HttpTaskActivityReservedName = "BuiltIn::HttpActivity";
 }

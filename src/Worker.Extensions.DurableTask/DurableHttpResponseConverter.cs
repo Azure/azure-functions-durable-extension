@@ -23,7 +23,7 @@ internal class DurableHttpResponseConverter : JsonConverter<DurableHttpResponse>
         JsonSerializerOptions options)
     {
         DurableHttpResponse response;
-        HttpStatusCode statusCode = HttpStatusCode.Moved;
+        HttpStatusCode statusCode = HttpStatusCode.OK;
         var headers = new Dictionary<string, StringValues>(StringComparer.OrdinalIgnoreCase);
         string content = "";
 

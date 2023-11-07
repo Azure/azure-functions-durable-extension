@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Net;
-using DurableTask.Core;
 using DurableTaskCore = DurableTask.Core;
 
 namespace Microsoft.Azure.Functions.Worker;

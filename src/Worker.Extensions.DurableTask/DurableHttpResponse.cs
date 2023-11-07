@@ -3,11 +3,8 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net;
-using System.Net.Http;
 using System.Text.Json.Serialization;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.Azure.Functions.Worker;
@@ -26,11 +23,11 @@ public class DurableHttpResponse
     /// <param name="content">Content returned from the HTTP call.</param>
     public DurableHttpResponse(
         HttpStatusCode statusCode,
-        IDictionary<string, StringValues> headers = null,
-        string content = null)
+        IDictionary<string, StringValues>? headers = null,
+        string? content = null)
     {
         this.StatusCode = statusCode;
-        this.Headers = HttpHeadersConverter.CreateCopy(headers);
+        this.Headers = HttpHeadersHelper.CreateCopy(headers);
         this.Content = content;
     }
 
@@ -44,41 +41,11 @@ public class DurableHttpResponse
     /// Headers in the response from an HTTP request.
     /// </summary>
     [JsonPropertyName("headers")]
-    [JsonConverter(typeof(HttpHeadersConverter))]
-    public IDictionary<string, StringValues> Headers { get; }
+    public IDictionary<string, StringValues>? Headers { get; }
 
     /// <summary>
     /// Content returned from an HTTP request.
     /// </summary>
     [JsonPropertyName("content")]
-    public string Content { get; }
-
-    /// <summary>
-    /// Creates a DurableHttpResponse from an HttpResponseMessage.
-    /// </summary>
-    /// <param name="httpResponseMessage">HttpResponseMessage returned from the HTTP call.</param>
-    /// <returns>A <see cref="Task{TResult}"/> representing the result of the asynchronous operation.</returns>
-    public static async Task<DurableHttpResponse> CreateDurableHttpResponseWithHttpResponseMessage(HttpResponseMessage httpResponseMessage)
-    {
-        DurableHttpResponse durableHttpResponse = new DurableHttpResponse(
-            statusCode: httpResponseMessage.StatusCode,
-            headers: CreateStringValuesHeaderDictionary(httpResponseMessage.Headers),
-            content: await httpResponseMessage.Content.ReadAsStringAsync());
-
-        return durableHttpResponse;
-    }
-
-    private static IDictionary<string, StringValues> CreateStringValuesHeaderDictionary(IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers)
-    {
-        IDictionary<string, StringValues> newHeaders = new Dictionary<string, StringValues>(StringComparer.OrdinalIgnoreCase);
-        if (headers != null)
-        {
-            foreach (var header in headers)
-            {
-                newHeaders[header.Key] = new StringValues(header.Value.ToArray());
-            }
-        }
-
-        return newHeaders;
-    }
+    public string? Content { get; }
 }

@@ -2,10 +2,9 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System;
-using System.Collections.Generic;
+using System.Net;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.Azure.Functions.Worker;
 
@@ -31,13 +30,13 @@ internal class DurableHttpRequestConverter : JsonConverter<DurableHttpRequest>
     {
         writer.WriteStartObject();
 
-        // method
+        // Method
         writer.WriteString("method", request.Method?.ToString());
         
-        // uri
+        // URI
         writer.WriteString("uri", request.Uri?.ToString());
 
-        // headers
+        // Headers
         writer.WriteStartObject("headers");
 
         var headers = request.Headers;
@@ -62,11 +61,30 @@ internal class DurableHttpRequestConverter : JsonConverter<DurableHttpRequest>
 
         writer.WriteEndObject();
 
-        // content
+        // Content
         writer.WriteString("content", request.Content);
 
-        // asynchronous pattern enabled
+        // Asynchronous pattern enabled
         writer.WriteBoolean("asynchronousPatternEnabled", request.AsynchronousPatternEnabled);
+
+        // Timeout
+        writer.WriteString("timeout", request.Timeout.ToString());
+
+        // HTTP retry options
+        writer.WriteStartObject("retryOptions");
+        writer.WriteString("FirstRetryInterval", request.HttpRetryOptions.FirstRetryInterval.ToString());
+        writer.WriteString("MaxRetryInterval", request.HttpRetryOptions.MaxRetryInterval.ToString());
+        writer.WriteNumber("BackoffCoefficient", request.HttpRetryOptions.BackoffCoefficient);
+        writer.WriteString("RetryTimeout", request.HttpRetryOptions.RetryTimeout.ToString());
+        writer.WriteNumber("MaxNumberOfAttempts", request.HttpRetryOptions.MaxNumberOfAttempts);
+        writer.WriteStartArray("StatusCodesToRetry");
+        foreach (HttpStatusCode statusCode in request.HttpRetryOptions.StatusCodesToRetry)
+        {
+            writer.WriteNumberValue((decimal)statusCode);
+        }
+        
+        writer.WriteEndArray();
+        writer.WriteEndObject();
 
         writer.WriteEndObject();
     }

@@ -25,11 +25,11 @@ public class DurableHttpRequest
         string? content = null,
         bool asynchronousPatternEnabled = true,
         TimeSpan? timeout = null,
-        HttpRetryOptions httpRetryOptions = null)
+        HttpRetryOptions? httpRetryOptions = null)
     {
         this.Method = method;
         this.Uri = uri;
-        this.Headers = HttpHeadersConverter.CreateCopy(headers);
+        this.Headers = HttpHeadersHelper.CreateCopy(headers);
         this.Content = content;
         this.AsynchronousPatternEnabled = asynchronousPatternEnabled;
         this.Timeout = timeout;
@@ -52,7 +52,6 @@ public class DurableHttpRequest
     /// Headers passed with the HTTP request made by the Durable Function.
     /// </summary>
     [JsonPropertyName("headers")]
-    [JsonConverter(typeof(HttpHeadersConverter))]
     public IDictionary<string, StringValues>? Headers { get; }
 
     /// <summary>
@@ -73,7 +72,7 @@ public class DurableHttpRequest
     /// in the response, a timeout in making the HTTP call, or an exception raised from the HTTP Client library.
     /// </summary>
     [JsonPropertyName("retryOptions")]
-    public HttpRetryOptions HttpRetryOptions { get; }
+    public HttpRetryOptions? HttpRetryOptions { get; }
 
     /// <summary>
     /// The total timeout for the original HTTP request and any
