@@ -3,10 +3,8 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
-using System.Reflection;
 using DurableTask.Core.Entities;
 using DurableTask.Core.Entities.OperationFormat;
-using DurableTask.Core.Exceptions;
 using Newtonsoft.Json;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
@@ -24,7 +22,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         [JsonIgnore]
         internal EntityBatchResult? Result { get; set; }
 
-        internal void EnsureSuccess()
+        internal void ThrowIfFailed()
         {
             if (this.Result == null)
             {

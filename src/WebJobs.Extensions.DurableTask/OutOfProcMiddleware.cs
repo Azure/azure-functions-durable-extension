@@ -142,7 +142,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         response.Actions.Select(ProtobufUtils.ToOrchestratorAction),
                         response.CustomStatus);
 
-                    context.EnsureSuccess();
+                    context.ThrowIfFailed();
                 },
 #pragma warning restore CS0618 // Type or member is obsolete (not intended for general public use)
             };
@@ -331,7 +331,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     P.EntityBatchResult response = P.EntityBatchResult.Parser.ParseFrom(triggerReturnValueBytes);
                     context.Result = response.ToEntityBatchResult();
 
-                    context.EnsureSuccess();
+                    context.ThrowIfFailed();
 #pragma warning restore CS0618 // Type or member is obsolete (not intended for general public use)
                 },
             };

@@ -51,7 +51,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         [JsonIgnore]
         internal TaskOrchestrationEntityParameters? EntityParameters { get; private set; }
 
-        internal void EnsureSuccess()
+        internal void ThrowIfFailed()
         {
             if (this.failure != null)
             {
