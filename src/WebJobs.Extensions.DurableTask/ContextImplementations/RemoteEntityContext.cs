@@ -3,12 +3,9 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
-using DurableTask.Core;
-using DurableTask.Core.Command;
+using DurableTask.Core.Entities;
 using DurableTask.Core.Entities.OperationFormat;
-using DurableTask.Core.History;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
@@ -20,9 +17,40 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         [JsonProperty("request")]
-        public EntityBatchRequest Request { get; private set; }
+        internal EntityBatchRequest Request { get; private set; }
 
         [JsonIgnore]
         internal EntityBatchResult? Result { get; set; }
+
+        internal void ThrowIfFailed()
+        {
+            if (this.Result == null)
+            {
+                throw new InvalidOperationException("Entity batch request has not been processed yet.");
+            }
+
+            if (this.Result.FailureDetails is { } f)
+            {
+                throw new EntityFailureException(f.ErrorMessage);
+            }
+
+            List<Exception>? errors = null;
+            if (this.Result.Results is not null)
+            {
+                foreach (OperationResult result in this.Result.Results)
+                {
+                    if (result.FailureDetails is { } failure)
+                    {
+                        errors ??= new List<Exception>();
+                        errors.Add(new EntityFailureException(failure.ErrorMessage));
+                    }
+                }
+            }
+
+            if (errors is not null)
+            {
+                throw errors.Count == 1 ? errors[0] : new AggregateException(errors);
+            }
+        }
     }
 }
