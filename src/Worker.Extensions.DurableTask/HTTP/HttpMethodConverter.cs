@@ -6,7 +6,7 @@ using System.Net.Http;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
+namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask.Http;
 
 internal class HttpMethodConverter : JsonConverter<HttpMethod>
 {

@@ -7,7 +7,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Primitives;
 
-namespace Microsoft.Azure.Functions.Worker;
+namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask.Http;
 
 // StringValues does not deserialize as you would expect, so we need a custom mechanism
 // for serializing HTTP header collections

@@ -421,7 +421,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 await next();
                 return;
             }
-            
+
             FunctionName functionName = new FunctionName(scheduledEvent.Name);
 
             OrchestrationInstance? instance = dispatchContext.GetProperty<OrchestrationInstance>();

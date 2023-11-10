@@ -19,21 +19,24 @@ public class HttpRetryOptions
 
     private TimeSpan firstRetryInterval;
     private int maxNumberOfAttempts;
+    private IList<HttpStatusCode>? statusCodesToRetry;
 
     /// <summary>
     /// Creates a new instance SerializableRetryOptions with the supplied first retry and max attempts.
     /// </summary>
     /// <param name="firstRetryInterval">Timespan to wait for the first retry.</param>
     /// <param name="maxNumberOfAttempts">Max number of attempts to retry.</param>
+    /// <param name="statusCodesToRetry">List of status codes that specify when to retry.</param>
     /// <exception cref="ArgumentException">
     /// The <paramref name="firstRetryInterval"/> value must be greater than <see cref="TimeSpan.Zero"/>.
     /// </exception>
-    public HttpRetryOptions(TimeSpan firstRetryInterval, int maxNumberOfAttempts)
+    public HttpRetryOptions(TimeSpan firstRetryInterval, int maxNumberOfAttempts, IList<HttpStatusCode>? statusCodesToRetry = null)
     {
         this.MaxRetryInterval = DefaultMaxRetryinterval;
 
         this.firstRetryInterval = firstRetryInterval;
         this.maxNumberOfAttempts = maxNumberOfAttempts;
+        this.statusCodesToRetry = statusCodesToRetry ?? new List<HttpStatusCode>();
     }
 
     /// <summary>
@@ -96,5 +99,5 @@ public class HttpRetryOptions
     /// will be retried.
     /// </summary>
     [JsonPropertyName("StatusCodesToRetry")]
-    public IList<HttpStatusCode> StatusCodesToRetry { get; set; } = new List<HttpStatusCode>();
+    public IList<HttpStatusCode> StatusCodesToRetry { get; }
 }
