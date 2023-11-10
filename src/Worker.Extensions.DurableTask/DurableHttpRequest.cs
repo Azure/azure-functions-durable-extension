@@ -7,12 +7,11 @@ using System.Net.Http;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Primitives;
 
-namespace Microsoft.Azure.Functions.Worker;
+namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask.Http;
 
 /// <summary>
 /// Request used to make an HTTP call through Durable Functions.
 /// </summary>
-[JsonConverter(typeof(DurableHttpRequestConverter))]
 public class DurableHttpRequest
 {
     /// <summary>
@@ -29,7 +28,7 @@ public class DurableHttpRequest
     {
         this.Method = method;
         this.Uri = uri;
-        this.Headers = HttpHeadersHelper.CreateCopy(headers);
+        this.Headers = headers;
         this.Content = content;
         this.AsynchronousPatternEnabled = asynchronousPatternEnabled;
         this.Timeout = timeout;
@@ -40,6 +39,7 @@ public class DurableHttpRequest
     /// HttpMethod used in the HTTP request made by the Durable Function.
     /// </summary>
     [JsonPropertyName("method")]
+    [JsonConverter(typeof(HttpMethodConverter))]
     public HttpMethod Method { get; }
 
     /// <summary>
@@ -52,6 +52,7 @@ public class DurableHttpRequest
     /// Headers passed with the HTTP request made by the Durable Function.
     /// </summary>
     [JsonPropertyName("headers")]
+    [JsonConverter(typeof(HttpHeadersConverter))]
     public IDictionary<string, StringValues>? Headers { get; }
 
     /// <summary>

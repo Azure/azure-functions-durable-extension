@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Net.Http;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using DurableTask.Core.Entities;
@@ -15,7 +14,6 @@ using DurableTask.Core.Exceptions;
 using DurableTask.Core.History;
 using DurableTask.Core.Middleware;
 using Microsoft.Azure.WebJobs.Host.Executors;
-using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
@@ -418,45 +416,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new InvalidOperationException($"An activity was scheduled but no {nameof(TaskScheduledEvent)} was found!");
             }
 
-            if (!string.IsNullOrEmpty(scheduledEvent.Name) && scheduledEvent.Name.StartsWith("BuiltIn::HttpActivity"))
+            if (scheduledEvent.Name?.StartsWith("BuiltIn::", StringComparison.OrdinalIgnoreCase) ?? false)
             {
-                try
-                {
-                    if (dispatchContext.GetProperty<TaskActivity>() is TaskHttpActivityShim shim)
-                    {
-                        OrchestrationInstance orchestrationInstance = dispatchContext.GetProperty<OrchestrationInstance>();
-                        TaskContext context = new TaskContext(orchestrationInstance);
-
-                        // convert the DurableHttpRequest
-                        DurableHttpRequest? req = ConvertDurableHttpRequest(scheduledEvent.Input);
-                        IList<DurableHttpRequest> list = new List<DurableHttpRequest>() { req };
-                        string serializedRequest = JsonConvert.SerializeObject(list);
-
-                        string? output = await shim.RunAsync(context, serializedRequest);
-                        dispatchContext.SetProperty(new ActivityExecutionResult
-                        {
-                            ResponseEvent = new TaskCompletedEvent(
-                            eventId: -1,
-                            taskScheduledId: scheduledEvent.EventId,
-                            result: JsonConvert.SerializeObject(output)),
-                        });
-                        return;
-                    }
-                }
-                catch (Exception e)
-                {
-                    dispatchContext.SetProperty(new ActivityExecutionResult
-                    {
-                        ResponseEvent = new TaskFailedEvent(
-                        eventId: -1,
-                        taskScheduledId: scheduledEvent.EventId,
-                        reason: $"Function failed",
-                        details: e.Message),
-                    });
-                    return;
-                }
+                await next();
+                return;
             }
-
+            
             FunctionName functionName = new FunctionName(scheduledEvent.Name);
 
             OrchestrationInstance? instance = dispatchContext.GetProperty<OrchestrationInstance>();

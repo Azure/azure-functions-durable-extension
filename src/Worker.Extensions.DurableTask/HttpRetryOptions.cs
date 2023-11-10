@@ -4,20 +4,21 @@
 using System;
 using System.Collections.Generic;
 using System.Net;
-using DurableTaskCore = DurableTask.Core;
+using System.Text.Json.Serialization;
 
-namespace Microsoft.Azure.Functions.Worker;
+namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask.Http;
 
 /// <summary>
 /// Defines retry policies that can be passed as parameters to various operations.
 /// </summary>
 public class HttpRetryOptions
 {
-    private readonly DurableTaskCore.RetryOptions coreRetryOptions;
-
     // Would like to make this durability provider specific, but since this is a developer
     // facing type, that is difficult.
     private static readonly TimeSpan DefaultMaxRetryinterval = TimeSpan.FromDays(6);
+
+    private TimeSpan firstRetryInterval;
+    private int maxNumberOfAttempts;
 
     /// <summary>
     /// Creates a new instance SerializableRetryOptions with the supplied first retry and max attempts.
@@ -29,8 +30,10 @@ public class HttpRetryOptions
     /// </exception>
     public HttpRetryOptions(TimeSpan firstRetryInterval, int maxNumberOfAttempts)
     {
-        this.coreRetryOptions = new DurableTaskCore.RetryOptions(firstRetryInterval, maxNumberOfAttempts);
         this.MaxRetryInterval = DefaultMaxRetryinterval;
+
+        this.firstRetryInterval = firstRetryInterval;
+        this.maxNumberOfAttempts = maxNumberOfAttempts;
     }
 
     /// <summary>
@@ -39,10 +42,11 @@ public class HttpRetryOptions
     /// <value>
     /// The TimeSpan to wait for the first retries.
     /// </value>
+    [JsonPropertyName("FirstRetryInterval")]
     public TimeSpan FirstRetryInterval
     {
-        get { return this.coreRetryOptions.FirstRetryInterval; }
-        set { this.coreRetryOptions.FirstRetryInterval = value; }
+        get { return this.firstRetryInterval; }
+        set { this.firstRetryInterval = value; }
     }
 
     /// <summary>
@@ -51,11 +55,8 @@ public class HttpRetryOptions
     /// <value>
     /// The TimeSpan of the max retry interval, defaults to 6 days.
     /// </value>
-    public TimeSpan MaxRetryInterval
-    {
-        get { return this.coreRetryOptions.MaxRetryInterval; }
-        set { this.coreRetryOptions.MaxRetryInterval = value; }
-    }
+    [JsonPropertyName("MaxRetryInterval")]
+    public TimeSpan MaxRetryInterval { get; set; }
 
     /// <summary>
     /// Gets or sets the backoff coefficient.
@@ -63,11 +64,8 @@ public class HttpRetryOptions
     /// <value>
     /// The backoff coefficient used to determine rate of increase of backoff. Defaults to 1.
     /// </value>
-    public double BackoffCoefficient
-    {
-        get { return this.coreRetryOptions.BackoffCoefficient; }
-        set { this.coreRetryOptions.BackoffCoefficient = value; }
-    }
+    [JsonPropertyName("BackoffCoefficient")]
+    public double BackoffCoefficient { get; set; }
 
     /// <summary>
     /// Gets or sets the timeout for retries.
@@ -75,11 +73,8 @@ public class HttpRetryOptions
     /// <value>
     /// The TimeSpan timeout for retries, defaults to <see cref="TimeSpan.MaxValue"/>.
     /// </value>
-    public TimeSpan RetryTimeout
-    {
-        get { return this.coreRetryOptions.RetryTimeout; }
-        set { this.coreRetryOptions.RetryTimeout = value; }
-    }
+    [JsonPropertyName("RetryTimeout")]
+    public TimeSpan RetryTimeout { get; set; }
 
     /// <summary>
     /// Gets or sets the max number of attempts.
@@ -87,10 +82,11 @@ public class HttpRetryOptions
     /// <value>
     /// The maximum number of retry attempts.
     /// </value>
+    [JsonPropertyName("MaxNumberOfAttempts")]
     public int MaxNumberOfAttempts
     {
-        get { return this.coreRetryOptions.MaxNumberOfAttempts; }
-        set { this.coreRetryOptions.MaxNumberOfAttempts = value; }
+        get { return this.maxNumberOfAttempts; }
+        set { this.maxNumberOfAttempts = value; }
     }
 
     /// <summary>
@@ -99,15 +95,6 @@ public class HttpRetryOptions
     /// If none are provided, all 4xx and 5xx status codes
     /// will be retried.
     /// </summary>
+    [JsonPropertyName("StatusCodesToRetry")]
     public IList<HttpStatusCode> StatusCodesToRetry { get; set; } = new List<HttpStatusCode>();
-
-    internal RetryOptions GetRetryOptions()
-    {
-        return new RetryOptions(this.FirstRetryInterval, this.MaxNumberOfAttempts)
-        {
-            BackoffCoefficient = this.BackoffCoefficient,
-            MaxRetryInterval = this.MaxRetryInterval,
-            RetryTimeout = this.RetryTimeout,
-        };
-    }
 }

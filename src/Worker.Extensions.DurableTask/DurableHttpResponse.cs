@@ -1,18 +1,16 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
-using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Primitives;
 
-namespace Microsoft.Azure.Functions.Worker;
+namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask.Http;
 
 /// <summary>
 /// Response received from the HTTP request made by the Durable Function.
 /// </summary>
-[JsonConverter(typeof(DurableHttpResponseConverter))]
 public class DurableHttpResponse
 {
     /// <summary>
@@ -27,7 +25,7 @@ public class DurableHttpResponse
         string? content = null)
     {
         this.StatusCode = statusCode;
-        this.Headers = HttpHeadersHelper.CreateCopy(headers);
+        this.Headers = headers;
         this.Content = content;
     }
 
@@ -41,6 +39,7 @@ public class DurableHttpResponse
     /// Headers in the response from an HTTP request.
     /// </summary>
     [JsonPropertyName("headers")]
+    [JsonConverter(typeof(HttpHeadersConverter))]
     public IDictionary<string, StringValues>? Headers { get; }
 
     /// <summary>
