@@ -13,11 +13,6 @@ namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask.Http;
 // for serializing HTTP header collections
 internal class HttpHeadersConverter : JsonConverter<IDictionary<string, StringValues>>
 {
-    public override bool CanConvert(Type objectType)
-    {
-        return typeof(IDictionary<string, StringValues>).IsAssignableFrom(objectType);
-    }
-
     public override IDictionary<string, StringValues> Read(
         ref Utf8JsonReader reader,
         Type objectType,

@@ -20,11 +20,14 @@ public static class TaskOrchestrationContextExtensionMethods
     /// <param name="context">The task orchestration context.</param>
     /// <param name="request">The DurableHttpRequest used to make the HTTP call.</param>
     /// <returns>DurableHttpResponse</returns>
-    public static async Task<DurableHttpResponse> CallHttpAsync(this TaskOrchestrationContext context, DurableHttpRequest request)
+    public static Task<DurableHttpResponse> CallHttpAsync(this TaskOrchestrationContext context, DurableHttpRequest request)
     {
-        DurableHttpResponse response = await context.CallActivityAsync<DurableHttpResponse>(Constants.HttpTaskActivityReservedName, request);
-        
-        return response;
+        if (context is null)
+        {
+            throw new ArgumentNullException(nameof(context));
+        }
+
+        return context.CallActivityAsync<DurableHttpResponse>(Constants.HttpTaskActivityReservedName, request);
     }
 
     /// <summary>
@@ -36,16 +39,13 @@ public static class TaskOrchestrationContextExtensionMethods
     /// <param name="content">Content passed in the HTTP request.</param>
     /// <param name="retryOptions">The retry option for the HTTP task.</param>
     /// <returns>A <see cref="Task{DurableHttpResponse}"/>Result of the HTTP call.</returns>
-    public static async Task<DurableHttpResponse?> CallHttpAsync(this TaskOrchestrationContext context, HttpMethod method, Uri uri, string? content = null, HttpRetryOptions? retryOptions = null)
+    public static Task<DurableHttpResponse> CallHttpAsync(this TaskOrchestrationContext context, HttpMethod method, Uri uri, string? content = null, HttpRetryOptions? retryOptions = null)
     {
-        DurableHttpRequest request = new DurableHttpRequest(
-            method: method,
-            uri: uri,
-            content: content,
-            httpRetryOptions: retryOptions);
+        DurableHttpRequest request = new DurableHttpRequest(method, uri);
 
-        DurableHttpResponse response = await context.CallActivityAsync<DurableHttpResponse>(Constants.HttpTaskActivityReservedName, request);
+        request.Content = content;
+        request.HttpRetryOptions = retryOptions;
 
-        return response;
+        return context.CallHttpAsync(request);
     }
 }

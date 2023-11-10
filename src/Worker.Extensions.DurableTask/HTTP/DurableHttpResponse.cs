@@ -17,16 +17,10 @@ public class DurableHttpResponse
     /// Initializes a new instance of the <see cref="DurableHttpResponse"/> class.
     /// </summary>
     /// <param name="statusCode">HTTP Status code returned from the HTTP call.</param>
-    /// <param name="headers">Headers returned from the HTTP call.</param>
-    /// <param name="content">Content returned from the HTTP call.</param>
     public DurableHttpResponse(
-        HttpStatusCode statusCode,
-        IDictionary<string, StringValues>? headers = null,
-        string? content = null)
+        HttpStatusCode statusCode)
     {
         this.StatusCode = statusCode;
-        this.Headers = headers;
-        this.Content = content;
     }
 
     /// <summary>
@@ -40,11 +34,11 @@ public class DurableHttpResponse
     /// </summary>
     [JsonPropertyName("headers")]
     [JsonConverter(typeof(HttpHeadersConverter))]
-    public IDictionary<string, StringValues>? Headers { get; }
+    public IDictionary<string, StringValues>? Headers { get; init; }
 
     /// <summary>
     /// Content returned from an HTTP request.
     /// </summary>
     [JsonPropertyName("content")]
-    public string? Content { get; }
+    public string? Content { get; init; }
 }

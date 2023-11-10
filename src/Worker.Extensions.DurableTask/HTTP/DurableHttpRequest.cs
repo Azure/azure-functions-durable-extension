@@ -19,20 +19,10 @@ public class DurableHttpRequest
     /// </summary>
     public DurableHttpRequest(
         HttpMethod method,
-        Uri uri,
-        IDictionary<string, StringValues>? headers = null,
-        string? content = null,
-        bool asynchronousPatternEnabled = true,
-        TimeSpan? timeout = null,
-        HttpRetryOptions? httpRetryOptions = null)
+        Uri uri)
     {
         this.Method = method;
         this.Uri = uri;
-        this.Headers = headers;
-        this.Content = content;
-        this.AsynchronousPatternEnabled = asynchronousPatternEnabled;
-        this.Timeout = timeout;
-        this.HttpRetryOptions = httpRetryOptions;
     }
 
     /// <summary>
@@ -53,32 +43,32 @@ public class DurableHttpRequest
     /// </summary>
     [JsonPropertyName("headers")]
     [JsonConverter(typeof(HttpHeadersConverter))]
-    public IDictionary<string, StringValues>? Headers { get; }
+    public IDictionary<string, StringValues>? Headers { get; set; }
 
     /// <summary>
     /// Content passed with the HTTP request made by the Durable Function.
     /// </summary>
     [JsonPropertyName("content")]
-    public string? Content { get; }
+    public string? Content { get; set; }
 
     /// <summary>
     /// Specifies whether the Durable HTTP APIs should automatically
     /// handle the asynchronous HTTP pattern.
     /// </summary>
     [JsonPropertyName("asynchronousPatternEnabled")]
-    public bool AsynchronousPatternEnabled { get; }
+    public bool AsynchronousPatternEnabled { get; set; }
 
     /// <summary>
     /// Defines retry policy for handling of failures in making the HTTP Request. These could be non-successful HTTP status codes
     /// in the response, a timeout in making the HTTP call, or an exception raised from the HTTP Client library.
     /// </summary>
     [JsonPropertyName("retryOptions")]
-    public HttpRetryOptions? HttpRetryOptions { get; }
+    public HttpRetryOptions? HttpRetryOptions { get; set; }
 
     /// <summary>
     /// The total timeout for the original HTTP request and any
     /// asynchronous polling.
     /// </summary>
     [JsonPropertyName("timeout")]
-    public TimeSpan? Timeout { get; }
+    public TimeSpan? Timeout { get; set; }
 }

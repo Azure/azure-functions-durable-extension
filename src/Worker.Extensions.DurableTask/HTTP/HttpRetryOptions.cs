@@ -17,26 +17,13 @@ public class HttpRetryOptions
     // facing type, that is difficult.
     private static readonly TimeSpan DefaultMaxRetryinterval = TimeSpan.FromDays(6);
 
-    private TimeSpan firstRetryInterval;
-    private int maxNumberOfAttempts;
-    private IList<HttpStatusCode>? statusCodesToRetry;
-
     /// <summary>
     /// Creates a new instance SerializableRetryOptions with the supplied first retry and max attempts.
     /// </summary>
-    /// <param name="firstRetryInterval">Timespan to wait for the first retry.</param>
-    /// <param name="maxNumberOfAttempts">Max number of attempts to retry.</param>
-    /// <param name="statusCodesToRetry">List of status codes that specify when to retry.</param>
-    /// <exception cref="ArgumentException">
-    /// The <paramref name="firstRetryInterval"/> value must be greater than <see cref="TimeSpan.Zero"/>.
     /// </exception>
-    public HttpRetryOptions(TimeSpan firstRetryInterval, int maxNumberOfAttempts, IList<HttpStatusCode>? statusCodesToRetry = null)
+    public HttpRetryOptions(IList<HttpStatusCode>? statusCodesToRetry = null)
     {
-        this.MaxRetryInterval = DefaultMaxRetryinterval;
-
-        this.firstRetryInterval = firstRetryInterval;
-        this.maxNumberOfAttempts = maxNumberOfAttempts;
-        this.statusCodesToRetry = statusCodesToRetry ?? new List<HttpStatusCode>();
+        this.StatusCodesToRetry = statusCodesToRetry ?? new List<HttpStatusCode>();
     }
 
     /// <summary>
@@ -46,11 +33,7 @@ public class HttpRetryOptions
     /// The TimeSpan to wait for the first retries.
     /// </value>
     [JsonPropertyName("FirstRetryInterval")]
-    public TimeSpan FirstRetryInterval
-    {
-        get { return this.firstRetryInterval; }
-        set { this.firstRetryInterval = value; }
-    }
+    public TimeSpan FirstRetryInterval { get; set; }
 
     /// <summary>
     /// Gets or sets the max retry interval.
@@ -59,7 +42,7 @@ public class HttpRetryOptions
     /// The TimeSpan of the max retry interval, defaults to 6 days.
     /// </value>
     [JsonPropertyName("MaxRetryInterval")]
-    public TimeSpan MaxRetryInterval { get; set; }
+    public TimeSpan MaxRetryInterval { get; set; } = DefaultMaxRetryinterval;
 
     /// <summary>
     /// Gets or sets the backoff coefficient.
@@ -68,7 +51,7 @@ public class HttpRetryOptions
     /// The backoff coefficient used to determine rate of increase of backoff. Defaults to 1.
     /// </value>
     [JsonPropertyName("BackoffCoefficient")]
-    public double BackoffCoefficient { get; set; }
+    public double BackoffCoefficient { get; set; } = 1;
 
     /// <summary>
     /// Gets or sets the timeout for retries.
@@ -77,7 +60,7 @@ public class HttpRetryOptions
     /// The TimeSpan timeout for retries, defaults to <see cref="TimeSpan.MaxValue"/>.
     /// </value>
     [JsonPropertyName("RetryTimeout")]
-    public TimeSpan RetryTimeout { get; set; }
+    public TimeSpan RetryTimeout { get; set; } = TimeSpan.MaxValue;
 
     /// <summary>
     /// Gets or sets the max number of attempts.
@@ -86,11 +69,7 @@ public class HttpRetryOptions
     /// The maximum number of retry attempts.
     /// </value>
     [JsonPropertyName("MaxNumberOfAttempts")]
-    public int MaxNumberOfAttempts
-    {
-        get { return this.maxNumberOfAttempts; }
-        set { this.maxNumberOfAttempts = value; }
-    }
+    public int MaxNumberOfAttempts { get; set; }
 
     /// <summary>
     /// Gets or sets the list of status codes upon which the

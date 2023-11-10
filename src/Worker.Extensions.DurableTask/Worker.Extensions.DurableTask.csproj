@@ -54,8 +54,4 @@
       <PackagePath>content/SBOM</PackagePath>
     </Content>
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="HTTP\" />
-  </ItemGroup>
-
 </Project>
