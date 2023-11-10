@@ -546,14 +546,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             dispatchContext.SetProperty(activityResult);
         }
 
-        private static DurableHttpRequest? ConvertDurableHttpRequest(string? inputString)
-        {
-            IList<DurableHttpRequest>? input = JsonConvert.DeserializeObject<IList<DurableHttpRequest>>(inputString);
-            DurableHttpRequest? request = input?.First();
-
-            return request;
-        }
-
         private static FailureDetails GetFailureDetails(Exception e)
         {
             if (e.InnerException != null && e.InnerException.Message.StartsWith("Result:"))
