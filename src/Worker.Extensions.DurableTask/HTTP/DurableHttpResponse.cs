@@ -17,8 +17,7 @@ public class DurableHttpResponse
     /// Initializes a new instance of the <see cref="DurableHttpResponse"/> class.
     /// </summary>
     /// <param name="statusCode">HTTP Status code returned from the HTTP call.</param>
-    public DurableHttpResponse(
-        HttpStatusCode statusCode)
+    public DurableHttpResponse(HttpStatusCode statusCode)
     {
         this.StatusCode = statusCode;
     }

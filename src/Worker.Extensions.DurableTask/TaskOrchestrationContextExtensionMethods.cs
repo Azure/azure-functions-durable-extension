@@ -41,10 +41,11 @@ public static class TaskOrchestrationContextExtensionMethods
     /// <returns>A <see cref="Task{DurableHttpResponse}"/>Result of the HTTP call.</returns>
     public static Task<DurableHttpResponse> CallHttpAsync(this TaskOrchestrationContext context, HttpMethod method, Uri uri, string? content = null, HttpRetryOptions? retryOptions = null)
     {
-        DurableHttpRequest request = new DurableHttpRequest(method, uri);
-
-        request.Content = content;
-        request.HttpRetryOptions = retryOptions;
+        DurableHttpRequest request = new DurableHttpRequest(method, uri)
+        {
+            Content = content,
+            HttpRetryOptions = retryOptions,
+        };
 
         return context.CallHttpAsync(request);
     }

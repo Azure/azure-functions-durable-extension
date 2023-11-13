@@ -20,7 +20,6 @@ public class HttpRetryOptions
     /// <summary>
     /// Creates a new instance SerializableRetryOptions with the supplied first retry and max attempts.
     /// </summary>
-    /// </exception>
     public HttpRetryOptions(IList<HttpStatusCode>? statusCodesToRetry = null)
     {
         this.StatusCodesToRetry = statusCodesToRetry ?? new List<HttpStatusCode>();

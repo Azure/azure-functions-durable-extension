@@ -17,9 +17,7 @@ public class DurableHttpRequest
     /// <summary>
     /// Initializes a new instance of the <see cref="DurableHttpRequest"/> class.
     /// </summary>
-    public DurableHttpRequest(
-        HttpMethod method,
-        Uri uri)
+    public DurableHttpRequest(HttpMethod method, Uri uri)
     {
         this.Method = method;
         this.Uri = uri;
