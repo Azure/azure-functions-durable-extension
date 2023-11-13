@@ -1,10 +1,23 @@
 # Release Notes
 
+## Microsoft.Azure.Functions.Worker.Extensions.DurableTask <version>
+
 ### New Features
 
 ### Bug Fixes
 
-- Fix support for distributed tracing v2 in dotnet-isolated and Java (https://github.com/Azure/azure-functions-durable-extension/pull/2634)
+### Breaking Changes
+
+### Dependency Updates
+
+## Microsoft.Azure.WebJobs.Extensions.DurableTask <version>
+
+### New Features
+
+### Bug Fixes
+
+- Fix issue where json token input (not a json object) was unwrapped before sending to an out-of-proc worker. This could then lead to deserialization issues as the wrapping quotes were missing. (Applies to dotnet-isolated and java only)
+- Fix failed orchestration/entities not showing up as function invocation failures. (Applies to dotnet-isolated and java only)
 
 ### Breaking Changes
 
