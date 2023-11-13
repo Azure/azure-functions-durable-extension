@@ -419,6 +419,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new InvalidOperationException($"An activity was scheduled but no {nameof(TaskScheduledEvent)} was found!");
             }
 
+            if (scheduledEvent.Name?.StartsWith("BuiltIn::", StringComparison.OrdinalIgnoreCase) ?? false)
+            {
+                await next();
+                return;
+            }
+
             FunctionName functionName = new FunctionName(scheduledEvent.Name);
 
             OrchestrationInstance? instance = dispatchContext.GetProperty<OrchestrationInstance>();
