@@ -149,7 +149,7 @@ steps:
     rootFolderOrFile: '$(System.DefaultWorkingDirectory)/test/PerfTests/DFPerfTests/'
     includeRootFolder: false
     archiveType: 'zip'
-    archiveFile: '$(System.DefaultWorkingDirectory)/$(Build.BuildId).zip'
+    archiveFile: '$(Build.BuildId).zip'
     replaceExistingArchive: true
     verbose: true
 
