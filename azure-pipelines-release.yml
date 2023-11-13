@@ -31,22 +31,22 @@ steps:
 - task: NuGetToolInstaller@1
   displayName: 'Use NuGet '
 
-# dotnet restore
-- task: DotNetCoreCLI@2
-  displayName: 'dotnet restore'
-  inputs:
-    command: restore
-    projects: '**/**/*.csproj'
-    feedsToUse: config
-    nugetConfigPath: 'nuget.config'
+# # dotnet restore
+# - task: DotNetCoreCLI@2
+#   displayName: 'dotnet restore'
+#   inputs:
+#     command: restore
+#     projects: '**/**/*.csproj'
+#     feedsToUse: config
+#     nugetConfigPath: 'nuget.config'
 
-# Build durable-extension
-- task: VSBuild@1
-  displayName: 'Build Durable Extension'
-  inputs:
-    solution: '**/WebJobs.Extensions.DurableTask.sln'
-    vsVersion: "16.0"
-    configuration: Release
+# # Build durable-extension
+# - task: VSBuild@1
+#   displayName: 'Build Durable Extension'
+#   inputs:
+#     solution: '**/WebJobs.Extensions.DurableTask.sln'
+#     vsVersion: "16.0"
+#     configuration: Release
 
 # # Authenticode sign all the DLLs with the Microsoft certificate.
 # - task: EsrpCodeSigning@1
@@ -149,7 +149,7 @@ steps:
     rootFolderOrFile: '$(System.DefaultWorkingDirectory)/azure-functions-durable-extension/test/PerfTests/DFPerfTests/'
     includeRootFolder: true
     archiveType: 'zip'
-    archiveFile: '$(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip'
+    archiveFile: '$(System.DefaultWorkingDirectory)/azure-functions-durable-extension/$(Build.BuildId).zip'
     replaceExistingArchive: true
     verbose: true
 
