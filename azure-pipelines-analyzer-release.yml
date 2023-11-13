@@ -142,11 +142,6 @@ steps:
     MaxConcurrency: '50'
     MaxRetryAttempts: '5'
 
-# Make the nuget packages available for download in the ADO portal UI
-- publish: '$(System.DefaultWorkingDirectory)/azure-functions-durable-extension'
-  displayName: 'Publish nuget packages to Artifacts'
-  artifact: PackageOutput
-
 # zip perf tests
 - task: ArchiveFiles@2
   inputs:
@@ -156,3 +151,8 @@ steps:
     archiveFile: '$(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip'
     replaceExistingArchive: true
     verbose: true
+
+# Make the nuget packages available for download in the ADO portal UI
+- publish: '$(System.DefaultWorkingDirectory)/azure-functions-durable-extension'
+  displayName: 'Publish nuget packages to Artifacts'
+  artifact: PackageOutput
