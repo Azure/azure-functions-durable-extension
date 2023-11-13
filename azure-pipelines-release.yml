@@ -147,7 +147,7 @@ steps:
   displayName: 'Zip perf tests'
   inputs:
     rootFolderOrFile: '$(System.DefaultWorkingDirectory)/azure-functions-durable-extension/test/PerfTests/DFPerfTests/'
-    includeRootFolder: true
+    includeRootFolder: false
     archiveType: 'zip'
     archiveFile: '$(System.DefaultWorkingDirectory)/$(Build.BuildId).zip'
     replaceExistingArchive: true
