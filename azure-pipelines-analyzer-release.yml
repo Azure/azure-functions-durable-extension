@@ -142,16 +142,6 @@ steps:
     MaxConcurrency: '50'
     MaxRetryAttempts: '5'
 
-# zip perf tests
-- task: ArchiveFiles@2
-  inputs:
-    rootFolderOrFile: '$(Build.BinariesDirectory)/test/PerfTests/DFPerfTests/'
-    includeRootFolder: true
-    archiveType: 'zip'
-    archiveFile: '$(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip'
-    replaceExistingArchive: true
-    verbose: true
-
 # Make the nuget packages available for download in the ADO portal UI
 - publish: '$(System.DefaultWorkingDirectory)/azure-functions-durable-extension'
   displayName: 'Publish nuget packages to Artifacts'
