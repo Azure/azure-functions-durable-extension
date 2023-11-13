@@ -31,123 +31,123 @@ steps:
 - task: NuGetToolInstaller@1
   displayName: 'Use NuGet '
 
-# # dotnet restore
-# - task: DotNetCoreCLI@2
-#   displayName: 'dotnet restore'
-#   inputs:
-#     command: restore
-#     projects: '**/**/*.csproj'
-#     feedsToUse: config
-#     nugetConfigPath: 'nuget.config'
+# dotnet restore
+- task: DotNetCoreCLI@2
+  displayName: 'dotnet restore'
+  inputs:
+    command: restore
+    projects: '**/**/*.csproj'
+    feedsToUse: config
+    nugetConfigPath: 'nuget.config'
 
-# # Build durable-extension
-# - task: VSBuild@1
-#   displayName: 'Build Durable Extension'
-#   inputs:
-#     solution: '**/WebJobs.Extensions.DurableTask.sln'
-#     vsVersion: "16.0"
-#     configuration: Release
+# Build durable-extension
+- task: VSBuild@1
+  displayName: 'Build Durable Extension'
+  inputs:
+    solution: '**/WebJobs.Extensions.DurableTask.sln'
+    vsVersion: "16.0"
+    configuration: Release
 
-# # Authenticode sign all the DLLs with the Microsoft certificate.
-# - task: EsrpCodeSigning@1
-#   inputs:
-#     ConnectedServiceName: 'ESRP Service'
-#     FolderPath: 'src/WebJobs.Extensions.DurableTask/bin/Release'
-#     Pattern: '*DurableTask.dll'
-#     signConfigType: 'inlineSignParams'
-#     inlineOperation: |
-#       [    
-#           {
-#             "KeyCode": "CP-230012",
-#             "OperationCode": "SigntoolSign",
-#             "Parameters": {
-#               "OpusName": "Microsoft",
-#               "OpusInfo": "http://www.microsoft.com",
-#               "FileDigest": "/fd \"SHA256\"",
-#               "PageHash": "/NPH",
-#               "TimeStamp": "/tr \"http://rfc3161.gtm.corp.microsoft.com/TSS/HttpTspServer\" /td sha256"
-#             },
-#             "ToolName": "sign",
-#             "ToolVersion": "1.0"
-#           },
-#           {
-#             "KeyCode": "CP-230012",
-#             "OperationCode": "SigntoolVerify",
-#             "Parameters": {},
-#             "ToolName": "sign",
-#             "ToolVersion": "1.0"
-#           }
-#       ]
-#     SessionTimeout: '60'
-#     MaxConcurrency: '50'
-#     MaxRetryAttempts: '5'
+# Authenticode sign all the DLLs with the Microsoft certificate.
+- task: EsrpCodeSigning@1
+  inputs:
+    ConnectedServiceName: 'ESRP Service'
+    FolderPath: 'src/WebJobs.Extensions.DurableTask/bin/Release'
+    Pattern: '*DurableTask.dll'
+    signConfigType: 'inlineSignParams'
+    inlineOperation: |
+      [    
+          {
+            "KeyCode": "CP-230012",
+            "OperationCode": "SigntoolSign",
+            "Parameters": {
+              "OpusName": "Microsoft",
+              "OpusInfo": "http://www.microsoft.com",
+              "FileDigest": "/fd \"SHA256\"",
+              "PageHash": "/NPH",
+              "TimeStamp": "/tr \"http://rfc3161.gtm.corp.microsoft.com/TSS/HttpTspServer\" /td sha256"
+            },
+            "ToolName": "sign",
+            "ToolVersion": "1.0"
+          },
+          {
+            "KeyCode": "CP-230012",
+            "OperationCode": "SigntoolVerify",
+            "Parameters": {},
+            "ToolName": "sign",
+            "ToolVersion": "1.0"
+          }
+      ]
+    SessionTimeout: '60'
+    MaxConcurrency: '50'
+    MaxRetryAttempts: '5'
 
-# # SBOM generator task for additional supply chain protection
-# - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
-#   displayName: 'Manifest Generator '
-#   inputs:
-#     BuildDropPath: '$(System.DefaultWorkingDirectory)'
+# SBOM generator task for additional supply chain protection
+- task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
+  displayName: 'Manifest Generator '
+  inputs:
+    BuildDropPath: '$(System.DefaultWorkingDirectory)'
 
-# # dotnet pack
-# # Packaging needs to be a separate step from build.
-# # This will automatically pick up the signed DLLs.
-# - task: DotNetCoreCLI@2
-#   displayName: 'dotnet pack WebJobs.Extensions.DurableTask.csproj'
-#   inputs:
-#     command: pack
-#     packagesToPack: 'src/**/WebJobs.Extensions.DurableTask.csproj'
-#     configuration: Release
-#     packDirectory: 'azure-functions-durable-extension'
-#     nobuild: true
+# dotnet pack
+# Packaging needs to be a separate step from build.
+# This will automatically pick up the signed DLLs.
+- task: DotNetCoreCLI@2
+  displayName: 'dotnet pack WebJobs.Extensions.DurableTask.csproj'
+  inputs:
+    command: pack
+    packagesToPack: 'src/**/WebJobs.Extensions.DurableTask.csproj'
+    configuration: Release
+    packDirectory: 'azure-functions-durable-extension'
+    nobuild: true
 
-# # Remove redundant symbol package(s)
-# - script: |
-#    echo *** Searching for .symbols.nupkg files to delete...
-#    dir /s /b *.symbols.nupkg
+# Remove redundant symbol package(s)
+- script: |
+   echo *** Searching for .symbols.nupkg files to delete...
+   dir /s /b *.symbols.nupkg
    
-#    echo *** Deleting .symbols.nupkg files...
-#    del /S /Q *.symbols.nupkg
+   echo *** Deleting .symbols.nupkg files...
+   del /S /Q *.symbols.nupkg
    
-#    echo *** Listing remaining packages
-#    dir /s /b *.nupkg
-#   displayName: 'Remove Redundant Symbols Package(s)'
-#   continueOnError: true
+   echo *** Listing remaining packages
+   dir /s /b *.nupkg
+  displayName: 'Remove Redundant Symbols Package(s)'
+  continueOnError: true
 
-# # Digitally sign all the nuget packages with the Microsoft certificate.
-# # This appears to be an in-place signing job, which is convenient.
-# - task: EsrpCodeSigning@1
-#   inputs:
-#     ConnectedServiceName: 'ESRP Service'
-#     FolderPath: '$(System.DefaultWorkingDirectory)'
-#     Pattern: '*.nupkg'
-#     signConfigType: 'inlineSignParams'
-#     inlineOperation: |
-#       [    
-#           {
-#             "KeyCode": "CP-401405",
-#             "OperationCode": "NuGetSign",
-#             "Parameters": {},
-#             "ToolName": "sign",
-#             "ToolVersion": "1.0"
-#           },
-#           {
-#             "KeyCode": "CP-401405",
-#             "OperationCode": "NuGetVerify",
-#             "Parameters": {},
-#             "ToolName": "sign",
-#             "ToolVersion": "1.0"
-#           }
-#       ]
-#     SessionTimeout: '60'
-#     MaxConcurrency: '50'
-#     MaxRetryAttempts: '5'
+# Digitally sign all the nuget packages with the Microsoft certificate.
+# This appears to be an in-place signing job, which is convenient.
+- task: EsrpCodeSigning@1
+  inputs:
+    ConnectedServiceName: 'ESRP Service'
+    FolderPath: '$(System.DefaultWorkingDirectory)'
+    Pattern: '*.nupkg'
+    signConfigType: 'inlineSignParams'
+    inlineOperation: |
+      [    
+          {
+            "KeyCode": "CP-401405",
+            "OperationCode": "NuGetSign",
+            "Parameters": {},
+            "ToolName": "sign",
+            "ToolVersion": "1.0"
+          },
+          {
+            "KeyCode": "CP-401405",
+            "OperationCode": "NuGetVerify",
+            "Parameters": {},
+            "ToolName": "sign",
+            "ToolVersion": "1.0"
+          }
+      ]
+    SessionTimeout: '60'
+    MaxConcurrency: '50'
+    MaxRetryAttempts: '5'
 
-# - task: CmdLine@2
-#   displayName: 'List files'
-#   inputs:
-#     script: |
-#       dir /a-D /S /B
-#     workingDirectory: '$(Build.ArtifactStagingDirectory)'
+- task: CmdLine@2
+  displayName: 'List files'
+  inputs:
+    script: |
+      dir /a-D /S /B
+    workingDirectory: '$(Build.ArtifactStagingDirectory)'
 
 - task: CmdLine@2
   displayName: 'List files'
@@ -163,7 +163,7 @@ steps:
     rootFolderOrFile: '$(System.DefaultWorkingDirectory)/test/PerfTests/DFPerfTests/'
     includeRootFolder: false
     archiveType: 'zip'
-    archiveFile: '$(Build.BuildId).zip'
+    archiveFile: '$(System.DefaultWorkingDirectory)/azure-functions-durable-extension/$(Build.BuildId).zip'
     replaceExistingArchive: true
     verbose: true
 
