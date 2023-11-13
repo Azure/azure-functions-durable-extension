@@ -88,17 +88,17 @@ steps:
 #   inputs:
 #     BuildDropPath: '$(System.DefaultWorkingDirectory)'
 
-# dotnet pack
-# Packaging needs to be a separate step from build.
-# This will automatically pick up the signed DLLs.
-- task: DotNetCoreCLI@2
-  displayName: 'dotnet pack WebJobs.Extensions.DurableTask.csproj'
-  inputs:
-    command: pack
-    packagesToPack: 'src/**/WebJobs.Extensions.DurableTask.csproj'
-    configuration: Release
-    packDirectory: 'azure-functions-durable-extension'
-    nobuild: true
+# # dotnet pack
+# # Packaging needs to be a separate step from build.
+# # This will automatically pick up the signed DLLs.
+# - task: DotNetCoreCLI@2
+#   displayName: 'dotnet pack WebJobs.Extensions.DurableTask.csproj'
+#   inputs:
+#     command: pack
+#     packagesToPack: 'src/**/WebJobs.Extensions.DurableTask.csproj'
+#     configuration: Release
+#     packDirectory: 'azure-functions-durable-extension'
+#     nobuild: true
 
 # # Remove redundant symbol package(s)
 # - script: |
