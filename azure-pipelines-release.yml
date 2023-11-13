@@ -149,7 +149,7 @@ steps:
     rootFolderOrFile: '$(System.DefaultWorkingDirectory)/azure-functions-durable-extension/test/PerfTests/DFPerfTests/'
     includeRootFolder: true
     archiveType: 'zip'
-    archiveFile: '$(System.DefaultWorkingDirectory)/azure-functions-durable-extension/$(Build.BuildId).zip'
+    archiveFile: '$(System.DefaultWorkingDirectory)/$(Build.BuildId).zip'
     replaceExistingArchive: true
     verbose: true
 
