@@ -142,12 +142,12 @@ steps:
 #     MaxConcurrency: '50'
 #     MaxRetryAttempts: '5'
 
-- task: CmdLine@2
-  displayName: 'List files'
-  inputs:
-    script: |
-      dir /a-D /S /B
-    workingDirectory: '$(Build.ArtifactStagingDirectory)'
+# - task: CmdLine@2
+#   displayName: 'List files'
+#   inputs:
+#     script: |
+#       dir /a-D /S /B
+#     workingDirectory: '$(Build.ArtifactStagingDirectory)'
 
 - task: CmdLine@2
   displayName: 'List files'
