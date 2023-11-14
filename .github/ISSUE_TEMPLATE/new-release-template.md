@@ -16,6 +16,11 @@ _Due: <2-3-business-days-before-release>_
 - [ ] Publish DTFx packages to the [ADO feed](https://dev.azure.com/durabletaskframework/Durable%20Task%20Framework%20CI/_artifacts/feed/durabletask) for testing.
 - [ ] Keep branch `azure-storage-v12` updated with branch `main`.
 
+** Prep `durabletask-dotnet` Release: (assigned to: )**
+_Due: <2-3-business-days-before-release>_
+- [] Check for  changes to [durabletask-dotnet](https://github.com/microsoft/durabletask-dotnet) since the last extension release. If the upcoming extension releases has a dependency on them, release the dependencies first. In particular, check for updates to `Microsoft.DurableTask.Grpc`.
+
+
 **Prep Release (assigned to: )**
 _Due: <2-business-days-before-release>_
 - [ ] Update Durable Functions references (Analyzer? DTFx?) and check current version.
