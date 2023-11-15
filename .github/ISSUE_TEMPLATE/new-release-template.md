@@ -18,7 +18,7 @@ _Due: <2-3-business-days-before-release>_
 
 ** Prep `durabletask-dotnet` Release: (assigned to: )**
 _Due: <2-3-business-days-before-release>_
-- [] Check for  changes to [durabletask-dotnet](https://github.com/microsoft/durabletask-dotnet) since the last extension release. If the upcoming extension releases has a dependency on them, release the dependencies first. In particular, check for updates to `Microsoft.DurableTask.Grpc`.
+- [] Check for changes in [durabletask-dotnet](https://github.com/microsoft/durabletask-dotnet) since the last extension release. If the upcoming extension releases has a dependency on them, release the dependencies first. In particular, check for updates to `Microsoft.DurableTask.Grpc`.
 
 
 **Prep Release (assigned to: )**
