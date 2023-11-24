@@ -142,13 +142,16 @@ steps:
 #     MaxConcurrency: '50'
 #     MaxRetryAttempts: '5'
 
+# Publish projects to specified folder.
 - task: DotNetCoreCLI@2
+  displayName: 'dotnet publish'
   inputs:
-    command: 'custom'
-    custom: 'publish'
-    projects: '**/**/*.csproj'
-    arguments: '-o OutputDirectory'
-    workingDirectory: '$(System.DefaultWorkingDirectory)/test/PerfTests/DFPerfTests/'
+    command: 'publish'
+    publishWebProjects: false
+    projects: '$(System.DefaultWorkingDirectory)/test/PerfTests/DFPerfTests/**/*.csproj'
+    arguments: '-o $(System.DefaultWorkingDirectory)/test/PerfTests/DFPerfTests/Output'
+    zipAfterPublish: true
+    modifyOutputPath: true
 
 - task: CmdLine@2
   displayName: 'List files'
