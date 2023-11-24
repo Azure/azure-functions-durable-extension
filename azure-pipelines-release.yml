@@ -144,8 +144,8 @@ steps:
 
 - task: DotNetCoreCLI@2
   inputs:
-    command: 'publish'
-    publishWebProjects: true
+    command: 'custom'
+    custom: 'dotnet publish -o OutputDirectory'
     workingDirectory: '$(System.DefaultWorkingDirectory)/test/PerfTests/DFPerfTests/'
 
 - task: CmdLine@2
