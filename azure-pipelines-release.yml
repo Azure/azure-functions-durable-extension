@@ -161,15 +161,23 @@ steps:
     workingDirectory: '$(System.DefaultWorkingDirectory)'
 
 # zip perf tests
-- task: ArchiveFiles@2
-  displayName: 'Zip perf tests'
+# - task: ArchiveFiles@2
+#   displayName: 'Zip perf tests'
+#   inputs:
+#     rootFolderOrFile: '$(System.DefaultWorkingDirectory)/test/PerfTests/DFPerfTests/'
+#     includeRootFolder: false
+#     archiveType: 'zip'
+#     archiveFile: '$(System.DefaultWorkingDirectory)/azure-functions-durable-extension/$(Build.BuildId).zip'
+#     replaceExistingArchive: true
+#     verbose: true
+
+# Copy files v2
+# Copy files from a source folder to a target folder using patterns matching file paths (not folder paths).
+- task: CopyFiles@2
   inputs:
-    rootFolderOrFile: '$(System.DefaultWorkingDirectory)/test/PerfTests/DFPerfTests/'
-    includeRootFolder: false
-    archiveType: 'zip'
-    archiveFile: '$(System.DefaultWorkingDirectory)/azure-functions-durable-extension/$(Build.BuildId).zip'
-    replaceExistingArchive: true
-    verbose: true
+    SourceFolder: '$(System.DefaultWorkingDirectory)/test/PerfTests/DFPerfTests/Output/' # string. Source Folder. 
+    Contents: '**' # string. Required. Contents. Default: **.
+    TargetFolder: '$(System.DefaultWorkingDirectory)/azure-functions-durable-extension/' # string. Required. Target Folder. 
 
 # Make the nuget packages available for download in the ADO portal UI
 - publish: '$(System.DefaultWorkingDirectory)/azure-functions-durable-extension'
