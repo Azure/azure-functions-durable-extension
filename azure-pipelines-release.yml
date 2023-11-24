@@ -146,6 +146,7 @@ steps:
   inputs:
     command: 'custom'
     custom: 'publish'
+    projects: '**/**/*.csproj'
     arguments: '-o OutputDirectory'
     workingDirectory: '$(System.DefaultWorkingDirectory)/test/PerfTests/DFPerfTests/'
 
