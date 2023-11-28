@@ -6,6 +6,8 @@
 
 ### Bug Fixes
 
+- Fix issue with isolated entities: custom deserialization was not working because IServices was not passed along
+
 ### Breaking Changes
 
 ### Dependency Updates
