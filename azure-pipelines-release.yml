@@ -157,7 +157,7 @@ steps:
 - task: CopyFiles@2
   inputs:
     SourceFolder: '$(System.DefaultWorkingDirectory)/test/PerfTests/DFPerfTests/Output/'
-    Contents: '**' # string. Required. Contents. Default: **.
+    Contents: '**'
     TargetFolder: '$(System.DefaultWorkingDirectory)/azure-functions-durable-extension/'
 
 # Make the nuget packages available for download in the ADO portal UI
