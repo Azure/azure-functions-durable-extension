@@ -48,7 +48,7 @@ steps:
     vsVersion: "16.0"
     configuration: Release
 
-Authenticode sign all the DLLs with the Microsoft certificate.
+# Authenticode sign all the DLLs with the Microsoft certificate.
 - task: EsrpCodeSigning@1
   inputs:
     ConnectedServiceName: 'ESRP Service'
@@ -82,15 +82,15 @@ Authenticode sign all the DLLs with the Microsoft certificate.
     MaxConcurrency: '50'
     MaxRetryAttempts: '5'
 
-SBOM generator task for additional supply chain protection
+# SBOM generator task for additional supply chain protection
 - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
   displayName: 'Manifest Generator '
   inputs:
     BuildDropPath: '$(System.DefaultWorkingDirectory)'
 
-dotnet pack
-Packaging needs to be a separate step from build.
-This will automatically pick up the signed DLLs.
+# dotnet pack
+# Packaging needs to be a separate step from build.
+# This will automatically pick up the signed DLLs.
 - task: DotNetCoreCLI@2
   displayName: 'dotnet pack WebJobs.Extensions.DurableTask.csproj'
   inputs:
@@ -100,7 +100,7 @@ This will automatically pick up the signed DLLs.
     packDirectory: 'azure-functions-durable-extension'
     nobuild: true
 
-Remove redundant symbol package(s)
+# Remove redundant symbol package(s)
 - script: |
    echo *** Searching for .symbols.nupkg files to delete...
    dir /s /b *.symbols.nupkg
@@ -113,8 +113,8 @@ Remove redundant symbol package(s)
   displayName: 'Remove Redundant Symbols Package(s)'
   continueOnError: true
 
-Digitally sign all the nuget packages with the Microsoft certificate.
-This appears to be an in-place signing job, which is convenient.
+# Digitally sign all the nuget packages with the Microsoft certificate.
+# This appears to be an in-place signing job, which is convenient.
 - task: EsrpCodeSigning@1
   inputs:
     ConnectedServiceName: 'ESRP Service'
