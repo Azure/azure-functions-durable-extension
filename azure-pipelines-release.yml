@@ -153,13 +153,12 @@ steps:
     zipAfterPublish: true
     modifyOutputPath: true
 
-# Copy files v2
-# Copy files from a source folder to a target folder using patterns matching file paths (not folder paths).
+# Move zip'ed .NET in-proc perf tests to the ADO publishishing directory
 - task: CopyFiles@2
   inputs:
-    SourceFolder: '$(System.DefaultWorkingDirectory)/test/PerfTests/DFPerfTests/Output/' # string. Source Folder. 
+    SourceFolder: '$(System.DefaultWorkingDirectory)/test/PerfTests/DFPerfTests/Output/'
     Contents: '**' # string. Required. Contents. Default: **.
-    TargetFolder: '$(System.DefaultWorkingDirectory)/azure-functions-durable-extension/' # string. Required. Target Folder. 
+    TargetFolder: '$(System.DefaultWorkingDirectory)/azure-functions-durable-extension/'
 
 # Make the nuget packages available for download in the ADO portal UI
 - publish: '$(System.DefaultWorkingDirectory)/azure-functions-durable-extension'
