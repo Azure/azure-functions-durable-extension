@@ -40,7 +40,7 @@ public sealed class TaskEntityDispatcher
             throw new ArgumentNullException(nameof(entity));
         }
 
-        this.Result = await GrpcEntityRunner.LoadAndRunAsync(this.request, entity);
+        this.Result = await GrpcEntityRunner.LoadAndRunAsync(this.request, entity, this.services);
     }
 
     /// <summary>

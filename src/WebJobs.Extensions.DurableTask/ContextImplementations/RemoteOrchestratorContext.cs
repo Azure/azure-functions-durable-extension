@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using DurableTask.Core;
 using DurableTask.Core.Command;
 using DurableTask.Core.Entities;
+using DurableTask.Core.Exceptions;
 using DurableTask.Core.History;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -17,6 +18,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly OrchestrationRuntimeState runtimeState;
 
         private OrchestratorExecutionResult? executionResult;
+
+        private Exception? failure;
 
         public RemoteOrchestratorContext(OrchestrationRuntimeState runtimeState, TaskOrchestrationEntityParameters? entityParameters)
         {
@@ -47,6 +50,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         [JsonIgnore]
         internal TaskOrchestrationEntityParameters? EntityParameters { get; private set; }
+
+        internal void ThrowIfFailed()
+        {
+            if (this.failure != null)
+            {
+                throw this.failure;
+            }
+        }
+
+        internal OrchestratorExecutionResult GetResult()
+        {
+            return this.executionResult ?? throw new InvalidOperationException($"The execution result has not yet been set using {nameof(this.SetResult)}.");
+        }
 
         internal void SetResult(IEnumerable<OrchestratorAction> actions, string customStatus)
         {
@@ -107,16 +123,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.OrchestratorCompleted = true;
                     this.SerializedOutput = completeAction.Result;
                     this.ContinuedAsNew = completeAction.OrchestrationStatus == OrchestrationStatus.ContinuedAsNew;
+
+                    if (completeAction.OrchestrationStatus == OrchestrationStatus.Failed)
+                    {
+                        string message = completeAction switch
+                        {
+                            { FailureDetails: { } f } => f.ErrorMessage,
+                            { Result: { } r } => r,
+                            _ => "Exception occurred during orchestration execution.",
+                        };
+
+                        this.failure = new OrchestrationFailureException(message);
+                    }
+
                     break;
                 }
             }
 
             this.executionResult = result;
-        }
-
-        internal OrchestratorExecutionResult GetResult()
-        {
-            return this.executionResult ?? throw new InvalidOperationException($"The execution result has not yet been set using {nameof(this.SetResult)}.");
         }
     }
 }

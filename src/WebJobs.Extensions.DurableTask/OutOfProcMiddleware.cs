@@ -14,7 +14,7 @@ using DurableTask.Core.Exceptions;
 using DurableTask.Core.History;
 using DurableTask.Core.Middleware;
 using Microsoft.Azure.WebJobs.Host.Executors;
-using Newtonsoft.Json;
+using P = Microsoft.DurableTask.Protobuf;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
@@ -137,10 +137,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     }
 
                     byte[] triggerReturnValueBytes = Convert.FromBase64String(triggerReturnValue);
-                    var response = Microsoft.DurableTask.Protobuf.OrchestratorResponse.Parser.ParseFrom(triggerReturnValueBytes);
+                    P.OrchestratorResponse response = P.OrchestratorResponse.Parser.ParseFrom(triggerReturnValueBytes);
                     context.SetResult(
                         response.Actions.Select(ProtobufUtils.ToOrchestratorAction),
                         response.CustomStatus);
+
+                    context.ThrowIfFailed();
                 },
 #pragma warning restore CS0618 // Type or member is obsolete (not intended for general public use)
             };
@@ -326,9 +328,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     }
 
                     byte[] triggerReturnValueBytes = Convert.FromBase64String(triggerReturnValue);
-                    var response = Microsoft.DurableTask.Protobuf.EntityBatchResult.Parser.ParseFrom(triggerReturnValueBytes);
+                    P.EntityBatchResult response = P.EntityBatchResult.Parser.ParseFrom(triggerReturnValueBytes);
                     context.Result = response.ToEntityBatchResult();
 
+                    context.ThrowIfFailed();
 #pragma warning restore CS0618 // Type or member is obsolete (not intended for general public use)
                 },
             };
@@ -414,6 +417,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 // This should never happen, and there's no good response we can return if it does.
                 throw new InvalidOperationException($"An activity was scheduled but no {nameof(TaskScheduledEvent)} was found!");
+            }
+
+            if (scheduledEvent.Name?.StartsWith("BuiltIn::", StringComparison.OrdinalIgnoreCase) ?? false)
+            {
+                await next();
+                return;
             }
 
             FunctionName functionName = new FunctionName(scheduledEvent.Name);
