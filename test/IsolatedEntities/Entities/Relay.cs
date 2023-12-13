@@ -25,7 +25,7 @@ class Relay : ITaskEntity
         return dispatcher.DispatchAsync<Relay>();
     }
 
-    public record Input(EntityInstanceId entityInstanceId, string operationName, DateTimeOffset? scheduledTime);
+    public record Input(EntityInstanceId entityInstanceId, string operationName, object? input, DateTimeOffset? scheduledTime);
 
     public ValueTask<object?> RunAsync(TaskEntityOperation operation)
     {
@@ -33,7 +33,11 @@ class Relay : ITaskEntity
 
         Input input = GetInput<Input>();
 
-        operation.Context.SignalEntity(input.entityInstanceId, input.operationName, new SignalEntityOptions() { SignalTime = input.scheduledTime });
+        operation.Context.SignalEntity(
+            input.entityInstanceId, 
+            input.operationName, 
+            input.input,
+            new SignalEntityOptions() { SignalTime = input.scheduledTime });
 
         return default;
     }

@@ -41,7 +41,8 @@ class SignalThenPoll : Test
         {
             await context.Client.Entities.SignalEntityAsync(
                 counterEntityId, 
-                "increment", 
+                "set", 
+                333,
                 new SignalEntityOptions() { SignalTime = scheduledTime }, 
                 context.CancellationToken);
         }
@@ -50,7 +51,7 @@ class SignalThenPoll : Test
             await context.Client.Entities.SignalEntityAsync(
                 relayEntityId, 
                 operationName: "", 
-                input: new Relay.Input(counterEntityId, "increment", scheduledTime), 
+                input: new Relay.Input(counterEntityId, "set", 333, scheduledTime), 
                 options: null, 
                 context.CancellationToken);
         }
@@ -63,6 +64,12 @@ class SignalThenPoll : Test
         {
             Assert.True(metadata.LastUpdatedAt > scheduledTime - TimeSpan.FromMilliseconds(100));
         }
+
+        int counterState = await context.WaitForEntityStateAsync<int>(
+            counterEntityId,
+            timeout: default);
+
+        Assert.Equal(333, counterState);
     }
 
     [Function(nameof(PollingOrchestration))]
@@ -70,24 +77,27 @@ class SignalThenPoll : Test
     {
         // read entity id from input
         var entityId = context.GetInput<EntityInstanceId>();
+        DateTime startTime = context.CurrentUtcDateTime;
 
-        while (true)
+        while (context.CurrentUtcDateTime < startTime + TimeSpan.FromSeconds(30))
         {
             var result = await context.Entities.CallEntityAsync<int>(entityId, "get");
 
             if (result != 0)
             {
-                if (result == 1)
+                if (result == 333)
                 {
                     return "ok";
                 }
                 else
                 {
-                    return $"fail: wrong entity state: expected 1, got {result}";
+                    return $"fail: wrong entity state: expected 333, got {result}";
                 }
             }
 
             await context.CreateTimer(DateTime.UtcNow + TimeSpan.FromSeconds(1), CancellationToken.None);
         }
+
+        return "timed out while waiting for entity to have state";
     }
 }
