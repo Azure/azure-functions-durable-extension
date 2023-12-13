@@ -30,7 +30,7 @@
 
     <!-- Version information -->
     <VersionPrefix>1.2.0</VersionPrefix>
-	<VersionSuffix>rc.1</VersionSuffix>
+	<VersionSuffix>preivew.1</VersionSuffix>
     <AssemblyVersion>$(VersionPrefix).0</AssemblyVersion>
     <!-- FileVersionRevision is expected to be set by the CI. -->
     <FileVersion Condition="'$(FileVersionRevision)' != ''">$(VersionPrefix).$(FileVersionRevision)</FileVersion>
