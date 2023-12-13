@@ -136,6 +136,7 @@ internal partial class FunctionsDurableClientProvider : IAsyncDisposable
             {
                 Channel = channel,
                 DataConverter = this.options.DataConverter,
+                EnableEntitySupport = this.options.EnableEntitySupport,
             };
 
             ILogger logger = this.loggerFactory.CreateLogger<GrpcDurableTaskClient>();
