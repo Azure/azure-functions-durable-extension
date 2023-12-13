@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
+using DurableTask.Core.Entities;
 using DurableTask.Core.History;
 using DurableTask.Core.Query;
 using Newtonsoft.Json;
@@ -27,7 +28,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         IOrchestrationService,
         IOrchestrationServiceClient,
         IOrchestrationServiceQueryClient,
-        IOrchestrationServicePurgeClient
+        IOrchestrationServicePurgeClient,
+        IEntityOrchestrationService
     {
         internal const string NoConnectionDetails = "default";
 
@@ -36,6 +38,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly string name;
         private readonly IOrchestrationService innerService;
         private readonly IOrchestrationServiceClient innerServiceClient;
+        private readonly IEntityOrchestrationService entityOrchestrationService;
         private readonly string connectionName;
 
         /// <summary>
@@ -52,6 +55,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.name = storageProviderName ?? throw new ArgumentNullException(nameof(storageProviderName));
             this.innerService = service ?? throw new ArgumentNullException(nameof(service));
             this.innerServiceClient = serviceClient ?? throw new ArgumentNullException(nameof(serviceClient));
+            this.entityOrchestrationService = service as IEntityOrchestrationService;
             this.connectionName = connectionName ?? throw new ArgumentNullException(connectionName);
         }
 
@@ -64,7 +68,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <summary>
         /// Specifies whether the durability provider supports Durable Entities.
         /// </summary>
-        public virtual bool SupportsEntities => false;
+        public virtual bool SupportsEntities => this.entityOrchestrationService?.EntityBackendProperties != null;
 
         /// <summary>
         /// Specifies whether the backend's WaitForOrchestration is implemented without polling.
@@ -120,6 +124,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         /// <inheritdoc/>
         public int MaxConcurrentTaskActivityWorkItems => this.GetOrchestrationService().MaxConcurrentTaskActivityWorkItems;
+
+        /// <inheritdoc/>
+        EntityBackendProperties IEntityOrchestrationService.EntityBackendProperties => this.entityOrchestrationService?.EntityBackendProperties;
+
+        /// <inheritdoc/>
+        EntityBackendQueries IEntityOrchestrationService.EntityBackendQueries => this.entityOrchestrationService?.EntityBackendQueries;
+
+        /// <inheritdoc/>
+        Task<TaskOrchestrationWorkItem> IEntityOrchestrationService.LockNextOrchestrationWorkItemAsync(TimeSpan receiveTimeout, CancellationToken cancellationToken)
+            => this.entityOrchestrationService.LockNextOrchestrationWorkItemAsync(receiveTimeout, cancellationToken);
+
+        /// <inheritdoc/>
+        Task<TaskOrchestrationWorkItem> IEntityOrchestrationService.LockNextEntityWorkItemAsync(TimeSpan receiveTimeout, CancellationToken cancellationToken)
+            => this.entityOrchestrationService.LockNextEntityWorkItemAsync(receiveTimeout, cancellationToken);
 
         internal string GetBackendInfo()
         {

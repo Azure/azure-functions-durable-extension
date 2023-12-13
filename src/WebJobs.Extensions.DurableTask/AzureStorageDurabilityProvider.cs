@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using DurableTask.AzureStorage;
 using DurableTask.AzureStorage.Tracking;
 using DurableTask.Core;
+using DurableTask.Core.Entities;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -19,6 +20,7 @@ using Newtonsoft.Json.Serialization;
 using Microsoft.Azure.WebJobs.Host.Scale;
 #endif
 using AzureStorage = DurableTask.AzureStorage;
+using DTCore = DurableTask.Core;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
@@ -53,8 +55,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 });
             this.logger = logger;
         }
-
-        public override bool SupportsEntities => true;
 
         public override bool CheckStatusBeforeRaiseEvent => true;
 
@@ -98,6 +98,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         /// <inheritdoc/>
         public async override Task<string> RetrieveSerializedEntityState(EntityId entityId, JsonSerializerSettings serializerSettings)
+        {
+            EntityBackendQueries entityBackendQueries = (this.serviceClient as IEntityOrchestrationService)?.EntityBackendQueries;
+
+            if (entityBackendQueries != null) // entity queries are natively supported
+            {
+                var entity = await entityBackendQueries.GetEntityAsync(new DTCore.Entities.EntityId(entityId.EntityName, entityId.EntityKey), cancellation: default);
+
+                if (entity == null)
+                {
+                    return null;
+                }
+                else
+                {
+                    return entity.Value.SerializedState;
+                }
+            }
+            else // fall back to old implementation
+            {
+                return await this.LegacyImplementationOfRetrieveSerializedEntityState(entityId, serializerSettings);
+            }
+        }
+
+        private async Task<string> LegacyImplementationOfRetrieveSerializedEntityState(EntityId entityId, JsonSerializerSettings serializerSettings)
         {
             var instanceId = EntityId.GetSchedulerIdFromEntityId(entityId);
             IList<OrchestrationState> stateList = await this.serviceClient.GetOrchestrationStateAsync(instanceId, false);

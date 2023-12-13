@@ -20,6 +20,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly string instanceId;
         private readonly MessagePayloadDataConverter messageDataConverter;
         private readonly bool inputsAreArrays;
+        private readonly bool rawInput;
 
         private JToken parsedJsonInput;
         private string serializedOutput;
@@ -35,6 +36,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.inputsAreArrays =
                 config.OutOfProcProtocol == OutOfProcOrchestrationProtocol.OrchestratorShim ||
                 config.PlatformInformationService.GetWorkerRuntimeType() == WorkerRuntimeType.DotNetIsolated;
+
+            // Do not manipulate JSON input when using middleware passthrough.
+            this.rawInput = config.OutOfProcProtocol == OutOfProcOrchestrationProtocol.MiddlewarePassthrough;
         }
 
         /// <inheritdoc />
@@ -116,8 +120,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return null;
             }
 
-            var value = jToken as JValue;
-            if (value != null)
+            if (!this.rawInput && jToken is JValue value)
             {
                 return value.ToObject(destinationType);
             }
@@ -129,7 +132,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // MessagePayloadDataConverter to throw an exception. This is a workaround for that case. All other
             // inputs with destination System.String (in-proc: JSON and not JSON; out-of-proc: not-JSON) inputs with
             // destination System.String should cast to JValues and be handled above.)
-            if (destinationType.Equals(typeof(string)))
+            if (this.rawInput)
             {
                 return serializedValue;
             }

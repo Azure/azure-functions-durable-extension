@@ -1,3 +1,8 @@
+pr:
+  - main
+  - dev
+  - feature/*
+  
 jobs:
 
   - job: FunctionsV1Tests

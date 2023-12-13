@@ -8,7 +8,6 @@ using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.ApplicationInsights.Channel;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage;
 using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Extensions.DependencyInjection;

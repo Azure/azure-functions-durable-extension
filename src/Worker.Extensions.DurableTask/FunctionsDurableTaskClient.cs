@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DurableTask;
 using Microsoft.DurableTask.Client;
+using Microsoft.DurableTask.Client.Entities;
 
 namespace Microsoft.Azure.Functions.Worker;
 
@@ -24,6 +25,8 @@ internal sealed class FunctionsDurableTaskClient : DurableTaskClient
     }
 
     public string? QueryString { get; }
+
+    public override DurableEntityClient Entities => this.inner.Entities;
 
     public override ValueTask DisposeAsync()
     {

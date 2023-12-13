@@ -61,7 +61,7 @@ internal class OrchestrationInputConverter : IInputConverter
         // 3. The TargetType matches our cached type.
         // If these are met, then we assume this parameter is the orchestration input.
         if (context.Source is null
-            && context.FunctionContext.Items.TryGetValue(OrchestrationInputKey, out object value)
+            && context.FunctionContext.Items.TryGetValue(OrchestrationInputKey, out object? value)
             && context.TargetType == value?.GetType())
         {
             // Remove this from the items so we bind this only once.

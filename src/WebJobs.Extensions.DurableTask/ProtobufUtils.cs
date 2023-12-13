@@ -5,10 +5,13 @@
 using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using DurableTask.Core;
 using DurableTask.Core.Command;
+using DurableTask.Core.Entities;
+using DurableTask.Core.Entities.OperationFormat;
 using DurableTask.Core.History;
 using DurableTask.Core.Query;
 using Google.Protobuf;
@@ -298,6 +301,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
+        [return: NotNullIfNotNull("parameters")]
+        public static P.OrchestratorEntityParameters? ToProtobuf(this TaskOrchestrationEntityParameters? parameters)
+        {
+            if (parameters == null)
+            {
+                return null;
+            }
+
+            return new P.OrchestratorEntityParameters
+            {
+                EntityMessageReorderWindow = Duration.FromTimeSpan(parameters.EntityMessageReorderWindow),
+            };
+        }
+
         public static string Base64Encode(IMessage message)
         {
             // Create a serialized payload using lower-level protobuf APIs. We do this to avoid allocating
@@ -363,6 +380,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 ContinuationToken = request.Query.ContinuationToken,
                 InstanceIdPrefix = request.Query.InstanceIdPrefix,
                 FetchInputsAndOutputs = request.Query.FetchInputsAndOutputs,
+                ExcludeEntities = true,
             };
 
             // Empty lists are not allowed by the underlying code that takes in an OrchestrationQuery. However,
@@ -429,6 +447,147 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 DeletedInstanceCount = result.DeletedInstanceCount,
             };
+        }
+
+        /// <summary>
+        /// Converts a <see cref="EntityBatchRequest" /> to <see cref="P.EntityBatchRequest" />.
+        /// </summary>
+        /// <param name="entityBatchRequest">The operation request to convert.</param>
+        /// <returns>The converted operation request.</returns>
+        [return: NotNullIfNotNull("entityBatchRequest")]
+        internal static P.EntityBatchRequest? ToEntityBatchRequest(this EntityBatchRequest? entityBatchRequest)
+        {
+            if (entityBatchRequest == null)
+            {
+                return null;
+            }
+
+            var batchRequest = new P.EntityBatchRequest()
+            {
+                InstanceId = entityBatchRequest.InstanceId,
+                EntityState = entityBatchRequest.EntityState,
+            };
+
+            foreach (var operation in entityBatchRequest.Operations ?? Enumerable.Empty<OperationRequest>())
+            {
+                batchRequest.Operations.Add(operation.ToOperationRequest());
+            }
+
+            return batchRequest;
+        }
+
+        /// <summary>
+        /// Converts a <see cref="OperationRequest" /> to <see cref="P.OperationRequest" />.
+        /// </summary>
+        /// <param name="operationRequest">The operation request to convert.</param>
+        /// <returns>The converted operation request.</returns>
+        [return: NotNullIfNotNull("operationRequest")]
+        internal static P.OperationRequest? ToOperationRequest(this OperationRequest? operationRequest)
+        {
+            if (operationRequest == null)
+            {
+                return null;
+            }
+
+            return new P.OperationRequest()
+            {
+                Operation = operationRequest.Operation,
+                Input = operationRequest.Input,
+                RequestId = operationRequest.Id.ToString(),
+            };
+        }
+
+        /// <summary>
+        /// Converts a <see cref="P.EntityBatchResult" /> to a <see cref="OperationBatchResult" />.
+        /// </summary>
+        /// <param name="entityBatchResult">The operation result to convert.</param>
+        /// <returns>The converted operation result.</returns>
+        [return: NotNullIfNotNull("entityBatchResult")]
+        internal static EntityBatchResult? ToEntityBatchResult(this P.EntityBatchResult? entityBatchResult)
+        {
+            if (entityBatchResult == null)
+            {
+                return null;
+            }
+
+            return new EntityBatchResult()
+            {
+                Actions = entityBatchResult.Actions.Select(operationAction => operationAction!.ToOperationAction()).ToList(),
+                EntityState = entityBatchResult.EntityState,
+                Results = entityBatchResult.Results.Select(operationResult => operationResult!.ToOperationResult()).ToList(),
+                FailureDetails = GetFailureDetails(entityBatchResult.FailureDetails),
+            };
+        }
+
+        /// <summary>
+        /// Converts a <see cref="P.OperationAction" /> to a <see cref="OperationAction" />.
+        /// </summary>
+        /// <param name="operationAction">The operation action to convert.</param>
+        /// <returns>The converted operation action.</returns>
+        [return: NotNullIfNotNull("operationAction")]
+        internal static OperationAction? ToOperationAction(this P.OperationAction? operationAction)
+        {
+            if (operationAction == null)
+            {
+                return null;
+            }
+
+            switch (operationAction.OperationActionTypeCase)
+            {
+                case P.OperationAction.OperationActionTypeOneofCase.SendSignal:
+
+                    return new SendSignalOperationAction()
+                    {
+                        Name = operationAction.SendSignal.Name,
+                        Input = operationAction.SendSignal.Input,
+                        InstanceId = operationAction.SendSignal.InstanceId,
+                        ScheduledTime = operationAction.SendSignal.ScheduledTime?.ToDateTime(),
+                    };
+
+                case P.OperationAction.OperationActionTypeOneofCase.StartNewOrchestration:
+
+                    return new StartNewOrchestrationOperationAction()
+                    {
+                        Name = operationAction.StartNewOrchestration.Name,
+                        Input = operationAction.StartNewOrchestration.Input,
+                        InstanceId = operationAction.StartNewOrchestration.InstanceId,
+                        Version = operationAction.StartNewOrchestration.Version,
+                    };
+                default:
+                    throw new NotSupportedException($"Deserialization of {operationAction.OperationActionTypeCase} is not supported.");
+            }
+        }
+
+        /// <summary>
+        /// Converts a <see cref="P.OperationResult" /> to a <see cref="OperationResult" />.
+        /// </summary>
+        /// <param name="operationResult">The operation result to convert.</param>
+        /// <returns>The converted operation result.</returns>
+        [return: NotNullIfNotNull("operationResult")]
+        internal static OperationResult? ToOperationResult(this P.OperationResult? operationResult)
+        {
+            if (operationResult == null)
+            {
+                return null;
+            }
+
+            switch (operationResult.ResultTypeCase)
+            {
+                case P.OperationResult.ResultTypeOneofCase.Success:
+                    return new OperationResult()
+                    {
+                        Result = operationResult.Success.Result,
+                    };
+
+                case P.OperationResult.ResultTypeOneofCase.Failure:
+                    return new OperationResult()
+                    {
+                        FailureDetails = GetFailureDetails(operationResult.Failure.FailureDetails),
+                    };
+
+                default:
+                    throw new NotSupportedException($"Deserialization of {operationResult.ResultTypeCase} is not supported.");
+            }
         }
     }
 }

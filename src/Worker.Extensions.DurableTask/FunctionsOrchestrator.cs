@@ -5,6 +5,7 @@ using System;
 using System.Threading.Tasks;
 using Microsoft.Azure.Functions.Worker.Middleware;
 using Microsoft.DurableTask;
+using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
 
@@ -44,8 +45,19 @@ internal class FunctionsOrchestrator : ITaskOrchestrator
         this.contextBinding.Value = wrapperContext;
         this.inputContext.PrepareInput(input);
 
-        // This method will advance to the next middleware and throw if it detects an asynchronous execution.
-        await EnsureSynchronousExecution(this.functionContext, this.next, wrapperContext);
+        try
+        {
+            // This method will advance to the next middleware and throw if it detects an asynchronous execution.
+            await EnsureSynchronousExecution(this.functionContext, this.next, wrapperContext);
+        }
+        catch (Exception ex)
+        {
+            this.functionContext.GetLogger<FunctionsOrchestrator>().LogError(
+                ex,
+                "An error occurred while executing the orchestrator function '{FunctionName}'.",
+                this.functionContext.FunctionDefinition.Name);
+            throw;
+        }
 
         // Set the raw function output as the orchestrator output
         object? functionOutput = this.functionContext.GetInvocationResult().Value;

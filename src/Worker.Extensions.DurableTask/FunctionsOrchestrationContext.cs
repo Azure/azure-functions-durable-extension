@@ -6,6 +6,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DurableTask;
+using Microsoft.DurableTask.Entities;
 using Microsoft.DurableTask.Worker;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -22,6 +23,7 @@ internal sealed partial class FunctionsOrchestrationContext : TaskOrchestrationC
     private readonly DurableTaskWorkerOptions options;
 
     private InputConverter? inputConverter;
+    private EntityFeature? entities;
 
     public FunctionsOrchestrationContext(TaskOrchestrationContext innerContext, FunctionContext functionContext)
     {
@@ -47,6 +49,9 @@ internal sealed partial class FunctionsOrchestrationContext : TaskOrchestrationC
     public override ParentOrchestrationInstance? Parent => this.innerContext.Parent;
 
     protected override ILoggerFactory LoggerFactory { get; }
+
+    public override TaskOrchestrationEntityFeature Entities =>
+        this.entities ??= new EntityFeature(this, this.innerContext.Entities);
 
     public override T GetInput<T>()
     {
@@ -115,15 +120,6 @@ internal sealed partial class FunctionsOrchestrationContext : TaskOrchestrationC
         return this.innerContext.WaitForExternalEvent<T>(eventName, cancellationToken);
     }
 
-    /// <summary>
-    /// Throws if accessed by a non-orchestrator thread or marks the current object as accessed successfully.
-    /// </summary>
-    private void EnsureLegalAccess()
-    {
-        this.ThrowIfIllegalAccess();
-        this.IsAccessed = true;
-    }
-
     internal void ThrowIfIllegalAccess()
     {
         // Only the orchestrator thread is allowed to run the task continuation. If we detect that some other thread
@@ -144,5 +140,14 @@ internal sealed partial class FunctionsOrchestrationContext : TaskOrchestrationC
                 throw;
             }
         }
+    }
+
+    /// <summary>
+    /// Throws if accessed by a non-orchestrator thread or marks the current object as accessed successfully.
+    /// </summary>
+    private void EnsureLegalAccess()
+    {
+        this.ThrowIfIllegalAccess();
+        this.IsAccessed = true;
     }
 }

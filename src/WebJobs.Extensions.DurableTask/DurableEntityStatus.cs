@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.Serialization;
+using DurableTask.Core.Entities;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -36,6 +37,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         // Just in case the above assumption is ever wrong, fallback to a raw string
                         this.State = state.EntityState;
                     }
+                }
+            }
+        }
+
+        internal DurableEntityStatus(EntityBackendQueries.EntityMetadata metadata)
+        {
+            this.EntityId = new EntityId(metadata.EntityId.Name, metadata.EntityId.Key);
+            this.LastOperationTime = metadata.LastModifiedTime;
+            if (metadata.SerializedState != null)
+            {
+                try
+                {
+                    // Entity state is expected to be JSON-compatible
+                    this.State = JToken.Parse(metadata.SerializedState);
+                }
+                catch (JsonException)
+                {
+                    // Just in case the above assumption is ever wrong, fallback to a raw string
+                    this.State = metadata.SerializedState;
                 }
             }
         }
