@@ -1,0 +1,44 @@
+name: Smoke Test - .NET in-proc w/ MSSQL on Functions V4
+
+on:
+  push:
+    branches: [ main, dev ]
+    paths:
+      - 'src/**'
+      - 'test/SmokeTests/BackendSmokeTests/MSSQL/**'
+  pull_request:
+    branches: [ main, dev ]
+    paths:
+      - 'src/**'
+      - 'test/SmokeTests/BackendSmokeTests/MSSQL/**'
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    env:
+      SA_PASSWORD: NotASecret!12
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup .NET 6
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '6.0.x'
+      env:
+        NUGET_AUTH_TOKEN: RequiredButNotUsed
+
+    - name: NuGet Restore
+      run: dotnet restore -v n
+
+    - name: Build
+      run: dotnet build
+
+    - name: Setup SQL Server container
+      run: test/SmokeTests/BackendSmokeTests/MSSQL/setup.ps1
+      shell: pwsh
+
+    - name: Run V4 .NET in-proc w/ Netherite Smoke Test
+      run: test/SmokeTests/e2e-test.ps1 -DockerfilePath test/SmokeTests/BackendSmokeTests/MSSQL/Dockerfile -HttpStartPath api/Function1_HttpStart -ContainerName MSSQLApp
+      shell: pwsh
