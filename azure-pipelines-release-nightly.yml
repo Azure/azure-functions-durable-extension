@@ -7,7 +7,7 @@ schedules:
   displayName: Daily midnight build
   branches:
     include:
-    - main
+    - dev
 
 trigger: none
 pr: none
