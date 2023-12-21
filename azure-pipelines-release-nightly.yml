@@ -1,13 +1,12 @@
-# This is a copy of azure-pieplines-release.yml except that it triggers nightly.
+# This is a copy of azure-pipelines-release.yml except that it triggers nightly.
 # We want a copy so we can distinguish between nightly artifacts (which may trigger nightly perf tests) and artifacts built on-demand
 
-# YAML file in the main branch
 schedules:
-- cron: '0 0 * * *'
-  displayName: Daily midnight build
+- cron: '0 8 * * *'
+  displayName: Daily midnight (PDT) build
   branches:
     include:
-    - dajusto/add-nightly-release
+    - dev
 
 trigger: none
 pr: none
