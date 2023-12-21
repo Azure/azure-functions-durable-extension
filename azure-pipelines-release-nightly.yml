@@ -7,7 +7,7 @@ schedules:
   displayName: Daily midnight build
   branches:
     include:
-    - dev
+    - dajusto/add-nightly-release
 
 trigger: none
 pr: none
