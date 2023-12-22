@@ -24,9 +24,9 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Setup SQL Server container
-      run: test/SmokeTests/BackendSmokeTests/MSSQL/setup.ps1
+      run: test/SmokeTests/BackendSmokeTests/MSSQL/setup.ps1 -DockerfilePath test/SmokeTests/BackendSmokeTests/MSSQL/Dockerfile
       shell: pwsh
 
     - name: Run V4 .NET in-proc w/ MSSQL Smoke Test
-      run: test/SmokeTests/e2e-test.ps1 -DockerfilePath test/SmokeTests/BackendSmokeTests/MSSQL/Dockerfile -HttpStartPath api/Function1_HttpStart -ContainerName MSSQLApp
+      run: test/SmokeTests/e2e-test.ps1 -DockerfilePath test/SmokeTests/BackendSmokeTests/MSSQL/Dockerfile -HttpStartPath api/Function1_HttpStart -ContainerName MSSQLApp -NoSetup true
       shell: pwsh
