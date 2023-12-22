@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       SA_PASSWORD: NotASecret!12
-      SQLDB_Connection: "Server=localhost;Database=DurableDB;Trusted_Connection=True;"
+      SQLDB_Connection: "Server=localhost,1433;Database=DurableDB;User Id=sa;Password=NotASecret!12;"
 
     steps:
     - uses: actions/checkout@v4
