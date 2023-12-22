@@ -7,7 +7,7 @@ param(
     [string]$tag="2019-latest",
     [int]$port=1433,
     [string]$dbname="DurableDB",
-    [string]$sqldbconn = "Server=localhost,1433;Database=DurableDB;User Id=sa;Password=NotASecret!12;"
+    [string]$sqldbconn = "Server=localhost,1433;Database=DurableDB;User Id=sa;Password=NotASecret!12;",
     [string]$DockerfilePath,
     [string]$ImageName="dfapp",
     [string]$collation="Latin1_General_100_BIN2_UTF8",
