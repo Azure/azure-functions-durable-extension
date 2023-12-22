@@ -22,10 +22,12 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Setup .NET 6
+    - name: Setup .NET
       uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: '6.0.x'
+        dotnet-version: | 
+          3.1.x
+          6.0.x
       env:
         NUGET_AUTH_TOKEN: RequiredButNotUsed
 
@@ -39,6 +41,6 @@ jobs:
       run: test/SmokeTests/BackendSmokeTests/MSSQL/setup.ps1
       shell: pwsh
 
-    - name: Run V4 .NET in-proc w/ Netherite Smoke Test
+    - name: Run V4 .NET in-proc w/ MSSQL Smoke Test
       run: test/SmokeTests/e2e-test.ps1 -DockerfilePath test/SmokeTests/BackendSmokeTests/MSSQL/Dockerfile -HttpStartPath api/Function1_HttpStart -ContainerName MSSQLApp
       shell: pwsh
