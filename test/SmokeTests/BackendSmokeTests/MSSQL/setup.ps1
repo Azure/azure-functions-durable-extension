@@ -10,6 +10,7 @@ param(
     [string]$sqldbconn = "Server=localhost,1433;Database=DurableDB;User Id=sa;Password=NotASecret!12;",
     [string]$DockerfilePath,
     [string]$ImageName="dfapp",
+    [string]$ContainerName="app",
     [string]$collation="Latin1_General_100_BIN2_UTF8",
     [string]$additinalRunFlags=""
 )
@@ -36,9 +37,10 @@ docker ps
 Write-Host "Creating '$dbname' database with '$collation' collation" -ForegroundColor DarkYellow
 docker exec -d mssql-server /opt/mssql-tools/bin/sqlcmd -S . -U sa -P "$pw" -Q "CREATE DATABASE [$dbname] COLLATE $collation"
 
-# Finally, start up the smoke test container, which will connect to the Azurite container
-	docker run --name $ContainerName -p 8080:80 -it --add-host=host.docker.internal:host-gateway -d `
-		--env 'AzureWebJobsStorage=UseDevelopmentStorage=true;DevelopmentStorageProxyUri=http://host.docker.internal' `
-        --env 'SQLDB_Connection=Server=localhost,1433;Database=DurableDB;User Id=sa;Password=NotASecret!12;' `
-		--env 'WEBSITE_HOSTNAME=localhost:8080' `
-		$ImageName
+# Finally, start up the smoke test container, which will connect to the MSSQL container
+Write-Host "Starting '$ContainerName'" -ForegroundColor DarkYellow
+docker run --name $ContainerName -p 8080:80 -it --add-host=host.docker.internal:host-gateway -d `
+	--env 'AzureWebJobsStorage=UseDevelopmentStorage=true;DevelopmentStorageProxyUri=http://host.docker.internal' `
+	--env 'SQLDB_Connection=Server=localhost,1433;Database=DurableDB;User Id=sa;Password=NotASecret!12;' `
+	--env 'WEBSITE_HOSTNAME=localhost:8080' `
+	$ImageName
