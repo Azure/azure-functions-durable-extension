@@ -28,5 +28,5 @@ jobs:
       shell: pwsh
 
     - name: Run V4 .NET in-proc w/ MSSQL Smoke Test
-      run: test/SmokeTests/e2e-test.ps1 -DockerfilePath test/SmokeTests/BackendSmokeTests/MSSQL/Dockerfile -HttpStartPath api/Function1_HttpStart -ContainerName MSSQLApp -NoSetup true
+      run: test/SmokeTests/e2e-test.ps1 -DockerfilePath test/SmokeTests/BackendSmokeTests/MSSQL/Dockerfile -HttpStartPath api/Function1_HttpStart -ContainerName MSSQLApp
       shell: pwsh
