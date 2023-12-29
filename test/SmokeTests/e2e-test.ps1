@@ -28,9 +28,6 @@ if ($NoSetup -eq $false) {
 	Write-Host "Building sample app Docker container from '$DockerfilePath'..." -ForegroundColor Yellow
 	docker build -f $DockerfilePath -t $ImageName --progress plain $PSScriptRoot/../../
 
- 	Write-Host "AzuriteVersion: $AzuriteVersion"
-  	Write-Host "Sleep: $Sleep"
-
 	# Next, download and start the Azurite emulator Docker image
 	Write-Host "Pulling down the mcr.microsoft.com/azure-storage/azurite:$AzuriteVersion image..." -ForegroundColor Yellow
 	docker pull "mcr.microsoft.com/azure-storage/azurite:${AzuriteVersion}"
@@ -64,7 +61,7 @@ if ($NoSetup -eq $false) {
   		# Finally, start up the application container, connecting to the SQL Server container
 		Write-Host "Starting the $ContainerName application container" -ForegroundColor Yellow
 	 	docker run --name $ContainerName -p 8080:80 -it --add-host=host.docker.internal:host-gateway -d `
-			--env "SQLDB_Connection=Server=172.17.0.3,1433;Database=$dbname;User=sa;Password=$pw;" `
+			--env "SQLDB_Connection=Server=mssql-server,1433;Database=$dbname;User=sa;Password=$pw;" `
 			--env 'AzureWebJobsStorage=UseDevelopmentStorage=true;DevelopmentStorageProxyUri=http://host.docker.internal' `
 			--env 'WEBSITE_HOSTNAME=localhost:8080' `
 			$ImageName
