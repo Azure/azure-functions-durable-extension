@@ -65,6 +65,9 @@ if ($MSSQLTest -eq $true) {
 	Write-Host "Waiting for SQL Server to be ready..." -ForegroundColor Yellow
 	Start-Sleep -Seconds 30  # Adjust the sleep duration based on your SQL Server container startup time
 
+	Write-Host "Getting IP Address..." -ForegroundColor Yellow
+ 	docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' mssql-server
+
  	# Create the database with strict binary collation
 	Write-Host "Creating '$dbname' database with '$collation' collation" -ForegroundColor DarkYellow
 	docker exec -d mssql-server /opt/mssql-tools/bin/sqlcmd -S . -U sa -P "$pw" -Q "CREATE DATABASE [$dbname] COLLATE $collation"
