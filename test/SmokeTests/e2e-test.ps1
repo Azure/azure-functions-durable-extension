@@ -9,7 +9,7 @@ param(
 	[switch]$NoValidation=$false,
 	[int]$Sleep=30,
  	[string]$additinalRunFlags="",
-  	[switch]$MSSQLTest=$false,
+  	[switch]$SetupSQLServer=$false,
   	[string]$ImageName="dfapp",
 	[string]$ContainerName="app",
   	[string]$pw="$env:SA_PASSWORD",
@@ -46,9 +46,10 @@ if ($NoSetup -eq $false) {
 		# Wait for SQL Server to be ready
 		Write-Host "Waiting for SQL Server to be ready..." -ForegroundColor Yellow
 		Start-Sleep -Seconds 30  # Adjust the sleep duration based on your SQL Server container startup time
-	
+
+ 		# Get SQL Server IP Address - used to create SQLDB_Connection
 		Write-Host "Getting IP Address..." -ForegroundColor Yellow
-	 	docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' mssql-server
+	 	$serverIpAddress = docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' mssql-server
 	
 	 	# Create the database with strict binary collation
 		Write-Host "Creating '$dbname' database with '$collation' collation" -ForegroundColor DarkYellow
@@ -61,7 +62,7 @@ if ($NoSetup -eq $false) {
   		# Finally, start up the application container, connecting to the SQL Server container
 		Write-Host "Starting the $ContainerName application container" -ForegroundColor Yellow
 	 	docker run --name $ContainerName -p 8080:80 -it --add-host=host.docker.internal:host-gateway -d `
-			--env "SQLDB_Connection=Server=mssql-server,1433;Database=$dbname;User=sa;Password=$pw;" `
+			--env "SQLDB_Connection=Server=$serverIpAddress,1433;Database=$dbname;User=sa;Password=$pw;" `
 			--env 'AzureWebJobsStorage=UseDevelopmentStorage=true;DevelopmentStorageProxyUri=http://host.docker.internal' `
 			--env 'WEBSITE_HOSTNAME=localhost:8080' `
 			$ImageName
