@@ -16,7 +16,7 @@ param(
   	[string]$pw="$env:SA_PASSWORD",
     	[string]$sqlpid="Express",
      	[string]$tag="2019-latest",
-    	[int]$port=1433,
+    	[int]$port=1433
 )
 
 $ErrorActionPreference = "Stop"
