@@ -48,11 +48,11 @@ if ($MSSQLTest -eq $true) {
 	docker build -f $DockerfilePath -t $ImageName --progress plain $PSScriptRoot/../../
 
  	# Next, download and start the Azurite emulator Docker image
-	Write-Host "Pulling down the mcr.microsoft.com/azure-storage/azurite:$AzuriteVersion image..." -ForegroundColor Yellow
-	docker pull "mcr.microsoft.com/azure-storage/azurite:${AzuriteVersion}"
+	Write-Host "Pulling down the mcr.microsoft.com/azure-storage/azurite:3.26.0 image..." -ForegroundColor Yellow
+	docker pull "mcr.microsoft.com/azure-storage/azurite:3.26.0"
 
 	Write-Host "Starting Azurite storage emulator using default ports..." -ForegroundColor Yellow
-	docker run --name 'azurite' -p 10000:10000 -p 10001:10001 -p 10002:10002 -d "mcr.microsoft.com/azure-storage/azurite:${AzuriteVersion}"
+	docker run --name 'azurite' -p 10000:10000 -p 10001:10001 -p 10002:10002 -d "mcr.microsoft.com/azure-storage/azurite:3.26.0"
 	
 	Write-Host "Pulling down the mcr.microsoft.com/mssql/server:$tag image..."
 	docker pull mcr.microsoft.com/mssql/server:$tag
