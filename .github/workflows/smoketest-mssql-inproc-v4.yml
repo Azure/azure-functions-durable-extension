@@ -23,5 +23,5 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Run V4 .NET in-proc w/ MSSQL Smoke Test
-      run: test/SmokeTests/e2e-test.ps1 -DockerfilePath test/SmokeTests/BackendSmokeTests/MSSQL/Dockerfile -HttpStartPath api/DurableFunctionsHttpStart -ContainerName MSSQLApp -MSSQLTest true -NoSetup true
+      run: test/SmokeTests/e2e-test.ps1 -DockerfilePath test/SmokeTests/BackendSmokeTests/MSSQL/Dockerfile -HttpStartPath api/DurableFunctionsHttpStart -ContainerName MSSQLApp -MSSQLTest true
       shell: pwsh
