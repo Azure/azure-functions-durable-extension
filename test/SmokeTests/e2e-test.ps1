@@ -13,7 +13,7 @@ param(
 	[string]$AzuriteVersion="3.26.0",
 	[int]$Sleep=30,
  	[string]$additinalRunFlags="",
-  	[string]$pw="$env:SA_PASSWORD",
+  	[string]$pw="NotASecret!12",
     	[string]$sqlpid="Express",
      	[string]$tag="2019-latest",
     	[int]$port=1433,
