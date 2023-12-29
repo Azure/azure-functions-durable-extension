@@ -13,7 +13,7 @@ param(
 	[string]$AzuriteVersion="3.26.0",
 	[int]$Sleep=30,
  	[string]$additinalRunFlags="",
-  	[string]$pw="NotASecret!12",
+  	[string]$pw="$env:SA_PASSWORD",
     	[string]$sqlpid="Express",
      	[string]$tag="2019-latest",
     	[int]$port=1433,
@@ -79,7 +79,7 @@ if ($MSSQLTest -eq $true) {
 	# Finally, start up the application container, connecting to the SQL Server container
 	Write-Host "Starting the $ContainerName application container" -ForegroundColor Yellow
  	docker run --name $ContainerName -p 8080:80 -it --add-host=host.docker.internal:host-gateway -d `
-	--env 'SQLDB_Connection=Server=172.17.0.3,1433;Database=$dbname;User=sa;Password=$pw;' `
+	--env "SQLDB_Connection=Server=172.17.0.3,1433;Database=$dbname;User=sa;Password=$pw;" `
 	--env 'AzureWebJobsStorage=UseDevelopmentStorage=true;DevelopmentStorageProxyUri=http://host.docker.internal' `
 	--env 'WEBSITE_HOSTNAME=localhost:8080' `
 	$ImageName
