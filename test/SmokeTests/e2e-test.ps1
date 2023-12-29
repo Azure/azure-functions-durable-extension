@@ -5,14 +5,14 @@ param(
 	[string]$DockerfilePath,
 	[Parameter(Mandatory=$true)]
 	[string]$HttpStartPath,
-    [string]$ImageName="dfapp",
-	[string]$ContainerName="app",
 	[switch]$NoSetup=$false,
  	[switch]$MSSQLTest=$false,
 	[switch]$NoValidation=$false,
 	[string]$AzuriteVersion="3.26.0",
 	[int]$Sleep=30,
  	[string]$additinalRunFlags="",
+  	[string]$ImageName="dfapp",
+	[string]$ContainerName="app",
   	[string]$pw="$env:SA_PASSWORD",
     	[string]$sqlpid="Express",
      	[string]$tag="2019-latest",
@@ -35,54 +35,39 @@ if ($NoSetup -eq $false) {
 	Write-Host "Starting Azurite storage emulator using default ports..." -ForegroundColor Yellow
 	docker run --name 'azurite' -p 10000:10000 -p 10001:10001 -p 10002:10002 -d "mcr.microsoft.com/azure-storage/azurite:${AzuriteVersion}"
 
+ 	if ($MSSQLTest -eq true) {
+		Write-Host "Pulling down the mcr.microsoft.com/mssql/server:$tag image..."
+		docker pull mcr.microsoft.com/mssql/server:$tag
+		
+		# Start the SQL Server docker container with the specified edition
+		Write-Host "Starting SQL Server $tag $sqlpid docker container on port $port" -ForegroundColor DarkYellow
+		docker run $additinalRunFlags --name mssql-server -e 'ACCEPT_EULA=Y' -e "MSSQL_SA_PASSWORD=$pw" -e "MSSQL_PID=$sqlpid" -p ${port}:1433 -d mcr.microsoft.com/mssql/server:$tag
+		
+		# Wait for SQL Server to be ready
+		Write-Host "Waiting for SQL Server to be ready..." -ForegroundColor Yellow
+		Start-Sleep -Seconds 30  # Adjust the sleep duration based on your SQL Server container startup time
+	
+		Write-Host "Getting IP Address..." -ForegroundColor Yellow
+	 	docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' mssql-server
+	
+	 	# Create the database with strict binary collation
+		Write-Host "Creating '$dbname' database with '$collation' collation" -ForegroundColor DarkYellow
+		docker exec -d mssql-server /opt/mssql-tools/bin/sqlcmd -S . -U sa -P "$pw" -Q "CREATE DATABASE [$dbname] COLLATE $collation"
+
+  		# Wait for database to be ready
+		Write-Host "Waiting for database to be ready..." -ForegroundColor Yellow
+		Start-Sleep -Seconds 30  # Adjust the sleep duration based on your database container startup time
+   	}
+
 	# Finally, start up the smoke test container, which will connect to the Azurite container
 	docker run --name $ContainerName -p 8080:80 -it --add-host=host.docker.internal:host-gateway -d `
 		--env 'AzureWebJobsStorage=UseDevelopmentStorage=true;DevelopmentStorageProxyUri=http://host.docker.internal' `
 		--env 'WEBSITE_HOSTNAME=localhost:8080' `
 		$ImageName
-}
 
-if ($MSSQLTest -eq $true) {
-	# Build the Docker image first, since that's the most critical step
-	Write-Host "Building sample app Docker container from '$DockerfilePath'..." -ForegroundColor Yellow
-	docker build -f $DockerfilePath -t $ImageName --progress plain $PSScriptRoot/../../
-
- 	# Next, download and start the Azurite emulator Docker image
-	Write-Host "Pulling down the mcr.microsoft.com/azure-storage/azurite:3.26.0 image..." -ForegroundColor Yellow
-	docker pull "mcr.microsoft.com/azure-storage/azurite:3.26.0"
-
-	Write-Host "Starting Azurite storage emulator using default ports..." -ForegroundColor Yellow
-	docker run --name 'azurite' -p 10000:10000 -p 10001:10001 -p 10002:10002 -d "mcr.microsoft.com/azure-storage/azurite:3.26.0"
-	
-	Write-Host "Pulling down the mcr.microsoft.com/mssql/server:$tag image..."
-	docker pull mcr.microsoft.com/mssql/server:$tag
-	
-	# Start the SQL Server docker container with the specified edition
-	Write-Host "Starting SQL Server $tag $sqlpid docker container on port $port" -ForegroundColor DarkYellow
-	docker run $additinalRunFlags --name mssql-server -e 'ACCEPT_EULA=Y' -e "MSSQL_SA_PASSWORD=$pw" -e "MSSQL_PID=$sqlpid" -p ${port}:1433 -d mcr.microsoft.com/mssql/server:$tag
-	
-	# Wait for SQL Server to be ready
-	Write-Host "Waiting for SQL Server to be ready..." -ForegroundColor Yellow
-	Start-Sleep -Seconds 30  # Adjust the sleep duration based on your SQL Server container startup time
-
-	Write-Host "Getting IP Address..." -ForegroundColor Yellow
- 	docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' mssql-server
-
- 	# Create the database with strict binary collation
-	Write-Host "Creating '$dbname' database with '$collation' collation" -ForegroundColor DarkYellow
-	docker exec -d mssql-server /opt/mssql-tools/bin/sqlcmd -S . -U sa -P "$pw" -Q "CREATE DATABASE [$dbname] COLLATE $collation"
-
- 	# Wait for database to be ready
-	Write-Host "Waiting for database to be ready..." -ForegroundColor Yellow
-	Start-Sleep -Seconds 30  # Adjust the sleep duration based on your database container startup time
-	
-	# Finally, start up the application container, connecting to the SQL Server container
-	Write-Host "Starting the $ContainerName application container" -ForegroundColor Yellow
- 	docker run --name $ContainerName -p 8080:80 -it --add-host=host.docker.internal:host-gateway -d `
-	--env "SQLDB_Connection=Server=172.17.0.3,1433;Database=$dbname;User=sa;Password=$pw;" `
-	--env 'AzureWebJobsStorage=UseDevelopmentStorage=true;DevelopmentStorageProxyUri=http://host.docker.internal' `
-	--env 'WEBSITE_HOSTNAME=localhost:8080' `
-	$ImageName
+  	if ($MSSQLTest -eq true) {
+		docker run -e "SQLDB_Connection=Server=172.17.0.3,1433;Database=$dbname;User=sa;Password=$pw;" $ImageName
+   	}
 }
 
 if ($sleep -gt  0) {
