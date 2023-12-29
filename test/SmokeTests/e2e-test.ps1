@@ -7,7 +7,6 @@ param(
 	[string]$HttpStartPath,
 	[switch]$NoSetup=$false,
 	[switch]$NoValidation=$false,
-	[string]$AzuriteVersion="3.26.0",
 	[int]$Sleep=30,
  	[string]$additinalRunFlags="",
   	[switch]$MSSQLTest=$false,
@@ -22,6 +21,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+$AzuriteVersion = "3.26.0"
 
 if ($NoSetup -eq $false) {
 	# Build the docker image first, since that's the most critical step
