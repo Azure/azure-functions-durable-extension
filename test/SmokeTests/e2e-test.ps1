@@ -16,7 +16,9 @@ param(
   	[string]$pw="$env:SA_PASSWORD",
     	[string]$sqlpid="Express",
      	[string]$tag="2019-latest",
-    	[int]$port=1433
+    	[int]$port=1433,
+     	[string]$dbname="DurableDB",
+    	[string]$collation="Latin1_General_100_BIN2_UTF8"
 )
 
 $ErrorActionPreference = "Stop"
