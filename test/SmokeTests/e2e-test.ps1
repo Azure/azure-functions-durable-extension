@@ -35,7 +35,7 @@ if ($NoSetup -eq $false) {
 	Write-Host "Starting Azurite storage emulator using default ports..." -ForegroundColor Yellow
 	docker run --name 'azurite' -p 10000:10000 -p 10001:10001 -p 10002:10002 -d "mcr.microsoft.com/azure-storage/azurite:${AzuriteVersion}"
 
- 	if ($MSSQLTest -eq true) {
+ 	if ($MSSQLTest -eq $true) {
 		Write-Host "Pulling down the mcr.microsoft.com/mssql/server:$tag image..."
 		docker pull mcr.microsoft.com/mssql/server:$tag
 		
@@ -65,7 +65,7 @@ if ($NoSetup -eq $false) {
 		--env 'WEBSITE_HOSTNAME=localhost:8080' `
 		$ImageName
 
-  	if ($MSSQLTest -eq true) {
+  	if ($MSSQLTest -eq $true) {
 		docker run -e "SQLDB_Connection=Server=172.17.0.3,1433;Database=$dbname;User=sa;Password=$pw;" $ImageName
    	}
 }
