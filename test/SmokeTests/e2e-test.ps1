@@ -64,25 +64,22 @@ if ($MSSQLTest -eq $true) {
 	# Wait for SQL Server to be ready
 	Write-Host "Waiting for SQL Server to be ready..." -ForegroundColor Yellow
 	Start-Sleep -Seconds 30  # Adjust the sleep duration based on your SQL Server container startup time
+
+ 	# Create the database with strict binary collation
+	Write-Host "Creating '$dbname' database with '$collation' collation" -ForegroundColor DarkYellow
+	docker exec -d mssql-server /opt/mssql-tools/bin/sqlcmd -S . -U sa -P "$pw" -Q "CREATE DATABASE [$dbname] COLLATE $collation"
+
+ 	# Wait for database to be ready
+	Write-Host "Waiting for database to be ready..." -ForegroundColor Yellow
+	Start-Sleep -Seconds 30  # Adjust the sleep duration based on your database container startup time
 	
 	# Finally, start up the application container, connecting to the SQL Server container
 	Write-Host "Starting the $ContainerName application container" -ForegroundColor Yellow
  	docker run --name $ContainerName -p 8080:80 -it --add-host=host.docker.internal:host-gateway -d `
-	--env 'SQLDB_Connection=Server=$ContainerName,1433;Database=$dbname;User=sa;Password=$pw;' `
+	--env 'SQLDB_Connection=Server=mssql-server,1433;Database=$dbname;User=sa;Password=$pw;' `
 	--env 'AzureWebJobsStorage=UseDevelopmentStorage=true;DevelopmentStorageProxyUri=http://host.docker.internal' `
 	--env 'WEBSITE_HOSTNAME=localhost:8080' `
 	$ImageName
-	
-	# The container needs a bit more time before it can start accepting commands
-	Write-Host "Sleeping for 30 seconds to let the container finish initializing..." -ForegroundColor Yellow
-	Start-Sleep -Seconds 30
-	
-	# Check to see what containers are running
-	docker ps
-	
-	# Create the database with strict binary collation
-	Write-Host "Creating '$dbname' database with '$collation' collation" -ForegroundColor DarkYellow
-	docker exec -d mssql-server /opt/mssql-tools/bin/sqlcmd -S . -U sa -P "$pw" -Q "CREATE DATABASE [$dbname] COLLATE $collation"
 }
 
 if ($sleep -gt  0) {
