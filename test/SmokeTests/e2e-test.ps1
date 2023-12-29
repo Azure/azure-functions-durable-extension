@@ -46,6 +46,13 @@ if ($MSSQLTest -eq $true) {
 	# Build the Docker image first, since that's the most critical step
 	Write-Host "Building sample app Docker container from '$DockerfilePath'..." -ForegroundColor Yellow
 	docker build -f $DockerfilePath -t $ImageName --progress plain $PSScriptRoot/../../
+
+ 	# Next, download and start the Azurite emulator Docker image
+	Write-Host "Pulling down the mcr.microsoft.com/azure-storage/azurite:$AzuriteVersion image..." -ForegroundColor Yellow
+	docker pull "mcr.microsoft.com/azure-storage/azurite:${AzuriteVersion}"
+
+	Write-Host "Starting Azurite storage emulator using default ports..." -ForegroundColor Yellow
+	docker run --name 'azurite' -p 10000:10000 -p 10001:10001 -p 10002:10002 -d "mcr.microsoft.com/azure-storage/azurite:${AzuriteVersion}"
 	
 	Write-Host "Pulling down the mcr.microsoft.com/mssql/server:$tag image..."
 	docker pull mcr.microsoft.com/mssql/server:$tag
@@ -59,9 +66,10 @@ if ($MSSQLTest -eq $true) {
 	Start-Sleep -Seconds 30  # Adjust the sleep duration based on your SQL Server container startup time
 	
 	# Finally, start up the application container, connecting to the SQL Server container
-	docker run --name $ContainerName -p 8080:80 -it --add-host=host.docker.internal:host-gateway -d `
+	Write-Host "Starting the $ContainerName application container" -ForegroundColor Yellow
+ 	docker run --name $ContainerName -p 8080:80 -it --add-host=host.docker.internal:host-gateway -d `
 	--env 'SQLDB_Connection=Server=$ContainerName,1433;Database=YourDatabase;User=sa;Password=$pw;' `
-	--env 'AzureWebJobsStorage=UseDevelopmentStorage=true;' `
+	--env 'AzureWebJobsStorage=UseDevelopmentStorage=true;DevelopmentStorageProxyUri=http://host.docker.internal' `
 	--env 'WEBSITE_HOSTNAME=localhost:8080' `
 	$ImageName
 	
