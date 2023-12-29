@@ -60,19 +60,22 @@ if ($NoSetup -eq $false) {
   		# Wait for database to be ready
 		Write-Host "Waiting for database to be ready..." -ForegroundColor Yellow
 		Start-Sleep -Seconds 30  # Adjust the sleep duration based on your database container startup time
-   	}
 
-	# Finally, start up the smoke test container, which will connect to the Azurite container
- 	Write-Host "Starting $ContainerName application container" -ForegroundColor Yellow
-	docker run --name $ContainerName -p 8080:80 -it --add-host=host.docker.internal:host-gateway -d `
-		--env 'AzureWebJobsStorage=UseDevelopmentStorage=true;DevelopmentStorageProxyUri=http://host.docker.internal' `
-		--env 'WEBSITE_HOSTNAME=localhost:8080' `
-		$ImageName
-
-  	if ($MSSQLTest -eq $true) {
-   		Write-Host "Adding SQLDB_Connection environment variable" -ForegroundColor Yellow
-		docker run -e "SQLDB_Connection=Server=172.17.0.3,1433;Database=$dbname;User=sa;Password=$pw;" $ImageName
+  		# Finally, start up the application container, connecting to the SQL Server container
+		Write-Host "Starting the $ContainerName application container" -ForegroundColor Yellow
+	 	docker run --name $ContainerName -p 8080:80 -it --add-host=host.docker.internal:host-gateway -d `
+			--env "SQLDB_Connection=Server=172.17.0.3,1433;Database=$dbname;User=sa;Password=$pw;" `
+			--env 'AzureWebJobsStorage=UseDevelopmentStorage=true;DevelopmentStorageProxyUri=http://host.docker.internal' `
+			--env 'WEBSITE_HOSTNAME=localhost:8080' `
+			$ImageName
    	}
+    	else {
+		Write-Host "Starting $ContainerName application container" -ForegroundColor Yellow
+		docker run --name $ContainerName -p 8080:80 -it --add-host=host.docker.internal:host-gateway -d `
+			--env 'AzureWebJobsStorage=UseDevelopmentStorage=true;DevelopmentStorageProxyUri=http://host.docker.internal' `
+			--env 'WEBSITE_HOSTNAME=localhost:8080' `
+			$ImageName
+     	}
 }
 
 if ($sleep -gt  0) {
