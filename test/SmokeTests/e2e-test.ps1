@@ -6,11 +6,11 @@ param(
 	[Parameter(Mandatory=$true)]
 	[string]$HttpStartPath,
 	[switch]$NoSetup=$false,
- 	[switch]$MSSQLTest=$false,
 	[switch]$NoValidation=$false,
 	[string]$AzuriteVersion="3.26.0",
 	[int]$Sleep=30,
  	[string]$additinalRunFlags="",
+  	[switch]$MSSQLTest=$false,
   	[string]$ImageName="dfapp",
 	[string]$ContainerName="app",
   	[string]$pw="$env:SA_PASSWORD",
@@ -27,6 +27,8 @@ if ($NoSetup -eq $false) {
 	# Build the docker image first, since that's the most critical step
 	Write-Host "Building sample app Docker container from '$DockerfilePath'..." -ForegroundColor Yellow
 	docker build -f $DockerfilePath -t $ImageName --progress plain $PSScriptRoot/../../
+
+ 	Write-Host "AzuriteVersion: $AzuriteVersion"
 
 	# Next, download and start the Azurite emulator Docker image
 	Write-Host "Pulling down the mcr.microsoft.com/azure-storage/azurite:$AzuriteVersion image..." -ForegroundColor Yellow
