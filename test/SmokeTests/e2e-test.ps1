@@ -59,7 +59,7 @@ if ($MSSQLTest -eq $true) {
 	# Finally, start up the application container, connecting to the SQL Server container
 	docker run --name $ContainerName -p 8080:80 -it --add-host=host.docker.internal:host-gateway -d `
 	--env 'SQLDB_Connection=Server=$ContainerName,1433;Database=YourDatabase;User=sa;Password=$pw;' `
-	--env 'AzureWebJobsStorage=UseDevelopmentStorage=true;DevelopmentStorageProxyUri=http://host.docker.internal' `
+	--env 'AzureWebJobsStorage=UseDevelopmentStorage=true;' `
 	--env 'WEBSITE_HOSTNAME=localhost:8080' `
 	$ImageName
 	
