@@ -8,6 +8,7 @@ param(
     [string]$ImageName="dfapp",
 	[string]$ContainerName="app",
 	[switch]$NoSetup=$false,
+ 	[switch]$MSSQLTest=$false,
 	[switch]$NoValidation=$false,
 	[string]$AzuriteVersion="3.26.0",
 	[int]$Sleep=30
@@ -32,6 +33,38 @@ if ($NoSetup -eq $false) {
 		--env 'AzureWebJobsStorage=UseDevelopmentStorage=true;DevelopmentStorageProxyUri=http://host.docker.internal' `
 		--env 'WEBSITE_HOSTNAME=localhost:8080' `
 		$ImageName
+}
+
+if ($MSSQLTest -eq $true) {
+	# Build the Docker image first, since that's the most critical step
+	Write-Host "Building sample app Docker container from '$DockerfilePath'..." -ForegroundColor Yellow
+	docker build -f $DockerfilePath -t $ImageName --progress plain $PSScriptRoot/../../
+	
+	# Start the SQL Server container
+	Write-Host "Starting SQL Server container..." -ForegroundColor Yellow
+	docker run -e 'ACCEPT_EULA=Y' -e "SA_PASSWORD=$SqlServerPassword" --name $SqlServerContainerName -p 1433:1433 -d mcr.microsoft.com/mssql/server
+	
+	# Wait for SQL Server to be ready
+	Write-Host "Waiting for SQL Server to be ready..." -ForegroundColor Yellow
+	Start-Sleep -Seconds 30  # Adjust the sleep duration based on your SQL Server container startup time
+	
+	# Finally, start up the application container, connecting to the SQL Server container
+	docker run --name $ContainerName -p 8080:80 -it --add-host=host.docker.internal:host-gateway -d `
+	--env 'SqlConnectionString=Server=$SqlServerContainerName,1433;Database=YourDatabase;User=sa;Password=$SqlServerPassword;' `
+	--env 'AzureWebJobsStorage=UseDevelopmentStorage=true;DevelopmentStorageProxyUri=http://host.docker.internal' `
+	--env 'WEBSITE_HOSTNAME=localhost:8080' `
+	$ImageName
+	
+	# The container needs a bit more time before it can start accepting commands
+	Write-Host "Sleeping for 30 seconds to let the container finish initializing..." -ForegroundColor Yellow
+	Start-Sleep -Seconds 30
+	
+	# Check to see what containers are running
+	docker ps
+	
+	# Create the database with strict binary collation
+	Write-Host "Creating '$dbname' database with '$collation' collation" -ForegroundColor DarkYellow
+	docker exec -d mssql-server /opt/mssql-tools/bin/sqlcmd -S . -U sa -P "$pw" -Q "CREATE DATABASE [$dbname] COLLATE $collation"
 }
 
 if ($sleep -gt  0) {
