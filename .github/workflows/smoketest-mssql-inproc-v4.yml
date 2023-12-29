@@ -18,15 +18,10 @@ jobs:
     runs-on: ubuntu-latest
     env:
       SA_PASSWORD: NotASecret!12
-      SQLDB_Connection: "Server=localhost,1433;Database=DurableDB;User Id=sa;Password=NotASecret!12;"
 
     steps:
     - uses: actions/checkout@v4
 
-    - name: Setup SQL Server container
-      run: test/SmokeTests/BackendSmokeTests/MSSQL/setup.ps1 -DockerfilePath test/SmokeTests/BackendSmokeTests/MSSQL/Dockerfile
-      shell: pwsh
-
     - name: Run V4 .NET in-proc w/ MSSQL Smoke Test
-      run: test/SmokeTests/e2e-test.ps1 -DockerfilePath test/SmokeTests/BackendSmokeTests/MSSQL/Dockerfile -HttpStartPath api/Function1_HttpStart -ContainerName MSSQLApp
+      run: test/SmokeTests/BackendSmokeTests/MSSQL/mssql-e2e-test.ps1 -DockerfilePath test/SmokeTests/BackendSmokeTests/MSSQL/Dockerfile -HttpStartPath api/Function1_HttpStart -ContainerName MSSQLApp
       shell: pwsh
