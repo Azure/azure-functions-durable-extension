@@ -11,7 +11,12 @@ param(
  	[switch]$MSSQLTest=$false,
 	[switch]$NoValidation=$false,
 	[string]$AzuriteVersion="3.26.0",
-	[int]$Sleep=30
+	[int]$Sleep=30,
+ 	[string]$additinalRunFlags="",
+  	[string]$pw="$env:SA_PASSWORD",
+    	[string]$sqlpid="Express",
+     	[string]$tag="2019-latest",
+    	[int]$port=1433,
 )
 
 $ErrorActionPreference = "Stop"
@@ -40,9 +45,12 @@ if ($MSSQLTest -eq $true) {
 	Write-Host "Building sample app Docker container from '$DockerfilePath'..." -ForegroundColor Yellow
 	docker build -f $DockerfilePath -t $ImageName --progress plain $PSScriptRoot/../../
 	
-	# Start the SQL Server container
-	Write-Host "Starting SQL Server container..." -ForegroundColor Yellow
-	docker run -e 'ACCEPT_EULA=Y' -e "SA_PASSWORD=$SqlServerPassword" --name $SqlServerContainerName -p 1433:1433 -d mcr.microsoft.com/mssql/server
+	Write-Host "Pulling down the mcr.microsoft.com/mssql/server:$tag image..."
+	docker pull mcr.microsoft.com/mssql/server:$tag
+	
+	# Start the SQL Server docker container with the specified edition
+	Write-Host "Starting SQL Server $tag $sqlpid docker container on port $port" -ForegroundColor DarkYellow
+	docker run $additinalRunFlags --name mssql-server -e 'ACCEPT_EULA=Y' -e "MSSQL_SA_PASSWORD=$pw" -e "MSSQL_PID=$sqlpid" -p ${port}:1433 -d mcr.microsoft.com/mssql/server:$tag
 	
 	# Wait for SQL Server to be ready
 	Write-Host "Waiting for SQL Server to be ready..." -ForegroundColor Yellow
@@ -50,7 +58,7 @@ if ($MSSQLTest -eq $true) {
 	
 	# Finally, start up the application container, connecting to the SQL Server container
 	docker run --name $ContainerName -p 8080:80 -it --add-host=host.docker.internal:host-gateway -d `
-	--env 'SqlConnectionString=Server=$SqlServerContainerName,1433;Database=YourDatabase;User=sa;Password=$SqlServerPassword;' `
+	--env 'SQLDB_Connection=Server=$ContainerName,1433;Database=YourDatabase;User=sa;Password=$pw;' `
 	--env 'AzureWebJobsStorage=UseDevelopmentStorage=true;DevelopmentStorageProxyUri=http://host.docker.internal' `
 	--env 'WEBSITE_HOSTNAME=localhost:8080' `
 	$ImageName
