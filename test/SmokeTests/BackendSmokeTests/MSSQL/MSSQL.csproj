@@ -4,8 +4,11 @@
     <AzureFunctionsVersion>v4</AzureFunctionsVersion>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\..\..\src\WebJobs.Extensions.DurableTask\WebJobs.Extensions.DurableTask.csproj" />
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="4.2.0" />
-	<PackageReference Include="Microsoft.DurableTask.SqlServer.AzureFunctions" Version="1.2.2" />
+    <PackageReference Include="Microsoft.DurableTask.SqlServer.AzureFunctions" Version="1.*" />
   </ItemGroup>
   <ItemGroup>
     <None Update="host.json">
