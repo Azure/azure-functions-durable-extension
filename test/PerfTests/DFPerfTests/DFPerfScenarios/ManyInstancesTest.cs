@@ -8,13 +8,15 @@ using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System;
+using static System.Net.Mime.MediaTypeNames;
+using Microsoft.AspNetCore.Mvc;
 
 namespace DFPerfScenarios
 {
     public static class ManyInstancesTest
     {
         [FunctionName("StartManyInstances")]
-        public static async Task<HttpResponseMessage> Start(
+        public static async Task<IActionResult> Start(
             [HttpTrigger(AuthorizationLevel.Function, methods: "post", Route = "StartManyInstances")] HttpRequestMessage req,
             [DurableClient] IDurableOrchestrationClient starter,
             ILogger log)
@@ -23,7 +25,7 @@ namespace DFPerfScenarios
             int num = await HttpContentExtensions.ReadAsAsync<int>(req.Content);
             if (num <= 0)
             {
-                return req.CreateErrorResponse(HttpStatusCode.BadRequest, "Request body expects an instance count.");
+                return new BadRequestObjectResult("Request body expects an instance count.");
             }
 
             log.LogWarning($"Starting {num} instances...");
@@ -32,13 +34,19 @@ namespace DFPerfScenarios
                 MaxDegreeOfParallelism = 100
             };
 
-            Parallel.For(0, num, parallelOptions, delegate (int i) {
-                string text = $"instance_{newGuid}_{i:000000}";
-                starter.StartNewAsync<object>("HelloSequence", text, null).GetAwaiter().GetResult();
-            });
+            try
+            {
+                Parallel.For(0, num, parallelOptions, delegate (int i) {
+                    string text = $"instance_{newGuid}_{i:000000}";
+                    starter.StartNewAsync<object>("HelloSequence", text, null).GetAwaiter().GetResult();            });
+            }
+            catch (Exception ex)
+            {
+                var exception = new Exception($"Error for GUID ${newGuid}", ex); ;
+                return new BadRequestObjectResult(exception);
+            }
 
-            log.LogWarning($"Created {num} instances successfully!");
-            return req.CreateResponse();
+            return new OkObjectResult($"Created {num} instances successfully!");
         }
     }
 }

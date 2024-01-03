@@ -33,6 +33,7 @@ namespace DFPerfScenarios
         public static async Task<List<string>> HelloSequence([OrchestrationTrigger] IDurableOrchestrationContext context)
         {
             List<string> outputs = new List<string>();
+            await context.WaitForExternalEvent("HANG");
             outputs.Add(await context.CallActivityAsync<string>("SayHello", "Tokyo"));
             outputs.Add(await context.CallActivityAsync<string>("SayHello", "Seattle"));
             outputs.Add(await context.CallActivityAsync<string>("SayHello", "London"));
