@@ -17,6 +17,7 @@ namespace DFPerfScenarios
             [DurableClient] IDurableOrchestrationClient starter,
             ILogger log)
         {
+            Guid newGuid = new Guid.NewGuid();
             int num = await HttpContentExtensions.ReadAsAsync<int>(req.Content);
             if (num <= 0)
             {
@@ -30,7 +31,7 @@ namespace DFPerfScenarios
             };
 
             Parallel.For(0, num, parallelOptions, delegate (int i) {
-                string text = $"instance_{i:000000}";
+                string text = $"instance_{newGuid}_{i:000000}";
                 starter.StartNewAsync<object>("HelloSequence", text, null).GetAwaiter().GetResult();
             });
 
