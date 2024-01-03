@@ -3,6 +3,7 @@ using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Extensions.Logging;
+using System;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -17,7 +18,7 @@ namespace DFPerfScenarios
             [DurableClient] IDurableOrchestrationClient starter,
             ILogger log)
         {
-            Guid newGuid = new Guid.NewGuid();
+            Guid newGuid = Guid.NewGuid();
             int num = await HttpContentExtensions.ReadAsAsync<int>(req.Content);
             if (num <= 0)
             {
