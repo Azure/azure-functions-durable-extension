@@ -3,7 +3,9 @@
 
 using System;
 using System.Diagnostics;
+using Microsoft.Azure.Functions.Worker.Converters;
 using Microsoft.Azure.Functions.Worker.Extensions.Abstractions;
+using Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
 
 namespace Microsoft.Azure.Functions.Worker;
 
@@ -12,6 +14,8 @@ namespace Microsoft.Azure.Functions.Worker;
 /// </summary>
 [AttributeUsage(AttributeTargets.Parameter)]
 [DebuggerDisplay("{Activity}")]
+[InputConverter(typeof(ActivityInputConverter))]
+[ConverterFallbackBehavior(ConverterFallbackBehavior.Disallow)]
 public sealed class ActivityTriggerAttribute : TriggerBindingAttribute
 {
     /// <summary>
