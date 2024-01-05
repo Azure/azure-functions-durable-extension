@@ -25,6 +25,11 @@ internal class ActivityInputConverter : IInputConverter
             throw new ArgumentNullException(nameof(context));
         }
 
+        if (context.Source is null)
+        {
+            return new(ConversionResult.Success(null));
+        }
+
         if (context.Source is not string source)
         {
             throw new InvalidOperationException($"Expected converter source to be a string, received {context.Source?.GetType()}.");
