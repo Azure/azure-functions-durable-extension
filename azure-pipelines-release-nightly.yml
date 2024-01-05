@@ -27,7 +27,7 @@ steps:
     targetType: 'inline'
     script: |
       # the "ci" section is to denote this payload is automatically released by the CI
-      $versionSuffix = ".ci.$(Build.BuildNumber)""
+      $versionSuffix = "ci.$(Build.BuildNumber)""
       Write-Host "##vso[task.setvariable variable=PackageSuffix;]$versionSuffix"
 
 # Configure all the .NET SDK versions we need

@@ -7,6 +7,8 @@
     <MajorVersion>2</MajorVersion>
     <MinorVersion>13</MinorVersion>
     <PatchVersion>1</PatchVersion>
+    <VersionSuffix>$(PackageSuffix)</VersionSuffix>
+    <FileVersion>$(MajorVersion).$(MinorVersion).$(PatchVersion)</FileVersion>
     <AssemblyVersion>$(MajorVersion).0.0.0</AssemblyVersion>
     <Company>Microsoft Corporation</Company>
     <LangVersion>9.0</LangVersion>
@@ -21,11 +23,9 @@
 
   <PropertyGroup Condition="$(VersionSuffix) == ''">
     <Version>$(MajorVersion).$(MinorVersion).$(PatchVersion)</Version>
-    <FileVersion>$(MajorVersion).$(MinorVersion).$(PatchVersion)</FileVersion>
   </PropertyGroup>
   <PropertyGroup Condition="$(VersionSuffix) != ''">
     <Version>$(MajorVersion).$(MinorVersion).$(PatchVersion)-$(VersionSuffix)</Version>
-    <FileVersion>$(MajorVersion).$(MinorVersion).$(PatchVersion)-$(VersionSuffix)</FileVersion>
   </PropertyGroup>
 
 
