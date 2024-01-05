@@ -6,7 +6,23 @@ pool:
   demands:
     - ImageOverride -equals MMS2022TLS
 
+variables:
+  PackageSuffix: ''
+
 steps:
+
+- task: PowerShell@2
+  displayName: 'Populate PackageSuffix iff source branch is not dev'
+  inputs:
+    targetType: 'inline'
+    script: |
+      # if source branch is not `dev` then we're generating a release based on a feature branch
+      # In that case, we populate the environment variable "PackageSuffix" accordingly
+      if($Env:BUILD_SOURCEBRANCHNAME -ne 'dev'){
+        # the "pr" section is to denote this code is a candidate to be PR'ed
+        $versionSuffix = "pr.$(Build.BuildNumber)"
+        Write-Host "##vso[task.setvariable variable=PackageSuffix;]$versionSuffix"
+      }
 
 # Configure all the .NET SDK versions we need
 - task: UseDotNet@2

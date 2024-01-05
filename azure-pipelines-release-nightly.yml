@@ -16,7 +16,19 @@ pool:
   demands:
     - ImageOverride -equals MMS2022TLS
 
+variables:
+  PackageSuffix: ''
+
 steps:
+
+- task: PowerShell@2
+  displayName: 'Populate PackageSuffix'
+  inputs:
+    targetType: 'inline'
+    script: |
+      # the "ci" section is to denote this payload is automatically released by the CI
+      $versionSuffix = ".ci.$(Build.BuildNumber)""
+      Write-Host "##vso[task.setvariable variable=PackageSuffix;]$versionSuffix"
 
 # Configure all the .NET SDK versions we need
 - task: UseDotNet@2
