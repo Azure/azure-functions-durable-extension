@@ -6,6 +6,17 @@ pool:
   demands:
     - ImageOverride -equals MMS2022TLS
 
+variables:
+
+  - name: PackageSuffix
+    # if source branch is not `dev` then we're generating a release based on a feature branch
+    # In that case, we populate the environment variable "PackageSuffix" accordingly
+    ${{ if ne(variables['Build.SourceBranchName'], 'dev') }}:
+      value: 'pr.$(Build.BuildNumber)' # the "pr" section is to denote this code is a candidate to be PR'ed
+    ${{ else }}:
+      value: ''
+
+
 steps:
 
 # Configure all the .NET SDK versions we need
