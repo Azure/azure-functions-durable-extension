@@ -4,6 +4,7 @@
 using System;
 using System.Net;
 using System.Threading;
+using System.Threading.Tasks;
 using Azure.Core.Serialization;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.DurableTask.Client;
@@ -17,6 +18,52 @@ namespace Microsoft.Azure.Functions.Worker;
 /// </summary>
 public static class DurableTaskClientExtensions
 {
+    /// <summary>
+    /// Creates an HTTP response that is useful for checking the status of the specified instance.
+    /// </summary>
+    /// <param name="client">The <see cref="DurableTaskClient"/>.</param>
+    /// <param name="request">The HTTP request that this response is for.</param>
+    /// <param name="instanceId">The ID of the orchestration instance to check.</param>
+    /// <param name="cancellation">The cancellation token.</param>
+    /// <returns>An HTTP 202 response with a Location header and a payload containing instance control URLs.</returns>
+    public static Task<HttpResponseData> CreateCheckStatusResponseAsync(
+        this DurableTaskClient client,
+        HttpRequestData request,
+        string instanceId,
+        CancellationToken cancellation = default)
+    {
+        return client.CreateCheckStatusResponseAsync(request, instanceId, HttpStatusCode.Accepted, cancellation);
+    }
+
+    /// <summary>
+    /// Creates an HTTP response that is useful for checking the status of the specified instance.
+    /// </summary>
+    /// <param name="client">The <see cref="DurableTaskClient"/>.</param>
+    /// <param name="request">The HTTP request that this response is for.</param>
+    /// <param name="instanceId">The ID of the orchestration instance to check.</param>
+    /// <param name="statusCode">The status code.</param>
+    /// <param name="cancellation">The cancellation token.</param>
+    /// <returns>An HTTP response with a Location header and a payload containing instance control URLs.</returns>
+    public static async Task<HttpResponseData> CreateCheckStatusResponseAsync(
+        this DurableTaskClient client,
+        HttpRequestData request,
+        string instanceId,
+        HttpStatusCode statusCode,
+        CancellationToken cancellation = default)
+    {
+        if (client is null)
+        {
+            throw new ArgumentNullException(nameof(client));
+        }
+
+        HttpResponseData response = request.CreateResponse(statusCode);
+        object payload = SetHeadersAndGetPayload(client, request, response, instanceId);
+
+        ObjectSerializer serializer = GetObjectSerializer(response);
+        await serializer.SerializeAsync(response.Body, payload, payload.GetType(), cancellation);
+        return response;
+    }
+
     /// <summary>
     /// Creates an HTTP response that is useful for checking the status of the specified instance.
     /// </summary>
@@ -55,6 +102,17 @@ public static class DurableTaskClientExtensions
             throw new ArgumentNullException(nameof(client));
         }
 
+        HttpResponseData response = request.CreateResponse(statusCode);
+        object payload = SetHeadersAndGetPayload(client, request, response, instanceId);
+
+        ObjectSerializer serializer = GetObjectSerializer(response);
+        serializer.Serialize(response.Body, payload, payload.GetType(), cancellation);
+        return response;
+    }
+
+    private static object SetHeadersAndGetPayload(
+        DurableTaskClient client, HttpRequestData request, HttpResponseData response, string instanceId)
+    {
         static string BuildUrl(string url, params string?[] queryValues)
         {
             bool appended = false;
@@ -79,13 +137,10 @@ public static class DurableTaskClientExtensions
         string formattedInstanceId = Uri.EscapeDataString(instanceId);
         string instanceUrl = $"{baseUrl}/runtime/webhooks/durabletask/instances/{formattedInstanceId}";
         string? commonQueryParameters = GetQueryParams(client);
-
-        HttpResponseData response = request.CreateResponse(statusCode);
         response.Headers.Add("Location", BuildUrl(instanceUrl, commonQueryParameters));
         response.Headers.Add("Content-Type", "application/json");
 
-        ObjectSerializer serializer = GetObjectSerializer(response);
-        var payload = new
+        return new
         {
             id = instanceId,
             purgeHistoryDeleteUri = BuildUrl(instanceUrl, commonQueryParameters),
@@ -93,9 +148,6 @@ public static class DurableTaskClientExtensions
             statusQueryGetUri = BuildUrl(instanceUrl, commonQueryParameters),
             terminatePostUri = BuildUrl($"{instanceUrl}/terminate", "reason={{text}}}", commonQueryParameters),
         };
-
-        serializer.Serialize(response.Body, payload, payload.GetType(), cancellation);
-        return response;
     }
 
     private static ObjectSerializer GetObjectSerializer(HttpResponseData response)
