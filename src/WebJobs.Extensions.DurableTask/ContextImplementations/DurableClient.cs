@@ -1145,7 +1145,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             if (status == null)
             {
-                throw new ArgumentException($"An orchestrastion with the instanceId {instanceId} was not found.");
+                throw new ArgumentException($"An orchestration with the instanceId {instanceId} was not found.");
             }
 
             return restartWithNewInstanceId ? await ((IDurableOrchestrationClient)this).StartNewAsync(orchestratorFunctionName: status.Name, status.Input)
