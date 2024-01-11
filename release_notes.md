@@ -4,6 +4,8 @@
 
 ### New Features
 
+- Add `CreateCheckStatusResponseAsync` APIs. (https://github.com/Azure/azure-functions-durable-extension/pull/2722)
+
 ### Bug Fixes
 
 - Fix issue with isolated entities: custom deserialization was not working because IServices was not passed along (https://github.com/Azure/azure-functions-durable-extension/pull/2686)
