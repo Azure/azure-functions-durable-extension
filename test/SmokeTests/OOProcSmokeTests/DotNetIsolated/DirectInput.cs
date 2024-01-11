@@ -51,18 +51,18 @@ public static class DirectInput
     }
 
     [Function(ActivityName)]
-    public static string Activity([ActivityTrigger] string input, FunctionContext executionContext)
+    public static string Activity([ActivityTrigger] MyInput input, FunctionContext executionContext)
     {
         ILogger logger = executionContext.GetLogger(ActivityName);
         logger.LogInformation("Received input {input}", input);
-        return input;
+        return $"{input.PropA}, {input.PropB}";
     }
 
     private static async Task<string> InputOrchestrationImpl(
         TaskOrchestrationContext context, MyInput input, FunctionContext functionContext)
     {
-        string result = await context.CallActivityAsync<string>(ActivityName) + ", ";
-        result += await context.CallActivityAsync<string>(ActivityName);
+        string result = await context.CallActivityAsync<string>(ActivityName, input) + ", ";
+        result += await context.CallActivityAsync<string>(ActivityName, new MyInput(functionContext.FunctionId, 1, true));
         return result;
     }
 
