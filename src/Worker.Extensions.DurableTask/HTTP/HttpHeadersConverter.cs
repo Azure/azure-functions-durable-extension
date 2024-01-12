@@ -28,7 +28,7 @@ internal class HttpHeadersConverter : JsonConverter<IDictionary<string, StringVa
         var valueList = new List<string>();
         while (reader.Read() && reader.TokenType != JsonTokenType.EndObject)
         {
-            string? propertyName = reader.GetString();
+            string propertyName = reader.GetString()!;
 
             reader.Read();
 
@@ -42,7 +42,7 @@ internal class HttpHeadersConverter : JsonConverter<IDictionary<string, StringVa
             {
                 while (reader.Read() && reader.TokenType != JsonTokenType.EndArray)
                 {
-                    valueList.Add(reader.GetString());
+                    valueList.Add(reader.GetString()!);
                 }
 
                 values = new StringValues(valueList.ToArray());
@@ -62,8 +62,7 @@ internal class HttpHeadersConverter : JsonConverter<IDictionary<string, StringVa
     {
         writer.WriteStartObject();
 
-        var headers = (IDictionary<string, StringValues>)value;
-        foreach (var pair in headers)
+        foreach (KeyValuePair<string, StringValues> pair in value)
         {
             if (pair.Value.Count == 1)
             {

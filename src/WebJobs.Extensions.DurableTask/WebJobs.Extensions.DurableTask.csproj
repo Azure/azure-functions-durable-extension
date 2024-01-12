@@ -6,8 +6,8 @@
     <RootNamespace>Microsoft.Azure.WebJobs.Extensions.DurableTask</RootNamespace>
     <MajorVersion>2</MajorVersion>
     <MinorVersion>13</MinorVersion>
-    <PatchVersion>0</PatchVersion>
-    <Version>$(MajorVersion).$(MinorVersion).$(PatchVersion)</Version>
+    <PatchVersion>1</PatchVersion>
+    <VersionSuffix>$(PackageSuffix)</VersionSuffix>
     <FileVersion>$(MajorVersion).$(MinorVersion).$(PatchVersion)</FileVersion>
     <AssemblyVersion>$(MajorVersion).0.0.0</AssemblyVersion>
     <Company>Microsoft Corporation</Company>
@@ -20,6 +20,14 @@
     <!-- See https://github.com/Azure/azure-functions-durable-extension/issues/1433 -->
     <NoWarn>NU5125;SA0001</NoWarn>
   </PropertyGroup>
+
+  <PropertyGroup Condition="$(VersionSuffix) == ''">
+    <Version>$(MajorVersion).$(MinorVersion).$(PatchVersion)</Version>
+  </PropertyGroup>
+  <PropertyGroup Condition="$(VersionSuffix) != ''">
+    <Version>$(MajorVersion).$(MinorVersion).$(PatchVersion)-$(VersionSuffix)</Version>
+  </PropertyGroup>
+
 
   <!-- NuGet Publishing Metadata -->
   <PropertyGroup>
@@ -105,7 +113,7 @@
 
   <!-- Common dependencies across all targets -->
   <ItemGroup>
-    <PackageReference Include="Microsoft.Azure.DurableTask.Core" Version="2.16.0" />
+    <PackageReference Include="Microsoft.Azure.DurableTask.Core" Version="2.16.1" />
     <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" Version="1.17.0" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers" Version="0.5.*" />
     <!-- Build-time dependencies -->

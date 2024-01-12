@@ -6,6 +6,17 @@ pool:
   demands:
     - ImageOverride -equals MMS2022TLS
 
+variables:
+
+  - name: PackageSuffix
+    # if source branch is not `dev` then we're generating a release based on a feature branch
+    # In that case, we populate the environment variable "PackageSuffix" accordingly
+    ${{ if ne(variables['Build.SourceBranchName'], 'dev') }}:
+      value: 'pr.$(Build.BuildNumber)' # the "pr" section is to denote this code is a candidate to be PR'ed
+    ${{ else }}:
+      value: ''
+
+
 steps:
 
 # Configure all the .NET SDK versions we need
@@ -141,6 +152,24 @@ steps:
     SessionTimeout: '60'
     MaxConcurrency: '50'
     MaxRetryAttempts: '5'
+
+# zip .NET in-proc perf tests
+- task: DotNetCoreCLI@2
+  displayName: 'Zip .NET in-proc perf tests'
+  inputs:
+    command: 'publish'
+    publishWebProjects: false
+    projects: '$(System.DefaultWorkingDirectory)/test/PerfTests/DFPerfTests/**/*.csproj'
+    arguments: '-o $(System.DefaultWorkingDirectory)/test/PerfTests/DFPerfTests/Output'
+    zipAfterPublish: true
+    modifyOutputPath: true
+
+# Move zip'ed .NET in-proc perf tests to the ADO publishing directory
+- task: CopyFiles@2
+  inputs:
+    SourceFolder: '$(System.DefaultWorkingDirectory)/test/PerfTests/DFPerfTests/Output/'
+    Contents: '**'
+    TargetFolder: '$(System.DefaultWorkingDirectory)/azure-functions-durable-extension/'
 
 # Make the nuget packages available for download in the ADO portal UI
 - publish: '$(System.DefaultWorkingDirectory)/azure-functions-durable-extension'

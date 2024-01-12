@@ -58,7 +58,6 @@ public sealed class DurableTaskExtensionStartup : WorkerExtensionStartup
 
         applicationBuilder.Services.Configure<WorkerOptions>(o =>
         {
-            o.InputConverters.RegisterAt<DurableTaskClientConverter>(0);
             o.InputConverters.Register<OrchestrationInputConverter>();
         });
 
