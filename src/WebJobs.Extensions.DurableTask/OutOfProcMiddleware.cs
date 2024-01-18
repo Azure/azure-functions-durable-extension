@@ -269,6 +269,35 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             FunctionName functionName = new FunctionName(entityId.EntityName);
             RegisteredFunctionInfo functionInfo = this.extension.GetEntityInfo(functionName);
 
+            if (entityId.EntityName?.StartsWith("openai::", StringComparison.OrdinalIgnoreCase) ?? false)
+            {
+                try
+                {
+                    await next(); 
+                }
+                catch (Exception hostRuntimeException)
+                {
+                    try
+                    {
+                        await next();
+                    }
+                    catch (Exception hostRuntimeException2)
+                    {
+                        try
+                        {
+                            await next();
+                        }
+                        catch (Exception hostRuntimeException3)
+                        {
+                            var lol = hostRuntimeException3;
+                        }
+
+                    }
+                }
+
+                return;
+            }
+
             void SetErrorResult(FailureDetails failureDetails)
             {
                 // Returns a result with no operation results and no state change,

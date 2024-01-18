@@ -456,14 +456,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     "For more information on extension bundles, see https://docs.microsoft.com/azure/azure-functions/functions-bindings-register#extension-bundles.");
 #endif
             }
-            else
-            {
                 // This is the older middleware implementation that is currently in use for in-process .NET
                 // and the older out-of-proc languages, like Node.js, Python, and PowerShell.
                 this.taskHubWorker.AddActivityDispatcherMiddleware(this.ActivityMiddleware);
                 this.taskHubWorker.AddOrchestrationDispatcherMiddleware(this.EntityMiddleware);
                 this.taskHubWorker.AddOrchestrationDispatcherMiddleware(this.OrchestrationMiddleware);
-            }
 
             // The RPC server needs to be started sometime before any functions can be triggered
             // and this is the latest point in the pipeline available to us.
