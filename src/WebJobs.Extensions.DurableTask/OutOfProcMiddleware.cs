@@ -271,30 +271,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             if (entityId.EntityName?.StartsWith("openai::", StringComparison.OrdinalIgnoreCase) ?? false)
             {
-                try
-                {
-                    await next(); 
-                }
-                catch (Exception hostRuntimeException)
-                {
-                    try
-                    {
-                        await next();
-                    }
-                    catch (Exception hostRuntimeException2)
-                    {
-                        try
-                        {
-                            await next();
-                        }
-                        catch (Exception hostRuntimeException3)
-                        {
-                            var lol = hostRuntimeException3;
-                        }
-
-                    }
-                }
-
+                await next();
                 return;
             }
 
