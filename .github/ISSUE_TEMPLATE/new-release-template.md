@@ -16,6 +16,11 @@ _Due: <2-3-business-days-before-release>_
 - [ ] Publish DTFx packages to the [ADO feed](https://dev.azure.com/durabletaskframework/Durable%20Task%20Framework%20CI/_artifacts/feed/durabletask) for testing.
 - [ ] Keep branch `azure-storage-v12` updated with branch `main`.
 
+** Prep `durabletask-dotnet` Release: (assigned to: )**
+_Due: <2-3-business-days-before-release>_
+- [] Check for changes in [durabletask-dotnet](https://github.com/microsoft/durabletask-dotnet) since the last extension release. If the upcoming extension releases has a dependency on them, release the dependencies first. In particular, check for updates to `Microsoft.DurableTask.Grpc`.
+- [] If `durabletask-dotnet` needs to be released, follow [these](https://github.com/microsoft/durabletask-dotnet/blob/main/doc/release_process.md) instructions
+
 **Prep Release (assigned to: )**
 _Due: <2-business-days-before-release>_
 - [ ] Update Durable Functions references (Analyzer? DTFx?) and check current version.
@@ -51,3 +56,9 @@ _Due: <release-deadline>_
 - [ ] Publish release notes from the pre-reset `release_notes.md.`
 - [ ] Post announcement on Twitter (Chris).
 - [ ] Increment Durable Functions patch version.
+
+**(When necessary) .NET isolated worker release  (assigned to: )**
+_ If there's new features for C# isolated, the .NET isolated worker *extension* needs to be released._
+- [ ] Update the reference to the DF Extension on [here](https://github.com/Azure/azure-functions-durable-extension/blob/dev/src/Worker.Extensions.DurableTask/AssemblyInfo.cs)
+- [ ] Rev the worker extension package version [here](https://github.com/Azure/azure-functions-durable-extension/blob/dev/src/Worker.Extensions.DurableTask/Worker.Extensions.DurableTask.csproj)
+- [ ] Run the [Release .NET Isolated Worker Extension](https://durabletaskframework.visualstudio.com/Durable%20Task%20Framework%20CI/_build?definitionId=30) pipeline
