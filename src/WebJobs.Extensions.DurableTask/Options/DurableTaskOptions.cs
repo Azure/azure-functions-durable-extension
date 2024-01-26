@@ -302,7 +302,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             traceHelper.TraceConfiguration(this.HubName, configurationJson.ToString(Formatting.None));
         }
 
-        internal void Validate(INameResolver environmentVariableResolver, EndToEndTraceHelper traceHelper)
+        internal void Validate(INameResolver environmentVariableResolver)
         {
             if (string.IsNullOrEmpty(this.HubName))
             {
