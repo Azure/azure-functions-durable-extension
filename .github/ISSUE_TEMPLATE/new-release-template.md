@@ -30,7 +30,7 @@ _Due: <2-business-days-before-release>_
 - [ ] Add the Durable Functions package to the [ADO test feed](https://dev.azure.com/durabletaskframework/Durable%20Task%20Framework%20CI/_artifacts/feed/durabletask-test).
 - [ ] Check for package size, make sure it's not surprisingly heavier than a previous release.
 - [ ] Update Worker.Extensions.Durabletask references and check current veresion.
-- [ ] Run pipeline [Release .Net Isolated Worker Extension] to build package and add it to ADO for testing.
+- [ ] Run pipeline [Release .Net Isolated Worker Extension](https://durabletaskframework.visualstudio.com/Durable%20Task%20Framework%20CI/_build?definitionId=30) to build package and add it to ADO for testing.
 - [ ] Merge (**choose create a merge commit, NOT squash merge**) dev into main. Person performing validation must approve PR.
 - [ ] Keep branch `v3.x` updated with branch `dev`. Do not merge PRs that are specific to Durable Functions v2.
 
