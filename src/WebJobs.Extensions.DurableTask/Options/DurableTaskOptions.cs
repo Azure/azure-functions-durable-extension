@@ -321,9 +321,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 !string.Equals(runtimeLanguage, "dotnet", StringComparison.OrdinalIgnoreCase))
             {
                 throw new InvalidOperationException(
-                    "Durable Functions does not work with ExtendedSessionsEnabled = true for non-.NET languages. " +
-                    "This value is being set to false instead. " +
-                    "See https://docs.microsoft.com/en-us/azure/azure-functions/durable/durable-functions-perf-and-scale#extended-sessions for more details.");
+                    "Durable Functions with extendedSessionsEnabled set to 'true' is only supported when using the in-process .NET worker. Please remove the setting or change it to 'false'." +
+                    "See https://docs.microsoft.com/azure/azure-functions/durable/durable-functions-perf-and-scale#extended-sessions for more details.");
             }
 
             this.Notifications.Validate();
