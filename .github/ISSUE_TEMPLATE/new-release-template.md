@@ -24,12 +24,12 @@ _Due: <2-3-business-days-before-release>_
 
 **Prep Release (assigned to: )**
 _Due: <2-business-days-before-release>_
-- [ ] Update Durable Functions references (Analyzer? DTFx?) and check current version.
+- [ ] Update DTFx packages and Analyzer version at WebJobs.Extensions.Durabletask.csproj and check WebJobs.Extensions.Durabletask version.
 - [ ] Locally, run `dotnet list package --vulnerable` to ensure the release is not affected by any vulnerable dependencies.
 - [ ] Review the [Dependabot vulnerability alerts](https://github.com/Azure/azure-functions-durable-extension/security/dependabot) and address them. Note: code samples / test projects _may_ be excluded from this check.
 - [ ] Add the Durable Functions package to the [ADO test feed](https://dev.azure.com/durabletaskframework/Durable%20Task%20Framework%20CI/_artifacts/feed/durabletask-test).
 - [ ] Check for package size, make sure it's not surprisingly heavier than a previous release.
-- [ ] Update Worker.Extensions.Durabletask references and check current version.
+- [ ] Update .NET Isolated SDK version at Worker.Extensions.Durabletask.csproj and check Worker.Extensions.Durabletask version.
 - [ ] Run pipeline [Release .Net Isolated Worker Extension](https://durabletaskframework.visualstudio.com/Durable%20Task%20Framework%20CI/_build?definitionId=30) to create the new package and add it to the ADO feed for testing.
 - [ ] Merge (**choose create a merge commit, NOT squash merge**) dev into main. Person performing validation must approve PR.
 - [ ] Keep branch `v3.x` updated with branch `dev`. Do not merge PRs that are specific to Durable Functions v2.
