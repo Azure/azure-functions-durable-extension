@@ -46,6 +46,7 @@ static class All
         yield return new MultipleLockedTransfers(2);
         yield return new MultipleLockedTransfers(5);
         yield return new MultipleLockedTransfers(100);
+        yield return new FaultyCriticalSection();
         yield return new LargeEntity();
         yield return new CallFaultyEntity();
         yield return new CallFaultyEntityBatches();
