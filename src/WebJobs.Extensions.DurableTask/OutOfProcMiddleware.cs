@@ -214,8 +214,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         isReplay: false);
                 }
             }
+            else if (context.TryGetOrchestrationErrorDetails(out string details))
+            {
+                // the function failed because the orchestrator failed.
+
+                orchestratorResult = context.GetResult();
+
+                this.TraceHelper.FunctionFailed(
+                     this.Options.HubName,
+                     functionName.Name,
+                     instance.InstanceId,
+                     details,
+                     FunctionType.Orchestrator,
+                     isReplay: false);
+
+                await this.LifeCycleNotificationHelper.OrchestratorFailedAsync(
+                    this.Options.HubName,
+                    functionName.Name,
+                    instance.InstanceId,
+                    details,
+                    isReplay: false);
+            }
             else
             {
+                // the function failed for some other reason
+
                 string exceptionDetails = functionResult.Exception.ToString();
 
                 this.TraceHelper.FunctionFailed(
