@@ -99,7 +99,7 @@ class EntityQueries2 : Test
             },
             result =>
             {
-                Assert.Equal(8, result.Count()); // TODO this is provider-specific
+                Assert.Equal(context.BackendSupportsImplicitEntityDeletion ? 4 : 8, result.Count());
             }),
 
 
@@ -119,7 +119,7 @@ class EntityQueries2 : Test
             },
             result =>
             {
-                Assert.Equal(8, result.Count()); // TODO this is provider-specific
+                Assert.Equal(context.BackendSupportsImplicitEntityDeletion ? 4 : 8, result.Count()); // TODO this is provider-specific
             }),
         };
 
@@ -135,13 +135,12 @@ class EntityQueries2 : Test
         }
 
         // ----- remove the 4 deleted entities whose metadata still lingers in Azure Storage provider
-        // TODO this is provider-specific
 
         context.Logger.LogInformation("starting storage cleaning");
 
         var cleaningResponse = await context.Client.Entities.CleanEntityStorageAsync();
 
-        Assert.Equal(4, cleaningResponse.EmptyEntitiesRemoved);
+        Assert.Equal(context.BackendSupportsImplicitEntityDeletion ? 0 : 4, cleaningResponse.EmptyEntitiesRemoved);
         Assert.Equal(0, cleaningResponse.OrphanedLocksReleased);
     }
 }

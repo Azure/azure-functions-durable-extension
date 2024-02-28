@@ -31,4 +31,6 @@ internal class TestContext
     public ILogger Logger { get; }
 
     public CancellationToken CancellationToken { get; set; }
+
+    public bool BackendSupportsImplicitEntityDeletion { get; set; } = false;  // false for Azure Storage, true for Netherite and MSSQL
 }
