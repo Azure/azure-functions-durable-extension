@@ -57,6 +57,8 @@ static class All
         yield return new InvalidEntityId(InvalidEntityId.Location.ClientSignal);
         yield return new InvalidEntityId(InvalidEntityId.Location.OrchestrationCall);
         yield return new InvalidEntityId(InvalidEntityId.Location.OrchestrationSignal);
+        yield return new CallFaultyActivity();
+        yield return new CallFaultySuborchestration();
     }
 
 }
