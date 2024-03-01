@@ -23,10 +23,19 @@ class CallFaultySuborchestration : Test
 {
     // this is not an entity test... but it's a good place to put this test
 
+    private readonly bool nested;
+
+    public CallFaultySuborchestration(bool nested)
+    {
+        this.nested = nested;
+    }
+
+    public override string Name => $"{base.Name}.{(this.nested ? "Nested" : "NotNested")}";
+
     public override async Task RunAsync(TestContext context)
     {
         string orchestrationName = nameof(CallFaultySuborchestrationOrchestration);
-        string instanceId = await context.Client.ScheduleNewOrchestrationInstanceAsync(orchestrationName);
+        string instanceId = await context.Client.ScheduleNewOrchestrationInstanceAsync(orchestrationName, this.nested);
         var metadata = await context.Client.WaitForInstanceCompletionAsync(instanceId, true);
 
         Assert.Equal(OrchestrationRuntimeStatus.Completed, metadata.RuntimeStatus);
@@ -46,10 +55,31 @@ class CallFaultySuborchestrationOrchestration
     [Function(nameof(FaultySuborchestration))]
     public void FaultySuborchestration([OrchestrationTrigger] TaskOrchestrationContext context)
     {
-        this.MethodThatThrows();
+        bool nested = context.GetInput<bool>();
+
+        if (!nested)
+        {
+            this.MethodThatThrowsException();
+        }
+        else
+        {
+            this.MethodThatThrowsNestedException();
+        }
     }
 
-    void MethodThatThrows()
+    void MethodThatThrowsNestedException()
+    {
+        try
+        {
+            this.MethodThatThrowsException();
+        }
+        catch (Exception e)
+        {
+            throw new Exception("KABOOOOOM", e);
+        }
+    }
+
+    void MethodThatThrowsException()
     {
         throw new Exception("KABOOM");
     }
@@ -57,16 +87,31 @@ class CallFaultySuborchestrationOrchestration
     [Function(nameof(CallFaultySuborchestrationOrchestration))]
     public async Task<string> RunAsync([OrchestrationTrigger] TaskOrchestrationContext context)
     {
+        bool nested = context.GetInput<bool>();
+
         try
         {
-            await context.CallSubOrchestratorAsync(nameof(FaultySuborchestration));
+            await context.CallSubOrchestratorAsync(nameof(FaultySuborchestration), nested);
             throw new Exception("expected suborchestrator to throw exception, but none was thrown");
         }
         catch (TaskFailedException taskFailedException)
         {
             Assert.NotNull(taskFailedException.FailureDetails);
-            Assert.Equal("KABOOM", taskFailedException.FailureDetails.ErrorMessage);
-            Assert.Contains(nameof(MethodThatThrows), taskFailedException.FailureDetails.StackTrace);
+
+            if (!nested)
+            {
+                Assert.Equal("KABOOM", taskFailedException.FailureDetails.ErrorMessage);
+                Assert.Contains(nameof(MethodThatThrowsException), taskFailedException.FailureDetails.StackTrace);
+            }
+            else
+            {
+                Assert.Equal("KABOOOOOM", taskFailedException.FailureDetails.ErrorMessage);
+                Assert.Contains(nameof(MethodThatThrowsNestedException), taskFailedException.FailureDetails.StackTrace);
+
+                Assert.NotNull(taskFailedException.FailureDetails.InnerFailure);
+                Assert.Equal("KABOOM", taskFailedException.FailureDetails.InnerFailure!.ErrorMessage);
+                Assert.Contains(nameof(MethodThatThrowsException), taskFailedException.FailureDetails.InnerFailure.StackTrace);
+            }
         }
         catch (Exception e)
         {

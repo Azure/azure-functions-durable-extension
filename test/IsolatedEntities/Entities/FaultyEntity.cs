@@ -116,6 +116,18 @@ namespace IsolatedEntities
                         ThrowTestException();
                         return default;
                     }
+                case "ThrowNested":
+                    {
+                        try
+                        { 
+                            ThrowTestException();
+                        }
+                        catch (Exception e)
+                        {
+                            throw new Exception("KABOOOOOM", e);
+                        }
+                        return default;
+                    }
                 case "Get":
                     {
                         return GetOrCreate().Value;

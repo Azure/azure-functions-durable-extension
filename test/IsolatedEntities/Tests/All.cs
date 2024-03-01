@@ -57,8 +57,14 @@ static class All
         yield return new InvalidEntityId(InvalidEntityId.Location.ClientSignal);
         yield return new InvalidEntityId(InvalidEntityId.Location.OrchestrationCall);
         yield return new InvalidEntityId(InvalidEntityId.Location.OrchestrationSignal);
-        yield return new CallFaultyActivity();
-        yield return new CallFaultySuborchestration();
+        yield return new CallFaultyActivity(nested: false);
+
+        // requires https://github.com/Azure/azure-functions-durable-extension/pull/2748
+        yield return new CallFaultySuborchestration(nested: false); 
+
+        // these tests require us to implement better propagation of FailureDetails for activities and orchestrations
+        // yield return new CallFaultyActivity(nested: true);
+        //yield return new CallFaultySuborchestration(nested: true);
     }
 
 }

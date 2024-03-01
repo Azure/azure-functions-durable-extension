@@ -48,19 +48,42 @@ class CallFaultyEntityOrchestration
         // read entity id from input
         var entityId = context.GetInput<EntityInstanceId>();
 
-        async Task ExpectOperationExceptionAsync(Task t, EntityInstanceId entityId, string operationName, string errorText)
+        async Task ExpectOperationExceptionAsync(Task t, EntityInstanceId entityId, string operationName,
+                            string errorMessage, string? errorMethod = null, string? innerErrorMessage = null, string innerErrorMethod = "")
         {
             try
             {
                 await t;
                 throw new Exception("expected operation exception, but none was thrown");
             }
-            catch(EntityOperationFailedException entityException)
+            catch (EntityOperationFailedException entityException)
             {
                 Assert.Equal(operationName, entityException.OperationName);
                 Assert.Equal(entityId, entityException.EntityId);
-                //Assert.Contains(errorText, entityException.Message);  // requires microsoft/durabletask-dotnet#203
+                Assert.Contains(errorMessage, entityException.Message);
+
                 Assert.NotNull(entityException.FailureDetails);
+                Assert.Equal(errorMessage, entityException.FailureDetails.ErrorMessage);
+
+                if (errorMethod != null)
+                {
+                    Assert.Contains(errorMethod, entityException.FailureDetails.StackTrace);
+                }            
+
+                if (innerErrorMessage != null)
+                {
+                    Assert.NotNull(entityException.FailureDetails.InnerFailure);
+                    Assert.Equal(innerErrorMessage, entityException.FailureDetails.InnerFailure!.ErrorMessage);
+
+                    if (innerErrorMethod != null)
+                    {
+                        Assert.Contains(innerErrorMethod, entityException.FailureDetails.InnerFailure.StackTrace);
+                    }
+                }
+                else
+                {
+                    Assert.Null(entityException.FailureDetails.InnerFailure);
+                }
             }
             catch (Exception e)
             {
@@ -73,12 +96,29 @@ class CallFaultyEntityOrchestration
             Assert.False(await context.Entities.CallEntityAsync<bool>(entityId, "Exists"));
 
             await ExpectOperationExceptionAsync(
+                context.Entities.CallEntityAsync(entityId, "Throw"),
+                entityId,
+                "Throw",
+                "KABOOM",
+                "ThrowTestException");
+
+            await ExpectOperationExceptionAsync(
+                context.Entities.CallEntityAsync(entityId, "ThrowNested"),
+                entityId,
+                "ThrowNested",
+                "KABOOOOOM",
+                "FaultyEntity.RunAsync",
+                "KABOOM",
+                "ThrowTestException");
+
+            await ExpectOperationExceptionAsync(
                 context.Entities.CallEntityAsync(entityId, "SetToUnserializable"),
                 entityId,
                 "SetToUnserializable",
-                "problematic object: is not serializable");
+                "problematic object: is not serializable",
+                "ProblematicObjectJsonConverter.Write");
 
-            // since the operation failed, the entity state is unchanged, meaning the entity still does not exist
+            // since the operations failed, the entity state is unchanged, meaning the entity still does not exist
             Assert.False(await context.Entities.CallEntityAsync<bool>(entityId, "Exists"));
 
             await context.Entities.CallEntityAsync(entityId, "SetToUndeserializable");
@@ -89,7 +129,8 @@ class CallFaultyEntityOrchestration
                context.Entities.CallEntityAsync<int>(entityId, "Get"),
                entityId,
                "Get",
-               "problematic object: is not deserializable");
+               "problematic object: is not deserializable",
+               "ProblematicObjectJsonConverter.Read");
 
             await context.Entities.CallEntityAsync(entityId, "DeleteWithoutReading");
 
@@ -103,7 +144,9 @@ class CallFaultyEntityOrchestration
                context.Entities.CallEntityAsync(entityId, "SetThenThrow", 333),
                entityId,
                "SetThenThrow",
-               "KABOOM");
+               "KABOOM",
+               "FaultyEntity.RunAsync");
+
  
             // value should be unchanged
             Assert.Equal(3, await context.Entities.CallEntityAsync<int>(entityId, "Get"));
@@ -112,7 +155,8 @@ class CallFaultyEntityOrchestration
               context.Entities.CallEntityAsync(entityId, "DeleteThenThrow"),
               entityId,
               "DeleteThenThrow",
-              "KABOOM");
+              "KABOOM",
+               "FaultyEntity.RunAsync");
 
             // value should be unchanged
             Assert.Equal(3, await context.Entities.CallEntityAsync<int>(entityId, "Get"));
@@ -126,7 +170,8 @@ class CallFaultyEntityOrchestration
               context.Entities.CallEntityAsync(entityId, "SetThenThrow", 333),
               entityId,
               "SetThenThrow",
-              "KABOOM");
+              "KABOOM",
+               "FaultyEntity.RunAsync");
 
             // must have rolled back to non-existing state
             Assert.False(await context.Entities.CallEntityAsync<bool>(entityId, "Exists"));
