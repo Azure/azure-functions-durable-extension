@@ -374,15 +374,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     functionName.Name,
                     batchRequest.InstanceId,
                     functionResult.Exception.ToString(),
-                    FunctionType.Orchestrator,
+                    FunctionType.Entity,
                     isReplay: false);
 
-                SetErrorResult(new FailureDetails(
-                    errorType: "FunctionInvocationFailed",
-                    errorMessage: $"Invocation of function '{functionName}' failed with an exception.",
-                    stackTrace: null,
-                    innerFailure: new FailureDetails(functionResult.Exception),
-                    isNonRetriable: true));
+                if (context.Result != null)
+                {
+                    // Send the results of the entity batch execution back to the DTFx dispatch pipeline.
+                    // This is important so we can propagate the individual failure details of each failed operation back to the
+                    // calling orchestrator. Also, even though the function execution was reported as a failure,
+                    // it may not be a "total failure", i.e. some of the operations in the batch may have succeeded and updated
+                    // the entity state.
+                    dispatchContext.SetProperty(context.Result);
+                }
+                else
+                {
+                    SetErrorResult(new FailureDetails(
+                        errorType: "FunctionInvocationFailed",
+                        errorMessage: $"Invocation of function '{functionName}' failed with an exception.",
+                        stackTrace: null,
+                        innerFailure: new FailureDetails(functionResult.Exception),
+                        isNonRetriable: true));
+                }
 
                 return;
             }
@@ -399,8 +411,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                        FunctionType.Entity,
                        isReplay: false);
 
-            // Send the result of the orchestrator function to the DTFx dispatch pipeline.
-            // This allows us to bypass the default, in-process execution and process the given results immediately.
+            // Send the results of the entity batch execution back to the DTFx dispatch pipeline.
             dispatchContext.SetProperty(batchResult);
         }
 
