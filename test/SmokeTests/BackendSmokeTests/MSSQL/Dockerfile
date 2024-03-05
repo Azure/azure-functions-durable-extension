@@ -3,7 +3,7 @@
 
 FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build-env
 
-# Build the app
+# Build the DF MSSQL app
 COPY . /root
 RUN cd /root/test/SmokeTests/BackendSmokeTests/MSSQL && \
     mkdir -p /home/site/wwwroot && \
