@@ -1,4 +1,6 @@
-﻿# Installing PowerShell: https://docs.microsoft.com/powershell/scripting/install/installing-powershell
+﻿$ErrorActionPreference = "Stop"
+
+# Installing PowerShell: https://docs.microsoft.com/powershell/scripting/install/installing-powershell
 
 param(
 	[Parameter(Mandatory=$true)]
