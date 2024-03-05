@@ -51,7 +51,7 @@ if ($NoSetup -eq $false) {
 
 		# Start the SQL Server docker container with the specified edition
 		Write-Host "Starting SQL Server $tag $sqlpid docker container on port $port with additional run flags $additionalRunFlags" -ForegroundColor DarkYellow
-		docker run --name mssqlserver -e 'ACCEPT_EULA=Y' -e "MSSQL_SA_PASSWORD=$pw" -e "MSSQL_PID=$sqlpid" -p ${port}:1433 -d mcr.microsoft.com/mssql/server:$tag
+		docker run --name mssql-server -e 'ACCEPT_EULA=Y' -e "MSSQL_SA_PASSWORD=$pw" -e "MSSQL_PID=$sqlpid" -p ${port}:1433 -d mcr.microsoft.com/mssql/server:$tag
 		Exit-OnError
 
 		# Wait for SQL Server to be ready
@@ -61,12 +61,12 @@ if ($NoSetup -eq $false) {
 
  		# Get SQL Server IP Address - used to create SQLDB_Connection
 		Write-Host "Getting IP Address..." -ForegroundColor Yellow
-	 	$serverIpAddress = docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' mssqlserver
+	 	$serverIpAddress = docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' mssql-server
 		Exit-OnError
 
 	 	# Create the database with strict binary collation
 		Write-Host "Creating '$dbname' database with '$collation' collation" -ForegroundColor DarkYellow
-		docker exec -d mssqlserver /opt/mssql-tools/bin/sqlcmd -S . -U sa -P "$pw" -Q "CREATE DATABASE [$dbname] COLLATE $collation"
+		docker exec -d mssql-server /opt/mssql-tools/bin/sqlcmd -S . -U sa -P "$pw" -Q "CREATE DATABASE [$dbname] COLLATE $collation"
 		Exit-OnError
 
   		# Wait for database to be ready
