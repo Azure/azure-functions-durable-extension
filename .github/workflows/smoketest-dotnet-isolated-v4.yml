@@ -1,6 +1,7 @@
 name: Smoke Test - .NET Isolated on Functions V4
 
 on:
+  workflow_dispatch:
   push:
     branches: [ main, dev ]
     paths:
