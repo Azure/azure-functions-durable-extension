@@ -51,7 +51,7 @@ if ($NoSetup -eq $false) {
 
 		# Start the SQL Server docker container with the specified edition
 		Write-Host "Starting SQL Server $tag $sqlpid docker container on port $port with additional run flags $additionalRunFlags" -ForegroundColor DarkYellow
-		docker run $additinalRunFlags --name mydocker -e 'ACCEPT_EULA=Y' -e "MSSQL_SA_PASSWORD=$pw" -e "MSSQL_PID=$sqlpid" -p ${port}:1433 -d mcr.microsoft.com/mssql/server:$tag
+		docker run --name mydocker -e 'ACCEPT_EULA=Y' -e "MSSQL_SA_PASSWORD=$pw" -e "MSSQL_PID=$sqlpid" -p ${port}:1433 -d mcr.microsoft.com/mssql/server:$tag
 		Exit-OnError
 
 		# Wait for SQL Server to be ready
