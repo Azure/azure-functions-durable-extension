@@ -1,5 +1,4 @@
-﻿# Installing PowerShell: https://docs.microsoft.com/powershell/scripting/install/installing-powershell
-
+﻿
 param(
 	[Parameter(Mandatory=$true)]
 	[string]$DockerfilePath,
@@ -10,7 +9,6 @@ param(
 	[switch]$NoSetup=$false,
 	[switch]$NoValidation=$false,
 	[int]$Sleep=30,
- 	[string]$additinalRunFlags="",
   	[switch]$SetupSQLServer=$false,
   	[string]$pw="$env:SA_PASSWORD",
     	[string]$sqlpid="Express",
@@ -20,6 +18,13 @@ param(
     	[string]$collation="Latin1_General_100_BIN2_UTF8"
 )
 
+function Exit-OnError() {
+	# There appears to be a known problem in GitHub Action's `pwsh` shell preventing it from failing fast on an error:
+	# https://github.com/actions/runner-images/issues/6668#issuecomment-1364540817
+	# Therefore, we manually check if there was an error an fail if so.
+	if (!$LASTEXITCODE.Equals(0)) {exit $LASTEXITCODE}
+}
+
 $ErrorActionPreference = "Stop"
 $AzuriteVersion = "3.26.0"
 
@@ -27,37 +32,46 @@ if ($NoSetup -eq $false) {
 	# Build the docker image first, since that's the most critical step
 	Write-Host "Building sample app Docker container from '$DockerfilePath'..." -ForegroundColor Yellow
 	docker build -f $DockerfilePath -t $ImageName --progress plain $PSScriptRoot/../../
+	Exit-OnError
 
 	# Next, download and start the Azurite emulator Docker image
 	Write-Host "Pulling down the mcr.microsoft.com/azure-storage/azurite:$AzuriteVersion image..." -ForegroundColor Yellow
 	docker pull "mcr.microsoft.com/azure-storage/azurite:${AzuriteVersion}"
+	Exit-OnError
 
 	Write-Host "Starting Azurite storage emulator using default ports..." -ForegroundColor Yellow
 	docker run --name 'azurite' -p 10000:10000 -p 10001:10001 -p 10002:10002 -d "mcr.microsoft.com/azure-storage/azurite:${AzuriteVersion}"
+	Exit-OnError
 
  	if ($SetupSQLServer -eq $true) {
 		Write-Host "Pulling down the mcr.microsoft.com/mssql/server:$tag image..."
 		docker pull mcr.microsoft.com/mssql/server:$tag
-		
+		Exit-OnError
+
 		# Start the SQL Server docker container with the specified edition
 		Write-Host "Starting SQL Server $tag $sqlpid docker container on port $port" -ForegroundColor DarkYellow
-		docker run $additinalRunFlags --name mssql-server -e 'ACCEPT_EULA=Y' -e "MSSQL_SA_PASSWORD=$pw" -e "MSSQL_PID=$sqlpid" -p ${port}:1433 -d mcr.microsoft.com/mssql/server:$tag
-		
+		docker run --name mssql-server -e 'ACCEPT_EULA=Y' -e "MSSQL_SA_PASSWORD=$pw" -e "MSSQL_PID=$sqlpid" -p ${port}:1433 -d mcr.microsoft.com/mssql/server:$tag
+		Exit-OnError
+
 		# Wait for SQL Server to be ready
 		Write-Host "Waiting for SQL Server to be ready..." -ForegroundColor Yellow
 		Start-Sleep -Seconds 30  # Adjust the sleep duration based on your SQL Server container startup time
+		Exit-OnError
 
  		# Get SQL Server IP Address - used to create SQLDB_Connection
 		Write-Host "Getting IP Address..." -ForegroundColor Yellow
 	 	$serverIpAddress = docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' mssql-server
-	
+		Exit-OnError
+
 	 	# Create the database with strict binary collation
 		Write-Host "Creating '$dbname' database with '$collation' collation" -ForegroundColor DarkYellow
 		docker exec -d mssql-server /opt/mssql-tools/bin/sqlcmd -S . -U sa -P "$pw" -Q "CREATE DATABASE [$dbname] COLLATE $collation"
+		Exit-OnError
 
   		# Wait for database to be ready
 		Write-Host "Waiting for database to be ready..." -ForegroundColor Yellow
 		Start-Sleep -Seconds 30  # Adjust the sleep duration based on your database container startup time
+		Exit-OnError
 
   		# Finally, start up the application container, connecting to the SQL Server container
 		Write-Host "Starting the $ContainerName application container" -ForegroundColor Yellow
@@ -66,6 +80,7 @@ if ($NoSetup -eq $false) {
 			--env 'AzureWebJobsStorage=UseDevelopmentStorage=true;DevelopmentStorageProxyUri=http://host.docker.internal' `
 			--env 'WEBSITE_HOSTNAME=localhost:8080' `
 			$ImageName
+		Exit-OnError
    	}
     	else {
 		Write-Host "Starting $ContainerName application container" -ForegroundColor Yellow
@@ -74,6 +89,7 @@ if ($NoSetup -eq $false) {
 			--env 'WEBSITE_HOSTNAME=localhost:8080' `
 			$ImageName
      	}
+		Exit-OnError
 }
 
 if ($sleep -gt  0) {
@@ -84,12 +100,14 @@ if ($sleep -gt  0) {
 
 # Check to see what containers are running
 docker ps
+Exit-OnError
 
 try {
 	# Make sure the Functions runtime is up and running
 	$pingUrl = "http://localhost:8080/admin/host/ping"
 	Write-Host "Pinging app at $pingUrl to ensure the host is healthy" -ForegroundColor Yellow
 	Invoke-RestMethod -Method Post -Uri "http://localhost:8080/admin/host/ping"
+	Exit-OnError
 
 	if ($NoValidation -eq $false) {
 		# Note that any HTTP protocol errors (e.g. HTTP 4xx or 5xx) will cause an immediate failure
