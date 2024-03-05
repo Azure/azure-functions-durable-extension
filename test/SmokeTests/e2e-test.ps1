@@ -7,8 +7,7 @@ param(
 	[string]$DockerfilePath,
 	[Parameter(Mandatory=$true)]
 	[string]$HttpStartPath,
-	[parameter(Mandatory=$false)]
-	[string]$ImageName="dfapp",
+	[parameter(Mandatory=$false)][string]$ImageName="dfapp",
 	[string]$ContainerName="app",
 	[switch]$NoSetup=$false,
 	[switch]$NoValidation=$false,
