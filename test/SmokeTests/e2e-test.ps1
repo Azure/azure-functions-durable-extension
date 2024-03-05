@@ -20,7 +20,7 @@ param(
 )
 
 function Exit-OnError() {
-	# There appears to be a known problem in GitHub Action's `pwsh`shell preventing it from failing fast on an error:
+	# There appears to be a known problem in GitHub Action's `pwsh` shell preventing it from failing fast on an error:
 	# https://github.com/actions/runner-images/issues/6668#issuecomment-1364540817
 	# Therefore, we manually check if there was an error an fail if so.
 	if (!$LASTEXITCODE.Equals(0)) {exit $LASTEXITCODE}
@@ -118,7 +118,7 @@ try {
 		$result = Invoke-RestMethod -Method Post -Uri $startOrchestrationUri
 		Write-Host "Started orchestration with instance ID '$($result.id)'!" -ForegroundColor Yellow
 		Write-Host "Waiting for orchestration to complete..." -ForegroundColor Yellow
-		
+
 		$retryCount = 0
 		$success = $false
 		$statusUrl = $result.statusQueryGetUri
