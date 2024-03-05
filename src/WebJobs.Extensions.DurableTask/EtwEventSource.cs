@@ -7,7 +7,7 @@ using System.Diagnostics.Tracing;
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     /// <summary>
-    /// ETWW Event Provider for the WebJobs.Extensions.DurableTask extension.
+    /// ETW Event Provider for the WebJobs.Extensions.DurableTask extension.
     /// </summary>
     [EventSource(Name = "WebJobs-Extensions-DurableTask")]
     internal sealed class EtwEventSource : EventSource
