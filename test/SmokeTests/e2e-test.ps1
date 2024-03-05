@@ -9,7 +9,6 @@ param(
 	[switch]$NoSetup=$false,
 	[switch]$NoValidation=$false,
 	[int]$Sleep=30,
- 	[string]$additinalRunFlags="",
   	[switch]$SetupSQLServer=$false,
   	[string]$pw="$env:SA_PASSWORD",
     	[string]$sqlpid="Express",
@@ -50,7 +49,7 @@ if ($NoSetup -eq $false) {
 		Exit-OnError
 
 		# Start the SQL Server docker container with the specified edition
-		Write-Host "Starting SQL Server $tag $sqlpid docker container on port $port with additional run flags $additionalRunFlags" -ForegroundColor DarkYellow
+		Write-Host "Starting SQL Server $tag $sqlpid docker container on port $port" -ForegroundColor DarkYellow
 		docker run --name mssql-server -e 'ACCEPT_EULA=Y' -e "MSSQL_SA_PASSWORD=$pw" -e "MSSQL_PID=$sqlpid" -p ${port}:1433 -d mcr.microsoft.com/mssql/server:$tag
 		Exit-OnError
 
