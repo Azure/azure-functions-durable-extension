@@ -1,13 +1,10 @@
-﻿$ErrorActionPreference = "Stop"
-
-# Installing PowerShell: https://docs.microsoft.com/powershell/scripting/install/installing-powershell
-
+﻿
 param(
 	[Parameter(Mandatory=$true)]
 	[string]$DockerfilePath,
 	[Parameter(Mandatory=$true)]
 	[string]$HttpStartPath,
-	[parameter(Mandatory=$false)][string]$ImageName="dfapp",
+	[string]$ImageName="dfapp",
 	[string]$ContainerName="app",
 	[switch]$NoSetup=$false,
 	[switch]$NoValidation=$false,
