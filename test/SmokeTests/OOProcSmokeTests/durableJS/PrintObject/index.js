@@ -10,5 +10,5 @@
  */
 
 module.exports = async function (context) {
-    return JSON.stringify(context.bindings.cities);
+    return JSON.stringify(context.bindings.obj);
 };
