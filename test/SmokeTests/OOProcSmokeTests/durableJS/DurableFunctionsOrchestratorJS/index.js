@@ -20,7 +20,7 @@ module.exports = df.orchestrator(function* (context) {
     outputs.push(yield context.df.callActivity("Hello", "Seattle"));
     outputs.push(yield context.df.callActivity("Hello", "London"));
     outputs.push(yield context.df.callActivity("Hello", "123"));
-    outputs.push(yield context.df.callActivity("Hello", ["Dubai", "New York", "Vancouver"]));
+    outputs.push(yield context.df.callActivity("PrintArray", ["Dubai", "New York", "Vancouver"]));
     outputs.push(yield context.df.callActivity("PrintObject", city));
 
     return outputs;
