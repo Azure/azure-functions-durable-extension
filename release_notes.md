@@ -10,6 +10,7 @@
 
 - Fix issue with isolated entities: custom deserialization was not working because IServices was not passed along (https://github.com/Azure/azure-functions-durable-extension/pull/2686)
 - Fix issue with `string` activity input having extra quotes (https://github.com/Azure/azure-functions-durable-extension/pull/2708)
+- Fix issue with out-of-proc entity operation errors: success/failure details of individual operations in a batch was not processed correctly (https://github.com/Azure/azure-functions-durable-extension/pull/2752)
 
 ### Breaking Changes
 
