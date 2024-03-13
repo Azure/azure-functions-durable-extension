@@ -12,11 +12,23 @@ import json
 import azure.functions as func
 import azure.durable_functions as df
 
+class City:
+  def __init__(self, country, name):
+    self.country = country
+    self.name = name
 
 def orchestrator_function(context: df.DurableOrchestrationContext):
     result1 = yield context.call_activity('Hello', "Tokyo")
     result2 = yield context.call_activity('Hello', "Seattle")
     result3 = yield context.call_activity('Hello', "London")
-    return [result1, result2, result3]
+    result4 = yield context.call_activity('Print', 123)
+
+    cities = ["Tokyo", "Seattle", "Cairo"]
+    result5 = yield context.call_activity("PrintArray", cities)
+
+    city = City("France", "Paris")
+    result5 = yield context.call_activity("PrintObject", city)
+
+    return [result1, result2, result3, result4, result5]
 
 main = df.Orchestrator.create(orchestrator_function)
