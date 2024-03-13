@@ -127,7 +127,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             string serializedValue = jToken.ToString(Formatting.None);
 
-
             if (this.rawInput) // the "modern" OOProc protocol case
             {
                 return serializedValue;
