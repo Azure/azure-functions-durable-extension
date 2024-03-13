@@ -16,6 +16,17 @@ class City:
   def __init__(self, country, name):
     self.country = country
     self.name = name
+  
+  def to_json(self):
+        return json.dumps({"name": self.name, "country": self.country})
+    
+  @classmethod
+  def from_json(cls, json_str):
+      data = json.loads(json_str)
+      return cls(name=data['name'], country=data['country'])
+  
+  def __str__(self):
+        return f"City(name= {self.name}, country= {self.country})"
 
 def orchestrator_function(context: df.DurableOrchestrationContext):
     result1 = yield context.call_activity('Hello', "Tokyo")
@@ -27,8 +38,8 @@ def orchestrator_function(context: df.DurableOrchestrationContext):
     result5 = yield context.call_activity("PrintArray", cities)
 
     city = City("France", "Paris")
-    result5 = yield context.call_activity("PrintObject", city)
+    result6 = yield context.call_activity("PrintObject", city)
 
-    return [result1, result2, result3, result4, result5]
+    return [result1, result2, result3, result4, result5, result6]
 
 main = df.Orchestrator.create(orchestrator_function)

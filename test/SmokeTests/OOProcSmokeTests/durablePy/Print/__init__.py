@@ -9,5 +9,5 @@
 import logging
 
 
-def main(input: any) -> str:
-    return f"Input: {input}!"
+def main(input: int) -> str:
+    return f"{input}"

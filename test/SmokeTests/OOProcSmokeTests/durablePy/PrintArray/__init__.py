@@ -8,9 +8,9 @@
 
 import logging
 
-def main(cities: list) -> list:
-    results = []
+def main(cities: list) -> str:
+    results = "";
     for city in cities:
-        result = f"Hello {city}"
-        results.append(result)
+        result = f"{city} "
+        results += result
     return results

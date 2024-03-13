@@ -2,7 +2,7 @@
   "scriptFile": "__init__.py",
   "bindings": [
     {
-      "name": "name",
+      "name": "input",
       "type": "activityTrigger",
       "direction": "in"
     }

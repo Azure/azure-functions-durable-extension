@@ -10,4 +10,4 @@ import logging
 
 
 def main(obj: object) -> str:
-    return f"Printing object: {obj}!"
+    return f"Printing object: {obj}"
