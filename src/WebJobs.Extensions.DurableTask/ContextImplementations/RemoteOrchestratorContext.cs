@@ -64,6 +64,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return this.executionResult ?? throw new InvalidOperationException($"The execution result has not yet been set using {nameof(this.SetResult)}.");
         }
 
+        internal bool TryGetOrchestrationErrorDetails(out string details)
+        {
+            if (this.failure != null)
+            {
+                details = this.failure.Message;
+                return true;
+            }
+            else
+            {
+                details = string.Empty;
+                return false;
+            }
+        }
+
         internal void SetResult(IEnumerable<OrchestratorAction> actions, string customStatus)
         {
             var result = new OrchestratorExecutionResult
