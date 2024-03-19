@@ -656,7 +656,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             [NotNullWhen(true)] out string? exceptionMessage)
         {
             // In certain situations, like when the .NET Isolated worker is configured with
-            // WorkerOptions.EnableUserCodeException = true, the exception message we get from the .NET Isoalted
+            // WorkerOptions.EnableUserCodeException = true, the exception message we get from the .NET Isolated
             // worker looks like this:
             // "Exception of type 'ExceptionSerialization.Function+UnknownException' was thrown."
             const string startMarker = "Exception of type '";
