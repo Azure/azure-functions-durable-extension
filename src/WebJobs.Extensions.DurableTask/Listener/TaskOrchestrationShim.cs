@@ -208,6 +208,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             finally
             {
+                this.config.TraceHelper.ExtensionInformationalEvent(
+                   this.context.HubName,
+                   this.context.InstanceId,
+                   this.context.Name,
+                   $"INSTRUMENTATION: in `finally` statement, `isCompleted` set to `true`.",
+                   false);
+
                 this.context.IsCompleted = true;
             }
         }
