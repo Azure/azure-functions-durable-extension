@@ -30,6 +30,26 @@ jobs:
         feedsToUse: 'config'
         nugetConfigPath: 'nuget.config'
 
+    - task: PowerShell@2
+      displayName: 'Check for vulnerabilities'
+      inputs:
+        targetType: 'inline'
+        script: |
+          # Check for vulnerabilities.
+          $logFile = "output.txt"
+          dotnet list package --vulnerable > $logFile
+
+          # report if vulnerabilities are found
+          $report = Get-Content $logFile -Raw
+          $hasVulnerabilities = $report | Select-String "has the following vulnerable packages"
+
+          if ($hasVulnerabilities)
+          {
+              Write-Host "Some dependencies have known vulnerabilities!"
+              Write-Host "Please run `dotnet list package --vulnerable` locally to see the list of reported vulnerabilities"
+              exit 1 # terminate pipeline
+          }
+
     - task: DotNetCoreCLI@2
       inputs:
         command: 'build'
