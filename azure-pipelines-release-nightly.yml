@@ -19,7 +19,7 @@ pool:
 variables:
 
   - name: PackageSuffix
-      value: 'ci.$(Build.BuildNumber)' # the "ci" section is to denote this payload is automatically released by the CI
+    value: 'ci.$(Build.BuildNumber)' # the "ci" section is to denote this payload is automatically released by the CI
 steps:
 
 # Configure all the .NET SDK versions we need
