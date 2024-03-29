@@ -1,17 +1,10 @@
 # Release Notes
 
-## Microsoft.Azure.Functions.Worker.Extensions.DurableTask 1.1.1
+## Microsoft.Azure.Functions.Worker.Extensions.DurableTask <version>
 
 ### New Features
 
-- Add `CreateCheckStatusResponseAsync` APIs. (https://github.com/Azure/azure-functions-durable-extension/pull/2722)
-
 ### Bug Fixes
-
-- Fix issue with isolated entities: custom deserialization was not working because IServices was not passed along (https://github.com/Azure/azure-functions-durable-extension/pull/2686)
-- Fix issue with `string` activity input having extra quotes (https://github.com/Azure/azure-functions-durable-extension/pull/2708)
-- Fix issue with out-of-proc entity operation errors: success/failure details of individual operations in a batch was not processed correctly (https://github.com/Azure/azure-functions-durable-extension/pull/2752)
-- Fix issues with .NET Isolated out-of-process error parsing (see https://github.com/Azure/azure-functions-durable-extension/issues/2711)
 
 ### Breaking Changes
 
@@ -22,6 +15,8 @@
 ### New Features
 
 ### Bug Fixes
+
+* Fix crash caused by `ObjectDisposedException` in token renewal code path
 
 ### Breaking Changes
 
