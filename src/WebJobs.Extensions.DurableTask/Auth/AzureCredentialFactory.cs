@@ -84,7 +84,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth
             // First, check if the credential is being disposed
             cancellationToken.ThrowIfCancellationRequested();
 
-            this.OnRenewing(state);
+            CatchObjectDisposed(() => this.OnRenewing(state));
 
             NewTokenAndFrequency next;
             AccessToken result;
@@ -100,7 +100,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth
             {
                 // Attempt to renew the token again after the configured delay has elapsed
                 next = new NewTokenAndFrequency(state.Previous.Token, state.RefreshDelay);
-                this.OnRenewalFailed(++state.Attempts, next, e);
+                CatchObjectDisposed(() => this.OnRenewalFailed(++state.Attempts, next, e));
                 return next;
             }
 
@@ -108,7 +108,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth
             state.Attempts = 0;
             state.Previous = result;
             next = new NewTokenAndFrequency(result.Token, GetRenewalFrequency(result, state.RefreshOffset));
-            this.OnRenewed(next);
+            CatchObjectDisposed(() => this.OnRenewed(next));
 
             return next;
         }
@@ -135,6 +135,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth
             // Eg. The token expires in 10 minutes, but we typically try to renew it 30 minutes before expiry
             TimeSpan frequency = accessToken.ExpiresOn - DateTimeOffset.UtcNow - refreshOffset;
             return frequency < TimeSpan.Zero ? TimeSpan.Zero : frequency;
+        }
+
+        private static void CatchObjectDisposed(Action action)
+        {
+            try
+            {
+                action();
+            }
+            catch (ObjectDisposedException)
+            {
+                // IcM #487363612: This can happen if the host is shutting down or restarting.
+                // We catch the exception to avoid crashing the process.
+            }
         }
 
         internal sealed class TokenRenewalState
