@@ -143,6 +143,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth
             {
                 action();
             }
+            catch (AggregateException ex) when (ex.InnerException is ObjectDisposedException)
+            {
+                // See comment below
+            }
             catch (ObjectDisposedException)
             {
                 // IcM #487363612: This can happen if the host is shutting down or restarting.
