@@ -54,7 +54,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             int numAttempts = 1;
             while (numAttempts <= maxAttempts)
             {
-                this.grpcServer = new Server();
+                ChannelOption[] options = new[]
+                {
+                    new ChannelOption(ChannelOptions.MaxReceiveMessageLength, int.MaxValue),
+                    new ChannelOption(ChannelOptions.MaxSendMessageLength, int.MaxValue),
+                };
+
+                this.grpcServer = new Server(options);
                 this.grpcServer.Services.Add(P.TaskHubSidecarService.BindService(new TaskHubGrpcServer(this)));
 
                 int listeningPort = numAttempts == 1 ? DefaultPort : this.GetRandomPort();
