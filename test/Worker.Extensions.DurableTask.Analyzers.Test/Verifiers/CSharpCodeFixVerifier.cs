@@ -58,5 +58,9 @@ namespace Worker.Extensions.DurableTask.Analyzers.Tests
             test.ExpectedDiagnostics.AddRange(expected);
             await test.RunAsync(CancellationToken.None);
         }
+
+        public class Test : CSharpCodeFixTest<TAnalyzer, TCodeFix, MSTestVerifier>
+        {
+        }
     }
 }
