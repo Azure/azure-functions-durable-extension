@@ -23,6 +23,8 @@
 
 ### Bug Fixes
 
+- Fix execution context / log scope leak in token renewal (https://github.com/Azure/azure-functions-durable-extension/pull/2782)
+
 ### Breaking Changes
 
 ### Dependency Updates
