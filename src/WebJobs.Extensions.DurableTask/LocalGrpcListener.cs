@@ -160,6 +160,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     throw new RpcException(new Status(StatusCode.AlreadyExists, $"An Orchestration instance with the ID {request.InstanceId} already exists."));
                 }
+                catch (InvalidOperationException ex) when (ex.Message.EndsWith("already exists.")) // for older versions of DTF.AS and DTFx.Netherite
+                {
+                    throw new RpcException(new Status(StatusCode.AlreadyExists, $"An Orchestration instance with the ID {request.InstanceId} already exists."));
+                }
                 catch (Exception ex)
                 {
                     this.extension.TraceHelper.ExtensionWarningEvent(
