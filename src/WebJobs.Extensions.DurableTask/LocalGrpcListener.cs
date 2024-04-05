@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using DurableTask.Core.Entities;
+using DurableTask.Core.Exceptions;
 using DurableTask.Core.History;
 using DurableTask.Core.Query;
 using DurableTask.Core.Serializing.Internal;
@@ -161,9 +162,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         InstanceId = instanceId,
                     };
                 }
-                catch (InvalidOperationException)
+                catch (OrchestrationAlreadyExistsException)
                 {
                     throw new RpcException(new Status(StatusCode.AlreadyExists, $"An Orchestration instance with the ID {request.InstanceId} already exists."));
+                }
+                catch (InvalidOperationException ex) when (ex.Message.EndsWith("already exists.")) // for older versions of DTF.AS and DTFx.Netherite
+                {
+                    throw new RpcException(new Status(StatusCode.AlreadyExists, $"An Orchestration instance with the ID {request.InstanceId} already exists."));
+                }
+                catch (Exception ex)
+                {
+                    this.extension.TraceHelper.ExtensionWarningEvent(
+                        this.extension.Options.HubName,
+                        functionName: request.Name,
+                        instanceId: request.InstanceId,
+                        message: $"Failed to start instanceId {request.InstanceId} due to internal exception.\n Exception trace: {ex}.");
+                    throw new RpcException(new Status(StatusCode.Internal, $"Failed to start instance with ID {request.InstanceId}.\nInner Exception message: {ex.Message}."));
                 }
             }
 
