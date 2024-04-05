@@ -155,11 +155,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         InstanceId = instanceId,
                     };
                 }
-                catch (InvalidOperationException ex)
+                catch (OrchestrationAlreadyExistsException ex)
                 {
-                    string errorMessage = $"Failed to start instance with ID {request.InstanceId}. Does this instance ID already exist?.\n" +
-                        $"Inner exception: {ex}";
-                    throw new RpcException(new Status(StatusCode.AlreadyExists, errorMessage));
+                    throw new RpcException(new Status(StatusCode.AlreadyExists, $"An Orchestration instance with the ID {request.InstanceId} already exists."));
+                }
+                catch (Exception ex)
+                {
+                    this.extension.TraceHelper.ExtensionWarningEvent(
+                        this.extension.Options.HubName,
+                        functionName: request.Name,
+                        instanceId: request.InstanceId,
+                        message: $"Failed to start instanceId {request.InstanceId} due to internal exception.\n Exception trace: {ex}.");
+                    throw new RpcException(new Status(StatusCode.Internal, $"Failed to start instance with ID {request.InstanceId}. Does this instance ID already exist?.\n"));
                 }
             }
 
