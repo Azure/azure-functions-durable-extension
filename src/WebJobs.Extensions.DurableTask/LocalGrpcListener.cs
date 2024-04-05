@@ -167,7 +167,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         functionName: request.Name,
                         instanceId: request.InstanceId,
                         message: $"Failed to start instanceId {request.InstanceId} due to internal exception.\n Exception trace: {ex}.");
-                    throw new RpcException(new Status(StatusCode.Internal, $"Failed to start instance with ID {request.InstanceId}. Does this instance ID already exist?.\n"));
+                    throw new RpcException(new Status(StatusCode.Internal, $"Failed to start instance with ID {request.InstanceId}.\nInner Exception message: {ex.Message}."));
                 }
             }
 
