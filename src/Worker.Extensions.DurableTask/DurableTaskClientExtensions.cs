@@ -56,6 +56,11 @@ public static class DurableTaskClientExtensions
             throw new ArgumentNullException(nameof(client));
         }
 
+        if (request is null)
+        {
+            throw new ArgumentNullException(nameof(request));
+        }
+
         HttpResponseData response = request.CreateResponse(statusCode);
         object payload = SetHeadersAndGetPayload(client, request, response, instanceId);
 
@@ -100,6 +105,11 @@ public static class DurableTaskClientExtensions
         if (client is null)
         {
             throw new ArgumentNullException(nameof(client));
+        }
+
+        if (request is null)
+        {
+            throw new ArgumentNullException(nameof(request));
         }
 
         HttpResponseData response = request.CreateResponse(statusCode);
