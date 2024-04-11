@@ -27,7 +27,7 @@ jobs:
       run: |
 
         Write-Host "Checking for changes in release_notes.md..."
-        $latestCommitInPR= ${{ github.sha }}
+        $latestCommitInPR = ${{ github.sha }}
         $latestCommitInTargetBranch = ${{ github.event.before }}
 
         # Get list of files changed in this PR
