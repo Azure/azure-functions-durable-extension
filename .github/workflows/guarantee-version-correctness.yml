@@ -85,5 +85,5 @@ jobs:
           Write-Error $errorMessage
           exit 1
         } else {
-          Write-Host "WebJobs extension version ($projectVersion) at least a patch-release greater than the latest tag version ($minVersion)."
+          Write-Host "WebJobs extension version ($env:PROJ_VERSION) at least a patch-release greater than the latest tag version ($env:MIN_VERSION)."
         }
