@@ -9,7 +9,7 @@ on:
   pull_request:
     branches: [ main, dev ]
     paths:
-      - '*'
+      - '.github/workflows/guarantee-release-notes.yml'
 
 jobs:
   build:
