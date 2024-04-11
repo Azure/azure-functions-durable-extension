@@ -51,8 +51,18 @@ jobs:
         
         # Compare the project version to the minimum required version
         if ($projectVersion -lt $minVersion) {
-          Write-Error "Project version ($projectVersion) is less than the minimum required version ($minVersion)."
+          Write-Error "WebJobs extension version ($projectVersion) is less than the minimum required version ($minVersion)."
           exit 1
         } else {
-          Write-Host "Project version ($projectVersion) meets the minimum required version ($minVersion)."
+          Write-Host "WebJobs extension version ($projectVersion) meets the minimum required version ($minVersion)."
+        }
+    - name: Check minorVersion
+      shell: pwsh
+      run: |       
+        # Compare the project version to the minimum required version
+        if ($projectVersion -lt $minVersion) {
+          Write-Error "WebJobs extension version ($projectVersion) is less than the minimum required version ($minVersion)."
+          exit 1
+        } else {
+          Write-Host "WebJobs extension version ($projectVersion) meets the minimum required version ($minVersion)."
         }
