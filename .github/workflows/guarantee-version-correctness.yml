@@ -19,8 +19,18 @@ jobs:
     if: ${{ !contains(github.event.pull_request.labels.*.name, 'version-already-correct') }}
     steps:
     - uses: actions/checkout@v2
-
-    - name: Check .NET project version
+    - name: Ensure a label is provided
+      if: ${{ !contains(github.event.pull_request.labels.*.name, 'major-pr') }} &&
+        ${{ !contains(github.event.pull_request.labels.*.name, 'minor-pr') }} &&
+        ${{ !contains(github.event.pull_request.labels.*.name, 'patch-pr') }} &&
+      shell: pwsh
+      run: | 
+        $errorMessage = "This PR does not include either the 'major-pr', 'minor-pr', or 'patch-pr' labels, "+
+          "which correspond to whether this change warrants a major, minor, or patch version increase over the "+
+          "last release, nor does it include a 'version-already-correct' label, indicating the WebJobs extension "+
+          "version is correct as-is. Label this PR with one of those four labels to proceed."
+        Write-Error $errorMessage
+    - name: Obtain version in csproj and version of latest tag
       shell: pwsh
       run: |
         $csprojPath = ".\src\WebJobs.Extensions.DurableTask\WebJobs.Extensions.DurableTask.csproj"
@@ -74,13 +84,39 @@ jobs:
       if: ${{ !contains(github.event.pull_request.labels.*.name, 'patch-pr') }}
       shell: pwsh
       run: | 
-        $tagPatch = $env:TAG_PATCH
-        $projPatch = $env:PROJ_PATCH
-
         # Compare the project version to the minimum required version
-        if ($projPatch -lt $tagPatch) {
+        if ($env:PROJ_PATCH -lt $env:TAG_PATCH) {
           $errorMessage = "WebJobs extension version ($env:PROJ_VERSION) it not" +
             "a patch-release greater than the latest tag version ($env:MIN_VERSION)." +
+            "Please increment the patch version or remove the `patch-pr` label."
+          Write-Error $errorMessage
+          exit 1
+        } else {
+          Write-Host "WebJobs extension version ($env:PROJ_VERSION) at least a patch-release greater than the latest tag version ($env:MIN_VERSION)."
+        }
+    - name: Check minorVersion
+      if: ${{ !contains(github.event.pull_request.labels.*.name, 'minor-pr') }}
+      shell: pwsh
+      run: | 
+        # Ensure that csproj is at least one minor version greater than the last release
+        if ($env:PROJ_MINOR -lt $env:TAG_MINOR) {
+          $errorMessage = "WebJobs extension version ($env:PROJ_VERSION) it not" +
+            "a patch-release greater than the latest tag version ($env:MIN_VERSION)." +
+            "Please increment the patch version or remove the `patch-pr` label."
+          Write-Error $errorMessage
+          exit 1
+        } else {
+          Write-Host "WebJobs extension version ($env:PROJ_VERSION) at least a patch-release greater than the latest tag version ($env:MIN_VERSION)."
+        }
+
+    - name: Check majorVersion
+      if: ${{ !contains(github.event.pull_request.labels.*.name, 'major-pr') }}
+      shell: pwsh
+      run: | 
+        # Ensure that csproj is at least one major version greater than the last release
+        if ($env:PROJ_MAJOR -lt $env:TAG_MAJOR) {
+          $errorMessage = "WebJobs extension version ($env:PROJ_VERSION) it not" +
+            "a major-release greater than the latest tag version ($env:MIN_VERSION)." +
             "Please increment the patch version or remove the `patch-pr` label."
           Write-Error $errorMessage
           exit 1
