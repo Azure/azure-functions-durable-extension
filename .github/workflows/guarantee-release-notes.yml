@@ -1,0 +1,35 @@
+name: Guarantee release notes are provided
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, dev ]
+    paths:
+      - 'src/**'
+  pull_request:
+    branches: [ main, dev ]
+    paths:
+      - 'src/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Check for release_notes.md changes
+      id: check_changes
+      run: |
+        echo "Checking for changes in release_notes.md..."
+        if git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep -q 'release_notes.md'; then
+          echo "release_notes.md was modified."
+          echo "MODIFIED=true" >> $GITHUB_ENV
+        else
+          echo "release_notes.md was NOT modified."
+          echo "MODIFIED=false" >> $GITHUB_ENV
+
+    - name: Fail if release_notes.md was not modified
+      if: env.MODIFIED == 'false'
+      run: |
+        echo "Error: release_notes.md must be updated in this PR."
+        exit 1
