@@ -23,7 +23,7 @@ jobs:
       run: |
         echo "Checking for changes in release_notes.md..."
         if git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep -q 'release_notes.md'; then
-          echo "release_notes.md was modified."
+          echo "release_notes.md was modified. "
           echo "MODIFIED=true" >> $GITHUB_ENV
         else
           echo "release_notes.md was NOT modified."
