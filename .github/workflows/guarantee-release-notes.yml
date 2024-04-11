@@ -3,7 +3,7 @@ name: Guarantee release notes are provided
 on:
   workflow_dispatch:
   push:
-    branches: [ main, dev ]
+    branches: [ main, dev, dajusto/validate-release-notes-are-provided ]
     paths:
       - 'src/**'
   pull_request:
