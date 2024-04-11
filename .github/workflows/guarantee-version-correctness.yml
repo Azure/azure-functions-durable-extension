@@ -1,0 +1,46 @@
+name: Guarantee release notes are provided
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, dev, dajusto/validate-release-notes-are-provided ]
+    paths:
+      - '*'
+  pull_request:
+    branches: [ main, dev, dajusto/validate-release-notes-are-provided ]
+    types: [labeled, unlabeled]
+    paths:
+      - '.github/workflows/guarantee-release-notes.yml'
+      - '.github/workflows/guarantee-version-correctness.yml'
+
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'version-already-correct') }}
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Check .NET project version
+      shell: pwsh
+      run: |
+        $minVersion = [Version]"1.0.0" # TBD
+        $csprojPath = "..\src\WebJobs.Extensions.DurableTask\WebJobs.Extensions.DurableTask.csproj"
+        
+        # Parse the .csproj file to find the <Version> element
+        [xml]$csproj = Get-Content -Path $csprojPath
+        $projectVersionString = $csproj.Project.PropertyGroup.Version
+        if (-not $projectVersionString) {
+          Write-Error "Version tag not found in the .csproj file."
+          exit 1
+        }
+        
+        $projectVersion = [Version]$projectVersionString
+        
+        # Compare the project version to the minimum required version
+        if ($projectVersion -lt $minVersion) {
+          Write-Error "Project version ($projectVersion) is less than the minimum required version ($minVersion)."
+          exit 1
+        } else {
+          Write-Host "Project version ($projectVersion) meets the minimum required version ($minVersion)."
+        }
