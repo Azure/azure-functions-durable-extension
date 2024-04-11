@@ -5,7 +5,7 @@ on:
   push:
     branches: [ main, dev, dajusto/validate-release-notes-are-provided ]
     paths:
-      - 'src/**'
+      - '*'
   pull_request:
     branches: [ main, dev ]
     paths:
