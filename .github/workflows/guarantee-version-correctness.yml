@@ -67,7 +67,7 @@ jobs:
         }
 
     - name: Check minorVersion
-      if: ${{ contains(github.event.pull_request.labels.*.name, 'patch-pr') }}
+      if: ${{ !contains(github.event.pull_request.labels.*.name, 'patch-pr') }}
       shell: pwsh
       run: | 
         $tagPatch = $env:TAG_PATCH
@@ -75,8 +75,11 @@ jobs:
    
         # Compare the project version to the minimum required version
         if ($projPatch -lt $tagPatch) {
-          Write-Error "PR was labeled with the 'patch-pr' label, but the `<PatchVersion>` element in the csproj ($projPatch) is less than `<PatchVersion>` of the last release tag ($tagPatch)."
+          $errorMessage = "WebJobs extension version ($projectVersion) it not" +
+            "a patch-release greater than the latest tag version ($minVersion)." +
+            "Please increment the patch version or remove the `patch-pr` label."
+          Write-Error $errorMessage
           exit 1
         } else {
-          Write-Host "WebJobs extension version ($projectVersion) meets the minimum required version ($minVersion)."
+          Write-Host "WebJobs extension version ($projectVersion) at least a patch-release greater than the latest tag version ($minVersion)."
         }
