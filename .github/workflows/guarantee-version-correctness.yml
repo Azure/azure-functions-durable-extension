@@ -57,6 +57,7 @@ jobs:
           Write-Host "WebJobs extension version ($projectVersion) meets the minimum required version ($minVersion)."
         }
     - name: Check minorVersion
+      if: ${{ contains(github.event.pull_request.labels.*.name, 'version-already-correct') }}
       shell: pwsh
       run: |       
         # Compare the project version to the minimum required version
