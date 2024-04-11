@@ -10,6 +10,9 @@ on:
     branches: [ main, dev ]
     paths:
       - '.github/workflows/guarantee-release-notes.yml'
+  pull_request_target:
+    types: [labeled, unlabeled]
+
 
 jobs:
   build:
