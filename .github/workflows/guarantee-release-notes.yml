@@ -27,6 +27,9 @@ jobs:
       run: |
 
         Write-Host "Checking for changes in release_notes.md..."
+
+        # `github.sha` is documented here : https://docs.github.com/en/actions/learn-github-actions/contexts#github-context
+        # `github.event.before` is documented here (under "Webhook payload object for push"): https://docs.github.com/en/webhooks/webhook-events-and-payloads#push 
         $latestCommitInPR = "${{ github.sha }}"
         $latestCommitInTargetBranch = "${{ github.event.before }}"
 
