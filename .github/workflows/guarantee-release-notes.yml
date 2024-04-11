@@ -32,5 +32,6 @@ jobs:
     - name: Fail if release_notes.md was not modified
       if: env.MODIFIED == 'false'
       run: |
+        echo {{github.event.issue.labels.*.name}}
         echo "Error: release_notes.md must be updated in this PR."
         exit 1
