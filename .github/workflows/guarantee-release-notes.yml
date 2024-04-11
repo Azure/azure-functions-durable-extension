@@ -14,7 +14,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    if: ${{ !contains(github.event.issue.labels.*.name, 'does-not-need-release-note') }}
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'does-not-need-release-note') }}
     steps:
     - uses: actions/checkout@v2
 
@@ -32,6 +32,6 @@ jobs:
     - name: Fail if release_notes.md was not modified
       if: env.MODIFIED == 'false'
       run: |
-        echo {{github.event.issue.labels.*.name}}
+        echo {{github.event.pull_request.labels.*.name.*.name}}
         echo "Error: release_notes.md must be updated in this PR."
         exit 1
