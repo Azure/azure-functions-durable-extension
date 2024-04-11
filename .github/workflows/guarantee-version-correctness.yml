@@ -8,7 +8,6 @@ on:
       - '*'
   pull_request:
     branches: [ main, dev, dajusto/validate-release-notes-are-provided ]
-    types: [labeled, unlabeled]
     paths:
       - '.github/workflows/guarantee-release-notes.yml'
       - '.github/workflows/guarantee-version-correctness.yml'
@@ -27,15 +26,14 @@ jobs:
         $minVersion = [Version]"1.0.0" # TBD
         $csprojPath = ".\src\WebJobs.Extensions.DurableTask\WebJobs.Extensions.DurableTask.csproj"
         
-        # Parse the .csproj file to find the <Version> element
+        # Parse the .csproj file to find the <MajorVersion> element
         [xml]$csproj = Get-Content -Path $csprojPath
-        $projectVersionString = $csproj.Project.PropertyGroup.Version
-        if (-not $projectVersionString) {
-          Write-Error "Version tag not found in the .csproj file."
-          exit 1
-        }
+        $majorVersionString = $csproj.Project.PropertyGroup.MajorVersion
+        $minorVersionString = $csproj.Project.PropertyGroup.MinorVersion
+        $patchVersionString = $csproj.Project.PropertyGroup.PatchVersion
+        $version = "$majorVersionString.$minorVersionString.$patchVersionString"
         
-        $projectVersion = [Version]$projectVersionString
+        $projectVersion = [Version]$version
         
         # Compare the project version to the minimum required version
         if ($projectVersion -lt $minVersion) {
