@@ -32,6 +32,8 @@ jobs:
         $patchVersionString = $csproj.Project.PropertyGroup.PatchVersion
         $version = "$majorVersionString.$minorVersionString.$patchVersionString"
         $projectVersion = [Version]$version
+        "PROJ_VERSION=$projectVersion" | Out-File -Append -FilePath $Env:GITHUB_ENV
+
 
         # Obtain latest tag
         git fetch --tags
@@ -40,6 +42,8 @@ jobs:
 
         $latestTag = $latestTag.TrimStart('v')
         $minVersion = [Version]$latestTag
+        "MIN_VERSION=$minVersion" | Out-File -Append -FilePath $Env:GITHUB_ENV
+
 
         # Split the version number by '.' character
         $versionParts = $latestTag -split '\.'
@@ -73,13 +77,10 @@ jobs:
         $tagPatch = $env:TAG_PATCH
         $projPatch = $env:PROJ_PATCH
 
-        Write-Host $tagPatch
-        Write-Host $env:TAG_PATCH
-
         # Compare the project version to the minimum required version
         if ($projPatch -lt $tagPatch) {
-          $errorMessage = "WebJobs extension version ($projectVersion) it not" +
-            "a patch-release greater than the latest tag version ($minVersion)." +
+          $errorMessage = "WebJobs extension version ($env:PROJ_VERSION) it not" +
+            "a patch-release greater than the latest tag version ($env:MIN_VERSION)." +
             "Please increment the patch version or remove the `patch-pr` label."
           Write-Error $errorMessage
           exit 1
