@@ -8,9 +8,11 @@ on:
       - '*'
   pull_request:
     branches: [ main, dev, dajusto/validate-release-notes-are-provided ]
-    types: [labeled, unlabeled]
     paths:
       - '.github/workflows/guarantee-release-notes.yml'
+  pull_request:
+    branches: [ main, dev, dajusto/validate-release-notes-are-provided ]
+    types: [labeled, unlabeled]
 
 jobs:
   build:

@@ -11,7 +11,9 @@ on:
     paths:
       - '.github/workflows/guarantee-release-notes.yml'
       - '.github/workflows/guarantee-version-correctness.yml'
-
+  pull_request:
+    branches: [ main, dev, dajusto/validate-release-notes-are-provided ]
+    types: [labeled, unlabeled]
 
 jobs:
   build:
