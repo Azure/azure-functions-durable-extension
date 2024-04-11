@@ -14,6 +14,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    if: ${{ !contains(github.event.issue.labels.*.name, 'does-not-need-release-note') }}
     steps:
     - uses: actions/checkout@v2
 
