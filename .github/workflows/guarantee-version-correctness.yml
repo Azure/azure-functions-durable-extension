@@ -50,13 +50,13 @@ jobs:
         $tagPatch = $versionParts[2]
 
         # Set version components as environment variables for future use
-        echo "TAG_MAJOR=$($versionParts[0])" | Out-File -Append -FilePath $Env:GITHUB_ENV
-        echo "TAG_MINOR=$($versionParts[1])" | Out-File -Append -FilePath $Env:GITHUB_ENV
-        echo "TAG_PATCH=$($versionParts[2])" | Out-File -Append -FilePath $Env:GITHUB_ENV
+        "TAG_MAJOR=$($versionParts[0])" | Out-File -Append -FilePath $Env:GITHUB_ENV
+        "TAG_MINOR=$($versionParts[1])" | Out-File -Append -FilePath $Env:GITHUB_ENV
+        "TAG_PATCH=$($versionParts[2])" | Out-File -Append -FilePath $Env:GITHUB_ENV
 
-        echo "PROJ_MAJOR=$($tagMajor)" | Out-File -Append -FilePath $Env:GITHUB_ENV
-        echo "PROJ_MINOR=$($tagMinor)" | Out-File -Append -FilePath $Env:GITHUB_ENV
-        echo "PROJ_PATCH=$($tagPatch)" | Out-File -Append -FilePath $Env:GITHUB_ENV
+        "PROJ_MAJOR=$($tagMajor)" | Out-File -Append -FilePath $Env:GITHUB_ENV
+        "PROJ_MINOR=$($tagMinor)" | Out-File -Append -FilePath $Env:GITHUB_ENV
+        "PROJ_PATCH=$($tagPatch)" | Out-File -Append -FilePath $Env:GITHUB_ENV
         
         # Compare the project version to the minimum required version
         if ($projectVersion -lt $minVersion) {
