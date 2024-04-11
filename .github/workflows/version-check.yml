@@ -10,8 +10,8 @@ on:
     branches: [ main, dev, dajusto/validate-release-notes-are-provided ]
     types: [labeled, unlabeled, synchronize]  # Trigger on PR labeling events, or a PR push (synchronize)
     paths:
-      - '.github/workflows/guarantee-release-notes.yml'
-      - '.github/workflows/guarantee-version-correctness.yml'
+      - '.github/workflows/release-notes-check.yml'
+      - '.github/workflows/version-check.yml'
 
 jobs:
   build:
