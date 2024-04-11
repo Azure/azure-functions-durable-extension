@@ -27,7 +27,7 @@ jobs:
         else
           echo "release_notes.md was NOT modified."
           echo "MODIFIED=false" >> $GITHUB_ENV
-
+        fi
     - name: Fail if release_notes.md was not modified
       if: env.MODIFIED == 'false'
       run: |
