@@ -25,8 +25,13 @@ jobs:
       id: check_changes
       shell: pwsh
       run: |
+
         Write-Host "Checking for changes in release_notes.md..."
-        $changedFiles = git diff --name-only ${{ github.event.before }} ${{ github.sha }}
+        $latestCommitInPR= ${{ github.sha }}
+        $latestCommitInTargetBranch = ${{ github.event.before }}
+
+        # Get list of files changed in this PR
+        $changedFiles = git diff --name-only latestCommitInTargetBranch $latestCommitInPR
 
         # If `release_notes.md` was modified, the PR passes the validation.
         # If it's not modified, fail and instruct author on what to do (either modify it or add 'no-release-notes' label)
@@ -36,6 +41,6 @@ jobs:
           $errorMessage = "This PR does not update `release_notes.md`. If the PR should be included " +
             "in the next release's release notes, please update this file. If the PR should not be included, " +
             "then please add the label `no-release-notes` to the PR."
-          Write-Error #errorMessage
+          Write-Error $errorMessage
           exit 1 # Fail the GH action
         }
