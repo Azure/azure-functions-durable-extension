@@ -48,6 +48,15 @@ jobs:
         $tagMajor = $versionParts[0]
         $tagMinor = $versionParts[1]
         $tagPatch = $versionParts[2]
+
+        # Set version components as environment variables for future use
+        echo "TAG_MAJOR=$($versionParts[0])" | Out-File -Append -FilePath $Env:GITHUB_ENV
+        echo "TAG_MINOR=$($versionParts[1])" | Out-File -Append -FilePath $Env:GITHUB_ENV
+        echo "TAG_PATCH=$($versionParts[2])" | Out-File -Append -FilePath $Env:GITHUB_ENV
+
+        echo "PROJ_MAJOR=$($tagMajor)" | Out-File -Append -FilePath $Env:GITHUB_ENV
+        echo "PROJ_MINOR=$($tagMinor)" | Out-File -Append -FilePath $Env:GITHUB_ENV
+        echo "PROJ_PATCH=$($tagPatch)" | Out-File -Append -FilePath $Env:GITHUB_ENV
         
         # Compare the project version to the minimum required version
         if ($projectVersion -lt $minVersion) {
@@ -56,13 +65,17 @@ jobs:
         } else {
           Write-Host "WebJobs extension version ($projectVersion) meets the minimum required version ($minVersion)."
         }
+
     - name: Check minorVersion
-      if: ${{ contains(github.event.pull_request.labels.*.name, 'version-already-correct') }}
+      if: ${{ contains(github.event.pull_request.labels.*.name, 'patch-pr') }}
       shell: pwsh
-      run: |       
+      run: | 
+        $tagPatch = $env:TAG_PATCH
+        $projPatch = $env:PROJ_PATCH
+   
         # Compare the project version to the minimum required version
-        if ($projectVersion -lt $minVersion) {
-          Write-Error "WebJobs extension version ($projectVersion) is less than the minimum required version ($minVersion)."
+        if ($projPatch -lt $tagPatch) {
+          Write-Error "PR was labeled with the 'patch-pr' label, but the `<PatchVersion>` element in the csproj ($projPatch) is less than `<PatchVersion>` of the last release tag ($tagPatch)."
           exit 1
         } else {
           Write-Host "WebJobs extension version ($projectVersion) meets the minimum required version ($minVersion)."
