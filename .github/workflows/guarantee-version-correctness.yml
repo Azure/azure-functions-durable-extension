@@ -72,7 +72,10 @@ jobs:
       run: | 
         $tagPatch = $env:TAG_PATCH
         $projPatch = $env:PROJ_PATCH
-   
+
+        Write-Host $tagPatch
+        Write-Host $env:TAG_PATCH
+
         # Compare the project version to the minimum required version
         if ($projPatch -lt $tagPatch) {
           $errorMessage = "WebJobs extension version ($projectVersion) it not" +
