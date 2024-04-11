@@ -23,17 +23,31 @@ jobs:
     - name: Check .NET project version
       shell: pwsh
       run: |
-        $minVersion = [Version]"1.0.0" # TBD
         $csprojPath = ".\src\WebJobs.Extensions.DurableTask\WebJobs.Extensions.DurableTask.csproj"
         
-        # Parse the .csproj file to find the <MajorVersion> element
+        # Parse the .csproj file to reconstruct the version 
         [xml]$csproj = Get-Content -Path $csprojPath
         $majorVersionString = $csproj.Project.PropertyGroup.MajorVersion
         $minorVersionString = $csproj.Project.PropertyGroup.MinorVersion
         $patchVersionString = $csproj.Project.PropertyGroup.PatchVersion
         $version = "$majorVersionString.$minorVersionString.$patchVersionString"
-        
         $projectVersion = [Version]$version
+
+        # Obtain latest tag
+        git fetch --tags
+        $latestTag = git describe --tags $(git rev-list --tags --max-count=1)
+        Write-Output "Latest tag in the repository is $latestTag"
+
+        $latestTag = $latestTag.TrimStart('v')
+        $minVersion = [Version]$latestTag
+
+        # Split the version number by '.' character
+        $versionParts = $latestTag -split '\.'
+        
+        # decompose the tag
+        $tagMajor = $versionParts[0]
+        $tagMinor = $versionParts[1]
+        $tagPatch = $versionParts[2]
         
         # Compare the project version to the minimum required version
         if ($projectVersion -lt $minVersion) {
