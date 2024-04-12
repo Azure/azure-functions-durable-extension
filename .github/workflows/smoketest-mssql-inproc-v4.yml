@@ -25,7 +25,7 @@ jobs:
       id: random_string
       shell: pwsh
       run: |
-        export SA_PASSWORD=$(pwsh -File test/SmokeTests/BackendSmokeTests/generate-random-string.ps1)
+        $env:SA_PASSWORD=$(pwsh -File test/SmokeTests/BackendSmokeTests/generate-random-string.ps1)
 
     - name: Run V4 .NET in-proc w/ MSSQL Smoke Test
       run: test/SmokeTests/e2e-test.ps1 -DockerfilePath test/SmokeTests/BackendSmokeTests/MSSQL/Dockerfile -HttpStartPath api/DurableFunctionsHttpStart -ContainerName MSSQLApp -SetupSQLServer
