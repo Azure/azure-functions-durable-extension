@@ -16,5 +16,5 @@ $all_chars = $uppercase_range + $lowercase_range + $number_range + $special_char
 # Generate a random string
 $newString = -join ($all_chars | Get-Random -Count $length | ForEach-Object {[char]$_})
 
-# Output the new string
-Write-Output $newString
+# Return the new string
+return $newString
