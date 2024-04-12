@@ -25,7 +25,8 @@ jobs:
       id: random_string
       shell: pwsh
       run: |
-        $random_string = .\../../test/SmokeTests/BackendSmokeTests/generate-random-string.ps1
+        $scriptPath = "$(github.workspace)..\..\test\SmokeTests\BackendSmokeTests\generate-random-string.ps1"
+        $random_string = & $scriptPath
         echo "::set-env name=SA_PASSWORD::$random_string"
 
     - name: Run V4 .NET in-proc w/ MSSQL Smoke Test
