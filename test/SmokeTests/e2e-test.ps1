@@ -64,7 +64,7 @@ if ($NoSetup -eq $false) {
 		Exit-OnError
 
 	 	# Create the database with strict binary collation
-		Write-Host "Creating '$dbname' database with '$collation' collation" -ForegroundColor DarkYellow
+		Write-Host "Creating '$dbname' database with '$collation' collation with $pw" -ForegroundColor DarkYellow
 		docker exec -d mssql-server /opt/mssql-tools/bin/sqlcmd -S . -U sa -P "$pw" -Q "CREATE DATABASE [$dbname] COLLATE $collation"
 		Exit-OnError
 
