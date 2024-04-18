@@ -7,11 +7,13 @@ on:
     paths:
       - 'src/**'
       - 'test/SmokeTests/BackendSmokeTests/MSSQL/**'
+      - '.github/workflows/smoketest-mssql-inproc-v4.yml'
   pull_request:
     branches: [ main, dev ]
     paths:
       - 'src/**'
       - 'test/SmokeTests/BackendSmokeTests/MSSQL/**'
+      - '.github/workflows/smoketest-mssql-inproc-v4.yml'
 
 jobs:
   build:
