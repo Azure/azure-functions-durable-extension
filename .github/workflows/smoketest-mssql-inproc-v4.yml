@@ -17,6 +17,8 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
+    env:
+      SA_PASSWORD: ${{ secrets.SA_PASSWORD }}
 
     steps:
     - uses: actions/checkout@v4
