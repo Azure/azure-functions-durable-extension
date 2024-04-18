@@ -10,7 +10,7 @@ param(
 	[switch]$NoValidation=$false,
 	[int]$Sleep=30,
   	[switch]$SetupSQLServer=$false,
-	[string]$pw="$env:SA_PASSWORD",
+		[string]$pw="$env:SA_PASSWORD",
     	[string]$sqlpid="Express",
      	[string]$tag="2019-latest",
     	[int]$port=1433,
