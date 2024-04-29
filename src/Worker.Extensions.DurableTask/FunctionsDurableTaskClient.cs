@@ -46,15 +46,15 @@ internal sealed class FunctionsDurableTaskClient : DurableTaskClient
     }
 
     public override Task<PurgeResult> PurgeAllInstancesAsync(
-        PurgeInstancesFilter filter, CancellationToken cancellation = default)
+        PurgeInstancesFilter filter, PurgeInstanceOptions? options = null, CancellationToken cancellation = default)
     {
-        return this.inner.PurgeAllInstancesAsync(filter, cancellation);
+        return this.inner.PurgeAllInstancesAsync(filter, options, cancellation);
     }
 
     public override Task<PurgeResult> PurgeInstanceAsync(
-        string instanceId, CancellationToken cancellation = default)
+        string instanceId, PurgeInstanceOptions? options = null, CancellationToken cancellation = default)
     {
-        return this.inner.PurgeInstanceAsync(instanceId, cancellation);
+        return this.inner.PurgeInstanceAsync(instanceId, options, cancellation);
     }
 
     public override Task RaiseEventAsync(
