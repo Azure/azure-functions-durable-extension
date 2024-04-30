@@ -153,13 +153,33 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             public async override Task<P.CreateInstanceResponse> StartInstance(P.CreateInstanceRequest request, ServerCallContext context)
             {
+                var instance = new OrchestrationInstance
+                {
+                    InstanceId = request.InstanceId ?? Guid.NewGuid().ToString("N"),
+                    ExecutionId = Guid.NewGuid().ToString(),
+                };
+
+
                 try
                 {
-                    string instanceId = await this.GetClient(context).StartNewAsync(
-                        request.Name, request.InstanceId, Raw(request.Input));
+                        // we don't use a DurableOrchestrationClient here because it doesn't expose a "ScheduledStartTime" property
+                        await this.GetDurabilityProvider(context).CreateTaskOrchestrationAsync(
+                        new TaskMessage
+                        {
+                            Event = new ExecutionStartedEvent(-1, Raw(request.Input))
+                            {
+                                Name = request.Name,
+                                Version = request.Version,
+                                OrchestrationInstance = instance,
+                                ScheduledStartTime = request.ScheduledStartTimestamp?.ToDateTime(),
+                            },
+                            OrchestrationInstance = instance,
+                        },
+                        this.GetStatusesNotToOverride());
+
                     return new P.CreateInstanceResponse
                     {
-                        InstanceId = instanceId,
+                        InstanceId = instance.InstanceId,
                     };
                 }
                 catch (OrchestrationAlreadyExistsException)
