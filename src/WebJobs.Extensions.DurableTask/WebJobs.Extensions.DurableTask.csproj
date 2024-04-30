@@ -137,4 +137,25 @@
     </Content>
   </ItemGroup>
 
+
+	<!-- The "AssemblyInfo.cs" file for the .NET isolated worker extension needs to be kept up to date with the
+	WebJobs extension version. This pre-build task re-generates that AssemblyInfo file based on this csproj's
+	Version tag.-->
+	<Target Name="GenerateTextFileOnBuild" BeforeTargets="BeforeBuild">
+		<ItemGroup>
+			<FileContent 
+				Include=
+'// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the MIT License. See License.txt in the project root for license information.
+
+using Microsoft.Azure.Functions.Worker.Extensions.Abstractions%3B
+[assembly: ExtensionInformation("Microsoft.Azure.WebJobs.Extensions.DurableTask", "$(Version)")]' />
+		</ItemGroup>
+		<WriteLinesToFile
+		  File="..\Worker.Extensions.DurableTask\AssemblyInfo.cs"
+		  Lines="@(FileContent)"
+		  Overwrite="true"
+		  Encoding="UTF-8" />
+	</Target>
+
 </Project>
