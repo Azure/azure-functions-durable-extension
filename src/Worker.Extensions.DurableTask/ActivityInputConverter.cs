@@ -25,6 +25,13 @@ internal class ActivityInputConverter : IInputConverter
             throw new ArgumentNullException(nameof(context));
         }
 
+        // Special handling for FunctionContext
+        // This addresses cases where the activity function has only FunctionContext as a parameter.
+        if (context.TargetType == typeof(FunctionContext))
+        {
+            return new(ConversionResult.Success(context.FunctionContext));
+        }
+
         if (context.Source is null)
         {
             return new(ConversionResult.Success(null));
