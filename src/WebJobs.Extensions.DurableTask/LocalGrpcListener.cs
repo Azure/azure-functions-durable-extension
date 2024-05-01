@@ -153,33 +153,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             public async override Task<P.CreateInstanceResponse> StartInstance(P.CreateInstanceRequest request, ServerCallContext context)
             {
-                var instance = new OrchestrationInstance
-                {
-                    InstanceId = request.InstanceId ?? Guid.NewGuid().ToString("N"),
-                    ExecutionId = Guid.NewGuid().ToString(),
-                };
-
-
                 try
                 {
-                        // we don't use a DurableOrchestrationClient here because it doesn't expose a "ScheduledStartTime" property
-                        await this.GetDurabilityProvider(context).CreateTaskOrchestrationAsync(
-                        new TaskMessage
-                        {
-                            Event = new ExecutionStartedEvent(-1, Raw(request.Input))
-                            {
-                                Name = request.Name,
-                                Version = request.Version,
-                                OrchestrationInstance = instance,
-                                ScheduledStartTime = request.ScheduledStartTimestamp?.ToDateTime(),
-                            },
-                            OrchestrationInstance = instance,
-                        },
-                        this.GetStatusesNotToOverride());
+                    string instanceId = request.InstanceId ?? Guid.NewGuid().ToString("N");
+                    TaskHubClient taskhubClient = new TaskHubClient(this.GetDurabilityProvider(context));
 
+                    // TODO: Ideally, we'd have a single method in the taskhubClient that can handle both scheduled and non-scheduled starts.
+                    // TODO: the type of `ScheduledStartTimestamp` is not nullable. Can we change it to `DateTime?` in the proto file?
+                    if (request.ScheduledStartTimestamp != null)
+                    {
+                        var ins = await taskhubClient.CreateScheduledOrchestrationInstanceAsync(
+                            name: request.Name, version: request.Version, instanceId: instanceId, input: Raw(request.Input), startAt: request.ScheduledStartTimestamp.ToDateTime());
+                    }
+                    else
+                    {
+                        await taskhubClient.CreateOrchestrationInstanceAsync(request.Name, request.Version, instanceId, Raw(request.Input));
+                    }
+
+                    // TODO: should this not inclide the ExecutionId and other elements of the taskhubClient response?
                     return new P.CreateInstanceResponse
                     {
-                        InstanceId = instance.InstanceId,
+                        InstanceId = instanceId,
                     };
                 }
                 catch (OrchestrationAlreadyExistsException)
@@ -252,13 +246,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 EntityBackendQueries.EntityQueryResult result = await entityOrchestrationService.EntityBackendQueries!.QueryEntitiesAsync(
                     new EntityBackendQueries.EntityQuery()
                     {
-                         InstanceIdStartsWith = query.InstanceIdStartsWith,
-                         LastModifiedFrom = query.LastModifiedFrom?.ToDateTime(),
-                         LastModifiedTo = query.LastModifiedTo?.ToDateTime(),
-                         IncludeTransient = query.IncludeTransient,
-                         IncludeState = query.IncludeState,
-                         ContinuationToken = query.ContinuationToken,
-                         PageSize = query.PageSize,
+                        InstanceIdStartsWith = query.InstanceIdStartsWith,
+                        LastModifiedFrom = query.LastModifiedFrom?.ToDateTime(),
+                        LastModifiedTo = query.LastModifiedTo?.ToDateTime(),
+                        IncludeTransient = query.IncludeTransient,
+                        IncludeState = query.IncludeState,
+                        ContinuationToken = query.ContinuationToken,
+                        PageSize = query.PageSize,
                     },
                     context.CancellationToken);
 
