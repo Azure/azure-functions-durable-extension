@@ -29,7 +29,7 @@ internal class ActivityInputConverter : IInputConverter
         // This addresses cases where the activity function has only FunctionContext as a parameter.
         if (context.TargetType == typeof(FunctionContext))
         {
-            return new(ConversionResult.Success(context.FunctionContext));
+            return new(ConversionResult.Unhandled());
         }
 
         if (context.Source is null)
