@@ -1,0 +1,50 @@
+name: Check release_notes.md is updated
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, dev, dajusto/validate-release-notes-are-provided ]
+    paths:
+      - '*'
+
+  pull_request:
+    branches: [ main, dev, dajusto/validate-release-notes-are-provided ]
+    types: [labeled, unlabeled, synchronize] # Trigger on PR labeling events, or a PR push (synchronize)
+    paths:
+      - '.github/workflows/release-notes-check.yml'
+      - '.github/workflows/version-check.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    # Skip all validation if label 'no-release-notes' is applied to the PR
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'no-release-notes') }}
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Check `release_notes.md`
+      id: check_changes
+      shell: pwsh
+      run: |
+
+        Write-Host "Checking for changes in release_notes.md..."
+
+        # `github.sha` is documented here : https://docs.github.com/en/actions/learn-github-actions/contexts#github-context
+        # `github.event.before` is documented here (under "Webhook payload object for push"): https://docs.github.com/en/webhooks/webhook-events-and-payloads#push 
+        $latestCommitInPR = "${{ github.sha }}"
+        $latestCommitInTargetBranch = "${{ github.event.before }}"
+
+        # Get list of files changed in this PR
+        $changedFiles = git diff --name-only latestCommitInTargetBranch $latestCommitInPR
+
+        # If `release_notes.md` was modified, the PR passes the validation.
+        # If it's not modified, fail and instruct author on what to do (either modify it or add 'no-release-notes' label)
+        if ($changedFiles -match "release_notes.md") {
+          Write-Host "release_notes.md was modified. Pass!"
+        } else {
+          $errorMessage = "This PR does not update `release_notes.md`. If the PR should be included " +
+            "in the next release's release notes, please update this file. If the PR should not be included, " +
+            "then please add the label `no-release-notes` to the PR."
+          Write-Error $errorMessage
+          exit 1 # Fail the GH action
+        }

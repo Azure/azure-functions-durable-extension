@@ -1,0 +1,126 @@
+name: Guarantee WebJobs Extension version is correct
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, dev, dajusto/validate-release-notes-are-provided ]
+    paths:
+      - '*'
+  pull_request:
+    branches: [ main, dev, dajusto/validate-release-notes-are-provided ]
+    types: [labeled, unlabeled, synchronize]  # Trigger on PR labeling events, or a PR push (synchronize)
+    paths:
+      - '.github/workflows/release-notes-check.yml'
+      - '.github/workflows/version-check.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    # Skip all validation if label 'version-already-correct' is applied to the PR
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'version-already-correct') }}
+    steps:
+    - uses: actions/checkout@v2
+    - name: Ensure a label is provided
+      if: ${{ !contains(github.event.pull_request.labels.*.name, 'major-pr') }} &&
+        ${{ !contains(github.event.pull_request.labels.*.name, 'minor-pr') }} &&
+        ${{ !contains(github.event.pull_request.labels.*.name, 'patch-pr') }} &&
+      shell: pwsh
+      run: | 
+        $errorMessage = "This PR does not include either the 'major-pr', 'minor-pr', or 'patch-pr' labels, "+
+          "which correspond to whether this change warrants a major, minor, or patch version increase over the "+
+          "last release, nor does it include a 'version-already-correct' label, indicating the WebJobs extension "+
+          "version is correct as-is. Label this PR with one of those four labels to proceed."
+        Write-Error $errorMessage
+    - name: Obtain version in csproj and version of latest tag
+      shell: pwsh
+      run: |
+        $csprojPath = ".\src\WebJobs.Extensions.DurableTask\WebJobs.Extensions.DurableTask.csproj"
+        
+        # Parse the .csproj file to reconstruct the version 
+        [xml]$csproj = Get-Content -Path $csprojPath
+        $majorVersionString = $csproj.Project.PropertyGroup.MajorVersion
+        $minorVersionString = $csproj.Project.PropertyGroup.MinorVersion
+        $patchVersionString = $csproj.Project.PropertyGroup.PatchVersion
+        $version = "$majorVersionString.$minorVersionString.$patchVersionString"
+        $projectVersion = [Version]$version
+        "PROJ_VERSION=$projectVersion" | Out-File -Append -FilePath $Env:GITHUB_ENV
+
+
+        # Obtain latest tag
+        git fetch --tags
+        $latestTag = git describe --tags $(git rev-list --tags --max-count=1)
+        Write-Output "Latest tag in the repository is $latestTag"
+
+        $latestTag = $latestTag.TrimStart('v')
+        $minVersion = [Version]$latestTag
+        "MIN_VERSION=$minVersion" | Out-File -Append -FilePath $Env:GITHUB_ENV
+
+
+        # Split the version number by '.' character
+        $versionParts = $latestTag -split '\.'
+        
+        # decompose the tag
+        $tagMajor = $versionParts[0]
+        $tagMinor = $versionParts[1]
+        $tagPatch = $versionParts[2]
+
+        # Set version components as environment variables for future use
+        "TAG_MAJOR=$($versionParts[0])" | Out-File -Append -FilePath $Env:GITHUB_ENV
+        "TAG_MINOR=$($versionParts[1])" | Out-File -Append -FilePath $Env:GITHUB_ENV
+        "TAG_PATCH=$($versionParts[2])" | Out-File -Append -FilePath $Env:GITHUB_ENV
+
+        "PROJ_MAJOR=$($tagMajor)" | Out-File -Append -FilePath $Env:GITHUB_ENV
+        "PROJ_MINOR=$($tagMinor)" | Out-File -Append -FilePath $Env:GITHUB_ENV
+        "PROJ_PATCH=$($tagPatch)" | Out-File -Append -FilePath $Env:GITHUB_ENV
+        
+        # Compare the project version to the minimum required version
+        if ($projectVersion -lt $minVersion) {
+          Write-Error "WebJobs extension version ($projectVersion) is less than the minimum required version ($minVersion)."
+          exit 1
+        } else {
+          Write-Host "WebJobs extension version ($projectVersion) meets the minimum required version ($minVersion)."
+        }
+
+    - name: Check minorVersion
+      if: ${{ !contains(github.event.pull_request.labels.*.name, 'patch-pr') }}
+      shell: pwsh
+      run: | 
+        # Compare the project version to the minimum required version
+        if ($env:PROJ_PATCH -lt $env:TAG_PATCH) {
+          $errorMessage = "WebJobs extension version ($env:PROJ_VERSION) it not" +
+            "a patch-release greater than the latest tag version ($env:MIN_VERSION)." +
+            "Please increment the patch version or remove the `patch-pr` label."
+          Write-Error $errorMessage
+          exit 1
+        } else {
+          Write-Host "WebJobs extension version ($env:PROJ_VERSION) at least a patch-release greater than the latest tag version ($env:MIN_VERSION)."
+        }
+    - name: Check minorVersion
+      if: ${{ !contains(github.event.pull_request.labels.*.name, 'minor-pr') }}
+      shell: pwsh
+      run: | 
+        # Ensure that csproj is at least one minor version greater than the last release
+        if ($env:PROJ_MINOR -lt $env:TAG_MINOR) {
+          $errorMessage = "WebJobs extension version ($env:PROJ_VERSION) it not" +
+            "a patch-release greater than the latest tag version ($env:MIN_VERSION)." +
+            "Please increment the patch version or remove the `patch-pr` label."
+          Write-Error $errorMessage
+          exit 1
+        } else {
+          Write-Host "WebJobs extension version ($env:PROJ_VERSION) at least a patch-release greater than the latest tag version ($env:MIN_VERSION)."
+        }
+
+    - name: Check majorVersion
+      if: ${{ !contains(github.event.pull_request.labels.*.name, 'major-pr') }}
+      shell: pwsh
+      run: | 
+        # Ensure that csproj is at least one major version greater than the last release
+        if ($env:PROJ_MAJOR -lt $env:TAG_MAJOR) {
+          $errorMessage = "WebJobs extension version ($env:PROJ_VERSION) it not" +
+            "a major-release greater than the latest tag version ($env:MIN_VERSION)." +
+            "Please increment the patch version or remove the `patch-pr` label."
+          Write-Error $errorMessage
+          exit 1
+        } else {
+          Write-Host "WebJobs extension version ($env:PROJ_VERSION) at least a patch-release greater than the latest tag version ($env:MIN_VERSION)."
+        }
