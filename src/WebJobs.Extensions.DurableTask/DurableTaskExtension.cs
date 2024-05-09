@@ -6,7 +6,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Net;
 using System.Net.Http;
 using System.Reflection;
 using System.Text;
@@ -70,9 +69,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #pragma warning disable CS0169
         private readonly ITelemetryActivator telemetryActivator;
 #pragma warning restore CS0169
-#endif
-#if FUNCTIONS_V3_OR_GREATER
-        private readonly LocalGrpcListener localGrpcListener;
 #endif
         private readonly bool isOptionsConfigured;
         private readonly Guid extensionGuid;
@@ -202,10 +198,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 runtimeType == WorkerRuntimeType.Custom)
             {
                 this.OutOfProcProtocol = OutOfProcOrchestrationProtocol.MiddlewarePassthrough;
-#if FUNCTIONS_V3_OR_GREATER
-                this.localGrpcListener = new LocalGrpcListener(this);
-                this.HostLifetimeService.OnStopped.Register(this.StopLocalGrpcServer);
-#endif
             }
             else
             {
@@ -464,30 +456,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             // The RPC server needs to be started sometime before any functions can be triggered
             // and this is the latest point in the pipeline available to us.
-#if FUNCTIONS_V3_OR_GREATER
-            if (this.OutOfProcProtocol == OutOfProcOrchestrationProtocol.MiddlewarePassthrough)
-            {
-                this.StartLocalGrpcServer();
-            }
-#endif
 #if FUNCTIONS_V2_OR_GREATER
             if (this.OutOfProcProtocol == OutOfProcOrchestrationProtocol.OrchestratorShim)
             {
                 this.StartLocalHttpServer();
             }
 #endif
-        }
-
-        internal string GetLocalRpcAddress()
-        {
-#if FUNCTIONS_V3_OR_GREATER
-            if (this.OutOfProcProtocol == OutOfProcOrchestrationProtocol.MiddlewarePassthrough)
-            {
-                return this.localGrpcListener.ListenAddress;
-            }
-#endif
-
-            return this.HttpApiHandler.GetBaseUrl();
         }
 
         internal DurabilityProvider GetDurabilityProvider(DurableClientAttribute attribute)
@@ -563,18 +537,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private void StopLocalHttpServer()
         {
             this.HttpApiHandler.StopLocalHttpServerAsync().GetAwaiter().GetResult();
-        }
-#endif
-
-#if FUNCTIONS_V3_OR_GREATER
-        private void StartLocalGrpcServer()
-        {
-            this.localGrpcListener.StartAsync().GetAwaiter().GetResult();
-        }
-
-        private void StopLocalGrpcServer()
-        {
-            this.localGrpcListener.StopAsync().GetAwaiter().GetResult();
         }
 #endif
 
@@ -1606,7 +1568,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             /// <param name="name">A descriptive name.</param>
             public NoOpScaleMonitor(string name)
             {
+#pragma warning disable CS0618 // Type or member is obsolete
                 this.Descriptor = new ScaleMonitorDescriptor(name);
+#pragma warning restore CS0618 // Type or member is obsolete
             }
 
             /// <summary>

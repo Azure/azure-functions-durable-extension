@@ -2,21 +2,13 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.DurableTask.Client;
 using Microsoft.DurableTask.Client.Grpc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-
-#if NET6_0_OR_GREATER
-using Grpc.Net.Client;
-#endif
-
-#if NETSTANDARD
-using GrpcChannel = Grpc.Core.Channel;
-#endif
+using Microsoft.Azure.Functions.Worker.Extensions.Rpc;
+using Grpc.Core;
+using Grpc.Core.Interceptors;
 
 namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
 
@@ -26,188 +18,93 @@ namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
 /// <remarks>
 /// This class does NOT provide <see cref="FunctionsDurableTaskClient" /> is meant as a per-binding wrapper.
 /// </remarks>
-internal partial class FunctionsDurableClientProvider : IAsyncDisposable
+internal partial class FunctionsDurableClientProvider
 {
-    private readonly ReaderWriterLockSlim sync = new();
     private readonly ILoggerFactory loggerFactory;
     private readonly ILogger logger;
     private readonly DurableTaskClientOptions options;
-    private Dictionary<ClientKey, ClientHolder>? clients = new();
+    private readonly FunctionsGrpcOptions grpcOptions;
 
-    private bool disposed;
+    private readonly DurableTaskClient defaultClient;
 
     /// <summary>
     /// Initializes a new instance of <see cref="FunctionsDurableClientProvider" /> class.
     /// </summary>
     /// <param name="loggerFactory">The service provider.</param>
     /// <param name="options">The client options.</param>
-    public FunctionsDurableClientProvider(ILoggerFactory loggerFactory, IOptions<DurableTaskClientOptions> options)
+    /// <param name="grpcOptions">The grpc options.</param>
+    public FunctionsDurableClientProvider(
+        ILoggerFactory loggerFactory,
+        IOptions<DurableTaskClientOptions> options,
+        IOptions<FunctionsGrpcOptions> grpcOptions)
     {
         this.loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
         this.logger = loggerFactory.CreateLogger<FunctionsDurableClientProvider>();
         this.options = options?.Value ?? throw new ArgumentNullException(nameof(options));
-    }
+        this.grpcOptions = grpcOptions?.Value ?? throw new ArgumentNullException(nameof(grpcOptions));
 
-    /// <inheritdoc />
-    public async ValueTask DisposeAsync()
-    {
-        if (this.disposed)
-        {
-            return;
-        }
-
-        try
-        {
-            this.sync.EnterWriteLock();
-            try
-            {
-                if (this.disposed)
-                {
-                    return;
-                }
-
-                foreach (ClientHolder holder in this.clients!.Values)
-                {
-                    await holder.DisposeAsync();
-                }
-
-                this.clients = null;
-                this.disposed = true;
-            }
-            finally
-            {
-                this.sync.ExitWriteLock();
-            }
-        }
-        catch (ObjectDisposedException)
-        {
-            // this can happen when 'this.sync' is disposed from concurrent DisposeAsync() calls.
-        }
-
-        this.sync.Dispose();
+        this.defaultClient = this.GetClientCore(null, null);
     }
 
     /// <summary>
     /// Gets a <see cref="DurableTaskClient" /> by name and gRPC endpoint.
     /// </summary>
-    /// <param name="endpoint">The gRPC endpoint this client should connect to.</param>
     /// <param name="taskHub">The name of the task hub this client is for.</param>
     /// <param name="connectionName">The name of the connection to use for the task-hub.</param>
     /// <returns>A <see cref="DurableTaskClient" />.</returns>
-    public DurableTaskClient GetClient(Uri endpoint, string? taskHub, string? connectionName)
+    public DurableTaskClient GetClient(string? taskHub, string? connectionName)
     {
-        this.VerifyNotDisposed();
-        this.sync.EnterReadLock();
-
-        taskHub ??= string.Empty;
-        connectionName ??= string.Empty;
-        ClientKey key = new(endpoint, taskHub, connectionName);
-        try
+        if (string.IsNullOrEmpty(taskHub) && string.IsNullOrEmpty(connectionName))
         {
-            this.VerifyNotDisposed();
-            if (this.clients!.TryGetValue(key, out ClientHolder? holder))
-            {
-                this.logger.LogTrace("DurableTaskClient resolved from cache");
-                return holder.Client;
-            }
-        }
-        finally
-        {
-            this.sync.ExitReadLock();
+            // optimization for the most often used client.
+            return this.defaultClient;
         }
 
-        this.sync.EnterWriteLock();
-        try
-        {
-            this.VerifyNotDisposed();
-            if (this.clients!.TryGetValue(key, out ClientHolder? holder))
-            {
-                this.logger.LogTrace("DurableTaskClient resolved from cache");
-                return holder.Client;
-            }
-
-            this.logger.LogTrace(
-                "DurableTaskClient cache miss, constructing for Endpoint: '{Endpoint}', TaskHub: '{TaskHub}', ConnectionName: '{ConnectionName}'",
-                endpoint,
-                taskHub,
-                connectionName);
-            GrpcChannel channel = CreateChannel(key);
-            GrpcDurableTaskClientOptions options = new()
-            {
-                Channel = channel,
-                DataConverter = this.options.DataConverter,
-            };
-
-            ILogger logger = this.loggerFactory.CreateLogger<GrpcDurableTaskClient>();
-            GrpcDurableTaskClient client = new(taskHub, options, logger);
-            holder = new(client, channel);
-            this.clients[key] = holder;
-            return client;
-        }
-        finally
-        {
-            this.sync.ExitWriteLock();
-        }
+        return this.GetClientCore(taskHub, connectionName);
     }
 
-    private void VerifyNotDisposed()
+    private DurableTaskClient GetClientCore(string? name, string? connection)
     {
-        if (this.disposed)
+        GrpcDurableTaskClientOptions options = new()
         {
-            throw new ObjectDisposedException(nameof(FunctionsDurableClientProvider));
-        }
+            CallInvoker = this.CreateCallInvoker(name, connection),
+            DataConverter = this.options.DataConverter,
+        };
+
+        ILogger logger = this.loggerFactory.CreateLogger<GrpcDurableTaskClient>();
+        return new GrpcDurableTaskClient(name ?? string.Empty, options, logger);
     }
 
-    // Wrapper class to conveniently dispose/shutdown the client and channel together.
-    private class ClientHolder : IAsyncDisposable
+    private CallInvoker CreateCallInvoker(string? name, string? connection)
     {
-        private readonly GrpcChannel channel;
-
-        public ClientHolder(DurableTaskClient client, GrpcChannel channel)
+        if (string.IsNullOrEmpty(name) && string.IsNullOrEmpty(connection))
         {
-            this.Client = client;
-            this.channel = channel;
+            return this.grpcOptions.CallInvoker;
         }
 
-        public DurableTaskClient Client { get; }
-
-        public async ValueTask DisposeAsync()
+        return this.grpcOptions.CallInvoker.Intercept(incoming =>
         {
-            try
+            Metadata metadata = incoming;
+            if (incoming.IsReadOnly)
             {
-                await this.Client.DisposeAsync();
-                await this.channel.ShutdownAsync();
-            }
-            catch
-            {
-                // dispose should not throw and unsure how Channel multiple ShutdownAsync() calls behave.
-            }
-        }
-    }
-
-    private record ClientKey(Uri Address, string? Name, string? Connection)
-    {
-        private static readonly Dictionary<string, string> EmptyHeaders = new();
-
-        public IReadOnlyDictionary<string, string> GetHeaders()
-        {
-            if (string.IsNullOrEmpty(this.Name) && string.IsNullOrEmpty(this.Connection))
-            {
-                return EmptyHeaders;
+                metadata = new();
+                foreach (Metadata.Entry entry in incoming)
+                {
+                    metadata.Add(entry);
+                }
             }
 
-            Dictionary<string, string> headers = new();
-            if (!string.IsNullOrEmpty(this.Name))
+            if (!string.IsNullOrEmpty(name))
             {
-                headers["Durable-TaskHub"] = this.Name!;
+                metadata.Add("Durable-TaskHub", name);
             }
 
-            if (!string.IsNullOrEmpty(this.Connection))
+            if (!string.IsNullOrEmpty(connection))
             {
-                headers["Durable-ConnectionName"] = this.Connection!;
+                metadata.Add("Durable-ConnectionName", connection);
             }
 
-            return headers;
-        }
+            return metadata;
+        });
     }
 }

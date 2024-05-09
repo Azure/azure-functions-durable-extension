@@ -31,18 +31,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (this.config.OutOfProcProtocol == OutOfProcOrchestrationProtocol.MiddlewarePassthrough)
             {
                 // Out-of-proc v2 (aka middleware passthrough) uses gRPC instead of vanilla HTTP + JSON as the RPC protocol.
-                string? localRpcAddress = this.config.GetLocalRpcAddress();
-                if (localRpcAddress == null)
-                {
-                    throw new InvalidOperationException("The local RPC address has not been configured!");
-                }
-
                 return JsonConvert.SerializeObject(new OrchestrationClientInputData
                 {
                     TaskHubName = string.IsNullOrEmpty(attr.TaskHub) ? client.TaskHubName : attr.TaskHub,
                     ConnectionName = attr.ConnectionName,
-                    RpcBaseUrl = localRpcAddress,
-                    RequiredQueryStringParameters = this.config.HttpApiHandler.GetUniversalQueryStrings(),
                 });
             }
 

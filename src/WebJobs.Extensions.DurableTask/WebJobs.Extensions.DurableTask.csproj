@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netcoreapp3.1;netstandard2.0;net462</TargetFrameworks>
+    <TargetFrameworks>net6.0;netstandard2.0;net462</TargetFrameworks>
     <AssemblyName>Microsoft.Azure.WebJobs.Extensions.DurableTask</AssemblyName>
     <RootNamespace>Microsoft.Azure.WebJobs.Extensions.DurableTask</RootNamespace>
     <MajorVersion>2</MajorVersion>
@@ -84,22 +84,22 @@
     .NET Core 3.1 settings: These are for Functions V3 and above.
     This is the target for extension bundles V4 and above.
   -->
-  <PropertyGroup Condition="'$(TargetFramework)' == 'netcoreapp3.1'">
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net6.0'">
     <DefineConstants>$(DefineConstants);FUNCTIONS_V2_OR_GREATER;FUNCTIONS_V3_OR_GREATER</DefineConstants>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.1'">
+  <ItemGroup Condition="'$(TargetFramework)' == 'net6.0'">
     <PackageReference Include="Azure.Identity" Version="1.5.0" />
-    <PackageReference Include="Microsoft.Azure.WebJobs" Version="3.0.31" />
+    <PackageReference Include="Microsoft.Azure.WebJobs" Version="3.0.39" />
+    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.Rpc" Version="3.0.39" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.WebApiCompatShim" Version="2.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Routing" Version="2.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Server.Kestrel" Version="2.2.0" />
     <PackageReference Include="Microsoft.Extensions.Azure" Version="1.1.1" />
-    <PackageReference Include="Microsoft.Extensions.Http" Version="2.2.0" />
     <PackageReference Include="Microsoft.ApplicationInsights" Version="2.12.2" />
     <!-- Explicitly pinned transitive dependencies with CVE vulnerabilities.-->
     <PackageReference Include="Microsoft.AspNetCore.Server.Kestrel.Transport.Sockets" Version="2.2.1" />
     <!-- The gRPC dependencies in this package are not compatible with older frameworks, like .NET Core 2.x -->
-    <PackageReference Include="Microsoft.DurableTask.Sidecar.Protobuf" Version="1.0.0" />
+    <PackageReference Include="Microsoft.DurableTask.Grpc" Version="1.2.2" />
   </ItemGroup>
 
   <!-- Common dependencies across all targets -->

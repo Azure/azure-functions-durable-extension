@@ -9,10 +9,12 @@ using Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
+using Microsoft.Azure.WebJobs.Host.Config;
 using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
+using Microsoft.ApplicationInsights.Extensibility;
 #else
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
@@ -20,6 +22,10 @@ using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.Host.Config;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+#endif
+
+#if FUNCTIONS_V3_OR_GREATER
+using Microsoft.Azure.WebJobs.Extensions.Rpc;
 #endif
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
@@ -85,7 +91,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new ArgumentNullException(nameof(builder));
             }
 
-            builder
+            IWebJobsExtensionBuilder extension = builder
                 .AddExtension<DurableTaskExtension>()
                 .BindOptions<DurableTaskOptions>();
 
@@ -105,6 +111,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             serviceCollection.TryAddSingleton<IConnectionStringResolver, WebJobsConnectionStringProvider>();
             serviceCollection.AddSingleton<IPlatformInformation, DefaultPlatformInformation>();
 #pragma warning restore CS0612, CS0618 // Type or member is obsolete
+
+#if FUNCTIONS_V3_OR_GREATER
+            serviceCollection.AddSingleton(sp =>
+            {
+                foreach (IExtensionConfigProvider cfg in sp.GetServices<IExtensionConfigProvider>())
+                {
+                    if (cfg is DurableTaskExtension ext)
+                    {
+                        return ext;
+                    }
+                }
+
+                throw new InvalidOperationException($"Unable to resolve service {typeof(DurableTaskExtension)}.");
+            });
+
+            extension.MapWorkerGrpcService<TaskHubGrpcServer>();
+#endif
 
             return builder;
         }

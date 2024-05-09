@@ -2,12 +2,10 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System;
-using Azure.Core.Serialization;
 using Microsoft.Azure.Functions.Worker.Core;
 using Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
 using Microsoft.DurableTask;
 using Microsoft.DurableTask.Client;
-using Microsoft.DurableTask.Converters;
 using Microsoft.DurableTask.Worker;
 using Microsoft.DurableTask.Worker.Shims;
 using Microsoft.Extensions.DependencyInjection;

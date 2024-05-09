@@ -13,7 +13,6 @@ internal sealed partial class DurableTaskClientConverter : IInputConverter
 {
     private readonly FunctionsDurableClientProvider clientProvider;
 
-    // Constructor parameters are optional DI-injected services.
     public DurableTaskClientConverter(FunctionsDurableClientProvider clientProvider)
     {
         this.clientProvider = clientProvider ?? throw new ArgumentNullException(nameof(clientProvider));
@@ -42,13 +41,7 @@ internal sealed partial class DurableTaskClientConverter : IInputConverter
         try
         {
             DurableClientInputData? inputData = JsonSerializer.Deserialize<DurableClientInputData>(clientConfigText);
-            if (!Uri.TryCreate(inputData?.rpcBaseUrl, UriKind.Absolute, out Uri? endpoint))
-            {
-                return new ValueTask<ConversionResult>(ConversionResult.Failed(
-                    new InvalidOperationException("Failed to parse the input binding payload data")));
-            }
-
-            DurableTaskClient client = this.clientProvider.GetClient(endpoint, inputData?.taskHubName, inputData?.connectionName);
+            DurableTaskClient client = this.clientProvider.GetClient(inputData?.taskHubName, inputData?.connectionName);
             client = new FunctionsDurableTaskClient(client, inputData!.requiredQueryStringParameters);
             return new ValueTask<ConversionResult>(ConversionResult.Success(client));
         }
@@ -62,5 +55,5 @@ internal sealed partial class DurableTaskClientConverter : IInputConverter
     }
 
     // Serializer is case-sensitive and incoming JSON properties are camel-cased.
-    private record DurableClientInputData(string rpcBaseUrl, string taskHubName, string connectionName, string requiredQueryStringParameters);
+    private record DurableClientInputData(string taskHubName, string connectionName, string requiredQueryStringParameters);
 }
