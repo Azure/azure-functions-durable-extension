@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Functions.Worker;
 [AttributeUsage(AttributeTargets.Parameter)]
 [DebuggerDisplay("{Activity}")]
 [InputConverter(typeof(ActivityInputConverter))]
-[ConverterFallbackBehavior(ConverterFallbackBehavior.Disallow)]
+[ConverterFallbackBehavior(ConverterFallbackBehavior.Allow)]
 public sealed class ActivityTriggerAttribute : TriggerBindingAttribute
 {
     /// <summary>

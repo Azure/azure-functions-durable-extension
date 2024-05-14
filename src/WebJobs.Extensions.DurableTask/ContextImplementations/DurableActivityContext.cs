@@ -127,13 +127,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             string serializedValue = jToken.ToString(Formatting.None);
 
-            // Object inputs for out-of-proc activities are passed in their JSON-stringified form with a destination
-            // type of System.String. Unfortunately, deserializing a JSON string to a string causes
-            // MessagePayloadDataConverter to throw an exception. This is a workaround for that case. All other
-            // inputs with destination System.String (in-proc: JSON and not JSON; out-of-proc: not-JSON) inputs with
-            // destination System.String should cast to JValues and be handled above.)
-            if (this.rawInput)
+            if (this.rawInput) // the "modern" OOProc protocol case
             {
+                return serializedValue;
+            }
+            else if (destinationType.Equals(typeof(string))) // legacy OOProc protocol case (JS, Python, PowerShell)
+            {
+                // Object/complex inputs in "legacy" out-of-proc activities are passed with a destination
+                // type of System.String (to be precise, if inspected with a debugger, you'll see a stringified JSON).
+                // Unfortunately, deserializing a JSON string to a string causes  MessagePayloadDataConverter to throw an exception, so the
+                // return statement prevents that.
                 return serializedValue;
             }
 

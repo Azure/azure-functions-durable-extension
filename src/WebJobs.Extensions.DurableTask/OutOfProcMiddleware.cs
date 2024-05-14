@@ -214,8 +214,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         isReplay: false);
                 }
             }
+            else if (context.TryGetOrchestrationErrorDetails(out string details))
+            {
+                // the function failed because the orchestrator failed.
+
+                orchestratorResult = context.GetResult();
+
+                this.TraceHelper.FunctionFailed(
+                     this.Options.HubName,
+                     functionName.Name,
+                     instance.InstanceId,
+                     details,
+                     FunctionType.Orchestrator,
+                     isReplay: false);
+
+                await this.LifeCycleNotificationHelper.OrchestratorFailedAsync(
+                    this.Options.HubName,
+                    functionName.Name,
+                    instance.InstanceId,
+                    details,
+                    isReplay: false);
+            }
             else
             {
+                // the function failed for some other reason
+
                 string exceptionDetails = functionResult.Exception.ToString();
 
                 this.TraceHelper.FunctionFailed(
@@ -374,15 +397,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     functionName.Name,
                     batchRequest.InstanceId,
                     functionResult.Exception.ToString(),
-                    FunctionType.Orchestrator,
+                    FunctionType.Entity,
                     isReplay: false);
 
-                SetErrorResult(new FailureDetails(
-                    errorType: "FunctionInvocationFailed",
-                    errorMessage: $"Invocation of function '{functionName}' failed with an exception.",
-                    stackTrace: null,
-                    innerFailure: new FailureDetails(functionResult.Exception),
-                    isNonRetriable: true));
+                if (context.Result != null)
+                {
+                    // Send the results of the entity batch execution back to the DTFx dispatch pipeline.
+                    // This is important so we can propagate the individual failure details of each failed operation back to the
+                    // calling orchestrator. Also, even though the function execution was reported as a failure,
+                    // it may not be a "total failure", i.e. some of the operations in the batch may have succeeded and updated
+                    // the entity state.
+                    dispatchContext.SetProperty(context.Result);
+                }
+                else
+                {
+                    SetErrorResult(new FailureDetails(
+                        errorType: "FunctionInvocationFailed",
+                        errorMessage: $"Invocation of function '{functionName}' failed with an exception.",
+                        stackTrace: null,
+                        innerFailure: new FailureDetails(functionResult.Exception),
+                        isNonRetriable: true));
+                }
 
                 return;
             }
@@ -399,8 +434,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                        FunctionType.Entity,
                        isReplay: false);
 
-            // Send the result of the orchestrator function to the DTFx dispatch pipeline.
-            // This allows us to bypass the default, in-process execution and process the given results immediately.
+            // Send the results of the entity batch execution back to the DTFx dispatch pipeline.
             dispatchContext.SetProperty(batchResult);
         }
 
@@ -621,23 +655,40 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             [NotNullWhen(true)] out string? exceptionType,
             [NotNullWhen(true)] out string? exceptionMessage)
         {
-            // Example exception messages:
+            // In certain situations, like when the .NET Isolated worker is configured with
+            // WorkerOptions.EnableUserCodeException = true, the exception message we get from the .NET Isolated
+            // worker looks like this:
+            // "Exception of type 'ExceptionSerialization.Function+UnknownException' was thrown."
+            const string startMarker = "Exception of type '";
+            const string endMarker = "' was thrown.";
+            if (exception.StartsWith(startMarker) && exception.EndsWith(endMarker))
+            {
+                exceptionType = exception[startMarker.Length..^endMarker.Length];
+                exceptionMessage = string.Empty;
+                return true;
+            }
+
+            // The following are the more common cases that we expect to see, which will be common across a
+            // variety of language workers:
             // .NET   : System.ApplicationException: Kah-BOOOOM!!
             // Java   : SQLServerException: Invalid column name 'status'.
             // Python : ResourceNotFoundError: The specified blob does not exist. RequestId:8d5a2c9b-b01e-006f-33df-3f7a2e000000 Time:2022-03-25T00:31:24.2003327Z ErrorCode:BlobNotFound Error:None
             // Node   : SyntaxError: Unexpected token N in JSON at position 12768
 
-            // From the above examples, they all follow the same pattern of {ExceptionType}: {Message}
+            // From the above examples, they all follow the same pattern of {ExceptionType}: {Message}.
+            // However, some exception types override the ToString() method and do something custom, in which
+            // case the message may not be in the expected format. In such cases we won't be able to distinguish
+            // the exception type.
             string delimeter = ": ";
             int endExceptionType = exception.IndexOf(delimeter);
             if (endExceptionType < 0)
             {
                 exceptionType = null;
-                exceptionMessage = null;
+                exceptionMessage = exception;
                 return false;
             }
 
-            exceptionType = exception[..endExceptionType];
+            exceptionType = exception[..endExceptionType].TrimEnd();
 
             // The .NET Isolated language worker strangely includes the stack trace in the exception message.
             // To avoid bloating the payload with redundant information, we only consider the first line.
@@ -645,7 +696,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             int endMessage = exception.IndexOf('\n', startMessage);
             if (endMessage < 0)
             {
-                exceptionMessage = exception[startMessage..];
+                exceptionMessage = exception[startMessage..].TrimEnd();
             }
             else
             {

@@ -72,6 +72,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth
                 RefreshOffset = tokenRefreshOffset,
             };
 
+            // The token credential will make background callbacks to renew the token.
+            // We suppress async flow to avoid logging scope from being captured as we do not know
+            // where this will be called from first.
+            using AsyncFlowControl flowControl = System.Threading.ExecutionContext.SuppressFlow();
             return new AppAuthTokenCredential(
                 value.Token,
                 (o, t) => this.RenewTokenAsync((TokenRenewalState)o, t),

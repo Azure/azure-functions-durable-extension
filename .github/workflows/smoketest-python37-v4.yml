@@ -1,6 +1,7 @@
 name: Smoke Test - Python 3.7 on Functions V4
 
 on:
+  workflow_dispatch:
   push:
     branches: [ main, dev ]
     paths:
