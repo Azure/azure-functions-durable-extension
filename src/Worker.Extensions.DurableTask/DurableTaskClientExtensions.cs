@@ -26,7 +26,7 @@ public static class DurableTaskClientExtensions
     /// <param name="instanceId">The ID of the orchestration instance to check.</param>
     /// <param name="cancellation">The cancellation token.</param>
     /// <returns>An HTTP 202 response with a Location header and a payload containing instance control URLs.</returns>
-    public static Task<HttpResponseData> CreateCheckStatusResponseAsync(
+    public virtual static Task<HttpResponseData> CreateCheckStatusResponseAsync(
         this DurableTaskClient client,
         HttpRequestData request,
         string instanceId,
@@ -44,7 +44,7 @@ public static class DurableTaskClientExtensions
     /// <param name="statusCode">The status code.</param>
     /// <param name="cancellation">The cancellation token.</param>
     /// <returns>An HTTP response with a Location header and a payload containing instance control URLs.</returns>
-    public static async Task<HttpResponseData> CreateCheckStatusResponseAsync(
+    public virtual static async Task<HttpResponseData> CreateCheckStatusResponseAsync(
         this DurableTaskClient client,
         HttpRequestData request,
         string instanceId,
