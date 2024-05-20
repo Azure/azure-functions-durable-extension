@@ -8,6 +8,11 @@ using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.ApplicationInsights.Channel;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
+<<<<<<< HEAD
+=======
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage;
+>>>>>>> v3.x
 using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -40,12 +45,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             ITypeLocator typeLocator,
             Action<ScaleOptions> configureScaleOptions = null)
         {
-            // Unless otherwise specified, use legacy partition management for tests as it makes the task hubs start up faster.
+            // Unless specified, use table partition management for tests as it makes the task hubs start up faster.
             // These tests run on a single task hub workers, so they don't test partition management anyways, and that is tested
             // in the DTFx repo.
-            if (!options.Value.StorageProvider.ContainsKey(nameof(AzureStorageOptions.UseLegacyPartitionManagement)))
+            if (options.Value.StorageProvider.ContainsKey(nameof(AzureStorageOptions.UseLegacyPartitionManagement)))
             {
-                options.Value.StorageProvider.Add(nameof(AzureStorageOptions.UseLegacyPartitionManagement), true);
+                options.Value.StorageProvider.Add(nameof(AzureStorageOptions.UseTablePartitionManagement), false);
             }
 
             var hostBuilder = new HostBuilder()
@@ -66,7 +71,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                             webJobsBuilder.AddDurableTask(options, storageProvider, durabilityProviderFactoryType);
                         }
 
-                        webJobsBuilder.AddAzureStorage();
+                        webJobsBuilder.AddAzureStorageBlobs();
                     })
                 .ConfigureServices(
                     serviceCollection =>
@@ -117,13 +122,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return new FunctionsV2HostWrapper(host, options, nameResolver);
         }
 
-        public static IHost CreateJobHostExternalEnvironment(IStorageAccountProvider storageAccountProvider)
+        public static IHost CreateJobHostExternalEnvironment(IStorageServiceClientProviderFactory clientProviderFactory)
         {
             IHost host = new HostBuilder()
                 .ConfigureServices(
                     serviceCollection =>
                     {
-                        serviceCollection.AddSingleton(storageAccountProvider);
+                        serviceCollection.AddSingleton(clientProviderFactory);
                         serviceCollection.AddDurableClientFactory();
                     })
                 .Build();

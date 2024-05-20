@@ -9,16 +9,23 @@ using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using Azure;
+using Azure.Storage.Blobs;
+using Azure.Storage.Blobs.Models;
+using Azure.Storage.Blobs.Specialized;
 using DurableTask.AzureStorage;
 using Microsoft.ApplicationInsights.Channel;
 #if !FUNCTIONS_V1
 using Microsoft.Extensions.Hosting;
 using Microsoft.Azure.WebJobs.Host.Scale;
 #endif
+<<<<<<< HEAD
+=======
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage;
+>>>>>>> v3.x
 using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Microsoft.WindowsAzure.Storage;
 using Moq;
 using Newtonsoft.Json.Linq;
 using Xunit;
@@ -215,19 +222,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
 #if !FUNCTIONS_V1
-        public static IHost GetJobHostExternalEnvironment(IStorageAccountProvider storageAccountProvider = null)
+        public static IHost GetJobHostExternalEnvironment(IStorageServiceClientProviderFactory clientProviderFactory = null)
         {
-            if (storageAccountProvider == null)
+            if (clientProviderFactory == null)
             {
-                storageAccountProvider = new TestStorageAccountProvider();
+                clientProviderFactory = new TestStorageServiceClientProviderFactory();
             }
 
-            return GetJobHostWithOptionsForDurableClientFactoryExternal(storageAccountProvider);
+            return GetJobHostWithOptionsForDurableClientFactoryExternal(clientProviderFactory);
         }
 
-        public static IHost GetJobHostWithOptionsForDurableClientFactoryExternal(IStorageAccountProvider storageAccountProvider)
+        public static IHost GetJobHostWithOptionsForDurableClientFactoryExternal(IStorageServiceClientProviderFactory clientProviderFactory)
         {
-            return PlatformSpecificHelpers.CreateJobHostExternalEnvironment(storageAccountProvider);
+            return PlatformSpecificHelpers.CreateJobHostExternalEnvironment(clientProviderFactory);
         }
 
         public static ITestHost GetJobHostWithMultipleDurabilityProviders(
@@ -417,7 +424,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var settings = new AzureStorageOrchestrationServiceSettings
             {
                 TaskHubName = hubName,
-                StorageConnectionString = GetStorageConnectionString(),
+                StorageAccountClientProvider = new StorageAccountClientProvider(GetStorageConnectionString()),
             };
 
             var service = new AzureStorageOrchestrationService(settings);
@@ -937,16 +944,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public static async Task<string> LoadStringFromTextBlobAsync(string blobName)
         {
             string connectionString = GetStorageConnectionString();
-            CloudStorageAccount account = CloudStorageAccount.Parse(connectionString);
-            var blobClient = account.CreateCloudBlobClient();
-            var testcontainer = blobClient.GetContainerReference("test");
-            var blob = testcontainer.GetBlockBlobReference(blobName);
+            var blobServiceClient = new BlobServiceClient(connectionString);
+            BlobContainerClient containerClient = blobServiceClient.GetBlobContainerClient("test");
+            BlockBlobClient blob = containerClient.GetBlockBlobClient(blobName);
             try
             {
-                return await blob.DownloadTextAsync();
+                BlobDownloadResult result = await blob.DownloadContentAsync();
+                return result.Content.ToString();
             }
-            catch (StorageException e)
-                when ((e as StorageException)?.RequestInformation?.HttpStatusCode == 404)
+            catch (RequestFailedException e) when (e.Status == 404)
             {
                 // if the blob does not exist, just return null.
                 return null;
@@ -956,11 +962,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public static async Task WriteStringToTextBlob(string blobName, string content)
         {
             string connectionString = GetStorageConnectionString();
-            CloudStorageAccount account = CloudStorageAccount.Parse(connectionString);
-            var blobClient = account.CreateCloudBlobClient();
-            var testcontainer = blobClient.GetContainerReference("test");
-            var blob = testcontainer.GetBlockBlobReference(blobName);
-            await blob.UploadTextAsync(content);
+            var blobServiceClient = new BlobServiceClient(connectionString);
+            BlobContainerClient containerClient = blobServiceClient.GetBlobContainerClient("test");
+            BlockBlobClient blob = containerClient.GetBlockBlobClient(blobName);
+
+            using (var buffer = new MemoryStream(Encoding.UTF8.GetBytes(content)))
+            {
+                await blob.UploadAsync(buffer);
+            }
         }
 
         private class ExplicitTypeLocator : ITypeLocator

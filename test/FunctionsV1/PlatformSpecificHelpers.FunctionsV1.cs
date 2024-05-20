@@ -7,6 +7,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.ApplicationInsights.Channel;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -39,24 +40,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var config = new JobHostConfiguration { HostId = "durable-task-host" };
             config.TypeLocator = TestHelpers.GetTypeLocator();
 
-            var storageAccountProvider = new AzureStorageAccountProvider(new WebJobsConnectionInfoProvider());
+            var clientProviderFactory = new StorageServiceClientProviderFactory(new WebJobsConnectionInfoProvider());
 
             var loggerFactory = new LoggerFactory();
             loggerFactory.AddProvider(loggerProvider);
 
-            // Unless otherwise specified, use legacy partition management for tests as it makes the task hubs start up faster.
+            // Unless specified, use table partition management for tests as it makes the task hubs start up faster.
             // These tests run on a single task hub workers, so they don't test partition management anyways, and that is tested
             // in the DTFx repo.
-            if (!options.Value.StorageProvider.ContainsKey(nameof(AzureStorageOptions.UseLegacyPartitionManagement)))
+            if (options.Value.StorageProvider.ContainsKey(nameof(AzureStorageOptions.UseLegacyPartitionManagement)))
             {
-                options.Value.StorageProvider.Add(nameof(AzureStorageOptions.UseLegacyPartitionManagement), true);
+                options.Value.StorageProvider.Add(nameof(AzureStorageOptions.UseTablePartitionManagement), false);
             }
 
             platformInformationService = platformInformationService ?? new DefaultPlatformInformation(nameResolver, loggerFactory);
 
             IDurabilityProviderFactory orchestrationServiceFactory = new AzureStorageDurabilityProviderFactory(
                 options,
-                storageAccountProvider,
+                clientProviderFactory,
                 nameResolver,
                 loggerFactory,
                 platformInformationService);
@@ -87,23 +88,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             config.LoggerFactory = loggerFactory;
 
             var host = new JobHost(config);
-            return new FunctionsV1HostWrapper(host, options, storageAccountProvider);
+            return new FunctionsV1HostWrapper(host, options, clientProviderFactory);
         }
 
         private class FunctionsV1HostWrapper : ITestHost
         {
             private readonly JobHost innerHost;
             private readonly DurableTaskOptions options;
-            private readonly IStorageAccountProvider storageAccountProvider;
+            private readonly IStorageServiceClientProviderFactory clientProviderFactory;
 
             public FunctionsV1HostWrapper(
                 JobHost innerHost,
                 IOptions<DurableTaskOptions> options,
-                IStorageAccountProvider storageAccountResolver)
+                IStorageServiceClientProviderFactory clientProviderFactory)
             {
                 this.innerHost = innerHost ?? throw new ArgumentNullException(nameof(innerHost));
                 this.options = options.Value;
-                this.storageAccountProvider = storageAccountResolver;
+                this.clientProviderFactory = clientProviderFactory;
             }
 
             public Task CallAsync(string methodName, IDictionary<string, object> args)

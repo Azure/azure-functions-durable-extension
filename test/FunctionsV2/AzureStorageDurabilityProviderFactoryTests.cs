@@ -19,12 +19,12 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void DefaultWorkerId_IsMachineName()
         {
-            var storageAccountProvider = new TestStorageAccountProvider();
+            var clientProviderFactory = new TestStorageServiceClientProviderFactory();
             var mockOptions = new OptionsWrapper<DurableTaskOptions>(new DurableTaskOptions());
             var nameResolver = new Mock<INameResolver>().Object;
             var factory = new AzureStorageDurabilityProviderFactory(
                 mockOptions,
-                storageAccountProvider,
+                clientProviderFactory,
                 nameResolver,
                 NullLoggerFactory.Instance,
                 TestHelpers.GetMockPlatformInformationService());
@@ -38,12 +38,12 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void ConsumptionDefaultsAreApplied()
         {
-            var storageAccountProvider = new TestStorageAccountProvider();
+            var clientProviderFactory = new TestStorageServiceClientProviderFactory();
             var mockOptions = new OptionsWrapper<DurableTaskOptions>(new DurableTaskOptions());
             var nameResolver = new Mock<INameResolver>().Object;
             var factory = new AzureStorageDurabilityProviderFactory(
                 mockOptions,
-                storageAccountProvider,
+                clientProviderFactory,
                 nameResolver,
                 NullLoggerFactory.Instance,
                 TestHelpers.GetMockPlatformInformationService(inConsumption: true));
@@ -60,12 +60,12 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void ConsumptionDefaultsForPythonAreApplied()
         {
-            var storageAccountProvider = new TestStorageAccountProvider();
+            var clientProviderFactory = new TestStorageServiceClientProviderFactory();
             var mockOptions = new OptionsWrapper<DurableTaskOptions>(new DurableTaskOptions());
             var nameResolver = new Mock<INameResolver>().Object;
             var factory = new AzureStorageDurabilityProviderFactory(
                 mockOptions,
-                storageAccountProvider,
+                clientProviderFactory,
                 nameResolver,
                 NullLoggerFactory.Instance,
                 TestHelpers.GetMockPlatformInformationService(inConsumption: true, language: WorkerRuntimeType.Python));
@@ -82,12 +82,12 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void ConsumptionDefaultsAreNotAlwaysApplied()
         {
-            var accountProvider = new TestStorageAccountProvider();
+            var clientProviderFactory = new TestStorageServiceClientProviderFactory();
             var mockOptions = new OptionsWrapper<DurableTaskOptions>(new DurableTaskOptions());
             var nameResolver = new Mock<INameResolver>().Object;
             var factory = new AzureStorageDurabilityProviderFactory(
                 mockOptions,
-                accountProvider,
+                clientProviderFactory,
                 nameResolver,
                 NullLoggerFactory.Instance,
                 TestHelpers.GetMockPlatformInformationService(inConsumption: false));
@@ -106,7 +106,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void ConsumptionDefaultsDoNotOverrideCustomerOptions()
         {
-            var storageAccountProvider = new TestStorageAccountProvider();
+            var storageAccountProvider = new TestStorageServiceClientProviderFactory();
             var options = new DurableTaskOptions();
 
             options.StorageProvider.Add("ControlQueueBufferThreshold", 999);
@@ -135,7 +135,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void EnvironmentIsVMSS_WorkerIdFromEnvironmentVariables()
         {
-            var storageAccountProvider = new TestStorageAccountProvider();
+            var clientProviderFactory = new TestStorageServiceClientProviderFactory();
             var mockOptions = new OptionsWrapper<DurableTaskOptions>(new DurableTaskOptions());
             var nameResolver = new SimpleNameResolver(new Dictionary<string, string>()
             {
@@ -145,7 +145,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
 
             var factory = new AzureStorageDurabilityProviderFactory(
                 mockOptions,
-                storageAccountProvider,
+                clientProviderFactory,
                 nameResolver,
                 NullLoggerFactory.Instance,
                 TestHelpers.GetMockPlatformInformationService());
