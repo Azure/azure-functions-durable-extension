@@ -15,15 +15,12 @@ _Due: <2-3-business-days-before-release>_
 - [ ] Run the [DTFx release pipeline](https://durabletaskframework.visualstudio.com/Durable%20Task%20Framework%20CI/_build?definitionId=21) ([defined here](https://github.com/Azure/durabletask/blob/main/azure-pipelines-release.yml)) to obtain new packages.
 - [ ] Publish DTFx packages to the [ADO feed](https://dev.azure.com/durabletaskframework/Durable%20Task%20Framework%20CI/_artifacts/feed/durabletask) for testing.
 - [ ] Keep branch `azure-storage-v12` updated with branch `main`.
-<<<<<<< HEAD
 
 **Prep DotNet Isolated SDK Release: (assigned to:)**
 _Due: <2-3-business-days-before-release>_
 - [ ] If there were DTFx.Core changes, check its reference version [here](https://github.com/microsoft/durabletask-dotnet/blob/c838535adb6aedb6671cf193389ce63a6b4a9b24/src/Abstractions/Abstractions.csproj#L10). If updates are required, document the changes in [release notes](https://github.com/microsoft/durabletask-dotnet/blob/c838535adb6aedb6671cf193389ce63a6b4a9b24/src/Abstractions/RELEASENOTES.md).
 - [ ] Check dotnet isolated SDK versions [here](https://github.com/microsoft/durabletask-dotnet/blob/c838535adb6aedb6671cf193389ce63a6b4a9b24/eng/targets/Release.props#L20). If updated, document the changes in the [change logs](https://github.com/microsoft/durabletask-dotnet/blob/c838535adb6aedb6671cf193389ce63a6b4a9b24/CHANGELOG.md).
 - [ ] Run pipeline [Release .Net out-of-proc SDK](https://durabletaskframework.visualstudio.com/Durable%20Task%20Framework%20CI/_build?definitionId=29) to create the new package and publish it to the ADO feed for testing.
-=======
->>>>>>> v3.x
 
 **Prep Release (assigned to: )**
 _Due: <2-business-days-before-release>_

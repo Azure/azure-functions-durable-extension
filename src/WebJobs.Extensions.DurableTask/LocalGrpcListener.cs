@@ -165,7 +165,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 catch (OrchestrationAlreadyExistsException)
                 {
                     throw new RpcException(new Status(StatusCode.AlreadyExists, $"An Orchestration instance with the ID {request.InstanceId} already exists."));
-<<<<<<< HEAD
                 }
                 catch (InvalidOperationException ex) when (ex.Message.EndsWith("already exists.")) // for older versions of DTF.AS and DTFx.Netherite
                 {
@@ -179,8 +178,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         instanceId: request.InstanceId,
                         message: $"Failed to start instanceId {request.InstanceId} due to internal exception.\n Exception trace: {ex}.");
                     throw new RpcException(new Status(StatusCode.Internal, $"Failed to start instance with ID {request.InstanceId}.\nInner Exception message: {ex.Message}."));
-=======
->>>>>>> v3.x
                 }
             }
 

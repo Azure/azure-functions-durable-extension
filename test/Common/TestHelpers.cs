@@ -19,10 +19,7 @@ using Microsoft.ApplicationInsights.Channel;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Azure.WebJobs.Host.Scale;
 #endif
-<<<<<<< HEAD
-=======
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage;
->>>>>>> v3.x
 using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;

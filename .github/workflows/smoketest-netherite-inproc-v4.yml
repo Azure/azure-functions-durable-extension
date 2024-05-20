@@ -1,10 +1,7 @@
 name: Smoke Test - .NET in-proc w/ Netherite on Functions V4
 
 on:
-<<<<<<< HEAD
   workflow_dispatch:
-=======
->>>>>>> v3.x
   push:
     branches: [ main, dev ]
     paths:

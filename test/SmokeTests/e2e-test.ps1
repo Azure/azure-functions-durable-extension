@@ -8,7 +8,6 @@ param(
 	[string]$ContainerName="app",
 	[switch]$NoSetup=$false,
 	[switch]$NoValidation=$false,
-<<<<<<< HEAD
 	[int]$Sleep=30,
   	[switch]$SetupSQLServer=$false,
   	[string]$pw="$env:SA_PASSWORD",
@@ -17,10 +16,6 @@ param(
     	[int]$port=1433,
      	[string]$dbname="DurableDB",
     	[string]$collation="Latin1_General_100_BIN2_UTF8"
-=======
-	[string]$AzuriteVersion="3.26.0",
-	[int]$Sleep=30
->>>>>>> v3.x
 )
 
 function Exit-OnError() {
