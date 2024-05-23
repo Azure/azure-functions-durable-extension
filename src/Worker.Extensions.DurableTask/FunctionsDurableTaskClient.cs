@@ -85,7 +85,7 @@ internal sealed class FunctionsDurableTaskClient : DurableTaskClient
     }
 
     public override Task TerminateInstanceAsync(
-    string instanceId, TerminateInstanceOptions? options = null, CancellationToken cancellation = default)
+        string instanceId, TerminateInstanceOptions? options = null, CancellationToken cancellation = default)
     {
         object? output = options?.Output;
         return this.inner.TerminateInstanceAsync(instanceId, output: output, cancellation);
