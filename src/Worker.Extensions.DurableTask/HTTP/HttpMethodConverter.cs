@@ -20,7 +20,8 @@ internal class HttpMethodConverter : JsonConverter<HttpMethod>
         Type objectType,
         JsonSerializerOptions options)
     {
-        return new HttpMethod(reader.GetString());
+        string readerString = reader.GetString() ?? string.Empty;
+        return new HttpMethod(readerString);
     }
 
     public override void Write(

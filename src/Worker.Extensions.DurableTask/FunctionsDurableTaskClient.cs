@@ -1,6 +1,7 @@
 // Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DurableTask;
@@ -87,8 +88,7 @@ internal sealed class FunctionsDurableTaskClient : DurableTaskClient
     public override Task TerminateInstanceAsync(
         string instanceId, TerminateInstanceOptions? options = null, CancellationToken cancellation = default)
     {
-        object? output = options?.Output;
-        return this.inner.TerminateInstanceAsync(instanceId, output: output, cancellation);
+        return this.inner.TerminateInstanceAsync(instanceId, options, cancellation);
     }
 
     public override Task<OrchestrationMetadata> WaitForInstanceCompletionAsync(
