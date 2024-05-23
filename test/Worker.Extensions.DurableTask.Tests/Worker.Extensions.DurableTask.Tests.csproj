@@ -18,8 +18,8 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
     <PackageReference Include="xunit" Version="2.5.3" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.5.3" />
-	<PackageReference Include="Moq" Version="4.7.145" />
-	<ProjectReference Include="..\..\src\Worker.Extensions.DurableTask\Worker.Extensions.DurableTask.csproj" />
+    <PackageReference Include="Moq" Version="4.7.145" />
+    <ProjectReference Include="..\..\src\Worker.Extensions.DurableTask\Worker.Extensions.DurableTask.csproj" />
   </ItemGroup>
 
   <ItemGroup>
