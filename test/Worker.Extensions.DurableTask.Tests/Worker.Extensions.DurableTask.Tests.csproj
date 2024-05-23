@@ -8,9 +8,9 @@
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
 
-	<!-- Sign assembly so it can reference internal components of the Worker Extension package -->
-	<SignAssembly>true</SignAssembly>
-	<AssemblyOriginatorKeyFile>..\..\sign.snk</AssemblyOriginatorKeyFile>
+    <!-- Sign assembly so it can reference internal components of the Worker Extension package -->
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\..\sign.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
 
   <ItemGroup>
