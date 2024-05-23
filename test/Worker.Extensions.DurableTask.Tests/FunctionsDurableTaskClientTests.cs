@@ -18,7 +18,8 @@ namespace Microsoft.Azure.Functions.Worker.Tests
             Mock<DurableTaskClient> durableClientMock = new(clientName);
 
             Task completedTask = Task.CompletedTask;
-            durableClientMock.Setup(x => x.TerminateInstanceAsync(It.IsAny<string>(), It.IsAny<TerminateInstanceOptions>(), It.IsAny<CancellationToken>())).Returns(completedTask);
+            durableClientMock.Setup(x => x.TerminateInstanceAsync(
+                It.IsAny<string>(), It.IsAny<TerminateInstanceOptions>(), It.IsAny<CancellationToken>())).Returns(completedTask);
 
             DurableTaskClient durableClient = durableClientMock.Object;
             FunctionsDurableTaskClient client = new FunctionsDurableTaskClient(durableClient, queryString: null);
