@@ -1,11 +1,10 @@
 # Release Notes
 
-## Microsoft.Azure.Functions.Worker.Extensions.DurableTask 1.2.0
+## Microsoft.Azure.Functions.Worker.Extensions.DurableTask 1.2.1
 
 ### New Features
 
-- Add `suspendPostUri` and `resumePostUri` to the list of returned URIs in `CreateCheckStatusResponseAsync`. (https://github.com/Azure/azure-functions-durable-extension/pull/2785)
-- Fix `NotSupportedException` when calling `PurgeAllInstancesAsync` and `PurgeInstanceAsync`
+- Fix regression on `TerminateInstanceAsync` API causing invocations to fail with "unimplemented" exceptions (https://github.com/Azure/azure-functions-durable-extension/pull/2829).
 
 ### Bug Fixes
 
