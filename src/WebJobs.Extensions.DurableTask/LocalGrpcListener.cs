@@ -157,23 +157,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     string instanceId = request.InstanceId ?? Guid.NewGuid().ToString("N");
                     TaskHubClient taskhubClient = new TaskHubClient(this.GetDurabilityProvider(context));
+                    OrchestrationInstance instance;
 
                     // TODO: Ideally, we'd have a single method in the taskhubClient that can handle both scheduled and non-scheduled starts.
                     // TODO: the type of `ScheduledStartTimestamp` is not nullable. Can we change it to `DateTime?` in the proto file?
                     if (request.ScheduledStartTimestamp != null)
                     {
-                        var ins = await taskhubClient.CreateScheduledOrchestrationInstanceAsync(
+                        instance = await taskhubClient.CreateScheduledOrchestrationInstanceAsync(
                             name: request.Name, version: request.Version, instanceId: instanceId, input: Raw(request.Input), startAt: request.ScheduledStartTimestamp.ToDateTime());
                     }
                     else
                     {
-                        await taskhubClient.CreateOrchestrationInstanceAsync(request.Name, request.Version, instanceId, Raw(request.Input));
+                        instance = await taskhubClient.CreateOrchestrationInstanceAsync(request.Name, request.Version, instanceId, Raw(request.Input));
                     }
 
-                    // TODO: should this not inclide the ExecutionId and other elements of the taskhubClient response?
+                    // TODO: should this not include the ExecutionId and other elements of the taskhubClient response?
                     return new P.CreateInstanceResponse
                     {
-                        InstanceId = instanceId,
+                        InstanceId = instance.InstanceId,
                     };
                 }
                 catch (OrchestrationAlreadyExistsException)
