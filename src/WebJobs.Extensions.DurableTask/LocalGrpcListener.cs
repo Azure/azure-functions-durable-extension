@@ -9,12 +9,15 @@ using System.Reflection.Metadata.Ecma335;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
+using DurableTask.Core.Entities;
+using DurableTask.Core.Exceptions;
 using DurableTask.Core.History;
 using DurableTask.Core.Query;
 using DurableTask.Core.Serializing.Internal;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using Microsoft.Extensions.Hosting;
+using DTCore = DurableTask.Core;
 using P = Microsoft.DurableTask.Protobuf;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
@@ -52,7 +55,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             int numAttempts = 1;
             while (numAttempts <= maxAttempts)
             {
-                this.grpcServer = new Server();
+                ChannelOption[] options = new[]
+                {
+                    new ChannelOption(ChannelOptions.MaxReceiveMessageLength, int.MaxValue),
+                    new ChannelOption(ChannelOptions.MaxSendMessageLength, int.MaxValue),
+                };
+
+                this.grpcServer = new Server(options);
                 this.grpcServer.Services.Add(P.TaskHubSidecarService.BindService(new TaskHubGrpcServer(this)));
 
                 int listeningPort = numAttempts == 1 ? DefaultPort : this.GetRandomPort();
@@ -153,9 +162,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         InstanceId = instanceId,
                     };
                 }
-                catch (InvalidOperationException)
+                catch (OrchestrationAlreadyExistsException)
                 {
                     throw new RpcException(new Status(StatusCode.AlreadyExists, $"An Orchestration instance with the ID {request.InstanceId} already exists."));
+                }
+                catch (InvalidOperationException ex) when (ex.Message.EndsWith("already exists.")) // for older versions of DTF.AS and DTFx.Netherite
+                {
+                    throw new RpcException(new Status(StatusCode.AlreadyExists, $"An Orchestration instance with the ID {request.InstanceId} already exists."));
+                }
+                catch (Exception ex)
+                {
+                    this.extension.TraceHelper.ExtensionWarningEvent(
+                        this.extension.Options.HubName,
+                        functionName: request.Name,
+                        instanceId: request.InstanceId,
+                        message: $"Failed to start instanceId {request.InstanceId} due to internal exception.\n Exception trace: {ex}.");
+                    throw new RpcException(new Status(StatusCode.Internal, $"Failed to start instance with ID {request.InstanceId}.\nInner Exception message: {ex.Message}."));
                 }
             }
 
@@ -163,6 +185,95 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 await this.GetClient(context).RaiseEventAsync(request.InstanceId, request.Name, Raw(request.Input));
                 return new P.RaiseEventResponse();
+            }
+
+            public async override Task<P.SignalEntityResponse> SignalEntity(P.SignalEntityRequest request, ServerCallContext context)
+            {
+                this.CheckEntitySupport(context, out var durabilityProvider, out var entityOrchestrationService);
+
+                EntityMessageEvent eventToSend = ClientEntityHelpers.EmitOperationSignal(
+                    new OrchestrationInstance() { InstanceId = request.InstanceId },
+                    Guid.Parse(request.RequestId),
+                    request.Name,
+                    request.Input,
+                    EntityMessageEvent.GetCappedScheduledTime(
+                        DateTime.UtcNow,
+                        entityOrchestrationService.EntityBackendProperties!.MaximumSignalDelayTime,
+                        request.ScheduledTime?.ToDateTime()));
+
+                await durabilityProvider.SendTaskOrchestrationMessageAsync(eventToSend.AsTaskMessage());
+
+                // No fields in the response
+                return new P.SignalEntityResponse();
+            }
+
+            public async override Task<P.GetEntityResponse> GetEntity(P.GetEntityRequest request, ServerCallContext context)
+            {
+                this.CheckEntitySupport(context, out var durabilityProvider, out var entityOrchestrationService);
+
+                EntityBackendQueries.EntityMetadata? metaData = await entityOrchestrationService.EntityBackendQueries!.GetEntityAsync(
+                    DTCore.Entities.EntityId.FromString(request.InstanceId),
+                    request.IncludeState,
+                    includeStateless: false,
+                    context.CancellationToken);
+
+                return new P.GetEntityResponse()
+                {
+                    Exists = metaData.HasValue,
+                    Entity = metaData.HasValue ? this.ConvertEntityMetadata(metaData.Value) : default,
+                };
+            }
+
+            public async override Task<P.QueryEntitiesResponse> QueryEntities(P.QueryEntitiesRequest request, ServerCallContext context)
+            {
+                this.CheckEntitySupport(context, out var durabilityProvider, out var entityOrchestrationService);
+
+                P.EntityQuery query = request.Query;
+                EntityBackendQueries.EntityQueryResult result = await entityOrchestrationService.EntityBackendQueries!.QueryEntitiesAsync(
+                    new EntityBackendQueries.EntityQuery()
+                    {
+                         InstanceIdStartsWith = query.InstanceIdStartsWith,
+                         LastModifiedFrom = query.LastModifiedFrom?.ToDateTime(),
+                         LastModifiedTo = query.LastModifiedTo?.ToDateTime(),
+                         IncludeTransient = query.IncludeTransient,
+                         IncludeState = query.IncludeState,
+                         ContinuationToken = query.ContinuationToken,
+                         PageSize = query.PageSize,
+                    },
+                    context.CancellationToken);
+
+                var response = new P.QueryEntitiesResponse()
+                {
+                    ContinuationToken = result.ContinuationToken,
+                };
+
+                foreach (EntityBackendQueries.EntityMetadata entityMetadata in result.Results)
+                {
+                    response.Entities.Add(this.ConvertEntityMetadata(entityMetadata));
+                }
+
+                return response;
+            }
+
+            public async override Task<P.CleanEntityStorageResponse> CleanEntityStorage(P.CleanEntityStorageRequest request, ServerCallContext context)
+            {
+                this.CheckEntitySupport(context, out var durabilityProvider, out var entityOrchestrationService);
+
+                EntityBackendQueries.CleanEntityStorageResult result = await entityOrchestrationService.EntityBackendQueries!.CleanEntityStorageAsync(
+                    new EntityBackendQueries.CleanEntityStorageRequest()
+                    {
+                        RemoveEmptyEntities = request.RemoveEmptyEntities,
+                        ReleaseOrphanedLocks = request.ReleaseOrphanedLocks,
+                        ContinuationToken = request.ContinuationToken,
+                    },
+                    context.CancellationToken);
+
+                return new P.CleanEntityStorageResponse()
+                {
+                    EmptyEntitiesRemoved = result.EmptyEntitiesRemoved,
+                    OrphanedLocksReleased = result.OrphanedLocksReleased,
+                    ContinuationToken = result.ContinuationToken,
+                };
             }
 
             public async override Task<P.TerminateResponse> TerminateInstance(P.TerminateRequest request, ServerCallContext context)
@@ -329,6 +440,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             private IDurableClient GetClient(ServerCallContext context)
             {
                 return this.extension.GetClient(this.GetAttribute(context));
+            }
+
+            private void CheckEntitySupport(ServerCallContext context, out DurabilityProvider durabilityProvider, out IEntityOrchestrationService entityOrchestrationService)
+            {
+                durabilityProvider = this.GetDurabilityProvider(context);
+                entityOrchestrationService = durabilityProvider;
+                if (entityOrchestrationService?.EntityBackendProperties == null)
+                {
+                    throw new RpcException(new Grpc.Core.Status(
+                        Grpc.Core.StatusCode.Unimplemented,
+                        $"Missing entity support for storage backend '{durabilityProvider.GetBackendInfo()}'. Entity support" +
+                        $" may have not been implemented yet, or the selected package version is too old."));
+                }
+            }
+
+            private P.EntityMetadata ConvertEntityMetadata(EntityBackendQueries.EntityMetadata metaData)
+            {
+                return new P.EntityMetadata()
+                {
+                    InstanceId = metaData.EntityId.ToString(),
+                    LastModifiedTime = metaData.LastModifiedTime.ToTimestamp(),
+                    BacklogQueueSize = metaData.BacklogQueueSize,
+                    LockedBy = metaData.LockedBy,
+                    SerializedState = metaData.SerializedState,
+                };
             }
         }
     }

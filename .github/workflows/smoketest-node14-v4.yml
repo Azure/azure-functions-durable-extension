@@ -1,6 +1,7 @@
 name: Smoke Test - Node 14 on Functions V4
 
 on:
+  workflow_dispatch:
   push:
     branches: [ main, dev ]
     paths:

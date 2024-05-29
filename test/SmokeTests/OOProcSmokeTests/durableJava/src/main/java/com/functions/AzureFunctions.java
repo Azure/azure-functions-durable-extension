@@ -40,10 +40,18 @@ public class AzureFunctions {
             @DurableOrchestrationTrigger(name = "orchestratorRequestProtoBytes") String orchestratorRequestProtoBytes) {
         return OrchestrationRunner.loadAndRun(orchestratorRequestProtoBytes, ctx -> {
             String result = "";
+            String[] cities = {"Dubai", "New York", "Vancouver"};
+            City paris = new City("France", "Paris");
+            
             result += ctx.callActivity("Capitalize", "Tokyo", String.class).await() + ", ";
             result += ctx.callActivity("Capitalize", "London", String.class).await() + ", ";
             result += ctx.callActivity("Capitalize", "Seattle", String.class).await() + ", ";
-            result += ctx.callActivity("Capitalize", "Austin", String.class).await();
+            result += ctx.callActivity("Capitalize", "Austin", String.class).await()+ ", ";
+
+            result += ctx.callActivity("Print", 123, String.class).await()+ ", ";
+            result += ctx.callActivity("PrintArray", cities, String.class).await()+ ", ";
+            result += ctx.callActivity("PrintObject", paris, String.class).await()+ ", ";
+
             return result;
         });
     }
@@ -57,5 +65,60 @@ public class AzureFunctions {
             final ExecutionContext context) {
         context.getLogger().info("Capitalizing: " + name);
         return name.toUpperCase();
+    }
+
+    @FunctionName("Print")
+    public String print(
+            @DurableActivityTrigger(name = "input") String input,
+            final ExecutionContext context) {
+        context.getLogger().info("Printing input: " + input);
+        return input.toString();
+    }
+
+    @FunctionName("PrintArray")
+    public String printArray(
+            @DurableActivityTrigger(name = "array") String[] array,
+            final ExecutionContext context) {
+        context.getLogger().info(Arrays.toString(array));
+        return Arrays.toString(array);
+    }
+
+    @FunctionName("PrintObject")
+    public String printObject(
+            @DurableActivityTrigger(name = "city") City city,
+            final ExecutionContext context) {
+        context.getLogger().info("Printing object" + city.toString());
+        return city.toString();
+    }
+
+    public class City {
+        private String country;
+        private String name;
+
+        public City(String country, String name){
+            this.country = country;
+            this.name = name;
+        }
+
+        public String getCountry() {
+            return country;
+        }
+
+        public void setCountry(String country) {
+            this.country = country;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        @Override
+        public String toString() {
+            return "City [Country=" + country + ", name=" + name + "]";
+        }
     }
 }

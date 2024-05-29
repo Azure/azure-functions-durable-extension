@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DurableTask;
 using Microsoft.DurableTask.Client;
+using Microsoft.DurableTask.Client.Entities;
 
 namespace Microsoft.Azure.Functions.Worker;
 
@@ -25,6 +26,8 @@ internal sealed class FunctionsDurableTaskClient : DurableTaskClient
 
     public string? QueryString { get; }
 
+    public override DurableEntityClient Entities => this.inner.Entities;
+
     public override ValueTask DisposeAsync()
     {
         // We do not dispose inner client as it has a longer life than this class.
@@ -43,15 +46,15 @@ internal sealed class FunctionsDurableTaskClient : DurableTaskClient
     }
 
     public override Task<PurgeResult> PurgeAllInstancesAsync(
-        PurgeInstancesFilter filter, CancellationToken cancellation = default)
+        PurgeInstancesFilter filter, PurgeInstanceOptions? options = null, CancellationToken cancellation = default)
     {
-        return this.inner.PurgeAllInstancesAsync(filter, cancellation);
+        return this.inner.PurgeAllInstancesAsync(filter, options, cancellation);
     }
 
     public override Task<PurgeResult> PurgeInstanceAsync(
-        string instanceId, CancellationToken cancellation = default)
+        string instanceId, PurgeInstanceOptions? options = null, CancellationToken cancellation = default)
     {
-        return this.inner.PurgeInstanceAsync(instanceId, cancellation);
+        return this.inner.PurgeInstanceAsync(instanceId, options, cancellation);
     }
 
     public override Task RaiseEventAsync(

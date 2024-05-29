@@ -22,6 +22,14 @@
     <NoWarn>NU5125;SA0001</NoWarn>
   </PropertyGroup>
 
+  <PropertyGroup Condition="$(VersionSuffix) == ''">
+    <Version>$(MajorVersion).$(MinorVersion).$(PatchVersion)</Version>
+  </PropertyGroup>
+  <PropertyGroup Condition="$(VersionSuffix) != ''">
+    <Version>$(MajorVersion).$(MinorVersion).$(PatchVersion)-$(VersionSuffix)</Version>
+  </PropertyGroup>
+
+
   <!-- NuGet Publishing Metadata -->
   <PropertyGroup>
     <Title>Azure Functions Durable Task Extension</Title>
@@ -78,7 +86,7 @@
     <DocumentationFile>$(AssemblyName).xml</DocumentationFile>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
-    <PackageReference Include="Azure.Identity" Version="1.10.0" />
+    <PackageReference Include="Azure.Identity" Version="1.11.0" />
     <PackageReference Include="Microsoft.Azure.WebJobs" Version="3.0.37" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.WebApiCompatShim" Version="2.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Routing" Version="2.2.0" />
@@ -99,7 +107,7 @@
     <DefineConstants>$(DefineConstants);FUNCTIONS_V2_OR_GREATER;FUNCTIONS_V3_OR_GREATER</DefineConstants>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.1'">
-    <PackageReference Include="Azure.Identity" Version="1.10.0" />
+    <PackageReference Include="Azure.Identity" Version="1.11.0" />
     <PackageReference Include="Microsoft.Azure.WebJobs" Version="3.0.37" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.WebApiCompatShim" Version="2.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Routing" Version="2.2.0" />
@@ -110,13 +118,14 @@
     <!-- Explicitly pinned transitive dependencies with CVE vulnerabilities.-->
     <PackageReference Include="Microsoft.AspNetCore.Server.Kestrel.Transport.Sockets" Version="2.2.1" />
     <!-- The gRPC dependencies in this package are not compatible with older frameworks, like .NET Core 2.x -->
-    <PackageReference Include="Microsoft.DurableTask.Sidecar.Protobuf" Version="1.0.0" />
+    <PackageReference Include="Microsoft.DurableTask.Grpc" Version="1.1.0" />
+    <PackageReference Include="Grpc.Core" Version="2.46.6" /> <!-- Bring this in until we move to hosted RPC -->
   </ItemGroup>
 
   <!-- Common dependencies across all targets -->
   <ItemGroup>
-    <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" Version="2.0.0-preview.5" />
-    <PackageReference Include="Microsoft.Azure.DurableTask.Core" Version="2.15.*" />
+    <PackageReference Include="Microsoft.Azure.DurableTask.Core" Version="2.17.0" />
+    <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" Version="2.0.0-preview.6" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers" Version="0.5.*" />
     <!-- Build-time dependencies -->
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.*" PrivateAssets="All" />

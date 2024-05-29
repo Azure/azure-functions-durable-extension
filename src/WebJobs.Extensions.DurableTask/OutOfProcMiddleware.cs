@@ -3,14 +3,18 @@
 #nullable enable
 #if FUNCTIONS_V3_OR_GREATER
 using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading.Tasks;
 using DurableTask.Core;
+using DurableTask.Core.Entities;
+using DurableTask.Core.Entities.OperationFormat;
 using DurableTask.Core.Exceptions;
 using DurableTask.Core.History;
 using DurableTask.Core.Middleware;
 using Microsoft.Azure.WebJobs.Host.Executors;
+using P = Microsoft.DurableTask.Protobuf;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
@@ -83,6 +87,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return;
             }
 
+            TaskOrchestrationEntityParameters? entityParameters = dispatchContext.GetProperty<TaskOrchestrationEntityParameters>();
+
             bool isReplaying = runtimeState.PastEvents.Any();
 
             this.TraceHelper.FunctionStarting(
@@ -104,7 +110,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     isReplay: false);
             }
 
-            var context = new RemoteOrchestratorContext(runtimeState);
+            var context = new RemoteOrchestratorContext(runtimeState, entityParameters);
 
             var input = new TriggeredFunctionData
             {
@@ -131,10 +137,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     }
 
                     byte[] triggerReturnValueBytes = Convert.FromBase64String(triggerReturnValue);
-                    var response = Microsoft.DurableTask.Protobuf.OrchestratorResponse.Parser.ParseFrom(triggerReturnValueBytes);
+                    P.OrchestratorResponse response = P.OrchestratorResponse.Parser.ParseFrom(triggerReturnValueBytes);
                     context.SetResult(
                         response.Actions.Select(ProtobufUtils.ToOrchestratorAction),
                         response.CustomStatus);
+
+                    context.ThrowIfFailed();
                 },
 #pragma warning restore CS0618 // Type or member is obsolete (not intended for general public use)
             };
@@ -206,8 +214,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         isReplay: false);
                 }
             }
+            else if (context.TryGetOrchestrationErrorDetails(out string details))
+            {
+                // the function failed because the orchestrator failed.
+
+                orchestratorResult = context.GetResult();
+
+                this.TraceHelper.FunctionFailed(
+                     this.Options.HubName,
+                     functionName.Name,
+                     instance.InstanceId,
+                     details,
+                     FunctionType.Orchestrator,
+                     isReplay: false);
+
+                await this.LifeCycleNotificationHelper.OrchestratorFailedAsync(
+                    this.Options.HubName,
+                    functionName.Name,
+                    instance.InstanceId,
+                    details,
+                    isReplay: false);
+            }
             else
             {
+                // the function failed for some other reason
+
                 string exceptionDetails = functionResult.Exception.ToString();
 
                 this.TraceHelper.FunctionFailed(
@@ -236,6 +267,178 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <summary>
+        /// Durable Task Framework entity middleware that invokes an out-of-process orchestrator function.
+        /// </summary>
+        /// <param name="dispatchContext">This middleware context provided by the framework that contains information about the entity.</param>
+        /// <param name="next">The next middleware handler in the pipeline.</param>
+        /// <exception cref="SessionAbortedException">Thrown if there is a recoverable error in the Functions runtime that's expected to be handled gracefully.</exception>
+        public async Task CallEntityAsync(DispatchMiddlewareContext dispatchContext, Func<Task> next)
+        {
+            EntityBatchRequest? batchRequest = dispatchContext.GetProperty<EntityBatchRequest>();
+
+            if (batchRequest == null)
+            {
+                // This should never happen, and there's no good response we can return if it does.
+                throw new InvalidOperationException($"An entity was scheduled but no {nameof(EntityBatchRequest)} was found!");
+            }
+
+            if (batchRequest.InstanceId == null)
+            {
+                // This should never happen, and there's no good response we can return if it does.
+                throw new InvalidOperationException($"An entity was scheduled but InstanceId is null!");
+            }
+
+            EntityId entityId = EntityId.GetEntityIdFromSchedulerId(batchRequest.InstanceId);
+            FunctionName functionName = new FunctionName(entityId.EntityName);
+            RegisteredFunctionInfo functionInfo = this.extension.GetEntityInfo(functionName);
+
+            void SetErrorResult(FailureDetails failureDetails)
+            {
+                // Returns a result with no operation results and no state change,
+                // and with failure details that explain what error was encountered.
+                dispatchContext.SetProperty(new EntityBatchResult()
+                {
+                    Actions = new List<OperationAction>(),
+                    Results = new List<OperationResult>(),
+                    EntityState = batchRequest!.EntityState,
+                    FailureDetails = failureDetails,
+                });
+            }
+
+            if (functionInfo == null)
+            {
+                SetErrorResult(new FailureDetails(
+                    errorType: "EntityFunctionNotFound",
+                    errorMessage: this.extension.GetInvalidEntityFunctionMessage(functionName.Name),
+                    stackTrace: null,
+                    innerFailure: null,
+                    isNonRetriable: true));
+                return;
+            }
+
+            this.TraceHelper.FunctionStarting(
+                this.Options.HubName,
+                functionName.Name,
+                batchRequest.InstanceId,
+                this.extension.GetIntputOutputTrace(batchRequest.EntityState),
+                functionType: FunctionType.Entity,
+                isReplay: false);
+
+            var context = new RemoteEntityContext(batchRequest);
+
+            var input = new TriggeredFunctionData
+            {
+                TriggerValue = context,
+#pragma warning disable CS0618 // Type or member is obsolete (not intended for general public use)
+                InvokeHandler = async functionInvoker =>
+                {
+                    // Invoke the function and look for a return value. Trigger return values are an undocumented feature that we depend on.
+                    Task invokeTask = functionInvoker();
+                    if (invokeTask is not Task<object> invokeTaskWithResult)
+                    {
+                        // This should never happen
+                        throw new InvalidOperationException("The internal function invoker returned a task that does not support return values!");
+                    }
+
+                    // The return value is expected to be a base64 string containing the protobuf-encoding of the batch result.
+                    string? triggerReturnValue = (await invokeTaskWithResult) as string;
+                    if (string.IsNullOrEmpty(triggerReturnValue))
+                    {
+                        throw new InvalidOperationException(
+                            "The function invocation resulted in a null response. This means that either the entity function was implemented " +
+                            "incorrectly, the Durable Task language SDK was implemented incorrectly, or that the destination language worker is not " +
+                            "sending the function result back to the host.");
+                    }
+
+                    byte[] triggerReturnValueBytes = Convert.FromBase64String(triggerReturnValue);
+                    P.EntityBatchResult response = P.EntityBatchResult.Parser.ParseFrom(triggerReturnValueBytes);
+                    context.Result = response.ToEntityBatchResult();
+
+                    context.ThrowIfFailed();
+#pragma warning restore CS0618 // Type or member is obsolete (not intended for general public use)
+                },
+            };
+
+            FunctionResult functionResult;
+            try
+            {
+                functionResult = await functionInfo.Executor.TryExecuteAsync(
+                    input,
+                    cancellationToken: this.HostLifetimeService.OnStopping);
+
+                if (!functionResult.Succeeded)
+                {
+                    // Shutdown can surface as a completed invocation in a failed state.
+                    // Re-throw so we can abort this invocation.
+                    this.HostLifetimeService.OnStopping.ThrowIfCancellationRequested();
+                }
+            }
+            catch (Exception hostRuntimeException)
+            {
+                string reason = this.HostLifetimeService.OnStopping.IsCancellationRequested ?
+                    "The Functions/WebJobs runtime is shutting down!" :
+                    $"Unhandled exception in the Functions/WebJobs runtime: {hostRuntimeException}";
+
+                this.TraceHelper.FunctionAborted(
+                    this.Options.HubName,
+                    functionName.Name,
+                    batchRequest.InstanceId,
+                    reason,
+                    functionType: FunctionType.Entity);
+
+                // This will abort the current execution and force an durable retry
+                throw new SessionAbortedException(reason);
+            }
+
+            if (!functionResult.Succeeded)
+            {
+                this.TraceHelper.FunctionFailed(
+                    this.Options.HubName,
+                    functionName.Name,
+                    batchRequest.InstanceId,
+                    functionResult.Exception.ToString(),
+                    FunctionType.Entity,
+                    isReplay: false);
+
+                if (context.Result != null)
+                {
+                    // Send the results of the entity batch execution back to the DTFx dispatch pipeline.
+                    // This is important so we can propagate the individual failure details of each failed operation back to the
+                    // calling orchestrator. Also, even though the function execution was reported as a failure,
+                    // it may not be a "total failure", i.e. some of the operations in the batch may have succeeded and updated
+                    // the entity state.
+                    dispatchContext.SetProperty(context.Result);
+                }
+                else
+                {
+                    SetErrorResult(new FailureDetails(
+                        errorType: "FunctionInvocationFailed",
+                        errorMessage: $"Invocation of function '{functionName}' failed with an exception.",
+                        stackTrace: null,
+                        innerFailure: new FailureDetails(functionResult.Exception),
+                        isNonRetriable: true));
+                }
+
+                return;
+            }
+
+            EntityBatchResult batchResult = context.Result
+                ?? throw new InvalidOperationException($"The entity function executed successfully but {nameof(context.Result)} is still null!");
+
+            this.TraceHelper.FunctionCompleted(
+                       this.Options.HubName,
+                       functionName.Name,
+                       batchRequest.InstanceId,
+                       this.extension.GetIntputOutputTrace(batchRequest.EntityState),
+                       batchResult.EntityState != null,
+                       FunctionType.Entity,
+                       isReplay: false);
+
+            // Send the results of the entity batch execution back to the DTFx dispatch pipeline.
+            dispatchContext.SetProperty(batchResult);
+        }
+
+        /// <summary>
         /// Durable Task Framework activity middleware that invokes an out-of-process orchestrator function.
         /// </summary>
         /// <param name="dispatchContext">This middleware context provided by the framework that contains information about the activity.</param>
@@ -248,6 +451,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 // This should never happen, and there's no good response we can return if it does.
                 throw new InvalidOperationException($"An activity was scheduled but no {nameof(TaskScheduledEvent)} was found!");
+            }
+
+            if (scheduledEvent.Name?.StartsWith("BuiltIn::", StringComparison.OrdinalIgnoreCase) ?? false)
+            {
+                await next();
+                return;
             }
 
             FunctionName functionName = new FunctionName(scheduledEvent.Name);
@@ -446,23 +655,40 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             [NotNullWhen(true)] out string? exceptionType,
             [NotNullWhen(true)] out string? exceptionMessage)
         {
-            // Example exception messages:
+            // In certain situations, like when the .NET Isolated worker is configured with
+            // WorkerOptions.EnableUserCodeException = true, the exception message we get from the .NET Isolated
+            // worker looks like this:
+            // "Exception of type 'ExceptionSerialization.Function+UnknownException' was thrown."
+            const string startMarker = "Exception of type '";
+            const string endMarker = "' was thrown.";
+            if (exception.StartsWith(startMarker) && exception.EndsWith(endMarker))
+            {
+                exceptionType = exception[startMarker.Length..^endMarker.Length];
+                exceptionMessage = string.Empty;
+                return true;
+            }
+
+            // The following are the more common cases that we expect to see, which will be common across a
+            // variety of language workers:
             // .NET   : System.ApplicationException: Kah-BOOOOM!!
             // Java   : SQLServerException: Invalid column name 'status'.
             // Python : ResourceNotFoundError: The specified blob does not exist. RequestId:8d5a2c9b-b01e-006f-33df-3f7a2e000000 Time:2022-03-25T00:31:24.2003327Z ErrorCode:BlobNotFound Error:None
             // Node   : SyntaxError: Unexpected token N in JSON at position 12768
 
-            // From the above examples, they all follow the same pattern of {ExceptionType}: {Message}
+            // From the above examples, they all follow the same pattern of {ExceptionType}: {Message}.
+            // However, some exception types override the ToString() method and do something custom, in which
+            // case the message may not be in the expected format. In such cases we won't be able to distinguish
+            // the exception type.
             string delimeter = ": ";
             int endExceptionType = exception.IndexOf(delimeter);
             if (endExceptionType < 0)
             {
                 exceptionType = null;
-                exceptionMessage = null;
+                exceptionMessage = exception;
                 return false;
             }
 
-            exceptionType = exception[..endExceptionType];
+            exceptionType = exception[..endExceptionType].TrimEnd();
 
             // The .NET Isolated language worker strangely includes the stack trace in the exception message.
             // To avoid bloating the payload with redundant information, we only consider the first line.
@@ -470,7 +696,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             int endMessage = exception.IndexOf('\n', startMessage);
             if (endMessage < 0)
             {
-                exceptionMessage = exception[startMessage..];
+                exceptionMessage = exception[startMessage..].TrimEnd();
             }
             else
             {

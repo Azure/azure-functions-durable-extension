@@ -100,6 +100,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public int? MaxConcurrentOrchestratorFunctions { get; set; } = null;
 
         /// <summary>
+        /// Gets or sets the maximum number of entity functions that can be processed concurrently on a single host instance.
+        /// </summary>
+        /// <remarks>
+        /// Increasing entity function concurrency can result in increased throughput but can
+        /// also increase the total CPU and memory usage on a single worker instance.
+        /// </remarks>
+        /// <value>
+        /// A positive integer configured by the host.
+        /// </value>
+        public int? MaxConcurrentEntityFunctions { get; set; } = null;
+
+        /// <summary>
         /// Gets or sets a value indicating whether to enable the local RPC endpoint managed by this extension.
         /// </summary>
         /// <remarks>
@@ -326,6 +338,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (this.MaxConcurrentOrchestratorFunctions <= 0)
             {
                 throw new InvalidOperationException($"{nameof(this.MaxConcurrentOrchestratorFunctions)} must be a positive integer value.");
+            }
+
+            if (this.MaxConcurrentEntityFunctions <= 0)
+            {
+                throw new InvalidOperationException($"{nameof(this.MaxConcurrentEntityFunctions)} must be a positive integer value.");
             }
 
             if (this.MaxEntityOperationBatchSize <= 0)
