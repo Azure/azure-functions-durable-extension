@@ -1242,12 +1242,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             };
 
             var wrappedOptions = new OptionsWrapper<DurableTaskOptions>(options);
-            var storageAccountProvider = new TestStorageAccountProvider();
+            var clientProviderFactory = new TestStorageServiceClientProviderFactory();
             var platformInformationService = TestHelpers.GetMockPlatformInformationService();
 
             var serviceFactory = new AzureStorageDurabilityProviderFactory(
                 wrappedOptions,
-                storageAccountProvider,
+                clientProviderFactory,
                 mockNameResolver.Object,
                 NullLoggerFactory.Instance,
                 platformInformationService);
@@ -1299,7 +1299,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             var serviceFactory = new AzureStorageDurabilityProviderFactory(
                 wrappedOptions,
-                new TestStorageAccountProvider(),
+                new TestStorageServiceClientProviderFactory(),
                 nameResolver,
                 NullLoggerFactory.Instance,
                 platformInformationService);
@@ -1332,7 +1332,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             var serviceFactory = new AzureStorageDurabilityProviderFactory(
                 wrappedOptions,
-                new TestStorageAccountProvider(),
+                new TestStorageServiceClientProviderFactory(),
                 nameResolver,
                 NullLoggerFactory.Instance,
                 TestHelpers.GetMockPlatformInformationService());
