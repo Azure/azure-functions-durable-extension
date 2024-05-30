@@ -4,18 +4,11 @@
     <TargetFrameworks>netcoreapp3.1;netstandard2.0;net462</TargetFrameworks>
     <AssemblyName>Microsoft.Azure.WebJobs.Extensions.DurableTask</AssemblyName>
     <RootNamespace>Microsoft.Azure.WebJobs.Extensions.DurableTask</RootNamespace>
-<<<<<<< HEAD
-    <MajorVersion>2</MajorVersion>
-    <MinorVersion>13</MinorVersion>
-    <PatchVersion>4</PatchVersion>
-    <VersionSuffix>$(PackageSuffix)</VersionSuffix>
-=======
     <MajorVersion>3</MajorVersion>
     <MinorVersion>0</MinorVersion>
     <PatchVersion>0</PatchVersion>
     <VersionPrefix>$(MajorVersion).$(MinorVersion).$(PatchVersion)</VersionPrefix>
     <VersionSuffix>preview.3</VersionSuffix>
->>>>>>> v3.x
     <FileVersion>$(MajorVersion).$(MinorVersion).$(PatchVersion)</FileVersion>
     <AssemblyVersion>$(MajorVersion).0.0.0</AssemblyVersion>
     <Company>Microsoft Corporation</Company>
@@ -131,13 +124,8 @@
 
   <!-- Common dependencies across all targets -->
   <ItemGroup>
-<<<<<<< HEAD
     <PackageReference Include="Microsoft.Azure.DurableTask.Core" Version="2.17.1" />
-    <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" Version="1.17.3" />
-=======
-    <PackageReference Include="Microsoft.Azure.DurableTask.Core" Version="2.17.0" />
     <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" Version="2.0.0-preview.6" />
->>>>>>> v3.x
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers" Version="0.5.*" />
     <!-- Build-time dependencies -->
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.*" PrivateAssets="All" />
