@@ -99,6 +99,8 @@
     <PackageReference Include="Azure.Identity" Version="1.11.0" />
     <PackageReference Include="Microsoft.Azure.WebJobs" Version="3.0.37" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.WebApiCompatShim" Version="2.2.0" />
+	<!-- To access Kestrel, use metapackage and leverage framework dependency on AspNetCore.
+	This allows us to avoid dependency on outdated Kestrel packages from NuGet, which may have CVEs-->
 	<PackageReference Include="Microsoft.AspNetCore.App" />
 	<PackageReference Include="Microsoft.Extensions.Azure" Version="1.1.1" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="2.2.0" />
