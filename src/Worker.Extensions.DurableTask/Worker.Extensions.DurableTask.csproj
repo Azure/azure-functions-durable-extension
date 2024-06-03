@@ -29,8 +29,8 @@
     <AssemblyOriginatorKeyFile>..\..\sign.snk</AssemblyOriginatorKeyFile>
 
     <!-- Version information -->
-    <VersionPrefix>1.1.4</VersionPrefix>
-    <VersionSuffix></VersionSuffix>
+    <VersionPrefix>1.2.0</VersionPrefix>
+    <VersionSuffix>rc.2</VersionSuffix>
     <AssemblyVersion>$(VersionPrefix).0</AssemblyVersion>
     <!-- FileVersionRevision is expected to be set by the CI.  -->
     <FileVersion Condition="'$(FileVersionRevision)' != ''">$(VersionPrefix).$(FileVersionRevision)</FileVersion>
