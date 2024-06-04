@@ -113,7 +113,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         this.config.Options.HubName,
                         this.activityName,
                         instanceId,
-                        exceptionToReport?.ToString() ?? string.Empty,
+                        exceptionToReport,
                         functionType: FunctionType.Activity,
                         isReplay: false,
                         taskEventId: this.taskEventId);

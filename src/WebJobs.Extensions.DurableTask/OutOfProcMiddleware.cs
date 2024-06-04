@@ -214,7 +214,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         isReplay: false);
                 }
             }
-            else if (context.TryGetOrchestrationErrorDetails(out string details))
+            else if (context.TryGetOrchestrationErrorDetails(out Exception? exception))
             {
                 // the function failed because the orchestrator failed.
 
@@ -224,7 +224,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                      this.Options.HubName,
                      functionName.Name,
                      instance.InstanceId,
-                     details,
+                     exception,
                      FunctionType.Orchestrator,
                      isReplay: false);
 
@@ -232,23 +232,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.Options.HubName,
                     functionName.Name,
                     instance.InstanceId,
-                    details,
+                    exception?.Message ?? string.Empty,
                     isReplay: false);
             }
             else
             {
                 // the function failed for some other reason
 
-                string exceptionDetails = functionResult.Exception.ToString();
-
                 this.TraceHelper.FunctionFailed(
                     this.Options.HubName,
                     functionName.Name,
                     instance.InstanceId,
-                    exceptionDetails,
+                    functionResult.Exception,
                     FunctionType.Orchestrator,
                     isReplay: false);
 
+                string exceptionDetails = functionResult.Exception.ToString();
                 await this.LifeCycleNotificationHelper.OrchestratorFailedAsync(
                     this.Options.HubName,
                     functionName.Name,
@@ -396,7 +395,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.Options.HubName,
                     functionName.Name,
                     batchRequest.InstanceId,
-                    functionResult.Exception.ToString(),
+                    functionResult.Exception,
                     FunctionType.Entity,
                     isReplay: false);
 
@@ -562,7 +561,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.Options.HubName,
                     functionName.Name,
                     instance.InstanceId,
-                    result.Exception.ToString(),
+                    result.Exception,
                     FunctionType.Activity,
                     isReplay: false,
                     scheduledEvent.EventId);

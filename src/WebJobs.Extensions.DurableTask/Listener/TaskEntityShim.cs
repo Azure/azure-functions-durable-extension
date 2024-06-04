@@ -237,7 +237,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         this.context.Name,
                         this.context.InstanceId,
                         this.entityTraceInfo.TraceFlags,
-                        this.context.InternalError.ToString());
+                        this.context.InternalError.SourceException);
                 }
                 else
                 {
@@ -547,7 +547,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         request.Id.ToString(),
                         request.Operation,
                         this.Config.GetIntputOutputTrace(this.context.RawInput),
-                        exception.ToString(),
+                        exception,
                         stopwatch.Elapsed.TotalMilliseconds,
                         isReplay: false);
             }
@@ -656,6 +656,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         request.Operation,
                         this.Config.GetIntputOutputTrace(request.Input),
                         this.Config.GetIntputOutputTrace(result.Result),
+                        sanitizedException: string.Empty,
                         result.DurationInMilliseconds,
                         isReplay: false);
                 }

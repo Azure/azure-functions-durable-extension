@@ -4,6 +4,7 @@
 using System;
 using System.Diagnostics;
 using System.Net;
+using DurableTask.Core.Common;
 using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
@@ -140,7 +141,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     functionName,
                     taskEventId,
                     instanceId,
-                    input,
                     functionType.ToString(),
                     ExtensionVersion,
                     isReplay);
@@ -226,7 +226,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     functionName,
                     taskEventId,
                     instanceId,
-                    output,
                     continuedAsNew,
                     functionType.ToString(),
                     ExtensionVersion,
@@ -237,26 +236,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     instanceId, functionName, functionType, continuedAsNew, isReplay, output, FunctionState.Completed, OrchestrationRuntimeStatus.Completed, hubName,
                     LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++, taskEventId);
             }
-        }
-
-        public void ProcessingOutOfProcPayload(
-            string functionName,
-            string taskHub,
-            string instanceId,
-            string details)
-        {
-            EtwEventSource.Instance.ProcessingOutOfProcPayload(
-                functionName,
-                taskHub,
-                LocalAppName,
-                LocalSlotName,
-                instanceId,
-                details,
-                ExtensionVersion);
-
-            this.logger.LogDebug(
-                "{instanceId}: Function '{functionName} ({functionType})' returned the following OOProc orchestration state: {details}. : {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
-                instanceId, functionName, FunctionType.Orchestrator, details, taskHub, LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++);
         }
 
         public void FunctionTerminated(
@@ -273,7 +252,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 LocalSlotName,
                 functionName,
                 instanceId,
-                reason,
                 functionType.ToString(),
                 ExtensionVersion,
                 IsReplay: false);
@@ -298,7 +276,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 LocalSlotName,
                 functionName,
                 instanceId,
-                reason,
                 functionType.ToString(),
                 ExtensionVersion,
                 IsReplay: false);
@@ -323,7 +300,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 LocalSlotName,
                 functionName,
                 instanceId,
-                reason,
                 functionType.ToString(),
                 ExtensionVersion,
                 IsReplay: false);
@@ -348,7 +324,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 LocalSlotName,
                 functionName,
                 instanceId,
-                reason,
                 functionType.ToString(),
                 ExtensionVersion,
                 IsReplay: false);
@@ -364,6 +339,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string functionName,
             string instanceId,
             string reason,
+            string sanitizedReason,
             FunctionType functionType,
             bool isReplay,
             int taskEventId = -1)
@@ -377,7 +353,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     functionName,
                     taskEventId,
                     instanceId,
-                    reason,
+                    sanitizedReason,
                     functionType.ToString(),
                     ExtensionVersion,
                     isReplay);
@@ -387,6 +363,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     instanceId, functionName, functionType, reason, isReplay, FunctionState.Failed, OrchestrationRuntimeStatus.Failed, hubName,
                     LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++, taskEventId);
             }
+        }
+
+        public void FunctionFailed(
+            string hubName,
+            string functionName,
+            string instanceId,
+            Exception reason,
+            FunctionType functionType,
+            bool isReplay,
+            int taskEventId = -1)
+        {
+            string sanitizedException = $"{reason.GetType().FullName}\n{reason.StackTrace}";
+            this.FunctionFailed(hubName, functionName, instanceId, reason.ToString(), sanitizedException, functionType, isReplay, taskEventId);
         }
 
         public void FunctionAborted(
@@ -434,8 +423,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     instanceId,
                     operationId,
                     operationName,
-                    input,
-                    output,
                     duration,
                     FunctionType.Entity.ToString(),
                     ExtensionVersion,
@@ -456,6 +443,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
            string operationName,
            string input,
            string exception,
+           string sanitizedException,
            double duration,
            bool isReplay)
         {
@@ -469,7 +457,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     instanceId,
                     operationId,
                     operationName,
-                    input,
                     exception,
                     duration,
                     FunctionType.Entity.ToString(),
@@ -483,12 +470,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
+        public void OperationFailed(
+           string hubName,
+           string functionName,
+           string instanceId,
+           string operationId,
+           string operationName,
+           string input,
+           Exception exception,
+           double duration,
+           bool isReplay)
+        {
+            string sanitizedException = $"{exception.GetType().FullName}\n{exception.StackTrace}";
+            this.OperationFailed(hubName, functionName, instanceId, operationId, operationName, input, exception.ToString(), sanitizedException, duration, isReplay);
+        }
+
         public void ExternalEventRaised(
             string hubName,
             string functionName,
             string instanceId,
             string eventName,
-            string input,
             bool isReplay)
         {
             if (this.ShouldLogEvent(isReplay))
@@ -502,7 +503,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     functionName,
                     instanceId,
                     eventName,
-                    input,
                     functionType.ToString(),
                     ExtensionVersion,
                     isReplay);
@@ -605,7 +605,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             FunctionType functionType,
             string instanceId,
             string operationId,
-            string result,
             bool isReplay)
         {
             if (this.ShouldLogEvent(isReplay))
@@ -617,7 +616,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     functionName,
                     instanceId,
                     operationId,
-                    result,
                     functionType.ToString(),
                     ExtensionVersion,
                     isReplay);
@@ -806,9 +804,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string functionName,
             string instanceId,
             string traceFlags,
-            string details)
+            Exception error)
         {
             FunctionType functionType = FunctionType.Entity;
+            string details = Utils.IsFatal(error) ? error.GetType().Name : error.ToString();
+            string sanitizedDetails = $"{error.GetType().FullName}\n{error.StackTrace}";
 
             EtwEventSource.Instance.EntityBatchFailed(
                 hubName,
@@ -817,7 +817,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 functionName,
                 instanceId,
                 traceFlags,
-                details,
+                sanitizedDetails,
                 functionType.ToString(),
                 ExtensionVersion);
 

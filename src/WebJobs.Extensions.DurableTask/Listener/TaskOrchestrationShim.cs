@@ -184,14 +184,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     }
                     catch (OrchestrationFailureException ex)
                     {
-                        this.TraceAndSendExceptionNotification(ex.Details);
+                        string sanitizedException = $"{e.GetType().FullName}\n{e.StackTrace}";
+                        this.TraceAndSendExceptionNotification(ex.Details, sanitizedException);
                         this.context.OrchestrationException = ExceptionDispatchInfo.Capture(ex);
                         throw ex;
                     }
                 }
                 else
                 {
-                    this.TraceAndSendExceptionNotification(e.ToString());
+                    string sanitizedException = $"{e.GetType().FullName}\n{e.StackTrace}";
+                    this.TraceAndSendExceptionNotification(e.ToString(), sanitizedException);
                     var orchestrationException = new OrchestrationFailureException(
                         $"Orchestrator function '{this.context.Name}' failed: {e.Message}",
                         Utils.SerializeCause(e, innerContext.ErrorDataConverter));
@@ -212,13 +214,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        private void TraceAndSendExceptionNotification(string exceptionDetails)
+        private void TraceAndSendExceptionNotification(string exceptionDetails, string sanitizedExceptionDetails)
         {
             this.config.TraceHelper.FunctionFailed(
                 this.context.HubName,
                 this.context.Name,
                 this.context.InstanceId,
                 exceptionDetails,
+                sanitizedReason: sanitizedExceptionDetails,
                 FunctionType.Orchestrator,
                 this.context.IsReplaying);
 

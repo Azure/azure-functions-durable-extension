@@ -1063,13 +1063,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                                 await next();
 
                                 // 5. If there were internal or application errors, trace them for DF
-                                if (entityContext.ErrorsPresent(out var description))
+                                if (entityContext.ErrorsPresent(out string description, out string sanitizedError))
                                 {
                                     this.TraceHelper.FunctionFailed(
                                         entityContext.HubName,
                                         entityContext.Name,
                                         entityContext.InstanceId,
                                         description,
+                                        sanitizedReason: sanitizedError,
                                         functionType: FunctionType.Entity,
                                         isReplay: false);
                                 }

@@ -782,6 +782,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             operationName,
                             input: "(replayed)",
                             exception: "(replayed)",
+                            sanitizedException: string.Empty,
                             duration: 0,
                             isReplay: true);
                     }
@@ -792,6 +793,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             functionName,
                             this.InstanceId,
                             reason: $"(replayed {exception.GetType().Name})",
+                            sanitizedReason: string.Empty,
                             functionType: functionType,
                             isReplay: true);
                     }
@@ -933,7 +935,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             FunctionType.Orchestrator,
                             this.InstanceId,
                             name,
-                            this.Config.GetIntputOutputTrace(responseMessage.Result),
                             this.IsReplaying);
                     }
                     else
@@ -943,7 +944,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                              this.Name,
                              this.InstanceId,
                              name,
-                             this.Config.GetIntputOutputTrace(input),
                              this.IsReplaying);
                     }
 
