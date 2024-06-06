@@ -359,7 +359,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             // Throw if any of the configured options are invalid
-            this.Options.Validate(this.nameResolver, this.TraceHelper);
+            this.Options.Validate(this.nameResolver);
 
 #pragma warning disable CS0618 // Type or member is obsolete
 
