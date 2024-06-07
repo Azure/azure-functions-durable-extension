@@ -49,6 +49,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             AzureStorageAccountOptions account = connectionInfo.Get<AzureStorageAccountOptions>();
             if (account != null)
             {
+                // To avoid memory leaks, we cache the TokenCredential, which can be retrieved using a `key`
+                // There are two ways of generating the key, corresponding to the two setting sets that can be used to set up System-assigned Identities (see: https://learn.microsoft.com/en-us/azure/azure-functions/durable/durable-functions-configure-durable-functions-with-credentials#add-managed-identity-configuration-in-the-azure-portal)
                 string key = !string.IsNullOrEmpty(account.AccountName) ? account.AccountName : account.BlobServiceUri.ToString();
 
                 TokenCredential credential = this.cachedTokenCredentials.GetOrAdd(
