@@ -49,8 +49,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             AzureStorageAccountOptions account = connectionInfo.Get<AzureStorageAccountOptions>();
             if (account != null)
             {
+                string key = !string.IsNullOrEmpty(account.AccountName) ? account.AccountName : account.BlobServiceUri.ToString();
+
                 TokenCredential credential = this.cachedTokenCredentials.GetOrAdd(
-                    account.AccountName,
+                    key,
                     attr => this.credentialFactory.Create(connectionInfo));
 
                 return new StorageAccountDetails
