@@ -239,6 +239,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 // the function failed for some other reason
 
+                string exceptionDetails = functionResult.Exception.ToString();
+
                 this.TraceHelper.FunctionFailed(
                     this.Options.HubName,
                     functionName.Name,
@@ -247,7 +249,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     FunctionType.Orchestrator,
                     isReplay: false);
 
-                string exceptionDetails = functionResult.Exception.ToString();
                 await this.LifeCycleNotificationHelper.OrchestratorFailedAsync(
                     this.Options.HubName,
                     functionName.Name,
