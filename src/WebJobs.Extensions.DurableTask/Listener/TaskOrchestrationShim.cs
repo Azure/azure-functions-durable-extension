@@ -220,14 +220,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 exceptionDetails = orchestrationFailureException.Details;
             }
 
-            string sanitizedExceptionDetails = $"{exception.GetType().FullName}\n{exception.StackTrace}";
-
             this.config.TraceHelper.FunctionFailed(
                 this.context.HubName,
                 this.context.Name,
                 this.context.InstanceId,
-                exceptionDetails,
-                sanitizedReason: sanitizedExceptionDetails,
+                exception: exception,
                 FunctionType.Orchestrator,
                 this.context.IsReplaying);
 

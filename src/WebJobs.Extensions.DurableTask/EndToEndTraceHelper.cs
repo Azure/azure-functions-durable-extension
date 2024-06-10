@@ -5,6 +5,7 @@ using System;
 using System.Diagnostics;
 using System.Net;
 using DurableTask.Core.Common;
+using DurableTask.Core.Exceptions;
 using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
@@ -338,12 +339,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string hubName,
             string functionName,
             string instanceId,
-            string reason,
-            string sanitizedReason,
+            Exception exception,
             FunctionType functionType,
             bool isReplay,
             int taskEventId = -1)
         {
+
+            string reason = exception.Message;
+            if (exception is OrchestrationFailureException orchestrationFailureException)
+            {
+                reason = orchestrationFailureException.Details;
+            }
+
+            string sanitizedReason = $"{exception.GetType().FullName}\n{exception.StackTrace}";
+
+            if (isReplay)
+            {
+                reason = $"(replayed {exception.GetType().Name})";
+                sanitizedReason = reason;
+            }
+
             if (this.ShouldLogEvent(isReplay))
             {
                 EtwEventSource.Instance.FunctionFailed(
@@ -363,19 +378,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     instanceId, functionName, functionType, reason, isReplay, FunctionState.Failed, OrchestrationRuntimeStatus.Failed, hubName,
                     LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++, taskEventId);
             }
-        }
-
-        public void FunctionFailed(
-            string hubName,
-            string functionName,
-            string instanceId,
-            Exception reason,
-            FunctionType functionType,
-            bool isReplay,
-            int taskEventId = -1)
-        {
-            string sanitizedException = $"{reason.GetType().FullName}\n{reason.StackTrace}";
-            this.FunctionFailed(hubName, functionName, instanceId, reason.ToString(), sanitizedException, functionType, isReplay, taskEventId);
         }
 
         public void FunctionAborted(

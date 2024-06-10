@@ -792,8 +792,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             this.Config.Options.HubName,
                             functionName,
                             this.InstanceId,
-                            reason: $"(replayed {exception.GetType().Name})",
-                            sanitizedReason: string.Empty,
+                            exception: exception,
                             functionType: functionType,
                             isReplay: true);
                     }
