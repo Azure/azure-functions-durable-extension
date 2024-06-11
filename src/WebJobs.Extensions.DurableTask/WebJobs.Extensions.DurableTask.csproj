@@ -58,8 +58,9 @@
     <!-- Don't increase below versions without significantly testing on Functions V1!
          Increasing these versions increments some dependencies that have binding redirects in Functions V1. -->
     <PackageReference Include="Azure.Identity" Version="1.1.1">
-		<NoWarn>NU1903;NU1902</NoWarn>
-	</PackageReference>
+        <NoWarn>NU1903;NU1902</NoWarn> <!-- To be removed once Functions V1 support is dropped. 
+		We need this to avoid build warnings, as we cannot change this V1 dependency-->
+    </PackageReference>
     <PackageReference Include="Microsoft.Azure.WebJobs" Version="2.3.0" />
     <PackageReference Include="Microsoft.Extensions.Options" Version="1.0.2" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="1.0.2" />
@@ -98,7 +99,7 @@
     <DefineConstants>$(DefineConstants);FUNCTIONS_V2_OR_GREATER;FUNCTIONS_V3_OR_GREATER</DefineConstants>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.1'">
-    <PackageReference Include="Azure.Identity" Version="1.11.0"/>
+    <PackageReference Include="Azure.Identity" Version="1.11.0" />
     <PackageReference Include="Microsoft.Azure.WebJobs" Version="3.0.37" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.WebApiCompatShim" Version="2.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Routing" Version="2.2.0" />
