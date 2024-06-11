@@ -113,7 +113,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.WriteEvent(206, TaskHub, AppName, SlotName, FunctionName, TaskEventId, InstanceId, Output ?? "(null)", ContinuedAsNew, FunctionType, ExtensionVersion, IsReplay);
         }
 
-        [Event(207, Level = EventLevel.Warning, Version = 3)]
+        [Event(207, Level = EventLevel.Warning, Version = 2)]
         public void FunctionTerminated(
             string TaskHub,
             string AppName,
@@ -302,7 +302,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string ExtensionVersion,
             bool IsReplay)
         {
-            this.WriteEvent(218, TaskHub, AppName, SlotName, FunctionName, InstanceId, Result ?? "(null)", OperationId, FunctionType, ExtensionVersion, IsReplay);
+            this.WriteEvent(218, TaskHub, AppName, SlotName, FunctionName, InstanceId, OperationId, Result ?? "(null)", FunctionType, ExtensionVersion, IsReplay);
         }
 
         [Event(219, Level = EventLevel.Informational, Version = 2)]
