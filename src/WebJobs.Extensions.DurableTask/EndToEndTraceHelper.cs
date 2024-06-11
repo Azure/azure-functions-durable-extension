@@ -9,7 +9,6 @@ using DurableTask.Core.Exceptions;
 using Microsoft.Extensions.Logging;
 
 #nullable enable
-
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     internal class EndToEndTraceHelper
