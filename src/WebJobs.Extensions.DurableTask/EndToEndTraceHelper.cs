@@ -358,6 +358,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 reason = $"(replayed {exception.GetType().Name})";
                 sanitizedReason = reason;
             }
+            this.FunctionFailed(hubName, functionName, instanceId, reason, sanitizedReason, functionType, isReplay, taskEventId);
+        }
+
+        public void FunctionFailed(
+            string hubName,
+            string functionName,
+            string instanceId,
+            string reason,
+            string sanitizedReason,
+            FunctionType functionType,
+            bool isReplay,
+            int taskEventId = -1)
+        {
 
             if (this.ShouldLogEvent(isReplay))
             {
@@ -444,8 +457,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
            string operationId,
            string operationName,
            string input,
+           Exception exception,
+           double duration,
+           bool isReplay)
+        {
+            string exceptionString = exception.ToString();
+            if (isReplay)
+            {
+                exceptionString = $"(replayed {exception.GetType().Name})";
+            }
+
+            this.OperationFailed(hubName, functionName, instanceId, operationId, operationName, input, exceptionString, duration, isReplay);
+        }
+
+        public void OperationFailed(
+           string hubName,
+           string functionName,
+           string instanceId,
+           string operationId,
+           string operationName,
+           string input,
            string exception,
-           string sanitizedException,
            double duration,
            bool isReplay)
         {
@@ -470,21 +502,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     instanceId, functionName, FunctionType.Entity, operationName, operationId, duration, exception, input, isReplay, hubName,
                     LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++);
             }
-        }
-
-        public void OperationFailed(
-           string hubName,
-           string functionName,
-           string instanceId,
-           string operationId,
-           string operationName,
-           string input,
-           Exception exception,
-           double duration,
-           bool isReplay)
-        {
-            string sanitizedException = $"{exception.GetType().FullName}\n{exception.StackTrace}";
-            this.OperationFailed(hubName, functionName, instanceId, operationId, operationName, input, exception.ToString(), sanitizedException, duration, isReplay);
         }
 
         public void ExternalEventRaised(

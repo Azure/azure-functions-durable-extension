@@ -656,7 +656,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         request.Operation,
                         this.Config.GetIntputOutputTrace(request.Input),
                         this.Config.GetIntputOutputTrace(result.Result),
-                        sanitizedException: string.Empty,
                         result.DurationInMilliseconds,
                         isReplay: false);
                 }
