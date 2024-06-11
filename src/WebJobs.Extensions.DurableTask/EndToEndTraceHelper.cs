@@ -19,13 +19,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private readonly ILogger logger;
         private readonly bool traceReplayEvents;
+        private readonly bool shouldCensor;
 
         private long sequenceNumber;
 
-        public EndToEndTraceHelper(ILogger logger, bool traceReplayEvents)
+        public EndToEndTraceHelper(ILogger logger, bool traceReplayEvents, bool shouldCensor = false)
         {
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
             this.traceReplayEvents = traceReplayEvents;
+            this.shouldCensor = shouldCensor;
         }
 
         public static string LocalAppName
@@ -123,16 +125,28 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++);
             }
         }
+#nullable enable
 
         public void FunctionStarting(
             string hubName,
             string functionName,
             string instanceId,
-            string input,
+            string? input,
             FunctionType functionType,
             bool isReplay,
             int taskEventId = -1)
         {
+
+            if (this.shouldCensor)
+            {
+                input = "";
+            }
+
+            if (isReplay)
+            {
+                input = "(replay)";
+            }
+
             if (this.ShouldLogEvent(isReplay))
             {
                 EtwEventSource.Instance.FunctionStarting(
@@ -142,6 +156,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     functionName,
                     taskEventId,
                     instanceId,
+                    input,
                     functionType.ToString(),
                     ExtensionVersion,
                     isReplay);
@@ -152,6 +167,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++, taskEventId);
             }
         }
+#nullable disable
 
         public void FunctionAwaited(
             string hubName,
@@ -218,6 +234,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             bool isReplay,
             int taskEventId = -1)
         {
+            if (this.shouldCensor)
+            {
+                output = "";
+            }
+
+            if (isReplay)
+            {
+                output = "(replay)";
+            }
+
             if (this.ShouldLogEvent(isReplay))
             {
                 EtwEventSource.Instance.FunctionCompleted(
@@ -227,6 +253,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     functionName,
                     taskEventId,
                     instanceId,
+                    output,
                     continuedAsNew,
                     functionType.ToString(),
                     ExtensionVersion,
@@ -245,6 +272,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string instanceId,
             string reason)
         {
+            if (this.shouldCensor)
+            {
+                reason = "";
+            }
+
             FunctionType functionType = FunctionType.Orchestrator;
 
             EtwEventSource.Instance.FunctionTerminated(
@@ -253,6 +285,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 LocalSlotName,
                 functionName,
                 instanceId,
+                reason,
                 functionType.ToString(),
                 ExtensionVersion,
                 IsReplay: false);
@@ -269,6 +302,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string instanceId,
             string reason)
         {
+            if (this.shouldCensor)
+            {
+                reason = "";
+            }
+
             FunctionType functionType = FunctionType.Orchestrator;
 
             EtwEventSource.Instance.SuspendingOrchestration(
@@ -277,6 +315,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 LocalSlotName,
                 functionName,
                 instanceId,
+                reason,
                 functionType.ToString(),
                 ExtensionVersion,
                 IsReplay: false);
@@ -293,6 +332,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string instanceId,
             string reason)
         {
+            if (this.shouldCensor)
+            {
+                reason = "";
+            }
+
             FunctionType functionType = FunctionType.Orchestrator;
 
             EtwEventSource.Instance.ResumingOrchestration(
@@ -301,6 +345,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 LocalSlotName,
                 functionName,
                 instanceId,
+                reason,
                 functionType.ToString(),
                 ExtensionVersion,
                 IsReplay: false);
@@ -317,6 +362,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string instanceId,
             string reason)
         {
+            if (this.shouldCensor)
+            {
+                reason = "";
+            }
+
             FunctionType functionType = FunctionType.Orchestrator;
 
             EtwEventSource.Instance.FunctionRewound(
@@ -325,6 +375,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 LocalSlotName,
                 functionName,
                 instanceId,
+                reason,
                 functionType.ToString(),
                 ExtensionVersion,
                 IsReplay: false);
@@ -428,6 +479,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
            double duration,
            bool isReplay)
         {
+            if (this.shouldCensor)
+            {
+                input = "";
+                output = "";
+            }
+
             if (this.ShouldLogEvent(isReplay))
             {
                 EtwEventSource.Instance.OperationCompleted(
@@ -438,6 +495,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     instanceId,
                     operationId,
                     operationName,
+                    input,
+                    output,
                     duration,
                     FunctionType.Entity.ToString(),
                     ExtensionVersion,
@@ -481,6 +540,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
            double duration,
            bool isReplay)
         {
+            if (this.shouldCensor)
+            {
+                input = "";
+                exception = "";
+            }
+
             if (this.ShouldLogEvent(isReplay))
             {
                 EtwEventSource.Instance.OperationFailed(
@@ -491,6 +556,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     instanceId,
                     operationId,
                     operationName,
+                    input,
                     exception,
                     duration,
                     FunctionType.Entity.ToString(),
@@ -509,8 +575,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string functionName,
             string instanceId,
             string eventName,
+            string input,
             bool isReplay)
         {
+            if (this.shouldCensor)
+            {
+                input = "";
+            }
+
             if (this.ShouldLogEvent(isReplay))
             {
                 FunctionType functionType = FunctionType.Orchestrator;
@@ -522,6 +594,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     functionName,
                     instanceId,
                     eventName,
+                    input,
                     functionType.ToString(),
                     ExtensionVersion,
                     isReplay);
@@ -624,8 +697,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             FunctionType functionType,
             string instanceId,
             string operationId,
+            string result,
             bool isReplay)
         {
+            if (this.shouldCensor)
+            {
+                result = "";
+            }
+
             if (this.ShouldLogEvent(isReplay))
             {
                 EtwEventSource.Instance.EntityResponseReceived(
@@ -635,6 +714,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     functionName,
                     instanceId,
                     operationId,
+                    result,
                     functionType.ToString(),
                     ExtensionVersion,
                     isReplay);

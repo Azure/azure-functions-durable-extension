@@ -95,7 +95,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.Options.HubName,
                 functionName.Name,
                 instance.InstanceId,
-                isReplaying ? "(replay)" : this.extension.GetIntputOutputTrace(startEvent.Input),
+                startEvent.Input,
                 FunctionType.Orchestrator,
                 isReplaying);
 
@@ -188,7 +188,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         this.Options.HubName,
                         functionName.Name,
                         instance.InstanceId,
-                        this.extension.GetIntputOutputTrace(context.SerializedOutput),
+                        context.SerializedOutput,
                         context.ContinuedAsNew,
                         FunctionType.Orchestrator,
                         isReplay: false);
@@ -320,7 +320,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.Options.HubName,
                 functionName.Name,
                 batchRequest.InstanceId,
-                this.extension.GetIntputOutputTrace(batchRequest.EntityState),
+                batchRequest.EntityState,
                 functionType: FunctionType.Entity,
                 isReplay: false);
 
@@ -429,7 +429,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                        this.Options.HubName,
                        functionName.Name,
                        batchRequest.InstanceId,
-                       this.extension.GetIntputOutputTrace(batchRequest.EntityState),
+                       batchRequest.EntityState,
                        batchResult.EntityState != null,
                        FunctionType.Entity,
                        isReplay: false);
@@ -496,7 +496,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.Options.HubName,
                 functionName.Name,
                 instance.InstanceId,
-                this.extension.GetIntputOutputTrace(rawInput),
+                rawInput,
                 functionType: FunctionType.Activity,
                 isReplay: false,
                 taskEventId: scheduledEvent.EventId);
@@ -542,7 +542,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.Options.HubName,
                     functionName.Name,
                     instance.InstanceId,
-                    this.extension.GetIntputOutputTrace(serializedOutput),
+                    serializedOutput,
                     continuedAsNew: false,
                     FunctionType.Activity,
                     isReplay: false,

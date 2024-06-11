@@ -58,7 +58,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.config.Options.HubName,
                 this.activityName,
                 instanceId,
-                this.config.GetIntputOutputTrace(rawInput),
+                rawInput,
                 functionType: FunctionType.Activity,
                 isReplay: false,
                 taskEventId: this.taskEventId);
@@ -76,7 +76,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         this.config.Options.HubName,
                         this.activityName,
                         instanceId,
-                        this.config.GetIntputOutputTrace(serializedOutput),
+                        serializedOutput,
                         continuedAsNew: false,
                         functionType: FunctionType.Activity,
                         isReplay: false,

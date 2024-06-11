@@ -533,8 +533,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         this.context.InstanceId,
                         request.Id.ToString(),
                         request.Operation,
-                        this.Config.GetIntputOutputTrace(this.context.RawInput),
-                        this.Config.GetIntputOutputTrace(response.Result),
+                        this.context.RawInput,
+                        response.Result,
                         stopwatch.Elapsed.TotalMilliseconds,
                         isReplay: false);
             }
@@ -638,8 +638,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         this.context.InstanceId,
                         request.Id.ToString(),
                         request.Operation,
-                        this.Config.GetIntputOutputTrace(request.Input),
-                        this.Config.GetIntputOutputTrace(result.Result),
+                        request.Input,
+                        result.Result,
                         result.DurationInMilliseconds,
                         isReplay: false);
                 }
@@ -654,8 +654,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         this.context.InstanceId,
                         request.Id.ToString(),
                         request.Operation,
-                        this.Config.GetIntputOutputTrace(request.Input),
-                        this.Config.GetIntputOutputTrace(result.Result),
+                        request.Input,
+                        result.Result,
                         result.DurationInMilliseconds,
                         isReplay: false);
                 }

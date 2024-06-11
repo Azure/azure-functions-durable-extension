@@ -75,7 +75,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.context.HubName,
                 this.context.Name,
                 this.context.InstanceId,
-                this.Config.GetIntputOutputTrace(serializedInput),
+                serializedInput,
                 FunctionType.Orchestrator,
                 this.context.IsReplaying);
             status = OrchestrationRuntimeStatus.Running;
@@ -113,7 +113,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.context.HubName,
                 this.context.Name,
                 this.context.InstanceId,
-                this.Config.GetIntputOutputTrace(serializedOutput),
+                serializedOutput,
                 this.context.ContinuedAsNew,
                 FunctionType.Orchestrator,
                 this.context.IsReplaying);

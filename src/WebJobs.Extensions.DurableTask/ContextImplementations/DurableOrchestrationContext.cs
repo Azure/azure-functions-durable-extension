@@ -933,6 +933,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             FunctionType.Orchestrator,
                             this.InstanceId,
                             name,
+                            responseMessage.Result,
                             this.IsReplaying);
                     }
                     else
@@ -942,6 +943,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                              this.Name,
                              this.InstanceId,
                              name,
+                             input,
                              this.IsReplaying);
                     }
 

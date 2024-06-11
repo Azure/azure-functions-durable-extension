@@ -154,7 +154,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             ILogger logger = loggerFactory.CreateLogger(LoggerCategoryName);
 
-            this.TraceHelper = new EndToEndTraceHelper(logger, this.Options.Tracing.TraceReplayEvents);
+            this.TraceHelper = new EndToEndTraceHelper(logger, this.Options.Tracing.TraceReplayEvents, this.Options.Tracing.TraceInputsAndOutputs);
             this.LifeCycleNotificationHelper = lifeCycleNotificationHelper ?? this.CreateLifeCycleNotificationHelper();
             this.durabilityProviderFactory = GetDurabilityProviderFactory(this.Options, logger, orchestrationServiceFactories);
             this.defaultDurabilityProvider = this.durabilityProviderFactory.GetDurabilityProvider();
@@ -1037,7 +1037,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                                     entityContext.HubName,
                                     entityContext.Name,
                                     entityContext.InstanceId,
-                                    this.GetIntputOutputTrace(runtimeState.Input),
+                                    runtimeState.Input,
                                     FunctionType.Entity,
                                     isReplay: false);
 
@@ -1080,7 +1080,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                                         entityContext.HubName,
                                         entityContext.Name,
                                         entityContext.InstanceId,
-                                        this.GetIntputOutputTrace(entityContext.State.EntityState),
+                                        entityContext.State.EntityState,
                                         continuedAsNew: true,
                                         functionType: FunctionType.Entity,
                                         isReplay: false);
