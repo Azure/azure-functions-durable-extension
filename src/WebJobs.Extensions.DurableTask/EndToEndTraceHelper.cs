@@ -59,7 +59,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
 #pragma warning disable SA1117 // Parameters should be on same line or separate lines
 
-        private string Sanitize(string? rawPayload, out string iloggerPayload, bool isReplay = false)
+        private string SanitizeString(string? rawPayload, out string iloggerPayload, bool isReplay = false)
         {
             if (isReplay)
             {
@@ -73,6 +73,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             iloggerPayload = this.shouldTraceRawData ? payload : sanitizedPayload;
             return sanitizedPayload;
+        }
+
+        private string SanitizeException(Exception? exception, out string iloggerExceptionString, bool isReplay = false)
+        {
+            if (isReplay)
+            {
+                iloggerExceptionString = "(replay)";
+                return "(replay)";
+            }
+
+            string exceptionString = exception != null ? exception.Message : string.Empty;
+            if (exception is OrchestrationFailureException orchestrationFailureException)
+            {
+                exceptionString = orchestrationFailureException.Details;
+            }
+
+            string sanitizedString = exception != null ? $"{exception.GetType().FullName}\n{exception.StackTrace}" : string.Empty;
+            iloggerExceptionString = this.shouldTraceRawData ? exceptionString : sanitizedString;
+            return sanitizedString;
         }
 
         public void ExtensionInformationalEvent(
@@ -152,7 +171,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             bool isReplay,
             int taskEventId = -1)
         {
-            string sanitizedInput = this.Sanitize(input, out string loggerInput, isReplay: isReplay);
+            string sanitizedInput = this.SanitizeString(input, out string loggerInput, isReplay: isReplay);
 
             if (this.ShouldLogEvent(isReplay))
             {
@@ -240,7 +259,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             bool isReplay,
             int taskEventId = -1)
         {
-            string sanitizedOutput = this.Sanitize(output, out string loggerOutput, isReplay: isReplay);
+            string sanitizedOutput = this.SanitizeString(output, out string loggerOutput, isReplay: isReplay);
 
             if (this.ShouldLogEvent(isReplay))
             {
@@ -270,7 +289,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string instanceId,
             string reason)
         {
-            string sanitizedReason = this.Sanitize(reason, out string loggerReason);
+            string sanitizedReason = this.SanitizeString(reason, out string loggerReason);
 
             FunctionType functionType = FunctionType.Orchestrator;
 
@@ -297,7 +316,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string instanceId,
             string reason)
         {
-            string sanitizedReason = this.Sanitize(reason, out string loggerReason);
+            string sanitizedReason = this.SanitizeString(reason, out string loggerReason);
 
             FunctionType functionType = FunctionType.Orchestrator;
 
@@ -324,7 +343,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string instanceId,
             string reason)
         {
-            string sanitizedReason = this.Sanitize(reason, out string loggerReason);
+            string sanitizedReason = this.SanitizeString(reason, out string loggerReason);
 
             FunctionType functionType = FunctionType.Orchestrator;
 
@@ -351,7 +370,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string instanceId,
             string reason)
         {
-            string sanitizedReason = this.Sanitize(reason, out string loggerReason);
+            string sanitizedReason = this.SanitizeString(reason, out string loggerReason);
 
             FunctionType functionType = FunctionType.Orchestrator;
 
@@ -381,21 +400,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             bool isReplay,
             int taskEventId = -1)
         {
-            string reason = exception != null ? exception.Message : string.Empty;
-            if (exception is OrchestrationFailureException orchestrationFailureException)
-            {
-                reason = orchestrationFailureException.Details;
-            }
-
-            string sanitizedReason = exception != null ? $"{exception.GetType().FullName}\n{exception.StackTrace}" : string.Empty;
-
-            if (isReplay)
-            {
-                reason = $"(replayed {exception?.GetType().Name})";
-                sanitizedReason = reason;
-            }
-
-            this.FunctionFailed(hubName, functionName, instanceId, reason, sanitizedReason, functionType, isReplay, taskEventId);
+            string sanitizedReason = this.SanitizeException(exception, out string loggerReason, isReplay);
+            this.FunctionFailed(hubName, functionName, instanceId, loggerReason, sanitizedReason, functionType, isReplay, taskEventId);
         }
 
         public void FunctionFailed(
@@ -464,8 +470,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
            double duration,
            bool isReplay)
         {
-            string sanitizedInput = this.Sanitize(input, out string loggerInput);
-            string sanitizedOutput = this.Sanitize(output, out string loggerOutput);
+            string sanitizedInput = this.SanitizeString(input, out string loggerInput);
+            string sanitizedOutput = this.SanitizeString(output, out string loggerOutput);
 
             if (this.ShouldLogEvent(isReplay))
             {
@@ -502,13 +508,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
            double duration,
            bool isReplay)
         {
-            string exceptionString = exception.ToString();
-            if (isReplay)
-            {
-                exceptionString = $"(replayed {exception.GetType().Name})";
-            }
-
-            this.OperationFailed(hubName, functionName, instanceId, operationId, operationName, input, exceptionString, duration, isReplay);
+            string sanitizedInput = this.SanitizeString(input, out string loggerInput);
+            string sanitizedException = this.SanitizeException(exception, out string loggerException, isReplay);
+            this.OperationFailed(hubName, functionName, instanceId, operationId, operationName, sanitizedInput, loggerInput, sanitizedException, loggerException, duration, isReplay);
         }
 
         public void OperationFailed(
@@ -522,9 +524,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
            double duration,
            bool isReplay)
         {
-            string sanitizedInput = this.Sanitize(input, out string loggerInput);
-            string sanitizedException = this.Sanitize(exception, out string loggerException);
+            string sanitizedInput = this.SanitizeString(input, out string loggerInput);
+            string sanitizedException = this.SanitizeString(exception, out string loggerException);
+            this.OperationFailed(hubName, functionName, instanceId, operationId, operationName, sanitizedInput, loggerInput, sanitizedException, loggerException, duration, isReplay);
+        }
 
+        private void OperationFailed(
+           string hubName,
+           string functionName,
+           string instanceId,
+           string operationId,
+           string operationName,
+           string sanitizedInput,
+           string loggerInput,
+           string sanitizedException,
+           string loggerException,
+           double duration,
+           bool isReplay)
+        {
             if (this.ShouldLogEvent(isReplay))
             {
                 EtwEventSource.Instance.OperationFailed(
@@ -557,7 +574,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string input,
             bool isReplay)
         {
-            string sanitizedInput = this.Sanitize(input, out string _);
+            string sanitizedInput = this.SanitizeString(input, out string _);
 
             if (this.ShouldLogEvent(isReplay))
             {
@@ -676,7 +693,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string result,
             bool isReplay)
         {
-            string sanitizedResult = this.Sanitize(result, out string _);
+            string sanitizedResult = this.SanitizeString(result, out string _);
 
             if (this.ShouldLogEvent(isReplay))
             {
