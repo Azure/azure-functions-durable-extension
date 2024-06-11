@@ -8,14 +8,16 @@ using DurableTask.Core.Common;
 using DurableTask.Core.Exceptions;
 using Microsoft.Extensions.Logging;
 
+#nullable enable
+
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     internal class EndToEndTraceHelper
     {
         private static readonly string ExtensionVersion = FileVersionInfo.GetVersionInfo(typeof(DurableTaskExtension).Assembly.Location).FileVersion;
 
-        private static string appName;
-        private static string slotName;
+        private static string? appName;
+        private static string? slotName;
 
         private readonly ILogger logger;
         private readonly bool traceReplayEvents;
@@ -125,7 +127,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++);
             }
         }
-#nullable enable
 
         public void FunctionStarting(
             string hubName,
@@ -167,7 +168,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++, taskEventId);
             }
         }
-#nullable disable
 
         public void FunctionAwaited(
             string hubName,
