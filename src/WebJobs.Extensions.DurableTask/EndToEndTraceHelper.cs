@@ -136,7 +136,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             bool isReplay,
             int taskEventId = -1)
         {
-
             if (this.shouldCensor)
             {
                 input = "";
@@ -227,7 +226,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string hubName,
             string functionName,
             string instanceId,
-            string output,
+            string? output,
             bool continuedAsNew,
             FunctionType functionType,
             bool isReplay,
@@ -389,25 +388,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string hubName,
             string functionName,
             string instanceId,
-            Exception exception,
+            Exception? exception,
             FunctionType functionType,
             bool isReplay,
             int taskEventId = -1)
         {
-
-            string reason = exception.Message;
+            string reason = exception != null ? exception.Message : string.Empty;
             if (exception is OrchestrationFailureException orchestrationFailureException)
             {
                 reason = orchestrationFailureException.Details;
             }
 
-            string sanitizedReason = $"{exception.GetType().FullName}\n{exception.StackTrace}";
+            string sanitizedReason = exception != null ? $"{exception.GetType().FullName}\n{exception.StackTrace}" : string.Empty;
 
             if (isReplay)
             {
-                reason = $"(replayed {exception.GetType().Name})";
+                reason = $"(replayed {exception?.GetType().Name})";
                 sanitizedReason = reason;
             }
+
             this.FunctionFailed(hubName, functionName, instanceId, reason, sanitizedReason, functionType, isReplay, taskEventId);
         }
 
@@ -421,7 +420,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             bool isReplay,
             int taskEventId = -1)
         {
-
             if (this.ShouldLogEvent(isReplay))
             {
                 EtwEventSource.Instance.FunctionFailed(
