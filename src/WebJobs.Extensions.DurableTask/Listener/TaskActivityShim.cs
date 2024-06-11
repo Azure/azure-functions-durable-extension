@@ -10,6 +10,7 @@ using Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener;
 using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.Host.Executors;
 
+#nullable enable
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     /// <summary>
@@ -100,7 +101,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 case WrappedFunctionResult.FunctionResultStatus.FunctionTimeoutError:
                     // Flow the original activity function exception to the orchestration
                     // without the outer FunctionInvocationException.
-                    Exception exceptionToReport = StripFunctionInvocationException(result.Exception);
+                    Exception? exceptionToReport = StripFunctionInvocationException(result.Exception);
 
                     if (OutOfProcExceptionHelpers.TryGetExceptionWithFriendlyMessage(
                         exceptionToReport,
@@ -119,7 +120,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         taskEventId: this.taskEventId);
 
                     throw new TaskFailureException(
-                            $"Activity function '{this.activityName}' failed: {exceptionToReport.Message}",
+                            $"Activity function '{this.activityName}' failed: {exceptionToReport!.Message}",
                             Utils.SerializeCause(exceptionToReport, this.config.ErrorDataConverter));
                 default:
                     // we throw a TaskFailureException to ensure deserialization is possible.
@@ -143,7 +144,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.taskEventId = taskEventId;
         }
 
-        private static Exception StripFunctionInvocationException(Exception e)
+        private static Exception? StripFunctionInvocationException(Exception? e)
         {
             var infrastructureException = e as FunctionInvocationException;
             if (infrastructureException?.InnerException != null)
