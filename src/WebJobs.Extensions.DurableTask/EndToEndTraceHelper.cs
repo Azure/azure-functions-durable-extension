@@ -20,15 +20,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private readonly ILogger logger;
         private readonly bool traceReplayEvents;
-        private readonly bool shouldCensor;
+        private readonly bool shouldTraceRawData;
 
         private long sequenceNumber;
 
-        public EndToEndTraceHelper(ILogger logger, bool traceReplayEvents, bool shouldCensor = false)
+        public EndToEndTraceHelper(ILogger logger, bool traceReplayEvents, bool shouldTraceRawData = false)
         {
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
             this.traceReplayEvents = traceReplayEvents;
-            this.shouldCensor = shouldCensor;
+            this.shouldTraceRawData = shouldTraceRawData;
         }
 
         public static string LocalAppName
@@ -58,6 +58,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
 #pragma warning disable SA1117 // Parameters should be on same line or separate lines
+
+        private string Sanitize(string? rawPayload, out string iloggerPayload, bool isReplay = false)
+        {
+            if (isReplay)
+            {
+                iloggerPayload = "(replay)";
+                return "(replay)";
+            }
+
+            string payload = rawPayload ?? string.Empty;
+            int numCharacters = payload.Length;
+            string sanitizedPayload = $"(Redacted {numCharacters} characters)";
+
+            iloggerPayload = this.shouldTraceRawData ? payload : sanitizedPayload;
+            return sanitizedPayload;
+        }
 
         public void ExtensionInformationalEvent(
             string hubName,
@@ -136,15 +152,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             bool isReplay,
             int taskEventId = -1)
         {
-            if (this.shouldCensor)
-            {
-                input = "";
-            }
-
-            if (isReplay)
-            {
-                input = "(replay)";
-            }
+            string sanitizedInput = this.Sanitize(input, out string loggerInput, isReplay: isReplay);
 
             if (this.ShouldLogEvent(isReplay))
             {
@@ -155,14 +163,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     functionName,
                     taskEventId,
                     instanceId,
-                    input,
+                    sanitizedInput,
                     functionType.ToString(),
                     ExtensionVersion,
                     isReplay);
 
                 this.logger.LogInformation(
                     "{instanceId}: Function '{functionName} ({functionType})' started. IsReplay: {isReplay}. Input: {input}. State: {state}. RuntimeStatus: {runtimeStatus}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}. TaskEventId: {taskEventId}",
-                    instanceId, functionName, functionType, isReplay, input, FunctionState.Started, OrchestrationRuntimeStatus.Running, hubName,
+                    instanceId, functionName, functionType, isReplay, loggerInput, FunctionState.Started, OrchestrationRuntimeStatus.Running, hubName,
                     LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++, taskEventId);
             }
         }
@@ -232,15 +240,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             bool isReplay,
             int taskEventId = -1)
         {
-            if (this.shouldCensor)
-            {
-                output = "";
-            }
-
-            if (isReplay)
-            {
-                output = "(replay)";
-            }
+            string sanitizedOutput = this.Sanitize(output, out string loggerOutput, isReplay: isReplay);
 
             if (this.ShouldLogEvent(isReplay))
             {
@@ -251,7 +251,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     functionName,
                     taskEventId,
                     instanceId,
-                    output,
+                    sanitizedOutput,
                     continuedAsNew,
                     functionType.ToString(),
                     ExtensionVersion,
@@ -259,7 +259,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 this.logger.LogInformation(
                     "{instanceId}: Function '{functionName} ({functionType})' completed. ContinuedAsNew: {continuedAsNew}. IsReplay: {isReplay}. Output: {output}. State: {state}. RuntimeStatus: {runtimeStatus}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}. TaskEventId: {taskEventId}",
-                    instanceId, functionName, functionType, continuedAsNew, isReplay, output, FunctionState.Completed, OrchestrationRuntimeStatus.Completed, hubName,
+                    instanceId, functionName, functionType, continuedAsNew, isReplay, loggerOutput, FunctionState.Completed, OrchestrationRuntimeStatus.Completed, hubName,
                     LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++, taskEventId);
             }
         }
@@ -270,10 +270,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string instanceId,
             string reason)
         {
-            if (this.shouldCensor)
-            {
-                reason = "";
-            }
+            string sanitizedReason = this.Sanitize(reason, out string loggerReason);
 
             FunctionType functionType = FunctionType.Orchestrator;
 
@@ -283,14 +280,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 LocalSlotName,
                 functionName,
                 instanceId,
-                reason,
+                sanitizedReason,
                 functionType.ToString(),
                 ExtensionVersion,
                 IsReplay: false);
 
             this.logger.LogWarning(
                 "{instanceId}: Function '{functionName} ({functionType})' was terminated. Reason: {reason}. State: {state}. RuntimeStatus: {runtimeStatus}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
-                instanceId, functionName, functionType, reason, FunctionState.Terminated, OrchestrationRuntimeStatus.Terminated, hubName,
+                instanceId, functionName, functionType, loggerReason, FunctionState.Terminated, OrchestrationRuntimeStatus.Terminated, hubName,
                 LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++);
         }
 
@@ -300,10 +297,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string instanceId,
             string reason)
         {
-            if (this.shouldCensor)
-            {
-                reason = "";
-            }
+            string sanitizedReason = this.Sanitize(reason, out string loggerReason);
 
             FunctionType functionType = FunctionType.Orchestrator;
 
@@ -313,14 +307,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 LocalSlotName,
                 functionName,
                 instanceId,
-                reason,
+                sanitizedReason,
                 functionType.ToString(),
                 ExtensionVersion,
                 IsReplay: false);
 
             this.logger.LogInformation(
                 "{instanceId}: Suspending function '{functionName} ({functionType})'. Reason: {reason}. State: {state}. RuntimeStatus: {runtimeStatus}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
-                instanceId, functionName, functionType, reason, FunctionState.Suspended, OrchestrationRuntimeStatus.Suspended, hubName,
+                instanceId, functionName, functionType, loggerReason, FunctionState.Suspended, OrchestrationRuntimeStatus.Suspended, hubName,
                 LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++);
         }
 
@@ -330,10 +324,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string instanceId,
             string reason)
         {
-            if (this.shouldCensor)
-            {
-                reason = "";
-            }
+            string sanitizedReason = this.Sanitize(reason, out string loggerReason);
 
             FunctionType functionType = FunctionType.Orchestrator;
 
@@ -343,14 +334,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 LocalSlotName,
                 functionName,
                 instanceId,
-                reason,
+                sanitizedReason,
                 functionType.ToString(),
                 ExtensionVersion,
                 IsReplay: false);
 
             this.logger.LogInformation(
                 "{instanceId}: Resuming function '{functionName} ({functionType})'. Reason: {reason}. State: {state}. RuntimeStatus: {runtimeStatus}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
-                instanceId, functionName, functionType, reason, FunctionState.Scheduled, OrchestrationRuntimeStatus.Running, hubName,
+                instanceId, functionName, functionType, loggerReason, FunctionState.Scheduled, OrchestrationRuntimeStatus.Running, hubName,
                 LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++);
         }
 
@@ -360,10 +351,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string instanceId,
             string reason)
         {
-            if (this.shouldCensor)
-            {
-                reason = "";
-            }
+            string sanitizedReason = this.Sanitize(reason, out string loggerReason);
 
             FunctionType functionType = FunctionType.Orchestrator;
 
@@ -373,14 +361,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 LocalSlotName,
                 functionName,
                 instanceId,
-                reason,
+                sanitizedReason,
                 functionType.ToString(),
                 ExtensionVersion,
                 IsReplay: false);
 
             this.logger.LogWarning(
                 "{instanceId}: Function '{functionName} ({functionType})' was rewound. Reason: {reason}. State: {state}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
-                instanceId, functionName, functionType, reason, FunctionState.Rewound, hubName,
+                instanceId, functionName, functionType, loggerReason, FunctionState.Rewound, hubName,
                 LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++);
         }
 
@@ -476,11 +464,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
            double duration,
            bool isReplay)
         {
-            if (this.shouldCensor)
-            {
-                input = "";
-                output = "";
-            }
+            string sanitizedInput = this.Sanitize(input, out string loggerInput);
+            string sanitizedOutput = this.Sanitize(output, out string loggerOutput);
 
             if (this.ShouldLogEvent(isReplay))
             {
@@ -492,8 +477,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     instanceId,
                     operationId,
                     operationName,
-                    input,
-                    output,
+                    sanitizedInput,
+                    sanitizedOutput,
                     duration,
                     FunctionType.Entity.ToString(),
                     ExtensionVersion,
@@ -501,7 +486,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 this.logger.LogInformation(
                     "{instanceId}: Function '{functionName} ({functionType})' completed '{operationName}' operation {operationId} in {duration}ms. IsReplay: {isReplay}. Input: {input}. Output: {output}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
-                    instanceId, functionName, FunctionType.Entity, operationName, operationId, duration, isReplay, input, output,
+                    instanceId, functionName, FunctionType.Entity, operationName, operationId, duration, isReplay, loggerInput, loggerOutput,
                     hubName, LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++);
             }
         }
@@ -537,11 +522,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
            double duration,
            bool isReplay)
         {
-            if (this.shouldCensor)
-            {
-                input = "";
-                exception = "";
-            }
+            string sanitizedInput = this.Sanitize(input, out string loggerInput);
+            string sanitizedException = this.Sanitize(exception, out string loggerException);
 
             if (this.ShouldLogEvent(isReplay))
             {
@@ -553,8 +535,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     instanceId,
                     operationId,
                     operationName,
-                    input,
-                    exception,
+                    sanitizedInput,
+                    sanitizedException,
                     duration,
                     FunctionType.Entity.ToString(),
                     ExtensionVersion,
@@ -562,7 +544,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 this.logger.LogError(
                     "{instanceId}: Function '{functionName} ({functionType})' failed '{operationName}' operation {operationId} after {duration}ms with exception {exception}. Input: {input}. IsReplay: {isReplay}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
-                    instanceId, functionName, FunctionType.Entity, operationName, operationId, duration, exception, input, isReplay, hubName,
+                    instanceId, functionName, FunctionType.Entity, operationName, operationId, duration, loggerException, loggerInput, isReplay, hubName,
                     LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++);
             }
         }
@@ -575,10 +557,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string input,
             bool isReplay)
         {
-            if (this.shouldCensor)
-            {
-                input = "";
-            }
+            string sanitizedInput = this.Sanitize(input, out string _);
 
             if (this.ShouldLogEvent(isReplay))
             {
@@ -591,7 +570,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     functionName,
                     instanceId,
                     eventName,
-                    input,
+                    sanitizedInput,
                     functionType.ToString(),
                     ExtensionVersion,
                     isReplay);
@@ -697,10 +676,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string result,
             bool isReplay)
         {
-            if (this.shouldCensor)
-            {
-                result = "";
-            }
+            string sanitizedResult = this.Sanitize(result, out string _);
 
             if (this.ShouldLogEvent(isReplay))
             {
@@ -711,7 +687,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     functionName,
                     instanceId,
                     operationId,
-                    result,
+                    sanitizedResult,
                     functionType.ToString(),
                     ExtensionVersion,
                     isReplay);
