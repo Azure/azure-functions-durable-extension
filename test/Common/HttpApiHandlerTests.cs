@@ -41,7 +41,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             var httpApiHandler = new HttpApiHandler(GetTestExtension(options), null);
             var ex = Assert.Throws<InvalidOperationException>(() => httpApiHandler.CreateCheckStatusResponse(new HttpRequestMessage(), string.Empty, null));
-            Assert.Equal("Webhooks are not configured", ex.Message);
+            string errorMessage = "Webhooks are not configured. This may occur if the environment variable `WEBSITE_HOSTNAME` is not set (should be automatically set for Azure Functions). "+
+                "Set it to <ip-address>:<port> as the value, where <ip-address>:<port> refers to the address that can be used to reach your function app from outside, or the DNS name of the app.";
+            Assert.Equal(errorMessage, ex.Message);
         }
 
         [Fact]
