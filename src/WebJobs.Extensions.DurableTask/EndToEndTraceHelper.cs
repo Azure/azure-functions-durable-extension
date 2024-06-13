@@ -77,13 +77,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private string SanitizeException(Exception? exception, out string iloggerExceptionString, bool isReplay = false)
         {
-            if (isReplay)
-            {
-                iloggerExceptionString = "(replay)";
-                return "(replay)";
-            }
-
-            string exceptionString = exception != null ? exception.Message : string.Empty;
+            string exceptionString = exception != null ? exception.toString() : string.Empty;
             if (exception is OrchestrationFailureException orchestrationFailureException)
             {
                 exceptionString = orchestrationFailureException.Details;
@@ -91,6 +85,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             string sanitizedString = exception != null ? $"{exception.GetType().FullName}\n{exception.StackTrace}" : string.Empty;
             iloggerExceptionString = this.shouldTraceRawData ? exceptionString : sanitizedString;
+            
+            if (isReplay)
+            {
+                return "(replay)";
+            }
+            
             return sanitizedString;
         }
 
