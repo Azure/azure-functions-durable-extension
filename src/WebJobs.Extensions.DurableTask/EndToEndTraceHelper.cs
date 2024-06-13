@@ -63,7 +63,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             if (isReplay)
             {
-                iloggerPayload = rawPayload;
+                iloggerPayload = rawPayload ?? "(replay)";
                 return "(replay)";
             }
 
