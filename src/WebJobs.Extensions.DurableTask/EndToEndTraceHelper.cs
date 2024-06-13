@@ -90,7 +90,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 return "(replay)";
             }
-            
+
             return sanitizedString;
         }
 
