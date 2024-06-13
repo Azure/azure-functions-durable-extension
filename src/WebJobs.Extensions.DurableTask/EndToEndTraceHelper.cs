@@ -67,7 +67,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return "(replay)";
             }
 
-            string payload = rawPayload ?? string.Empty;
+            string payload = rawPayload ?? "(null)";
             int numCharacters = payload.Length;
             string sanitizedPayload = $"(Redacted {numCharacters} characters)";
 
