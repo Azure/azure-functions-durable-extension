@@ -85,7 +85,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             string sanitizedString = exception != null ? $"{exception.GetType().FullName}\n{exception.StackTrace}" : string.Empty;
             iloggerExceptionString = this.shouldTraceRawData ? exceptionString : sanitizedString;
-            
+
             if (isReplay)
             {
                 return "(replay)";
