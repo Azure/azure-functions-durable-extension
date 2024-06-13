@@ -77,7 +77,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private string SanitizeException(Exception? exception, out string iloggerExceptionString, bool isReplay = false)
         {
-            string exceptionString = exception != null ? exception.toString() : string.Empty;
+            string exceptionString = exception != null ? exception.ToString() : string.Empty;
             if (exception is OrchestrationFailureException orchestrationFailureException)
             {
                 exceptionString = orchestrationFailureException.Details;
