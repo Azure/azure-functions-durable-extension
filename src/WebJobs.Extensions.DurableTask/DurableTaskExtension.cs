@@ -1487,35 +1487,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return false;
         }
 
-        internal string GetIntputOutputTrace(string rawInputOutputData)
-        {
-            if (this.Options.Tracing.TraceInputsAndOutputs)
-            {
-                return rawInputOutputData;
-            }
-            else if (rawInputOutputData == null)
-            {
-                return "(null)";
-            }
-            else
-            {
-                // Azure Storage uses UTF-32 encoding for string payloads
-                return "(" + Encoding.UTF32.GetByteCount(rawInputOutputData) + " bytes)";
-            }
-        }
-
-        internal string GetExceptionTrace(string rawExceptionData)
-        {
-            if (rawExceptionData == null)
-            {
-                return "(null)";
-            }
-            else
-            {
-                return rawExceptionData;
-            }
-        }
-
         /// <inheritdoc/>
         Task<HttpResponseMessage> IAsyncConverter<HttpRequestMessage, HttpResponseMessage>.ConvertAsync(
             HttpRequestMessage request,

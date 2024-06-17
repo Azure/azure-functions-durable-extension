@@ -546,7 +546,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         this.context.InstanceId,
                         request.Id.ToString(),
                         request.Operation,
-                        this.Config.GetIntputOutputTrace(this.context.RawInput),
+                        this.context.RawInput,
                         exception,
                         stopwatch.Elapsed.TotalMilliseconds,
                         isReplay: false);
