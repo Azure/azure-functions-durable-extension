@@ -1241,7 +1241,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal Uri GetWebhookUri()
         {
-            return this.webhookUrlProvider?.Invoke() ?? throw new InvalidOperationException("Webhooks are not configured");
+            string errorMessage = "Webhooks are not configured. This may occur if the environment variable `WEBSITE_HOSTNAME` is not set (should be automatically set for Azure Functions). " +
+                "Try setting it to the appropiate URI to reach your app. For example: the DNS name of the app, or a value of the form <ip-address>:<port>.";
+            return this.webhookUrlProvider?.Invoke() ?? throw new InvalidOperationException(errorMessage);
         }
 
         internal bool TryGetRpcBaseUrl(out Uri rpcBaseUrl)
