@@ -1242,7 +1242,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         internal Uri GetWebhookUri()
         {
             string errorMessage = "Webhooks are not configured. This may occur if the environment variable `WEBSITE_HOSTNAME` is not set (should be automatically set for Azure Functions). " +
-                "Try setting it to <ip-address>:<port> as the value, where <ip-address>:<port> refers to the address that can be used to reach your function app from outside, or the DNS name of the app.";
+                "Try setting it to the appropiate URI to reach your app. For example: the DNS name of the app, or a value of the form <ip-address>:<port>.";
             return this.webhookUrlProvider?.Invoke() ?? throw new InvalidOperationException(errorMessage);
         }
 
