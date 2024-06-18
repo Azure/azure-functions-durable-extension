@@ -25,7 +25,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         // This implementation is IConfigurationSection.Exists. Details: https://github.com/dotnet/runtime/blob/main/src/libraries/Microsoft.Extensions.Configuration.Abstractions/src/ConfigurationExtensions.cs#L78
-        // Functions host v1 (.net462 framework) doesn't support this method so we implement a substitute one here. 
+        // Functions host v1 (.net462 framework) doesn't support this method so we implement a substitute one here.
         private bool IfExists(IConfigurationSection section)
         {
             if (section == null)
@@ -37,6 +37,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 return section.GetChildren().Any();
             }
+
             return true;
         }
 
