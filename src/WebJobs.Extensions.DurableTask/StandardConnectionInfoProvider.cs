@@ -23,10 +23,36 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
         }
 
+        // This implementation is IConfigurationSection.Exists. Details: https://github.com/dotnet/runtime/blob/main/src/libraries/Microsoft.Extensions.Configuration.Abstractions/src/ConfigurationExtensions.cs#L78
+        // Functions host v1 (.net462 framework) doesn't support this method so we implement a substitute one here. 
+        private bool IfExists(IConfigurationSection section)
+        {
+            if (section == null)
+            {
+                return false;
+            }
+
+            if (section.Value == null)
+            {
+                return section.GetChildren().Any();
+            }
+
+            return true;
+        }
+
         /// <inheritdoc />
         public IConfigurationSection Resolve(string name)
         {
-            return this.configuration.GetSection(name);
+            string prefixedConnectionStringName = "AzureWebJobs" + name;
+            IConfigurationSection section = this.configuration?.GetSection(prefixedConnectionStringName);
+
+            if (!this.IfExists(section))
+            {
+                // next try a direct unprefixed lookup
+                section = this.configuration?.GetSection(name);
+            }
+
+            return section;
         }
     }
 }
