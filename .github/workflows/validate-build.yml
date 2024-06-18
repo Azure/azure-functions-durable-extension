@@ -29,6 +29,17 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v3
 
+    - name: Install Azure Storage Emulator
+      run: |
+        curl -L -o azurestorageemulator.msi "https://download.microsoft.com/download/C/1/9/C1902F99-2183-49E0-BFC8-A7B6E2D8A62E/MicrosoftAzureStorageEmulator.msi"
+        msiexec /i azurestorageemulator.msi /quiet
+
+    - name: Start Azure Storage Emulator
+      shell: cmd
+      run: |
+        "C:\Program Files (x86)\Microsoft SDKs\Azure\Storage Emulator\AzureStorageEmulator.exe" init
+        "C:\Program Files (x86)\Microsoft SDKs\Azure\Storage Emulator\AzureStorageEmulator.exe" start
+
     - name: Set up .NET Core 3.1
       uses: actions/setup-dotnet@v3
       with:
@@ -52,17 +63,6 @@ jobs:
 
     # - name: Install Azurite
     #   run: npm install -g azurite
-
-    - name: Install Azure Storage Emulator
-      run: |
-        curl -L -o azurestorageemulator.msi "https://download.microsoft.com/download/C/1/9/C1902F99-2183-49E0-BFC8-A7B6E2D8A62E/MicrosoftAzureStorageEmulator.msi"
-        msiexec /i azurestorageemulator.msi /quiet
-
-    - name: Start Azure Storage Emulator
-      run: |
-        "C:\Program Files (x86)\Microsoft SDKs\Azure\Storage Emulator\AzureStorageEmulator.exe" init
-        "C:\Program Files (x86)\Microsoft SDKs\Azure\Storage Emulator\AzureStorageEmulator.exe" start
-
 
     - name: Test DTx.Core
       run: dotnet test #--configuration $config --no-build --verbosity normal
