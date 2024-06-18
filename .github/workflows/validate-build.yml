@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-      - 'dajusto/add-tests-as-gh-action'
+      - dajusto/run-tests-in-gh-action
     paths-ignore: [ '**.md' ]
   pull_request:
     branches:
