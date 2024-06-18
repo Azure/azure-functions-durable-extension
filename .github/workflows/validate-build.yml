@@ -45,13 +45,24 @@ jobs:
     - name: Build
       run: dotnet build $solution #--configuration $config #--no-restore -p:FileVersionRevision=$GITHUB_RUN_NUMBER -p:ContinuousIntegrationBuild=true
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '16.x'
+    # - name: Set up Node.js
+    #   uses: actions/setup-node@v3
+    #   with:
+    #     node-version: '16.x'
 
-    - name: Install Azurite
-      run: npm install -g azurite
+    # - name: Install Azurite
+    #   run: npm install -g azurite
+
+    - name: Install Azure Storage Emulator
+      run: |
+        curl -L -o azurestorageemulator.msi "https://download.microsoft.com/download/C/1/9/C1902F99-2183-49E0-BFC8-A7B6E2D8A62E/MicrosoftAzureStorageEmulator.msi"
+        msiexec /i azurestorageemulator.msi /quiet
+
+    - name: Start Azure Storage Emulator
+      run: |
+        "C:\Program Files (x86)\Microsoft SDKs\Azure\Storage Emulator\AzureStorageEmulator.exe" init
+        "C:\Program Files (x86)\Microsoft SDKs\Azure\Storage Emulator\AzureStorageEmulator.exe" start
+
 
     - name: Test DTx.Core
-      run: azurite --blobPort 10000 --queuePort 10001 --tablePort 10002 & dotnet test #--configuration $config --no-build --verbosity normal
+      run: dotnet test #--configuration $config --no-build --verbosity normal
