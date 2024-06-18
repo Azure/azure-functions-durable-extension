@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Linq;
 using Microsoft.Extensions.Configuration;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
@@ -36,7 +37,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 return section.GetChildren().Any();
             }
-
             return true;
         }
 
