@@ -32,7 +32,7 @@ jobs:
     - name: Install Azure Storage Emulator
       run: |
         curl -L -o azurestorageemulator.msi "https://download.microsoft.com/download/C/1/9/C1902F99-2183-49E0-BFC8-A7B6E2D8A62E/MicrosoftAzureStorageEmulator.msi"
-        msiexec /i azurestorageemulator.msi /quiet
+        msiexec /i azurestorageemulator.msi
 
     - name: Start Azure Storage Emulator
       shell: cmd
