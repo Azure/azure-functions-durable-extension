@@ -54,7 +54,7 @@ jobs:
       run: npm install -g azurite
 
     - name: Start Azurite
-      run: azurite --silent --queuePort 10001 &
+      run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
 
     - name: Test DTx.Core
       run: dotnet test #--configuration $config --no-build --verbosity normal
