@@ -1,0 +1,31 @@
+name: Validate Build
+
+on:
+  push:
+    branches:
+      - main
+      - 'dajusto/add-tests-as-gh-action'
+    paths-ignore: [ '**.md' ]
+  pull_request:
+    branches:
+      - main
+    paths-ignore: [ '**.md' ]
+
+env:
+  solution: WebJobs.Extensions.DurableTask.sln
+  config: Release
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: true
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+
+    - name: Restore dependencies
+      run: dotnet restore $solution
