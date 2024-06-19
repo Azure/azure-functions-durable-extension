@@ -230,7 +230,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         internal class FunctionsV2HostWrapper : ITestHost
         {
-            internal readonly IHost InnerHost;
             private readonly JobHost innerWebJobsHost;
             private readonly DurableTaskOptions options;
             private readonly INameResolver nameResolver;
@@ -254,6 +253,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 this.innerWebJobsHost = (JobHost)this.InnerHost.Services.GetService<IJobHost>();
                 this.options = options.Value;
             }
+
+            internal IHost InnerHost { get; private set; }
 
             public Task CallAsync(string methodName, IDictionary<string, object> args)
                 => this.innerWebJobsHost.CallAsync(methodName, args);
