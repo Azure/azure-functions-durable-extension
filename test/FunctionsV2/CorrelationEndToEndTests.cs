@@ -405,14 +405,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var result = new List<OperationTelemetry>();
             if (current.Count != 0)
             {
-                /*foreach (var some in current)
-                {
-                    if (parent.Id == some.Context.Operation.ParentId)
-                    {
-                        Console.WriteLine("match");
-                    }
-                }*/
-
                 IOrderedEnumerable<OperationTelemetry> nexts = current.Where(p => p.Context.Operation.ParentId == parent.Id).OrderBy(p => p.Timestamp.Ticks);
                 foreach (OperationTelemetry next in nexts)
                 {
