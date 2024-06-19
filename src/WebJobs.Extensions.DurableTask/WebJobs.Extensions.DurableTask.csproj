@@ -58,12 +58,12 @@
     <Compile Include="**/*.cs" Exclude="Storage/*ClientProvider.cs;Correlation/*.cs;**/obj/**/*.cs" />
     <!-- Don't increase below versions without significantly testing on Functions V1!
          Increasing these versions increments some dependencies that have binding redirects in Functions V1. -->
-    <PackageReference Include="Azure.Identity" Version="1.1.1" />
     <PackageReference Include="Microsoft.AspNetCore.Hosting.Abstractions" Version="1.0.3" />
     <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="1.0.3" />
     <PackageReference Include="Microsoft.AspNetCore.Http.Features" Version="1.0.3" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Abstractions" Version="1.0.4" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Core" Version="1.0.4" />
+    <PackageReference Include="Azure.Identity" Version="1.1.1" NoWarn="NU1902,NU1903"/> <!-- Added NoWarn as this dependency cannot be dropped due to Functions V1-->
     <PackageReference Include="Microsoft.AspNetCore.Mvc.WebApiCompatShim" Version="1.0.4" />
     <PackageReference Include="Microsoft.AspNetCore.Routing" Version="1.0.4" />
     <PackageReference Include="Microsoft.AspNetCore.Routing.Abstractions" Version="1.0.4" />
