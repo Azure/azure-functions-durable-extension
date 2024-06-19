@@ -24,7 +24,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
         }
 
-        // This implementation is IConfigurationSection.Exists. Details: https://github.com/dotnet/runtime/blob/main/src/libraries/Microsoft.Extensions.Configuration.Abstractions/src/ConfigurationExtensions.cs#L78
+        // This implementation is a lone of `IConfigurationSection.Exists` found here https://github.com/dotnet/runtime/blob/main/src/libraries/Microsoft.Extensions.Configuration.Abstractions/src/ConfigurationExtensions.cs#L78
         // Functions host v1 (.net462 framework) doesn't support this method so we implement a substitute one here.
         private bool IfExists(IConfigurationSection section)
         {
