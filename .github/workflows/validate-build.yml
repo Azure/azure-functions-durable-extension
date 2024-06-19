@@ -14,7 +14,6 @@ on:
 env:
   solution: WebJobs.Extensions.DurableTask.sln
   config: Release
-  FUNCTIONS_WORKER_RUNTIME: dotnet
   AzureWebJobsStorage: UseDevelopmentStorage=true
 
 jobs:
