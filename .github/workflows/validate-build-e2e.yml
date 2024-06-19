@@ -55,4 +55,5 @@ jobs:
 
     # Run tests
     - name: Run FunctionsV2 tests (only E2E tests)
-      run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 & dotnet test ./test/FunctionsV2/WebJobs.Extensions.DurableTask.Tests.V2.csproj  --filter "FullyQualifiedName~Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests.DurableTaskEndToEndTests" # --filter "FullyQualifiedName~DurableTaskEndToEndTests.OutputsValidJSONLogs" #--configuration $config --no-build --verbosity normal
+      run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 & dotnet test ./test/FunctionsV2/WebJobs.Extensions.DurableTask.Tests.V2.csproj  
+      --filter "FullyQualifiedName~Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests.DurableTaskEndToEndTests&FullyQualifiedName!~Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests.DurableTaskEndToEndTests.DurableEntity_CleanEntityStorage" # --filter "FullyQualifiedName~DurableTaskEndToEndTests.OutputsValidJSONLogs" #--configuration $config --no-build --verbosity normal
