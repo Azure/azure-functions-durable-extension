@@ -4,6 +4,7 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+	<NoWarn>RS1026</NoWarn> <!-- Disable 'Enable concurrent execution' warning until we investigate if it's safe to enable-->
   </PropertyGroup>
 
   <PropertyGroup>

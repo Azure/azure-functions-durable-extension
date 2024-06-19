@@ -47,10 +47,10 @@ jobs:
     - name: Set up Node.js
       uses: actions/setup-node@v3
       with:
-        node-version: '16.x'
+        node-version: '18.x' # Azurite requires at least Node 18
 
     - name: Install Azurite
       run: npm install -g azurite
 
     - name: Test DTx.Core
-      run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 & dotnet test ./test/FunctionsV2/WebJobs.Extensions.DurableTask.Tests.V2.csproj  --filter "FullyQualifiedName~DurableTaskEndToEndTests.DurableEntity_CleanEntityStorage" #--configuration $config --no-build --verbosity normal
+      run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 & dotnet test ./test/FunctionsV2/WebJobs.Extensions.DurableTask.Tests.V2.csproj  # --filter "FullyQualifiedName~DurableTaskEndToEndTests.DurableEntity_CleanEntityStorage" #--configuration $config --no-build --verbosity normal
