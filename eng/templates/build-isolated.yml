@@ -1,0 +1,62 @@
+jobs:
+    - job: Build
+
+      templateContext:
+        outputs:
+            - output: pipelineArtifact
+              path: $(build.artifactStagingDirectory)
+              artifact: drop
+              sbomBuildDropPath: $(build.artifactStagingDirectory)
+              sbomPackageName: 'Durable Functions Extension Isolated SBOM'
+
+      steps:
+
+      - task: UseDotNet@2
+        displayName: 'Use the .NET 6 SDK'
+        inputs:
+            packageType: 'sdk'
+            version: '6.0.x'
+    
+      # Start by restoring all the .NET Isolated worker extension dependencies. This needs to be its own task.
+      - task: DotNetCoreCLI@2
+        displayName: 'Restore nuget dependencies'
+        inputs:
+            command: restore
+            verbosityRestore: Minimal
+            feedsToUse: 'config'
+            nugetConfigPath: 'nuget.config'
+            projects: 'src/Worker.Extensions.DurableTask/*.csproj'
+
+      # Build just the .NET Isolated worker extension project
+      - task: DotNetCoreCLI@2
+        displayName: 'Build'
+        inputs:
+            command: build
+            arguments: --no-restore -c release -p:FileVersionRevision=$(Build.BuildId) -p:ContinuousIntegrationBuild=true
+            projects: 'src/Worker.Extensions.DurableTask/*.csproj'
+    
+      - template: ci/sign-files.yml@eng
+        parameters:
+            displayName: Sign assemblies
+            folderPath: 'src/Worker.Extensions.DurableTask/bin/Release'
+            pattern: 'Microsoft.Azure.Functions.Worker.Extensions.DurableTask.dll'
+            signType: dll
+    
+      # Packaging needs to be a separate step from build.
+      # This will automatically pick up any signed DLLs.
+      - task: DotNetCoreCLI@2
+        displayName: Generate nuget packages
+        inputs:
+            command: pack
+            verbosityPack: Minimal
+            configuration: Release
+            nobuild: true
+            packDirectory: $(build.artifactStagingDirectory)
+            packagesToPack: 'src/Worker.Extensions.DurableTask/*.csproj'
+    
+      - template: ci/sign-files.yml@eng
+        parameters:
+            displayName: Sign NugetPackages
+            folderPath: $(build.artifactStagingDirectory)
+            pattern: '*.nupkg'
+            signType: nuget
