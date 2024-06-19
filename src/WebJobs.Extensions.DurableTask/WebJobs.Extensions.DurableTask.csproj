@@ -57,7 +57,7 @@
     <Compile Include="**/*.cs" Exclude="Auth/*.cs;Correlation/*.cs;**/obj/**/*.cs" />
     <!-- Don't increase below versions without significantly testing on Functions V1!
          Increasing these versions increments some dependencies that have binding redirects in Functions V1. -->
-    <PackageReference Include="Azure.Identity" Version="1.1.1" />
+    <PackageReference Include="Azure.Identity" Version="1.1.1" NoWarn="NU1902"/> <!-- Added NoWarn as this dependency cannot be dropped due to Functions V1-->
     <PackageReference Include="Microsoft.Azure.WebJobs" Version="2.3.0" />
     <PackageReference Include="Microsoft.Extensions.Options" Version="1.0.2" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="1.0.2" />

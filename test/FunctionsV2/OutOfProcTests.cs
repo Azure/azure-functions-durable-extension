@@ -342,9 +342,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 // Validate if we opened local RPC endpoint by looking at log statements.
                 var logger = this.loggerProvider.CreatedLoggers.Single(l => l.Category == TestHelpers.LogCategory);
                 var logMessages = logger.LogMessages.ToList();
+
+                Assert.True(logMessages.Count > 0, "No log messages found.");
+
                 bool enabledRpcEndpoint = logMessages.Any(msg => msg.Level == Microsoft.Extensions.Logging.LogLevel.Information && msg.FormattedMessage.StartsWith($"Opened local {expectedProtocol} endpoint:"));
 
-                Assert.Equal(enabledExpected, enabledRpcEndpoint);
+                Assert.Equal(enabledExpected, enabledRpcEndpoint, );
 
                 await host.StopAsync();
             }
