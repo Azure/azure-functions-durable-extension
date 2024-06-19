@@ -746,6 +746,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 conditionDescription: "Log file exists",
                 timeout: TimeSpan.FromSeconds(30));
 
+            // add a minute wait to ensure logs are fully written
+            await Task.Delay(TimeSpan.FromMinutes(1));
+
             await TestHelpers.WaitUntilTrue(
                 predicate: () =>
                 {
