@@ -53,4 +53,4 @@ jobs:
       run: npm install -g azurite
 
     - name: Test DTx.Core
-      run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 & dotnet test ./test/FunctionsV2/WebJobs.Extensions.DurableTask.Tests.V2.csproj --filter "FullyQualifiedName~OutOfProcTests.TestLocalRcpEndpointRuntimeVersion"#--configuration $config --no-build --verbosity normal
+      run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 & dotnet test ./test/FunctionsV2/WebJobs.Extensions.DurableTask.Tests.V2.csproj # --filter "FullyQualifiedName~OutOfProcTests.TestLocalRcpEndpointRuntimeVersion" #--configuration $config --no-build --verbosity normal
