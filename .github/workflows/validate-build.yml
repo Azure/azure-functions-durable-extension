@@ -55,4 +55,4 @@ jobs:
 
     # Run tests
     - name: Test FunctionsV2 tests
-      run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 & dotnet test ./test/FunctionsV2/WebJobs.Extensions.DurableTask.Tests.V2.csproj   --filter "FullyQualifiedName~DurableTaskEndToEndTests.OutputsValidJSONLogs" #--configuration $config --no-build --verbosity normal
+      run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 & dotnet test ./test/FunctionsV2/WebJobs.Extensions.DurableTask.Tests.V2.csproj  # --filter "FullyQualifiedName~DurableTaskEndToEndTests.OutputsValidJSONLogs" #--configuration $config --no-build --verbosity normal
