@@ -57,3 +57,6 @@ jobs:
     - name: Run FunctionsV2 tests (except E2E tests)
       run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 & dotnet test ./test/FunctionsV2/WebJobs.Extensions.DurableTask.Tests.V2.csproj  --filter "FullyQualifiedName!~Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests.DurableTaskEndToEndTests"
 
+    - name: Run Worker Extension tests
+      run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 & dotnet test ./test/Worker.Extensions.DurableTask.Tests/Worker.Extensions.DurableTask.Tests.csproj
+
