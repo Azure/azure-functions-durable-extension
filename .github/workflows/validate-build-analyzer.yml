@@ -42,7 +42,7 @@ jobs:
       run: dotnet restore $solution
 
     - name: Build
-      run: dotnet build $solution #--configuration $config #--no-restore -p:FileVersionRevision=$GITHUB_RUN_NUMBER -p:ContinuousIntegrationBuild=true
+      run: dotnet build $solution
 
     # Install Azurite
     - name: Set up Node.js (needed for Azurite)
