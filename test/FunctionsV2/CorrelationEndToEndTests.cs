@@ -234,7 +234,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [InlineData(false, true, true)]
         [InlineData(true, true, false)]
         [InlineData(true, true, true)]
-        public async void TelemetryClientSetup_AppInsights_Warnings(bool instrumentationKeyIsSet, bool connStringIsSet, bool extendedSessions)
+        public void TelemetryClientSetup_AppInsights_Warnings(bool instrumentationKeyIsSet, bool connStringIsSet, bool extendedSessions)
         {
             TraceOptions traceOptions = new TraceOptions()
             {
@@ -258,11 +258,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
             else if (instrumentationKeyIsSet)
             {
-                mockNameResolver = GetNameResolverMock(new[] { (instKeyEnvVarName, environmentVariableValue), (connStringEnvVarName, String.Empty) });
+                mockNameResolver = GetNameResolverMock(new[] { (instKeyEnvVarName, environmentVariableValue), (connStringEnvVarName, string.Empty) });
             }
             else if (connStringIsSet)
             {
-                mockNameResolver = GetNameResolverMock(new[] { (instKeyEnvVarName, String.Empty), (connStringEnvVarName, connStringValue) });
+                mockNameResolver = GetNameResolverMock(new[] { (instKeyEnvVarName, string.Empty), (connStringEnvVarName, connStringValue) });
             }
 
             using (var host = TestHelpers.GetJobHost(
