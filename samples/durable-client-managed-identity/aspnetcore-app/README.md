@@ -1,6 +1,6 @@
 # ASP.NET Core API To Do List Sample with Identity-Based Connection
 
-This sample is based off of the [To Do List sample](https://github.com/Azure-Samples/dotnet-core-api) in the Azure-Samples repo, and it shows how to use injected Durable Client with ASP.NET Core App and identity based connections. The injected Durable Client in this sample is configured to use a storage connection with the custom name `MyStorage` and client secret application.
+This example is adapted from the [To Do List sample](https://github.com/Azure-Samples/dotnet-core-api) in the Azure-Samples repository. It demonstrates an ASP.NET Core application with an injected Durable Client and identity-based connections. In this sample, the Durable Client is configured to use a storage connection with a custom name, `MyStorage`, and is set up to utilize a client secret for authentication.
 
 
 ## To make the sample run, you need to:
