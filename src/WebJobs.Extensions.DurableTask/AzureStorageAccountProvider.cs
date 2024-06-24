@@ -2,9 +2,11 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Collections.Concurrent;
 using DurableTask.AzureStorage;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.Extensions.Configuration;
+
 #if !FUNCTIONS_V1
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth;
 using Microsoft.WindowsAzure.Storage.Auth;
@@ -18,6 +20,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
 #if !FUNCTIONS_V1
         private readonly ITokenCredentialFactory credentialFactory;
+
+        private readonly ConcurrentDictionary<string, TokenCredential> cachedTokenCredentials =
+            new ConcurrentDictionary<string, TokenCredential>();
 
         public AzureStorageAccountProvider(IConnectionInfoResolver connectionInfoResolver, ITokenCredentialFactory credentialFactory)
         {
@@ -44,7 +49,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             AzureStorageAccountOptions account = connectionInfo.Get<AzureStorageAccountOptions>();
             if (account != null)
             {
-                TokenCredential credential = this.credentialFactory.Create(connectionInfo);
+                TokenCredential credential = this.cachedTokenCredentials.GetOrAdd(
+                    connectionName,
+                    attr => this.credentialFactory.Create(connectionInfo));
 
                 return new StorageAccountDetails
                 {

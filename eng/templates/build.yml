@@ -1,0 +1,105 @@
+jobs:
+    - job: Build
+
+      templateContext:
+        outputs:
+            - output: pipelineArtifact
+              path: $(build.artifactStagingDirectory)
+              artifact: drop
+              sbomBuildDropPath: $(build.artifactStagingDirectory)
+              sbomPackageName: 'Durable Functions Extension SBOM'
+    
+      steps:
+
+      # Configure all the .NET SDK versions we need
+      - task: UseDotNet@2
+        displayName: 'Use the .NET Core 2.1 SDK (required for build signing)'
+        inputs:
+            packageType: 'sdk'
+            version: '2.1.x'
+
+      - task: UseDotNet@2
+        displayName: 'Use the .NET Core 3.1 SDK'
+        inputs:
+            packageType: 'sdk'
+            version: '3.1.x'
+
+      - task: UseDotNet@2
+        displayName: 'Use the .NET 6 SDK'
+        inputs:
+            packageType: 'sdk'
+            version: '6.0.x'
+      
+      # Start by restoring all the dependencies.
+      - task: DotNetCoreCLI@2
+        displayName: 'dotnet restore'
+        inputs:
+            command: restore
+            projects: '**/**/*.csproj'
+            feedsToUse: config
+            nugetConfigPath: 'nuget.config'
+    
+      # Build durable-extension
+      - task: VSBuild@1
+        displayName: 'Build Durable Extension'
+        inputs:
+            solution: '**/WebJobs.Extensions.DurableTask.sln'
+            vsVersion: "16.0"
+            configuration: Release
+    
+      - template: ci/sign-files.yml@eng
+        parameters:
+            displayName: Sign assemblies
+            folderPath: 'src/WebJobs.Extensions.DurableTask/bin/Release'
+            pattern: '*DurableTask.dll'
+            signType: dll
+    
+      # dotnet pack
+      # Packaging needs to be a separate step from build.
+      # This will automatically pick up the signed DLLs.
+      - task: DotNetCoreCLI@2
+        displayName: 'dotnet pack WebJobs.Extensions.DurableTask.csproj'
+        inputs:
+            command: pack
+            packagesToPack: 'src/**/WebJobs.Extensions.DurableTask.csproj'
+            configuration: Release
+            packDirectory: 'azure-functions-durable-extension'
+            nobuild: true
+
+      # Remove redundant symbol package(s)
+      - script: |
+          echo *** Searching for .symbols.nupkg files to delete...
+          dir /s /b *.symbols.nupkg
+        
+          echo *** Deleting .symbols.nupkg files...
+          del /S /Q *.symbols.nupkg
+        
+          echo *** Listing remaining packages
+          dir /s /b *.nupkg
+        displayName: 'Remove Redundant Symbols Package(s)'
+        continueOnError: true
+
+      - template: ci/sign-files.yml@eng
+        parameters:
+            displayName: Sign NugetPackages
+            folderPath: $(build.artifactStagingDirectory)
+            pattern: '*.nupkg'
+            signType: nuget
+            
+      # zip .NET in-proc perf tests
+      - task: DotNetCoreCLI@2
+        displayName: 'Zip .NET in-proc perf tests'
+        inputs:
+            command: 'publish'
+            publishWebProjects: false
+            projects: '$(System.DefaultWorkingDirectory)/test/PerfTests/DFPerfTests/**/*.csproj'
+            arguments: '-o $(System.DefaultWorkingDirectory)/test/PerfTests/DFPerfTests/Output'
+            zipAfterPublish: true
+            modifyOutputPath: true
+
+      # Move zip'ed .NET in-proc perf tests to the ADO publishing directory
+      - task: CopyFiles@2
+        inputs:
+            SourceFolder: '$(System.DefaultWorkingDirectory)/test/PerfTests/DFPerfTests/Output/'
+            Contents: '**'
+            TargetFolder: '$(System.DefaultWorkingDirectory)/azure-functions-durable-extension/'
