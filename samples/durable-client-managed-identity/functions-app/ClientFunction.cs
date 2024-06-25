@@ -22,7 +22,7 @@ namespace DurableClientSampleFunctionApp
         {
             _client = clientFactory.CreateClient(new DurableClientOptions
             {
-                ConnectionName = "Storage",
+                ConnectionName = "ClientStorage",
                 TaskHub = configuration["TaskHub"]
             });
         }

@@ -1,6 +1,7 @@
 # Azure Function App with Durable Function and Identity-Based Connection
 
-This project demonstrates an Azure Function App that invokes a Durable Function through a Durable Client using dependency injection and identity-based connection. Both the function host and the injected Durable Client are configured to use a storage connection with the default name `Storage`.
+This project demonstrates an Azure Function App that invokes a Durable Function through a Durable Client using dependency injection and identity-based connection. In the sample, the function is set up to utilize a storage connection named `Storage` by default. Meanwhile, the integrated Durable Client is set to use a storage connection that is specifically named `ClientStorage`.
+
 
 ## To make the sample run, you need to:
 
@@ -29,5 +30,5 @@ This project demonstrates an Azure Function App that invokes a Durable Function 
 ## Notes
 
 - The Azure Functions runtime requires a storage account to start, with the default connection name `Storage`.
-- For Durable Functions initiated by the Durable Client to run successfully, both the Durable Client and the Functions runtime must use the same storage account. If you need to use a custom storage connection name for the Durable Client, ensure you also update the Azure Functions runtime to use this custom name.
+- When injecting a Durable Client, it also requires a storage account, with the same default connection name `Storage`. However, you can use a custom connection name for a separate storage account as runtime for the durable client. For example, in this sample we use custom name `ClientStorage`.~ 
 
