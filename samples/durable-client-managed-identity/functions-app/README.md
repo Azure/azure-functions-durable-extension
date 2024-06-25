@@ -30,5 +30,5 @@ This project demonstrates an Azure Function App that invokes a Durable Function 
 ## Notes
 
 - The Azure Functions runtime requires a storage account to start, with the default connection name `Storage`.
-- The Durable Client injected also requires a storage account, with the same default connection name `Storage`. However, you can use a custom connection name for a separate storage account as runtime for the durable client. For example, in this sample we use custom name `ClientStorage`.~ 
+- The Durable Client injected also requires a storage account, with the same default connection name `Storage`. However, you can use a custom connection name for a separate storage account as runtime for the durable client. For example, in this sample we use custom name `ClientStorage`.
 
