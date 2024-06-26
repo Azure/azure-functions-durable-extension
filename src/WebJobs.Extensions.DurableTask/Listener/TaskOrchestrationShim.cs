@@ -186,7 +186,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         this.context.OrchestrationException = ExceptionDispatchInfo.Capture(ex);
                         throw ex;
                     }
-                }  
+                }
                 else
                 {
                     this.TraceAndSendExceptionNotification(e.ToString());
