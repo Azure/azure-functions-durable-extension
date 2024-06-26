@@ -24,7 +24,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
         }
 
-        // This implementation is a lone of `IConfigurationSection.Exists` found here https://github.com/dotnet/runtime/blob/main/src/libraries/Microsoft.Extensions.Configuration.Abstractions/src/ConfigurationExtensions.cs#L78
+        // This implementation is a clone of `IConfigurationSection.Exists` found here https://github.com/dotnet/runtime/blob/main/src/libraries/Microsoft.Extensions.Configuration.Abstractions/src/ConfigurationExtensions.cs#L78
         // Functions host v1 (.net462 framework) doesn't support this method so we implement a substitute one here.
         private bool IfExists(IConfigurationSection section)
         {
@@ -44,12 +44,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <inheritdoc />
         public IConfigurationSection Resolve(string name)
         {
+            // This implementation is a replication of the WEbJobsConnectionInfo Provider used for the internal durable client.
+            // The original code can be found at: 
+            // https://github.com/Azure/azure-functions-durable-extension/blob/dev/src/WebJobs.Extensions.DurableTask/WebJobsConnectionInfoProvider.cs#L37.
+            // We need to first check the configuration section with the AzureWebJobs prefix, as this is the default name within the Functions app.
             string prefixedConnectionStringName = "AzureWebJobs" + name;
             IConfigurationSection section = this.configuration?.GetSection(prefixedConnectionStringName);
 
             if (!this.IfExists(section))
             {
-                // next try a direct unprefixed lookup
+                // If the section doesn't exist, then look for the configuration section without the prefix, since there is no prefix outside the WebJobs app.
                 section = this.configuration?.GetSection(name);
             }
 
