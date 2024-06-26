@@ -44,6 +44,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage
             {
                 return new BlobServiceClientProvider(connectionSection, this.componentFactory);
             }
+
             throw new InvalidOperationException($"Unable to resolve the Azure Storage connection named '{connectionName}'.");
         }
 
@@ -62,6 +63,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage
             {
                 return new QueueServiceClientProvider(connectionSection, this.componentFactory);
             }
+
             throw new InvalidOperationException($"Unable to resolve the Azure Storage connection named '{connectionName}'.");
         }
 
@@ -80,6 +82,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage
             {
                 return new TableServiceClientProvider(connectionSection, this.componentFactory);
             }
+
             throw new InvalidOperationException($"Unable to resolve the Azure Storage connection named '{connectionName}'.");
         }
     }

@@ -151,9 +151,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.TypedCodeProvider.Initialize();
 
             this.HttpApiHandler = new HttpApiHandler(this, logger);
+            
             // This line ensure every time we need the webhook URI, we get it directly from the
             // function runtime, which has the most up-to-date knowledge about the site hostname.
             Func<Uri> webhookDelegate = () => webhookProvider.GetUrl(this);
+            
             this.HttpApiHandler.RegisterWebhookProvider(
                 this.Options.WebhookUriProviderOverride ??
                 webhookDelegate);

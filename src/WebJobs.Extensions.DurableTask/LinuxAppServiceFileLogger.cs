@@ -184,7 +184,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             // Rename current file to older file.
             rename(this.logFilePath, this.archiveFilePath);
-
         }
 
         [DllImport("libc", SetLastError = true)]
