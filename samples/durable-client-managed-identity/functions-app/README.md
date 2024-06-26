@@ -13,8 +13,8 @@ This project demonstrates an Azure Function App that invokes a Durable Function 
     - Storage Table Data Contributor
 
 3. Link your storage account to your Function App by adding either of these two details to your `local.settings.json` file (for local development) or as environment variables in your Function App settings in Azure.
-    - <StorageConnectionName>__accountName
-    - <StorageConnectionName>__blobServiceUri, <StorageConnectionName>__queueServiceUri and <StorageConnectionName>__tableServiceUri
+    - \<StorageConnectionName\>__accountName
+    - \<StorageConnectionName\>__blobServiceUri, <StorageConnectionName>__queueServiceUri and <StorageConnectionName>__tableServiceUri
 
 4. Add the required identity information to your Functions App configuration.
     - system-assigned identity: nothing needs to be provided.
