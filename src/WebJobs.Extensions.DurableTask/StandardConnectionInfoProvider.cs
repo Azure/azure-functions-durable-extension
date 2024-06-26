@@ -44,10 +44,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <inheritdoc />
         public IConfigurationSection Resolve(string name)
         {
-            // This implementation is a replication of the WEbJobsConnectionInfo Provider used for the internal durable client.
-            // The original code can be found at: 
+            // This implementation is a replica of the WebJobsConnectionInfoProvider used for the internal durable client.
+            // The original code can be found at:
             // https://github.com/Azure/azure-functions-durable-extension/blob/dev/src/WebJobs.Extensions.DurableTask/WebJobsConnectionInfoProvider.cs#L37.
-            // We need to first check the configuration section with the AzureWebJobs prefix, as this is the default name within the Functions app.
+            // We need to first check the configuration section with the AzureWebJobs prefix, as this is the default name within the Functions app whether it's internal or external client.
             string prefixedConnectionStringName = "AzureWebJobs" + name;
             IConfigurationSection section = this.configuration?.GetSection(prefixedConnectionStringName);
 
