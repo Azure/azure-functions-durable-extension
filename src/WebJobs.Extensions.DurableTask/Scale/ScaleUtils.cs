@@ -50,6 +50,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
 #pragma warning disable CS0618 // Type or member is obsolete
                 this.Descriptor = new ScaleMonitorDescriptor(name);
 #pragma warning restore CS0618 // Type or member is obsolete
+#endif
             }
 
             /// <summary>
@@ -69,7 +70,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
                 throw new InvalidOperationException("The current DurableTask backend configuration does not support runtime scaling");
             }
         }
-#endif
 
 #if FUNCTIONS_V3_OR_GREATER
 #pragma warning disable SA1201 // Elements should appear in the correct order
