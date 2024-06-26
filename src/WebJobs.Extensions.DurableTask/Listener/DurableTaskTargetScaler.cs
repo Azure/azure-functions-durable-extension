@@ -52,7 +52,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 var serializedControlQueueLengths = metrics.ControlQueueLengths;
                 var controlQueueLengths = JsonConvert.DeserializeObject<IReadOnlyList<int>>(serializedControlQueueLengths);
 
-                var controlQueueMessages = controlQueueLengths?.Sum();
+                var controlQueueMessages = controlQueueLengths!.Sum();
                 var activeControlQueues = controlQueueLengths.Count(x => x > 0);
 
                 // compute orchestratorWorkers: the number of workers we need to process all orchestrator messages.
