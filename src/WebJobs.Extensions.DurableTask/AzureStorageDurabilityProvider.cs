@@ -11,12 +11,12 @@ using DurableTask.AzureStorage.Tracking;
 using DurableTask.Core;
 using DurableTask.Core.Entities;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage;
+using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
-using Microsoft.Azure.WebJobs.Host.Scale;
 using AzureStorage = DurableTask.AzureStorage;
 using DTCore = DurableTask.Core;
 
@@ -220,7 +220,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 FetchInput = condition.ShowInput,
             };
         }
-
 
         internal DurableTaskMetricsProvider GetMetricsProvider(
            string functionName,

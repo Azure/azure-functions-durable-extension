@@ -25,7 +25,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <inheritdoc />
         public IConfigurationSection Resolve(string name)
         {
-
             // The below represents the implementation of this.hostConfiguration.GetWebJobsConnectionSection(name), defined in the WebJobs SDK
             // but not available to Functions v3 at runtime.
             // Source: https://github.com/Azure/azure-webjobs-sdk/blob/b6d5b52da5d2fb457efbf359cbdd733186aacf7c/src/Microsoft.Azure.WebJobs.Host/Extensions/IConfigurationExtensions.cs#L103-L133

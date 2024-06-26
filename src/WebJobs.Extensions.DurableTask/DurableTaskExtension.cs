@@ -19,12 +19,12 @@ using DurableTask.Core.History;
 using DurableTask.Core.Middleware;
 using Microsoft.Azure.WebJobs.Description;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
-using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage;
 using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.Host.Config;
 using Microsoft.Azure.WebJobs.Host.Executors;
+using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Azure.WebJobs.Logging;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -85,19 +85,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private bool isTaskHubWorkerStarted;
         private HttpClient durableHttpClient;
         private EventSourceListener eventSourceListener;
-
-        private IConnectionInfoResolver connectionInfoResolver;
-
-        /// <summary>
-        /// Obsolete. Please use an alternate constructor overload.
-        /// </summary>
-        [Obsolete("The default constructor is obsolete and will be removed in future versions")]
-        public DurableTaskExtension()
-        {
-            // Options initialization happens later
-            this.Options = new DurableTaskOptions();
-            this.isOptionsConfigured = false;
-        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DurableTaskExtension"/>.
@@ -197,7 +184,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.OutOfProcProtocol = OutOfProcOrchestrationProtocol.OrchestratorShim;
             }
         }
-
 
         internal DurableTaskOptions Options { get; }
 
