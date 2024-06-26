@@ -7,11 +7,9 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using DurableTask.Core;
-#if !FUNCTIONS_V1
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
-#endif
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -165,7 +163,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             orchestrationServiceClientMock.Verify(x => x.ForceTerminateTaskOrchestrationAsync(It.IsAny<string>(), It.IsAny<string>()), Times.Never());
         }
 
-#if !FUNCTIONS_V1
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task DurableClient_ExternalApp_StartNewAsync_ReturnsInstanceId()
@@ -310,7 +307,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             return context.Request;
         }
-#endif
 
         private static async Task AssertHttpResponsesEqual(HttpResponseMessage response1, HttpResponseMessage response2)
         {

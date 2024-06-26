@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netcoreapp3.1;netstandard2.0;net462</TargetFrameworks>
+    <TargetFrameworks>net6.0</TargetFrameworks>
     <AssemblyName>Microsoft.Azure.WebJobs.Extensions.DurableTask</AssemblyName>
     <RootNamespace>Microsoft.Azure.WebJobs.Extensions.DurableTask</RootNamespace>
     <MajorVersion>3</MajorVersion>
@@ -46,67 +46,8 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
 
-  <!--
-    .NET Framework 4.x settings: These are specifically for Functions V1.
-  -->
-  <PropertyGroup Condition="'$(TargetFramework)' == 'net462'">
-    <DefineConstants>$(DefineConstants);FUNCTIONS_V1</DefineConstants>
-    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
-  </PropertyGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'net462'">
-    <!-- Don't include Correlation classes in Function V1. -->
-    <Compile Include="**/*.cs" Exclude="Storage/*ClientProvider.cs;Correlation/*.cs;**/obj/**/*.cs" />
-    <!-- Don't increase below versions without significantly testing on Functions V1!
-         Increasing these versions increments some dependencies that have binding redirects in Functions V1. -->
-    <PackageReference Include="Azure.Identity" Version="1.1.1" />
-    <PackageReference Include="Microsoft.AspNetCore.Hosting.Abstractions" Version="1.0.3" />
-    <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="1.0.3" />
-    <PackageReference Include="Microsoft.AspNetCore.Http.Features" Version="1.0.3" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.Abstractions" Version="1.0.4" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.Core" Version="1.0.4" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.WebApiCompatShim" Version="1.0.4" />
-    <PackageReference Include="Microsoft.AspNetCore.Routing" Version="1.0.4" />
-    <PackageReference Include="Microsoft.AspNetCore.Routing.Abstractions" Version="1.0.4" />
-    <PackageReference Include="Microsoft.Azure.WebJobs" Version="2.3.0" />
-    <PackageReference Include="Microsoft.Azure.WebJobs.Core" Version="2.3.0" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="1.0.2" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="1.0.2" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="1.1.1" />
-    <PackageReference Include="Microsoft.Extensions.Options" Version="1.0.2" />
-    <PackageReference Include="Microsoft.Extensions.Primitives" Version="1.0.1" />
-  </ItemGroup>
-
-  <!--
-    .NET Standard 2.0 settings: These are for Functions V2 and above but may not contain some V3+ settings.
-    This is also the target for extension bundles V2 and V3.
-  -->
-  <PropertyGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
-    <DefineConstants>$(DefineConstants);FUNCTIONS_V2_OR_GREATER</DefineConstants>
-    <!-- We treat the .NET Standard 2.0 public APIs as authoratative and only generate XML docs for those -->
-    <DocumentationFile>$(AssemblyName).xml</DocumentationFile>
-  </PropertyGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
-    <PackageReference Include="Azure.Identity" Version="1.11.4" />
-    <PackageReference Include="Microsoft.Azure.WebJobs" Version="3.0.37" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.WebApiCompatShim" Version="2.2.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Routing" Version="2.2.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Server.Kestrel" Version="2.2.0" />
-    <PackageReference Include="Microsoft.Extensions.Azure" Version="1.7.0" />
-    <PackageReference Include="Microsoft.Extensions.Http" Version="2.2.0" />
-    <PackageReference Include="Microsoft.Azure.DurableTask.ApplicationInsights" Version="0.1.*" />
-
-    <!-- Explicitly pinned transitive dependencies with CVE vulnerabilities.-->
-    <PackageReference Include="Microsoft.AspNetCore.Server.Kestrel.Transport.Sockets" Version="2.2.1" />
-  </ItemGroup>
-
-  <!--
-    .NET Core 3.1 settings: These are for Functions V3 and above.
-    This is the target for extension bundles V4 and above.
-  -->
-  <PropertyGroup Condition="'$(TargetFramework)' == 'netcoreapp3.1'">
-    <DefineConstants>$(DefineConstants);FUNCTIONS_V2_OR_GREATER;FUNCTIONS_V3_OR_GREATER</DefineConstants>
-  </PropertyGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.1'">
+  <!-- Common dependencies across all targets -->
+  <ItemGroup>
     <PackageReference Include="Azure.Identity" Version="1.11.4" />
     <PackageReference Include="Microsoft.Azure.WebJobs" Version="3.0.37" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.WebApiCompatShim" Version="2.2.0" />
@@ -120,11 +61,7 @@
     <!-- The gRPC dependencies in this package are not compatible with older frameworks, like .NET Core 2.x -->
     <PackageReference Include="Microsoft.DurableTask.Grpc" Version="1.1.0" />
     <PackageReference Include="Grpc.Core" Version="2.46.6" /> <!-- Bring this in until we move to hosted RPC -->
-  </ItemGroup>
-
-  <!-- Common dependencies across all targets -->
-  <ItemGroup>
-    <PackageReference Include="Microsoft.Azure.DurableTask.Core" Version="2.17.1" />
+	<PackageReference Include="Microsoft.Azure.DurableTask.Core" Version="2.17.1" />
     <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" Version="2.0.0-preview.6" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers" Version="0.5.*" />
     <!-- Build-time dependencies -->

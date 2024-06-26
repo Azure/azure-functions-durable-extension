@@ -6,9 +6,7 @@ using Azure.Data.Tables;
 using Azure.Storage.Blobs;
 using Azure.Storage.Queues;
 using DurableTask.AzureStorage;
-#if !FUNCTIONS_V1
 using Microsoft.Extensions.Azure;
-#endif
 using Microsoft.Extensions.Configuration;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage
@@ -18,7 +16,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage
     {
         private readonly IConnectionInfoResolver connectionInfoResolver;
 
-#if !FUNCTIONS_V1
         private readonly AzureComponentFactory componentFactory;
         private readonly AzureEventSourceLogForwarder logForwarder;
 
@@ -31,12 +28,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage
             // Initialize the AzureEventSourceListener for all Azure Client SDKs, if it hasn't been started already
             this.logForwarder.Start();
         }
-#else
-        public StorageServiceClientProviderFactory(IConnectionInfoResolver connectionInfoResolver)
-        {
-            this.connectionInfoResolver = connectionInfoResolver ?? throw new ArgumentNullException(nameof(connectionInfoResolver));
-        }
-#endif
 
         /// <inheritdoc />
         public IStorageServiceClientProvider<BlobServiceClient, BlobClientOptions> GetBlobClientProvider(string connectionName)
@@ -48,13 +39,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage
                 return StorageServiceClientProvider.ForBlob(connectionSection.Value);
             }
 
-#if !FUNCTIONS_V1
             // Otherwise, check if any account information has been specified, like account name or service URI
             if (connectionSection.Exists())
             {
                 return new BlobServiceClientProvider(connectionSection, this.componentFactory);
             }
-#endif
             throw new InvalidOperationException($"Unable to resolve the Azure Storage connection named '{connectionName}'.");
         }
 
@@ -68,13 +57,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage
                 return StorageServiceClientProvider.ForQueue(connectionSection.Value);
             }
 
-#if !FUNCTIONS_V1
             // Otherwise, check if any account information has been specified, like account name or service URI
             if (connectionSection.Exists())
             {
                 return new QueueServiceClientProvider(connectionSection, this.componentFactory);
             }
-#endif
             throw new InvalidOperationException($"Unable to resolve the Azure Storage connection named '{connectionName}'.");
         }
 
@@ -88,13 +75,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage
                 return StorageServiceClientProvider.ForTable(connectionSection.Value);
             }
 
-#if !FUNCTIONS_V1
             // Otherwise, check if any account information has been specified, like account name or service URI
             if (connectionSection.Exists())
             {
                 return new TableServiceClientProvider(connectionSection, this.componentFactory);
             }
-#endif
             throw new InvalidOperationException($"Unable to resolve the Azure Storage connection named '{connectionName}'.");
         }
     }

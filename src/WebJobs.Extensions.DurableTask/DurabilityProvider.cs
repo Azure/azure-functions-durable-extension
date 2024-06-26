@@ -11,9 +11,7 @@ using DurableTask.Core.History;
 using DurableTask.Core.Query;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-#if !FUNCTIONS_V1
 using Microsoft.Azure.WebJobs.Host.Scale;
-#endif
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
@@ -562,7 +560,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return this.ConnectionName.Equals(durabilityProvider.ConnectionName);
         }
 
-#if !FUNCTIONS_V1
         /// <summary>
         /// Tries to obtain a scale monitor for autoscaling.
         /// </summary>
@@ -582,7 +579,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             scaleMonitor = null;
             return false;
         }
-#endif
 
 #if FUNCTIONS_V3_OR_GREATER
         /// <summary>

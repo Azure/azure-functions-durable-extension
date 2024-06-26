@@ -5,15 +5,12 @@
 using System;
 using System.Threading.Tasks;
 
-#if !FUNCTIONS_V1
 using Microsoft.Azure.WebJobs.Host.Scale;
-#endif
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
 {
     internal static class ScaleUtils
     {
-#if !FUNCTIONS_V1
         internal static IScaleMonitor GetScaleMonitor(DurabilityProvider durabilityProvider, string functionId, FunctionName functionName, string? connectionName, string hubName)
         {
             if (durabilityProvider.TryGetScaleMonitor(
@@ -53,7 +50,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
 #pragma warning disable CS0618 // Type or member is obsolete
                 this.Descriptor = new ScaleMonitorDescriptor(name);
 #pragma warning restore CS0618 // Type or member is obsolete
-#endif
             }
 
             /// <summary>

@@ -6,9 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale;
 using Microsoft.Azure.WebJobs.Host.Listeners;
-#if !FUNCTIONS_V1
 using Microsoft.Azure.WebJobs.Host.Scale;
-#endif
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
@@ -26,9 +24,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly FunctionType functionType;
         private readonly string connectionName;
 
-#if !FUNCTIONS_V1
         private readonly Lazy<IScaleMonitor> scaleMonitor;
-#endif
 
 #if FUNCTIONS_V3_OR_GREATER
         private readonly Lazy<ITargetScaler> targetScaler;

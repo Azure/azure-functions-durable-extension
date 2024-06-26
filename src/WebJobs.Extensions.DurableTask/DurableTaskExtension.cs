@@ -18,10 +18,8 @@ using DurableTask.Core.Exceptions;
 using DurableTask.Core.History;
 using DurableTask.Core.Middleware;
 using Microsoft.Azure.WebJobs.Description;
-#if !FUNCTIONS_V1
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
 using Microsoft.Azure.WebJobs.Host.Scale;
-#endif
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage;
 using Microsoft.Azure.WebJobs.Host;
@@ -38,9 +36,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// <summary>
     /// Configuration for the Durable Functions extension.
     /// </summary>
-#if !FUNCTIONS_V1
     [Extension("DurableTask", "DurableTask")]
-#endif
     public class DurableTaskExtension :
         IExtensionConfigProvider,
         IDisposable,
@@ -92,7 +88,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private HttpClient durableHttpClient;
         private EventSourceListener eventSourceListener;
 
-#if FUNCTIONS_V1
         private IConnectionInfoResolver connectionInfoResolver;
 
         /// <summary>
@@ -105,7 +100,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.Options = new DurableTaskOptions();
             this.isOptionsConfigured = false;
         }
-#endif
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DurableTaskExtension"/>.
@@ -176,24 +170,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.TypedCodeProvider.Initialize();
 
             this.HttpApiHandler = new HttpApiHandler(this, logger);
-#if !FUNCTIONS_V1
             // This line ensure every time we need the webhook URI, we get it directly from the
             // function runtime, which has the most up-to-date knowledge about the site hostname.
             Func<Uri> webhookDelegate = () => webhookProvider.GetUrl(this);
             this.HttpApiHandler.RegisterWebhookProvider(
                 this.Options.WebhookUriProviderOverride ??
                 webhookDelegate);
-#endif
 
             this.HostLifetimeService = hostLifetimeService;
 
-#if !FUNCTIONS_V1
             // The RPC server is started when the extension is initialized.
             // The RPC server is stopped when the host has finished shutting down.
             this.HostLifetimeService.OnStopped.Register(this.StopLocalHttpServer);
             this.telemetryActivator = telemetryActivator;
             this.telemetryActivator?.Initialize(logger);
-#endif
 
             // Starting with .NET isolated and Java, we have a more efficient out-of-process
             // function invocation protocol. Other languages will use the existing protocol.
@@ -214,39 +204,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-#if FUNCTIONS_V1
-        internal DurableTaskExtension(
-            IOptions<DurableTaskOptions> options,
-            ILoggerFactory loggerFactory,
-            INameResolver nameResolver,
-            IEnumerable<IDurabilityProviderFactory> orchestrationServiceFactories,
-            IConnectionInfoResolver connectionInfoResolver,
-            IApplicationLifetimeWrapper shutdownNotification,
-            IDurableHttpMessageHandlerFactory durableHttpMessageHandlerFactory,
-#pragma warning disable CS0612 // Type or member is obsolete
-            IPlatformInformation platformInformationService)
-#pragma warning restore CS0612 // Type or member is obsolete
-
-            : this(options, loggerFactory, nameResolver, orchestrationServiceFactories, shutdownNotification, durableHttpMessageHandlerFactory)
-        {
-            this.connectionInfoResolver = connectionInfoResolver;
-        }
-
-        /// <summary>
-        /// Gets or sets default task hub name to be used by all <see cref="IDurableClient"/>, <see cref="IDurableOrchestrationClient"/>, <see cref="IDurableEntityClient"/>,
-        /// <see cref="IDurableOrchestrationContext"/>, and <see cref="IDurableActivityContext"/> instances.
-        /// </summary>
-        /// <remarks>
-        /// A task hub is a logical grouping of storage resources. Alternate task hub names can be used to isolate
-        /// multiple Durable Functions applications from each other, even if they are using the same storage backend.
-        /// </remarks>
-        /// <value>The name of the default task hub.</value>
-        public string HubName
-        {
-            get { return this.Options.HubName; }
-            set { this.Options.HubName = value; }
-        }
-#endif
 
         internal DurableTaskOptions Options { get; }
 
@@ -341,14 +298,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="context">Extension context provided by WebJobs.</param>
         void IExtensionConfigProvider.Initialize(ExtensionConfigContext context)
         {
-#if !FUNCTIONS_V1
             // Functions V1 is not supported in linux, so this is conditionally compiled
             // We initialize linux logging early on in case any initialization steps below were to trigger a log event.
             if (this.PlatformInformationService.GetOperatingSystem() == OperatingSystem.Linux)
             {
                 this.InitializeLinuxLogging();
             }
-#endif
 
             ConfigureLoaderHooks();
 
@@ -367,16 +322,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // Invoke webhook handler to make functions runtime register extension endpoints.
             var initialWebhookUri = context.GetWebhookHandler();
 
-#if FUNCTIONS_V1
-            // In Functions V1, there is no notion of an IWebhookProvider that
-            // we can dynamically call to fetch the webhook URI, and since context.GetWebhookHandler()
-            // only works in the scope of the Initialize() function, we just have to live with the static URI
-            // we grab now.
-            Func<Uri> staticWebhookHandler = () => initialWebhookUri;
-            this.HttpApiHandler.RegisterWebhookProvider(
-                this.Options.WebhookUriProviderOverride ??
-                staticWebhookHandler);
-#endif
 #pragma warning restore CS0618 // Type or member is obsolete
 
             this.TraceConfigurationSettings();
@@ -584,31 +529,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private void InitializeForFunctionsV1(ExtensionConfigContext context)
         {
-#if FUNCTIONS_V1
-            context.ApplyConfig(this.Options, "DurableTask");
-            this.nameResolver = context.Config.NameResolver;
-            this.loggerFactory = context.Config.LoggerFactory;
-            DurableTaskOptions.ResolveAppSettingOptions(this.Options, this.nameResolver);
-            ILogger logger = this.loggerFactory.CreateLogger(LoggerCategoryName);
-            this.TraceHelper = new EndToEndTraceHelper(logger, this.Options.Tracing.TraceReplayEvents);
-            this.connectionInfoResolver = new WebJobsConnectionInfoProvider();
-            this.PlatformInformationService = new DefaultPlatformInformation(this.nameResolver, this.loggerFactory);
-            this.durabilityProviderFactory = new AzureStorageDurabilityProviderFactory(
-                new OptionsWrapper<DurableTaskOptions>(this.Options),
-                new StorageServiceClientProviderFactory(this.connectionInfoResolver),
-                this.nameResolver,
-                this.loggerFactory,
-                this.PlatformInformationService);
-            this.defaultDurabilityProvider = this.durabilityProviderFactory.GetDurabilityProvider();
-            this.LifeCycleNotificationHelper = this.CreateLifeCycleNotificationHelper();
-            var messageSerializerSettingsFactory = new MessageSerializerSettingsFactory();
-            var errorSerializerSettingsFactory = new ErrorSerializerSettingsFactory();
-            this.MessageDataConverter = new MessagePayloadDataConverter(messageSerializerSettingsFactory.CreateJsonSerializerSettings(), true);
-            this.ErrorDataConverter = new MessagePayloadDataConverter(errorSerializerSettingsFactory.CreateJsonSerializerSettings(), true);
-            this.HttpApiHandler = new HttpApiHandler(this, logger);
-            this.TypedCodeProvider = new TypedCodeProvider();
-            this.TypedCodeProvider.Initialize();
-#endif
         }
 
         private void TraceConfigurationSettings()
@@ -1169,9 +1089,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         // This is temporary until script loading
         private static void ConfigureLoaderHooks()
         {
-#if FUNCTIONS_V1
-            AppDomain.CurrentDomain.AssemblyResolve += ResolveAssembly;
-#endif
         }
 
         private static Assembly ResolveAssembly(object sender, ResolveEventArgs args)
@@ -1538,7 +1455,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return payload;
         }
 
-#if !FUNCTIONS_V1
         /// <summary>
         /// Tags the current Activity with metadata: DurableFunctionsType, DurableFunctionsInstanceId, DurableFunctionsRuntimeStatus.
         /// This metadata will show up in Application Insights, if enabled.
@@ -1558,6 +1474,5 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 activity.AddTag("DurableFunctionsRuntimeStatus", statusStr);
             }
         }
-#endif
     }
 }

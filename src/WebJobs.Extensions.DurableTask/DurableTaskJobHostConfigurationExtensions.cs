@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-#if !FUNCTIONS_V1
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
@@ -24,7 +23,6 @@ using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.Host.Config;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-#endif
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
@@ -48,9 +46,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             serviceCollection.TryAddSingleton<INameResolver, DefaultNameResolver>();
             serviceCollection.TryAddSingleton<IConnectionInfoResolver, StandardConnectionInfoProvider>();
             serviceCollection.TryAddSingleton<IStorageServiceClientProviderFactory, StorageServiceClientProviderFactory>();
-#if !FUNCTIONS_V1
             serviceCollection.AddAzureClientsCore();
-#endif
             serviceCollection.TryAddSingleton<IDurabilityProviderFactory, AzureStorageDurabilityProviderFactory>();
             serviceCollection.TryAddSingleton<IDurableClientFactory, DurableClientFactory>();
             serviceCollection.TryAddSingleton<IMessageSerializerSettingsFactory, MessageSerializerSettingsFactory>();
@@ -75,7 +71,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return serviceCollection;
         }
 
-#if !FUNCTIONS_V1
         /// <summary>
         /// Adds the Durable Task extension to the provided <see cref="IWebJobsBuilder"/>.
         /// </summary>
@@ -179,29 +174,5 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return builder;
         }
 
-#else
-        /// <summary>
-        /// Enable running durable orchestrations implemented as functions.
-        /// </summary>
-        /// <param name="hostConfig">Configuration settings of the current <c>JobHost</c> instance.</param>
-        /// <param name="listenerConfig">Durable Functions configuration.</param>
-        public static void UseDurableTask(
-            this JobHostConfiguration hostConfig,
-            DurableTaskExtension listenerConfig)
-        {
-            if (hostConfig == null)
-            {
-                throw new ArgumentNullException(nameof(hostConfig));
-            }
-
-            if (listenerConfig == null)
-            {
-                throw new ArgumentNullException(nameof(listenerConfig));
-            }
-
-            IExtensionRegistry extensions = hostConfig.GetService<IExtensionRegistry>();
-            extensions.RegisterExtension<IExtensionConfigProvider>(listenerConfig);
-        }
-#endif
     }
 }

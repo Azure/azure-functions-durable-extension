@@ -9,14 +9,9 @@ using Microsoft.Extensions.Hosting;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
-#if !FUNCTIONS_V1
     internal class HostLifecycleService : IApplicationLifetimeWrapper
-#else
-    internal class HostLifecycleService
-#endif
     {
         internal static readonly IApplicationLifetimeWrapper NoOp = new NoOpLifetimeWrapper();
-#if !FUNCTIONS_V1
 #pragma warning disable CS0618 // Type or member is obsolete (no alternatives in .NET Standard 2.0)
         private readonly IApplicationLifetime appLifetime;
 
@@ -31,7 +26,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public CancellationToken OnStopping => this.appLifetime.ApplicationStopping;
 
         public CancellationToken OnStopped => this.appLifetime.ApplicationStopped;
-#endif
 
         private class NoOpLifetimeWrapper : IApplicationLifetimeWrapper
         {

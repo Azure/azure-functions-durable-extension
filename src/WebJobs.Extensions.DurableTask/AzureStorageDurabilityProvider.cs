@@ -16,9 +16,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
-#if !FUNCTIONS_V1
 using Microsoft.Azure.WebJobs.Host.Scale;
-#endif
 using AzureStorage = DurableTask.AzureStorage;
 using DTCore = DurableTask.Core;
 
@@ -223,7 +221,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             };
         }
 
-#if !FUNCTIONS_V1
 
         internal DurableTaskMetricsProvider GetMetricsProvider(
            string functionName,
@@ -254,7 +251,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return true;
         }
 
-#endif
 #if FUNCTIONS_V3_OR_GREATER
         public override bool TryGetTargetScaler(
             string functionId,

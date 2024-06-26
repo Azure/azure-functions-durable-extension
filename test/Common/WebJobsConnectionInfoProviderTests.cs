@@ -17,23 +17,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [InlineData(true)]
         public void Resolve(bool prefixNames)
         {
-#if FUNCTIONS_V1
-            // Instead of mocking ConfigurationManager.ConnectionStrings, use environment variables
-            string connectionName = Guid.NewGuid().ToString();
-            string previousValue = Environment.GetEnvironmentVariable(AddPrefix(connectionName, prefixNames), EnvironmentVariableTarget.Process);
-            Environment.SetEnvironmentVariable(AddPrefix(connectionName, prefixNames), "Foo=Bar;Baz", EnvironmentVariableTarget.Process);
-
-            try
-            {
-                var provider = new WebJobsConnectionInfoProvider();
-                Assert.Equal("Foo=Bar;Baz", provider.Resolve(connectionName).Value);
-                Assert.Null(provider.Resolve(Guid.NewGuid().ToString()).Value);
-            }
-            finally
-            {
-                Environment.SetEnvironmentVariable(AddPrefix(connectionName, prefixNames), previousValue, EnvironmentVariableTarget.Process);
-            }
-#else
             IConfiguration config = new ConfigurationBuilder()
                 .AddInMemoryCollection(
                 new KeyValuePair<string, string>[]
@@ -51,7 +34,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal("https://foo.bar/baz", provider.Resolve("MyOtherConnectionString").Value);
             Assert.Equal("MyAccount", provider.Resolve("MyConnection")["AccountName"]);
             Assert.Equal("MyOtherAccount", provider.Resolve("MyOtherConnection")["AccountName"]);
-#endif
         }
 
         private static string AddPrefix(string name, bool prefix) =>
