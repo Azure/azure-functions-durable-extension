@@ -9,8 +9,6 @@ using System.Reflection;
 using System.Text;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Specialized;
-#else
-using Microsoft.WindowsAzure.Storage.Blob;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
