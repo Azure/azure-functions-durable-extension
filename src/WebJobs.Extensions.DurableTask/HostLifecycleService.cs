@@ -3,9 +3,7 @@
 
 using System;
 using System.Threading;
-#if !FUNCTIONS_V1
 using Microsoft.Extensions.Hosting;
-#endif
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {

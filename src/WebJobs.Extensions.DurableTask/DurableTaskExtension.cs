@@ -63,11 +63,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             new ConcurrentDictionary<FunctionName, RegisteredFunctionInfo>();
 
         private readonly AsyncLock taskHubLock = new AsyncLock();
-#if FUNCTIONS_V2_OR_GREATER
 #pragma warning disable CS0169
         private readonly ITelemetryActivator telemetryActivator;
 #pragma warning restore CS0169
-#endif
 #if FUNCTIONS_V3_OR_GREATER
         private readonly LocalGrpcListener localGrpcListener;
 #endif
@@ -128,15 +126,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #pragma warning disable CS0612 // Type or member is obsolete
             IPlatformInformation platformInformationService = null,
 #pragma warning restore CS0612 // Type or member is obsolete
-#if FUNCTIONS_V2_OR_GREATER
             IErrorSerializerSettingsFactory errorSerializerSettingsFactory = null,
 #pragma warning disable CS0618 // Type or member is obsolete
             IWebHookProvider webhookProvider = null,
 #pragma warning restore CS0618 // Type or member is obsolete
             ITelemetryActivator telemetryActivator = null)
-#else
-            IErrorSerializerSettingsFactory errorSerializerSettingsFactory = null)
-#endif
         {
             this.extensionGuid = Guid.NewGuid();
 
@@ -419,12 +413,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.StartLocalGrpcServer();
             }
 #endif
-#if FUNCTIONS_V2_OR_GREATER
             if (this.OutOfProcProtocol == OutOfProcOrchestrationProtocol.OrchestratorShim)
             {
                 this.StartLocalHttpServer();
             }
-#endif
         }
 
         internal string GetLocalRpcAddress()
@@ -478,7 +470,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.eventSourceListener?.Dispose();
         }
 
-#if FUNCTIONS_V2_OR_GREATER
         private void StartLocalHttpServer()
         {
             bool? shouldEnable = this.Options.LocalRpcEndpointEnabled;
@@ -513,7 +504,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             this.HttpApiHandler.StopLocalHttpServerAsync().GetAwaiter().GetResult();
         }
-#endif
 
 #if FUNCTIONS_V3_OR_GREATER
         private void StartLocalGrpcServer()
