@@ -1,0 +1,9 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage__accountName": "<your identity linked storage account name for functions runtime>",
+    "ClientStorage__accountName": "<your identity linked storage account name for durable client>", 
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet",
+    "TaskHub": "mytesthub"
+  }
+}
