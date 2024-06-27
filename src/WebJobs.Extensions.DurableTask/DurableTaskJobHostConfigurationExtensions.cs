@@ -98,7 +98,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return builder;
         }
 
-#if FUNCTIONS_V3_OR_GREATER
         /// <summary>
         /// Adds the <see cref="IScaleMonitor"/> and <see cref="ITargetScaler"/> providers for the Durable Triggers.
         /// </summary>
@@ -117,7 +116,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             builder.Services.AddSingleton<ITargetScalerProvider>(serviceProvider => serviceProvider.GetServices<DurableTaskTriggersScaleProvider>().Single(x => x == provider));
             return builder;
         }
-#endif
 
         /// <summary>
         /// Adds the Durable Task extension to the provided <see cref="IWebJobsBuilder"/>.

@@ -580,7 +580,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return false;
         }
 
-#if FUNCTIONS_V3_OR_GREATER
         /// <summary>
         /// Tries to obtain a scaler for target based scaling.
         /// </summary>
@@ -600,6 +599,5 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             targetScaler = null;
             return false;
         }
-#endif
     }
 }

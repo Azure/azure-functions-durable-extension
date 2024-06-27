@@ -10,13 +10,7 @@ using Microsoft.Azure.WebJobs.Host.Scale;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
-#if FUNCTIONS_V3_OR_GREATER
     internal sealed class DurableTaskListener : IListener, IScaleMonitorProvider, ITargetScalerProvider
-#elif FUNCTIONS_V2_OR_GREATER
-    internal sealed class DurableTaskListener : IListener, IScaleMonitorProvider
-#else
-    internal sealed class DurableTaskListener : IListener
-#endif
     {
         private readonly DurableTaskExtension config;
         private readonly string functionId;
@@ -26,9 +20,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private readonly Lazy<IScaleMonitor> scaleMonitor;
 
-#if FUNCTIONS_V3_OR_GREATER
         private readonly Lazy<ITargetScaler> targetScaler;
-#endif
 
         public DurableTaskListener(
             DurableTaskExtension config,
@@ -57,7 +49,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.connectionName,
                     this.config.Options.HubName));
 
-#if FUNCTIONS_V3_OR_GREATER
             this.targetScaler = new Lazy<ITargetScaler>(() =>
                 ScaleUtils.GetTargetScaler(
                     this.config.DefaultDurabilityProvider,
@@ -65,7 +56,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.functionName,
                     this.connectionName,
                     this.config.Options.HubName));
-#endif
         }
 
         public Task StartAsync(CancellationToken cancellationToken)
@@ -108,11 +98,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return this.scaleMonitor.Value;
         }
 
-#if FUNCTIONS_V3_OR_GREATER
         public ITargetScaler GetTargetScaler()
         {
             return this.targetScaler.Value;
         }
-#endif
     }
 }

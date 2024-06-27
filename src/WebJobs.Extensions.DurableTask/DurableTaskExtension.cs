@@ -66,9 +66,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #pragma warning disable CS0169
         private readonly ITelemetryActivator telemetryActivator;
 #pragma warning restore CS0169
-#if FUNCTIONS_V3_OR_GREATER
         private readonly LocalGrpcListener localGrpcListener;
-#endif
         private readonly bool isOptionsConfigured;
         private readonly Guid extensionGuid;
 
@@ -176,10 +174,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 runtimeType == WorkerRuntimeType.Custom)
             {
                 this.OutOfProcProtocol = OutOfProcOrchestrationProtocol.MiddlewarePassthrough;
-#if FUNCTIONS_V3_OR_GREATER
                 this.localGrpcListener = new LocalGrpcListener(this);
                 this.HostLifetimeService.OnStopped.Register(this.StopLocalGrpcServer);
-#endif
             }
             else
             {
@@ -367,22 +363,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // Note that the order of the middleware added determines the order in which it executes.
             if (this.OutOfProcProtocol == OutOfProcOrchestrationProtocol.MiddlewarePassthrough)
             {
-#if FUNCTIONS_V3_OR_GREATER
                 // This is a newer, more performant flavor of orchestration/activity middleware that is being
                 // enabled for newer language runtimes.
                 var ooprocMiddleware = new OutOfProcMiddleware(this);
                 this.taskHubWorker.AddActivityDispatcherMiddleware(ooprocMiddleware.CallActivityAsync);
                 this.taskHubWorker.AddOrchestrationDispatcherMiddleware(ooprocMiddleware.CallOrchestratorAsync);
                 this.taskHubWorker.AddEntityDispatcherMiddleware(ooprocMiddleware.CallEntityAsync);
-#else
-                // This can happen if, for example, a Java user tries to use Durable Functions while targeting V2 or V3 extension bundles
-                // because those bundles target .NET Core 2.2, which doesn't support the gRPC libraries used in the modern out-of-proc implementation.
-                throw new PlatformNotSupportedException(
-                    "This project type is not supported on this version of the Azure Functions runtime. Please upgrade to Azure Functions V3 or higher. " +
-                    "If you are using a language that supports extension bundles, please use extension bundles V4 or higher. " +
-                    "For more information on Azure Functions versions, see https://docs.microsoft.com/azure/azure-functions/functions-versions. " +
-                    "For more information on extension bundles, see https://docs.microsoft.com/azure/azure-functions/functions-bindings-register#extension-bundles.");
-#endif
             }
             else
             {
@@ -395,12 +381,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             // The RPC server needs to be started sometime before any functions can be triggered
             // and this is the latest point in the pipeline available to us.
-#if FUNCTIONS_V3_OR_GREATER
             if (this.OutOfProcProtocol == OutOfProcOrchestrationProtocol.MiddlewarePassthrough)
             {
                 this.StartLocalGrpcServer();
             }
-#endif
             if (this.OutOfProcProtocol == OutOfProcOrchestrationProtocol.OrchestratorShim)
             {
                 this.StartLocalHttpServer();
@@ -409,12 +393,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal string GetLocalRpcAddress()
         {
-#if FUNCTIONS_V3_OR_GREATER
             if (this.OutOfProcProtocol == OutOfProcOrchestrationProtocol.MiddlewarePassthrough)
             {
                 return this.localGrpcListener.ListenAddress;
             }
-#endif
 
             return this.HttpApiHandler.GetBaseUrl();
         }
@@ -493,7 +475,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.HttpApiHandler.StopLocalHttpServerAsync().GetAwaiter().GetResult();
         }
 
-#if FUNCTIONS_V3_OR_GREATER
         private void StartLocalGrpcServer()
         {
             this.localGrpcListener.StartAsync().GetAwaiter().GetResult();
@@ -503,7 +484,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             this.localGrpcListener.StopAsync().GetAwaiter().GetResult();
         }
-#endif
 
         private void InitializeForFunctionsV1(ExtensionConfigContext context)
         {

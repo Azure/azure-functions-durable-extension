@@ -20,7 +20,6 @@
     <DebugType>embedded</DebugType>
     <!-- See https://github.com/Azure/azure-functions-durable-extension/issues/1433 -->
     <NoWarn>NU5125;SA0001</NoWarn>
-    <DefineConstants>$(DefineConstants);FUNCTIONS_V2_OR_GREATER;FUNCTIONS_V3_OR_GREATER</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup Condition="$(VersionSuffix) == ''">

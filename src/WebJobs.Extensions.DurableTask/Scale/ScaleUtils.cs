@@ -44,13 +44,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
             /// <param name="functionId">The function ID.</param>
             public NoOpScaleMonitor(string name, string functionId)
             {
-#if FUNCTIONS_V3_OR_GREATER
                 this.Descriptor = new ScaleMonitorDescriptor(name, functionId);
-#else
-#pragma warning disable CS0618 // Type or member is obsolete
-                this.Descriptor = new ScaleMonitorDescriptor(name);
-#pragma warning restore CS0618 // Type or member is obsolete
-#endif
             }
 
             /// <summary>
@@ -71,7 +65,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
             }
         }
 
-#if FUNCTIONS_V3_OR_GREATER
 #pragma warning disable SA1201 // Elements should appear in the correct order
         internal static ITargetScaler GetTargetScaler(DurabilityProvider durabilityProvider, string functionId, FunctionName functionName, string? connectionName, string hubName)
 #pragma warning restore SA1201 // Elements should appear in the correct order
@@ -111,6 +104,5 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
                 throw new NotSupportedException("The current DurableTask backend configuration does not support target-based scaling");
             }
         }
-#endif
     }
 }
