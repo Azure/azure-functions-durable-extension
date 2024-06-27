@@ -9,8 +9,6 @@ using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage;
-using Microsoft.Azure.WebJobs.Host;
-using Microsoft.Azure.WebJobs.Host.Config;
 using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.DependencyInjection;
