@@ -3,13 +3,14 @@
 
 using System;
 
+#nullable enable
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener
 {
     internal class WrappedFunctionResult
     {
         private WrappedFunctionResult(
             FunctionResultStatus status,
-            Exception ex)
+            Exception? ex)
         {
             this.Exception = ex;
             this.ExecutionStatus = status;
@@ -24,7 +25,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener
             FunctionsHostStoppingError = 4, // host was shutting down; treated as a functions runtime error
         }
 
-        internal Exception Exception { get; }
+        internal Exception? Exception { get; }
 
         internal FunctionResultStatus ExecutionStatus { get; }
 
