@@ -234,7 +234,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     new JProperty("isReplaying", arg.IsReplaying),
                     new JProperty("parentInstanceId", arg.ParentInstanceId),
                     new JProperty("upperSchemaVersion", SchemaVersion.V2),
-                    new JProperty("upperSchemaVersionNew", SchemaVersion.V3),
+                    new JProperty("upperSchemaVersionNew", SchemaVersion.V4),
                     new JProperty("longRunningTimerIntervalDuration", arg.LongRunningTimerIntervalLength),
                     new JProperty("maximumShortTimerDuration", arg.MaximumShortTimerDuration),
                     new JProperty("defaultHttpAsyncRequestSleepTimeMillseconds", arg.DefaultHttpAsyncRequestSleepTimeMillseconds));
