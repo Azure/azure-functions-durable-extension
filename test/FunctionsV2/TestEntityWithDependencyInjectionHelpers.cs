@@ -3,8 +3,10 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using System.Threading.Tasks;
-using Microsoft.WindowsAzure.Storage.Blob;
+using Azure.Storage.Blobs;
+using Azure.Storage.Blobs.Specialized;
 using Newtonsoft.Json;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
@@ -62,9 +64,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [FunctionName(nameof(BlobBackedEnvironment))]
-        public static Task BlobEnvironmentFunction([EntityTrigger] IDurableEntityContext context, [Blob(BlobContainerPath, System.IO.FileAccess.Read)] CloudBlobContainer blob)
+        public static Task BlobEnvironmentFunction([EntityTrigger] IDurableEntityContext context, [Blob(BlobContainerPath, System.IO.FileAccess.Read)] BlobContainerClient containerClient)
         {
-            return context.DispatchAsync<BlobBackedEnvironment>(blob);
+            return context.DispatchAsync<BlobBackedEnvironment>(containerClient);
         }
 
         [JsonObject(MemberSerialization = MemberSerialization.OptIn)]
@@ -92,17 +94,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public class BlobBackedEnvironment : IWritableEnvironment
         {
             private readonly INameResolver nameResolver;
-            private readonly CloudBlobContainer blobContainer;
+            private readonly BlobContainerClient blobContainerClient;
 
-            public BlobBackedEnvironment(INameResolver nameResolver, CloudBlobContainer blobContainer)
+            public BlobBackedEnvironment(INameResolver nameResolver, BlobContainerClient blobContainerClient)
             {
                 this.nameResolver = nameResolver;
-                this.blobContainer = blobContainer;
+                this.blobContainerClient = blobContainerClient;
             }
 
             public async Task<string> GetEnvironmentVariable(string variableName)
             {
-                CloudBlockBlob environmentVariableBlob = this.blobContainer.GetBlockBlobReference(variableName);
+                BlockBlobClient environmentVariableBlob = this.blobContainerClient.GetBlockBlobClient(variableName);
                 if (await environmentVariableBlob.ExistsAsync())
                 {
                     var readStream = await environmentVariableBlob.OpenReadAsync();
@@ -121,8 +123,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 try
                 {
-                    CloudBlockBlob environmentVariableBlob = this.blobContainer.GetBlockBlobReference(variable.Key);
-                    await environmentVariableBlob.UploadTextAsync(variable.Value);
+                    BlockBlobClient environmentVariableBlob = this.blobContainerClient.GetBlockBlobClient(variable.Key);
+
+                    using var buffer = new MemoryStream(Encoding.UTF8.GetBytes(variable.Value));
+                    await environmentVariableBlob.UploadAsync(buffer);
                     return true;
                 }
                 catch

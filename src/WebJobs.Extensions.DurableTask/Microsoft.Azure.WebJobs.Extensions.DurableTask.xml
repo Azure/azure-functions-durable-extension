@@ -4,48 +4,6 @@
         <name>Microsoft.Azure.WebJobs.Extensions.DurableTask</name>
     </assembly>
     <members>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth.AzureCredentialFactory.Create(Microsoft.Extensions.Configuration.IConfiguration,System.Threading.CancellationToken)">
-            <inheritdoc />
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth.AzureCredentialFactory.Create(Microsoft.Extensions.Configuration.IConfiguration,System.TimeSpan,System.TimeSpan,System.Threading.CancellationToken)">
-            <inheritdoc />
-        </member>
-        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth.ITokenCredentialFactory">
-            <summary>
-            Defines methods for retrieving <see cref="T:Microsoft.WindowsAzure.Storage.Auth.TokenCredential"/>.
-            </summary>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth.ITokenCredentialFactory.Create(Microsoft.Extensions.Configuration.IConfiguration,System.Threading.CancellationToken)">
-            <summary>
-            Creates a <see cref="T:Microsoft.WindowsAzure.Storage.Auth.TokenCredential"/> based on the specified <paramref name="configuration"/>.
-            </summary>
-            <param name="configuration">A configuration containing information about the connection.</param>
-            <param name="cancellationToken">
-            An optional <see cref="T:System.Threading.CancellationToken"/> for prematurely canceling the operation.
-            </param>
-            <returns>
-            The <see cref="T:Microsoft.WindowsAzure.Storage.Auth.TokenCredential"/> based on the specified <paramref name="configuration"/>.
-            </returns>
-            <exception cref="T:System.OperationCanceledException">The operation was canceled.</exception>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth.ITokenCredentialFactory.Create(Microsoft.Extensions.Configuration.IConfiguration,System.TimeSpan,System.TimeSpan,System.Threading.CancellationToken)">
-            <summary>
-            Creates a <see cref="T:Microsoft.WindowsAzure.Storage.Auth.TokenCredential"/> based on the specified <paramref name="configuration"/>.
-            </summary>
-            <param name="configuration">A configuration containing information about the connection.</param>
-            <param name="tokenRefreshOffset">The offset from the token expiration date to begin refresh.</param>
-            <param name="tokenRefreshRetryDelay">The amount of time to wait between refresh attempts in the event of a problem.</param>
-            <param name="cancellationToken">
-            An optional <see cref="T:System.Threading.CancellationToken"/> for prematurely canceling the operation.
-            </param>
-            <returns>
-            The <see cref="T:Microsoft.WindowsAzure.Storage.Auth.TokenCredential"/> based on the specified <paramref name="configuration"/>.
-            </returns>
-            <exception cref="T:System.OperationCanceledException">The operation was canceled.</exception>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageAccountProvider.GetStorageAccountDetails(System.String)">
-            <inheritdoc />
-        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageDurabilityProvider">
             <summary>
             The Azure Storage implementation of additional methods not required by IOrchestrationService.
@@ -3684,18 +3642,6 @@
             </summary>
             <returns>True if the user has opted in to the external PowerShell SDK. False otherwise.</returns>
         </member>
-        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IStorageAccountProvider">
-            <summary>
-            Defines methods for retrieving Azure Storage account metadata.
-            </summary>
-        </member>
-        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.IStorageAccountProvider.GetStorageAccountDetails(System.String)">
-            <summary>
-            Gets the <see cref="T:DurableTask.AzureStorage.StorageAccountDetails"/> associated with the <paramref name="connectionName"/>.
-            </summary>
-            <param name="connectionName">The name associated with the connection information.</param>
-            <returns>The corresponding <see cref="T:DurableTask.AzureStorage.StorageAccountDetails"/>.</returns>
-        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.ITokenSource">
             <summary>
             Implementations of this interface can be used to provide authorization tokens for outbound HTTP requests.
@@ -3998,61 +3944,6 @@
             resulting JSON exceeds the maximum size specified by <paramref name="maxSizeInKB"/>.
             </summary>
         </member>
-        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.DurableClientOptions">
-            <summary>
-            Options used to bind a function parameter to a <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableClient"/>, <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableEntityClient"/>, or <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient"/> instance.
-            </summary>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.DurableClientOptions.ConnectionName">
-            <summary>
-            Optional. Gets or sets the setting name for the app setting containing connection details used by this binding to connect
-            to instances of the storage provider other than the default one this application communicates with.
-            </summary>
-            <value>The name of an app setting containing connection details.</value>
-            <remarks>
-            For Azure Storage the default behavior is to use the value of <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageOptions.ConnectionName"/>.
-            If no value exists there, then the default behavior is to use the standard `AzureWebJobsStorage` connection string for all storage usage.
-            </remarks>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.DurableClientOptions.TaskHub">
-            <summary>
-             Gets or sets the name of the task hub in which the orchestration data lives.
-            </summary>
-            <value>The task hub used by this binding.</value>
-            <remarks>
-            The default behavior is to use the task hub name specified in <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.HubName"/>.
-            If no value exists there, then a default value will be used.
-            </remarks>
-        </member>
-        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.DurableClientOptions.IsExternalClient">
-            <summary>
-                Indicate if the client is External from the azure function where orchestrator functions are hosted.
-            </summary>
-            <remarks>
-                Default is true.
-            </remarks>
-        </member>
-        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.DurableDistributedTracingVersion">
-            <summary>
-            Represents configuration options for Distributed Tracing in Durable Functions.
-            </summary>
-        </member>
-        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.DurableDistributedTracingVersion.None">
-            <summary>
-            Distributed Tracing is disabled.
-            </summary>
-        </member>
-        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.DurableDistributedTracingVersion.V1">
-            <summary>
-            Original implementation of Distributed Tracing in Durable Functions
-            that can be configured to use HttpCorrelationProtocol or W3CTraceContext.
-            </summary>
-        </member>
-        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.DurableDistributedTracingVersion.V2">
-            <summary>
-            OpenTelemetry compatible version of Distributed Tracing in Durable Functions.
-            </summary>
-        </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageOptions">
             <summary>
             Configuration options for the Azure Storage storage provider.
@@ -4217,6 +4108,88 @@
             <summary>
             Throws an exception if any of the settings of the storage provider are invalid.
             </summary>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.DurableClientOptions">
+            <summary>
+            Options used to bind a function parameter to a <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableClient"/>, <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableEntityClient"/>, or <see cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.IDurableOrchestrationClient"/> instance.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.DurableClientOptions.ConnectionName">
+            <summary>
+            Optional. Gets or sets the setting name for the app setting containing connection details used by this binding to connect
+            to instances of the storage provider other than the default one this application communicates with.
+            </summary>
+            <value>The name of an app setting containing connection details.</value>
+            <remarks>
+            For Azure Storage the default behavior is to use the value of <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureStorageOptions.ConnectionName"/>.
+            If no value exists there, then the default behavior is to use the standard `AzureWebJobsStorage` connection string for all storage usage.
+            </remarks>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.DurableClientOptions.TaskHub">
+            <summary>
+             Gets or sets the name of the task hub in which the orchestration data lives.
+            </summary>
+            <value>The task hub used by this binding.</value>
+            <remarks>
+            The default behavior is to use the task hub name specified in <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions.HubName"/>.
+            If no value exists there, then a default value will be used.
+            </remarks>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.DurableClientOptions.IsExternalClient">
+            <summary>
+                Indicate if the client is External from the azure function where orchestrator functions are hosted.
+            </summary>
+            <remarks>
+                Default is true.
+            </remarks>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.DurableDistributedTracingVersion">
+            <summary>
+            Represents configuration options for Distributed Tracing in Durable Functions.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.DurableDistributedTracingVersion.None">
+            <summary>
+            Distributed Tracing is disabled.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.DurableDistributedTracingVersion.V1">
+            <summary>
+            Original implementation of Distributed Tracing in Durable Functions
+            that can be configured to use HttpCorrelationProtocol or W3CTraceContext.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.DurableDistributedTracingVersion.V2">
+            <summary>
+            OpenTelemetry compatible version of Distributed Tracing in Durable Functions.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.StorageServiceConnectionOptions">
+            <summary>
+            Represents the base connection options for all Azure Storage Service clients.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.StorageServiceConnectionOptions.AccountName">
+            <summary>
+            Gets or sets the optional account name.
+            </summary>
+            <value>The Azure Storage account name if specified; otherwise <see langword="null"/>.</value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.StorageServiceConnectionOptions.ServiceUri">
+            <summary>
+            Gets the optional service URI, if it can be derived from <see cref="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.StorageServiceConnectionOptions.AccountName"/>.
+            </summary>
+            <remarks>
+            This value is overridden by the derived classes, as each client has its own name for the
+            service URI, like <c>"BlobServiceUri"</c>.
+            </remarks>
+            <value>The service URI if specified; otherwise <see langword="null"/>.</value>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.Options.StorageServiceConnectionOptions.ServiceName">
+            <summary>
+            Gets the name of the Azure Storage service represented by the options.
+            </summary>
+            <value>The name of the service used within the service URI.</value>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableTaskOptions">
             <summary>
@@ -4998,6 +4971,50 @@
             <summary>
             JSON object representing history for an orchestration execution.
             </summary>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage.IStorageServiceClientProviderFactory">
+            <summary>
+            Defines methods for retrieving service client providers based on the connection name.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage.IStorageServiceClientProviderFactory.GetBlobClientProvider(System.String)">
+            <summary>
+            Gets the <see cref="T:DurableTask.AzureStorage.IStorageServiceClientProvider`2"/> used
+            for accessing the Azure Storage Blob Service associated with the <paramref name="connectionName"/>.
+            </summary>
+            <param name="connectionName">The name associated with the connection information.</param>
+            <returns>The corresponding <see cref="T:DurableTask.AzureStorage.IStorageServiceClientProvider`2"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage.IStorageServiceClientProviderFactory.GetQueueClientProvider(System.String)">
+            <summary>
+            Gets the <see cref="T:DurableTask.AzureStorage.IStorageServiceClientProvider`2"/> used
+            for accessing the Azure Storage Queue Service associated with the <paramref name="connectionName"/>.
+            </summary>
+            <param name="connectionName">The name associated with the connection information.</param>
+            <returns>The corresponding <see cref="T:DurableTask.AzureStorage.IStorageServiceClientProvider`2"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage.IStorageServiceClientProviderFactory.GetTableClientProvider(System.String)">
+            <summary>
+            Gets the <see cref="T:DurableTask.AzureStorage.IStorageServiceClientProvider`2"/> used
+            for accessing the Azure Storage Table Service associated with the <paramref name="connectionName"/>.
+            </summary>
+            <param name="connectionName">The name associated with the connection information.</param>
+            <returns>The corresponding <see cref="T:DurableTask.AzureStorage.IStorageServiceClientProvider`2"/>.</returns>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage.StorageServiceClientProvider`3">
+            <inheritdoc cref="T:DurableTask.AzureStorage.IStorageServiceClientProvider`2"/>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage.StorageServiceClientProviderFactory">
+            <inheritdoc cref="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage.IStorageServiceClientProviderFactory"/>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage.StorageServiceClientProviderFactory.GetBlobClientProvider(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage.StorageServiceClientProviderFactory.GetQueueClientProvider(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage.StorageServiceClientProviderFactory.GetTableClientProvider(System.String)">
+            <inheritdoc />
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.ActivityTriggerAttribute">
             <summary>

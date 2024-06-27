@@ -4,9 +4,10 @@
 #if !FUNCTIONS_V1
 using System;
 using System.Threading.Tasks;
+using Azure;
+using DurableTask.AzureStorage;
 using DurableTask.AzureStorage.Monitoring;
 using Microsoft.Extensions.Logging;
-using Microsoft.WindowsAzure.Storage;
 using Newtonsoft.Json;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
@@ -16,17 +17,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly string functionName;
         private readonly string hubName;
         private readonly ILogger logger;
-        private readonly CloudStorageAccount storageAccount;
+        private readonly StorageAccountClientProvider storageAccountClientProvider;
 
         private DisconnectedPerformanceMonitor performanceMonitor;
 
-        public DurableTaskMetricsProvider(string functionName, string hubName, ILogger logger, DisconnectedPerformanceMonitor performanceMonitor, CloudStorageAccount storageAccount)
+        public DurableTaskMetricsProvider(string functionName, string hubName, ILogger logger, DisconnectedPerformanceMonitor performanceMonitor, StorageAccountClientProvider storageAccountClientProvider)
         {
             this.functionName = functionName;
             this.hubName = hubName;
             this.logger = logger;
             this.performanceMonitor = performanceMonitor;
-            this.storageAccount = storageAccount;
+            this.storageAccountClientProvider = storageAccountClientProvider;
         }
 
         public virtual async Task<DurableTaskTriggerMetrics> GetMetricsAsync()
@@ -40,7 +41,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 DisconnectedPerformanceMonitor performanceMonitor = this.GetPerformanceMonitor();
                 heartbeat = await performanceMonitor.PulseAsync();
             }
-            catch (StorageException e)
+            catch (Exception e) when (e.InnerException is RequestFailedException)
             {
                 this.logger.LogWarning("{details}. Function: {functionName}. HubName: {hubName}.", e.ToString(), this.functionName, this.hubName);
             }
@@ -64,12 +65,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             if (this.performanceMonitor == null)
             {
-                if (this.storageAccount == null)
+                if (this.storageAccountClientProvider == null)
                 {
-                    throw new ArgumentNullException(nameof(this.storageAccount));
+                    throw new ArgumentNullException(nameof(this.storageAccountClientProvider));
                 }
 
-                this.performanceMonitor = new DisconnectedPerformanceMonitor(this.storageAccount, this.hubName);
+                this.performanceMonitor = new DisconnectedPerformanceMonitor(new AzureStorageOrchestrationServiceSettings
+                {
+                    StorageAccountClientProvider = this.storageAccountClientProvider,
+                    TaskHubName = this.hubName,
+                });
             }
 
             return this.performanceMonitor;
