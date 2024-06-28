@@ -11,8 +11,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{78BCF152-C
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebJobs.Extensions.DurableTask.Tests.V2", "test\FunctionsV2\WebJobs.Extensions.DurableTask.Tests.V2.csproj", "{F2A5DABB-36D4-4152-AF49-2570149899E1}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebJobs.Extensions.DurableTask.Tests.V1", "test\FunctionsV1\WebJobs.Extensions.DurableTask.Tests.V1.csproj", "{F99CA746-553C-43B4-943B-59A5D190459A}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{9850DECF-CBA2-43E7-B5E2-55053DD308E9}"
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
@@ -24,16 +22,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.stylecop\stylecop.json = .stylecop\stylecop.json
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VSSampleV1", "test\SmokeTests\SmokeTestsV1\VSSampleV1.csproj", "{78141F66-4DDD-4ABB-9DE3-D0B426FE8110}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SmokeTests", "SmokeTests", "{A8CF6993-258A-484A-AF6D-6CC88D36AF93}"
 	ProjectSection(SolutionItems) = preProject
 		test\SmokeTests\e2e-test.ps1 = test\SmokeTests\e2e-test.ps1
 	EndProjectSection
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VSSampleV2", "test\SmokeTests\SmokeTestsV2\VSSampleV2.csproj", "{E997024B-633E-4252-880B-E2A726E1B4A4}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VSSampleV3", "test\SmokeTests\SmokeTestsV3\VSSampleV3.csproj", "{F1611EF4-457B-47CB-94E9-B611EE488984}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "JavaScript", "JavaScript", "{7B2EDAEC-CFD0-404A-8E52-133FFF595C2F}"
 	ProjectSection(SolutionItems) = preProject
@@ -87,8 +79,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "pipelines", "pipelines", "{
 		.github\workflows\smoketest-node14-v4.yml = .github\workflows\smoketest-node14-v4.yml
 		.github\workflows\smoketest-python37-v4.yml = .github\workflows\smoketest-python37-v4.yml
 	EndProjectSection
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DFPerfScenariosV1", "test\DFPerfScenariosV1\DFPerfScenariosV1.csproj", "{65F904AA-0F6F-48CB-BE19-593B7D68152A}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "PerfTests", "PerfTests", "{7387E723-E153-4B7A-B105-8C67BFBD48CF}"
 EndProject

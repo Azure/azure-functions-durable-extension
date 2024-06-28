@@ -15,10 +15,8 @@ using Azure.Storage.Blobs.Models;
 using Azure.Storage.Blobs.Specialized;
 using DurableTask.AzureStorage;
 using Microsoft.ApplicationInsights.Channel;
-#if !FUNCTIONS_V1
 using Microsoft.Extensions.Hosting;
 using Microsoft.Azure.WebJobs.Host.Scale;
-#endif
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Microsoft.Extensions.Logging;
@@ -70,18 +68,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             int entityMessageReorderWindowInMinutes = 30,
             string exactTaskHubName = null,
             bool addDurableClientFactory = false,
-#if !FUNCTIONS_V1
             Action<ScaleOptions> configureScaleOptions = null,
-#endif
             Type[] types = null)
         {
             switch (storageProviderType)
             {
                 case AzureStorageProviderType:
-#if !FUNCTIONS_V1
                 case RedisProviderType:
                 case EmulatorProviderType:
-#endif
                     break;
                 default:
                     throw new InvalidOperationException($"Storage provider {storageProviderType} is not supported for testing infrastructure.");
@@ -163,11 +157,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 lifeCycleNotificationHelper: lifeCycleNotificationHelper,
                 serializerSettings: serializerSettings,
                 onSend: onSend,
-#if !FUNCTIONS_V1
                 addDurableClientFactory: addDurableClientFactory,
                 types: types,
                 configureScaleOptions: configureScaleOptions,
-#endif
                 durabilityProviderFactoryType: durabilityProviderFactoryType);
         }
 
@@ -182,9 +174,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Action<ITelemetry> onSend = null,
             Type durabilityProviderFactoryType = null,
             bool addDurableClientFactory = false,
-#if !FUNCTIONS_V1
             Action<ScaleOptions> configureScaleOptions = null,
-#endif
             Type[] types = null)
         {
             if (serializerSettings == null)
@@ -204,12 +194,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return PlatformSpecificHelpers.CreateJobHost(
                 options: optionsWrapper,
                 storageProvider: storageProviderType,
-#if !FUNCTIONS_V1
                 durabilityProviderFactoryType: durabilityProviderFactoryType,
                 addDurableClientFactory: addDurableClientFactory,
                 typeLocator: typeLocator,
                 configureScaleOptions: configureScaleOptions,
-#endif
                 loggerProvider: loggerProvider,
                 nameResolver: testNameResolver,
                 durableHttpMessageHandler: durableHttpMessageHandler,
@@ -218,7 +206,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 onSend: onSend);
         }
 
-#if !FUNCTIONS_V1
         public static IHost GetJobHostExternalEnvironment(IStorageServiceClientProviderFactory clientProviderFactory = null)
         {
             if (clientProviderFactory == null)
@@ -258,7 +245,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 optionsWrapper,
                 durabilityProviderFactories);
         }
-#endif
 
 #pragma warning disable CS0612 // Type or member is obsolete
         public static IPlatformInformation GetMockPlatformInformationService(
@@ -285,10 +271,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             switch (storageProvider)
             {
                 case AzureStorageProviderType:
-#if !FUNCTIONS_V1
                 case RedisProviderType:
                 case EmulatorProviderType:
-#endif
                     return new DurableTaskOptions();
                 default:
                     throw new InvalidOperationException($"Storage provider {storageProvider} is not supported for testing infrastructure.");
@@ -401,9 +385,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 typeof(TestEntityClasses),
                 typeof(ClientFunctions),
                 typeof(UnconstructibleClass),
-#if !FUNCTIONS_V1
                 typeof(TestEntityWithDependencyInjectionHelpers),
-#endif
             };
 
             ITypeLocator typeLocator = new ExplicitTypeLocator(types);

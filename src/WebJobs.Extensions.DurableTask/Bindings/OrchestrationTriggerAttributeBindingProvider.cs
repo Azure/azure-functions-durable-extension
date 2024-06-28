@@ -160,7 +160,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     var triggerData = new TriggerData(contextValueProvider, bindingData);
                     return Task.FromResult<ITriggerData>(triggerData);
                 }
-#if FUNCTIONS_V3_OR_GREATER
                 else if (value is RemoteOrchestratorContext remoteContext)
                 {
                     // Generate a byte array which is the serialized protobuf payload
@@ -180,7 +179,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     var triggerData = new TriggerData(contextValueProvider, EmptyBindingData);
                     return Task.FromResult<ITriggerData>(triggerData);
                 }
-#endif
                 else
                 {
                     throw new ArgumentException($"Don't know how to bind to {value?.GetType().Name ?? "null"}.", nameof(value));

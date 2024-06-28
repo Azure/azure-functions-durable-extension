@@ -12,7 +12,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     [Obsolete("Please use WebJobsConnectionInfoProvider instead.")]
     public class WebJobsConnectionStringProvider : IConnectionStringResolver
     {
-#if !FUNCTIONS_V1
         private readonly IConfiguration hostConfiguration;
 
         /// <summary>
@@ -29,12 +28,5 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             return this.hostConfiguration.GetWebJobsConnectionString(connectionStringName);
         }
-#else
-        /// <inheritdoc />
-        public string Resolve(string connectionStringName)
-        {
-            return Microsoft.Azure.WebJobs.Host.AmbientConnectionStringProvider.Instance.GetConnectionString(connectionStringName);
-        }
-#endif
     }
 }

@@ -1,7 +1,6 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-#if FUNCTIONS_V3_OR_GREATER
 #nullable enable
 using System;
 using System.Collections.Generic;
@@ -52,8 +51,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 var serializedControlQueueLengths = metrics.ControlQueueLengths;
                 var controlQueueLengths = JsonConvert.DeserializeObject<IReadOnlyList<int>>(serializedControlQueueLengths);
 
-                var controlQueueMessages = controlQueueLengths.Sum();
-                var activeControlQueues = controlQueueLengths.Count(x => x > 0);
+                var controlQueueMessages = controlQueueLengths!.Sum();
+                var activeControlQueues = controlQueueLengths!.Count(x => x > 0);
 
                 // compute orchestratorWorkers: the number of workers we need to process all orchestrator messages.
                 // We bound this result to be no larger than the partition count
@@ -91,4 +90,3 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
     }
 }
-#endif

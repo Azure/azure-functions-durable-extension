@@ -109,9 +109,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     if (destinationType == typeof(IDurableEntityContext))
                     {
                         convertedValue = entityContext;
-#if !FUNCTIONS_V1
                         ((IDurableEntityContext)value).FunctionBindingContext = context.FunctionContext;
-#endif
                 }
                 else if (destinationType == typeof(string))
                 {
@@ -128,7 +126,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     var triggerData = new TriggerData(inputValueProvider, bindingData);
                     return Task.FromResult<ITriggerData>(triggerData);
                 }
-#if FUNCTIONS_V3_OR_GREATER
                 else if (value is RemoteEntityContext remoteContext)
                 {
                     // Generate a byte array which is the serialized protobuf payload
@@ -142,7 +139,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     var triggerData = new TriggerData(contextValueProvider, EmptyBindingData);
                     return Task.FromResult<ITriggerData>(triggerData);
                 }
-#endif
                 else
                 {
                     throw new ArgumentException($"Don't know how to bind to {value?.GetType().Name ?? "null"}.", nameof(value));

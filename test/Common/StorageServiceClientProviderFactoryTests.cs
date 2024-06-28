@@ -2,10 +2,8 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
-#if !FUNCTIONS_V1
 using System.Collections.Generic;
 using System.Linq;
-#endif
 using System.Linq.Expressions;
 using System.Reflection;
 using Azure.Data.Tables;
@@ -13,18 +11,14 @@ using Azure.Storage.Blobs;
 using Azure.Storage.Queues;
 using DurableTask.AzureStorage;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage;
-#if !FUNCTIONS_V1
 using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
-#endif
 using Moq;
-#if !FUNCTIONS_V1
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
-#endif
 using Xunit;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
@@ -33,7 +27,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     {
         private const string EmulatorKey = "Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==";
 
-#if !FUNCTIONS_V1
         private readonly AzureComponentFactory componentFactory;
         private readonly AzureEventSourceLogForwarder logForwarder;
 
@@ -49,7 +42,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             this.componentFactory = provider.GetRequiredService<AzureComponentFactory>();
             this.logForwarder = provider.GetRequiredService<AzureEventSourceLogForwarder>();
         }
-#endif
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
@@ -126,7 +118,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(new Uri(expectedEndpoint, UriKind.Absolute), actual.Uri);
         }
 
-#if !FUNCTIONS_V1
 
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
@@ -251,18 +242,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 settings);
         }
 
-#endif
 
         private StorageServiceClientProviderFactory SetupClientProviderFactory(string connectionName, string connectionString)
         {
             var mock = new Mock<IConnectionInfoResolver>(MockBehavior.Strict);
             mock.Setup(r => r.Resolve(connectionName)).Returns(new ReadOnlyConfigurationValue(connectionName, connectionString));
 
-#if FUNCTIONS_V1
-            return new StorageServiceClientProviderFactory(mock.Object);
-#else
             return new StorageServiceClientProviderFactory(mock.Object, this.componentFactory, this.logForwarder);
-#endif
         }
 
         private sealed class AzureStorageAccountOptions

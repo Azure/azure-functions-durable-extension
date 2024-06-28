@@ -6,19 +6,11 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale;
 using Microsoft.Azure.WebJobs.Host.Listeners;
-#if !FUNCTIONS_V1
 using Microsoft.Azure.WebJobs.Host.Scale;
-#endif
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
-#if FUNCTIONS_V3_OR_GREATER
     internal sealed class DurableTaskListener : IListener, IScaleMonitorProvider, ITargetScalerProvider
-#elif FUNCTIONS_V2_OR_GREATER
-    internal sealed class DurableTaskListener : IListener, IScaleMonitorProvider
-#else
-    internal sealed class DurableTaskListener : IListener
-#endif
     {
         private readonly DurableTaskExtension config;
         private readonly string functionId;
@@ -26,13 +18,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly FunctionType functionType;
         private readonly string connectionName;
 
-#if !FUNCTIONS_V1
         private readonly Lazy<IScaleMonitor> scaleMonitor;
-#endif
 
-#if FUNCTIONS_V3_OR_GREATER
         private readonly Lazy<ITargetScaler> targetScaler;
-#endif
 
         public DurableTaskListener(
             DurableTaskExtension config,
@@ -53,7 +41,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.functionType = functionType;
             this.connectionName = connectionName;
 
-#if !FUNCTIONS_V1
             this.scaleMonitor = new Lazy<IScaleMonitor>(() =>
                 ScaleUtils.GetScaleMonitor(
                     this.config.DefaultDurabilityProvider,
@@ -62,8 +49,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.connectionName,
                     this.config.Options.HubName));
 
-#endif
-#if FUNCTIONS_V3_OR_GREATER
             this.targetScaler = new Lazy<ITargetScaler>(() =>
                 ScaleUtils.GetTargetScaler(
                     this.config.DefaultDurabilityProvider,
@@ -71,7 +56,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.functionName,
                     this.connectionName,
                     this.config.Options.HubName));
-#endif
         }
 
         public Task StartAsync(CancellationToken cancellationToken)
@@ -109,18 +93,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
         }
 
-#if !FUNCTIONS_V1
         public IScaleMonitor GetMonitor()
         {
             return this.scaleMonitor.Value;
         }
-#endif
 
-#if FUNCTIONS_V3_OR_GREATER
         public ITargetScaler GetTargetScaler()
         {
             return this.targetScaler.Value;
         }
-#endif
     }
 }
