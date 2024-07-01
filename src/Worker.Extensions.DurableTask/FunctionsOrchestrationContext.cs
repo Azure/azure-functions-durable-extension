@@ -42,6 +42,8 @@ internal sealed partial class FunctionsOrchestrationContext : TaskOrchestrationC
 
     public override string InstanceId => this.innerContext.InstanceId;
 
+    public override string InstanceVersion => this.innerContext.InstanceVersion;
+
     public override DateTime CurrentUtcDateTime => this.innerContext.CurrentUtcDateTime;
 
     public override bool IsReplaying => this.innerContext.IsReplaying;
