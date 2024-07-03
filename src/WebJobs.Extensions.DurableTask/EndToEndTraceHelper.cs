@@ -61,8 +61,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal void SanitizeString(string? rawPayload, out string iloggerString, out string durableKustoTableString)
         {
-            string payload = rawPayload ?? "(null)";
-            int numCharacters = rawPayload != null ? payload.Length : 0;
+            string payload = rawPayload ?? string.Empty;
+            int numCharacters = payload.Length;
             string sanitizedPayload = $"(Redacted {numCharacters} characters)";
 
             // By default, both ilogger and kusto data should use the sanitized data

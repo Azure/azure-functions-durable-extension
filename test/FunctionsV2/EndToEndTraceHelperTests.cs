@@ -12,11 +12,13 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
     public class EndToEndTraceHelperTests
     {
         [Theory]
-        [InlineData(true, true)]
-        [InlineData(false, true)]
-        [InlineData(true, false)]
-        [InlineData(false, false)]
-        public void StringSanitizerTest(bool shouldTraceRawData, bool testNullInput)
+        [InlineData(true, "DO NOT LOG ME")]
+        [InlineData(false, "DO NOT LOG ME")]
+        [InlineData(true, null)]
+        [InlineData(false, null)]
+        public void StringSanitizerTest(
+            bool shouldTraceRawData,
+            string? possiblySensitiveData)
         {
             // set up trace helper
             var nullLogger = new NullLogger<EndToEndTraceHelper>();
@@ -25,30 +27,23 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
                 traceReplayEvents: false, // has not effect on sanitizer
                 shouldTraceRawData: shouldTraceRawData);
 
-            // prepare sensitive data to sanitize
-            string possibleSensitiveData = "DO NOT LOG ME";
-
             // run sanitizer
             traceHelper.SanitizeString(
-                rawPayload: testNullInput ? null : possibleSensitiveData,
+                rawPayload: possiblySensitiveData,
                 out string iLoggerString,
                 out string kustoTableString);
 
             // expected: sanitized string should not contain the sensitive data
-            Assert.DoesNotContain(possibleSensitiveData, kustoTableString);
+            // skip this check if data is null
+            if (possiblySensitiveData != null)
+            {
+                Assert.DoesNotContain(possiblySensitiveData, kustoTableString);
+            }
 
             if (shouldTraceRawData)
             {
-                if (testNullInput)
-                {
-                    // If provided input is null, it is logged as "(null)"
-                    Assert.Equal("(null)", iLoggerString);
-                }
-                else
-                {
-                    // Otherwise, we expect to see the data as-is
-                    Assert.Equal(possibleSensitiveData, iLoggerString);
-                }
+                string expectedString = possiblySensitiveData ?? string.Empty;
+                Assert.Equal(expectedString, iLoggerString);
             }
             else
             {
@@ -60,11 +55,13 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
 
 
         [Theory]
-        [InlineData(true, true)]
-        [InlineData(false, true)]
-        [InlineData(true, false)]
-        [InlineData(false, false)]
-        public void ExceptionSanitizerTest(bool shouldTraceRawData, bool testNullInput)
+        [InlineData(true, "DO NOT LOG ME")]
+        [InlineData(false, "DO NOT LOG ME")]
+        [InlineData(true, null)]
+        [InlineData(false, null)]
+        public void ExceptionSanitizerTest(
+            bool shouldTraceRawData,
+            string? possiblySensitiveData)
         {
             // set up trace helper
             var nullLogger = new NullLogger<EndToEndTraceHelper>();
@@ -74,25 +71,34 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
                 shouldTraceRawData: shouldTraceRawData);
 
             // exception to sanitize
-            var possiblySensitiveData = "DO NOT LOG ME";
-            var exception = new Exception(possiblySensitiveData);
+            Exception? exception = null;
+            if (possiblySensitiveData != null)
+            {
+                exception = new Exception(possiblySensitiveData);
+            }
 
             // run sanitizer
             traceHelper.SanitizeException(
-                exception: testNullInput ? null : exception,
+                exception: exception,
                 out string iLoggerString,
                 out string kustoTableString);
 
             // exception message should not be part of the sanitized strings
-            Assert.DoesNotContain(possiblySensitiveData, kustoTableString);
+            // skip this check if data is null
+            if (possiblySensitiveData != null)
+            {
+                Assert.DoesNotContain(possiblySensitiveData, kustoTableString);
+            }
 
             if (shouldTraceRawData)
             {
-                var expectedString = testNullInput ? string.Empty : exception.ToString();
+                var expectedString = exception?.ToString() ?? string.Empty;
                 Assert.Equal(expectedString, iLoggerString);
             }
             else
             {
+                // If raw data is not being traced,
+                // kusto and the ilogger should get the same data
                 Assert.Equal(iLoggerString, kustoTableString);
             }
         }
