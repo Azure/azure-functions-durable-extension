@@ -59,39 +59,52 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
 #pragma warning disable SA1117 // Parameters should be on same line or separate lines
 
-        private void SanitizeString(string? rawPayload, out string iloggerString, out string durableKustoTableString, bool isReplay = false)
+        private void SanitizeString(string? rawPayload, out string iloggerString, out string durableKustoTableString)
         {
-            if (isReplay)
-            {
-                iloggerString = rawPayload ?? "(replay)";
-                durableKustoTableString = "(replay)";
-            }
-
             string payload = rawPayload ?? "(null)";
-            int numCharacters = payload.Length;
+            int numCharacters = rawPayload != null ? payload.Length : 0;
             string sanitizedPayload = $"(Redacted {numCharacters} characters)";
 
-            iloggerString = this.shouldTraceRawData ? payload : sanitizedPayload;
+            // By default, both ilogger and kusto data should use the sanitized data
+            iloggerString = sanitizedPayload;
             durableKustoTableString = sanitizedPayload;
+
+            // IFF users opts into tracing raw data, then their ILogger gets the raw data
+            if (this.shouldTraceRawData)
+            {
+                iloggerString = payload;
+            }
         }
 
-        private void SanitizeException(Exception? exception, out string iloggerExceptionString, out string durableKustoTableString, bool isReplay = false)
+        private void SanitizeException(Exception? exception, out string iloggerExceptionString, out string durableKustoTableString)
         {
-            string exceptionString = exception != null ? exception.ToString() : string.Empty;
-            if (exception is OrchestrationFailureException orchestrationFailureException)
+            // default case: exception is null
+            string rawError = string.Empty;
+            string sanitizedError = string.Empty;
+
+            // if exception is not null
+            if (exception != null)
             {
-                exceptionString = orchestrationFailureException.Details;
+                // common case if exception is not null
+                rawError = exception.ToString();
+                sanitizedError = $"{exception.GetType().FullName}\n{exception.StackTrace}";
+
+                // if exception is an OrchestrationFailureException, we need to unravel the details
+                if (exception is OrchestrationFailureException orchestrationFailureException)
+                {
+                    rawError = orchestrationFailureException.Details;
+                }
             }
 
-            string sanitizedString = exception != null ? $"{exception.GetType().FullName}\n{exception.StackTrace}" : string.Empty;
-            iloggerExceptionString = this.shouldTraceRawData ? exceptionString : sanitizedString;
+            // By default, both ilogger and kusto data should use the sanitized string
+            iloggerExceptionString = sanitizedError;
+            durableKustoTableString = sanitizedError;
 
-            if (isReplay)
+            // IFF users opts into tracing raw data, then their ILogger gets the raw exception string
+            if (this.shouldTraceRawData)
             {
-                durableKustoTableString = "(replay)";
+                iloggerExceptionString = rawError;
             }
-
-            durableKustoTableString = sanitizedString;
         }
 
         public void ExtensionInformationalEvent(
@@ -171,7 +184,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             bool isReplay,
             int taskEventId = -1)
         {
-            this.SanitizeString(input, out string loggerInput, out string sanitizedInput, isReplay: isReplay);
+            this.SanitizeString(input, out string loggerInput, out string sanitizedInput);
 
             if (this.ShouldLogEvent(isReplay))
             {
@@ -259,7 +272,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             bool isReplay,
             int taskEventId = -1)
         {
-            this.SanitizeString(output, out string loggerOutput, out string sanitizedOutput, isReplay: isReplay);
+            this.SanitizeString(output, out string loggerOutput, out string sanitizedOutput);
 
             if (this.ShouldLogEvent(isReplay))
             {
@@ -400,7 +413,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             bool isReplay,
             int taskEventId = -1)
         {
-            this.SanitizeException(exception, out string loggerReason, out string sanitizedReason, isReplay);
+            this.SanitizeException(exception, out string loggerReason, out string sanitizedReason);
             this.FunctionFailed(hubName, functionName, instanceId, loggerReason, sanitizedReason, functionType, isReplay, taskEventId);
         }
 
@@ -509,7 +522,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
            bool isReplay)
         {
             this.SanitizeString(input, out string loggerInput, out string sanitizedInput);
-            this.SanitizeException(exception, out string loggerException, out string sanitizedException, isReplay);
+            this.SanitizeException(exception, out string loggerException, out string sanitizedException);
             this.OperationFailed(hubName, functionName, instanceId, operationId, operationName, sanitizedInput, loggerInput, sanitizedException, loggerException, duration, isReplay);
         }
 
