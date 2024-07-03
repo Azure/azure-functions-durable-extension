@@ -12,8 +12,8 @@ using System.Threading.Tasks;
 using DurableTask.AzureStorage;
 using Microsoft.ApplicationInsights.Channel;
 #if !FUNCTIONS_V1
-using Microsoft.Extensions.Hosting;
 using Microsoft.Azure.WebJobs.Host.Scale;
+using Microsoft.Extensions.Hosting;
 #endif
 using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Microsoft.Extensions.Logging;
