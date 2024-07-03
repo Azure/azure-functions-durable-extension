@@ -59,7 +59,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
 #pragma warning disable SA1117 // Parameters should be on same line or separate lines
 
-        private void SanitizeString(string? rawPayload, out string iloggerString, out string durableKustoTableString)
+        internal void SanitizeString(string? rawPayload, out string iloggerString, out string durableKustoTableString)
         {
             string payload = rawPayload ?? "(null)";
             int numCharacters = rawPayload != null ? payload.Length : 0;
@@ -76,7 +76,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        private void SanitizeException(Exception? exception, out string iloggerExceptionString, out string durableKustoTableString)
+        internal void SanitizeException(Exception? exception, out string iloggerExceptionString, out string durableKustoTableString)
         {
             // default case: exception is null
             string rawError = string.Empty;
