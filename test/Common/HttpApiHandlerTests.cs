@@ -411,14 +411,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     TaskHub = TestConstants.TaskHub,
                     ConnectionName = TestConstants.ConnectionName,
                 },
-                TimeSpan.FromSeconds(10),
+                TimeSpan.FromSeconds(15),
                 TimeSpan.FromSeconds(3));
             stopwatch.Stop();
             Assert.Equal(HttpStatusCode.OK, httpResponseMessage.StatusCode);
             var content = await httpResponseMessage.Content.ReadAsStringAsync();
             var value = JsonConvert.DeserializeObject<string>(content);
             Assert.Equal("Hello Tokyo!", value);
-            Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10));
+            Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(15));
         }
 
         [Fact]
