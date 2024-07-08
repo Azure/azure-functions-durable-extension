@@ -5104,6 +5104,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 // run an orchestration B that queues behind A for the lock (and thus gets stuck)
                 TestDurableClient clientB = await host.StartOrchestratorAsync(nameof(TestOrchestrations.LockThenFailReplay), (orphanedEntityId, false), this.output, orchestrationB);
 
+                await Task.Delay(TimeSpan.FromMinutes(1)); // wait for a stable entity executionID, needed until https://github.com/Azure/durabletask/pull/1128 is merged
+
                 // remove release orphaned lock to unblock orchestration B
                 // Note: do NOT remove empty entities yet: we want to keep the empty entity so it can unblock orchestration B
                 response = await client.InnerClient.CleanEntityStorageAsync(removeEmptyEntities: false, releaseOrphanedLocks: true, CancellationToken.None);
