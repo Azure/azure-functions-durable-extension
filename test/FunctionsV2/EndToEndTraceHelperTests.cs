@@ -4,6 +4,7 @@
 #nullable enable
 using System;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
@@ -16,6 +17,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         [InlineData(false, "DO NOT LOG ME")]
         [InlineData(true, null)]
         [InlineData(false, null)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void StringSanitizerTest(
             bool shouldTraceRawData,
             string? possiblySensitiveData)
@@ -59,6 +61,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         [InlineData(false, "DO NOT LOG ME")]
         [InlineData(true, null)]
         [InlineData(false, null)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void ExceptionSanitizerTest(
             bool shouldTraceRawData,
             string? possiblySensitiveData)
