@@ -55,7 +55,6 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
             }
         }
 
-
         [Theory]
         [InlineData(true, "DO NOT LOG ME")]
         [InlineData(false, "DO NOT LOG ME")]

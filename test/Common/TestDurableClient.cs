@@ -182,7 +182,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             if (timeout == null)
             {
-                timeout = Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromMinutes(3); // 3 minutes because AzureStorage emulator can be slow
+                timeout = Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromMinutes(1);
             }
 
             Stopwatch sw = Stopwatch.StartNew();
