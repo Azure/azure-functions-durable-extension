@@ -75,7 +75,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.context.HubName,
                 this.context.Name,
                 this.context.InstanceId,
-                this.Config.GetIntputOutputTrace(serializedInput),
+                serializedInput,
                 FunctionType.Orchestrator,
                 this.context.IsReplaying);
             status = OrchestrationRuntimeStatus.Running;
@@ -113,7 +113,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.context.HubName,
                 this.context.Name,
                 this.context.InstanceId,
-                this.Config.GetIntputOutputTrace(serializedOutput),
+                serializedOutput,
                 this.context.ContinuedAsNew,
                 FunctionType.Orchestrator,
                 this.context.IsReplaying);
@@ -184,14 +184,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     }
                     catch (OrchestrationFailureException ex)
                     {
-                        this.TraceAndSendExceptionNotification(ex.Details);
+                        this.TraceAndSendExceptionNotification(ex);
                         this.context.OrchestrationException = ExceptionDispatchInfo.Capture(ex);
                         throw ex;
                     }
                 }
                 else
                 {
-                    this.TraceAndSendExceptionNotification(e.ToString());
+                    this.TraceAndSendExceptionNotification(e);
                     var orchestrationException = new OrchestrationFailureException(
                         $"Orchestrator function '{this.context.Name}' failed: {e.Message}",
                         Utils.SerializeCause(e, innerContext.ErrorDataConverter));
@@ -212,13 +212,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        private void TraceAndSendExceptionNotification(string exceptionDetails)
+        private void TraceAndSendExceptionNotification(Exception exception)
         {
+            string exceptionDetails = exception.Message;
+            if (exception is OrchestrationFailureException orchestrationFailureException)
+            {
+                exceptionDetails = orchestrationFailureException.Details;
+            }
+
             this.config.TraceHelper.FunctionFailed(
                 this.context.HubName,
                 this.context.Name,
                 this.context.InstanceId,
-                exceptionDetails,
+                exception: exception,
                 FunctionType.Orchestrator,
                 this.context.IsReplaying);
 
