@@ -5109,8 +5109,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 // remove release orphaned lock to unblock orchestration B
                 // Note: do NOT remove empty entities yet: we want to keep the empty entity so it can unblock orchestration B
                 response = await client.InnerClient.CleanEntityStorageAsync(removeEmptyEntities: false, releaseOrphanedLocks: true, CancellationToken.None);
-                Assert.Equal(0, response.NumberOfEmptyEntitiesRemoved);
                 Assert.Equal(1, response.NumberOfOrphanedLocksRemoved);
+                Assert.Equal(0, response.NumberOfEmptyEntitiesRemoved);
 
                 // wait for orchestration B to complete, now that the lock has been released
                 status = await clientB.WaitForCompletionAsync(this.output);
