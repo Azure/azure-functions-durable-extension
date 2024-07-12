@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
@@ -215,6 +216,33 @@ public static class DurableTaskClientExtensions
         //       More info: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Forwarded.
         //       One potential workaround is to set ASPNETCORE_FORWARDEDHEADERS_ENABLED to true.
         string baseUrl = request.Url.GetLeftPart(UriPartial.Authority);
+        string proto = request.Url.Scheme;
+        if (request.Headers.TryGetValues("Forwarded", out var forwarded))
+        {
+            var forwardedDict = (forwarded.FirstOrDefault() ?? "").Split(';').Select(pair => pair.Split('=')).Select(pair => new { key = pair[0], value = pair[1] }).ToDictionary(pair => pair.key, pair => pair.value);
+            if (forwardedDict.ContainsKey("proto"))
+            {
+                proto = forwardedDict["proto"];
+            }
+
+            if (forwardedDict.ContainsKey("host"))
+            {
+                baseUrl = $"{proto}://{forwardedDict["host"]}";
+            }
+        }
+        else
+        {
+            if (request.Headers.TryGetValues("X-Forwarded-Proto", out var protos))
+            {
+                proto = protos.First();
+            }
+
+            if (request.Headers.TryGetValues("X-Forwarded-Host", out var hosts))
+            {
+                baseUrl = $"{proto}://{hosts.First()}";
+            }
+        }
+
         string formattedInstanceId = Uri.EscapeDataString(instanceId);
         string instanceUrl = $"{baseUrl}/runtime/webhooks/durabletask/instances/{formattedInstanceId}";
         string? commonQueryParameters = GetQueryParams(client);
@@ -229,7 +257,8 @@ public static class DurableTaskClientExtensions
             statusQueryGetUri = BuildUrl(instanceUrl, commonQueryParameters, returnInternalServerErrorOnFailure ? "returnInternalServerErrorOnFailure=true" : ""),
             terminatePostUri = BuildUrl($"{instanceUrl}/terminate", "reason={{text}}", commonQueryParameters),
             suspendPostUri =  BuildUrl($"{instanceUrl}/suspend", "reason={{text}}", commonQueryParameters),
-            resumePostUri =  BuildUrl($"{instanceUrl}/resume", "reason={{text}}", commonQueryParameters)
+            resumePostUri =  BuildUrl($"{instanceUrl}/resume", "reason={{text}}", commonQueryParameters),
+            reqHeaders = request.Headers
         };
     }
 
