@@ -257,8 +257,7 @@ public static class DurableTaskClientExtensions
             statusQueryGetUri = BuildUrl(instanceUrl, commonQueryParameters, returnInternalServerErrorOnFailure ? "returnInternalServerErrorOnFailure=true" : ""),
             terminatePostUri = BuildUrl($"{instanceUrl}/terminate", "reason={{text}}", commonQueryParameters),
             suspendPostUri =  BuildUrl($"{instanceUrl}/suspend", "reason={{text}}", commonQueryParameters),
-            resumePostUri =  BuildUrl($"{instanceUrl}/resume", "reason={{text}}", commonQueryParameters),
-            reqHeaders = request.Headers
+            resumePostUri =  BuildUrl($"{instanceUrl}/resume", "reason={{text}}", commonQueryParameters)
         };
     }
 
