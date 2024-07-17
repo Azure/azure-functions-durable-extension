@@ -6,10 +6,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Azure;
+using DurableTask.AzureStorage;
 using DurableTask.AzureStorage.Monitoring;
 using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Extensions.Logging;
-using Microsoft.WindowsAzure.Storage;
 using Newtonsoft.Json;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
@@ -19,7 +20,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly string functionId;
         private readonly string functionName;
         private readonly string hubName;
-        private readonly CloudStorageAccount storageAccount;
+        private readonly StorageAccountClientProvider storageAccountClientProvider;
         private readonly ScaleMonitorDescriptor scaleMonitorDescriptor;
         private readonly ILogger logger;
         private readonly DurableTaskMetricsProvider durableTaskMetricsProvider;
@@ -30,7 +31,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string functionId,
             string functionName,
             string hubName,
-            CloudStorageAccount storageAccount,
+            StorageAccountClientProvider storageAccountClientProvider,
             ILogger logger,
             DurableTaskMetricsProvider durableTaskMetricsProvider,
             DisconnectedPerformanceMonitor performanceMonitor = null)
@@ -38,7 +39,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.functionId = functionId;
             this.functionName = functionName;
             this.hubName = hubName;
-            this.storageAccount = storageAccount;
+            this.storageAccountClientProvider = storageAccountClientProvider;
             this.logger = logger;
             this.performanceMonitor = performanceMonitor;
             this.durableTaskMetricsProvider = durableTaskMetricsProvider;

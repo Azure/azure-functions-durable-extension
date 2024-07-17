@@ -1603,7 +1603,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     {
                         new AzureStorageDurabilityProviderFactory(
                         new OptionsWrapper<DurableTaskOptions>(options),
-                        new TestStorageAccountProvider(),
+                        new TestStorageServiceClientProviderFactory(),
                         TestHelpers.GetTestNameResolver(),
                         NullLoggerFactory.Instance,
                         TestHelpers.GetMockPlatformInformationService()),

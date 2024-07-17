@@ -4,9 +4,8 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Azure.Storage.Blobs;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
-using Microsoft.WindowsAzure.Storage;
-using Microsoft.WindowsAzure.Storage.Blob;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -80,11 +79,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             };
 
             string storageConnectionString = TestHelpers.GetStorageConnectionString();
-            CloudStorageAccount.TryParse(storageConnectionString, out CloudStorageAccount storageAccount);
+            var blobServiceClient = new BlobServiceClient(storageConnectionString);
 
-            CloudBlobClient cloudBlobClient = storageAccount.CreateCloudBlobClient();
-            CloudBlobContainer cloudBlobContainer = cloudBlobClient.GetContainerReference(TestEntityWithDependencyInjectionHelpers.BlobContainerPath);
-            await cloudBlobContainer.CreateIfNotExistsAsync();
+            BlobContainerClient containerClient = blobServiceClient.GetBlobContainerClient(TestEntityWithDependencyInjectionHelpers.BlobContainerPath);
+            await containerClient.CreateIfNotExistsAsync();
 
             using (var host = TestHelpers.GetJobHost(
                 this.loggerProvider,
