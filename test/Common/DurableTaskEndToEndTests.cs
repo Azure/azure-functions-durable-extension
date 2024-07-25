@@ -5611,7 +5611,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 "Durable Functions with extendedSessionsEnabled set to 'true' is only supported when using",
                 exception.Message,
                 StringComparison.OrdinalIgnoreCase
-            )
+            );
         }
 
         [Fact]
