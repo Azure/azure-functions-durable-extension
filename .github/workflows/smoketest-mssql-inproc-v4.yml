@@ -1,23 +1,26 @@
 name: Smoke Test - .NET in-proc w/ MSSQL on Functions V4
 
 on:
+  workflow_dispatch:
   push:
     branches: [ main, dev ]
     paths:
       - 'src/**'
       - 'test/SmokeTests/BackendSmokeTests/MSSQL/**'
+      - '.github/workflows/smoketest-mssql-inproc-v4.yml'
   pull_request:
     branches: [ main, dev ]
     paths:
       - 'src/**'
       - 'test/SmokeTests/BackendSmokeTests/MSSQL/**'
+      - '.github/workflows/smoketest-mssql-inproc-v4.yml'
 
 jobs:
   build:
 
     runs-on: ubuntu-latest
     env:
-      SA_PASSWORD: NotASecret!12
+      SA_PASSWORD: ${{ secrets.SA_PASSWORD }}
 
     steps:
     - uses: actions/checkout@v4

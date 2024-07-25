@@ -56,6 +56,11 @@ public static class DurableTaskClientExtensions
             throw new ArgumentNullException(nameof(client));
         }
 
+        if (request is null)
+        {
+            throw new ArgumentNullException(nameof(request));
+        }
+
         HttpResponseData response = request.CreateResponse(statusCode);
         object payload = SetHeadersAndGetPayload(client, request, response, instanceId);
 
@@ -102,6 +107,11 @@ public static class DurableTaskClientExtensions
             throw new ArgumentNullException(nameof(client));
         }
 
+        if (request is null)
+        {
+            throw new ArgumentNullException(nameof(request));
+        }
+
         HttpResponseData response = request.CreateResponse(statusCode);
         object payload = SetHeadersAndGetPayload(client, request, response, instanceId);
 
@@ -146,7 +156,9 @@ public static class DurableTaskClientExtensions
             purgeHistoryDeleteUri = BuildUrl(instanceUrl, commonQueryParameters),
             sendEventPostUri = BuildUrl($"{instanceUrl}/raiseEvent/{{eventName}}", commonQueryParameters),
             statusQueryGetUri = BuildUrl(instanceUrl, commonQueryParameters),
-            terminatePostUri = BuildUrl($"{instanceUrl}/terminate", "reason={{text}}}", commonQueryParameters),
+            terminatePostUri = BuildUrl($"{instanceUrl}/terminate", "reason={{text}}", commonQueryParameters),
+            suspendPostUri =  BuildUrl($"{instanceUrl}/suspend", "reason={{text}}", commonQueryParameters),
+            resumePostUri =  BuildUrl($"{instanceUrl}/resume", "reason={{text}}", commonQueryParameters)
         };
     }
 
