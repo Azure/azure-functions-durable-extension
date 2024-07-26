@@ -1,7 +1,6 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
-
-using System;
+#nullable enable
 using System.Diagnostics.Tracing;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
@@ -43,7 +42,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string FunctionName,
             int TaskEventId,
             string InstanceId,
-            string Input,
+            string? Input,
             string FunctionType,
             string ExtensionVersion,
             bool IsReplay)
@@ -88,7 +87,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string FunctionName,
             string InstanceId,
             string EventName,
-            string Input,
+            string? Input,
             string FunctionType,
             string ExtensionVersion,
             bool IsReplay)
@@ -104,7 +103,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string FunctionName,
             int TaskEventId,
             string InstanceId,
-            string Output,
+            string? Output,
             bool ContinuedAsNew,
             string FunctionType,
             string ExtensionVersion,
@@ -204,7 +203,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string SlotName,
             string FunctionName,
             FunctionState FunctionState,
-            string Version,
+            string? Version,
             string InstanceId,
             string Details,
             string Reason,
@@ -222,8 +221,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string TaskHub,
             string AppName,
             string SlotName,
-            string FunctionName,
-            string InstanceId,
+            string? FunctionName,
+            string? InstanceId,
             string Details,
             string ExtensionVersion)
         {
@@ -235,8 +234,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string TaskHub,
             string AppName,
             string SlotName,
-            string FunctionName,
-            string InstanceId,
+            string? FunctionName,
+            string? InstanceId,
             string Details,
             string ExtensionVersion)
         {
@@ -265,7 +264,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string SlotName,
             string FunctionName,
             string InstanceId,
-            string Reason,
+            string? Reason,
             string FunctionType,
             string ExtensionVersion,
             bool IsReplay)
@@ -297,7 +296,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string FunctionName,
             string InstanceId,
             string OperationId,
-            string Result,
+            string? Result,
             string FunctionType,
             string ExtensionVersion,
             bool IsReplay)
@@ -313,7 +312,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string FunctionName,
             string InstanceId,
             string RequestingInstanceId,
-            string RequestingExecutionId,
+            string? RequestingExecutionId,
             string RequestId,
             string FunctionType,
             string ExtensionVersion,
@@ -347,8 +346,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string InstanceId,
             string OperationId,
             string OperationName,
-            string Input,
-            string Output,
+            string? Input,
+            string? Output,
             double Duration,
             string FunctionType,
             string ExtensionVersion,
@@ -366,7 +365,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string InstanceId,
             string OperationId,
             string OperationName,
-            string Input,
+            string? Input,
             string Exception,
             double Duration,
             string FunctionType,
