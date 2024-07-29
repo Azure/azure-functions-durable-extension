@@ -15,12 +15,10 @@ using Azure.Storage.Blobs.Models;
 using Azure.Storage.Blobs.Specialized;
 using DurableTask.AzureStorage;
 using Microsoft.ApplicationInsights.Channel;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Hosting;
-#endif
-#endif
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage;
+using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
