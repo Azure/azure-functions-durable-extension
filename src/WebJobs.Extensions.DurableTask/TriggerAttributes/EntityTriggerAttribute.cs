@@ -12,13 +12,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// </summary>
     [AttributeUsage(AttributeTargets.Parameter)]
     [DebuggerDisplay("{EntityName} ({Version})")]
-#if !FUNCTIONS_V1
 #pragma warning disable CS0618 // Type or member is obsolete
     [Binding(TriggerHandlesReturnValue = true)]
 #pragma warning restore CS0618 // Type or member is obsolete
-#else
-    [Binding]
-#endif
     public sealed class EntityTriggerAttribute : Attribute
     {
         /// <summary>

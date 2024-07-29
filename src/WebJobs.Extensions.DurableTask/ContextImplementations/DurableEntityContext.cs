@@ -115,9 +115,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal int OutboxPosition => this.outbox.Count;
 
-#if !FUNCTIONS_V1
         public FunctionBindingContext FunctionBindingContext { get; set; }
-#endif
 
         public void CaptureInternalError(Exception e, TaskEntityShim shim)
         {
@@ -524,11 +522,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 args = Array.Empty<object>();
             }
 
-#if !FUNCTIONS_V1
             T Constructor() => (T)context.FunctionBindingContext.CreateObjectInstance(typeof(T), constructorParameters);
-#else
-            T Constructor() => (T)Activator.CreateInstance(typeof(T), constructorParameters);
-#endif
 
             var state = ((Extensions.DurableTask.DurableEntityContext)context).GetStateWithInjectedDependencies(Constructor);
 

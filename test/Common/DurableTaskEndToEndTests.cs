@@ -20,10 +20,8 @@ using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Microsoft.Diagnostics.Tracing;
-#if !FUNCTIONS_V1
 using Microsoft.Extensions.Hosting;
 using WebJobs.Extensions.DurableTask.Tests.V2;
-#endif
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
@@ -92,10 +90,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true, TestHelpers.AzureStorageProviderType)]
         [InlineData(false, TestHelpers.AzureStorageProviderType)]
-#if !FUNCTIONS_V1
         [InlineData(true, TestHelpers.EmulatorProviderType)]
         [InlineData(false, TestHelpers.EmulatorProviderType)]
-#endif
         public async Task HelloWorldOrchestration_Inline(bool extendedSessions, string storageProviderType)
         {
             string[] orchestratorFunctionNames =
@@ -220,7 +216,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
-#if !FUNCTIONS_V1
         /// <summary>
         /// End to end test that ensures that customers can configure custom connection string names
         /// using DurableClientOptions when they create a DurableClient from an external app (e.g. ASP.NET Core app).
@@ -259,7 +254,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await clientHost.StopAsync();
             }
         }
-#endif
 
         /// <summary>
         /// End-to-end test which validates a simple orchestrator function does not have assigned value for <see cref="DurableOrchestrationContext.ParentInstanceId"/>.
@@ -292,7 +286,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
-#if !FUNCTIONS_V1
         /// <summary>
         /// By simulating the appropiate environment variables for Linux Consumption,
         /// this test checks that we are emitting logs from DurableTask.AzureStorage
@@ -790,7 +783,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 conditionDescription: "Log file contains all required fields and expected events",
                 timeout: TimeSpan.FromSeconds(35));
         }
-#endif
 
         /// <summary>
         /// End-to-end test which runs a simple orchestrator function that calls a single activity function.
@@ -2462,7 +2454,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
-#if !FUNCTIONS_V1
         /// <summary>
         /// End-to-end test which creates an external client that calls a non-existent orchestrator function.
         /// </summary>
@@ -2592,7 +2583,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await newHost.StopAsync();
             }
         }
-#endif
 
         /// <summary>
         /// End-to-end test which runs a orchestrator function that calls a non-existent activity function.
@@ -2727,11 +2717,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 Assert.NotNull(status);
                 Assert.Equal(OrchestrationRuntimeStatus.Failed, status.RuntimeStatus);
-#if FUNCTIONS_V1
-                Assert.Equal("Orchestrator function 'UncallableOrchestrator' failed: Exception has been thrown by the target of an invocation.", status.Output.ToString());
-#else
                 Assert.Equal("Orchestrator function 'UncallableOrchestrator' failed: Exception of type 'System.Exception' was thrown.", status.Output.ToString());
-#endif
 
                 await host.StopAsync();
             }
@@ -5798,11 +5784,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
-#if FUNCTIONS_V1
-                var logger = this.loggerProvider.CreatedLoggers.FirstOrDefault(l => l.Category.Equals("Function"));
-#else
                 var logger = this.loggerProvider.CreatedLoggers.FirstOrDefault(l => l.Category.Equals("Function.ReplaySafeLogger_OneLogMessage.User"));
-#endif
                 var logMessages = logger.LogMessages.Where(
                     msg => msg.FormattedMessage.Contains("ReplaySafeLogger Test: About to say Hello")).ToList();
                 Assert.Single(logMessages);

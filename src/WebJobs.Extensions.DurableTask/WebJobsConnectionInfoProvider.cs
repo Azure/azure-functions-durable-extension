@@ -11,7 +11,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// </summary>
     public class WebJobsConnectionInfoProvider : IConnectionInfoResolver
     {
-#if !FUNCTIONS_V1
         private readonly IConfiguration hostConfiguration;
 
         /// <summary>
@@ -22,15 +21,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             this.hostConfiguration = hostConfiguration ?? throw new ArgumentNullException(nameof(hostConfiguration));
         }
-#endif
 
         /// <inheritdoc />
         public IConfigurationSection Resolve(string name)
         {
-#if FUNCTIONS_V1
-            // The returned key doesn't reflect whether the ConnectionString section was used or if the name was ultimately prefixed.
-            return new ReadOnlyConfigurationValue(name, Host.AmbientConnectionStringProvider.Instance.GetConnectionString(name));
-#else
             // The below represents the implementation of this.hostConfiguration.GetWebJobsConnectionSection(name), defined in the WebJobs SDK
             // but not available to Functions v3 at runtime.
             // Source: https://github.com/Azure/azure-webjobs-sdk/blob/b6d5b52da5d2fb457efbf359cbdd733186aacf7c/src/Microsoft.Azure.WebJobs.Host/Extensions/IConfigurationExtensions.cs#L103-L133
@@ -56,7 +50,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             return section;
-#endif
         }
     }
 }

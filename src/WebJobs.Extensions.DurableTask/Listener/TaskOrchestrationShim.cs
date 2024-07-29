@@ -79,7 +79,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 FunctionType.Orchestrator,
                 this.context.IsReplaying);
             status = OrchestrationRuntimeStatus.Running;
-#if !FUNCTIONS_V1
+
             // On a replay, the orchestrator will either go into a 'Completed'
             // state or a 'Failed' state. We want to avoid tagging them as
             // 'Running' while replaying because this could result in
@@ -88,7 +88,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 DurableTaskExtension.TagActivityWithOrchestrationStatus(status, this.context.InstanceId);
             }
-#endif
 
             var orchestratorInfo = this.Config.GetOrchestratorInfo(new FunctionName(this.context.Name));
 
@@ -128,9 +127,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.context.ContinuedAsNew,
                     this.context.IsReplaying));
             }
-#if !FUNCTIONS_V1
+
             DurableTaskExtension.TagActivityWithOrchestrationStatus(status, this.context.InstanceId);
-#endif
             return serializedOutput;
         }
 
@@ -199,9 +197,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.context.OrchestrationException =
                         ExceptionDispatchInfo.Capture(orchestrationException);
 
-#if !FUNCTIONS_V1
                     DurableTaskExtension.TagActivityWithOrchestrationStatus(OrchestrationRuntimeStatus.Failed, this.context.InstanceId);
-#endif
 
                     throw orchestrationException;
                 }

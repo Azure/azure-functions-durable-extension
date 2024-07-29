@@ -1,7 +1,6 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-#if !FUNCTIONS_V1
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -44,16 +43,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.performanceMonitor = performanceMonitor;
             this.durableTaskMetricsProvider = durableTaskMetricsProvider;
 
-#if FUNCTIONS_V3_OR_GREATER
             this.scaleMonitorDescriptor = new ScaleMonitorDescriptor($"{this.functionId}-DurableTaskTrigger-{this.hubName}".ToLower(), this.functionId);
-#else
-#pragma warning disable CS0618 // Type or member is obsolete.
-
-            // We need this because the new ScaleMonitorDescriptor constructor is not compatible with the WebJobs version of Functions V1 and V2.
-            // Technically, it is also not available in Functions V3, but we don't have a TFM allowing us to differentiate between Functions V3 and V4.
-            this.scaleMonitorDescriptor = new ScaleMonitorDescriptor($"{this.functionId}-DurableTaskTrigger-{this.hubName}".ToLower());
-#pragma warning restore CS0618 // Type or member is obsolete. However, the new interface is not compatible with Functions V2 and V1
-#endif
         }
 
         public ScaleMonitorDescriptor Descriptor
@@ -160,4 +150,3 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
     }
 }
-#endif

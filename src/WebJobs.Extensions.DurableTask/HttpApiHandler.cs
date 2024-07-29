@@ -1259,7 +1259,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return false;
         }
 
-#if !FUNCTIONS_V1
         internal async Task StartLocalHttpServerAsync()
         {
             if (!this.localHttpListener.IsListening)
@@ -1289,6 +1288,5 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 await this.localHttpListener.StopAsync();
             }
         }
-#endif
     }
 }

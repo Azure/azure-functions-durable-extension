@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
+    <AzureFunctionsVersion>v4</AzureFunctionsVersion>
   <WarningsAsErrors></WarningsAsErrors>
   <DefaultItemExcludes>**</DefaultItemExcludes>
   </PropertyGroup>
