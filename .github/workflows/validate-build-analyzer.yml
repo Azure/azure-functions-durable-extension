@@ -1,0 +1,59 @@
+name: Validate Build (analyzer)
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+    paths-ignore: [ '**.md' ]
+  pull_request:
+    branches:
+      - '*'
+    paths-ignore: [ '**.md' ]
+
+env:
+  solution: WebJobs.Extensions.DurableTask.sln
+  config: Release
+  AzureWebJobsStorage: UseDevelopmentStorage=true
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: true
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+
+    - name: Set up .NET Core 3.1
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '3.1.x'
+
+    - name: Set up .NET Core 2.1
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '2.1.x'
+
+    - name: Restore dependencies
+      run: dotnet restore $solution
+
+    - name: Build
+      run: dotnet build $solution
+
+    # Install Azurite
+    - name: Set up Node.js (needed for Azurite)
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18.x' # Azurite requires at least Node 18
+
+    - name: Install Azurite
+      run: npm install -g azurite
+
+    # Run tests
+    - name: Run Analyzer tests
+      run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 & dotnet test ./test/WebJobs.Extensions.DurableTask.Analyzers.Test/WebJobs.Extensions.DurableTask.Analyzers.Test.csproj
+

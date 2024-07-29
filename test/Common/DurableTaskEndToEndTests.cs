@@ -734,6 +734,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 conditionDescription: "Log file exists",
                 timeout: TimeSpan.FromSeconds(30));
 
+            // add a minute wait to ensure logs are fully written
+            await Task.Delay(TimeSpan.FromMinutes(1));
+
             await TestHelpers.WaitUntilTrue(
                 predicate: () =>
                 {
@@ -5041,6 +5044,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var orchestrationA = $"{prefix}-A";
                 var orchestrationB = $"{prefix}-B";
 
+                // PART 1: Test removal of empty entities
+
                 // create an empty entity
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.CreateEmptyEntities), new EntityId[] { emptyEntityId }, this.output);
                 var status = await client.WaitForCompletionAsync(this.output);
@@ -5060,6 +5065,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var result = await client.InnerClient.ListEntitiesAsync(query, CancellationToken.None);
                 Assert.Contains(result.Entities, s => s.EntityId.Equals(emptyEntityId));
 
+                // test removal of empty entity
+                var response = await client.InnerClient.CleanEntityStorageAsync(removeEmptyEntities: true, releaseOrphanedLocks: false, CancellationToken.None);
+                Assert.Equal(1, response.NumberOfEmptyEntitiesRemoved);
+                Assert.Equal(0, response.NumberOfOrphanedLocksRemoved);
+
+                // check that the empty entity record has been removed from storage
+                result = await client.InnerClient.ListEntitiesAsync(query, CancellationToken.None);
+                Assert.DoesNotContain(result.Entities, s => s.EntityId.Equals(emptyEntityId));
+
+                // PART 2: Test recovery from orphaned locks
+
                 // run an orchestration A that leaves an orphaned lock
                 TestDurableClient clientA = await host.StartOrchestratorAsync(nameof(TestOrchestrations.LockThenFailReplay), (orphanedEntityId, true), this.output, orchestrationA);
                 status = await clientA.WaitForCompletionAsync(this.output);
@@ -5067,21 +5083,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 // run an orchestration B that queues behind A for the lock (and thus gets stuck)
                 TestDurableClient clientB = await host.StartOrchestratorAsync(nameof(TestOrchestrations.LockThenFailReplay), (orphanedEntityId, false), this.output, orchestrationB);
 
-                // remove empty entity and release orphaned lock
-                var response = await client.InnerClient.CleanEntityStorageAsync(true, true, CancellationToken.None);
+                await Task.Delay(TimeSpan.FromMinutes(1)); // wait for a stable entity executionID, needed until https://github.com/Azure/durabletask/pull/1128 is merged
+
+                // remove release orphaned lock to unblock orchestration B
+                // Note: do NOT remove empty entities yet: we want to keep the empty entity so it can unblock orchestration B
+                response = await client.InnerClient.CleanEntityStorageAsync(removeEmptyEntities: false, releaseOrphanedLocks: true, CancellationToken.None);
                 Assert.Equal(1, response.NumberOfOrphanedLocksRemoved);
-                Assert.Equal(1, response.NumberOfEmptyEntitiesRemoved);
+                Assert.Equal(0, response.NumberOfEmptyEntitiesRemoved);
 
                 // wait for orchestration B to complete, now that the lock has been released
                 status = await clientB.WaitForCompletionAsync(this.output);
                 Assert.True(status.RuntimeStatus == OrchestrationRuntimeStatus.Completed);
 
-                // check that the empty entity record has been removed from storage
-                result = await client.InnerClient.ListEntitiesAsync(query, CancellationToken.None);
-                Assert.DoesNotContain(result.Entities, s => s.EntityId.Equals(emptyEntityId));
-
                 // clean again to remove the orphaned entity which is now empty also
-                response = await client.InnerClient.CleanEntityStorageAsync(true, true, CancellationToken.None);
+                response = await client.InnerClient.CleanEntityStorageAsync(removeEmptyEntities: true, releaseOrphanedLocks: true, CancellationToken.None);
                 Assert.Equal(0, response.NumberOfOrphanedLocksRemoved);
                 Assert.Equal(1, response.NumberOfEmptyEntitiesRemoved);
 

@@ -120,13 +120,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public void CaptureInternalError(Exception e, TaskEntityShim shim)
         {
             // first, try to get a quick ETW message out to help us diagnose what happened
-            string details = Utils.IsFatal(e) ? e.GetType().Name : e.ToString();
             this.Config.TraceHelper.EntityBatchFailed(
                 this.HubName,
                 this.Name,
                 this.InstanceId,
                 shim.TraceFlags,
-                details);
+                e);
 
             // then, record the error for additional reporting and tracking in other places
             this.InternalError = ExceptionDispatchInfo.Capture(e);
@@ -178,22 +177,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        public bool ErrorsPresent(out string description)
+        public bool ErrorsPresent(out string error, out string sanitizedError)
         {
             if (this.InternalError != null)
             {
-                description = $"Internal error: {this.InternalError.SourceException}";
+                error = $"Internal error: {this.InternalError.SourceException}";
+                sanitizedError = $"Internal error: {this.InternalError.SourceException.GetType().FullName} \n {this.InternalError.SourceException.StackTrace}";
                 return true;
             }
             else if (this.ApplicationErrors != null)
             {
                 var messages = this.ApplicationErrors.Select(i => $"({i.SourceException.Message})");
-                description = $"One or more operations failed: {string.Concat(messages)}";
+                error = $"One or more operations failed: {string.Concat(messages)}";
+
+                string errorTypes = string.Join(", ", this.ApplicationErrors.Select(i => i.SourceException.GetType().FullName));
+                sanitizedError = $"One or more operations failed: {errorTypes}";
                 return true;
             }
             else
             {
-                description = string.Empty;
+                error = string.Empty;
+                sanitizedError = string.Empty;
                 return false;
             }
         }

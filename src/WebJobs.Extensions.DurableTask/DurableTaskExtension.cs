@@ -128,7 +128,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             ILogger logger = loggerFactory.CreateLogger(LoggerCategoryName);
 
-            this.TraceHelper = new EndToEndTraceHelper(logger, this.Options.Tracing.TraceReplayEvents);
+            this.TraceHelper = new EndToEndTraceHelper(logger, this.Options.Tracing.TraceReplayEvents, this.Options.Tracing.TraceInputsAndOutputs);
             this.LifeCycleNotificationHelper = lifeCycleNotificationHelper ?? this.CreateLifeCycleNotificationHelper();
             this.durabilityProviderFactory = GetDurabilityProviderFactory(this.Options, logger, orchestrationServiceFactories);
             this.defaultDurabilityProvider = this.durabilityProviderFactory.GetDurabilityProvider();
@@ -917,7 +917,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                                     entityContext.HubName,
                                     entityContext.Name,
                                     entityContext.InstanceId,
-                                    this.GetIntputOutputTrace(runtimeState.Input),
+                                    runtimeState.Input,
                                     FunctionType.Entity,
                                     isReplay: false);
 
@@ -943,13 +943,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                                 await next();
 
                                 // 5. If there were internal or application errors, trace them for DF
-                                if (entityContext.ErrorsPresent(out var description))
+                                if (entityContext.ErrorsPresent(out string description, out string sanitizedError))
                                 {
                                     this.TraceHelper.FunctionFailed(
                                         entityContext.HubName,
                                         entityContext.Name,
                                         entityContext.InstanceId,
                                         description,
+                                        sanitizedReason: sanitizedError,
                                         functionType: FunctionType.Entity,
                                         isReplay: false);
                                 }
@@ -959,7 +960,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                                         entityContext.HubName,
                                         entityContext.Name,
                                         entityContext.InstanceId,
-                                        this.GetIntputOutputTrace(entityContext.State.EntityState),
+                                        entityContext.State.EntityState,
                                         continuedAsNew: true,
                                         functionType: FunctionType.Entity,
                                         isReplay: false);
@@ -1361,35 +1362,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             return false;
-        }
-
-        internal string GetIntputOutputTrace(string rawInputOutputData)
-        {
-            if (this.Options.Tracing.TraceInputsAndOutputs)
-            {
-                return rawInputOutputData;
-            }
-            else if (rawInputOutputData == null)
-            {
-                return "(null)";
-            }
-            else
-            {
-                // Azure Storage uses UTF-32 encoding for string payloads
-                return "(" + Encoding.UTF32.GetByteCount(rawInputOutputData) + " bytes)";
-            }
-        }
-
-        internal string GetExceptionTrace(string rawExceptionData)
-        {
-            if (rawExceptionData == null)
-            {
-                return "(null)";
-            }
-            else
-            {
-                return rawExceptionData;
-            }
         }
 
         /// <inheritdoc/>
