@@ -5592,7 +5592,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 { "FUNCTIONS_WORKER_RUNTIME", "node" },
             });
 
-
             InvalidOperationException exception =
                 await Assert.ThrowsAsync<InvalidOperationException>(async () =>
                 {
@@ -5610,8 +5609,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.StartsWith(
                 "Durable Functions with extendedSessionsEnabled set to 'true' is only supported when using",
                 exception.Message,
-                StringComparison.OrdinalIgnoreCase
-            );
+                StringComparison.OrdinalIgnoreCase);
         }
 
         [Fact]
