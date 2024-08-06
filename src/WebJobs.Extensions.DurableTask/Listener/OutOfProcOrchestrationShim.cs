@@ -39,6 +39,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             Original = 0,
             V2 = 1,
             V3 = 2,
+            V4 = 3,
         }
 
         private enum AsyncActionType
@@ -168,7 +169,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     }
 
                 case AsyncActionType.ContinueAsNew:
-                    this.context.ContinueAsNew(action.Input);
+                    this.context.ContinueAsNew(action.Input, action.PreserveUnprocessedEvents);
                     task = fireAndForgetTask;
                     break;
                 case AsyncActionType.WaitForExternalEvent:
@@ -229,6 +230,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             switch (schema)
             {
+                case SchemaVersion.V4:
                 case SchemaVersion.V3:
                 case SchemaVersion.V2:
                     // In this schema, action arrays should be 1 dimensional (1 action per yield), but due to legacy behavior they're nested within a 2-dimensional array.
@@ -312,6 +314,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             [JsonProperty("input")]
             internal object Input { get; set; }
+
+            [JsonProperty("preserveUnprocessedEvents")]
+            internal bool PreserveUnprocessedEvents { get; set; } = false;
 
             [JsonProperty("compoundActions")]
             internal AsyncAction[] CompoundActions { get; set; }
