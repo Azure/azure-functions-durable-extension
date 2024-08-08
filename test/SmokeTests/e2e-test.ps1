@@ -65,7 +65,8 @@ if ($NoSetup -eq $false) {
 
 	 	# Check if mssql-tools exists?
 		Write-Host "Does MSSQL-TOOLS EXIST?" -ForegroundColor DarkYellow
-		docker exec -d mssql-server ls /opt/mssql-tools/
+		$output = docker exec mssql-server ls /opt/mssql-tools/
+		Write-Host $output
 		Exit-OnError
 
 		# Check if mssql-tools/bin exists?
