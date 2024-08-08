@@ -63,6 +63,16 @@ if ($NoSetup -eq $false) {
 	 	$serverIpAddress = docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' mssql-server
 		Exit-OnError
 
+	 	# Check if mssql-tools exists?
+		Write-Host "Does MSSQL-TOOLS EXIST?" -ForegroundColor DarkYellow
+		docker exec -d mssql-server ls /opt/mssql-tools/
+		Exit-OnError
+
+		# Check if mssql-tools/bin exists?
+		Write-Host "Does MSSQL-TOOLS/BIN EXIST?" -ForegroundColor DarkYellow
+		docker exec -d mssql-server ls /opt/mssql-tools/bin
+		Exit-OnError
+
 	 	# Create the database with strict binary collation
 		Write-Host "Creating '$dbname' database with '$collation' collation" -ForegroundColor DarkYellow
 		docker exec -d mssql-server /opt/mssql-tools/bin/sqlcmd -S . -U sa -P "$pw" -Q "CREATE DATABASE [$dbname] COLLATE $collation"
