@@ -62,6 +62,12 @@ if ($NoSetup -eq $false) {
 		Write-Host "Getting IP Address..." -ForegroundColor Yellow
 	 	$serverIpAddress = docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' mssql-server
 		Exit-OnError
+	
+	 	# Check if mssql-tools exists?
+		Write-Host "Does OPT EXIST?" -ForegroundColor DarkYellow
+		$output = docker exec mssql-server ls /opt/
+		Write-Host $output
+		Exit-OnError
 
 	 	# Check if mssql-tools exists?
 		Write-Host "Does MSSQL-TOOLS EXIST?" -ForegroundColor DarkYellow
