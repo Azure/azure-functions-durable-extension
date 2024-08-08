@@ -70,7 +70,8 @@ if ($NoSetup -eq $false) {
 
 		# Check if mssql-tools/bin exists?
 		Write-Host "Does MSSQL-TOOLS/BIN EXIST?" -ForegroundColor DarkYellow
-		docker exec -d mssql-server ls /opt/mssql-tools/bin
+		$output = docker exec -d mssql-server ls /opt/mssql-tools/bin
+		Write-Host $output
 		Exit-OnError
 
 	 	# Create the database with strict binary collation
