@@ -71,19 +71,19 @@ if ($NoSetup -eq $false) {
 
 	 	# Check if mssql-tools exists?
 		Write-Host "Does MSSQL-TOOLS EXIST?" -ForegroundColor DarkYellow
-		$output = docker exec mssql-server ls /opt/mssql-tools/
+		$output = docker exec mssql-server ls /opt/mssql-tools18/
 		Write-Host $output
 		Exit-OnError
 
 		# Check if mssql-tools/bin exists?
 		Write-Host "Does MSSQL-TOOLS/BIN EXIST?" -ForegroundColor DarkYellow
-		$output = docker exec mssql-server ls /opt/mssql-tools/bin
+		$output = docker exec mssql-server ls /opt/mssql-tools18/bin
 		Write-Host $output
 		Exit-OnError
 
 	 	# Create the database with strict binary collation
 		Write-Host "Creating '$dbname' database with '$collation' collation" -ForegroundColor DarkYellow
-		docker exec -d mssql-server /opt/mssql-tools/bin/sqlcmd -S . -U sa -P "$pw" -Q "CREATE DATABASE [$dbname] COLLATE $collation"
+		docker exec -d mssql-server /opt/mssql-tools18/bin/sqlcmd -S . -U sa -P "$pw" -Q "CREATE DATABASE [$dbname] COLLATE $collation"
 		Exit-OnError
 
   		# Wait for database to be ready
