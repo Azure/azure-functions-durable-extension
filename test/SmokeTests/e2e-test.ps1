@@ -31,7 +31,7 @@ $AzuriteVersion = "3.26.0"
 if ($NoSetup -eq $false) {
 	# Build the docker image first, since that's the most critical step
 	Write-Host "Building sample app Docker container from '$DockerfilePath'..." -ForegroundColor Yellow
-	docker build --pull --no-cache -f $DockerfilePath -t $ImageName --progress plain $PSScriptRoot/../../
+	docker build -f $DockerfilePath -t $ImageName --progress plain $PSScriptRoot/../../
 	Exit-OnError
 
 	# Next, download and start the Azurite emulator Docker image
@@ -57,6 +57,16 @@ if ($NoSetup -eq $false) {
 		Write-Host "Waiting for SQL Server to be ready..." -ForegroundColor Yellow
 		Start-Sleep -Seconds 30  # Adjust the sleep duration based on your SQL Server container startup time
 		Exit-OnError
+
+		Write-Host "Checking if SQL Server is still running..." -ForegroundColor Yellow
+		$sqlServerStatus = docker inspect -f '{{.State.Status}}' mssql-server
+		Exit-OnError
+
+		if ($sqlServerStatus -ne "running") {
+			Write-Host "Unexpected SQL Server status: $sqlServerStatus" -ForegroundColor Yellow
+			docker logs mssql-server
+			exit 1;
+		}
 
  		# Get SQL Server IP Address - used to create SQLDB_Connection
 		Write-Host "Getting IP Address..." -ForegroundColor Yellow
