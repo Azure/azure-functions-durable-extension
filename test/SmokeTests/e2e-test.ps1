@@ -31,7 +31,7 @@ $AzuriteVersion = "3.26.0"
 if ($NoSetup -eq $false) {
 	# Build the docker image first, since that's the most critical step
 	Write-Host "Building sample app Docker container from '$DockerfilePath'..." -ForegroundColor Yellow
-	docker build -f $DockerfilePath -t $ImageName --progress plain $PSScriptRoot/../../
+	docker build --pull --no-cache -f $DockerfilePath -t $ImageName --progress plain $PSScriptRoot/../../
 	Exit-OnError
 
 	# Next, download and start the Azurite emulator Docker image
