@@ -63,7 +63,7 @@ jobs:
             command: pack
             packagesToPack: 'src/**/WebJobs.Extensions.DurableTask.csproj'
             configuration: Release
-            packDirectory: 'azure-functions-durable-extension'
+            packDirectory: $(build.artifactStagingDirectory)
             nobuild: true
 
       # Remove redundant symbol package(s)
