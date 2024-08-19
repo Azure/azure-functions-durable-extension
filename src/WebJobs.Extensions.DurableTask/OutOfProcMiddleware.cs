@@ -214,7 +214,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         isReplay: false);
                 }
             }
-            else if (context.TryGetOrchestrationErrorDetails(out Exception? exception))
+            else if (context.TryGetOrchestrationErrorDetails(out Exception? exception)
+                && (exception?.GetType() != typeof(OrchestrationFailureException) || !exception.Message.Contains("OutOfMemoryException")))
             {
                 // the function failed because the orchestrator failed.
 
@@ -234,6 +235,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     instance.InstanceId,
                     exception?.Message ?? string.Empty,
                     isReplay: false);
+            }
+            else if (exception?.GetType() == typeof(OrchestrationFailureException) && exception.Message.Contains("OutOfMemoryException"))
+            {
+                string reason = $"Out Of Memory exception thrown by the worker runtime: {exception}";
+
+                this.TraceHelper.FunctionAborted(
+                    this.Options.HubName,
+                    functionName.Name,
+                    instance.InstanceId,
+                    reason,
+                    functionType: FunctionType.Orchestrator);
+
+                // This will abort the current execution and force an durable retry
+                throw new SessionAbortedException(reason);
             }
             else
             {
@@ -555,6 +570,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         taskScheduledId: scheduledEvent.EventId,
                         result: serializedOutput),
                 };
+            }
+            else if (result.Exception is not null && result.Exception.Message.Contains("OutOfMemoryException"))
+            {
+                string reason = $"Out Of Memory exception thrown by the worker runtime: {result.Exception}";
+
+                this.TraceHelper.FunctionAborted(
+                    this.Options.HubName,
+                    functionName.Name,
+                    instance.InstanceId,
+                    reason,
+                    functionType: FunctionType.Activity);
+
+                // This will abort the current execution and force an durable retry
+                throw new SessionAbortedException(reason);
             }
             else
             {
