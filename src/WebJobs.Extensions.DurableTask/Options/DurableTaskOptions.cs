@@ -302,7 +302,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             traceHelper.TraceConfiguration(this.HubName, configurationJson.ToString(Formatting.None));
         }
 
-        internal void Validate(INameResolver environmentVariableResolver, EndToEndTraceHelper traceHelper)
+        internal void Validate(INameResolver environmentVariableResolver)
         {
             if (string.IsNullOrEmpty(this.HubName))
             {
@@ -320,12 +320,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 runtimeLanguage != null && // If we don't know from the environment variable, don't assume customer isn't .NET
                 !string.Equals(runtimeLanguage, "dotnet", StringComparison.OrdinalIgnoreCase))
             {
-                traceHelper.ExtensionWarningEvent(
-                    hubName: this.HubName,
-                    functionName: string.Empty,
-                    instanceId: string.Empty,
-                    message: "Durable Functions does not work with extendedSessions = true for non-.NET languages. This value is being set to false instead. See https://docs.microsoft.com/en-us/azure/azure-functions/durable/durable-functions-perf-and-scale#extended-sessions for more details.");
-                this.ExtendedSessionsEnabled = false;
+                throw new InvalidOperationException(
+                    "Durable Functions with extendedSessionsEnabled set to 'true' is only supported when using the in-process .NET worker. Please remove the setting or change it to 'false'." +
+                    "See https://docs.microsoft.com/azure/azure-functions/durable/durable-functions-perf-and-scale#extended-sessions for more details.");
             }
 
             this.Notifications.Validate();
