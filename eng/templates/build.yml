@@ -46,6 +46,7 @@ jobs:
             solution: '**/WebJobs.Extensions.DurableTask.sln'
             vsVersion: "16.0"
             configuration: Release
+            msbuildArgs: /p:FileVersionRevision=$(Build.BuildId) /p:ContinuousIntegrationBuild=true # these flags make package build deterministic
     
       - template: ci/sign-files.yml@eng
         parameters:
