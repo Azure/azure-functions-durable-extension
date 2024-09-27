@@ -156,7 +156,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 try
                 {
                     string instanceId = await this.GetClient(context).StartNewAsync(
-                        request.Name, request.InstanceId, Raw(request.Input));
+                        request.Name, request.InstanceId, request.Version, Raw(request.Input));
                     return new P.CreateInstanceResponse
                     {
                         InstanceId = instanceId,
