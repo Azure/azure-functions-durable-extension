@@ -6,7 +6,7 @@
     <RootNamespace>Microsoft.Azure.WebJobs.Extensions.DurableTask</RootNamespace>
     <MajorVersion>2</MajorVersion>
     <MinorVersion>13</MinorVersion>
-    <PatchVersion>6</PatchVersion>
+    <PatchVersion>7</PatchVersion>
     <VersionSuffix>$(PackageSuffix)</VersionSuffix>
     <FileVersion>$(MajorVersion).$(MinorVersion).$(PatchVersion)</FileVersion>
     <AssemblyVersion>$(MajorVersion).0.0.0</AssemblyVersion>
@@ -107,7 +107,7 @@
     <!-- Explicitly pinned transitive dependencies with CVE vulnerabilities.-->
     <PackageReference Include="Microsoft.AspNetCore.Server.Kestrel.Transport.Sockets" Version="2.2.1" />
     <!-- The gRPC dependencies in this package are not compatible with older frameworks, like .NET Core 2.x -->
-    <PackageReference Include="Microsoft.DurableTask.Grpc" Version="1.1.0" />
+    <PackageReference Include="Microsoft.DurableTask.Grpc" Version="1.3.0" />
     <PackageReference Include="Grpc.Core" Version="2.46.6" /> <!-- Bring this in until we move to hosted RPC -->
   </ItemGroup>
 
@@ -135,6 +135,10 @@
       <Pack>true</Pack>
       <PackagePath>content/SBOM</PackagePath>
     </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="LocalNuGet" Version="1.0.0" PrivateAssets="All" />
   </ItemGroup>
 
 </Project>
