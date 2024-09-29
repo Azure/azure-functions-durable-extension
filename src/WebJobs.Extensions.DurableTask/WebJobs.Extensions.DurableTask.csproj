@@ -137,8 +137,4 @@
     </Content>
   </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="LocalNuGet" Version="1.0.0" PrivateAssets="All" />
-  </ItemGroup>
-
 </Project>
