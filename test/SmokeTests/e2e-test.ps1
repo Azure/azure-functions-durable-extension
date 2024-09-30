@@ -107,6 +107,7 @@ try {
 	$pingUrl = "http://localhost:8080/admin/host/ping"
 	Write-Host "Pinging app at $pingUrl to ensure the host is healthy" -ForegroundColor Yellow
 	Invoke-RestMethod -Method Post -Uri "http://localhost:8080/admin/host/ping"
+	Write-Host "Host is healthy" -ForegroundColor Green
 	Exit-OnError
 
 	if ($NoValidation -eq $false) {
