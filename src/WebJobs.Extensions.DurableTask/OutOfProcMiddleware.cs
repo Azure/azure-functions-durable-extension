@@ -257,8 +257,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             else
             {
                 // the function failed for some other reason
-
-                string exceptionDetails = functionResult.Exception.ToString();
+                string exceptionDetails = functionResult.Exception?.ToString();
 
                 this.TraceHelper.FunctionFailed(
                     this.Options.HubName,
