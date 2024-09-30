@@ -23,3 +23,18 @@ jobs:
     - name: Run V4 .NET Isolated Smoke Test
       run: test/SmokeTests/e2e-test.ps1 -DockerfilePath test/SmokeTests/OOProcSmokeTests/DotNetIsolated/Dockerfile -HttpStartPath api/StartHelloCitiesTyped -NoValidation
       shell: pwsh
+
+    # Test that OOM errors are recoverable
+    - name: Run V4 .NET OOM Test
+      run: test/SmokeTests/e2e-test.ps1 -DockerfilePath test/SmokeTests/OOProcSmokeTests/DotNetIsolated/Dockerfile -HttpStartPath api/durable_HttpStartOOMOrchestrator -NoValidation
+      shell: pwsh
+
+    # Test that FailFast errors are recoverable
+    - name: Run V4 .NET FailFast Test
+      run: test/SmokeTests/e2e-test.ps1 -DockerfilePath test/SmokeTests/OOProcSmokeTests/DotNetIsolated/Dockerfile -HttpStartPath api/durable_HttpStartProcessExitOrchestrator -NoValidation
+      shell: pwsh
+
+    # Test that timeout errors are recoverable
+    - name: Run V4 .NET FailFast Test
+      run: test/SmokeTests/e2e-test.ps1 -DockerfilePath test/SmokeTests/OOProcSmokeTests/DotNetIsolated/Dockerfile -HttpStartPath api/durable_HttpStartTimeoutOrchestrator -NoValidation
+      shell: pwsh

@@ -7,5 +7,6 @@
         "excludedTypes": "Request"
       }
     }
-  }
+  },
+  "functionTimeout": "00:00:30"
 }
