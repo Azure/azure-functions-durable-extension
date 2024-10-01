@@ -170,8 +170,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 // - an out of memory exception
                 // - a worker process exit
                 if (functionResult.Exception is Host.FunctionTimeoutException
-                    // see in RemoteOrchestrationContext.TrySetResultInternal for details on OOM-handling
-                    || functionResult.Exception?.InnerException is OutOfMemoryException
+                    || functionResult.Exception?.InnerException is OutOfMemoryException // see RemoteOrchestrationContext.TrySetResultInternal for details on OOM-handling
                     || (functionResult.Exception?.InnerException?.GetType().ToString().Contains("WorkerProcessExitException") ?? false))
                 {
                     // TODO: the `WorkerProcessExitException` type is not exposed in our dependencies, it's part of WebJobs.Host.Script.
@@ -257,7 +256,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             else
             {
                 // the function failed for some other reason
-                string exceptionDetails = functionResult.Exception?.ToString();
+                string exceptionDetails = functionResult.Exception?.ToString() ?? "Framework-internal message: exception details could not be extracted";
 
                 this.TraceHelper.FunctionFailed(
                     this.Options.HubName,
@@ -276,7 +275,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 orchestratorResult = OrchestratorExecutionResult.ForFailure(
                     message: $"Function '{functionName}' failed with an unhandled exception.",
-                    functionResult.Exception);
+                    functionResult.Exception ?? new Exception($"Function '{functionName}' failed with an unknown unhandled exception"));
             }
 
             // Send the result of the orchestrator function to the DTFx dispatch pipeline.

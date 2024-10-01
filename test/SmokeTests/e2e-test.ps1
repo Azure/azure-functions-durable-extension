@@ -26,7 +26,7 @@ function Exit-OnError() {
 }
 
 $ErrorActionPreference = "Stop"
-$AzuriteVersion = "3.26.0"
+# $AzuriteVersion = "3.26.0"
 
 if ($NoSetup -eq $false) {
 	# Build the docker image first, since that's the most critical step
@@ -35,14 +35,15 @@ if ($NoSetup -eq $false) {
 	Exit-OnError
 
 	# Next, download and start the Azurite emulator Docker image
-	Write-Host "Pulling down the mcr.microsoft.com/azure-storage/azurite:$AzuriteVersion image..." -ForegroundColor Yellow
-	docker pull "mcr.microsoft.com/azure-storage/azurite:${AzuriteVersion}"
+	Write-Host "Pulling down the mcr.microsoft.com/azure-storage/azurite image..." -ForegroundColor Yellow
+	docker pull "mcr.microsoft.com/azure-storage/azurite"
 	Exit-OnError
 
 	Write-Host "Starting Azurite storage emulator using default ports..." -ForegroundColor Yellow
-	docker run --name 'azurite' -p 10000:10000 -p 10001:10001 -p 10002:10002 -d "mcr.microsoft.com/azure-storage/azurite:${AzuriteVersion}"
+	docker run --name 'azurite' -p 10000:10000 -p 10001:10001 -p 10002:10002 -d "mcr.microsoft.com/azure-storage/azurite"
 	Exit-OnError
-
+	# Author's note: we don't call 'Exit-OnError' here because this container may already be running 
+	
  	if ($SetupSQLServer -eq $true) {
 		Write-Host "Pulling down the mcr.microsoft.com/mssql/server:$tag image..."
 		docker pull mcr.microsoft.com/mssql/server:$tag
@@ -51,7 +52,7 @@ if ($NoSetup -eq $false) {
 		# Start the SQL Server docker container with the specified edition
 		Write-Host "Starting SQL Server $tag $sqlpid docker container on port $port" -ForegroundColor DarkYellow
 		docker run --name mssql-server -e 'ACCEPT_EULA=Y' -e "MSSQL_SA_PASSWORD=$pw" -e "MSSQL_PID=$sqlpid" -p ${port}:1433 -d mcr.microsoft.com/mssql/server:$tag
-		Exit-OnError
+		# Author's note: we don't call 'Exit-OnError' here because this container may already be running
 
 		# Wait for SQL Server to be ready
 		Write-Host "Waiting for SQL Server to be ready..." -ForegroundColor Yellow
@@ -80,7 +81,7 @@ if ($NoSetup -eq $false) {
 			--env 'AzureWebJobsStorage=UseDevelopmentStorage=true;DevelopmentStorageProxyUri=http://host.docker.internal' `
 			--env 'WEBSITE_HOSTNAME=localhost:8080' `
 			$ImageName
-		Exit-OnError
+		# Author's note: we don't call 'Exit-OnError' here because this container may already be running
    	}
     	else {
 		Write-Host "Starting $ContainerName application container" -ForegroundColor Yellow
@@ -89,7 +90,7 @@ if ($NoSetup -eq $false) {
 			--env 'WEBSITE_HOSTNAME=localhost:8080' `
 			$ImageName
      	}
-		Exit-OnError
+		# Author's note: we don't call 'Exit-OnError' here because this container may already be running
 }
 
 if ($sleep -gt  0) {
@@ -107,6 +108,7 @@ try {
 	$pingUrl = "http://localhost:8080/admin/host/ping"
 	Write-Host "Pinging app at $pingUrl to ensure the host is healthy" -ForegroundColor Yellow
 	Invoke-RestMethod -Method Post -Uri "http://localhost:8080/admin/host/ping"
+	Write-Host "Host is healthy!" -ForegroundColor Green
 	Exit-OnError
 
 	if ($NoValidation -eq $false) {
@@ -129,6 +131,7 @@ try {
 
 			if ($result.runtimeStatus -eq "Completed") {
 				$success = $true
+				Write-Host $result
 				break
 			}
 

@@ -25,6 +25,11 @@ RUN cd /root/test/SmokeTests/OOProcSmokeTests/DotNetIsolated && \
     ls -aR /home/site/wwwroot && \
     cat /home/site/wwwroot/extensions.json # debugging
 
+RUN cat /root/test/SmokeTests/OOProcSmokeTests/DotNetIsolated/obj/Release/net6.0/WorkerExtensions/WorkerExtensions.csproj
+
+RUN ls /root/test/SmokeTests/OOProcSmokeTests/DotNetIsolated/bin/ 
+# .azurefunctions/function.deps.json
+
 # Step 3: Generate the final app image to run
 FROM mcr.microsoft.com/azure-functions/dotnet-isolated:4-dotnet-isolated6.0
 

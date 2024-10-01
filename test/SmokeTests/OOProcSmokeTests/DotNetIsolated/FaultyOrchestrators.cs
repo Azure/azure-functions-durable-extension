@@ -10,24 +10,22 @@ namespace FaultOrchestrators
     public static class FaultyOrchestrators
     {
         [Function(nameof(OOMOrchestrator))]
-        public static async Task<string> OOMOrchestrator(
+        public static Task OOMOrchestrator(
             [OrchestrationTrigger] TaskOrchestrationContext context)
         {
             // this orchestrator is not deterministic, on purpose.
             // we use the non-determinism to force an OOM exception on only the first replay
             
-            // check if a file named "replayEvidence" exists in the current directory.
-            // create it if it does not
-            string evidenceFile = "replayEvidence";
+            // check if a file named "replayEvidence" exists in source code directory, create it if it does not.
+            // From experience, this code runs in `<sourceCodePath>/bin/output/`, so we store the file two directories above.
+            // We do this because the /bin/output/ directory gets overridden during the build process, which happens automatically
+            // when `func host start` is re-invoked.
+            string evidenceFile = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "..", "..", "replayEvidence");
             bool isTheFirstReplay = !System.IO.File.Exists(evidenceFile);
             if (isTheFirstReplay)
             {
                 System.IO.File.Create(evidenceFile).Close();
-            }
-            
-            // on the very first replay, OOM the process
-            if (isTheFirstReplay)
-            {
+
                 // force the process to run out of memory
                 List<byte[]> data = new List<byte[]>();
 
@@ -38,70 +36,67 @@ namespace FaultOrchestrators
             }
             
             // assuming the orchestrator survived the OOM, delete the evidence file and return
-            System.IO.File.Delete(evidenceFile)
-            return "done!";
+            System.IO.File.Delete(evidenceFile);
+            return Task.CompletedTask;
         }
         
         [Function(nameof(ProcessExitOrchestrator))]
-        public static async Task<string> ProcessExitOrchestrator(
+        public static Task ProcessExitOrchestrator(
             [OrchestrationTrigger] TaskOrchestrationContext context)
         {
             // this orchestrator is not deterministic, on purpose.
             // we use the non-determinism to force a sudden process exit on only the first replay
             
-            // check if a file named "replayEvidence" exists in the current directory.
-            // create it if it does not
-            string evidenceFile = "replayEvidence";
+            // check if a file named "replayEvidence" exists in source code directory, create it if it does not.
+            // From experience, this code runs in `<sourceCodePath>/bin/output/`, so we store the file two directories above.
+            // We do this because the /bin/output/ directory gets overridden during the build process, which happens automatically
+            // when `func host start` is re-invoked.
+            string evidenceFile = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "..", "..", "replayEvidence");
             bool isTheFirstReplay = !System.IO.File.Exists(evidenceFile);
             if (isTheFirstReplay)
             {
                 System.IO.File.Create(evidenceFile).Close();
-            }
-            
-            // on the very first replay, OOM the process
-            if (isTheFirstReplay)
-            {
-                // force the process to suddenly exit
-                Environment.FailFast(-1);
+
+                // simulate sudden crash
+                Environment.FailFast("Simulating crash!");
             }
             
             // assuming the orchestrator survived the OOM, delete the evidence file and return
-            System.IO.File.Delete(evidenceFile)
+            System.IO.File.Delete(evidenceFile);
 
-            return "done!";
+            return Task.CompletedTask;
         }
 
         [Function(nameof(TimeoutOrchestrator))]
-        public static async Task<string> TimeoutOrchestrator(
+        public static Task TimeoutOrchestrator(
             [OrchestrationTrigger] TaskOrchestrationContext context)
         {
             // this orchestrator is not deterministic, on purpose.
             // we use the non-determinism to force a timeout on only the first replay
             
-            // check if a file named "replayEvidence" exists in the current directory.
-            // create it if it does not
-            string evidenceFile = "replayEvidence";
+            // check if a file named "replayEvidence" exists in source code directory, create it if it does not.
+            // From experience, this code runs in `<sourceCodePath>/bin/output/`, so we store the file two directories above.
+            // We do this because the /bin/output/ directory gets overridden during the build process, which happens automatically
+            // when `func host start` is re-invoked.
+            string evidenceFile = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "..", "..", "replayEvidence");
             bool isTheFirstReplay = !System.IO.File.Exists(evidenceFile);
+
             if (isTheFirstReplay)
             {
                 System.IO.File.Create(evidenceFile).Close();
-            }
-            
-            // on the very first replay, time out the execution
-            if (isTheFirstReplay)
-            {
+                
                 // force the process to timeout after a 1 minute wait
                 System.Threading.Thread.Sleep(TimeSpan.FromMinutes(1));
             }
             
             // assuming the orchestrator survived the timeout, delete the evidence file and return
-            System.IO.File.Delete(evidenceFile)
+            System.IO.File.Delete(evidenceFile);
 
-            return "done!";
+            return Task.CompletedTask;
         }
 
         [Function("durable_HttpStartOOMOrchestrator")]
-        public static async Task<HttpResponseData> HttpStart(
+        public static async Task<HttpResponseData> HttpStartOOMOrchestrator(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestData req,
             [DurableClient] DurableTaskClient client,
             FunctionContext executionContext)
@@ -120,7 +115,7 @@ namespace FaultOrchestrators
         }
 
         [Function("durable_HttpStartProcessExitOrchestrator")]
-        public static async Task<HttpResponseData> HttpStart(
+        public static async Task<HttpResponseData> HttpStartProcessExitOrchestrator(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestData req,
             [DurableClient] DurableTaskClient client,
             FunctionContext executionContext)
@@ -139,7 +134,7 @@ namespace FaultOrchestrators
         }
 
         [Function("durable_HttpStartTimeoutOrchestrator")]
-        public static async Task<HttpResponseData> HttpStart(
+        public static async Task<HttpResponseData> HttpStartTimeoutOrchestrator(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestData req,
             [DurableClient] DurableTaskClient client,
             FunctionContext executionContext)
