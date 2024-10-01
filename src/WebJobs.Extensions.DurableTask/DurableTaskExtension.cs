@@ -447,7 +447,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.taskHubWorker.AddOrchestrationDispatcherMiddleware(ooprocMiddleware.CallOrchestratorAsync);
                 this.taskHubWorker.AddEntityDispatcherMiddleware(ooprocMiddleware.CallEntityAsync);
 #else
-
                 // This can happen if, for example, a Java user tries to use Durable Functions while targeting V2 or V3 extension bundles
                 // because those bundles target .NET Core 2.2, which doesn't support the gRPC libraries used in the modern out-of-proc implementation.
                 throw new PlatformNotSupportedException(
