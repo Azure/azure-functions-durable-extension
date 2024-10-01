@@ -451,7 +451,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 // This can happen if, for example, a Java user tries to use Durable Functions while targeting V2 or V3 extension bundles
                 // because those bundles target .NET Core 2.2, which doesn't support the gRPC libraries used in the modern out-of-proc implementation.
                 throw new PlatformNotSupportedException(
-                    $"This project type is not supported on this version of the Azure Functions runtime. Please upgrade to Azure Functions V3 or higher. " +
+                    "This project type is not supported on this version of the Azure Functions runtime. Please upgrade to Azure Functions V3 or higher. " +
                     "If you are using a language that supports extension bundles, please use extension bundles V4 or higher. " +
                     "For more information on Azure Functions versions, see https://docs.microsoft.com/azure/azure-functions/functions-versions. " +
                     "For more information on extension bundles, see https://docs.microsoft.com/azure/azure-functions/functions-bindings-register#extension-bundles.");
