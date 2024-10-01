@@ -21,5 +21,5 @@ jobs:
 
       # Validation is blocked on https://github.com/Azure/azure-functions-host/issues/7995
     - name: Run V4 .NET Isolated Smoke Test
-      run: test/SmokeTests/e2e-test.ps1 -DockerfilePath test/SmokeTests/OOProcSmokeTests/DotNetIsolated/Dockerfile -HttpStartPath api/StartHelloCitiesTyped -NoValidation
+      run: test/SmokeTests/e2e-test.ps1 -DockerfilePath test/SmokeTests/OOProcSmokeTests/DotNetIsolated/Dockerfile -HttpStartPath api/StartHelloCitiesTyped
       shell: pwsh
