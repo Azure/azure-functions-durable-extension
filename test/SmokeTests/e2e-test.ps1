@@ -7,7 +7,6 @@ param(
 	[string]$ImageName="dfapp",
 	[string]$ContainerName="app",
 	[switch]$NoSetup=$false,
-	[switch]$NoValidation=$false,
 	[int]$Sleep=30,
   	[switch]$SetupSQLServer=$false,
   	[string]$pw="$env:SA_PASSWORD",
@@ -107,34 +106,33 @@ try {
 	$pingUrl = "http://localhost:8080/admin/host/ping"
 	Write-Host "Pinging app at $pingUrl to ensure the host is healthy" -ForegroundColor Yellow
 	Invoke-RestMethod -Method Post -Uri "http://localhost:8080/admin/host/ping"
+	Write-Host "Host is healthy" -ForegroundColor Green
 	Exit-OnError
 
-	if ($NoValidation -eq $false) {
-		# Note that any HTTP protocol errors (e.g. HTTP 4xx or 5xx) will cause an immediate failure
-		$startOrchestrationUri = "http://localhost:8080/$HttpStartPath"
-		Write-Host "Starting a new orchestration instance via POST to $startOrchestrationUri..." -ForegroundColor Yellow
+	# Note that any HTTP protocol errors (e.g. HTTP 4xx or 5xx) will cause an immediate failure
+	$startOrchestrationUri = "http://localhost:8080/$HttpStartPath"
+	Write-Host "Starting a new orchestration instance via POST to $startOrchestrationUri..." -ForegroundColor Yellow
 
-		$result = Invoke-RestMethod -Method Post -Uri $startOrchestrationUri
-		Write-Host "Started orchestration with instance ID '$($result.id)'!" -ForegroundColor Yellow
-		Write-Host "Waiting for orchestration to complete..." -ForegroundColor Yellow
+	$result = Invoke-RestMethod -Method Post -Uri $startOrchestrationUri
+	Write-Host "Started orchestration with instance ID '$($result.id)'!" -ForegroundColor Yellow
+	Write-Host "Waiting for orchestration to complete..." -ForegroundColor Yellow
 
-		$retryCount = 0
-		$success = $false
-		$statusUrl = $result.statusQueryGetUri
+	$retryCount = 0
+	$success = $false
+	$statusUrl = $result.statusQueryGetUri
 
-		while ($retryCount -lt 15) {
-			$result = Invoke-RestMethod -Method Get -Uri $statusUrl
-			$runtimeStatus = $result.runtimeStatus
-			Write-Host "Orchestration is $runtimeStatus" -ForegroundColor Yellow
+	while ($retryCount -lt 15) {
+		$result = Invoke-RestMethod -Method Get -Uri $statusUrl
+		$runtimeStatus = $result.runtimeStatus
+		Write-Host "Orchestration is $runtimeStatus" -ForegroundColor Yellow
 
-			if ($result.runtimeStatus -eq "Completed") {
-				$success = $true
-				break
-			}
-
-			Start-Sleep -Seconds 1
-			$retryCount = $retryCount + 1
+		if ($result.runtimeStatus -eq "Completed") {
+			$success = $true
+			break
 		}
+
+		Start-Sleep -Seconds 1
+		$retryCount = $retryCount + 1
 	}
 
 	if ($success -eq $false) {
