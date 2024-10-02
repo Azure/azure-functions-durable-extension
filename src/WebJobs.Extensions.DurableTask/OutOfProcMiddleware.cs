@@ -140,7 +140,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     P.OrchestratorResponse response = P.OrchestratorResponse.Parser.ParseFrom(triggerReturnValueBytes);
 
                     // TrySetResult may throw if a platform-level error is encountered (like an out of memory exception).
-                    context.TrySetResult(
+                    context.SetResult(
                         response.Actions.Select(ProtobufUtils.ToOrchestratorAction),
                         response.CustomStatus);
 
@@ -170,7 +170,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 // - an out of memory exception
                 // - a worker process exit
                 if (functionResult.Exception is Host.FunctionTimeoutException
-                    || functionResult.Exception?.InnerException is OutOfMemoryException // see RemoteOrchestrationContext.TrySetResultInternal for details on OOM-handling
+                    || functionResult.Exception?.InnerException is SessionAbortedException // see RemoteOrchestrationContext.TrySetResultInternal for details on OOM-handling
                     || (functionResult.Exception?.InnerException?.GetType().ToString().Contains("WorkerProcessExitException") ?? false))
                 {
                     // TODO: the `WorkerProcessExitException` type is not exposed in our dependencies, it's part of WebJobs.Host.Script.

@@ -71,7 +71,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return hasError;
         }
 
-        internal void TrySetResult(IEnumerable<OrchestratorAction> actions, string customStatus)
+        internal void SetResult(IEnumerable<OrchestratorAction> actions, string customStatus)
         {
             var result = new OrchestratorExecutionResult
             {
@@ -79,7 +79,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 Actions = actions,
             };
 
-            this.TrySetResultInternal(result);
+            this.SetResultInternal(result);
         }
 
         // TODO: This method should be considered deprecated because SDKs should no longer be returning results as JSON.
@@ -117,14 +117,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     innerException: jsonReaderException);
             }
 
-            this.TrySetResultInternal(result);
+            this.SetResultInternal(result);
         }
 
         /// <summary>
         /// Recursively inspect the FailureDetails of the failed orchestrator and throw if a platform-level exception is detected.
         /// </summary>
         /// <remarks>
-        /// Today, this method only checks for <see cref="OutOfMemoryException"/>. In the future, we may want to add more cases.
+        /// Today, this method only checks for <see cref="SessionAbortedException"/>. In the future, we may want to add more cases.
         /// Other known platform-level exceptions, like timeouts or process exists due to `Environment.FailFast`, do not yield
         /// a `OrchestratorExecutionResult` as the isolated invocation is abruptly terminated. Therefore, they don't need to be
         /// handled in this method.
@@ -135,12 +135,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// to this method as we encounter them.
         /// </remarks>
         /// <param name="failureDetails">The failure details of the orchestrator.</param>
-        /// <exception cref="OutOfMemoryException">If an OOM error is detected.</exception>
+        /// <exception cref="SessionAbortedException">If an OOM error is detected.</exception>
         private void ThrowIfPlatformLevelException(FailureDetails failureDetails)
         {
             if (failureDetails.InnerFailure?.IsCausedBy<OutOfMemoryException>() ?? false)
             {
-                throw new OutOfMemoryException(failureDetails.ErrorMessage);
+                throw new SessionAbortedException(failureDetails.ErrorMessage);
             }
 
             if (failureDetails.InnerFailure != null)
@@ -149,7 +149,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        private void TrySetResultInternal(OrchestratorExecutionResult result)
+        private void SetResultInternal(OrchestratorExecutionResult result)
         {
             // Look for an orchestration completion action to see if we need to grab the output.
             foreach (OrchestratorAction action in result.Actions)
