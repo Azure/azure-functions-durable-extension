@@ -80,6 +80,10 @@ Do {
         $retryCount = $retryCount + 1
 
     } catch {
+        # we expect to enter this 'catch' block if our HTTP request to the host fail.
+        # Some failures observed during development include:
+        # - The host is not running/was restarting/was killed
+        # - The host is running but not healthy (OOMs may cause this), so it needs to be forcibly restarted
         Write-Host "An error occurred:" -ForegroundColor Red
         Write-Host $_ -ForegroundColor Red
 
