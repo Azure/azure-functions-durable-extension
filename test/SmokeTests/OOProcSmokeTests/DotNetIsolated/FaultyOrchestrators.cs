@@ -33,11 +33,16 @@ namespace FaultOrchestrators
                 {
                     data.Add(new byte[1024 * 1024 * 1024]);
                 }
+
+                // we expect the code to never reach this statement, it should OOM.
+                // we throw just in case the code does not time out. This should fail the test
+                throw new Exception("this should never be reached");
             }
-            
-            // assuming the orchestrator survived the OOM, delete the evidence file and return
-            System.IO.File.Delete(evidenceFile);
-            return Task.CompletedTask;
+            else {
+                // if it's not the first replay, delete the evidence file and return
+                System.IO.File.Delete(evidenceFile);
+                return Task.CompletedTask;
+            }
         }
         
         [Function(nameof(ProcessExitOrchestrator))]
@@ -57,14 +62,14 @@ namespace FaultOrchestrators
             {
                 System.IO.File.Create(evidenceFile).Close();
 
-                // simulate sudden crash
+                // force sudden crash
                 Environment.FailFast("Simulating crash!");
             }
-            
-            // assuming the orchestrator survived the OOM, delete the evidence file and return
-            System.IO.File.Delete(evidenceFile);
-
-            return Task.CompletedTask;
+            else {
+                // if it's not the first replay, delete the evidence file and return
+                System.IO.File.Delete(evidenceFile);
+                return Task.CompletedTask;
+            }
         }
 
         [Function(nameof(TimeoutOrchestrator))]
@@ -87,12 +92,16 @@ namespace FaultOrchestrators
                 
                 // force the process to timeout after a 1 minute wait
                 System.Threading.Thread.Sleep(TimeSpan.FromMinutes(1));
+                
+                // we expect the code to never reach this statement, it should time out.
+                // we throw just in case the code does not time out. This should fail the test
+                throw new Exception("this should never be reached");
             }
-            
-            // assuming the orchestrator survived the timeout, delete the evidence file and return
-            System.IO.File.Delete(evidenceFile);
-
-            return Task.CompletedTask;
+            else {
+                // if it's not the first replay, delete the evidence file and return
+                System.IO.File.Delete(evidenceFile);
+                return Task.CompletedTask;
+            }
         }
 
         [Function("durable_HttpStartOOMOrchestrator")]
