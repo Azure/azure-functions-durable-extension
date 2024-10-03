@@ -246,7 +246,7 @@ public static class DurableTaskClientExtensions
         string formattedInstanceId = Uri.EscapeDataString(instanceId);
         string instanceUrl = $"{baseUrl}/runtime/webhooks/durabletask/instances/{formattedInstanceId}";
         string? commonQueryParameters = GetQueryParams(client);
-        response.Headers.Add("Location", BuildUrl(instanceUrl, commonQueryParameters));
+        response.Headers.Add("Location", BuildUrl(instanceUrl, commonQueryParameters, returnInternalServerErrorOnFailure ? "returnInternalServerErrorOnFailure=true" : ""));
         response.Headers.Add("Content-Type", "application/json");
 
         return new
