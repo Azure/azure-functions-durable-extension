@@ -64,6 +64,7 @@ namespace FaultOrchestrators
 
                 // force sudden crash
                 Environment.FailFast("Simulating crash!");
+                throw new Exception("this should never be reached");
             }
             else {
                 // if it's not the first replay, delete the evidence file and return
