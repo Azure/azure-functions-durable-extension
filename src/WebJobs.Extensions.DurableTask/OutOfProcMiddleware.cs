@@ -138,10 +138,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                     byte[] triggerReturnValueBytes = Convert.FromBase64String(triggerReturnValue);
                     P.OrchestratorResponse response = P.OrchestratorResponse.Parser.ParseFrom(triggerReturnValueBytes);
+
+                    // TrySetResult may throw if a platform-level error is encountered (like an out of memory exception).
                     context.SetResult(
                         response.Actions.Select(ProtobufUtils.ToOrchestratorAction),
                         response.CustomStatus);
 
+                    // Here we throw if the orchestrator completed with an application-level error. When we do this,
+                    // the function's result type will be of type `OrchestrationFailureException` which is reserved
+                    // for application-level errors that do not need to be re-tried.
                     context.ThrowIfFailed();
                 },
 #pragma warning restore CS0618 // Type or member is obsolete (not intended for general public use)
@@ -158,6 +163,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     // Shutdown can surface as a completed invocation in a failed state.
                     // Re-throw so we can abort this invocation.
                     this.HostLifetimeService.OnStopping.ThrowIfCancellationRequested();
+                }
+
+                // we abort the invocation on "platform level errors" such as:
+                // - a timeout
+                // - an out of memory exception
+                // - a worker process exit
+                if (functionResult.Exception is Host.FunctionTimeoutException
+                    || functionResult.Exception?.InnerException is SessionAbortedException // see RemoteOrchestrationContext.TrySetResultInternal for details on OOM-handling
+                    || (functionResult.Exception?.InnerException?.GetType().ToString().Contains("WorkerProcessExitException") ?? false))
+                {
+                    // TODO: the `WorkerProcessExitException` type is not exposed in our dependencies, it's part of WebJobs.Host.Script.
+                    // Should we add that dependency or should it be exposed in WebJobs.Host?
+                    throw functionResult.Exception;
                 }
             }
             catch (Exception hostRuntimeException)
@@ -238,8 +256,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             else
             {
                 // the function failed for some other reason
-
-                string exceptionDetails = functionResult.Exception.ToString();
+                string exceptionDetails = functionResult.Exception?.ToString() ?? "Framework-internal message: exception details could not be extracted";
 
                 this.TraceHelper.FunctionFailed(
                     this.Options.HubName,
@@ -258,7 +275,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 orchestratorResult = OrchestratorExecutionResult.ForFailure(
                     message: $"Function '{functionName}' failed with an unhandled exception.",
-                    functionResult.Exception);
+                    functionResult.Exception ?? new Exception($"Function '{functionName}' failed with an unknown unhandled exception"));
             }
 
             // Send the result of the orchestrator function to the DTFx dispatch pipeline.
