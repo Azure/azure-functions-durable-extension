@@ -120,8 +120,37 @@ public static class DurableTaskClientExtensions
         return response;
     }
 
+    /// <summary>
+    /// Creates an HTTP management payload for the specified orchestration instance.
+    /// </summary>
+    /// <param name="client">The <see cref="DurableTaskClient"/>.</param>
+    /// <param name="instanceId">The ID of the orchestration instance.</param>
+    /// <param name="request">Optional HTTP request data to use for creating the base URL.</param>
+    /// <returns>An object containing instance control URLs.</returns>
+    /// <exception cref="ArgumentException">Thrown when instanceId is null or empty.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when a valid base URL cannot be determined.</exception>
+    public static object CreateHttpManagementPayload(
+        this DurableTaskClient client,
+        string instanceId,
+        HttpRequestData? request = null)
+    {
+        if (string.IsNullOrEmpty(instanceId))
+        {
+            throw new ArgumentException("InstanceId cannot be null or empty.", nameof(instanceId));
+        }
+
+        try
+        {
+            return SetHeadersAndGetPayload(client, request, null, instanceId);
+        }
+        catch (InvalidOperationException ex)
+        {
+            throw new InvalidOperationException("Failed to create HTTP management payload. " + ex.Message, ex);
+        }
+    }
+
     private static object SetHeadersAndGetPayload(
-        DurableTaskClient client, HttpRequestData request, HttpResponseData response, string instanceId)
+        DurableTaskClient client, HttpRequestData? request, HttpResponseData? response, string instanceId)
     {
         static string BuildUrl(string url, params string?[] queryValues)
         {
@@ -143,12 +172,25 @@ public static class DurableTaskClientExtensions
         //       request headers into consideration and generate the base URL accordingly.
         //       More info: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Forwarded.
         //       One potential workaround is to set ASPNETCORE_FORWARDEDHEADERS_ENABLED to true.
-        string baseUrl = request.Url.GetLeftPart(UriPartial.Authority);
+        string? baseUrl = (request != null) ? request.Url.GetLeftPart(UriPartial.Authority) : GetBaseUrl(client);
+        bool isFromRequest = request != null;
+        
+        if (baseUrl == null)
+        {
+            throw new InvalidOperationException("Base URL is null. Either use Functions bindings or provide an HTTP request to create the HttpPayload.");
+        }
+
         string formattedInstanceId = Uri.EscapeDataString(instanceId);
-        string instanceUrl = $"{baseUrl}/runtime/webhooks/durabletask/instances/{formattedInstanceId}";
+        string instanceUrl = isFromRequest
+            ? $"{baseUrl}/runtime/webhooks/durabletask/instances/{formattedInstanceId}"
+            : $"{baseUrl}/instances/{formattedInstanceId}";
         string? commonQueryParameters = GetQueryParams(client);
-        response.Headers.Add("Location", BuildUrl(instanceUrl, commonQueryParameters));
-        response.Headers.Add("Content-Type", "application/json");
+        
+        if (response != null)
+        {
+            response.Headers.Add("Location", BuildUrl(instanceUrl, commonQueryParameters));
+            response.Headers.Add("Content-Type", "application/json");
+        }
 
         return new
         {
@@ -171,5 +213,10 @@ public static class DurableTaskClientExtensions
     private static string? GetQueryParams(DurableTaskClient client)
     {
         return client is FunctionsDurableTaskClient functions ? functions.QueryString : null;
+    }
+
+    private static string? GetBaseUrl(DurableTaskClient client)
+    {
+        return client is FunctionsDurableTaskClient functions ? functions.BaseUrl : null;
     }
 }

@@ -17,15 +17,16 @@ internal sealed class FunctionsDurableTaskClient : DurableTaskClient
 {
     private readonly DurableTaskClient inner;
 
-    public FunctionsDurableTaskClient(DurableTaskClient inner, string? queryString)
+    public FunctionsDurableTaskClient(DurableTaskClient inner, string? queryString, string? baseUrl)
         : base(inner.Name)
     {
         this.inner = inner;
         this.QueryString = queryString;
+        this.BaseUrl = baseUrl;
     }
 
     public string? QueryString { get; }
-
+    public string? BaseUrl { get; }
     public override DurableEntityClient Entities => this.inner.Entities;
 
     public override ValueTask DisposeAsync()

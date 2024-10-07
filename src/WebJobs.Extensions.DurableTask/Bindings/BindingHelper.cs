@@ -43,6 +43,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     ConnectionName = attr.ConnectionName,
                     RpcBaseUrl = localRpcAddress,
                     RequiredQueryStringParameters = this.config.HttpApiHandler.GetUniversalQueryStrings(),
+                    BaseUrl = this.config.HttpApiHandler.GetBaseUrl(),
                 });
             }
 
