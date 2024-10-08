@@ -223,6 +223,6 @@ public static class DurableTaskClientExtensions
 
     private static string? GetBaseUrl(DurableTaskClient client)
     {
-        return client is FunctionsDurableTaskClient functions ? functions.BaseUrl : null;
+        return client is FunctionsDurableTaskClient functions ? functions.HttpBaseUrl : null;
     }
 }
