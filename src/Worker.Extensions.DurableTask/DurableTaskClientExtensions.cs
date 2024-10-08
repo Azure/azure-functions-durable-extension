@@ -172,15 +172,21 @@ public static class DurableTaskClientExtensions
         //       request headers into consideration and generate the base URL accordingly.
         //       More info: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Forwarded.
         //       One potential workaround is to set ASPNETCORE_FORWARDEDHEADERS_ENABLED to true.
-        string? baseUrl = (request != null) ? request.Url.GetLeftPart(UriPartial.Authority) : GetBaseUrl(client);
+
+        // If HttpRequestData is provided, use its URL; otherwise, get the baseUrl from the DurableTaskClient.
+        // The base URL could be null if:
+        // 1. The DurableTaskClient isn't a FunctionsDurableTaskClient (which would have the baseUrl from bindings)
+        // 2. There's no valid HttpRequestData provided
+        string? baseUrl = ((request != null) ? request.Url.GetLeftPart(UriPartial.Authority) : GetBaseUrl(client))
+            ?? throw new InvalidOperationException("Base URL is null. Either use Functions bindings or provide an HTTP request to create the HttpPayload.");
         bool isFromRequest = request != null;
-        
-        if (baseUrl == null)
-        {
-            throw new InvalidOperationException("Base URL is null. Either use Functions bindings or provide an HTTP request to create the HttpPayload.");
-        }
 
         string formattedInstanceId = Uri.EscapeDataString(instanceId);
+
+        // The baseUrl differs depending on the source. Eg:
+        // - From request: http://localhost:7071/
+        // - From durable client: http://localhost:7071/runtime/webhooks/durabletask
+        // We adjust the instanceUrl construction accordingly.
         string instanceUrl = isFromRequest
             ? $"{baseUrl}/runtime/webhooks/durabletask/instances/{formattedInstanceId}"
             : $"{baseUrl}/instances/{formattedInstanceId}";
