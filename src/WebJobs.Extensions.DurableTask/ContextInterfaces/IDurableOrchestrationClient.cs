@@ -141,8 +141,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </exception>
         Task<string> StartNewAsync<T>(
             string orchestratorFunctionName,
-            T input)
-            where T : class;
+            T input);
 
         /// <summary>
         /// Starts a new instance of the specified orchestrator function.
