@@ -1,0 +1,99 @@
+# This is our package-publishing pipeline.
+# When executed, it automatically publishes the output of the 'official pipeline' (the nupkgs) to our internal ADO feed.
+# It may optionally also publish the packages to NuGet, but that is gated behind a manual approval.
+
+trigger: none # only trigger is manual
+pr: none # only trigger is manual
+
+# We include to this variable group to be able to access the NuGet API key
+variables:
+- group: durabletask_config
+
+resources:
+    repositories:
+        - repository: 1es
+          type: git
+          name: 1ESPipelineTemplates/1ESPipelineTemplates
+          ref: refs/tags/release
+        - repository: eng
+          type: git
+          name: engineering
+          ref: refs/tags/release
+
+    pipelines:
+    - pipeline: officialPipeline # Reference to the pipeline to be used as an artifact source
+      source: 'durabletask-dotnet.official'
+
+extends:
+  template: v1/1ES.Official.PipelineTemplate.yml@1es
+  parameters:
+    pool:
+        name: 1es-pool-azfunc
+        image: 1es-windows-2022
+        os: windows
+
+    stages:
+    - stage: release
+      jobs:
+
+      # ADO release
+      - job: adoRelease
+        displayName: ADO Release
+        templateContext:
+          inputs:
+          - input: pipelineArtifact
+            pipeline: officialPipeline  # Pipeline reference, as defined in the resources section
+            artifactName: drop
+            targetPath: $(System.DefaultWorkingDirectory)/drop
+
+          # The preferred method of release on 1ES is by populating the 'output' section of a 1ES template.
+          # We use this method to release to ADO, but not to release to NuGet; this is explained in the 'nugetRelease' job.
+          # To read more about the 'output syntax', see: 
+          # - https://eng.ms/docs/cloud-ai-platform/devdiv/one-engineering-system-1es/1es-docs/1es-pipeline-templates/features/outputs
+          # - https://eng.ms/docs/cloud-ai-platform/devdiv/one-engineering-system-1es/1es-docs/1es-pipeline-templates/features/outputs/nuget-packages
+          outputs:
+          - output: nuget # 'nuget' is an output "type" for pushing to NuGet
+            displayName: 'Push to durabletask ADO feed'
+            packageParentPath: $(System.DefaultWorkingDirectory) # This needs to be set to some prefix of the `packagesToPush` parameter. Apparently it helps with SDL tooling
+            packagesToPush: '$(System.DefaultWorkingDirectory)/**/*.nupkg;!$(System.DefaultWorkingDirectory)/**/*.symbols.nupkg'
+            publishVstsFeed: '3f99e810-c336-441f-8892-84983093ad7f/c895696b-ce37-4fe7-b7ce-74333a04f8bf'
+            allowPackageConflicts: true
+
+      # NuGet approval gate
+      - job: nugetApproval
+        displayName: NuGetApproval
+        pool: server # This task only works when executed on serverl pools, so this needs to be specified
+        steps:
+          # Wait for manual approval. 
+          - task: ManualValidation@1
+            inputs:
+              instructions: Confirm you want to push to NuGet
+              onTimeout: 'reject'
+
+      # NuGet release
+      - job: nugetRelease
+        displayName: NuGet Release
+        dependsOn:
+        - nugetApproval
+        - adoRelease
+        condition: succeeded('nugetApproval', 'adoRelease')
+        templateContext:
+          inputs:
+          - input: pipelineArtifact
+            pipeline: officialPipeline  # Pipeline reference as defined in the resources section
+            artifactName: drop
+            targetPath: $(System.DefaultWorkingDirectory)/drop
+        # Ideally, we would push to NuGet using the 1ES "template output" syntax, like we do for ADO.
+        # Unfortunately, that syntax does not allow for skipping duplicates when pushing to NuGet feeds
+        # (i.e; not failing the job when trying to push a package version that already exists on NuGet).
+        # This is a problem for us because our pipelines often produce multiple packages, and we want to be able to
+        # perform a 'nuget push *.nupkg' that skips packages already on NuGet while pushing the rest.
+        # Therefore, we use a regular .NET Core ADO Task to publish the packages until that usability gap is addressed.
+        steps:
+        - task: DotNetCoreCLI@2
+          displayName: 'Push to nuget.org'
+          inputs:
+            command: custom
+            custom: nuget
+            arguments: 'push "*.nupkg" --api-key $(nuget_api_key) --skip-duplicate --source https://api.nuget.org/v3/index.json'
+            workingDirectory: '$(System.DefaultWorkingDirectory)/drop'
