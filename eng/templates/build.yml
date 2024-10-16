@@ -124,3 +124,14 @@ jobs:
             SourceFolder: '$(System.DefaultWorkingDirectory)/test/PerfTests/DFPerfTests/Output/'
             Contents: '**'
             TargetFolder: '$(System.DefaultWorkingDirectory)/azure-functions-durable-extension/'
+
+      # We also need to build the Java smoke test, for CodeQL compliance
+      # We don't need to build the other smoke tests, because they can be analyzed without being compiled,
+      # as they're interpreted languages.
+      # This could be a separate pipeline, but the task is so small that it's paired with the .NET code build
+      # for convenience.
+      - pwsh: |
+          cd ./test/SmokeTests/OOProcSmokeTests/durableJava/
+          gradle build
+          ls
+        displayName: 'Build Java OOProc test (for CodeQL compliance)'
