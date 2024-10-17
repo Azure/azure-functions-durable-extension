@@ -18,6 +18,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.editorconfig = .editorconfig
 		azure-pipelines-release-dotnet-isolated.yml = azure-pipelines-release-dotnet-isolated.yml
 		azure-pipelines-release.yml = azure-pipelines-release.yml
+		Directory.Build.targets = Directory.Build.targets
 		nuget.config = nuget.config
 		README.md = README.md
 		release_notes.md = release_notes.md
@@ -94,7 +95,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "PerfTests", "PerfTests", "{
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DFPerfScenariosV4", "test\DFPerfScenarios\DFPerfScenariosV4.csproj", "{FC8AD123-F949-4D21-B817-E5A4BBF7F69B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Worker.Extensions.DurableTask.Tests", "test\Worker.Extensions.DurableTask.Tests\Worker.Extensions.DurableTask.Tests.csproj", "{76DEC17C-BF6A-498A-8E8A-7D6CB2E03284}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Worker.Extensions.DurableTask.Tests", "test\Worker.Extensions.DurableTask.Tests\Worker.Extensions.DurableTask.Tests.csproj", "{76DEC17C-BF6A-498A-8E8A-7D6CB2E03284}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
