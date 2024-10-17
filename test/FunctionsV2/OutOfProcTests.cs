@@ -342,6 +342,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 // Validate if we opened local RPC endpoint by looking at log statements.
                 var logger = this.loggerProvider.CreatedLoggers.Single(l => l.Category == TestHelpers.LogCategory);
                 var logMessages = logger.LogMessages.ToList();
+
                 bool enabledRpcEndpoint = logMessages.Any(msg => msg.Level == Microsoft.Extensions.Logging.LogLevel.Information && msg.FormattedMessage.StartsWith($"Opened local {expectedProtocol} endpoint:"));
 
                 Assert.Equal(enabledExpected, enabledRpcEndpoint);
@@ -363,6 +364,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 await host.StartAsync();
 
+#pragma warning disable SYSLIB0014 // Type or member is obsolete
                 using (var client = new WebClient())
                 {
                     string jsonString = client.DownloadString("http://localhost:17071/durabletask/instances");
@@ -370,6 +372,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     // The result is expected to be an empty array
                     JArray array = JArray.Parse(jsonString);
                 }
+#pragma warning restore SYSLIB0014 // Type or member is obsolete
 
                 await host.StopAsync();
             }

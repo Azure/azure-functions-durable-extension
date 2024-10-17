@@ -80,11 +80,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(options.TableServiceUri, actual.TableServiceUri);
 
             // Get CloudStorageAccount
-            CloudStorageAccount acount = actual.ToCloudStorageAccount();
-            Assert.Same(actual.StorageCredentials, acount.Credentials);
-            Assert.Equal(options.BlobServiceUri, acount.BlobEndpoint);
-            Assert.Equal(options.QueueServiceUri, acount.QueueEndpoint);
-            Assert.Equal(options.TableServiceUri, acount.TableEndpoint);
+            CloudStorageAccount account = actual.ToCloudStorageAccount();
+            Assert.Same(actual.StorageCredentials, account.Credentials);
+            Assert.Equal(options.BlobServiceUri, account.BlobEndpoint);
+            Assert.Equal(options.QueueServiceUri, account.QueueEndpoint);
+            Assert.Equal(options.TableServiceUri, account.TableEndpoint);
         }
 
         [Fact]
