@@ -2,6 +2,8 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System;
+using System.Diagnostics;
+using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
@@ -19,6 +21,72 @@ namespace Microsoft.Azure.Functions.Worker;
 public static class DurableTaskClientExtensions
 {
     /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="client">The <see cref="DurableTaskClient"/>.</param>
+    /// <param name="request">The HTTP request that this response is for.</param>
+    /// <param name="instanceId">The ID of the orchestration instance to check.</param>
+    /// <param name="cancellation">The cancellation token.</param>
+    /// <param name="timeout">Total allowed timeout for output from the durable function. The default value is 10 seconds.</param>
+    /// <param name="retryInterval">The timeout between checks for output from the durable function. The default value is 1 second.</param>
+    /// <param name="returnInternalServerErrorOnFailure">Optional parameter that configures the http response code returned. Defaults to <c>false</c>.
+    /// <returns></returns>
+    public static async Task<HttpResponseData> WaitForCompletionOrCreateCheckStatusResponseAsync(this DurableTaskClient client,
+        HttpRequestData request,
+        string instanceId,
+        CancellationToken cancellation = default,
+        TimeSpan? timeout = null,
+        TimeSpan? retryInterval = null,
+        bool returnInternalServerErrorOnFailure = false
+    )
+    {
+        var timeoutLocal = timeout ?? TimeSpan.FromSeconds(10);
+        var retryIntervalLocal = retryInterval ?? TimeSpan.FromSeconds(1);
+
+        Stopwatch stopwatch = Stopwatch.StartNew();
+        while (true)
+        {
+            var status = await client.GetInstanceAsync(instanceId, getInputsAndOutputs: true);
+            if (status != null)
+            {
+                if (status.RuntimeStatus == OrchestrationRuntimeStatus.Completed ||
+#pragma warning disable CS0618 // Type or member is obsolete
+                    status.RuntimeStatus == OrchestrationRuntimeStatus.Canceled ||
+#pragma warning restore CS0618 // Type or member is obsolete
+                    status.RuntimeStatus == OrchestrationRuntimeStatus.Terminated ||
+                    status.RuntimeStatus == OrchestrationRuntimeStatus.Failed)
+                {
+                    var response = request.CreateResponse((status.RuntimeStatus == OrchestrationRuntimeStatus.Failed && returnInternalServerErrorOnFailure) ? HttpStatusCode.InternalServerError : HttpStatusCode.OK);
+                    await response.WriteAsJsonAsync(new
+                    {
+                        name = status.Name,
+                        instanceId = status.InstanceId,
+                        runtimeStatus = status.RuntimeStatus.ToString(),
+                        input = status.ReadInputAs<object?>(),
+                        customStatus = status.ReadCustomStatusAs<object?>(),
+                        output = status.ReadOutputAs<object?>(),
+                        createdTime = status.CreatedAt.ToString("s") + "Z",
+                        lastUpdatedTime = status.LastUpdatedAt.ToString("s") + "Z",
+                    });
+
+                    return response;
+                }
+            }
+
+            TimeSpan elapsed = stopwatch.Elapsed;
+            if (elapsed < timeoutLocal)
+            {
+                TimeSpan remainingTime = timeoutLocal.Subtract(elapsed);
+                await Task.Delay(remainingTime > retryIntervalLocal ? retryIntervalLocal : remainingTime);
+            }
+            else
+            {
+                return await CreateCheckStatusResponseAsync(client, request, instanceId, cancellation: cancellation, returnInternalServerErrorOnFailure: returnInternalServerErrorOnFailure);
+            }
+        }
+    }
+
+    /// <summary>
     /// Creates an HTTP response that is useful for checking the status of the specified instance.
     /// </summary>
     /// <param name="client">The <see cref="DurableTaskClient"/>.</param>
@@ -30,9 +98,10 @@ public static class DurableTaskClientExtensions
         this DurableTaskClient client,
         HttpRequestData request,
         string instanceId,
-        CancellationToken cancellation = default)
+        CancellationToken cancellation = default,
+        bool returnInternalServerErrorOnFailure = false)
     {
-        return client.CreateCheckStatusResponseAsync(request, instanceId, HttpStatusCode.Accepted, cancellation);
+        return client.CreateCheckStatusResponseAsync(request, instanceId, HttpStatusCode.Accepted, cancellation, returnInternalServerErrorOnFailure: returnInternalServerErrorOnFailure);
     }
 
     /// <summary>
@@ -49,7 +118,8 @@ public static class DurableTaskClientExtensions
         HttpRequestData request,
         string instanceId,
         HttpStatusCode statusCode,
-        CancellationToken cancellation = default)
+        CancellationToken cancellation = default,
+        bool returnInternalServerErrorOnFailure = false)
     {
         if (client is null)
         {
@@ -62,7 +132,7 @@ public static class DurableTaskClientExtensions
         }
 
         HttpResponseData response = request.CreateResponse(statusCode);
-        object payload = SetHeadersAndGetPayload(client, request, response, instanceId);
+        object payload = SetHeadersAndGetPayload(client, request, response, instanceId, returnInternalServerErrorOnFailure: returnInternalServerErrorOnFailure);
 
         ObjectSerializer serializer = GetObjectSerializer(response);
         await serializer.SerializeAsync(response.Body, payload, payload.GetType(), cancellation);
@@ -81,9 +151,10 @@ public static class DurableTaskClientExtensions
         this DurableTaskClient client,
         HttpRequestData request,
         string instanceId,
-        CancellationToken cancellation = default)
+        CancellationToken cancellation = default,
+        bool returnInternalServerErrorOnFailure = false)
     {
-        return client.CreateCheckStatusResponse(request, instanceId, HttpStatusCode.Accepted, cancellation);
+        return client.CreateCheckStatusResponse(request, instanceId, HttpStatusCode.Accepted, cancellation, returnInternalServerErrorOnFailure: returnInternalServerErrorOnFailure);
     }
 
     /// <summary>
@@ -100,7 +171,8 @@ public static class DurableTaskClientExtensions
         HttpRequestData request,
         string instanceId,
         HttpStatusCode statusCode,
-        CancellationToken cancellation = default)
+        CancellationToken cancellation = default,
+        bool returnInternalServerErrorOnFailure = false)
     {
         if (client is null)
         {
@@ -113,7 +185,7 @@ public static class DurableTaskClientExtensions
         }
 
         HttpResponseData response = request.CreateResponse(statusCode);
-        object payload = SetHeadersAndGetPayload(client, request, response, instanceId);
+        object payload = SetHeadersAndGetPayload(client, request, response, instanceId, returnInternalServerErrorOnFailure: returnInternalServerErrorOnFailure);
 
         ObjectSerializer serializer = GetObjectSerializer(response);
         serializer.Serialize(response.Body, payload, payload.GetType(), cancellation);
@@ -121,7 +193,7 @@ public static class DurableTaskClientExtensions
     }
 
     private static object SetHeadersAndGetPayload(
-        DurableTaskClient client, HttpRequestData request, HttpResponseData response, string instanceId)
+        DurableTaskClient client, HttpRequestData request, HttpResponseData response, string instanceId, bool returnInternalServerErrorOnFailure = false)
     {
         static string BuildUrl(string url, params string?[] queryValues)
         {
@@ -144,10 +216,37 @@ public static class DurableTaskClientExtensions
         //       More info: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Forwarded.
         //       One potential workaround is to set ASPNETCORE_FORWARDEDHEADERS_ENABLED to true.
         string baseUrl = request.Url.GetLeftPart(UriPartial.Authority);
+        string proto = request.Url.Scheme;
+        if (request.Headers.TryGetValues("Forwarded", out var forwarded))
+        {
+            var forwardedDict = (forwarded.FirstOrDefault() ?? "").Split(';').Select(pair => pair.Split('=')).Select(pair => new { key = pair[0], value = pair[1] }).ToDictionary(pair => pair.key, pair => pair.value);
+            if (forwardedDict.ContainsKey("proto"))
+            {
+                proto = forwardedDict["proto"];
+            }
+
+            if (forwardedDict.ContainsKey("host"))
+            {
+                baseUrl = $"{proto}://{forwardedDict["host"]}";
+            }
+        }
+        else
+        {
+            if (request.Headers.TryGetValues("X-Forwarded-Proto", out var protos))
+            {
+                proto = protos.First();
+            }
+
+            if (request.Headers.TryGetValues("X-Forwarded-Host", out var hosts))
+            {
+                baseUrl = $"{proto}://{hosts.First()}";
+            }
+        }
+
         string formattedInstanceId = Uri.EscapeDataString(instanceId);
         string instanceUrl = $"{baseUrl}/runtime/webhooks/durabletask/instances/{formattedInstanceId}";
         string? commonQueryParameters = GetQueryParams(client);
-        response.Headers.Add("Location", BuildUrl(instanceUrl, commonQueryParameters));
+        response.Headers.Add("Location", BuildUrl(instanceUrl, commonQueryParameters, returnInternalServerErrorOnFailure ? "returnInternalServerErrorOnFailure=true" : ""));
         response.Headers.Add("Content-Type", "application/json");
 
         return new
@@ -155,7 +254,7 @@ public static class DurableTaskClientExtensions
             id = instanceId,
             purgeHistoryDeleteUri = BuildUrl(instanceUrl, commonQueryParameters),
             sendEventPostUri = BuildUrl($"{instanceUrl}/raiseEvent/{{eventName}}", commonQueryParameters),
-            statusQueryGetUri = BuildUrl(instanceUrl, commonQueryParameters),
+            statusQueryGetUri = BuildUrl(instanceUrl, commonQueryParameters, returnInternalServerErrorOnFailure ? "returnInternalServerErrorOnFailure=true" : ""),
             terminatePostUri = BuildUrl($"{instanceUrl}/terminate", "reason={{text}}", commonQueryParameters),
             suspendPostUri =  BuildUrl($"{instanceUrl}/suspend", "reason={{text}}", commonQueryParameters),
             resumePostUri =  BuildUrl($"{instanceUrl}/resume", "reason={{text}}", commonQueryParameters)
