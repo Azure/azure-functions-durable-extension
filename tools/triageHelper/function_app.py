@@ -12,6 +12,7 @@ REPOS = [
     "Azure/azure-functions-durable-extension",
     "Azure/azure-functions-durable-js",
     "Azure/azure-functions-durable-python",
+    "Azure/azure-functions-durable-powershell",
     powershell_worker_repo,
     "microsoft/durabletask-java",
     "microsoft/durabletask-dotnet",
@@ -40,7 +41,6 @@ def get_triage_issues(repository):
     'labels': label, 
 }
 
-    payload_str = urllib.parse.urlencode(payload, safe=':+')
     # Define the GitHub API endpoint
     api_endpoint = f"https://api.github.com/repos/{repository}/issues"
     query_str1 = "?labels=Needs%3A%20Triage%20%3Amag%3A"

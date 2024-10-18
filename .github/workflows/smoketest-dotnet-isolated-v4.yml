@@ -19,7 +19,79 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-      # Validation is blocked on https://github.com/Azure/azure-functions-host/issues/7995
-    - name: Run V4 .NET Isolated Smoke Test
-      run: test/SmokeTests/e2e-test.ps1 -DockerfilePath test/SmokeTests/OOProcSmokeTests/DotNetIsolated/Dockerfile -HttpStartPath api/StartHelloCitiesTyped -NoValidation
+    # Install .NET versions
+    - name: Set up .NET Core 3.1
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '3.1.x'
+
+    - name: Set up .NET Core 2.1
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '2.1.x'
+
+    - name: Set up .NET Core 6.x
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '6.x'
+
+    - name: Set up .NET Core 8.x
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '8.x'
+
+    # Install Azurite
+    - name: Set up Node.js (needed for Azurite)
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18.x' # Azurite requires at least Node 18
+
+    - name: Install Azurite
+      run: npm install -g azurite
+
+    - name: Restore WebJobs extension
+      run: dotnet restore $solution
+
+    - name: Build and pack WebJobs extension
+      run: cd ./src/WebJobs.Extensions.DurableTask &&
+        mkdir ./out &&
+        dotnet build -c Release WebJobs.Extensions.DurableTask.csproj --output ./out &&
+        mkdir ~/packages &&
+        dotnet nuget push ./out/Microsoft.Azure.WebJobs.Extensions.DurableTask.*.nupkg --source ~/packages &&
+        dotnet nuget add source ~/packages
+
+    - name: Build .NET Isolated Smoke Test
+      run: cd ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated &&
+        dotnet restore --verbosity normal &&
+        dotnet build -c Release
+
+    - name: Install core tools
+      run: npm i -g azure-functions-core-tools@4 --unsafe-perm true
+  
+    # Run smoke tests
+    # Unlike other smoke tests, the .NET isolated smoke tests run outside of a docker container, but to race conditions
+    # when building the smoke test app in docker, causing the build to fail. This is a temporary workaround until the
+    # root cause is identified and fixed.
+
+    - name: Run smoke tests (Hello Cities)
       shell: pwsh
+      run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
+        cd ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated && func host start --port 7071 &
+        ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated/run-smoke-tests.ps1 -HttpStartPath api/StartHelloCitiesTyped
+
+    - name: Run smoke tests (Process Exit)
+      shell: pwsh
+      run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
+        ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated/run-smoke-tests.ps1 -HttpStartPath api/durable_HttpStartProcessExitOrchestrator
+
+    - name: Run smoke tests (Timeout)
+      shell: pwsh
+      run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
+        cd ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated && func host start --port 7071 &
+        ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated/run-smoke-tests.ps1 -HttpStartPath api/durable_HttpStartTimeoutOrchestrator
+
+    - name: Run smoke tests (OOM)
+      shell: pwsh
+      run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
+        cd ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated && func host start --port 7071 &
+        ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated/run-smoke-tests.ps1 -HttpStartPath api/durable_HttpStartOOMOrchestrator

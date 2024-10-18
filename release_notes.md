@@ -1,18 +1,6 @@
 # Release Notes
 
-## Microsoft.Azure.Functions.Worker.Extensions.DurableTask 1.2.1
-
-### New Features
-
-- Fix regression on `TerminateInstanceAsync` API causing invocations to fail with "unimplemented" exceptions (https://github.com/Azure/azure-functions-durable-extension/pull/2829).
-
-### Bug Fixes
-
-### Breaking Changes
-
-### Dependency Updates
-
-## Microsoft.Azure.WebJobs.Extensions.DurableTask <version>
+## Microsoft.Azure.Functions.Worker.Extensions.DurableTask (version)
 
 ### New Features
 
@@ -24,3 +12,15 @@
 ### Breaking Changes
 
 ### Dependency Updates
+
+## Microsoft.Azure.WebJobs.Extensions.DurableTask 2.13.7
+
+### New Features
+
+### Bug Fixes
+
+### Breaking Changes
+
+### Dependency Updates
+
+- Microsoft.DurableTask.Grpc to 1.3.0

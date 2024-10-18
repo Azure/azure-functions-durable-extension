@@ -218,6 +218,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 UseSeparateQueueForEntityWorkItems = this.useSeparateQueueForEntityWorkItems,
                 EntityMessageReorderWindowInMinutes = this.options.EntityMessageReorderWindowInMinutes,
                 MaxEntityOperationBatchSize = this.options.MaxEntityOperationBatchSize,
+                AllowReplayingTerminalInstances = this.azureStorageOptions.AllowReplayingTerminalInstances,
             };
 
             if (this.inConsumption)
