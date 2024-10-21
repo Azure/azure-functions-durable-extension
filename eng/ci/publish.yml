@@ -22,7 +22,7 @@ resources:
 
     pipelines:
     - pipeline: officialPipeline # Reference to the pipeline to be used as an artifact source
-      source: 'durabletask-extension.official'
+      source: 'durable-extension.official'
 
 extends:
   template: v1/1ES.Official.PipelineTemplate.yml@1es
