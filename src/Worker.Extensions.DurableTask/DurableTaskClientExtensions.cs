@@ -129,7 +129,7 @@ public static class DurableTaskClientExtensions
     /// <returns>An object containing instance control URLs.</returns>
     /// <exception cref="ArgumentException">Thrown when instanceId is null or empty.</exception>
     /// <exception cref="InvalidOperationException">Thrown when a valid base URL cannot be determined.</exception>
-    public static object CreateHttpManagementPayload(
+    public static HttpManagementPayload CreateHttpManagementPayload(
         this DurableTaskClient client,
         string instanceId,
         HttpRequestData? request = null)
@@ -149,7 +149,7 @@ public static class DurableTaskClientExtensions
         }
     }
 
-    private static object SetHeadersAndGetPayload(
+    private static HttpManagementPayload SetHeadersAndGetPayload(
         DurableTaskClient client, HttpRequestData? request, HttpResponseData? response, string instanceId)
     {
         static string BuildUrl(string url, params string?[] queryValues)
@@ -198,15 +198,15 @@ public static class DurableTaskClientExtensions
             response.Headers.Add("Content-Type", "application/json");
         }
 
-        return new
+        return new HttpManagementPayload
         {
-            id = instanceId,
-            purgeHistoryDeleteUri = BuildUrl(instanceUrl, commonQueryParameters),
-            sendEventPostUri = BuildUrl($"{instanceUrl}/raiseEvent/{{eventName}}", commonQueryParameters),
-            statusQueryGetUri = BuildUrl(instanceUrl, commonQueryParameters),
-            terminatePostUri = BuildUrl($"{instanceUrl}/terminate", "reason={{text}}", commonQueryParameters),
-            suspendPostUri =  BuildUrl($"{instanceUrl}/suspend", "reason={{text}}", commonQueryParameters),
-            resumePostUri =  BuildUrl($"{instanceUrl}/resume", "reason={{text}}", commonQueryParameters)
+            Id = instanceId,
+            PurgeHistoryDeleteUri = BuildUrl(instanceUrl, commonQueryParameters),
+            SendEventPostUri = BuildUrl($"{instanceUrl}/raiseEvent/{{eventName}}", commonQueryParameters),
+            StatusQueryGetUri = BuildUrl(instanceUrl, commonQueryParameters),
+            TerminatePostUri = BuildUrl($"{instanceUrl}/terminate", "reason={{text}}", commonQueryParameters),
+            SuspendPostUri =  BuildUrl($"{instanceUrl}/suspend", "reason={{text}}", commonQueryParameters),
+            ResumePostUri =  BuildUrl($"{instanceUrl}/resume", "reason={{text}}", commonQueryParameters)
         };
     }
 

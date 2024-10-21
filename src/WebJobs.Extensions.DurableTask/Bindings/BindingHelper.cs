@@ -135,7 +135,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             /// <summary>
             /// The base URL of the Azure Functions host, used in the out-of-proc model.
             /// This URL is sent by the client binding object to the Durable Worker extension,
-            /// allowing the extension to know the host's base URL for constructing complete URLs.
+            /// allowing the extension to know the host's base URL for constructing management URLs.
             /// </summary>
             [JsonProperty("HttpBaseUrl")]
             public string? HttpBaseUrl { get; set; }
