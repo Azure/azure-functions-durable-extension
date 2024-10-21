@@ -139,14 +139,7 @@ public static class DurableTaskClientExtensions
             throw new ArgumentException("InstanceId cannot be null or empty.", nameof(instanceId));
         }
 
-        try
-        {
-            return SetHeadersAndGetPayload(client, request, null, instanceId);
-        }
-        catch (InvalidOperationException ex)
-        {
-            throw new InvalidOperationException("Failed to create HTTP management payload. " + ex.Message, ex);
-        }
+        return SetHeadersAndGetPayload(client, request, null, instanceId);
     }
 
     private static HttpManagementPayload SetHeadersAndGetPayload(
@@ -181,7 +174,7 @@ public static class DurableTaskClientExtensions
 
         if (baseUrl == null)
         {
-            throw new InvalidOperationException("Base URL is null. Either use Functions bindings or provide an HTTP request to create the HttpPayload.");
+            throw new InvalidOperationException("Failed to create HTTP management payload as base URL is null. Either use Functions bindings or provide an HTTP request to create the HttpPayload.");
         }
         
         bool isFromRequest = request != null;
