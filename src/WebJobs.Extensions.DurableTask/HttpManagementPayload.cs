@@ -3,6 +3,7 @@
 
 using Newtonsoft.Json;
 
+#nullable enable
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     /// <summary>
@@ -17,7 +18,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// The ID of the orchestration instance.
         /// </value>
         [JsonProperty("id")]
-        public string Id { get; internal set; }
+        public string? Id { get; internal set; }
 
         /// <summary>
         /// Gets the HTTP GET status query endpoint URL.
@@ -26,7 +27,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// The HTTP URL for fetching the instance status.
         /// </value>
         [JsonProperty("statusQueryGetUri")]
-        public string StatusQueryGetUri { get; internal set; }
+        public string? StatusQueryGetUri { get; internal set; }
 
         /// <summary>
         /// Gets the HTTP POST external event sending endpoint URL.
@@ -35,7 +36,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// The HTTP URL for posting external event notifications.
         /// </value>
         [JsonProperty("sendEventPostUri")]
-        public string SendEventPostUri { get; internal set; }
+        public string? SendEventPostUri { get; internal set; }
 
         /// <summary>
         /// Gets the HTTP POST instance termination endpoint.
@@ -44,7 +45,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// The HTTP URL for posting instance termination commands.
         /// </value>
         [JsonProperty("terminatePostUri")]
-        public string TerminatePostUri { get; internal set; }
+        public string? TerminatePostUri { get; internal set; }
 
         /// <summary>
         /// Gets the HTTP POST instance rewind endpoint.
@@ -53,7 +54,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// The HTTP URL for rewinding orchestration instances.
         /// </value>
         [JsonProperty("rewindPostUri")]
-        public string RewindPostUri { get; internal set; }
+        public string? RewindPostUri { get; internal set; }
 
         /// <summary>
         /// Gets the HTTP DELETE purge instance history by instance ID endpoint.
@@ -62,7 +63,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// The HTTP URL for purging instance history by instance ID.
         /// </value>
         [JsonProperty("purgeHistoryDeleteUri")]
-        public string PurgeHistoryDeleteUri { get; internal set; }
+        public string? PurgeHistoryDeleteUri { get; internal set; }
 
         /// <summary>
         /// Gets the HTTP POST instance restart endpoint.
@@ -71,7 +72,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// The HTTP URL for restarting an orchestration instance.
         /// </value>
         [JsonProperty("restartPostUri")]
-        public string RestartPostUri { get; internal set; }
+        public string? RestartPostUri { get; internal set; }
 
         /// <summary>
         /// Gets the HTTP POST instance suspend endpoint.
@@ -80,7 +81,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// The HTTP URL for suspending an orchestration instance.
         /// </value>
         [JsonProperty("suspendPostUri")]
-        public string SuspendPostUri { get; internal set; }
+        public string? SuspendPostUri { get; internal set; }
 
         /// <summary>
         /// Gets the HTTP POST instance resume endpoint.
@@ -89,6 +90,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// The HTTP URL for resuming an orchestration instance.
         /// </value>
         [JsonProperty("resumePostUri")]
-        public string ResumePostUri { get; internal set; }
+        public string? ResumePostUri { get; internal set; }
     }
 }
