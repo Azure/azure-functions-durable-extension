@@ -154,5 +154,46 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
 
             Assert.Equal("waws-prod-euapbn1-003:dw0SmallDedicatedWebWorkerRole_hr0HostRole-3-VM-13", settings.WorkerId);
         }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void CustomConnectionNameIsResolved()
+        {
+            var storageAccountProvider = new CustomTestStorageAccountProvider("CustomConnection");
+            var mockOptions = new OptionsWrapper<DurableTaskOptions>(new DurableTaskOptions());
+            var nameResolver = new Mock<INameResolver>().Object;
+
+            var factory = new AzureStorageDurabilityProviderFactory(
+                mockOptions,
+                storageAccountProvider,
+                nameResolver,
+                NullLoggerFactory.Instance,
+                TestHelpers.GetMockPlatformInformationService());
+
+            factory.GetDurabilityProvider(); // This will initialize the default connection string
+            var provider = factory.GetDurabilityProvider(new DurableClientAttribute() { ConnectionName = "CustomConnection", TaskHub = "TestHubName" });
+
+            Assert.Equal("CustomConnection", provider.ConnectionName);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void DefaultConnectionNameIsResolved()
+        {
+            var storageAccountProvider = new CustomTestStorageAccountProvider("CustomConnection");
+            var mockOptions = new OptionsWrapper<DurableTaskOptions>(new DurableTaskOptions());
+            var nameResolver = new Mock<INameResolver>().Object;
+
+            var factory = new AzureStorageDurabilityProviderFactory(
+                mockOptions,
+                storageAccountProvider,
+                nameResolver,
+                NullLoggerFactory.Instance,
+                TestHelpers.GetMockPlatformInformationService());
+
+            var provider = factory.GetDurabilityProvider();
+
+            Assert.Equal("Storage", provider.ConnectionName);
+        }
     }
 }

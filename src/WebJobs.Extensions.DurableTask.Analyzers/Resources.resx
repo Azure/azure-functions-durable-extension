@@ -306,10 +306,10 @@ https://docs.microsoft.com/azure/azure-functions/durable/durable-functions-check
     <value>I/O operations are not allowed inside an orchestrator function.</value>
   </data>
   <data name="MethodAnalyzerMessageFormat" xml:space="preserve">
-    <value>Method call '{0}' violates the orchestrator deterministic code constraint. Methods definied in source code that are used in an orchestrator must be deterministic.</value>
+    <value>Method call '{0}' violates the orchestrator deterministic code constraint. Methods defined in source code that are used in an orchestrator must be deterministic.</value>
   </data>
   <data name="MethodAnalyzerTitle" xml:space="preserve">
-    <value>Methods definied in source code that are used in an orchestrator must be deterministic.</value>
+    <value>Methods defined in source code that are used in an orchestrator must be deterministic.</value>
   </data>
   <data name="SignalEntityAnalyzerDescription" xml:space="preserve">
     <value>SignalEntityAsync must use an Entity Interface.</value>

@@ -6,6 +6,8 @@
 
 ### Bug Fixes
 
+- Fix custom connection name not working when using IDurableClientFactory.CreateClient() - contributed by [@hctan](https://github.com/hctan)
+
 ### Breaking Changes
 
 ### Dependency Updates

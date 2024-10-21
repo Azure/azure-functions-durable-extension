@@ -621,7 +621,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Method call &apos;{0}&apos; violates the orchestrator deterministic code constraint. Methods definied in source code that are used in an orchestrator must be deterministic..
+        ///   Looks up a localized string similar to Method call &apos;{0}&apos; violates the orchestrator deterministic code constraint. Methods defined in source code that are used in an orchestrator must be deterministic..
         /// </summary>
         public static string MethodAnalyzerMessageFormat {
             get {
@@ -630,7 +630,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Methods definied in source code that are used in an orchestrator must be deterministic..
+        ///   Looks up a localized string similar to Methods defined in source code that are used in an orchestrator must be deterministic..
         /// </summary>
         public static string MethodAnalyzerTitle {
             get {
