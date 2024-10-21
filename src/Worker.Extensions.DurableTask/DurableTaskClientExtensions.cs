@@ -177,8 +177,13 @@ public static class DurableTaskClientExtensions
         // The base URL could be null if:
         // 1. The DurableTaskClient isn't a FunctionsDurableTaskClient (which would have the baseUrl from bindings)
         // 2. There's no valid HttpRequestData provided
-        string? baseUrl = ((request != null) ? request.Url.GetLeftPart(UriPartial.Authority) : GetBaseUrl(client))
-            ?? throw new InvalidOperationException("Base URL is null. Either use Functions bindings or provide an HTTP request to create the HttpPayload.");
+        string? baseUrl = ((request != null) ? request.Url.GetLeftPart(UriPartial.Authority) : GetBaseUrl(client));
+
+        if (baseUrl == null)
+        {
+            throw new InvalidOperationException("Base URL is null. Either use Functions bindings or provide an HTTP request to create the HttpPayload.");
+        }
+        
         bool isFromRequest = request != null;
 
         string formattedInstanceId = Uri.EscapeDataString(instanceId);
