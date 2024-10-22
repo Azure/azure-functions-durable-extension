@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Functions.Worker.Tests
             FunctionsDurableTaskClient client = this.GetTestFunctionsDurableTaskClient(BaseUrl);
             string instanceId = "testInstanceIdWithHostBaseUrl";
 
-            dynamic payload = client.CreateHttpManagementPayload(instanceId);
+            HttpManagementPayload payload = client.CreateHttpManagementPayload(instanceId);
 
             AssertHttpManagementPayload(payload, BaseUrl, instanceId);
         }
@@ -84,12 +84,12 @@ namespace Microsoft.Azure.Functions.Worker.Tests
             var mockHttpRequestData = new Mock<HttpRequestData>(mockFunctionContext.Object);
             mockHttpRequestData.SetupGet(r => r.Url).Returns(new Uri(requestUrl));
 
-            dynamic payload = client.CreateHttpManagementPayload(instanceId, mockHttpRequestData.Object);
+            HttpManagementPayload payload = client.CreateHttpManagementPayload(instanceId, mockHttpRequestData.Object);
 
             AssertHttpManagementPayload(payload, "http://localhost:7075/runtime/webhooks/durabletask", instanceId);
         }
 
-        private static void AssertHttpManagementPayload(dynamic payload, string BaseUrl, string instanceId)
+        private static void AssertHttpManagementPayload(HttpManagementPayload payload, string BaseUrl, string instanceId)
         {
             Assert.Equal(instanceId, payload.Id);
             Assert.Equal($"{BaseUrl}/instances/{instanceId}", payload.PurgeHistoryDeleteUri);
