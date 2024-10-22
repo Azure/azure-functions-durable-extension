@@ -45,8 +45,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             serviceCollection.TryAddSingleton<INameResolver, DefaultNameResolver>();
-            serviceCollection.TryAddSingleton<IConnectionInfoResolver, StandardConnectionInfoProvider>();
-            serviceCollection.TryAddSingleton<IStorageAccountProvider, AzureStorageAccountProvider>();
 #if !FUNCTIONS_V1
             serviceCollection.AddAzureClientsCore();
             serviceCollection.TryAddSingleton<ITokenCredentialFactory, AzureCredentialFactory>();
