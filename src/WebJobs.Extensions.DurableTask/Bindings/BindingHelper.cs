@@ -137,7 +137,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             /// This URL is sent by the client binding object to the Durable Worker extension,
             /// allowing the extension to know the host's base URL for constructing management URLs.
             /// </summary>
-            [JsonProperty("HttpBaseUrl")]
+            [JsonProperty("httpBaseUrl")]
             public string? HttpBaseUrl { get; set; }
         }
     }
