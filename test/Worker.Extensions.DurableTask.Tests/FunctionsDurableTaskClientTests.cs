@@ -1,5 +1,5 @@
+using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.DurableTask.Client;
-using Microsoft.DurableTask.Client.Grpc;
 using Moq;
 
 namespace Microsoft.Azure.Functions.Worker.Tests
@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Functions.Worker.Tests
     /// </summary>
     public class FunctionsDurableTaskClientTests
     {
-        private FunctionsDurableTaskClient GetTestFunctionsDurableTaskClient()
+        private FunctionsDurableTaskClient GetTestFunctionsDurableTaskClient(string? baseUrl = null)
         {
             // construct mock client
 
@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Functions.Worker.Tests
                 It.IsAny<string>(), It.IsAny<TerminateInstanceOptions>(), It.IsAny<CancellationToken>())).Returns(completedTask);
 
             DurableTaskClient durableClient = durableClientMock.Object;
-            FunctionsDurableTaskClient client = new FunctionsDurableTaskClient(durableClient, queryString: null);
+            FunctionsDurableTaskClient client = new FunctionsDurableTaskClient(durableClient, queryString: null, httpBaseUrl: baseUrl);
             return client;
         }
 
@@ -52,6 +52,52 @@ namespace Microsoft.Azure.Functions.Worker.Tests
             await client.TerminateInstanceAsync(instanceId);
             await client.TerminateInstanceAsync(instanceId, options);
             await client.TerminateInstanceAsync(instanceId, options, token);
+        }
+
+        /// <summary>
+        /// Test that the `CreateHttpManagementPayload` method returns the expected payload structure without HttpRequestData.
+        /// </summary>
+        [Fact]
+        public void CreateHttpManagementPayload_WithBaseUrl()
+        {
+            const string BaseUrl = "http://localhost:7071/runtime/webhooks/durabletask";
+            FunctionsDurableTaskClient client = this.GetTestFunctionsDurableTaskClient(BaseUrl);
+            string instanceId = "testInstanceIdWithHostBaseUrl";
+
+            HttpManagementPayload payload = client.CreateHttpManagementPayload(instanceId);
+
+            AssertHttpManagementPayload(payload, BaseUrl, instanceId);
+        }
+
+        /// <summary>
+        /// Test that the `CreateHttpManagementPayload` method returns the expected payload structure with HttpRequestData.
+        /// </summary>
+        [Fact]
+        public void CreateHttpManagementPayload_WithHttpRequestData()
+        {
+            const string requestUrl = "http://localhost:7075/orchestrators/E1_HelloSequence";
+            FunctionsDurableTaskClient client = this.GetTestFunctionsDurableTaskClient();
+            string instanceId = "testInstanceIdWithRequest";
+
+            // Create mock HttpRequestData object.
+            var mockFunctionContext = new Mock<FunctionContext>();
+            var mockHttpRequestData = new Mock<HttpRequestData>(mockFunctionContext.Object);
+            mockHttpRequestData.SetupGet(r => r.Url).Returns(new Uri(requestUrl));
+
+            HttpManagementPayload payload = client.CreateHttpManagementPayload(instanceId, mockHttpRequestData.Object);
+
+            AssertHttpManagementPayload(payload, "http://localhost:7075/runtime/webhooks/durabletask", instanceId);
+        }
+
+        private static void AssertHttpManagementPayload(HttpManagementPayload payload, string BaseUrl, string instanceId)
+        {
+            Assert.Equal(instanceId, payload.Id);
+            Assert.Equal($"{BaseUrl}/instances/{instanceId}", payload.PurgeHistoryDeleteUri);
+            Assert.Equal($"{BaseUrl}/instances/{instanceId}/raiseEvent/{{eventName}}", payload.SendEventPostUri);
+            Assert.Equal($"{BaseUrl}/instances/{instanceId}", payload.StatusQueryGetUri);
+            Assert.Equal($"{BaseUrl}/instances/{instanceId}/terminate?reason={{{{text}}}}", payload.TerminatePostUri);
+            Assert.Equal($"{BaseUrl}/instances/{instanceId}/suspend?reason={{{{text}}}}", payload.SuspendPostUri);
+            Assert.Equal($"{BaseUrl}/instances/{instanceId}/resume?reason={{{{text}}}}", payload.ResumePostUri);
         }
     }
 }

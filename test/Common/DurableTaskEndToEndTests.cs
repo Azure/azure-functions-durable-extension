@@ -5592,16 +5592,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 { "FUNCTIONS_WORKER_RUNTIME", "node" },
             });
 
-            using (var host = TestHelpers.GetJobHostWithOptions(
-                this.loggerProvider,
-                durableTaskOptions,
-                nameResolver: nameResolver))
-            {
-                await host.StartAsync();
-                await host.StopAsync();
-            }
+            InvalidOperationException exception =
+                await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+                {
+                    using (var host = TestHelpers.GetJobHostWithOptions(
+                        this.loggerProvider,
+                        durableTaskOptions,
+                        nameResolver: nameResolver))
+                    {
+                        await host.StartAsync();
+                        await host.StopAsync();
+                    }
+                });
 
-            Assert.False(durableTaskOptions.ExtendedSessionsEnabled);
+            Assert.NotNull(exception);
+            Assert.StartsWith(
+                "Durable Functions with extendedSessionsEnabled set to 'true' is only supported when using",
+                exception.Message,
+                StringComparison.OrdinalIgnoreCase);
         }
 
         [Fact]
