@@ -26,12 +26,12 @@ function Exit-OnError() {
 }
 
 $ErrorActionPreference = "Stop"
-$AzuriteVersion = "3.26.0"
+$AzuriteVersion = "3.32.0"
 
 if ($NoSetup -eq $false) {
 	# Build the docker image first, since that's the most critical step
 	Write-Host "Building sample app Docker container from '$DockerfilePath'..." -ForegroundColor Yellow
-	docker build -f $DockerfilePath -t $ImageName --progress plain $PSScriptRoot/../../
+	docker build --pull -f $DockerfilePath -t $ImageName --progress plain $PSScriptRoot/../../
 	Exit-OnError
 
 	# Next, download and start the Azurite emulator Docker image
@@ -58,6 +58,16 @@ if ($NoSetup -eq $false) {
 		Start-Sleep -Seconds 30  # Adjust the sleep duration based on your SQL Server container startup time
 		Exit-OnError
 
+		Write-Host "Checking if SQL Server is still running..." -ForegroundColor Yellow
+		$sqlServerStatus = docker inspect -f '{{.State.Status}}' mssql-server
+		Exit-OnError
+
+		if ($sqlServerStatus -ne "running") {
+			Write-Host "Unexpected SQL Server status: $sqlServerStatus" -ForegroundColor Yellow
+			docker logs mssql-server
+			exit 1;
+		}
+
  		# Get SQL Server IP Address - used to create SQLDB_Connection
 		Write-Host "Getting IP Address..." -ForegroundColor Yellow
 	 	$serverIpAddress = docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' mssql-server
@@ -65,7 +75,7 @@ if ($NoSetup -eq $false) {
 
 	 	# Create the database with strict binary collation
 		Write-Host "Creating '$dbname' database with '$collation' collation" -ForegroundColor DarkYellow
-		docker exec -d mssql-server /opt/mssql-tools/bin/sqlcmd -S . -U sa -P "$pw" -Q "CREATE DATABASE [$dbname] COLLATE $collation"
+		docker exec -d mssql-server /opt/mssql-tools18/bin/sqlcmd -S . -U sa -P "$pw" -Q "CREATE DATABASE [$dbname] COLLATE $collation"
 		Exit-OnError
 
   		# Wait for database to be ready

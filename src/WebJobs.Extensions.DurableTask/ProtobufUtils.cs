@@ -97,7 +97,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             },
                         },
                         ScheduledStartTimestamp = startedEvent.ScheduledStartTime == null ? null : Timestamp.FromDateTime(startedEvent.ScheduledStartTime.Value),
-                        CorrelationData = startedEvent.Correlation,
+                        ParentTraceContext = startedEvent.ParentTraceContext == null ? null : new P.TraceContext
+                        {
+                            TraceParent = startedEvent.ParentTraceContext.TraceParent,
+                            TraceState = startedEvent.ParentTraceContext.TraceState,
+                        },
                     };
                     break;
                 case EventType.ExecutionTerminated:

@@ -159,7 +159,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // Need to check this.defaultStorageProvider != null for external clients that call GetDurabilityProvider(attribute)
             // which never initializes the defaultStorageProvider.
             if (string.Equals(this.defaultSettings?.TaskHubName, settings.TaskHubName, StringComparison.OrdinalIgnoreCase) &&
-                string.Equals(this.defaultSettings?.StorageConnectionString, settings.StorageConnectionString, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(this.defaultSettings?.StorageAccountDetails?.ConnectionString, settings.StorageAccountDetails?.ConnectionString, StringComparison.OrdinalIgnoreCase) &&
                 this.defaultStorageProvider != null)
             {
                 // It's important that clients use the same AzureStorageOrchestrationService instance
@@ -217,6 +217,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 UseSeparateQueueForEntityWorkItems = this.useSeparateQueueForEntityWorkItems,
                 EntityMessageReorderWindowInMinutes = this.options.EntityMessageReorderWindowInMinutes,
                 MaxEntityOperationBatchSize = this.options.MaxEntityOperationBatchSize,
+                AllowReplayingTerminalInstances = this.azureStorageOptions.AllowReplayingTerminalInstances,
             };
 
             if (this.inConsumption)

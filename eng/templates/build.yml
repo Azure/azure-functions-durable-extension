@@ -46,6 +46,7 @@ jobs:
             solution: '**/WebJobs.Extensions.DurableTask.sln'
             vsVersion: "16.0"
             configuration: Release
+            msbuildArgs: /p:FileVersionRevision=$(Build.BuildId) /p:ContinuousIntegrationBuild=true # these flags make package build deterministic
     
       - template: ci/sign-files.yml@eng
         parameters:
@@ -54,6 +55,13 @@ jobs:
             pattern: '*DurableTask.dll'
             signType: dll
     
+      - template: ci/sign-files.yml@eng
+        parameters:
+            displayName: Sign assemblies
+            folderPath: 'src/Worker.Extensions.DurableTask/bin/Release'
+            pattern: '*DurableTask.dll'
+            signType: dll
+
       # dotnet pack
       # Packaging needs to be a separate step from build.
       # This will automatically pick up the signed DLLs.
@@ -63,7 +71,20 @@ jobs:
             command: pack
             packagesToPack: 'src/**/WebJobs.Extensions.DurableTask.csproj'
             configuration: Release
-            packDirectory: 'azure-functions-durable-extension'
+            packDirectory: $(build.artifactStagingDirectory)
+            nobuild: true
+
+    
+      # dotnet pack
+      # Packaging needs to be a separate step from build.
+      # This will automatically pick up the signed DLLs.
+      - task: DotNetCoreCLI@2
+        displayName: 'dotnet pack Worker.Extensions.DurableTask.csproj'
+        inputs:
+            command: pack
+            packagesToPack: 'src/**/Worker.Extensions.DurableTask.csproj'
+            configuration: Release
+            packDirectory: $(build.artifactStagingDirectory)
             nobuild: true
 
       # Remove redundant symbol package(s)
@@ -103,3 +124,14 @@ jobs:
             SourceFolder: '$(System.DefaultWorkingDirectory)/test/PerfTests/DFPerfTests/Output/'
             Contents: '**'
             TargetFolder: '$(System.DefaultWorkingDirectory)/azure-functions-durable-extension/'
+
+      # We also need to build the Java smoke test, for CodeQL compliance
+      # We don't need to build the other smoke tests, because they can be analyzed without being compiled,
+      # as they're interpreted languages.
+      # This could be a separate pipeline, but the task is so small that it's paired with the .NET code build
+      # for convenience.
+      - pwsh: |
+          cd ./test/SmokeTests/OOProcSmokeTests/durableJava/
+          gradle build
+          ls
+        displayName: 'Build Java OOProc test (for CodeQL compliance)'
