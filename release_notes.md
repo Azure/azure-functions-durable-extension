@@ -1,12 +1,14 @@
 # Release Notes
 
-## Microsoft.Azure.Functions.Worker.Extensions.DurableTask 1.2.1
+## Microsoft.Azure.Functions.Worker.Extensions.DurableTask <version>
 
 ### New Features
 
-- Fix regression on `TerminateInstanceAsync` API causing invocations to fail with "unimplemented" exceptions (https://github.com/Azure/azure-functions-durable-extension/pull/2829).
+- Added an `IFunctionsWorkerApplicationBuilder.ConfigureDurableExtension()` extension method for cases where auto-registration does not work (no source gen running). (#2950)
 
 ### Bug Fixes
+
+- Made durable extension for isolated worker configuration idempotent, allowing multiple calls safely. (#2950)
 
 ### Breaking Changes
 
