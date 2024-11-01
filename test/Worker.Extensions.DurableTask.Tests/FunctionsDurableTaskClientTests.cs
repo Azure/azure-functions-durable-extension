@@ -92,6 +92,8 @@ namespace Microsoft.Azure.Functions.Worker.Tests
             // Create mock HttpRequestData object.
             var mockFunctionContext = new Mock<FunctionContext>();
             var mockHttpRequestData = new Mock<HttpRequestData>(mockFunctionContext.Object);
+            var headers = new HttpHeadersCollection();
+            mockHttpRequestData.SetupGet(r => r.Headers).Returns(headers);
             mockHttpRequestData.SetupGet(r => r.Url).Returns(new Uri(requestUrl));
 
             HttpManagementPayload payload = client.CreateHttpManagementPayload(instanceId, mockHttpRequestData.Object);
@@ -269,7 +271,12 @@ namespace Microsoft.Azure.Functions.Worker.Tests
             
             // Set up the URL property.
             mockHttpRequestData.SetupGet(r => r.Url).Returns(new Uri("http://localhost:7075/orchestrators/E1_HelloSequence"));
+            
+            var headers = new HttpHeadersCollection();
 
+            // Setup the Headers property to return the empty headers
+            mockHttpRequestData.SetupGet(r => r.Headers).Returns(headers);
+            
             var mockHttpResponseData = new Mock<HttpResponseData>(mockFunctionContext.Object)
             {
                 DefaultValue = DefaultValue.Mock
