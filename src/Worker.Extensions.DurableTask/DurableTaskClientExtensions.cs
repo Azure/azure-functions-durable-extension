@@ -29,7 +29,7 @@ public static class DurableTaskClientExtensions
     /// <param name="cancellation">The cancellation token.</param>
     /// <param name="timeout">Total allowed timeout for output from the durable function. The default value is 10 seconds.</param>
     /// <param name="retryInterval">The timeout between checks for output from the durable function. The default value is 1 second.</param>
-    /// <param name="returnInternalServerErrorOnFailure">Optional parameter that configures the http response code returned. Defaults to <c>false</c>.
+    /// <param name="returnInternalServerErrorOnFailure">Optional parameter that configures the http response code returned. Defaults to <c>false</c>.</param>
     /// <returns></returns>
     public static async Task<HttpResponseData> WaitForCompletionOrCreateCheckStatusResponseAsync(this DurableTaskClient client,
         HttpRequestData request,
@@ -40,8 +40,13 @@ public static class DurableTaskClientExtensions
         bool returnInternalServerErrorOnFailure = false
     )
     {
-        var timeoutLocal = timeout ?? TimeSpan.FromSeconds(10);
-        var retryIntervalLocal = retryInterval ?? TimeSpan.FromSeconds(1);
+        TimeSpan timeoutLocal = timeout ?? TimeSpan.FromSeconds(10);
+        TimeSpan retryIntervalLocal = retryInterval ?? TimeSpan.FromSeconds(1);
+        
+        if (retryIntervalLocal > timeoutLocal)
+        {
+            throw new ArgumentException($"Total timeout {timeoutLocal.TotalSeconds} should be bigger than retry timeout {retryIntervalLocal.TotalSeconds}");
+        }
 
         Stopwatch stopwatch = Stopwatch.StartNew();
         while (true)
@@ -56,32 +61,35 @@ public static class DurableTaskClientExtensions
                     status.RuntimeStatus == OrchestrationRuntimeStatus.Terminated ||
                     status.RuntimeStatus == OrchestrationRuntimeStatus.Failed)
                 {
-                    var response = request.CreateResponse((status.RuntimeStatus == OrchestrationRuntimeStatus.Failed && returnInternalServerErrorOnFailure) ? HttpStatusCode.InternalServerError : HttpStatusCode.OK);
-                    await response.WriteAsJsonAsync(new
+                    var response = request.CreateResponse(HttpStatusCode.OK);
+                    await response.WriteAsJsonAsync(new OrchestrationMetadata(status.Name, status.InstanceId)
                     {
-                        name = status.Name,
-                        instanceId = status.InstanceId,
-                        runtimeStatus = status.RuntimeStatus.ToString(),
-                        input = status.ReadInputAs<object?>(),
-                        customStatus = status.ReadCustomStatusAs<object?>(),
-                        output = status.ReadOutputAs<object?>(),
-                        createdTime = status.CreatedAt.ToString("s") + "Z",
-                        lastUpdatedTime = status.LastUpdatedAt.ToString("s") + "Z",
+                        CreatedAt = status.CreatedAt,
+                        LastUpdatedAt = status.LastUpdatedAt,
+                        RuntimeStatus = status.RuntimeStatus,
+                        SerializedInput = status.SerializedInput,
+                        SerializedOutput = status.SerializedOutput,
+                        SerializedCustomStatus = status.SerializedCustomStatus,
                     });
+                    
+                    if (status.RuntimeStatus == OrchestrationRuntimeStatus.Failed && returnInternalServerErrorOnFailure)
+                    {
+                        response.StatusCode = HttpStatusCode.InternalServerError;
+                    }
 
                     return response;
                 }
             }
 
             TimeSpan elapsed = stopwatch.Elapsed;
-            if (elapsed < timeoutLocal)
+            if (elapsed < timeout)
             {
-                TimeSpan remainingTime = timeoutLocal.Subtract(elapsed);
+                TimeSpan remainingTime = timeoutLocal!.Subtract(elapsed);
                 await Task.Delay(remainingTime > retryIntervalLocal ? retryIntervalLocal : remainingTime);
             }
             else
             {
-                return await CreateCheckStatusResponseAsync(client, request, instanceId, cancellation: cancellation, returnInternalServerErrorOnFailure: returnInternalServerErrorOnFailure);
+                return await CreateCheckStatusResponseAsync(client, request, instanceId, cancellation: cancellation);
             }
         }
     }
@@ -98,10 +106,9 @@ public static class DurableTaskClientExtensions
         this DurableTaskClient client,
         HttpRequestData request,
         string instanceId,
-        CancellationToken cancellation = default,
-        bool returnInternalServerErrorOnFailure = false)
+        CancellationToken cancellation = default)
     {
-        return client.CreateCheckStatusResponseAsync(request, instanceId, HttpStatusCode.Accepted, cancellation, returnInternalServerErrorOnFailure: returnInternalServerErrorOnFailure);
+        return client.CreateCheckStatusResponseAsync(request, instanceId, HttpStatusCode.Accepted, cancellation);
     }
 
     /// <summary>
@@ -118,8 +125,7 @@ public static class DurableTaskClientExtensions
         HttpRequestData request,
         string instanceId,
         HttpStatusCode statusCode,
-        CancellationToken cancellation = default,
-        bool returnInternalServerErrorOnFailure = false)
+        CancellationToken cancellation = default)
     {
         if (client is null)
         {
@@ -132,8 +138,8 @@ public static class DurableTaskClientExtensions
         }
 
         HttpResponseData response = request.CreateResponse(statusCode);
-        object payload = SetHeadersAndGetPayload(client, request, response, instanceId, returnInternalServerErrorOnFailure: returnInternalServerErrorOnFailure);
-
+        object payload = SetHeadersAndGetPayload(client, request, response, instanceId);
+        
         ObjectSerializer serializer = GetObjectSerializer(response);
         await serializer.SerializeAsync(response.Body, payload, payload.GetType(), cancellation);
         return response;
@@ -151,10 +157,9 @@ public static class DurableTaskClientExtensions
         this DurableTaskClient client,
         HttpRequestData request,
         string instanceId,
-        CancellationToken cancellation = default,
-        bool returnInternalServerErrorOnFailure = false)
+        CancellationToken cancellation = default)
     {
-        return client.CreateCheckStatusResponse(request, instanceId, HttpStatusCode.Accepted, cancellation, returnInternalServerErrorOnFailure: returnInternalServerErrorOnFailure);
+        return client.CreateCheckStatusResponse(request, instanceId, HttpStatusCode.Accepted, cancellation);
     }
 
     /// <summary>
@@ -171,8 +176,7 @@ public static class DurableTaskClientExtensions
         HttpRequestData request,
         string instanceId,
         HttpStatusCode statusCode,
-        CancellationToken cancellation = default,
-        bool returnInternalServerErrorOnFailure = false)
+        CancellationToken cancellation = default)
     {
         if (client is null)
         {
@@ -185,7 +189,7 @@ public static class DurableTaskClientExtensions
         }
 
         HttpResponseData response = request.CreateResponse(statusCode);
-        object payload = SetHeadersAndGetPayload(client, request, response, instanceId, returnInternalServerErrorOnFailure: returnInternalServerErrorOnFailure);
+        object payload = SetHeadersAndGetPayload(client, request, response, instanceId);
 
         ObjectSerializer serializer = GetObjectSerializer(response);
         serializer.Serialize(response.Body, payload, payload.GetType(), cancellation);
@@ -215,7 +219,7 @@ public static class DurableTaskClientExtensions
     }
 
     private static HttpManagementPayload SetHeadersAndGetPayload(
-        DurableTaskClient client, HttpRequestData? request, HttpResponseData? response, string instanceId, bool returnInternalServerErrorOnFailure = false)
+        DurableTaskClient client, HttpRequestData? request, HttpResponseData? response, string instanceId)
     {
         static string BuildUrl(string url, params string?[] queryValues)
         {
@@ -237,34 +241,6 @@ public static class DurableTaskClientExtensions
         //       request headers into consideration and generate the base URL accordingly.
         //       More info: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Forwarded.
         //       One potential workaround is to set ASPNETCORE_FORWARDEDHEADERS_ENABLED to true.
-        string baseUrl = request.Url.GetLeftPart(UriPartial.Authority);
-        string proto = request.Url.Scheme;
-        if (request.Headers.TryGetValues("Forwarded", out var forwarded))
-        {
-            var forwardedDict = (forwarded.FirstOrDefault() ?? "").Split(';').Select(pair => pair.Split('=')).Select(pair => new { key = pair[0], value = pair[1] }).ToDictionary(pair => pair.key, pair => pair.value);
-            if (forwardedDict.ContainsKey("proto"))
-            {
-                proto = forwardedDict["proto"];
-            }
-
-            if (forwardedDict.ContainsKey("host"))
-            {
-                baseUrl = $"{proto}://{forwardedDict["host"]}";
-            }
-        }
-        else
-        {
-            if (request.Headers.TryGetValues("X-Forwarded-Proto", out var protos))
-            {
-                proto = protos.First();
-            }
-
-            if (request.Headers.TryGetValues("X-Forwarded-Host", out var hosts))
-            {
-                baseUrl = $"{proto}://{hosts.First()}";
-            }
-        }
-
 
         // If HttpRequestData is provided, use its URL; otherwise, get the baseUrl from the DurableTaskClient.
         // The base URL could be null if:
@@ -276,7 +252,7 @@ public static class DurableTaskClientExtensions
         {
             throw new InvalidOperationException("Failed to create HTTP management payload as base URL is null. Either use Functions bindings or provide an HTTP request to create the HttpPayload.");
         }
-        
+
         bool isFromRequest = request != null;
 
         string formattedInstanceId = Uri.EscapeDataString(instanceId);

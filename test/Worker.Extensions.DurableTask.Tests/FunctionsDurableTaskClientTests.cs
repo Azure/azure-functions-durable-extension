@@ -1,6 +1,14 @@
+using System.Net;
+using System.Reflection.PortableExecutable;
+using System.Text;
+using System.Text.Json;
+using Azure.Core;
+using Azure.Core.Serialization;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.DurableTask.Client;
+using Microsoft.Extensions.Options;
 using Moq;
+using Newtonsoft.Json;
 
 namespace Microsoft.Azure.Functions.Worker.Tests
 {
@@ -9,7 +17,7 @@ namespace Microsoft.Azure.Functions.Worker.Tests
     /// </summary>
     public class FunctionsDurableTaskClientTests
     {
-        private FunctionsDurableTaskClient GetTestFunctionsDurableTaskClient(string? baseUrl = null)
+        private FunctionsDurableTaskClient GetTestFunctionsDurableTaskClient(string? baseUrl = null, OrchestrationMetadata? orchestrationMetadata = null)
         {
             // construct mock client
 
@@ -20,6 +28,12 @@ namespace Microsoft.Azure.Functions.Worker.Tests
             Task completedTask = Task.CompletedTask;
             durableClientMock.Setup(x => x.TerminateInstanceAsync(
                 It.IsAny<string>(), It.IsAny<TerminateInstanceOptions>(), It.IsAny<CancellationToken>())).Returns(completedTask);
+
+            if (orchestrationMetadata != null)
+            {
+                durableClientMock.Setup(x => x.GetInstancesAsync(orchestrationMetadata.InstanceId, It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(orchestrationMetadata);
+            }
 
             DurableTaskClient durableClient = durableClientMock.Object;
             FunctionsDurableTaskClient client = new FunctionsDurableTaskClient(durableClient, queryString: null, httpBaseUrl: baseUrl);
@@ -89,6 +103,116 @@ namespace Microsoft.Azure.Functions.Worker.Tests
             AssertHttpManagementPayload(payload, "http://localhost:7075/runtime/webhooks/durabletask", instanceId);
         }
 
+        /// <summary>
+        /// Test that the `WaitForCompletionOrCreateCheckStatusResponseAsync` method returns the expected response when the orchestration is completed.
+        /// The expected response should include OrchestrationMetadata in the body with an HttpStatusCode.OK.
+        /// </summary>
+        [Fact]
+        public async Task TestWaitForCompletionOrCreateCheckStatusResponseAsync_WhenCompleted()
+        {
+            string instanceId = "test-instance-id-completed";
+            var expectedResult = new OrchestrationMetadata("TestCompleted", instanceId)
+            {
+                CreatedAt = DateTime.UtcNow,
+                LastUpdatedAt = DateTime.UtcNow,
+                RuntimeStatus = OrchestrationRuntimeStatus.Completed,
+                SerializedCustomStatus = "TestCustomStatus",
+                SerializedInput = "TestInput",
+                SerializedOutput = "TestOutput"
+            };
+
+            var client = this.GetTestFunctionsDurableTaskClient( orchestrationMetadata: expectedResult);
+
+            HttpRequestData request = this.MockHttpRequestAndResponseData();
+
+            HttpResponseData response = await client.WaitForCompletionOrCreateCheckStatusResponseAsync(request, instanceId);
+
+            Assert.NotNull(response);
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+            // Reset stream position for reading
+            response.Body.Position = 0;
+            var orchestratorMetadata = await System.Text.Json.JsonSerializer.DeserializeAsync<OrchestrationMetadata>(response.Body);
+
+            // Assert the response content is not null and check the content is correct.
+            Assert.NotNull(orchestratorMetadata);
+            AssertOrhcestrationMetadata(expectedResult, orchestratorMetadata);
+        }
+
+        /// <summary>
+        /// Test that the `WaitForCompletionOrCreateCheckStatusResponseAsync` method returns expected response when the orchestration is still running.
+        /// The response body should contain a HttpManagementPayload with HttpStatusCode.Accepted.
+        /// </summary>
+        [Fact]
+        public async Task TestWaitForCompletionOrCreateCheckStatusResponseAsync_WhenRunning()
+        {
+            string instanceId = "test-instance-id-running";
+            var expectedResult = new OrchestrationMetadata("TestRunning", instanceId)
+            {
+                CreatedAt = DateTime.UtcNow,
+                LastUpdatedAt = DateTime.UtcNow,
+                RuntimeStatus = OrchestrationRuntimeStatus.Running,
+            };
+
+            var client = this.GetTestFunctionsDurableTaskClient(orchestrationMetadata: expectedResult);
+
+            HttpRequestData request = this.MockHttpRequestAndResponseData();
+            
+            HttpResponseData response = await client.WaitForCompletionOrCreateCheckStatusResponseAsync(request, instanceId);
+
+            Assert.NotNull(response);
+            Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
+
+            // Reset stream position for reading
+            response.Body.Position = 0;
+            HttpManagementPayload? payload;
+            using (var reader = new StreamReader(response.Body))
+            {
+                payload = JsonConvert.DeserializeObject<HttpManagementPayload>(await reader.ReadToEndAsync());
+            }
+
+            // Assert the response content is not null and check the content is correct.
+            Assert.NotNull(payload);
+            AssertHttpManagementPayload(payload, "http://localhost:7075/runtime/webhooks/durabletask", instanceId);
+        }
+
+        /// <summary>
+        /// Tests the `WaitForCompletionOrCreateCheckStatusResponseAsync` method to ensure it returns the correct HTTP status code
+        /// based on the `returnInternalServerErrorOnFailure` parameter when the orchestration has failed.
+        /// </summary>
+        [Theory]
+        [InlineData(true, HttpStatusCode.InternalServerError)]
+        [InlineData(false, HttpStatusCode.OK)]
+        public async Task TestWaitForCompletionOrCreateCheckStatusResponseAsync_WhenFailed(bool returnInternalServerErrorOnFailure, HttpStatusCode expected)
+        {
+            string instanceId = "test-instance-id-failed";
+            var expectedResult = new OrchestrationMetadata("TestFailed", instanceId)
+            {
+                CreatedAt = DateTime.UtcNow,
+                LastUpdatedAt = DateTime.UtcNow,
+                RuntimeStatus = OrchestrationRuntimeStatus.Failed,
+                SerializedOutput = "Microsoft.DurableTask.TaskFailedException: Task 'SayHello' (#0) failed with an unhandled exception: Exception while executing function: Functions.SayHello",
+                SerializedInput = null
+            };
+
+            var client = this.GetTestFunctionsDurableTaskClient(orchestrationMetadata: expectedResult);
+
+            HttpRequestData request = this.MockHttpRequestAndResponseData();
+
+            HttpResponseData response = await client.WaitForCompletionOrCreateCheckStatusResponseAsync(request, instanceId, returnInternalServerErrorOnFailure: returnInternalServerErrorOnFailure);
+
+            Assert.NotNull(response);
+            Assert.Equal(expected, response.StatusCode);
+
+            // Reset stream position for reading
+            response.Body.Position = 0;
+            var orchestratorMetadata = await System.Text.Json.JsonSerializer.DeserializeAsync<OrchestrationMetadata>(response.Body);
+
+            // Assert the response content is not null and check the content is correct.
+            Assert.NotNull(orchestratorMetadata);
+            AssertOrhcestrationMetadata(expectedResult, orchestratorMetadata);
+        }
+
         private static void AssertHttpManagementPayload(HttpManagementPayload payload, string BaseUrl, string instanceId)
         {
             Assert.Equal(instanceId, payload.Id);
@@ -98,6 +222,72 @@ namespace Microsoft.Azure.Functions.Worker.Tests
             Assert.Equal($"{BaseUrl}/instances/{instanceId}/terminate?reason={{{{text}}}}", payload.TerminatePostUri);
             Assert.Equal($"{BaseUrl}/instances/{instanceId}/suspend?reason={{{{text}}}}", payload.SuspendPostUri);
             Assert.Equal($"{BaseUrl}/instances/{instanceId}/resume?reason={{{{text}}}}", payload.ResumePostUri);
+        }
+
+        private static void AssertOrhcestrationMetadata( OrchestrationMetadata expected, OrchestrationMetadata actual)
+        {
+            Assert.Equal(expected.InstanceId, actual.InstanceId);
+            Assert.Equal(expected.CreatedAt, actual.CreatedAt);
+            Assert.Equal(expected.LastUpdatedAt, actual.LastUpdatedAt);
+            Assert.Equal(expected.RuntimeStatus, actual.RuntimeStatus);
+            Assert.Equal(expected.SerializedInput, actual.SerializedInput);
+            Assert.Equal(expected.SerializedOutput, actual.SerializedOutput);
+            Assert.Equal(expected.SerializedCustomStatus, actual.SerializedCustomStatus);
+        }
+
+        // Mocks the required HttpRequestData and HttpResponseData for testing purposes.
+        // This method sets up a mock HttpRequestData with a predefined URL and a mock HttpResponseDatav with a default status code and body. 
+        private HttpRequestData MockHttpRequestAndResponseData()
+        {
+            var mockObjectSerializer = new Mock<ObjectSerializer>();
+            
+            // Setup the SerializeAsync method
+            mockObjectSerializer.Setup(s => s.SerializeAsync(It.IsAny<Stream>(), It.IsAny<object?>(), It.IsAny<Type>(), It.IsAny<CancellationToken>()))
+                .Returns<Stream, object?, Type, CancellationToken>(async (stream, value, type, token) =>
+            {
+                await System.Text.Json.JsonSerializer.SerializeAsync(stream, value, type, cancellationToken: token);
+            });
+
+            var workerOptions = new WorkerOptions
+            {
+                Serializer = mockObjectSerializer.Object
+            };
+            var mockOptions = new Mock<IOptions<WorkerOptions>>();
+            mockOptions.Setup(o => o.Value).Returns(workerOptions);
+
+            // Mock the service provider
+            var mockServiceProvider = new Mock<IServiceProvider>();
+
+            // Set up the service provider to return the mock IOptions<WorkerOptions>
+            mockServiceProvider.Setup(sp => sp.GetService(typeof(IOptions<WorkerOptions>)))
+                .Returns(mockOptions.Object);
+
+            // Set up the service provider to return the mock ObjectSerializer
+            mockServiceProvider.Setup(sp => sp.GetService(typeof(ObjectSerializer)))
+                .Returns(mockObjectSerializer.Object);
+
+            // Create a mock FunctionContext and assign the service provider
+            var mockFunctionContext = new Mock<FunctionContext>();
+            mockFunctionContext.SetupGet(c => c.InstanceServices).Returns(mockServiceProvider.Object);
+            var mockHttpRequestData = new Mock<HttpRequestData>(mockFunctionContext.Object);
+            
+            // Set up the URL property.
+            mockHttpRequestData.SetupGet(r => r.Url).Returns(new Uri("http://localhost:7075/orchestrators/E1_HelloSequence"));
+
+            var mockHttpResponseData = new Mock<HttpResponseData>(mockFunctionContext.Object)
+            {
+                DefaultValue = DefaultValue.Mock
+            };
+
+            // Enable setting StatusCode and Body as mutable properties
+            mockHttpResponseData.SetupProperty(r => r.StatusCode, HttpStatusCode.OK);
+            mockHttpResponseData.SetupProperty(r => r.Body, new MemoryStream());
+
+            // Setup CreateResponse to return the configured HttpResponseData mock
+            mockHttpRequestData.Setup(r => r.CreateResponse())
+                .Returns(mockHttpResponseData.Object);
+
+            return mockHttpRequestData.Object;
         }
     }
 }
