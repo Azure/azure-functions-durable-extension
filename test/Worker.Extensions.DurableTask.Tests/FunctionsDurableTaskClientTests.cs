@@ -1,8 +1,4 @@
 using System.Net;
-using System.Reflection.PortableExecutable;
-using System.Text;
-using System.Text.Json;
-using Azure.Core;
 using Azure.Core.Serialization;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.DurableTask.Client;
