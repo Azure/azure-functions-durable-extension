@@ -138,7 +138,7 @@ public static class DurableTaskClientExtensions
 
         HttpResponseData response = request.CreateResponse(statusCode);
         object payload = SetHeadersAndGetPayload(client, request, response, instanceId);
-        
+
         ObjectSerializer serializer = GetObjectSerializer(response);
         await serializer.SerializeAsync(response.Body, payload, payload.GetType(), cancellation);
         return response;
