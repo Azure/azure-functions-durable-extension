@@ -130,7 +130,7 @@ namespace Microsoft.Azure.Functions.Worker.Tests
 
             // Reset stream position for reading
             response.Body.Position = 0;
-            var orchestratorMetadata = await System.Text.Json.JsonSerializer.DeserializeAsync<OrchestrationMetadata>(response.Body);
+            var orchestratorMetadata = await System.Text.Json.JsonSerializer.DeserializeAsync<dynamic>(response.Body);
 
             // Assert the response content is not null and check the content is correct.
             Assert.NotNull(orchestratorMetadata);
@@ -204,7 +204,7 @@ namespace Microsoft.Azure.Functions.Worker.Tests
 
             // Reset stream position for reading
             response.Body.Position = 0;
-            var orchestratorMetadata = await System.Text.Json.JsonSerializer.DeserializeAsync<OrchestrationMetadata>(response.Body);
+            var orchestratorMetadata = await System.Text.Json.JsonSerializer.DeserializeAsync<dynamic>(response.Body);
 
             // Assert the response content is not null and check the content is correct.
             Assert.NotNull(orchestratorMetadata);
@@ -217,14 +217,12 @@ namespace Microsoft.Azure.Functions.Worker.Tests
         /// - Using the "Forwarded" header
         /// - Using "X-Forwarded-Proto" and "X-Forwarded-Host" headers
         /// - Using only "X-Forwarded-Host" with default protocol
-        /// - Using "X-Original-Proto" and "X-Original-Host" headers
         /// - no headers
         /// </summary>
         [Theory]
         [InlineData("Forwarded", "proto=https;host=forwarded.example.com","","", "https://forwarded.example.com/runtime/webhooks/durabletask")]
         [InlineData("X-Forwarded-Proto", "https", "X-Forwarded-Host", "xforwarded.example.com", "https://xforwarded.example.com/runtime/webhooks/durabletask")]
         [InlineData("", "", "X-Forwarded-Host", "test.net", "https://test.net/runtime/webhooks/durabletask")]
-        [InlineData("X-Original-Proto", "https", "X-Original-Host", "original.example.com", "https://original.example.com/runtime/webhooks/durabletask")]
         [InlineData("", "", "", "", "https://localhost:7075/runtime/webhooks/durabletask")] // Default base URL for empty headers
         public void TestHttpRequestDataForwardingHandling(string header1, string? value1, string header2, string value2, string expectedBaseUrl)
         {
@@ -258,15 +256,16 @@ namespace Microsoft.Azure.Functions.Worker.Tests
             Assert.Equal($"{BaseUrl}/instances/{instanceId}/resume?reason={{{{text}}}}", payload.ResumePostUri);
         }
 
-        private static void AssertOrhcestrationMetadata( OrchestrationMetadata expected, OrchestrationMetadata actual)
+        private static void AssertOrhcestrationMetadata(OrchestrationMetadata expectedResult, dynamic actualResult)
         {
-            Assert.Equal(expected.InstanceId, actual.InstanceId);
-            Assert.Equal(expected.CreatedAt, actual.CreatedAt);
-            Assert.Equal(expected.LastUpdatedAt, actual.LastUpdatedAt);
-            Assert.Equal(expected.RuntimeStatus, actual.RuntimeStatus);
-            Assert.Equal(expected.SerializedInput, actual.SerializedInput);
-            Assert.Equal(expected.SerializedOutput, actual.SerializedOutput);
-            Assert.Equal(expected.SerializedCustomStatus, actual.SerializedCustomStatus);
+            Assert.Equal(expectedResult.Name, actualResult.GetProperty("Name").GetString());
+            Assert.Equal(expectedResult.InstanceId, actualResult.GetProperty("InstanceId").GetString());
+            Assert.Equal(expectedResult.CreatedAt, actualResult.GetProperty("CreatedAt").GetDateTime());
+            Assert.Equal(expectedResult.LastUpdatedAt, actualResult.GetProperty("LastUpdatedAt").GetDateTime());
+            Assert.Equal(expectedResult.RuntimeStatus.ToString(), actualResult.GetProperty("RuntimeStatus").GetString());
+            Assert.Equal(expectedResult.SerializedInput, actualResult.GetProperty("SerializedInput").GetString());
+            Assert.Equal(expectedResult.SerializedOutput, actualResult.GetProperty("SerializedOutput").GetString());
+            Assert.Equal(expectedResult.SerializedCustomStatus, actualResult.GetProperty("SerializedCustomStatus").GetString());
         }
 
         // Mocks the required HttpRequestData and HttpResponseData for testing purposes.

@@ -58,14 +58,16 @@ public static class DurableTaskClientExtensions
                     {
                         var response = request.CreateResponse(
                             (status.RuntimeStatus == OrchestrationRuntimeStatus.Failed && returnInternalServerErrorOnFailure) ? HttpStatusCode.InternalServerError : HttpStatusCode.OK);
-                        await response.WriteAsJsonAsync(new OrchestrationMetadata(status.Name, status.InstanceId)
+                        await response.WriteAsJsonAsync(new
                         {
+                            Name = status.Name,
+                            InstanceId = status.InstanceId,
                             CreatedAt = status.CreatedAt,
                             LastUpdatedAt = status.LastUpdatedAt,
-                            RuntimeStatus = status.RuntimeStatus,
+                            RuntimeStatus = status.RuntimeStatus.ToString(), // Convert enum to string
                             SerializedInput = status.SerializedInput,
                             SerializedOutput = status.SerializedOutput,
-                            SerializedCustomStatus = status.SerializedCustomStatus,
+                            SerializedCustomStatus = status.SerializedCustomStatus
                         }, statusCode: response.StatusCode);
 
                         return response;
@@ -74,6 +76,7 @@ public static class DurableTaskClientExtensions
                 await Task.Delay(retryIntervalLocal, cancellation);
             }
         }
+        // If the task is canceled, call CreateCheckStatusResponseAsync to return a response containing instance management URLs.
         catch (OperationCanceledException)
         {
             return await CreateCheckStatusResponseAsync(client, request, instanceId);
@@ -316,17 +319,7 @@ public static class DurableTaskClientExtensions
             return $"{proto}://{host}";
         }
 
-        // Fallback to "X-Original-Proto" and "X-Original-Host" headers if neither of the above produced a returnable URL
-        if (request.Headers.TryGetValues("X-Original-Proto", out var originalProtos))
-        {
-            proto = originalProtos.First();
-        }
-        if (request.Headers.TryGetValues("X-Original-Host", out var originalHosts))
-        {
-            host = originalHosts.First();
-        }
-
-        // Construct and return the base URL from guaranteed fallback values
+        // Construct and return the base URL from default fallback values
         return $"{proto}://{host}";
     }
 
