@@ -20,7 +20,8 @@ namespace Microsoft.Azure.Functions.Worker;
 public static class DurableTaskClientExtensions
 {
     /// <summary>
-    /// 
+    /// Waits for the completion of the specified orchestration instance with a retry interval, controlled by the cancellation token.
+    /// If the orchestration does not complete within the required time, returns an HTTP response containing the <see cref="HttpManagementPayload"/> class to manage instances.
     /// </summary>
     /// <param name="client">The <see cref="DurableTaskClient"/>.</param>
     /// <param name="request">The HTTP request that this response is for.</param>
