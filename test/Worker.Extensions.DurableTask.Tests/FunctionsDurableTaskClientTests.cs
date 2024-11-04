@@ -171,7 +171,7 @@ namespace Microsoft.Azure.Functions.Worker.Tests
 
             // Assert the response content is not null and check the content is correct.
             Assert.NotNull(payload);
-            AssertHttpManagementPayload(payload, "http://localhost:7075/runtime/webhooks/durabletask", instanceId);
+            AssertHttpManagementPayload(payload, "https://localhost:7075/runtime/webhooks/durabletask", instanceId);
         }
 
         /// <summary>
@@ -225,7 +225,7 @@ namespace Microsoft.Azure.Functions.Worker.Tests
         [InlineData("X-Forwarded-Proto", "https", "X-Forwarded-Host", "xforwarded.example.com", "https://xforwarded.example.com/runtime/webhooks/durabletask")]
         [InlineData("", "", "X-Forwarded-Host", "test.net", "https://test.net/runtime/webhooks/durabletask")]
         [InlineData("X-Original-Proto", "https", "X-Original-Host", "original.example.com", "https://original.example.com/runtime/webhooks/durabletask")]
-        [InlineData("", "", "", "", "http://localhost:7075/runtime/webhooks/durabletask")] // Default base URL for empty headers
+        [InlineData("", "", "", "", "https://localhost:7075/runtime/webhooks/durabletask")] // Default base URL for empty headers
         public void TestHttpRequestDataForwardingHandling(string header1, string? value1, string header2, string value2, string expectedBaseUrl)
         {
             var headers = new HttpHeadersCollection();
@@ -307,7 +307,7 @@ namespace Microsoft.Azure.Functions.Worker.Tests
             var mockHttpRequestData = new Mock<HttpRequestData>(mockFunctionContext.Object);
             
             // Set up the URL property.
-            mockHttpRequestData.SetupGet(r => r.Url).Returns(new Uri("http://localhost:7075/orchestrators/E1_HelloSequence"));
+            mockHttpRequestData.SetupGet(r => r.Url).Returns(new Uri("https://localhost:7075/orchestrators/E1_HelloSequence"));
 
             // If headers are provided, use them, otherwise create a new empty HttpHeadersCollection
             headers ??= new HttpHeadersCollection();
