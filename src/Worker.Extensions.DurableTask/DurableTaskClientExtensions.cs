@@ -2,7 +2,6 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System;
-using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Threading;
@@ -26,69 +25,59 @@ public static class DurableTaskClientExtensions
     /// <param name="client">The <see cref="DurableTaskClient"/>.</param>
     /// <param name="request">The HTTP request that this response is for.</param>
     /// <param name="instanceId">The ID of the orchestration instance to check.</param>
-    /// <param name="cancellation">The cancellation token.</param>
-    /// <param name="timeout">Total allowed timeout for output from the durable function. The default value is 10 seconds.</param>
     /// <param name="retryInterval">The timeout between checks for output from the durable function. The default value is 1 second.</param>
     /// <param name="returnInternalServerErrorOnFailure">Optional parameter that configures the http response code returned. Defaults to <c>false</c>.</param>
+    /// <param name="getInputsAndOutputs">Optional parameter that configures whether to get the inputs and outputs of the orchestration. Defaults to <c>true</c>.</param>
+    /// <param name="cancellation">A token that signals if the wait should be canceled. If canceled, call CreateCheckStatusResponseAsync to return a reponse contains a HttpManagementPayload.</param>
     /// <returns></returns>
-    public static async Task<HttpResponseData> WaitForCompletionOrCreateCheckStatusResponseAsync(this DurableTaskClient client,
+    public static async Task<HttpResponseData> WaitForCompletionOrCreateCheckStatusResponseAsync(
+        this DurableTaskClient client,
         HttpRequestData request,
         string instanceId,
-        CancellationToken cancellation = default,
-        TimeSpan? timeout = null,
         TimeSpan? retryInterval = null,
-        bool returnInternalServerErrorOnFailure = false
+        bool returnInternalServerErrorOnFailure = false,
+        bool getInputsAndOutputs = true,
+        CancellationToken cancellation = default
     )
     {
-        TimeSpan timeoutLocal = timeout ?? TimeSpan.FromSeconds(10);
         TimeSpan retryIntervalLocal = retryInterval ?? TimeSpan.FromSeconds(1);
-        
-        if (retryIntervalLocal > timeoutLocal)
+        try
         {
-            throw new ArgumentException($"Total timeout {timeoutLocal.TotalSeconds} should be bigger than retry timeout {retryIntervalLocal.TotalSeconds}");
-        }
-
-        Stopwatch stopwatch = Stopwatch.StartNew();
-        while (true)
-        {
-            var status = await client.GetInstanceAsync(instanceId, getInputsAndOutputs: true);
-            if (status != null)
+            while (true)
             {
-                if (status.RuntimeStatus == OrchestrationRuntimeStatus.Completed ||
-#pragma warning disable CS0618 // Type or member is obsolete
-                    status.RuntimeStatus == OrchestrationRuntimeStatus.Canceled ||
-#pragma warning restore CS0618 // Type or member is obsolete
-                    status.RuntimeStatus == OrchestrationRuntimeStatus.Terminated ||
-                    status.RuntimeStatus == OrchestrationRuntimeStatus.Failed)
+                var status = await client.GetInstanceAsync(instanceId, getInputsAndOutputs: getInputsAndOutputs);
+                if (status != null)
                 {
-                    var response = request.CreateResponse(
-                        (status.RuntimeStatus == OrchestrationRuntimeStatus.Failed && returnInternalServerErrorOnFailure)? HttpStatusCode.InternalServerError: HttpStatusCode.OK);
-                    await response.WriteAsJsonAsync(new OrchestrationMetadata(status.Name, status.InstanceId)
+                    if (status.RuntimeStatus == OrchestrationRuntimeStatus.Completed ||
+#pragma warning disable CS0618 // Type or member is obsolete
+                        status.RuntimeStatus == OrchestrationRuntimeStatus.Canceled ||
+#pragma warning restore CS0618 // Type or member is obsolete
+                        status.RuntimeStatus == OrchestrationRuntimeStatus.Terminated ||
+                        status.RuntimeStatus == OrchestrationRuntimeStatus.Failed)
                     {
-                        CreatedAt = status.CreatedAt,
-                        LastUpdatedAt = status.LastUpdatedAt,
-                        RuntimeStatus = status.RuntimeStatus,
-                        SerializedInput = status.SerializedInput,
-                        SerializedOutput = status.SerializedOutput,
-                        SerializedCustomStatus = status.SerializedCustomStatus,
-                    }, statusCode: response.StatusCode);
+                        var response = request.CreateResponse(
+                            (status.RuntimeStatus == OrchestrationRuntimeStatus.Failed && returnInternalServerErrorOnFailure) ? HttpStatusCode.InternalServerError : HttpStatusCode.OK);
+                        await response.WriteAsJsonAsync(new OrchestrationMetadata(status.Name, status.InstanceId)
+                        {
+                            CreatedAt = status.CreatedAt,
+                            LastUpdatedAt = status.LastUpdatedAt,
+                            RuntimeStatus = status.RuntimeStatus,
+                            SerializedInput = status.SerializedInput,
+                            SerializedOutput = status.SerializedOutput,
+                            SerializedCustomStatus = status.SerializedCustomStatus,
+                        }, statusCode: response.StatusCode);
 
-                    return response;
+                        return response;
+                    }
                 }
-            }
-
-            TimeSpan elapsed = stopwatch.Elapsed;
-            if (elapsed < timeout)
-            {
-                TimeSpan remainingTime = timeoutLocal!.Subtract(elapsed);
-                await Task.Delay(remainingTime > retryIntervalLocal ? retryIntervalLocal : remainingTime);
-            }
-            else
-            {
-                return await CreateCheckStatusResponseAsync(client, request, instanceId, cancellation: cancellation);
+                await Task.Delay(retryIntervalLocal, cancellation);
             }
         }
-    }
+        catch (OperationCanceledException)
+        {
+            return await CreateCheckStatusResponseAsync(client, request, instanceId);
+        }
+     }
 
     /// <summary>
     /// Creates an HTTP response that is useful for checking the status of the specified instance.
@@ -290,43 +279,54 @@ public static class DurableTaskClientExtensions
     {
         // Default to the scheme from the request URL
         string proto = request.Url.Scheme;
-        string baseUrl;
+        string host = request.Url.Authority;
 
         // Check for "Forwarded" header
-        if (request.Headers.TryGetValues("Forwarded", out var forwarded))
+        if (request.Headers.TryGetValues("Forwarded", out var forwardedHeaders))
         {
-            var forwardedDict = (forwarded.FirstOrDefault() ?? "").Split(';')
+            var forwardedDict = forwardedHeaders.FirstOrDefault()?.Split(';')
                 .Select(pair => pair.Split('='))
-                .Where(pair => pair.Length == 2) // Ensure valid key-value pairs
+                .Where(pair => pair.Length == 2)
                 .ToDictionary(pair => pair[0].Trim(), pair => pair[1].Trim());
 
-            if (forwardedDict.TryGetValue("proto", out var forwardedProto))
+            if (forwardedDict != null)
             {
-                proto = forwardedProto;
-            }
-
-            if (forwardedDict.TryGetValue("host", out var forwardedHost))
-            {
-                baseUrl = $"{proto}://{forwardedHost}";
-                return baseUrl;
+                if (forwardedDict.TryGetValue("proto", out var forwardedProto))
+                {
+                    proto = forwardedProto;
+                }
+                if (forwardedDict.TryGetValue("host", out var forwardedHost))
+                {
+                    host = forwardedHost;
+                    // Return if either proto or host (or both) were found in "Forwarded" header
+                    return $"{proto}://{forwardedHost}";
+                }
             }
         }
-
-        // Check for "X-Forwarded-Proto" and "X-Forwarded-Host" headers
+        // Check for "X-Forwarded-Proto" and "X-Forwarded-Host" headers if "Forwarded" is not present
         if (request.Headers.TryGetValues("X-Forwarded-Proto", out var protos))
         {
-            proto = protos.First();
+            proto = protos.FirstOrDefault() ?? proto;
         }
-
         if (request.Headers.TryGetValues("X-Forwarded-Host", out var hosts))
         {
-            baseUrl = $"{proto}://{hosts.First()}";
-            return baseUrl;
+            // Return base URL if either "X-Forwarded-Proto" or "X-Forwarded-Host" (or both) are found
+            host = hosts.FirstOrDefault() ?? host;
+            return $"{proto}://{host}";
         }
 
-        // Fallback to using the request's URL if no forwarding headers are found
-        baseUrl = $"{proto}://{request.Url.Authority}";
-        return baseUrl;
+        // Fallback to "X-Original-Proto" and "X-Original-Host" headers if neither of the above produced a returnable URL
+        if (request.Headers.TryGetValues("X-Original-Proto", out var originalProtos))
+        {
+            proto = originalProtos.First();
+        }
+        if (request.Headers.TryGetValues("X-Original-Host", out var originalHosts))
+        {
+            host = originalHosts.First();
+        }
+
+        // Construct and return the base URL from guaranteed fallback values
+        return $"{proto}://{host}";
     }
 
 

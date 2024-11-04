@@ -138,8 +138,8 @@ namespace Microsoft.Azure.Functions.Worker.Tests
         }
 
         /// <summary>
-        /// Test that the `WaitForCompletionOrCreateCheckStatusResponseAsync` method returns expected response when the orchestration is still running.
-        /// The response body should contain a HttpManagementPayload with HttpStatusCode.Accepted.
+        /// Test that the `WaitForCompletionOrCreateCheckStatusResponseAsync` method returns expected response when the orchestrator didn't finish within
+        /// the timeout period. The response body should contain a HttpManagementPayload with HttpStatusCode.Accepted.
         /// </summary>
         [Fact]
         public async Task TestWaitForCompletionOrCreateCheckStatusResponseAsync_WhenRunning()
@@ -155,8 +155,8 @@ namespace Microsoft.Azure.Functions.Worker.Tests
             var client = this.GetTestFunctionsDurableTaskClient(orchestrationMetadata: expectedResult);
 
             HttpRequestData request = this.MockHttpRequestAndResponseData();
-            
-            HttpResponseData response = await client.WaitForCompletionOrCreateCheckStatusResponseAsync(request, instanceId);
+            CancellationTokenSource cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            HttpResponseData response = await client.WaitForCompletionOrCreateCheckStatusResponseAsync(request, instanceId, cancellation : cts.Token);
 
             Assert.NotNull(response);
             Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
@@ -211,6 +211,42 @@ namespace Microsoft.Azure.Functions.Worker.Tests
             AssertOrhcestrationMetadata(expectedResult, orchestratorMetadata);
         }
 
+        /// <summary>
+        /// Tests the `GetBaseUrlFromRequest` can return the right base URL from the HttpRequestData with different forwarding or proxies.
+        /// This test covers the following scenarios:
+        /// - Using the "Forwarded" header
+        /// - Using "X-Forwarded-Proto" and "X-Forwarded-Host" headers
+        /// - Using only "X-Forwarded-Host" with default protocol
+        /// - Using "X-Original-Proto" and "X-Original-Host" headers
+        /// - no headers
+        /// </summary>
+        [Theory]
+        [InlineData("Forwarded", "proto=https;host=forwarded.example.com","","", "https://forwarded.example.com/runtime/webhooks/durabletask")]
+        [InlineData("X-Forwarded-Proto", "https", "X-Forwarded-Host", "xforwarded.example.com", "https://xforwarded.example.com/runtime/webhooks/durabletask")]
+        [InlineData("", "", "X-Forwarded-Host", "test.net", "https://test.net/runtime/webhooks/durabletask")]
+        [InlineData("X-Original-Proto", "https", "X-Original-Host", "original.example.com", "https://original.example.com/runtime/webhooks/durabletask")]
+        [InlineData("", "", "", "", "http://localhost:7075/runtime/webhooks/durabletask")] // Default base URL for empty headers
+        public void TestHttpRequestDataForwardingHandling(string header1, string? value1, string header2, string value2, string expectedBaseUrl)
+        {
+            var headers = new HttpHeadersCollection();
+            if (!string.IsNullOrEmpty(header1))
+            {
+                headers.Add(header1, value1);
+            }
+            if (!string.IsNullOrEmpty(header2))
+            {
+                headers.Add(header2, value2);
+            }
+
+            var request = this.MockHttpRequestAndResponseData(headers);
+            var client = this.GetTestFunctionsDurableTaskClient();
+
+            var payload = client.CreateHttpManagementPayload("testInstanceId", request);
+            AssertHttpManagementPayload(payload, expectedBaseUrl, "testInstanceId");
+        }
+
+
+
         private static void AssertHttpManagementPayload(HttpManagementPayload payload, string BaseUrl, string instanceId)
         {
             Assert.Equal(instanceId, payload.Id);
@@ -235,7 +271,8 @@ namespace Microsoft.Azure.Functions.Worker.Tests
 
         // Mocks the required HttpRequestData and HttpResponseData for testing purposes.
         // This method sets up a mock HttpRequestData with a predefined URL and a mock HttpResponseDatav with a default status code and body. 
-        private HttpRequestData MockHttpRequestAndResponseData()
+        // The headers of HttpRequestData can be provided as an optional parameter, otherwise an empty HttpHeadersCollection is used.
+        private HttpRequestData MockHttpRequestAndResponseData(HttpHeadersCollection? headers = null)
         {
             var mockObjectSerializer = new Mock<ObjectSerializer>();
             
@@ -271,8 +308,9 @@ namespace Microsoft.Azure.Functions.Worker.Tests
             
             // Set up the URL property.
             mockHttpRequestData.SetupGet(r => r.Url).Returns(new Uri("http://localhost:7075/orchestrators/E1_HelloSequence"));
-            
-            var headers = new HttpHeadersCollection();
+
+            // If headers are provided, use them, otherwise create a new empty HttpHeadersCollection
+            headers ??= new HttpHeadersCollection();
 
             // Setup the Headers property to return the empty headers
             mockHttpRequestData.SetupGet(r => r.Headers).Returns(headers);
