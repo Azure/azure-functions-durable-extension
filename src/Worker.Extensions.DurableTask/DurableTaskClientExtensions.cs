@@ -28,7 +28,7 @@ public static class DurableTaskClientExtensions
     /// <param name="instanceId">The ID of the orchestration instance to check.</param>
     /// <param name="retryInterval">The timeout between checks for output from the durable function. The default value is 1 second.</param>
     /// <param name="returnInternalServerErrorOnFailure">Optional parameter that configures the http response code returned. Defaults to <c>false</c>.</param>
-    /// <param name="getInputsAndOutputs">Optional parameter that configures whether to get the inputs and outputs of the orchestration. Defaults to <c>true</c>.</param>
+    /// <param name="getInputsAndOutputs">Optional parameter that configures whether to get the inputs and outputs of the orchestration. Defaults to <c>false</c>.</param>
     /// <param name="cancellation">A token that signals if the wait should be canceled. If canceled, call CreateCheckStatusResponseAsync to return a reponse contains a HttpManagementPayload.</param>
     /// <returns></returns>
     public static async Task<HttpResponseData> WaitForCompletionOrCreateCheckStatusResponseAsync(
@@ -37,7 +37,7 @@ public static class DurableTaskClientExtensions
         string instanceId,
         TimeSpan? retryInterval = null,
         bool returnInternalServerErrorOnFailure = false,
-        bool getInputsAndOutputs = true,
+        bool getInputsAndOutputs = false,
         CancellationToken cancellation = default
     )
     {
