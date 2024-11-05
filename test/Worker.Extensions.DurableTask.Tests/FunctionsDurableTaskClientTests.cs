@@ -155,8 +155,11 @@ namespace Microsoft.Azure.Functions.Worker.Tests
             var client = this.GetTestFunctionsDurableTaskClient(orchestrationMetadata: expectedResult);
 
             HttpRequestData request = this.MockHttpRequestAndResponseData();
-            CancellationTokenSource cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
-            HttpResponseData response = await client.WaitForCompletionOrCreateCheckStatusResponseAsync(request, instanceId, cancellation : cts.Token);
+            HttpResponseData response;
+            using (CancellationTokenSource cts = new CancellationTokenSource(TimeSpan.FromSeconds(10)))
+            {
+                response = await client.WaitForCompletionOrCreateCheckStatusResponseAsync(request, instanceId, cancellation: cts.Token);
+            };
 
             Assert.NotNull(response);
             Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
