@@ -8,7 +8,6 @@
     <MinorVersion>0</MinorVersion>
     <PatchVersion>0</PatchVersion>
     <VersionPrefix>$(MajorVersion).$(MinorVersion).$(PatchVersion)</VersionPrefix>
-    <VersionSuffix>preview.4</VersionSuffix>
     <FileVersion>$(MajorVersion).$(MinorVersion).$(PatchVersion)</FileVersion>
     <AssemblyVersion>$(MajorVersion).0.0.0</AssemblyVersion>
     <Company>Microsoft Corporation</Company>
@@ -51,11 +50,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Azure.Identity" Version="1.11.4" />
+    <PackageReference Include="Azure.Identity" Version="1.12.1" />
     <PackageReference Include="Microsoft.Azure.WebJobs" Version="3.0.39" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.Rpc" Version="3.0.39" />
     <PackageReference Include="Microsoft.Azure.DurableTask.Core" Version="3.0.0" />
-    <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" Version="2.0.1" />
+    <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" Version="2.0.2" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers" Version="0.5.*" />
     <PackageReference Include="Microsoft.Extensions.Azure" Version="1.7.0" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="6.0.0" />
