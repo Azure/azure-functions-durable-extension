@@ -118,7 +118,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(new Uri(expectedEndpoint, UriKind.Absolute), actual.Uri);
         }
 
-
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData("unittest1", "https://unittest1.blob.core.windows.net")]
@@ -241,7 +240,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 JsonConvert.SerializeObject(value, settings),
                 settings);
         }
-
 
         private StorageServiceClientProviderFactory SetupClientProviderFactory(string connectionName, string connectionString)
         {
