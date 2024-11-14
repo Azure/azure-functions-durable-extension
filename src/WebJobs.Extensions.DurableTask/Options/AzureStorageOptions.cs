@@ -161,19 +161,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         /// <summary>
         /// Gets or sets the maximum queue polling interval.
+        /// We update the default value to 1 second for the Flex Consumption SKU
+        /// because of a known cold start latency with Flex Consumption
+        /// and Durable Functions.
+        /// The default value is 30 seconds for all other SKUs.
         /// </summary>
         /// <value>Maximum interval for polling control and work-item queues.</value>
         public TimeSpan MaxQueuePollingInterval
         {
             get
             {
-                if (string.Equals(Environment.GetEnvironmentVariable("WEBSITE_SKU"), "FlexConsumption", StringComparison.OrdinalIgnoreCase))
+                if (this.maxQueuePollingInterval == TimeSpan.Zero)
                 {
-                    this.maxQueuePollingInterval = TimeSpan.FromSeconds(1);
-                }
-                else
-                {
-                    this.maxQueuePollingInterval = TimeSpan.FromSeconds(30);
+                    if (string.Equals(Environment.GetEnvironmentVariable("WEBSITE_SKU"), "FlexConsumption", StringComparison.OrdinalIgnoreCase))
+                    {
+                        this.maxQueuePollingInterval = TimeSpan.FromSeconds(1);
+                    }
+                    else
+                    {
+                        this.maxQueuePollingInterval = TimeSpan.FromSeconds(30);
+                    }
                 }
 
                 return this.maxQueuePollingInterval;
