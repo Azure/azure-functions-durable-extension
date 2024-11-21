@@ -20,8 +20,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
     public class DurableTaskScaleMonitorTests
     {
-        private readonly string functionId = "DurableTaskTriggerFunctionId";
-        private readonly FunctionName functionName = new FunctionName("DurableTaskTriggerFunctionName");
         private readonly string hubName = "DurableTaskTriggerHubName";
         private readonly StorageAccountClientProvider clientProvider = new StorageAccountClientProvider(TestHelpers.GetStorageConnectionString());
         private readonly ITestOutputHelper output;
@@ -45,15 +43,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 TaskHubName = this.hubName,
             });
             var metricsProvider = new DurableTaskMetricsProvider(
-                this.functionName.Name,
                 this.hubName,
                 logger,
                 this.performanceMonitor.Object,
                 this.clientProvider);
 
             this.scaleMonitor = new DurableTaskScaleMonitor(
-                this.functionId,
-                this.functionName.Name,
                 this.hubName,
                 this.clientProvider,
                 logger,
@@ -65,7 +60,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void ScaleMonitorDescriptor_ReturnsExpectedValue()
         {
-            Assert.Equal($"{this.functionId}-DurableTaskTrigger-{this.hubName}".ToLower(), this.scaleMonitor.Descriptor.Id);
+            Assert.Equal($"DurableTaskTrigger-{this.hubName}".ToLower(), this.scaleMonitor.Descriptor.Id);
         }
 
         [Fact]

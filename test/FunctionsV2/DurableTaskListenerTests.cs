@@ -2,13 +2,10 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
-using System.Linq;
-using Microsoft.Azure.WebJobs.Host.Executors;
 using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
-using Moq;
 using Xunit;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
@@ -40,9 +37,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             IScaleMonitor scaleMonitor = this.listener.GetMonitor();
 
             Assert.Equal(typeof(DurableTaskScaleMonitor), scaleMonitor.GetType());
-            Assert.Equal($"{this.functionId}-DurableTaskTrigger-DurableTaskHub".ToLower(), scaleMonitor.Descriptor.Id);
+            Assert.Equal($"DurableTaskTrigger-DurableTaskHub".ToLower(), scaleMonitor.Descriptor.Id);
 
-            var scaleMonitor2 = this.listener.GetMonitor();
+            IScaleMonitor scaleMonitor2 = this.listener.GetMonitor();
 
             Assert.Same(scaleMonitor, scaleMonitor2);
         }

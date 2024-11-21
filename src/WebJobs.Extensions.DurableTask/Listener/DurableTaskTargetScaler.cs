@@ -18,14 +18,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly TargetScalerResult scaleResult;
         private readonly DurabilityProvider durabilityProvider;
         private readonly ILogger logger;
-        private readonly string functionId;
+        private readonly string scaler;
 
-        public DurableTaskTargetScaler(string functionId, DurableTaskMetricsProvider metricsProvider, DurabilityProvider durabilityProvider, ILogger logger)
+        public DurableTaskTargetScaler(
+            string scalerId,
+            DurableTaskMetricsProvider metricsProvider,
+            DurabilityProvider durabilityProvider,
+            ILogger logger)
         {
-            this.functionId = functionId;
+            this.scaler = scalerId;
             this.metricsProvider = metricsProvider;
             this.scaleResult = new TargetScalerResult();
-            this.TargetScalerDescriptor = new TargetScalerDescriptor(this.functionId);
+            this.TargetScalerDescriptor = new TargetScalerDescriptor(this.scaler);
             this.durabilityProvider = durabilityProvider;
             this.logger = logger;
         }
@@ -67,7 +71,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 // and the ScaleController is injecting it's own custom ILogger implementation that forwards logs to Kusto.
                 var metricsLog = $"Metrics: workItemQueueLength={workItemQueueLength}. controlQueueLengths={serializedControlQueueLengths}. " +
                     $"maxConcurrentOrchestrators={this.MaxConcurrentOrchestrators}. maxConcurrentActivities={this.MaxConcurrentActivities}";
-                var scaleControllerLog = $"Target worker count for '{this.functionId}' is '{numWorkersToRequest}'. " +
+                var scaleControllerLog = $"Target worker count for '{this.scaler}' is '{numWorkersToRequest}'. " +
                     metricsLog;
 
                 // target worker count should never be negative
@@ -84,7 +88,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 // We want to augment the exception with metrics information for investigation purposes
                 var metricsLog = $"Metrics: workItemQueueLength={metrics?.WorkItemQueueLength}. controlQueueLengths={metrics?.ControlQueueLengths}. " +
                     $"maxConcurrentOrchestrators={this.MaxConcurrentOrchestrators}. maxConcurrentActivities={this.MaxConcurrentActivities}";
-                var errorLog = $"Error: target worker count for '{this.functionId}' resulted in exception. " + metricsLog;
+                var errorLog = $"Error: target worker count for '{this.scaler}' resulted in exception. " + metricsLog;
                 throw new Exception(errorLog, ex);
             }
         }
