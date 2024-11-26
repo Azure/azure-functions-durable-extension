@@ -35,13 +35,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private readonly object initLock = new object();
 
-#if !FUNCTIONS_V1
         private DurableTaskScaleMonitor singletonScaleMonitor;
-#endif
-
-#if FUNCTIONS_V3_OR_GREATER
         private DurableTaskTargetScaler singletonTargetScaler;
-#endif
 
         public AzureStorageDurabilityProvider(
             AzureStorageOrchestrationService service,
