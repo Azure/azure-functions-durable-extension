@@ -38,6 +38,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.durableTaskMetricsProvider = durableTaskMetricsProvider;
 
             string id = $"DurableTaskTrigger-{this.hubName}".ToLower();
+
             // Scalers in Durable Functions are shared for all functions in the same task hub.
             // So instead of using a function ID, we use the task hub name as the basis for the descriptor ID.
             this.scaleMonitorDescriptor = new ScaleMonitorDescriptor(id: id, functionId: id);
