@@ -13,16 +13,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     internal class DurableTaskMetricsProvider
     {
-        private readonly string functionName;
         private readonly string hubName;
         private readonly ILogger logger;
         private readonly CloudStorageAccount storageAccount;
 
         private DisconnectedPerformanceMonitor performanceMonitor;
 
-        public DurableTaskMetricsProvider(string functionName, string hubName, ILogger logger, DisconnectedPerformanceMonitor performanceMonitor, CloudStorageAccount storageAccount)
+        public DurableTaskMetricsProvider(
+            string hubName,
+            ILogger logger,
+            DisconnectedPerformanceMonitor performanceMonitor,
+            CloudStorageAccount storageAccount)
         {
-            this.functionName = functionName;
             this.hubName = hubName;
             this.logger = logger;
             this.performanceMonitor = performanceMonitor;
@@ -42,7 +44,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             catch (StorageException e)
             {
-                this.logger.LogWarning("{details}. Function: {functionName}. HubName: {hubName}.", e.ToString(), this.functionName, this.hubName);
+                this.logger.LogWarning("{details}. HubName: {hubName}.", e.ToString(), this.hubName);
             }
 
             if (heartbeat != null)

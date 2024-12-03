@@ -16,8 +16,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     internal sealed class DurableTaskScaleMonitor : IScaleMonitor<DurableTaskTriggerMetrics>
     {
-        private readonly string functionId;
-        private readonly string functionName;
         private readonly string hubName;
         private readonly CloudStorageAccount storageAccount;
         private readonly ScaleMonitorDescriptor scaleMonitorDescriptor;
@@ -27,31 +25,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private DisconnectedPerformanceMonitor performanceMonitor;
 
         public DurableTaskScaleMonitor(
-            string functionId,
-            string functionName,
             string hubName,
             CloudStorageAccount storageAccount,
             ILogger logger,
             DurableTaskMetricsProvider durableTaskMetricsProvider,
             DisconnectedPerformanceMonitor performanceMonitor = null)
         {
-            this.functionId = functionId;
-            this.functionName = functionName;
             this.hubName = hubName;
             this.storageAccount = storageAccount;
             this.logger = logger;
             this.performanceMonitor = performanceMonitor;
             this.durableTaskMetricsProvider = durableTaskMetricsProvider;
 
+            string id = $"DurableTaskTrigger-{this.hubName}".ToLower();
 #if FUNCTIONS_V3_OR_GREATER
-            this.scaleMonitorDescriptor = new ScaleMonitorDescriptor($"{this.functionId}-DurableTaskTrigger-{this.hubName}".ToLower(), this.functionId);
+            // Scalers in Durable Functions are shared for all functions in the same task hub.
+            // So instead of using a function ID, we use the task hub name as the basis for the descriptor ID.
+            this.scaleMonitorDescriptor = new ScaleMonitorDescriptor(id: id, functionId: id);
 #else
-#pragma warning disable CS0618 // Type or member is obsolete.
-
             // We need this because the new ScaleMonitorDescriptor constructor is not compatible with the WebJobs version of Functions V1 and V2.
             // Technically, it is also not available in Functions V3, but we don't have a TFM allowing us to differentiate between Functions V3 and V4.
-            this.scaleMonitorDescriptor = new ScaleMonitorDescriptor($"{this.functionId}-DurableTaskTrigger-{this.hubName}".ToLower());
-#pragma warning restore CS0618 // Type or member is obsolete. However, the new interface is not compatible with Functions V2 and V1
+            this.scaleMonitorDescriptor = new ScaleMonitorDescriptor(id);
 #endif
         }
 
@@ -150,9 +144,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (writeToUserLogs)
             {
                 this.logger.LogInformation(
-                    $"Durable Functions Trigger Scale Decision: {scaleStatus.Vote.ToString()}, Reason: {scaleRecommendation?.Reason}",
+                    "Durable Functions Trigger Scale Decision for {TaskHub}: {Vote}, Reason: {Reason}",
                     this.hubName,
-                    this.functionName);
+                    scaleStatus.Vote,
+                    scaleRecommendation?.Reason);
             }
 
             return scaleStatus;

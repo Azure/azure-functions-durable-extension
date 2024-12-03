@@ -47,7 +47,6 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
             CloudStorageAccount nullCloudStorageAccountMock = null;
             this.metricsProviderMock = new Mock<DurableTaskMetricsProvider>(
                 MockBehavior.Strict,
-                "FunctionName",
                 "HubName",
                 logger,
                 nullPerformanceMonitorMock,
