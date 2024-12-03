@@ -48,19 +48,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 this.performanceMonitor.Object,
                 this.clientProvider);
 
+            string scalerId = $"DurableTask-AzureStorage:{this.hubName}";
+
             this.scaleMonitor = new DurableTaskScaleMonitor(
+                scalerId,
                 this.hubName,
-                this.clientProvider,
                 logger,
-                metricsProvider,
-                this.performanceMonitor.Object);
+                metricsProvider);
         }
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void ScaleMonitorDescriptor_ReturnsExpectedValue()
         {
-            Assert.Equal($"DurableTaskTrigger-{this.hubName}".ToLower(), this.scaleMonitor.Descriptor.Id);
+            Assert.Equal($"DurableTask-AzureStorage:{this.hubName}", this.scaleMonitor.Descriptor.Id);
         }
 
         [Fact]
