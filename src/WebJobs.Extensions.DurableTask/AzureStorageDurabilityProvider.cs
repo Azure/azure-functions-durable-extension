@@ -243,6 +243,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return new DurableTaskMetricsProvider(hubName, logger, performanceMonitor: null, storageAccount);
         }
 
+        // Common routine for getting the scaler ID. Note that we MUST use the same ID for both the
+        // scale monitor and the target scaler.
+        private static string GetScalerUniqueId(string hubName)
+        {
+            return $"DurableTask-AzureStorage:{hubName ?? "default"}";
+        }
+
         /// <inheritdoc/>
         public override bool TryGetScaleMonitor(
             string functionId,
@@ -255,11 +262,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 if (this.singletonScaleMonitor == null)
                 {
-                    CloudStorageAccount storageAccount = this.storageAccountProvider.GetStorageAccountDetails(connectionName).ToCloudStorageAccount();
-                    DurableTaskMetricsProvider metricsProvider = this.GetMetricsProvider(hubName, storageAccount, this.logger);
-                    this.singletonScaleMonitor = new DurableTaskScaleMonitor(
+                    DurableTaskMetricsProvider metricsProvider = this.GetMetricsProvider(
                         hubName,
-                        storageAccount,
+                        this.storageAccountProvider.GetStorageAccountDetails(connectionName).ToCloudStorageAccount(),
+                        this.logger);
+
+                    // Scalers in Durable Functions are shared for all functions in the same task hub.
+                    // So instead of using a function ID, we use the task hub name as the basis for the descriptor ID.
+                    string id = GetScalerUniqueId(hubName);
+                    this.singletonScaleMonitor = new DurableTaskScaleMonitor(
+                        id,
+                        hubName,
                         this.logger,
                         metricsProvider);
                 }
@@ -283,12 +296,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 if (this.singletonTargetScaler == null)
                 {
                     // This is only called by the ScaleController, it doesn't run in the Functions Host process.
-                    CloudStorageAccount storageAccount = this.storageAccountProvider.GetStorageAccountDetails(connectionName).ToCloudStorageAccount();
-                    DurableTaskMetricsProvider metricsProvider = this.GetMetricsProvider(hubName, storageAccount, this.logger);
+                    DurableTaskMetricsProvider metricsProvider = this.GetMetricsProvider(
+                        hubName,
+                        this.storageAccountProvider.GetStorageAccountDetails(connectionName).ToCloudStorageAccount(),
+                        this.logger);
 
                     // Scalers in Durable Functions are shared for all functions in the same task hub.
                     // So instead of using a function ID, we use the task hub name as the basis for the descriptor ID.
-                    string id = $"DurableTask-AzureStorage:{hubName ?? "default"}";
+                    string id = GetScalerUniqueId(hubName);
                     this.singletonTargetScaler = new DurableTaskTargetScaler(id, metricsProvider, this, this.logger);
                 }
 

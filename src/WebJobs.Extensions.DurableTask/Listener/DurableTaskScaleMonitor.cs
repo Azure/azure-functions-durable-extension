@@ -9,7 +9,6 @@ using System.Threading.Tasks;
 using DurableTask.AzureStorage.Monitoring;
 using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Extensions.Logging;
-using Microsoft.WindowsAzure.Storage;
 using Newtonsoft.Json;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
@@ -17,27 +16,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     internal sealed class DurableTaskScaleMonitor : IScaleMonitor<DurableTaskTriggerMetrics>
     {
         private readonly string hubName;
-        private readonly CloudStorageAccount storageAccount;
         private readonly ScaleMonitorDescriptor scaleMonitorDescriptor;
         private readonly ILogger logger;
         private readonly DurableTaskMetricsProvider durableTaskMetricsProvider;
 
-        private DisconnectedPerformanceMonitor performanceMonitor;
-
         public DurableTaskScaleMonitor(
+            string id,
             string hubName,
-            CloudStorageAccount storageAccount,
             ILogger logger,
-            DurableTaskMetricsProvider durableTaskMetricsProvider,
-            DisconnectedPerformanceMonitor performanceMonitor = null)
+            DurableTaskMetricsProvider durableTaskMetricsProvider)
         {
             this.hubName = hubName;
-            this.storageAccount = storageAccount;
             this.logger = logger;
-            this.performanceMonitor = performanceMonitor;
             this.durableTaskMetricsProvider = durableTaskMetricsProvider;
-
-            string id = $"DurableTaskTrigger-{this.hubName}".ToLower();
 #if FUNCTIONS_V3_OR_GREATER
             // Scalers in Durable Functions are shared for all functions in the same task hub.
             // So instead of using a function ID, we use the task hub name as the basis for the descriptor ID.
