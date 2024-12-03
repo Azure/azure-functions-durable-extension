@@ -9,16 +9,18 @@ using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using Azure;
+using Azure.Storage.Blobs;
+using Azure.Storage.Blobs.Models;
+using Azure.Storage.Blobs.Specialized;
 using DurableTask.AzureStorage;
 using Microsoft.ApplicationInsights.Channel;
-#if !FUNCTIONS_V1
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage;
 using Microsoft.Azure.WebJobs.Host.Scale;
-using Microsoft.Extensions.Hosting;
-#endif
 using Microsoft.Azure.WebJobs.Host.TestCommon;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Microsoft.WindowsAzure.Storage;
 using Moq;
 using Newtonsoft.Json.Linq;
 using Xunit;
@@ -66,18 +68,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             int entityMessageReorderWindowInMinutes = 30,
             string exactTaskHubName = null,
             bool addDurableClientFactory = false,
-#if !FUNCTIONS_V1
             Action<ScaleOptions> configureScaleOptions = null,
-#endif
             Type[] types = null)
         {
             switch (storageProviderType)
             {
                 case AzureStorageProviderType:
-#if !FUNCTIONS_V1
                 case RedisProviderType:
                 case EmulatorProviderType:
-#endif
                     break;
                 default:
                     throw new InvalidOperationException($"Storage provider {storageProviderType} is not supported for testing infrastructure.");
@@ -159,11 +157,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 lifeCycleNotificationHelper: lifeCycleNotificationHelper,
                 serializerSettings: serializerSettings,
                 onSend: onSend,
-#if !FUNCTIONS_V1
                 addDurableClientFactory: addDurableClientFactory,
                 types: types,
                 configureScaleOptions: configureScaleOptions,
-#endif
                 durabilityProviderFactoryType: durabilityProviderFactoryType);
         }
 
@@ -178,9 +174,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Action<ITelemetry> onSend = null,
             Type durabilityProviderFactoryType = null,
             bool addDurableClientFactory = false,
-#if !FUNCTIONS_V1
             Action<ScaleOptions> configureScaleOptions = null,
-#endif
             Type[] types = null)
         {
             if (serializerSettings == null)
@@ -200,12 +194,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return PlatformSpecificHelpers.CreateJobHost(
                 options: optionsWrapper,
                 storageProvider: storageProviderType,
-#if !FUNCTIONS_V1
                 durabilityProviderFactoryType: durabilityProviderFactoryType,
                 addDurableClientFactory: addDurableClientFactory,
                 typeLocator: typeLocator,
                 configureScaleOptions: configureScaleOptions,
-#endif
                 loggerProvider: loggerProvider,
                 nameResolver: testNameResolver,
                 durableHttpMessageHandler: durableHttpMessageHandler,
@@ -214,20 +206,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 onSend: onSend);
         }
 
-#if !FUNCTIONS_V1
-        public static IHost GetJobHostExternalEnvironment(IStorageAccountProvider storageAccountProvider = null)
+        public static IHost GetJobHostExternalEnvironment(IStorageServiceClientProviderFactory clientProviderFactory = null)
         {
-            if (storageAccountProvider == null)
+            if (clientProviderFactory == null)
             {
-                storageAccountProvider = new TestStorageAccountProvider();
+                clientProviderFactory = new TestStorageServiceClientProviderFactory();
             }
 
-            return GetJobHostWithOptionsForDurableClientFactoryExternal(storageAccountProvider);
+            return GetJobHostWithOptionsForDurableClientFactoryExternal(clientProviderFactory);
         }
 
-        public static IHost GetJobHostWithOptionsForDurableClientFactoryExternal(IStorageAccountProvider storageAccountProvider)
+        public static IHost GetJobHostWithOptionsForDurableClientFactoryExternal(IStorageServiceClientProviderFactory clientProviderFactory)
         {
-            return PlatformSpecificHelpers.CreateJobHostExternalEnvironment(storageAccountProvider);
+            return PlatformSpecificHelpers.CreateJobHostExternalEnvironment(clientProviderFactory);
         }
 
         public static ITestHost GetJobHostWithMultipleDurabilityProviders(
@@ -254,7 +245,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 optionsWrapper,
                 durabilityProviderFactories);
         }
-#endif
 
 #pragma warning disable CS0612 // Type or member is obsolete
         public static IPlatformInformation GetMockPlatformInformationService(
@@ -281,10 +271,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             switch (storageProvider)
             {
                 case AzureStorageProviderType:
-#if !FUNCTIONS_V1
                 case RedisProviderType:
                 case EmulatorProviderType:
-#endif
                     return new DurableTaskOptions();
                 default:
                     throw new InvalidOperationException($"Storage provider {storageProvider} is not supported for testing infrastructure.");
@@ -397,9 +385,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 typeof(TestEntityClasses),
                 typeof(ClientFunctions),
                 typeof(UnconstructibleClass),
-#if !FUNCTIONS_V1
                 typeof(TestEntityWithDependencyInjectionHelpers),
-#endif
             };
 
             ITypeLocator typeLocator = new ExplicitTypeLocator(types);
@@ -417,7 +403,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var settings = new AzureStorageOrchestrationServiceSettings
             {
                 TaskHubName = hubName,
-                StorageConnectionString = GetStorageConnectionString(),
+                StorageAccountClientProvider = new StorageAccountClientProvider(GetStorageConnectionString()),
             };
 
             var service = new AzureStorageOrchestrationService(settings);
@@ -937,16 +923,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public static async Task<string> LoadStringFromTextBlobAsync(string blobName)
         {
             string connectionString = GetStorageConnectionString();
-            CloudStorageAccount account = CloudStorageAccount.Parse(connectionString);
-            var blobClient = account.CreateCloudBlobClient();
-            var testcontainer = blobClient.GetContainerReference("test");
-            var blob = testcontainer.GetBlockBlobReference(blobName);
+            var blobServiceClient = new BlobServiceClient(connectionString);
+            BlobContainerClient containerClient = blobServiceClient.GetBlobContainerClient("test");
+            BlockBlobClient blob = containerClient.GetBlockBlobClient(blobName);
             try
             {
-                return await blob.DownloadTextAsync();
+                BlobDownloadResult result = await blob.DownloadContentAsync();
+                return result.Content.ToString();
             }
-            catch (StorageException e)
-                when ((e as StorageException)?.RequestInformation?.HttpStatusCode == 404)
+            catch (RequestFailedException e) when (e.Status == 404)
             {
                 // if the blob does not exist, just return null.
                 return null;
@@ -956,11 +941,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public static async Task WriteStringToTextBlob(string blobName, string content)
         {
             string connectionString = GetStorageConnectionString();
-            CloudStorageAccount account = CloudStorageAccount.Parse(connectionString);
-            var blobClient = account.CreateCloudBlobClient();
-            var testcontainer = blobClient.GetContainerReference("test");
-            var blob = testcontainer.GetBlockBlobReference(blobName);
-            await blob.UploadTextAsync(content);
+            var blobServiceClient = new BlobServiceClient(connectionString);
+            BlobContainerClient containerClient = blobServiceClient.GetBlobContainerClient("test");
+            BlockBlobClient blob = containerClient.GetBlockBlobClient(blobName);
+
+            using (var buffer = new MemoryStream(Encoding.UTF8.GetBytes(content)))
+            {
+                await blob.UploadAsync(buffer);
+            }
         }
 
         private class ExplicitTypeLocator : ITypeLocator

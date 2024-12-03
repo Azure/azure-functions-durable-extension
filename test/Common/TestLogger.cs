@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
 using Xunit.Abstractions;
@@ -12,6 +13,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     {
         private readonly ITestOutputHelper testOutput;
         private readonly Func<string, LogLevel, bool> filter;
+        private readonly ConcurrentQueue<LogMessage> logMessages = new ConcurrentQueue<LogMessage>();
 
         public TestLogger(ITestOutputHelper testOutput, string category, Func<string, LogLevel, bool> filter = null)
         {
@@ -20,9 +22,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             this.filter = filter;
         }
 
-        public string Category { get; private set; }
+        public string Category { get; }
 
-        public IList<LogMessage> LogMessages { get; } = new List<LogMessage>();
+        public IReadOnlyCollection<LogMessage> LogMessages => this.logMessages;
 
         public IDisposable BeginScope<TState>(TState state)
         {
@@ -42,7 +44,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
 
             string formattedMessage = formatter(state, exception);
-            this.LogMessages.Add(new LogMessage
+            this.logMessages.Enqueue(new LogMessage
             {
                 Level = logLevel,
                 EventId = eventId,

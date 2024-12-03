@@ -65,7 +65,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new InvalidOperationException("The local HTTP listener has already started.");
             }
 
-#if !FUNCTIONS_V1
             const int maxAttempts = 10;
             int numAttempts = 1;
             do
@@ -109,10 +108,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 throw new IOException($"Unable to find a port to open an RPC endpoint on after {maxAttempts} attempts");
             }
-#else
-            // no-op: this is dummy code to make build warnings go away
-            await Task.Yield();
-#endif
         }
 
         private int GetRandomPort()
@@ -131,12 +126,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public async Task StopAsync()
         {
-#if !FUNCTIONS_V1
             await this.localWebHost.StopAsync();
-#else
-            // no-op: this is dummy code to make build warnings go away
-            await Task.Yield();
-#endif
             this.IsListening = false;
         }
 

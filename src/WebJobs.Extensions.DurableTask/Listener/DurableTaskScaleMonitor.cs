@@ -1,7 +1,6 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-#if !FUNCTIONS_V1
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,7 +8,6 @@ using System.Threading.Tasks;
 using DurableTask.AzureStorage.Monitoring;
 using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Extensions.Logging;
-using Microsoft.WindowsAzure.Storage;
 using Newtonsoft.Json;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
@@ -17,36 +15,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     internal sealed class DurableTaskScaleMonitor : IScaleMonitor<DurableTaskTriggerMetrics>
     {
         private readonly string hubName;
-        private readonly CloudStorageAccount storageAccount;
         private readonly ScaleMonitorDescriptor scaleMonitorDescriptor;
         private readonly ILogger logger;
         private readonly DurableTaskMetricsProvider durableTaskMetricsProvider;
 
-        private DisconnectedPerformanceMonitor performanceMonitor;
-
         public DurableTaskScaleMonitor(
+            string id,
             string hubName,
-            CloudStorageAccount storageAccount,
             ILogger logger,
-            DurableTaskMetricsProvider durableTaskMetricsProvider,
-            DisconnectedPerformanceMonitor performanceMonitor = null)
+            DurableTaskMetricsProvider durableTaskMetricsProvider)
         {
             this.hubName = hubName;
-            this.storageAccount = storageAccount;
             this.logger = logger;
-            this.performanceMonitor = performanceMonitor;
             this.durableTaskMetricsProvider = durableTaskMetricsProvider;
 
-            string id = $"DurableTaskTrigger-{this.hubName}".ToLower();
-#if FUNCTIONS_V3_OR_GREATER
             // Scalers in Durable Functions are shared for all functions in the same task hub.
             // So instead of using a function ID, we use the task hub name as the basis for the descriptor ID.
             this.scaleMonitorDescriptor = new ScaleMonitorDescriptor(id: id, functionId: id);
-#else
-            // We need this because the new ScaleMonitorDescriptor constructor is not compatible with the WebJobs version of Functions V1 and V2.
-            // Technically, it is also not available in Functions V3, but we don't have a TFM allowing us to differentiate between Functions V3 and V4.
-            this.scaleMonitorDescriptor = new ScaleMonitorDescriptor(id);
-#endif
         }
 
         public ScaleMonitorDescriptor Descriptor
@@ -154,4 +139,3 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
     }
 }
-#endif

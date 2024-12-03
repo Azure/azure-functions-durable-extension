@@ -37,12 +37,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </remarks>
         string OperationName { get; }
 
-#if !FUNCTIONS_V1
         /// <summary>
         /// Contains function invocation context to assist with dependency injection at Entity construction time.
         /// </summary>
         FunctionBindingContext FunctionBindingContext { get; set; }
-#endif
 
         /// <summary>
         /// Whether this entity has a state.

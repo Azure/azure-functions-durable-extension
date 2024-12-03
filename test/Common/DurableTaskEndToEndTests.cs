@@ -13,23 +13,18 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using DurableTask.AzureStorage;
+using Azure.Storage.Blobs;
 using DurableTask.Core;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Microsoft.Diagnostics.Tracing;
-#if !FUNCTIONS_V1
 using Microsoft.Extensions.Hosting;
-using WebJobs.Extensions.DurableTask.Tests.V2;
-#endif
-using Microsoft.WindowsAzure.Storage;
-using Microsoft.WindowsAzure.Storage.Blob;
-using Moq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
+using WebJobs.Extensions.DurableTask.Tests.V2;
 using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
@@ -43,8 +38,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         private readonly TestLoggerProvider loggerProvider;
         private readonly bool useTestLogger = IsLogFriendlyPlatform();
         private readonly LogEventTraceListener eventSourceListener;
-
-        private static readonly string InstrumentationKey = Environment.GetEnvironmentVariable("APPINSIGHTS_INSTRUMENTATIONKEY");
 
         public DurableTaskEndToEndTests(ITestOutputHelper output)
         {
@@ -97,10 +90,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true, TestHelpers.AzureStorageProviderType)]
         [InlineData(false, TestHelpers.AzureStorageProviderType)]
-#if !FUNCTIONS_V1
         [InlineData(true, TestHelpers.EmulatorProviderType)]
         [InlineData(false, TestHelpers.EmulatorProviderType)]
-#endif
         public async Task HelloWorldOrchestration_Inline(bool extendedSessions, string storageProviderType)
         {
             string[] orchestratorFunctionNames =
@@ -225,7 +216,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
-#if !FUNCTIONS_V1
         /// <summary>
         /// End to end test that ensures that customers can configure custom connection string names
         /// using DurableClientOptions when they create a DurableClient from an external app (e.g. ASP.NET Core app).
@@ -253,9 +243,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 TaskHub = taskHubName,
             };
 
-            var storageAccountProvider = new CustomAccountStorageProvider(appSettings);
+            var clientProviderFactory = new CustomStorageServiceClientProviderFactory(appSettings);
 
-            using (IHost clientHost = TestHelpers.GetJobHostExternalEnvironment(storageAccountProvider))
+            using (IHost clientHost = TestHelpers.GetJobHostExternalEnvironment(clientProviderFactory))
             {
                 await clientHost.StartAsync();
                 IDurableClientFactory durableClientFactory = clientHost.Services.GetService(typeof(IDurableClientFactory)) as DurableClientFactory;
@@ -264,7 +254,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await clientHost.StopAsync();
             }
         }
-#endif
 
         /// <summary>
         /// End-to-end test which validates a simple orchestrator function does not have assigned value for <see cref="DurableOrchestrationContext.ParentInstanceId"/>.
@@ -297,7 +286,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
-#if !FUNCTIONS_V1
         /// <summary>
         /// By simulating the appropiate environment variables for Linux Consumption,
         /// this test checks that we are emitting logs from DurableTask.AzureStorage
@@ -795,7 +783,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 conditionDescription: "Log file contains all required fields and expected events",
                 timeout: TimeSpan.FromSeconds(35));
         }
-#endif
 
         /// <summary>
         /// End-to-end test which runs a simple orchestrator function that calls a single activity function.
@@ -2467,7 +2454,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
-#if !FUNCTIONS_V1
         /// <summary>
         /// End-to-end test which creates an external client that calls a non-existent orchestrator function.
         /// </summary>
@@ -2493,9 +2479,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 TaskHub = taskHubName,
             };
 
-            var storageAccountProvider = new CustomAccountStorageProvider(appSettings);
+            var clientProviderFactory = new CustomStorageServiceClientProviderFactory(appSettings);
 
-            using (IHost clientHost = TestHelpers.GetJobHostExternalEnvironment(storageAccountProvider))
+            using (IHost clientHost = TestHelpers.GetJobHostExternalEnvironment(clientProviderFactory))
             {
                 using (var orchestrationHost = TestHelpers.GetJobHost(
                    this.loggerProvider,
@@ -2562,7 +2548,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 { "TestTaskHub", taskHub },
             };
 
-            var storageAccountProvider = new CustomAccountStorageProvider(taskHubAndStorageAppSetting);
+            var clientProviderFactory = new CustomStorageServiceClientProviderFactory(taskHubAndStorageAppSetting);
 
             // create a new host without activity functions and see if the function fails
             using (ITestHost newHost = TestHelpers.GetJobHost(
@@ -2574,7 +2560,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 types: modifiedTypeArray))
             {
                 await newHost.StartAsync();
-                using (IHost clientHost = TestHelpers.GetJobHostExternalEnvironment(storageAccountProvider))
+                using (IHost clientHost = TestHelpers.GetJobHostExternalEnvironment(clientProviderFactory))
                 {
                     DurableClientOptions durableClientOptions = new DurableClientOptions
                     {
@@ -2597,7 +2583,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await newHost.StopAsync();
             }
         }
-#endif
 
         /// <summary>
         /// End-to-end test which runs a orchestrator function that calls a non-existent activity function.
@@ -2732,11 +2717,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 Assert.NotNull(status);
                 Assert.Equal(OrchestrationRuntimeStatus.Failed, status.RuntimeStatus);
-#if FUNCTIONS_V1
-                Assert.Equal("Orchestrator function 'UncallableOrchestrator' failed: Exception has been thrown by the target of an invocation.", status.Output.ToString());
-#else
                 Assert.Equal("Orchestrator function 'UncallableOrchestrator' failed: Exception of type 'System.Exception' was thrown.", status.Output.ToString());
-#endif
 
                 await host.StopAsync();
             }
@@ -4242,11 +4223,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             };
 
             string storageConnectionString = TestHelpers.GetStorageConnectionString();
-            CloudStorageAccount.TryParse(storageConnectionString, out CloudStorageAccount storageAccount);
-
-            CloudBlobClient cloudBlobClient = storageAccount.CreateCloudBlobClient();
-            CloudBlobContainer cloudBlobContainer = cloudBlobClient.GetContainerReference(TestEntityClasses.BlobContainerPath);
-            await cloudBlobContainer.CreateIfNotExistsAsync();
+            var blobServiceClient = new BlobServiceClient(storageConnectionString);
+            BlobContainerClient containerClient = blobServiceClient.GetBlobContainerClient(TestEntityClasses.BlobContainerPath);
+            await containerClient.CreateIfNotExistsAsync();
 
             using (var host = TestHelpers.GetJobHost(
                 this.loggerProvider,
@@ -5813,11 +5792,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
-#if FUNCTIONS_V1
-                var logger = this.loggerProvider.CreatedLoggers.FirstOrDefault(l => l.Category.Equals("Function"));
-#else
                 var logger = this.loggerProvider.CreatedLoggers.FirstOrDefault(l => l.Category.Equals("Function.ReplaySafeLogger_OneLogMessage.User"));
-#endif
                 var logMessages = logger.LogMessages.Where(
                     msg => msg.FormattedMessage.Contains("ReplaySafeLogger Test: About to say Hello")).ToList();
                 Assert.Single(logMessages);
@@ -5910,56 +5885,42 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         private static async Task<int> GetBlobCount(string containerName, string directoryName)
         {
             string storageConnectionString = TestHelpers.GetStorageConnectionString();
-            CloudStorageAccount storageAccount;
-            if (!CloudStorageAccount.TryParse(storageConnectionString, out storageAccount))
+            BlobServiceClient blobServiceClient;
+            try
+            {
+                blobServiceClient = new BlobServiceClient(storageConnectionString);
+            }
+            catch (ArgumentException)
             {
                 return 0;
             }
 
-            CloudBlobClient cloudBlobClient = storageAccount.CreateCloudBlobClient();
-
-            CloudBlobContainer cloudBlobContainer = cloudBlobClient.GetContainerReference(containerName);
-            await cloudBlobContainer.CreateIfNotExistsAsync();
-            CloudBlobDirectory instanceDirectory = cloudBlobContainer.GetDirectoryReference(directoryName);
-            int blobCount = 0;
-            BlobContinuationToken blobContinuationToken = null;
-            do
-            {
-                BlobResultSegment results = await instanceDirectory.ListBlobsSegmentedAsync(blobContinuationToken);
-                blobContinuationToken = results.ContinuationToken;
-                blobCount += results.Results.Count();
-            }
-            while (blobContinuationToken != null);
-
-            return blobCount;
+            BlobContainerClient containerClient = blobServiceClient.GetBlobContainerClient(containerName);
+            await containerClient.CreateIfNotExistsAsync();
+            return await containerClient.GetBlobsAsync().CountAsync();
         }
 
         private static async Task EnsureBlobContainerExists(string containerName)
         {
             var storageConnectionString = TestHelpers.GetStorageConnectionString();
-            var storageAccount = CloudStorageAccount.Parse(storageConnectionString);
-            var cloudBlobClient = storageAccount.CreateCloudBlobClient();
-            var cloudBlobContainer = cloudBlobClient.GetContainerReference(containerName);
-            await cloudBlobContainer.CreateIfNotExistsAsync();
+            var blobServiceClient = new BlobServiceClient(storageConnectionString);
+            var containerClient = blobServiceClient.GetBlobContainerClient(containerName);
+            await containerClient.CreateIfNotExistsAsync();
         }
 
         private static async Task ValidateBlobUrlAsync(string taskHubName, string instanceId, string value)
         {
-            CloudStorageAccount account = CloudStorageAccount.Parse(TestHelpers.GetStorageConnectionString());
-            Assert.StartsWith(account.BlobStorageUri.PrimaryUri.OriginalString, value);
+            var blobServiceClient = new BlobServiceClient(TestHelpers.GetStorageConnectionString());
+            Assert.StartsWith(blobServiceClient.Uri.OriginalString, value);
             Assert.Contains("/" + instanceId + "/", value);
             Assert.EndsWith(".json.gz", value);
 
             string containerName = $"{taskHubName.ToLowerInvariant()}-largemessages";
-            CloudBlobClient client = account.CreateCloudBlobClient();
-            CloudBlobContainer container = client.GetContainerReference(containerName);
-            Assert.True(await container.ExistsAsync(), $"Blob container {containerName} is expected to exist.");
-
-            await client.GetBlobReferenceFromServerAsync(new Uri(value));
-            CloudBlobDirectory instanceDirectory = container.GetDirectoryReference(instanceId);
+            BlobContainerClient containerClient = blobServiceClient.GetBlobContainerClient(containerName);
+            Assert.True(await containerClient.ExistsAsync(), $"Blob container {containerName} is expected to exist.");
 
             string blobName = value.Split('/').Last();
-            CloudBlob blob = instanceDirectory.GetBlobReference(blobName);
+            BlobClient blob = containerClient.GetBlobClient(instanceId + "/" + blobName);
             Assert.True(await blob.ExistsAsync(), $"Blob named {blob.Uri} is expected to exist.");
         }
 

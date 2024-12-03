@@ -4,26 +4,17 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-#if !FUNCTIONS_V1
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.Auth;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage;
 using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-#else
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
-using Microsoft.Azure.WebJobs.Host;
-using Microsoft.Azure.WebJobs.Host.Config;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
-#endif
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
@@ -46,11 +37,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             serviceCollection.TryAddSingleton<INameResolver, DefaultNameResolver>();
             serviceCollection.TryAddSingleton<IConnectionInfoResolver, StandardConnectionInfoProvider>();
-            serviceCollection.TryAddSingleton<IStorageAccountProvider, AzureStorageAccountProvider>();
-#if !FUNCTIONS_V1
+            serviceCollection.TryAddSingleton<IStorageServiceClientProviderFactory, StorageServiceClientProviderFactory>();
             serviceCollection.AddAzureClientsCore();
-            serviceCollection.TryAddSingleton<ITokenCredentialFactory, AzureCredentialFactory>();
-#endif
             serviceCollection.TryAddSingleton<IDurabilityProviderFactory, AzureStorageDurabilityProviderFactory>();
             serviceCollection.TryAddSingleton<IDurableClientFactory, DurableClientFactory>();
             serviceCollection.TryAddSingleton<IMessageSerializerSettingsFactory, MessageSerializerSettingsFactory>();
@@ -75,7 +63,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return serviceCollection;
         }
 
-#if !FUNCTIONS_V1
         /// <summary>
         /// Adds the Durable Task extension to the provided <see cref="IWebJobsBuilder"/>.
         /// </summary>
@@ -95,8 +82,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             IServiceCollection serviceCollection = builder.Services;
             serviceCollection.AddAzureClientsCore();
             serviceCollection.TryAddSingleton<IConnectionInfoResolver, WebJobsConnectionInfoProvider>();
-            serviceCollection.TryAddSingleton<ITokenCredentialFactory, AzureCredentialFactory>();
-            serviceCollection.TryAddSingleton<IStorageAccountProvider, AzureStorageAccountProvider>();
+            serviceCollection.TryAddSingleton<IStorageServiceClientProviderFactory, StorageServiceClientProviderFactory>();
             serviceCollection.TryAddSingleton<IDurableHttpMessageHandlerFactory, DurableHttpMessageHandlerFactory>();
             serviceCollection.AddSingleton<IDurabilityProviderFactory, AzureStorageDurabilityProviderFactory>();
             serviceCollection.TryAddSingleton<IMessageSerializerSettingsFactory, MessageSerializerSettingsFactory>();
@@ -112,7 +98,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return builder;
         }
 
-#if FUNCTIONS_V3_OR_GREATER
         /// <summary>
         /// Adds the <see cref="IScaleMonitor"/> and <see cref="ITargetScaler"/> providers for the Durable Triggers.
         /// </summary>
@@ -131,7 +116,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             builder.Services.AddSingleton<ITargetScalerProvider>(serviceProvider => serviceProvider.GetServices<DurableTaskTriggersScaleProvider>().Single(x => x == provider));
             return builder;
         }
-#endif
 
         /// <summary>
         /// Adds the Durable Task extension to the provided <see cref="IWebJobsBuilder"/>.
@@ -179,30 +163,5 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             return builder;
         }
-
-#else
-        /// <summary>
-        /// Enable running durable orchestrations implemented as functions.
-        /// </summary>
-        /// <param name="hostConfig">Configuration settings of the current <c>JobHost</c> instance.</param>
-        /// <param name="listenerConfig">Durable Functions configuration.</param>
-        public static void UseDurableTask(
-            this JobHostConfiguration hostConfig,
-            DurableTaskExtension listenerConfig)
-        {
-            if (hostConfig == null)
-            {
-                throw new ArgumentNullException(nameof(hostConfig));
-            }
-
-            if (listenerConfig == null)
-            {
-                throw new ArgumentNullException(nameof(listenerConfig));
-            }
-
-            IExtensionRegistry extensions = hostConfig.GetService<IExtensionRegistry>();
-            extensions.RegisterExtension<IExtensionConfigProvider>(listenerConfig);
-        }
-#endif
     }
 }

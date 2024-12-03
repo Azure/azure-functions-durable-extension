@@ -6,8 +6,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using System.Threading.Tasks;
-using Microsoft.WindowsAzure.Storage.Blob;
+using Azure.Storage.Blobs;
+using Azure.Storage.Blobs.Specialized;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
@@ -133,7 +135,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [FunctionName(nameof(StorageBackedCounter))]
-        public static Task StorageBackedCounterFunction([EntityTrigger] IDurableEntityContext context, [Blob(BlobContainerPath)] CloudBlobContainer blobContainer)
+        public static Task StorageBackedCounterFunction(
+            [EntityTrigger] IDurableEntityContext context,
+            [Blob(BlobContainerPath)] BlobContainerClient blobContainer)
         {
             return context.DispatchAsync<StorageBackedCounter>(blobContainer);
         }
@@ -553,10 +557,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [JsonObject(MemberSerialization = MemberSerialization.OptIn)]
         public class StorageBackedCounter : IAsyncCounter
         {
-            private readonly CloudBlobContainer blobContainer;
-            private readonly string blobName = "counter";
+            private const string BlobName = "counter";
 
-            public StorageBackedCounter(CloudBlobContainer blobContainer)
+            private readonly BlobContainerClient blobContainer;
+
+            public StorageBackedCounter(BlobContainerClient blobContainer)
             {
                 this.blobContainer = blobContainer;
             }
@@ -577,7 +582,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             public async Task<int> Get()
             {
-                CloudBlockBlob environmentVariableBlob = this.blobContainer.GetBlockBlobReference(this.blobName);
+                BlockBlobClient environmentVariableBlob = this.blobContainer.GetBlockBlobClient(BlobName);
                 if (await environmentVariableBlob.ExistsAsync())
                 {
                     var readStream = await environmentVariableBlob.OpenReadAsync();
@@ -602,8 +607,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             public async Task Set(int newValue)
             {
                 this.Value = newValue;
-                CloudBlockBlob environmentVariableBlob = this.blobContainer.GetBlockBlobReference(this.blobName);
-                await environmentVariableBlob.UploadTextAsync(newValue.ToString());
+                BlockBlobClient environmentVariableBlob = this.blobContainer.GetBlockBlobClient(BlobName);
+                using (var buffer = new MemoryStream(Encoding.UTF8.GetBytes(newValue.ToString())))
+                {
+                    await environmentVariableBlob.UploadAsync(buffer);
+                }
             }
 
             public void Delete()

@@ -15,9 +15,7 @@ namespace DurableFunctions.TypedInterfaces.SourceGenerator.Tests.Models
         {
             if (!File.Exists(projectFilePath))
             {
-                var currentDirectory = Directory.GetCurrentDirectory();
-
-                throw new ArgumentException($"No project file exists at '{projectFilePath}'.");
+                throw new ArgumentException($"No project file exists at '{Path.GetFullPath(projectFilePath)}'.");
             }
 
             // https://stackoverflow.com/a/64766792/7176908

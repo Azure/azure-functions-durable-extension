@@ -4,14 +4,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using System.Threading.Tasks;
+using Azure;
+using DurableTask.AzureStorage;
 using DurableTask.AzureStorage.Monitoring;
 using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Microsoft.Azure.WebJobs.Logging;
 using Microsoft.Extensions.Logging;
-using Microsoft.WindowsAzure.Storage;
 using Moq;
 using Xunit;
 using Xunit.Abstractions;
@@ -21,7 +21,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     public class DurableTaskScaleMonitorTests
     {
         private readonly string hubName = "DurableTaskTriggerHubName";
-        private readonly CloudStorageAccount storageAccount = CloudStorageAccount.Parse(TestHelpers.GetStorageConnectionString());
+        private readonly StorageAccountClientProvider clientProvider = new StorageAccountClientProvider(TestHelpers.GetStorageConnectionString());
         private readonly ITestOutputHelper output;
         private readonly EndToEndTraceHelper traceHelper;
         private readonly LoggerFactory loggerFactory;
@@ -37,26 +37,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             this.loggerFactory.AddProvider(this.loggerProvider);
             ILogger logger = this.loggerFactory.CreateLogger(LogCategories.CreateTriggerCategory("DurableTask"));
             this.traceHelper = new EndToEndTraceHelper(logger, false);
-            this.performanceMonitor = new Mock<DisconnectedPerformanceMonitor>(MockBehavior.Strict, this.storageAccount, this.hubName, (int?)null);
+            this.performanceMonitor = new Mock<DisconnectedPerformanceMonitor>(MockBehavior.Strict, new AzureStorageOrchestrationServiceSettings
+            {
+                StorageAccountClientProvider = this.clientProvider,
+                TaskHubName = this.hubName,
+            });
             var metricsProvider = new DurableTaskMetricsProvider(
                 this.hubName,
                 logger,
                 this.performanceMonitor.Object,
-                this.storageAccount);
+                this.clientProvider);
+
+            string scalerId = $"DurableTask-AzureStorage:{this.hubName}";
 
             this.scaleMonitor = new DurableTaskScaleMonitor(
+                scalerId,
                 this.hubName,
-                this.storageAccount,
                 logger,
-                metricsProvider,
-                this.performanceMonitor.Object);
+                metricsProvider);
         }
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void ScaleMonitorDescriptor_ReturnsExpectedValue()
         {
-            Assert.Equal($"DurableTaskTrigger-{this.hubName}".ToLower(), this.scaleMonitor.Descriptor.Id);
+            Assert.Equal($"DurableTask-AzureStorage:{this.hubName}", this.scaleMonitor.Descriptor.Id);
         }
 
         [Fact]
@@ -89,12 +94,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var errorMsg = "Uh oh";
             this.performanceMonitor
                 .Setup(m => m.PulseAsync())
-                .Throws(new StorageException(errorMsg));
+                .Throws(new Exception("Failure", new RequestFailedException(errorMsg)));
 
             var metrics = await this.scaleMonitor.GetMetricsAsync();
 
-            var warning = this.loggerProvider.GetAllLogMessages().Last(p => p.Level == Microsoft.Extensions.Logging.LogLevel.Warning);
-            var expectedWarning = $"Microsoft.WindowsAzure.Storage.StorageException: {errorMsg}";
+            var warning = this.loggerProvider.GetAllLogMessages().Last(p => p.Level == LogLevel.Warning);
+            var expectedWarning = $"System.Exception: Failure{Environment.NewLine} ---> Azure.RequestFailedException: {errorMsg}";
             Assert.StartsWith(expectedWarning, warning.FormattedMessage);
         }
 

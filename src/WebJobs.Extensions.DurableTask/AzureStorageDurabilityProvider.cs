@@ -10,15 +10,13 @@ using DurableTask.AzureStorage;
 using DurableTask.AzureStorage.Tracking;
 using DurableTask.Core;
 using DurableTask.Core.Entities;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage;
+using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Extensions.Logging;
-using Microsoft.WindowsAzure.Storage;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
-#if !FUNCTIONS_V1
-using Microsoft.Azure.WebJobs.Host.Scale;
-#endif
 using AzureStorage = DurableTask.AzureStorage;
 using DTCore = DurableTask.Core;
 
@@ -30,31 +28,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     internal class AzureStorageDurabilityProvider : DurabilityProvider
     {
         private readonly AzureStorageOrchestrationService serviceClient;
-        private readonly IStorageAccountProvider storageAccountProvider;
+        private readonly IStorageServiceClientProviderFactory clientProviderFactory;
         private readonly string connectionName;
         private readonly JObject storageOptionsJson;
         private readonly ILogger logger;
 
         private readonly object initLock = new object();
 
-#if !FUNCTIONS_V1
         private DurableTaskScaleMonitor singletonScaleMonitor;
-#endif
-
-#if FUNCTIONS_V3_OR_GREATER
         private DurableTaskTargetScaler singletonTargetScaler;
-#endif
 
         public AzureStorageDurabilityProvider(
             AzureStorageOrchestrationService service,
-            IStorageAccountProvider storageAccountProvider,
+            IStorageServiceClientProviderFactory clientProviderFactory,
             string connectionName,
             AzureStorageOptions options,
             ILogger logger)
             : base("Azure Storage", service, service, connectionName)
         {
             this.serviceClient = service;
-            this.storageAccountProvider = storageAccountProvider;
+            this.clientProviderFactory = clientProviderFactory;
             this.connectionName = connectionName;
             this.storageOptionsJson = JObject.FromObject(
                 options,
@@ -233,14 +226,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             };
         }
 
-#if !FUNCTIONS_V1
-
         internal DurableTaskMetricsProvider GetMetricsProvider(
             string hubName,
-            CloudStorageAccount storageAccount,
+            StorageAccountClientProvider storageAccountClientProvider,
             ILogger logger)
         {
-            return new DurableTaskMetricsProvider(hubName, logger, performanceMonitor: null, storageAccount);
+            return new DurableTaskMetricsProvider(hubName, logger, performanceMonitor: null, storageAccountClientProvider);
+        }
+
+        // Common routine for getting the scaler ID. Note that we MUST use the same ID for both the
+        // scale monitor and the target scaler.
+        private static string GetScalerUniqueId(string hubName)
+        {
+            return $"DurableTask-AzureStorage:{hubName ?? "default"}";
         }
 
         /// <inheritdoc/>
@@ -255,11 +253,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 if (this.singletonScaleMonitor == null)
                 {
-                    CloudStorageAccount storageAccount = this.storageAccountProvider.GetStorageAccountDetails(connectionName).ToCloudStorageAccount();
-                    DurableTaskMetricsProvider metricsProvider = this.GetMetricsProvider(hubName, storageAccount, this.logger);
-                    this.singletonScaleMonitor = new DurableTaskScaleMonitor(
+                    DurableTaskMetricsProvider metricsProvider = this.GetMetricsProvider(
                         hubName,
-                        storageAccount,
+                        this.clientProviderFactory.GetClientProvider(connectionName),
+                        this.logger);
+
+                    // Scalers in Durable Functions are shared for all functions in the same task hub.
+                    // So instead of using a function ID, we use the task hub name as the basis for the descriptor ID.
+                    string id = GetScalerUniqueId(hubName);
+                    this.singletonScaleMonitor = new DurableTaskScaleMonitor(
+                        id,
+                        hubName,
                         this.logger,
                         metricsProvider);
                 }
@@ -269,8 +273,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-#endif
-#if FUNCTIONS_V3_OR_GREATER
         public override bool TryGetTargetScaler(
             string functionId,
             string functionName,
@@ -283,12 +285,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 if (this.singletonTargetScaler == null)
                 {
                     // This is only called by the ScaleController, it doesn't run in the Functions Host process.
-                    CloudStorageAccount storageAccount = this.storageAccountProvider.GetStorageAccountDetails(connectionName).ToCloudStorageAccount();
-                    DurableTaskMetricsProvider metricsProvider = this.GetMetricsProvider(hubName, storageAccount, this.logger);
+                    DurableTaskMetricsProvider metricsProvider = this.GetMetricsProvider(
+                        hubName,
+                        this.clientProviderFactory.GetClientProvider(connectionName),
+                        this.logger);
 
                     // Scalers in Durable Functions are shared for all functions in the same task hub.
                     // So instead of using a function ID, we use the task hub name as the basis for the descriptor ID.
-                    string id = $"DurableTask-AzureStorage:{hubName ?? "default"}";
+                    string id = GetScalerUniqueId(hubName);
                     this.singletonTargetScaler = new DurableTaskTargetScaler(id, metricsProvider, this, this.logger);
                 }
 
@@ -296,6 +300,5 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return true;
             }
         }
-#endif
     }
 }

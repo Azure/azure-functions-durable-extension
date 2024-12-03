@@ -25,9 +25,6 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
-using Microsoft.WindowsAzure.Storage.Blob;
-using Microsoft.WindowsAzure.Storage.Queue;
-using Microsoft.WindowsAzure.Storage.Table;
 
 namespace VSSample
 {
@@ -49,60 +46,60 @@ namespace VSSample
         [FunctionName(""ArgumentAnalyzerTestCases"")]
         public static async Task<string> Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
-            {
-                // For a test case below
-                var (jobId, batchNumber) = context.GetInput<(string, int)>();
+        {
+            // For a test case below
+            var (jobId, batchNumber) = context.GetInput<(string, int)>();
 
-                // Testing different matching input types
-                // SyntaxKind.PredefinedType (string), SyntaxKind.IdentifierName (Object), and SyntaxKind.ArrayType (string[])
+            // Testing different matching input types
+            // SyntaxKind.PredefinedType (string), SyntaxKind.IdentifierName (Object), and SyntaxKind.ArrayType (string[])
 
-                await context.CallActivityAsync<string>(""Test_String_DirectInput"", ""London"");
-                await context.CallActivityAsync<string>(""Test_String_OnContext"", ""Tokyo"");
-                await context.CallActivityAsync<string>(""Test_Object_DirectInput"", new Object());
-                await context.CallActivityAsync<string>(""Test_Object_OnContext"", new Object());
-                await context.CallActivityAsync<string>(""Test_StringArray_DirectInput"", new string[] { ""Minneapolis"" });
-                await context.CallActivityAsync<string>(""Test_StringArray_OnContext"", new string[] { ""Minneapolis"" });
+            await context.CallActivityAsync<string>(""Test_String_DirectInput"", ""London"");
+            await context.CallActivityAsync<string>(""Test_String_OnContext"", ""Tokyo"");
+            await context.CallActivityAsync<string>(""Test_Object_DirectInput"", new Object());
+            await context.CallActivityAsync<string>(""Test_Object_OnContext"", new Object());
+            await context.CallActivityAsync<string>(""Test_StringArray_DirectInput"", new string[] { ""Minneapolis"" });
+            await context.CallActivityAsync<string>(""Test_StringArray_OnContext"", new string[] { ""Minneapolis"" });
 
-                // SyntaxKind.GenericType (Tuple and ValueTuple) and SyntaxKind.TupleType (ValueTuple alt format ex (string, int))
+            // SyntaxKind.GenericType (Tuple and ValueTuple) and SyntaxKind.TupleType (ValueTuple alt format ex (string, int))
 
-                Tuple<string, int> tuple = new Tuple<string, int>(""Seattle"", 4);
-                await context.CallActivityAsync<string>(""Test_Tuple_DirectInput"", tuple);
-                await context.CallActivityAsync<string>(""Test_Tuple_OnContext"", tuple);
-                await context.CallActivityAsync<string>(""Test_ValueTuple_DirectInput"", (""Seattle"", 4));
-                await context.CallActivityAsync<string>(""Test_ValueTuple_OnContext"", (""Seattle"", 4));
-                await context.CallActivityAsync<string>(""Test_ValueTuple_VariableNames"", (jobId, batchNumber));
+            Tuple<string, int> tuple = new Tuple<string, int>(""Seattle"", 4);
+            await context.CallActivityAsync<string>(""Test_Tuple_DirectInput"", tuple);
+            await context.CallActivityAsync<string>(""Test_Tuple_OnContext"", tuple);
+            await context.CallActivityAsync<string>(""Test_ValueTuple_DirectInput"", (""Seattle"", 4));
+            await context.CallActivityAsync<string>(""Test_ValueTuple_OnContext"", (""Seattle"", 4));
+            await context.CallActivityAsync<string>(""Test_ValueTuple_VariableNames"", (jobId, batchNumber));
 
-                // Testing JsonArray compatible types (IEnumerable Typles)
-                // IArrayTypeSymbol (array) to INamedTypeSymbol (IList)
+            // Testing JsonArray compatible types (IEnumerable Typles)
+            // IArrayTypeSymbol (array) to INamedTypeSymbol (IList)
 
-                await context.CallActivityAsync<string>(""Test_IListInput_DirectInput"", new string[] { ""Seattle"" });
-                await context.CallActivityAsync<string>(""Test_IListInput_OnContext"", new string[] { ""Seattle"" });
-                
-                // INamedTypeSymbol (List) and INamedTypeSymbol (Ilist)
-
-                List<string> namedType = new List<string>();
-                await context.CallActivityAsync<string>(""Test_IListInput_DirectInput"", namedType);
-                await context.CallActivityAsync<string>(""Test_IListInput_OnContext"", namedType);
-
-                // Testing argument is valid when input is subclass (Object -> ValueType -> Char)
-
-                await context.CallActivityAsync<string>(""Test_ValueType_DirectInput"", new Char());
-                await context.CallActivityAsync<string>(""Test_Object_DirectInput"", new Char());
-
-                // Testing null input when function input not used
-
-                await context.CallActivityAsync<string>(""Test_UnusedInputFromContext"", null);
-
-                // Testing null input used with non value type
-
-                await context.CallActivityAsync(""Test_ValidNull"", null);
+            await context.CallActivityAsync<string>(""Test_IListInput_DirectInput"", new string[] { ""Seattle"" });
+            await context.CallActivityAsync<string>(""Test_IListInput_OnContext"", new string[] { ""Seattle"" });
             
-                return ""Hello World!"";
+            // INamedTypeSymbol (List) and INamedTypeSymbol (Ilist)
 
-                // Nightmare Test; testing nested Tuples, JSON compatible types, indirect subclass, getting input on a context
+            List<string> namedType = new List<string>();
+            await context.CallActivityAsync<string>(""Test_IListInput_DirectInput"", namedType);
+            await context.CallActivityAsync<string>(""Test_IListInput_OnContext"", namedType);
 
-                await context.CallActivityAsync<string>(""Test_NightmareTest"", new List<Tuple<(int, IEnumerable<string>), Decimal>>());
-            }
+            // Testing argument is valid when input is subclass (Object -> ValueType -> Char)
+
+            await context.CallActivityAsync<string>(""Test_ValueType_DirectInput"", new Char());
+            await context.CallActivityAsync<string>(""Test_Object_DirectInput"", new Char());
+
+            // Testing null input when function input not used
+
+            await context.CallActivityAsync<string>(""Test_UnusedInputFromContext"", null);
+
+            // Testing null input used with non value type
+
+            await context.CallActivityAsync(""Test_ValidNull"", null);
+        
+            return ""Hello World!"";
+
+            // Nightmare Test; testing nested Tuples, JSON compatible types, indirect subclass, getting input on a context
+
+            await context.CallActivityAsync<string>(""Test_NightmareTest"", new List<Tuple<(int, IEnumerable<string>), Decimal>>());
+        }
 
         // Functions Testing different matching input types
         // SyntaxKind.PredefinedType (string), SyntaxKind.IdentifierName (Object), and SyntaxKind.ArrayType (string[])
@@ -189,7 +186,7 @@ namespace VSSample
         public static string TestIListInputDirectInput([ActivityTrigger] IList<string> namedType)
         {
             return $""Hello {name}!"";
-        
+        }
 
         [FunctionName(""Test_IListInput_OnContext"")]
         public static string TestIListInputContext([ActivityTrigger] IDurableActivityContext context)
@@ -199,7 +196,7 @@ namespace VSSample
         }
 
         // Testing argument is valid when input is subclass (Object -> ValueType -> Char)
-         [FunctionName(""Test_ValueType_DirectInput"")]
+        [FunctionName(""Test_ValueType_DirectInput"")]
         public static string TestValueTypeDirectInput([ActivityTrigger] ValueType input)
         {
             return $""Hello World!"";
@@ -251,50 +248,50 @@ namespace VSSample
         [FunctionName(""ArgumentAnalyzerTestCases"")]
         public static async Task<string> Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
-            {
-                var retryOptions = new RetryOptions(new TimeSpan(), 2);
+        {
+            var retryOptions = new RetryOptions(new TimeSpan(), 2);
 
-                // Test correct custom method is used to determine which argument the input is.
-                await context.CallActivityAsync<string>(""Extension_InputNotLast"", ""input"", retryOptions);
+            // Test correct custom method is used to determine which argument the input is.
+            await context.CallActivityAsync<string>(""Extension_InputNotLast"", ""input"", retryOptions);
 
-                // Test argument analyzer does not compare input on default parameter.
-                await context.CallActivityAsync<string>(""Extension_InputNotLast"", ""notInput"", 2, 3, retryOptions: retryOptions);
-            }
+            // Test argument analyzer does not compare input on default parameter.
+            await context.CallActivityAsync<string>(""Extension_InputNotLast"", ""notInput"", 2, 3, retryOptions: retryOptions);
+        }
 
         [FunctionName(""Extension_InputNotLast"")]
         public static string ExtensionInputNotLast([ActivityTrigger] string name)
-            {
-                return $""Hello {name}!"";
-            }
-
-            // Test correct custom method is used to determine which argument the input is
-
-            public static Task<TResult> CallActivityAsync<TResult>(
-            this IDurableOrchestrationContext context, string functionName, object input, RetryOptions retryOptions)
-            {
-                return retryOptions != null
-                    ? context.CallActivityWithRetryAsync<TResult>(functionName, retryOptions, input)
-                    : context.CallActivityAsync<TResult>(functionName, input);
-            }
-
-            public static Task<TResult> CallActivityAsync<TResult>(
-            this IDurableOrchestrationContext context, string functionName, int integer, object input, RetryOptions retryOptions)
-            {
-                return retryOptions != null
-                    ? context.CallActivityWithRetryAsync<TResult>(functionName, retryOptions, input)
-                    : context.CallActivityAsync<TResult>(functionName, input);
-            }
-
-            // Test argument analyzer does not compare input on default parameter
-
-            public static Task<TResult> CallActivityAsync<TResult>(
-            this IDurableOrchestrationContext context, string functionName, string stringOne, int integerOne, int integerTwo, object input = null, RetryOptions retryOptions = null)
-            {
-                return retryOptions != null
-                    ? context.CallActivityWithRetryAsync<TResult>(functionName, retryOptions, input)
-                    : context.CallActivityAsync<TResult>(functionName, input);
-            }
+        {
+            return $""Hello {name}!"";
         }
+
+        // Test correct custom method is used to determine which argument the input is
+
+        public static Task<TResult> CallActivityAsync<TResult>(
+        this IDurableOrchestrationContext context, string functionName, object input, RetryOptions retryOptions)
+        {
+            return retryOptions != null
+                ? context.CallActivityWithRetryAsync<TResult>(functionName, retryOptions, input)
+                : context.CallActivityAsync<TResult>(functionName, input);
+        }
+
+        public static Task<TResult> CallActivityAsync<TResult>(
+        this IDurableOrchestrationContext context, string functionName, int integer, object input, RetryOptions retryOptions)
+        {
+            return retryOptions != null
+                ? context.CallActivityWithRetryAsync<TResult>(functionName, retryOptions, input)
+                : context.CallActivityAsync<TResult>(functionName, input);
+        }
+
+        // Test argument analyzer does not compare input on default parameter
+
+        public static Task<TResult> CallActivityAsync<TResult>(
+        this IDurableOrchestrationContext context, string functionName, string stringOne, int integerOne, int integerTwo, object input = null, RetryOptions retryOptions = null)
+        {
+            return retryOptions != null
+                ? context.CallActivityWithRetryAsync<TResult>(functionName, retryOptions, input)
+                : context.CallActivityAsync<TResult>(functionName, input);
+        }
+    }
 }";
             VerifyCSharpDiagnostic(test);
         }
@@ -309,10 +306,7 @@ using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask;
-using Microsoft.WindowsAzure.Storage.Blob;
-using Microsoft.WindowsAzure.Storage.Queue;
-using Microsoft.WindowsAzure.Storage.Table;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask
 
 namespace VSSample
 {
@@ -321,11 +315,11 @@ namespace VSSample
         [FunctionName(""ArgumentAnalyzerTestCases"")]
         public static async Task<string> Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
-            {
-                await context.CallActivityAsync<string>(""Function_Takes_String"", 4);
-            
-                return ""Hello World!"";
-            }
+        {
+            await context.CallActivityAsync<string>(""Function_Takes_String"", 4);
+        
+            return ""Hello World!"";
+        }
 
         [FunctionName(""Function_Takes_String"")]
         public static string FunctionTakesString([ActivityTrigger] IDurableActivityContext context)
@@ -340,10 +334,10 @@ namespace VSSample
                 Id = DiagnosticId,
                 Message = string.Format(Resources.ActivityArgumentAnalyzerMessageFormat, "Function_Takes_String", "string", "int"),
                 Severity = Severity,
-                Locations =
-                 new[] {
-                            new DiagnosticResultLocation("Test0.cs", 21, 82)
-                     }
+                Locations = new[]
+                {
+                    new DiagnosticResultLocation("Test0.cs", 18, 78)
+                }
             };
             VerifyCSharpDiagnostic(test, expectedDiagnostics);
         }
@@ -359,9 +353,6 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
-using Microsoft.WindowsAzure.Storage.Blob;
-using Microsoft.WindowsAzure.Storage.Queue;
-using Microsoft.WindowsAzure.Storage.Table;
 
 namespace VSSample
 {
@@ -370,11 +361,11 @@ namespace VSSample
         [FunctionName(""ArgumentAnalyzerTestCases"")]
         public static async Task<string> Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
-            {
-                await context.CallActivityAsync<string>(""Function_Takes_String"", 4);
-            
-                return ""Hello World!"";
-            }
+        {
+            await context.CallActivityAsync<string>(""Function_Takes_String"", 4);
+        
+            return ""Hello World!"";
+        }
 
         [FunctionName(""Function_Takes_String"")]
         public static string FunctionTakesString([ActivityTrigger] string name)
@@ -388,10 +379,10 @@ namespace VSSample
                 Id = DiagnosticId,
                 Message = string.Format(Resources.ActivityArgumentAnalyzerMessageFormat, "Function_Takes_String", "string", "int"),
                 Severity = Severity,
-                Locations =
-                 new[] {
-                            new DiagnosticResultLocation("Test0.cs", 21, 82)
-                     }
+                Locations = new[]
+                {
+                    new DiagnosticResultLocation("Test0.cs", 18, 78)
+                }
             };
             VerifyCSharpDiagnostic(test, expectedDiagnostics);
         }
@@ -407,9 +398,6 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
-using Microsoft.WindowsAzure.Storage.Blob;
-using Microsoft.WindowsAzure.Storage.Queue;
-using Microsoft.WindowsAzure.Storage.Table;
 
 namespace VSSample
 {
@@ -418,12 +406,12 @@ namespace VSSample
         [FunctionName(""ArgumentAnalyzerTestCases"")]
         public static async Task<string> Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
-            {
-                string[] arrayType = new string[] { ""Seattle"", ""Tokyo"" };
-                await context.CallActivityAsync<string>(""Function_Takes_String"", arrayType);
-            
-                return ""Hello World!"";
-            }
+        {
+            string[] arrayType = new string[] { ""Seattle"", ""Tokyo"" };
+            await context.CallActivityAsync<string>(""Function_Takes_String"", arrayType);
+        
+            return ""Hello World!"";
+        }
 
         [FunctionName(""Function_Takes_String"")]
         public static string FunctionTakesString([ActivityTrigger] string name)
@@ -437,10 +425,10 @@ namespace VSSample
                 Id = DiagnosticId,
                 Message = string.Format(Resources.ActivityArgumentAnalyzerMessageFormat, "Function_Takes_String", "string", "string[]"),
                 Severity = Severity,
-                Locations =
-                 new[] {
-                            new DiagnosticResultLocation("Test0.cs", 22, 82)
-                     }
+                Locations = new[]
+                {
+                    new DiagnosticResultLocation("Test0.cs", 19, 78)
+                }
             };
             VerifyCSharpDiagnostic(test, expectedDiagnostics);
         }
@@ -456,9 +444,6 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
-using Microsoft.WindowsAzure.Storage.Blob;
-using Microsoft.WindowsAzure.Storage.Queue;
-using Microsoft.WindowsAzure.Storage.Table;
 
 namespace VSSample
 {
@@ -467,11 +452,11 @@ namespace VSSample
         [FunctionName(""ArgumentAnalyzerTestCases"")]
         public static async Task<string> Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
-            {
-                await context.CallActivityAsync<string>(""Unused_Input"", ""World""));
-            
-                return ""Hello World!"";
-            }
+        {
+            await context.CallActivityAsync<string>(""Unused_Input"", ""World""));
+        
+            return ""Hello World!"";
+        }
 
         [FunctionName(""Unused_Input"")]
         public static string UnusedInput([ActivityTrigger] IDurableActivityContext context)
@@ -485,10 +470,10 @@ namespace VSSample
                 Id = DiagnosticId,
                 Message = string.Format(Resources.ActivityArgumentAnalyzerMessageFormatNotUsed, "Unused_Input"),
                 Severity = Severity,
-                Locations =
-                 new[] {
-                            new DiagnosticResultLocation("Test0.cs", 21, 73)
-                     }
+                Locations = new[]
+                {
+                    new DiagnosticResultLocation("Test0.cs", 18, 69)
+                }
             };
             VerifyCSharpDiagnostic(test, expectedDiagnostics);
         }
@@ -504,9 +489,6 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
-using Microsoft.WindowsAzure.Storage.Blob;
-using Microsoft.WindowsAzure.Storage.Queue;
-using Microsoft.WindowsAzure.Storage.Table;
 
 namespace VSSample
 {
@@ -515,11 +497,11 @@ namespace VSSample
         [FunctionName(""ArgumentAnalyzerTestCases"")]
         public static async Task<string> Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
-            {
-                await context.CallActivityAsync<string>(""InvalidNullInput"", null));
-            
-                return ""Hello World!"";
-            }
+        {
+            await context.CallActivityAsync<string>(""InvalidNullInput"", null));
+        
+            return ""Hello World!"";
+        }
 
         [FunctionName(""InvalidNullInput"")]
         public static string InvalidNullInput([ActivityTrigger] int input)
@@ -533,10 +515,10 @@ namespace VSSample
                 Id = DiagnosticId,
                 Message = string.Format(Resources.ActivityArgumentAnalyzerMessageFormatInvalidNull, "InvalidNullInput", "int"),
                 Severity = Severity,
-                Locations =
-                 new[] {
-                            new DiagnosticResultLocation("Test0.cs", 21, 77)
-                     }
+                Locations = new[]
+                {
+                    new DiagnosticResultLocation("Test0.cs", 18, 73)
+                }
             };
             VerifyCSharpDiagnostic(test, expectedDiagnostics);
         }
@@ -552,9 +534,6 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
-using Microsoft.WindowsAzure.Storage.Blob;
-using Microsoft.WindowsAzure.Storage.Queue;
-using Microsoft.WindowsAzure.Storage.Table;
 
 namespace VSSample
 {
@@ -563,11 +542,11 @@ namespace VSSample
         [FunctionName(""ArgumentAnalyzerTestCases"")]
         public static async Task<string> Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
-            {
-                await context.CallActivityAsync<string>(""InvalidNullInput"", null));
-            
-                return ""Hello World!"";
-            }
+        {
+            await context.CallActivityAsync<string>(""InvalidNullInput"", null));
+        
+            return ""Hello World!"";
+        }
 
         [FunctionName(""InvalidNullInput"")]
         public static string InvalidNullInput([ActivityTrigger] int input)
@@ -581,10 +560,10 @@ namespace VSSample
                 Id = DiagnosticId,
                 Message = string.Format(Resources.ActivityArgumentAnalyzerMessageFormatInvalidNull, "InvalidNullInput", "int"),
                 Severity = Severity,
-                Locations =
-                 new[] {
-                            new DiagnosticResultLocation("Test0.cs", 21, 77)
-                     }
+                Locations = new[]
+                {
+                    new DiagnosticResultLocation("Test0.cs", 18, 73)
+                }
             };
             VerifyCSharpDiagnostic(test, expectedDiagnostics);
         }

@@ -191,13 +191,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         // synchronize with the DurableTask.Core API.
         public override async Task<string> Execute(OrchestrationContext innerContext, string serializedInput)
         {
-#if !FUNCTIONS_V1
             // Adding "Tags" to activity allows using App Insights to query current state of entities
             var activity = Activity.Current;
             OrchestrationRuntimeStatus status = OrchestrationRuntimeStatus.Running;
 
             DurableTaskExtension.TagActivityWithOrchestrationStatus(status, this.context.InstanceId, true);
-#endif
             try
             {
                 if (this.operationBatch.Count == 0

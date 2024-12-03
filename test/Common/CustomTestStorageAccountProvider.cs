@@ -2,12 +2,15 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using Azure.Data.Tables;
+using Azure.Storage.Blobs;
+using Azure.Storage.Queues;
 using DurableTask.AzureStorage;
-using Microsoft.WindowsAzure.Storage;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
-    internal class CustomTestStorageAccountProvider : IStorageAccountProvider
+    internal class CustomTestStorageAccountProvider : IStorageServiceClientProviderFactory
     {
         private readonly string customConnectionString;
         private readonly string customConnectionName;
@@ -18,11 +21,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             this.customConnectionString = $"DefaultEndpointsProtocol=https;AccountName=test;AccountKey={GenerateRandomKey()};EndpointSuffix=core.windows.net";
         }
 
-        public CloudStorageAccount GetCloudStorageAccount(string name) =>
-            CloudStorageAccount.Parse(name != this.customConnectionName ? TestHelpers.GetStorageConnectionString() : this.customConnectionString);
+        public IStorageServiceClientProvider<BlobServiceClient, BlobClientOptions> GetBlobClientProvider(string connectionName) =>
+            StorageServiceClientProvider.ForBlob(TestHelpers.GetStorageConnectionString());
 
-        public StorageAccountDetails GetStorageAccountDetails(string name) =>
-            new StorageAccountDetails { ConnectionString = name != this.customConnectionName ? TestHelpers.GetStorageConnectionString() : this.customConnectionString };
+        public IStorageServiceClientProvider<QueueServiceClient, QueueClientOptions> GetQueueClientProvider(string connectionName) =>
+            StorageServiceClientProvider.ForQueue(TestHelpers.GetStorageConnectionString());
+
+        public IStorageServiceClientProvider<TableServiceClient, TableClientOptions> GetTableClientProvider(string connectionName) =>
+            StorageServiceClientProvider.ForTable(TestHelpers.GetStorageConnectionString());
 
         private static string GenerateRandomKey()
         {

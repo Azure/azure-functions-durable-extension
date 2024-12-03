@@ -4,13 +4,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Metadata;
 using System.Threading.Tasks;
+using Azure.Storage.Blobs;
 using DurableTask.AzureStorage;
 using FluentAssertions.Common;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
-using Microsoft.WindowsAzure.Storage;
-using Microsoft.WindowsAzure.Storage.Blob;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -42,39 +42,17 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
             // Future test runs will clean up more.
             const int maxDeletedTaskHubs = 2000;
             string connectionString = TestHelpers.GetStorageConnectionString();
-            CloudStorageAccount account = CloudStorageAccount.Parse(connectionString);
+            var blobServiceClient = new BlobServiceClient(connectionString);
 
-            this.output.WriteLine($"Using storage account: {account.Credentials.AccountName}");
+            this.output.WriteLine($"Using storage account: {blobServiceClient.AccountName}");
 
-            CloudBlobClient blobClient = account.CreateCloudBlobClient();
-            BlobContinuationToken continuationToken = null;
-            List<string> taskHubsToDelete = new List<string>();
-            do
-            {
-                var containersSegmentResult = await blobClient.ListContainersSegmentedAsync(
-                    prefix: string.Empty,
-                    ContainerListingDetails.Metadata,
-                    maxResults: 500,
-                    continuationToken,
-                    new BlobRequestOptions(),
-                    new OperationContext());
-                continuationToken = containersSegmentResult.ContinuationToken;
-
-                foreach (var blobContainer in containersSegmentResult.Results)
-                {
-                    int suffixIndex = blobContainer.Name.IndexOf("-leases");
-                    if (suffixIndex > 0)
-                    {
-                        if (blobContainer.Properties.LastModified.HasValue
-                            && DateTime.UtcNow.ToDateTimeOffset().Subtract(blobContainer.Properties.LastModified.Value) > oldTaskHubDeletionThreshold)
-                        {
-                            string taskHub = blobContainer.Name.Substring(0, suffixIndex);
-                            taskHubsToDelete.Add(taskHub);
-                        }
-                    }
-                }
-            }
-            while (continuationToken != null && taskHubsToDelete.Count < maxDeletedTaskHubs);
+            List<string> taskHubsToDelete = await blobServiceClient
+                .GetBlobContainersAsync()
+                .Where(c => c.Name.Contains("-leases", StringComparison.Ordinal))
+                .Where(c => DateTimeOffset.UtcNow.Subtract(c.Properties.LastModified) > oldTaskHubDeletionThreshold)
+                .Select(c => c.Name[..c.Name.IndexOf("-leases")])
+                .Take(maxDeletedTaskHubs)
+                .ToListAsync();
 
             await Task.WhenAll(taskHubsToDelete.Select(taskHub => this.DeleteTaskHub(taskHub, connectionString)));
         }
@@ -84,7 +62,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
             var settings = new AzureStorageOrchestrationServiceSettings()
             {
                 TaskHubName = taskHub,
-                StorageConnectionString = connectionString,
+                StorageAccountClientProvider = new StorageAccountClientProvider(connectionString),
             };
 
             var service = new AzureStorageOrchestrationService(settings);

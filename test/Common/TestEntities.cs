@@ -340,10 +340,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         private static async Task<int> CallHttpAsync(string requestUri)
         {
-            using (HttpResponseMessage response = await SharedHttpClient.GetAsync(requestUri))
-            {
-                return (int)response.StatusCode;
-            }
+            ////using (HttpResponseMessage response = await SharedHttpClient.GetAsync(requestUri))
+            ////{
+            ////    return (int)response.StatusCode;
+            ////}
+
+            // Making real calls to HTTP endpoints is not reliable in tests.
+            await Task.Delay(100);
+            return 200;
         }
 
         //-------------- an entity that uses custom deserialization

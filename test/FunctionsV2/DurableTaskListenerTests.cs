@@ -37,7 +37,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             IScaleMonitor scaleMonitor = this.listener.GetMonitor();
 
             Assert.Equal(typeof(DurableTaskScaleMonitor), scaleMonitor.GetType());
-            Assert.Equal($"DurableTaskTrigger-DurableTaskHub".ToLower(), scaleMonitor.Descriptor.Id);
+            Assert.Equal($"DurableTask-AzureStorage:DurableTaskHub", scaleMonitor.Descriptor.Id);
 
             IScaleMonitor scaleMonitor2 = this.listener.GetMonitor();
 
@@ -51,11 +51,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             options.WebhookUriProviderOverride = () => new Uri("https://sampleurl.net");
             var wrappedOptions = new OptionsWrapper<DurableTaskOptions>(options);
             var nameResolver = TestHelpers.GetTestNameResolver();
-            var storageAccountProvider = new TestStorageAccountProvider();
+            var clientProviderFactory = new TestStorageServiceClientProviderFactory();
             var platformInformationService = TestHelpers.GetMockPlatformInformationService();
             var serviceFactory = new AzureStorageDurabilityProviderFactory(
                 wrappedOptions,
-                storageAccountProvider,
+                clientProviderFactory,
                 nameResolver,
                 NullLoggerFactory.Instance,
                 platformInformationService);
