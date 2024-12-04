@@ -6,6 +6,7 @@ trigger:
     - main
     - dev
     - v3.x
+    - nytian/dfv3-release-rc.2
 
 resources:
   repositories:
