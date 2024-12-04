@@ -8,6 +8,7 @@ trigger:
             - main
             - dev
             - v3.x
+            - nytian/dfv3-release-rc.2
 
 # CI only, does not trigger on PRs.
 pr: none
