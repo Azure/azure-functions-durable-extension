@@ -5,11 +5,13 @@ on:
     branches:
       - main
       - dev
+      - nytian/dfv3-release-rc.2
     paths-ignore: [ '**.md' ]
   pull_request:
     branches:
       - main
       - dev
+      - nytian/dfv3-release-rc.2
     paths-ignore: [ '**.md' ]
 
 env:
