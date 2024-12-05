@@ -1,8 +1,0 @@
-- name: Durable Functions
-  href: https://docs.microsoft.com/en-us/azure/azure-functions/durable-functions-overview
-- name: .NET API Reference
-  href: api/
-- name: GitHub Repo
-  href: https://github.com/Azure/azure-functions-durable-extension/
-- name: Azure Functions Home
-  href: https://functions.azure.com
