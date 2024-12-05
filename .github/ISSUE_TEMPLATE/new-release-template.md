@@ -27,7 +27,7 @@ _Due: <2-business-days-before-release>_
 - [ ] Review the [Dependabot vulnerability alerts](https://github.com/Azure/azure-functions-durable-extension/security/dependabot) and address them. Note: code samples / test projects _may_ be excluded from this check.
 - [ ] Check for package size, make sure it's not surprisingly heavier than a previous release.
 - [ ] Update .NET Isolated SDK version at Worker.Extensions.Durabletask.csproj and check if we need to update the Worker.Extensions.Durabletask version.
-- [ ] Run [the extension release pipeline](https://azfunc.visualstudio.com/internal/_build?definitionId=673) to create the new package and add it to the [ADO test feed](https://azfunc.visualstudio.com/internal/_artifacts/feed/durabletask-internal) for testing.
+- [ ] Run [the extension release pipeline](https://azfunc.visualstudio.com/internal/_build?definitionId=673) to create the new WebJobs.Extensions.Durabletask and Worker.Extensions.Durabletask packages and add them to the [ADO test feed].(https://azfunc.visualstudio.com/internal/_artifacts/feed/durabletask-internal) for testing.
 - [ ] Keep branch `v2.x` updated with branch `dev` (v3.x). Do not merge PRs that are specific to Durable Functions v3.
 
 **Validation**
