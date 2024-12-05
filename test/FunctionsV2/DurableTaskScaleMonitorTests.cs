@@ -20,8 +20,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
     public class DurableTaskScaleMonitorTests
     {
-        private readonly string functionId = "DurableTaskTriggerFunctionId";
-        private readonly FunctionName functionName = new FunctionName("DurableTaskTriggerFunctionName");
         private readonly string hubName = "DurableTaskTriggerHubName";
         private readonly StorageAccountClientProvider clientProvider = new StorageAccountClientProvider(TestHelpers.GetStorageConnectionString());
         private readonly ITestOutputHelper output;
@@ -39,32 +37,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             this.loggerFactory.AddProvider(this.loggerProvider);
             ILogger logger = this.loggerFactory.CreateLogger(LogCategories.CreateTriggerCategory("DurableTask"));
             this.traceHelper = new EndToEndTraceHelper(logger, false);
-            this.performanceMonitor = new Mock<DisconnectedPerformanceMonitor>(MockBehavior.Strict, new AzureStorageOrchestrationServiceSettings{
+            this.performanceMonitor = new Mock<DisconnectedPerformanceMonitor>(MockBehavior.Strict, new AzureStorageOrchestrationServiceSettings
+            {
                 StorageAccountClientProvider = this.clientProvider,
                 TaskHubName = this.hubName,
             });
             var metricsProvider = new DurableTaskMetricsProvider(
-                this.functionName.Name,
                 this.hubName,
                 logger,
                 this.performanceMonitor.Object,
                 this.clientProvider);
 
+            string scalerId = $"DurableTask-AzureStorage:{this.hubName}";
+
             this.scaleMonitor = new DurableTaskScaleMonitor(
-                this.functionId,
-                this.functionName.Name,
+                scalerId,
                 this.hubName,
-                this.clientProvider,
                 logger,
-                metricsProvider,
-                this.performanceMonitor.Object);
+                metricsProvider);
         }
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void ScaleMonitorDescriptor_ReturnsExpectedValue()
         {
-            Assert.Equal($"{this.functionId}-DurableTaskTrigger-{this.hubName}".ToLower(), this.scaleMonitor.Descriptor.Id);
+            Assert.Equal($"DurableTask-AzureStorage:{this.hubName}", this.scaleMonitor.Descriptor.Id);
         }
 
         [Fact]
