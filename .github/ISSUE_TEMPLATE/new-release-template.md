@@ -38,7 +38,6 @@ _Due: <1-business-days-before-release>_
 - [ ] Smoke test .NET isolated apps. **(assigned to: )** - check that the correct version of the webjobs extension is loaded by going to bin\Debug\net8.0\.azurefunctions\Microsoft.Azure.WebJobs.Extensions.DurableTask.dll, right click on Properties, go to the Details tab and check the version
 - [ ] Merge (**choose create a merge commit, NOT squash merge**) dev into main. Person performing validation must approve PR.
 
-
 **DTFx Release Completion (assigned to: )**
 _Due: <release-deadline>_
 - [ ] Add the DTFx packages to the [ADO feed](https://azfunc.visualstudio.com/internal/_artifacts/feed/durabletask-internal)
