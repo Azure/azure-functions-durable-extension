@@ -1,6 +1,6 @@
 ---
 name: New release template
-about: Template for creating new releases of Durable Functions (WebJobs and Worker extension)
+about: Template for creating new releases of Durable Functions
 title: ''
 labels: ''
 assignees: bachuv, nytiannn
@@ -41,6 +41,7 @@ _Due: <1-business-days-before-release>_
 
 **DTFx Release Completion (assigned to: )**
 _Due: <release-deadline>_
+- [ ] Add the DTFx packages to the [ADO feed](https://azfunc.visualstudio.com/internal/_artifacts/feed/durabletask-internal)
 - [ ] Upload DTFx packages to NuGet (directly to nuget.org).
 - [ ] Delete `Microsoft.DurableTask.Sidecar.Protobuf` from MyGet, and publish it to NuGet _iff_ it was updated as an Extension dependency. 
 - [ ] Publish release notes for DTFx.
@@ -48,12 +49,14 @@ _Due: <release-deadline>_
 
 **DotNet Isolated SDK Release Completion: (assigned to:)**
 _Due: <release-deadline>_
+- [ ] Add the .NET isolated SDK packages to the [ADO feed](https://azfunc.visualstudio.com/internal/_artifacts/feed/durabletask-internal)
 - [ ] Upload .NET isolated SDK packages to NuGet (directly to nuget.org).
 - [ ] Publish release notes in the durable-dotnet repo.
 
 **Release Completion (assigned to: )**
 _Due: <release-deadline>_
 - [ ] Run the [Durable Functions release pipeline](https://azfunc.visualstudio.com/internal/_build?definitionId=673) and select `v3.x` or `dev` as the branch. Choose `dev` if you are making a v2.x relese, otherwise choose v3.x.
+- [ ] Add the Durable Functions packages to the [ADO feed](https://azfunc.visualstudio.com/internal/_artifacts/feed/durabletask-internal)
 - [ ] Upload the Durable Functions package to NuGet (directly to nuget.org).
 - [ ] Upload .NET Isolated worker extension package to NuGet (directly to nuget.org).
 - [ ] Create a PR in the [Azure Functions templates repo](https://github.com/Azure/azure-functions-templates) targeting branch `dev` to update all references of "Microsoft.Azure.WebJobs.Extensions.DurableTask" (search for this string in the code) to the latest version.
