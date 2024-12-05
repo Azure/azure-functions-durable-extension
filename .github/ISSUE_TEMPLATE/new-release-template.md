@@ -3,7 +3,7 @@ name: New release template
 about: Template for creating new releases of Durable Functions
 title: ''
 labels: ''
-assignees: bachuv, nytiannn
+assignees: bachuv, nytiannn, andystaples
 
 ---
 
@@ -28,12 +28,12 @@ _Due: <2-business-days-before-release>_
 - [ ] Check for package size, make sure it's not surprisingly heavier than a previous release.
 - [ ] Update .NET Isolated SDK version at Worker.Extensions.Durabletask.csproj and check if we need to update the Worker.Extensions.Durabletask version.
 - [ ] Run [the extension release pipeline](https://azfunc.visualstudio.com/internal/_build?definitionId=673) to create the new WebJobs.Extensions.Durabletask and Worker.Extensions.Durabletask packages and add them to the [ADO test feed].(https://azfunc.visualstudio.com/internal/_artifacts/feed/durabletask-internal) for testing.
-- [ ] Keep branch `v2.x` updated with branch `dev` (v3.x). Do not merge PRs that are specific to Durable Functions v3.
+- [ ] Cherry-pick any PRs that need to be in the `v2.x` branch
 
 **Validation**
 _Due: <1-business-days-before-release>_
 - [ ] Run private performance tests and ensure no regressions. **(assigned to: )**
-- [ ] Smoke test Functions V1, Functions V2, and Functions V3 .NET apps. **(assigned to: )**
+- [ ] Smoke test Functions V2, and Functions V3 .NET apps if you are releasing WebJobs.Extensions.DurableTask v2.x. **(assigned to: )**
 - [ ] Smoke test .NET apps with backend Netherite, MSSQL. **(assigned to: )**
 - [ ] Smoke test .NET isolated apps. **(assigned to: )** - check that the correct version of the webjobs extension is loaded by going to bin\Debug\net8.0\.azurefunctions\Microsoft.Azure.WebJobs.Extensions.DurableTask.dll, right click on Properties, go to the Details tab and check the version
 - [ ] Merge (**choose create a merge commit, NOT squash merge**) dev into main. Person performing validation must approve PR.
@@ -54,7 +54,7 @@ _Due: <release-deadline>_
 
 **Release Completion (assigned to: )**
 _Due: <release-deadline>_
-- [ ] Run the [Durable Functions release pipeline](https://azfunc.visualstudio.com/internal/_build?definitionId=673) and select `v3.x` or `dev` as the branch. Choose `dev` if you are making a v2.x relese, otherwise choose v3.x.
+- [ ] Run the [Durable Functions release pipeline](https://azfunc.visualstudio.com/internal/_build?definitionId=673) and select `dev` or `v2.x` as the branch. Choose `dev` if you are making a v3.x release, otherwise choose `v2.x` for a v2 release.
 - [ ] Add the Durable Functions packages to the [ADO feed](https://azfunc.visualstudio.com/internal/_artifacts/feed/durabletask-internal)
 - [ ] Upload the Durable Functions package to NuGet (directly to nuget.org).
 - [ ] Upload .NET Isolated worker extension package to NuGet (directly to nuget.org).
