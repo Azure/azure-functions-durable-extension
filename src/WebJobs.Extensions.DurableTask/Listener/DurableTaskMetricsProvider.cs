@@ -59,13 +59,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             if (this.heartbeat != null)
             {
-                metrics.PartitionCount = heartbeat.PartitionCount;
-                metrics.ControlQueueLengths = JsonConvert.SerializeObject(heartbeat.ControlQueueLengths);
-                metrics.ControlQueueLatencies = JsonConvert.SerializeObject(heartbeat.ControlQueueLatencies);
-                metrics.WorkItemQueueLength = heartbeat.WorkItemQueueLength;
-                if (heartbeat.WorkItemQueueLatency > TimeSpan.Zero)
+                metrics.PartitionCount = this.heartbeat.PartitionCount;
+                metrics.ControlQueueLengths = JsonConvert.SerializeObject(this.heartbeat.ControlQueueLengths);
+                metrics.ControlQueueLatencies = JsonConvert.SerializeObjectthis.heartbeat.ControlQueueLatencies);
+                metrics.WorkItemQueueLength = this.heartbeat.WorkItemQueueLength;
+                if (this.heartbeat.WorkItemQueueLatency > TimeSpan.Zero)
                 {
-                    metrics.WorkItemQueueLatency = heartbeat.WorkItemQueueLatency.ToString();
+                    metrics.WorkItemQueueLatency = this.heartbeat.WorkItemQueueLatency.ToString();
                 }
             }
 
