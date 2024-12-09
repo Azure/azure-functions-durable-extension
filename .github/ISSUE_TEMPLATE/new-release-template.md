@@ -41,8 +41,7 @@ _Due: <1-business-days-before-release>_
 **DTFx Release Completion (assigned to: )**
 _Due: <release-deadline>_
 - [ ] Add the DTFx packages to the [ADO feed](https://azfunc.visualstudio.com/internal/_artifacts/feed/durabletask-internal)
-- [ ] Upload DTFx packages to NuGet (directly to nuget.org).
-- [ ] Delete `Microsoft.DurableTask.Sidecar.Protobuf` from MyGet, and publish it to NuGet _iff_ it was updated as an Extension dependency. 
+- [ ] Upload DTFx packages to NuGet (directly to nuget.org). 
 - [ ] Publish release notes for DTFx.
 - [ ] Patch increment DTFx packages that were released (either DT-AzureStorage only or if there were Core changes DT-AzureStorage, DT-Core, and DT-ApplicationInsights) in WebJobs.Extensions.DurableTask.csproj
 
@@ -61,4 +60,3 @@ _Due: <release-deadline>_
 - [ ] Create a PR in the [Azure Functions templates repo](https://github.com/Azure/azure-functions-templates) targeting branch `dev` to update all references of "Microsoft.Azure.WebJobs.Extensions.DurableTask" (search for this string in the code) to the latest version.
 - [ ] _if and only if this is a new major release_, Create a PR in the [Azure Functions bundles repo](https://github.com/Azure/azure-functions-extension-bundles) to update bundles to the latest version .
 - [ ] Publish release notes.
-- [ ] Post announcement on Twitter (Chris).
