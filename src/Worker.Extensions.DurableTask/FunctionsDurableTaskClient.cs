@@ -1,6 +1,7 @@
 // Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DurableTask;
@@ -76,6 +77,12 @@ internal sealed class FunctionsDurableTaskClient : DurableTaskClient
         StartOrchestrationOptions? options = null,
         CancellationToken cancellation = default)
     {
+        Activity? currActivity = Activity.Current;
+        if (currActivity != null)
+        {
+            options = new StartOrchestrationOptions(ParentTraceId: currActivity?.Id?.ToString());
+        }
+
         return this.inner.ScheduleNewOrchestrationInstanceAsync(orchestratorName, input, options, cancellation);
     }
 

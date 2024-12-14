@@ -3,6 +3,7 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Reflection.Metadata.Ecma335;
 using System.Threading;
@@ -154,8 +155,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 try
                 {
+                    ActivitySource activityTraceSource = new ActivitySource("DurableTask.WebJobs");
+
+                    Activity? newActivity = activityTraceSource.CreateActivity("gRPC start orchestration", kind: ActivityKind.Producer);
+
+                    if (newActivity != null)
+                    {
+                        newActivity.SetParentId(request.ParentTraceContext.TraceParent);
+                    }
+
+                    newActivity?.Start();
+
                     string instanceId = await this.GetClient(context).StartNewAsync(
                         request.Name, request.InstanceId, Raw(request.Input));
+
+                    newActivity?.Stop();
+
                     return new P.CreateInstanceResponse
                     {
                         InstanceId = instanceId,
