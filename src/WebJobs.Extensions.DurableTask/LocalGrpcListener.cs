@@ -157,7 +157,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     ActivitySource activityTraceSource = new ActivitySource("DurableTask.WebJobs");
 
-                    Activity? newActivity = activityTraceSource.CreateActivity("gRPC start orchestration", kind: ActivityKind.Producer);
+                    Activity? newActivity = activityTraceSource.CreateActivity("gRPC start orchestration", kind: ActivityKind.Server);
 
                     if (newActivity != null)
                     {
