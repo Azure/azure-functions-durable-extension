@@ -33,8 +33,6 @@ _Due: <2-business-days-before-release>_
 **Validation**
 _Due: <1-business-days-before-release>_
 - [ ] Run private performance tests and ensure no regressions. **(assigned to: )**
-- [ ] Smoke test Functions V2 and Functions V3 .NET apps if you are releasing WebJobs.Extensions.DurableTask v2.x. **(assigned to: )**
-- [ ] Smoke test .NET apps with backend Netherite, MSSQL. **(assigned to: )**
 - [ ] Smoke test .NET isolated apps. **(assigned to: )** - check that the correct version of the webjobs extension is loaded by going to bin\Debug\net8.0\.azurefunctions\Microsoft.Azure.WebJobs.Extensions.DurableTask.dll, right click on Properties, go to the Details tab and check the version
 - [ ] Merge (**choose create a merge commit, NOT squash merge**) dev into main. Person performing validation must approve PR.
 
