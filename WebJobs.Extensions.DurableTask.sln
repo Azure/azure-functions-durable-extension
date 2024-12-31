@@ -1,4 +1,4 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31822.380
@@ -75,6 +75,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "pipelines", "pipelines", "{
 	ProjectSection(SolutionItems) = preProject
 		azure-pipelines.yml = azure-pipelines.yml
 		.github\workflows\smoketest-dotnet-isolated-v4.yml = .github\workflows\smoketest-dotnet-isolated-v4.yml
+		//.github\workflows\smoketest-dotnet-v2.yml = .github\workflows\smoketest-dotnet-v2.yml
+		.github\workflows\smoketest-dotnet-v3.yml = .github\workflows\smoketest-dotnet-v3.yml
 		.github\workflows\smoketest-node14-v4.yml = .github\workflows\smoketest-node14-v4.yml
 		.github\workflows\smoketest-python37-v4.yml = .github\workflows\smoketest-python37-v4.yml
 	EndProjectSection
