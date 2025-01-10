@@ -87,7 +87,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DFPerfScenariosV4", "test\D
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Worker.Extensions.DurableTask.Tests", "test\Worker.Extensions.DurableTask.Tests\Worker.Extensions.DurableTask.Tests.csproj", "{76DEC17C-BF6A-498A-8E8A-7D6CB2E03284}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotnetIsolatedE2ETests", "test\DotnetIsolatedE2ETests\DotnetIsolatedE2ETests.csproj", "{63628712-4196-4865-B268-5BA3D8F08DE1}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "E2ETests", "test\e2e\Tests\E2ETests.csproj", "{63628712-4196-4865-B268-5BA3D8F08DE1}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

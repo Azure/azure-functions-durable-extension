@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Durable.Tests.DotnetIsolatedE2E
     internal class TestLoggerProvider : ILoggerProvider, ILogger
     {
         private readonly IMessageSink _messageSink;
-        private ITestOutputHelper _currentTestOutput;
+        private ITestOutputHelper? _currentTestOutput;
         IList<string> _logs = new List<string>();
 
         public TestLoggerProvider(IMessageSink messageSink)
@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Durable.Tests.DotnetIsolatedE2E
             return new DisposableOutput(this);
         }
 
-        public IDisposable BeginScope<TState>(TState state)
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull
         {
             return null;
         }
@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Durable.Tests.DotnetIsolatedE2E
             return true;
         }
 
-        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
         {
             string formattedString = formatter(state, exception);
             _messageSink.OnMessage(new DiagnosticMessage(formattedString));

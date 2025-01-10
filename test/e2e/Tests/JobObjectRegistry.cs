@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Durable.Tests.DotnetIsolatedE2E
         }
 
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        private static extern IntPtr CreateJobObject(object a, string lpName);
+        private static extern IntPtr CreateJobObject(object? a, string? lpName);
 
         [DllImport("kernel32.dll", SetLastError = true)]
         private static extern bool SetInformationJobObject(IntPtr hJob, JobObjectInfoType infoType, IntPtr lpJobObjectInfo, uint cbJobObjectInfoLength);

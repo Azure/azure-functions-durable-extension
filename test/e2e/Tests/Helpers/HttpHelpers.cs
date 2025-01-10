@@ -66,7 +66,7 @@ namespace Microsoft.Azure.Durable.Tests.DotnetIsolatedE2E
 
         private static async Task<HttpResponseMessage> GetResponseMessage(HttpRequestMessage request)
         {
-            HttpResponseMessage response = null;
+            HttpResponseMessage? response = null;
             using (var httpClient = new HttpClient())
             {
                 response = await httpClient.SendAsync(request);

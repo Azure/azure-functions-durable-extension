@@ -10,9 +10,15 @@ param(
     [Switch]
     $StartCosmosDBEmulator,
     [Parameter(Mandatory=$false)]
+    $EmulatorStartDir,
+    [Parameter(Mandatory=$false)]
     [Switch]
     $NoWait
 )
+
+if (Test-Path($EmulatorStartDir)) {
+    Set-Location $EmulatorStartDir
+}
 
 $DebugPreference = 'Continue'
 

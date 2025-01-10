@@ -19,17 +19,15 @@ param(
     $SkipCoreTools,
 
     [Switch]
-    $UseCoreToolsBuildFromIntegrationTests,
-
-    [Switch]
     $SkipBuildOnPack
 )
 
-$ProjectBaseDirectory = "$PSScriptRoot\..\..\"
+$ProjectBaseDirectory = "$PSScriptRoot\..\..\..\"
+$ProjectTemporaryPath = Join-Path ([System.IO.Path]::GetTempPath()) "DurableTaskExtensionE2ETests"
+mkdir $ProjectTemporaryPath -ErrorAction SilentlyContinue > $Null
 $WebJobsExtensionProjectDirectory = Join-Path $ProjectBaseDirectory "src\WebJobs.Extensions.DurableTask"
 $WorkerExtensionProjectDirectory = Join-Path $ProjectBaseDirectory "src\Worker.Extensions.DurableTask"
-# $E2ETestProjectDirectory = "$ProjectBaseDirectory\test\DotnetIsolatedE2ETests"
-$E2EAppProjectDirectory = Join-Path $ProjectBaseDirectory "test\DotnetIsolatedE2EApps/MainApp"
+$E2EAppProjectDirectory = Join-Path $ProjectBaseDirectory "test\e2e\Apps\BasicDotNetIsolated"
 
 $FunctionsRuntimeVersion = 4
 
@@ -41,7 +39,7 @@ function StopOnFailedExecution {
   }
 }
 
-$FUNC_CLI_DIRECTORY = Join-Path $PSScriptRoot 'Azure.Functions.Cli'
+$FUNC_CLI_DIRECTORY = Join-Path $ProjectTemporaryPath 'Azure.Functions.Cli'
 if($SkipCoreTool -or (Test-Path $FUNC_CLI_DIRECTORY))
 {
   Write-Host "---Skipping Core Tools download---"  
@@ -66,20 +64,10 @@ else
       }
   }
 
-  if ($UseCoreToolsBuildFromIntegrationTests.IsPresent)
+  if ([string]::IsNullOrWhiteSpace($coreToolsURL))
   {
-    Write-Host ""
-    Write-Host "Install the Core Tools for Integration Tests..."
-    $coreToolsURL = "https://functionsintegclibuilds.blob.core.windows.net/builds/$FunctionsRuntimeVersion/latest/Azure.Functions.Cli.$os-$arch.zip"
-    $versionUrl = "https://functionsintegclibuilds.blob.core.windows.net/builds/$FunctionsRuntimeVersion/latest/version.txt"
-  }
-  else
-  {
-    if ([string]::IsNullOrWhiteSpace($coreToolsURL))
-    {
-      $coreToolsURL = "https://functionsclibuilds.blob.core.windows.net/builds/$FunctionsRuntimeVersion/latest/Azure.Functions.Cli.$os-$arch.zip"
-      $versionUrl = "https://functionsclibuilds.blob.core.windows.net/builds/$FunctionsRuntimeVersion/latest/version.txt"
-    }
+    $coreToolsURL = "https://functionsclibuilds.blob.core.windows.net/builds/$FunctionsRuntimeVersion/latest/Azure.Functions.Cli.$os-$arch.zip"
+    $versionUrl = "https://functionsclibuilds.blob.core.windows.net/builds/$FunctionsRuntimeVersion/latest/version.txt"
   }
 
   Write-Host ""
@@ -118,7 +106,7 @@ Write-Host "Building WebJobs extension project"
 
 Set-Location $WebJobsExtensionProjectDirectory
 if (!(Test-Path "./out")) {
-  mkdir ./out
+  mkdir ./out -ErrorAction SilentlyContinue > $Null
 }
 Get-ChildItem -Path ./out -Include * -File -Recurse | ForEach-Object { $_.Delete()}
 dotnet build -c Debug "$WebJobsExtensionProjectDirectory\WebJobs.Extensions.DurableTask.csproj" --output ./out
@@ -131,7 +119,7 @@ Write-Host "Building worker extension project"
 
 Set-Location $WorkerExtensionProjectDirectory
 if (!(Test-Path "./out")) {
-  mkdir ./out
+  mkdir ./out -ErrorAction SilentlyContinue > $Null
 }
 Get-ChildItem -Path ./out -Include * -File -Recurse | ForEach-Object { $_.Delete()}
 dotnet build -c Debug "$WorkerExtensionProjectDirectory\Worker.Extensions.DurableTask.csproj" --output ./out
@@ -172,7 +160,8 @@ if ($SkipStorageEmulator -And $SkipCosmosDBEmulator)
 }
 else 
 {
-  .\start-emulators.ps1 -SkipStorageEmulator:$SkipStorageEmulator -SkipCosmosDBEmulator:$true
+  # Set-Location $ProjectTemporaryPath
+  .\start-emulators.ps1 -SkipStorageEmulator:$SkipStorageEmulator -StartCosmosDBEmulator:$false -EmulatorStartDir $ProjectTemporaryPath
 }
 
 StopOnFailedExecution

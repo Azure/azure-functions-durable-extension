@@ -13,21 +13,9 @@ namespace Microsoft.Azure.Durable.Tests.DotnetIsolatedE2E
 {
     public static class FixtureHelpers
     {
-        public static Process GetFuncHostProcess(bool enableAuth = false)
+        public static Process GetFuncHostProcess(string appPath, bool enableAuth = false)
         {
-            var funcProcess = new Process();
-            var rootDir = Path.GetFullPath(@"../../../../..");
-            var e2eAppBinPath = Path.Combine(rootDir, @"test/DotnetIsolatedE2EApps/MainApp/bin");
-            string? e2eHostJson = Directory.GetFiles(e2eAppBinPath, "host.json", SearchOption.AllDirectories).FirstOrDefault();
-
-            if (e2eHostJson == null)
-            {
-                throw new InvalidOperationException($"Could not find a built worker app under '{e2eAppBinPath}'");
-            }
-
-            var e2eAppPath = Path.GetDirectoryName(e2eHostJson);
-
-            var cliPath = Path.Combine(rootDir, @"test/DotnetIsolatedE2ETests/Azure.Functions.Cli/func");
+            var cliPath = Path.Combine(Path.GetTempPath(), @"DurableTaskExtensionE2ETests/Azure.Functions.Cli/func");
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
@@ -36,14 +24,16 @@ namespace Microsoft.Azure.Durable.Tests.DotnetIsolatedE2E
 
             if (!File.Exists(cliPath))
             {
-                throw new InvalidOperationException($"Could not find '{cliPath}'. Try running '{Path.Combine(rootDir, "setup-e2e-tests.ps1")}' to install it.");
+                throw new InvalidOperationException($"Could not find '{cliPath}'. Try running '{Path.Combine("build-e2e-test.ps1")}' to install it.");
             }
+
+            var funcProcess = new Process();
 
             funcProcess.StartInfo.UseShellExecute = false;
             funcProcess.StartInfo.RedirectStandardError = true;
             funcProcess.StartInfo.RedirectStandardOutput = true;
             funcProcess.StartInfo.CreateNoWindow = true;
-            funcProcess.StartInfo.WorkingDirectory = e2eAppPath;
+            funcProcess.StartInfo.WorkingDirectory = appPath;
             funcProcess.StartInfo.FileName = cliPath;
             funcProcess.StartInfo.ArgumentList.Add("host");
             funcProcess.StartInfo.ArgumentList.Add("start");
