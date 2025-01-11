@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Durable.Tests.DotnetIsolatedE2E
         public static async Task<HttpResponseMessage> InvokeHttpTrigger(string functionName, string queryString = "")
         {
             // Basic http request
-            HttpRequestMessage request = GetTestRequest(functionName, queryString);
+            using HttpRequestMessage request = GetTestRequest(functionName, queryString);
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/plain"));
             return await GetResponseMessage(request);
         }

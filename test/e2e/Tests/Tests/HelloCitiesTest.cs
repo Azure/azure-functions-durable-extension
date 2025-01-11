@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Durable.Tests.DotnetIsolatedE2E
         [InlineData("HelloCities_HttpStart", "", HttpStatusCode.Accepted, "")]
         public async Task HttpTriggerTests(string functionName, string queryString, HttpStatusCode expectedStatusCode, string expectedMessage)
         {
-            HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger(functionName, queryString);
+            using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger(functionName, queryString);
             string actualMessage = await response.Content.ReadAsStringAsync();
 
             Assert.Equal(expectedStatusCode, response.StatusCode);

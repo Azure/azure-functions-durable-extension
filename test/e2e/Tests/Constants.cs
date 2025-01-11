@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Durable.Tests.DotnetIsolatedE2E
     {
         public static IConfiguration Configuration = TestUtility.GetTestConfiguration();
 
-        internal static string FunctionsHostUrl = Configuration["FunctionAppUrl"] ?? "http://localhost:7071";
+        internal static readonly string FunctionsHostUrl = Configuration["FunctionAppUrl"] ?? "http://localhost:7071";
 
         internal const string FunctionAppCollectionName = "DurableTestsCollection";
     }

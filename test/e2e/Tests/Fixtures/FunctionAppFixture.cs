@@ -82,7 +82,7 @@ namespace Microsoft.Azure.Durable.Tests.DotnetIsolatedE2E
                     _jobObjectRegistry.Register(this._funcProcess);
                 }
 
-                var httpClient = new HttpClient();
+                using var httpClient = new HttpClient();
                 this._logger.LogInformation("Waiting for host to be running...");
                 await TestUtility.RetryAsync(async () =>
                 {
