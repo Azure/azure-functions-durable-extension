@@ -10,7 +10,9 @@ This document provides instructions on how to use the end-to-end (E2E) test proj
 
 ## Running the E2E Tests
 
-### Step 1: Increment the host and worker package versions 
+### Step 1: Increment the host and worker package versions (optional)
+
+Note: This step is optional. However, if you do not perform this step, the versions of these two packages in your local NuGet cache will be replaced with the build output from the test run, which may lead to unexpected behavior debugging live versions in other apps. Be warned. 
 
 Modify the following files:
 ```
@@ -18,7 +20,6 @@ Modify the following files:
 \src\Worker.Extensions.DurableTask\AssemblyInfo.cs
 \src\Worker.Extensions.DurableTask\Worker.Extensions.DurableTask.csproj
 ```
-Ensure that the versions of both the host and worker extensions are unique. Each time you make a code change in either extension, you must either bump the versions of both extensions or delete all versions of both extensions from your local NuGet cache to prevent the test app build from using old code. 
 
 ### Step 2: Build the E2E Test Project
 

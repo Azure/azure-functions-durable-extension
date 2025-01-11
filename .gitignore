@@ -299,5 +299,4 @@ functions-extensions/
 /src/WebJobs.Extensions.DurableTask/Microsoft.Azure.WebJobs.Extensions.DurableTask.xml
 
 # E2E Tests build output
-/src/Worker.Extensions.DurableTask/out/*
 /src/WebJobs.Extensions.DurableTask/out/*

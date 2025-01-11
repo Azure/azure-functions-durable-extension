@@ -29,6 +29,11 @@ $WebJobsExtensionProjectDirectory = Join-Path $ProjectBaseDirectory "src\WebJobs
 $WorkerExtensionProjectDirectory = Join-Path $ProjectBaseDirectory "src\Worker.Extensions.DurableTask"
 $E2EAppProjectDirectory = Join-Path $ProjectBaseDirectory "test\e2e\Apps\BasicDotNetIsolated"
 
+$LocalNugetCacheDirectory = $env:NUGET_PACKAGES
+if (!$LocalNugetCacheDirectory) {
+  $LocalNugetCacheDirectory = "$env:USERPROFILE\.nuget\packages"
+}
+
 $FunctionsRuntimeVersion = 4
 
 # A function that checks exit codes and fails script if an error is found 
@@ -111,34 +116,26 @@ Write-Host "Moving nupkg from WebJobs extension to $E2EAppProjectDirectory/packa
 Set-Location ./out
 dotnet nuget push *.nupkg --source "$E2EAppProjectDirectory/packages"
 
-Write-Host "Building worker extension project"
-
-Set-Location $WorkerExtensionProjectDirectory
-if (!(Test-Path "./out")) {
-  mkdir ./out -ErrorAction SilentlyContinue > $Null
-}
-Get-ChildItem -Path ./out -Include * -File -Recurse | ForEach-Object { $_.Delete()}
-dotnet build -c Debug "$WorkerExtensionProjectDirectory\Worker.Extensions.DurableTask.csproj" --output ./out
-
-Write-Host "Moving nupkg from worker extension to $E2EAppProjectDirectory/packages"
-Set-Location ./out
-dotnet nuget push *.nupkg --source "$E2EAppProjectDirectory/packages"
-
 Write-Host "Updating app .csproj to reference built package versions"
 Set-Location $E2EAppProjectDirectory
 $files = Get-ChildItem -Path ./packages -Include * -File -Recurse
 $files | ForEach-Object {
-  if ($_.Name -match 'Microsoft.Azure.Functions.Worker.Extensions.DurableTask')
-  {
-    $webJobsExtensionVersion = $_.Name -replace 'Microsoft.Azure.Functions.Worker.Extensions.DurableTask\.|\.nupkg'
-    Write-Host "Updating Worker.Extensions.DurableTask version to $webJobsExtensionVersion"
-    dotnet add app.csproj package Microsoft.Azure.Functions.Worker.Extensions.DurableTask --version $webJobsExtensionVersion
-  }
   if ($_.Name -match 'Microsoft.Azure.WebJobs.Extensions.DurableTask')
   {
     $webJobsExtensionVersion = $_.Name -replace 'Microsoft.Azure.WebJobs.Extensions.DurableTask\.|\.nupkg'
-    Write-Host "Updating WebJobs.Extensions.DurableTask version to $webJobsExtensionVersion"
-    dotnet add app.csproj package Microsoft.Azure.WebJobs.Extensions.DurableTask --version $webJobsExtensionVersion
+
+    Write-Host "Removing cached version $webJobsExtensionVersion of WebJobs extension from nuget cache, if exists"
+    $cachedVersionFolders = Get-ChildItem -Path (Join-Path $LocalNugetCacheDirectory "microsoft.azure.webjobs.extensions.durabletask") -Directory
+    $cachedVersionFolders | ForEach-Object {
+      if ($_.Name -eq $webJobsExtensionVersion)
+      {
+        Write-Host "Removing cached version $webJobsExtensionVersion from nuget cache"
+        Remove-Item -Recurse -Force $_.FullName -ErrorAction Stop
+      }
+    }
+    
+    # Write-Host "Updating WebJobs.Extensions.DurableTask version to $webJobsExtensionVersion"
+    # dotnet add app.csproj package Microsoft.Azure.WebJobs.Extensions.DurableTask --version $webJobsExtensionVersion
   }
 }
 
