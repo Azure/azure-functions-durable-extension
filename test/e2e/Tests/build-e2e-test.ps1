@@ -44,10 +44,6 @@ if($SkipCoreTool -or (Test-Path $FUNC_CLI_DIRECTORY))
 {
   Write-Host "---Skipping Core Tools download---"  
 }
-elseif (Test-Path $FUNC_CLI_DIRECTORY) 
-{
-  Write-Host "---Skipping Core Tools download---"
-}
 else
 {
   $arch = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLowerInvariant()

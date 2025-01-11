@@ -36,7 +36,7 @@ $startedStorage = $false
 #     $IsWindows = $true
 # }
 
-if (!$IsWindows)
+if (!$IsWindows -and $StartCosmosDBEmulator)
 {
     Write-Host "Skipping CosmosDB emulator because it is not supported on non-Windows OS."
     $StartCosmosDBEmulator = $false

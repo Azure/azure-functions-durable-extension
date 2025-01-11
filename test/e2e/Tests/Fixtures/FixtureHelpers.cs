@@ -8,71 +8,69 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using Microsoft.Extensions.Logging;
 
-namespace Microsoft.Azure.Durable.Tests.DotnetIsolatedE2E
+namespace Microsoft.Azure.Durable.Tests.DotnetIsolatedE2E;
 
+public static class FixtureHelpers
 {
-    public static class FixtureHelpers
+    public static Process GetFuncHostProcess(string appPath, bool enableAuth = false)
     {
-        public static Process GetFuncHostProcess(string appPath, bool enableAuth = false)
+        var cliPath = Path.Combine(Path.GetTempPath(), @"DurableTaskExtensionE2ETests/Azure.Functions.Cli/func");
+
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
-            var cliPath = Path.Combine(Path.GetTempPath(), @"DurableTaskExtensionE2ETests/Azure.Functions.Cli/func");
-
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                cliPath += ".exe";
-            }
-
-            if (!File.Exists(cliPath))
-            {
-                throw new InvalidOperationException($"Could not find '{cliPath}'. Try running '{Path.Combine("build-e2e-test.ps1")}' to install it.");
-            }
-
-            var funcProcess = new Process();
-
-            funcProcess.StartInfo.UseShellExecute = false;
-            funcProcess.StartInfo.RedirectStandardError = true;
-            funcProcess.StartInfo.RedirectStandardOutput = true;
-            funcProcess.StartInfo.CreateNoWindow = true;
-            funcProcess.StartInfo.WorkingDirectory = appPath;
-            funcProcess.StartInfo.FileName = cliPath;
-            funcProcess.StartInfo.ArgumentList.Add("host");
-            funcProcess.StartInfo.ArgumentList.Add("start");
-            funcProcess.StartInfo.ArgumentList.Add("--csharp");
-            funcProcess.StartInfo.ArgumentList.Add("--verbose");
-
-            if (enableAuth)
-            {
-                funcProcess.StartInfo.ArgumentList.Add("--enableAuth");
-            }
-
-            return funcProcess;
+            cliPath += ".exe";
         }
 
-        public static void StartProcessWithLogging(Process funcProcess, ILogger logger)
+        if (!File.Exists(cliPath))
         {
-            funcProcess.ErrorDataReceived += (sender, e) => logger.LogError(e?.Data);
-            funcProcess.OutputDataReceived += (sender, e) => logger.LogInformation(e?.Data);
-
-            funcProcess.Start();
-
-            logger.LogInformation($"Started '{funcProcess.StartInfo.FileName}'");
-
-            funcProcess.BeginErrorReadLine();
-            funcProcess.BeginOutputReadLine();
+            throw new InvalidOperationException($"Could not find '{cliPath}'. Try running '{Path.Combine("build-e2e-test.ps1")}' to install it.");
         }
 
-        public static void KillExistingProcessesMatchingName(string processName)
+        var funcProcess = new Process();
+
+        funcProcess.StartInfo.UseShellExecute = false;
+        funcProcess.StartInfo.RedirectStandardError = true;
+        funcProcess.StartInfo.RedirectStandardOutput = true;
+        funcProcess.StartInfo.CreateNoWindow = true;
+        funcProcess.StartInfo.WorkingDirectory = appPath;
+        funcProcess.StartInfo.FileName = cliPath;
+        funcProcess.StartInfo.ArgumentList.Add("host");
+        funcProcess.StartInfo.ArgumentList.Add("start");
+        funcProcess.StartInfo.ArgumentList.Add("--csharp");
+        funcProcess.StartInfo.ArgumentList.Add("--verbose");
+
+        if (enableAuth)
         {
-            foreach (var process in Process.GetProcessesByName(processName))
+            funcProcess.StartInfo.ArgumentList.Add("--enableAuth");
+        }
+
+        return funcProcess;
+    }
+
+    public static void StartProcessWithLogging(Process funcProcess, ILogger logger)
+    {
+        funcProcess.ErrorDataReceived += (sender, e) => logger.LogError(e?.Data);
+        funcProcess.OutputDataReceived += (sender, e) => logger.LogInformation(e?.Data);
+
+        funcProcess.Start();
+
+        logger.LogInformation($"Started '{funcProcess.StartInfo.FileName}'");
+
+        funcProcess.BeginErrorReadLine();
+        funcProcess.BeginOutputReadLine();
+    }
+
+    public static void KillExistingProcessesMatchingName(string processName)
+    {
+        foreach (var process in Process.GetProcessesByName(processName))
+        {
+            try
             {
-                try
-                {
-                    process.Kill();
-                }
-                catch
-                {
-                    // Best effort
-                }
+                process.Kill();
+            }
+            catch
+            {
+                // Best effort
             }
         }
     }

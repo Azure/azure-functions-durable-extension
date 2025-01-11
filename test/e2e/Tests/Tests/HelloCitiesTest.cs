@@ -5,33 +5,31 @@ using System.Net;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Microsoft.Azure.Durable.Tests.DotnetIsolatedE2E
+namespace Microsoft.Azure.Durable.Tests.DotnetIsolatedE2E;
+
+[Collection(Constants.FunctionAppCollectionName )]
+public class HttpEndToEndTests
 {
-    [Collection(Constants.FunctionAppCollectionName )]
-    public class HttpEndToEndTests
+    private readonly FunctionAppFixture _fixture;
+
+    public HttpEndToEndTests(FunctionAppFixture fixture, ITestOutputHelper testOutputHelper)
     {
-        private readonly FunctionAppFixture _fixture;
+        _fixture = fixture;
+        _fixture.TestLogs.UseTestLogger(testOutputHelper);
+    }
 
-        public HttpEndToEndTests(FunctionAppFixture fixture, ITestOutputHelper testOutputHelper)
+    [Theory]
+    [InlineData("HelloCities_HttpStart", "", HttpStatusCode.Accepted, "")]
+    public async Task HttpTriggerTests(string functionName, string queryString, HttpStatusCode expectedStatusCode, string expectedMessage)
+    {
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger(functionName, queryString);
+        string actualMessage = await response.Content.ReadAsStringAsync();
+
+        Assert.Equal(expectedStatusCode, response.StatusCode);
+
+        if (!string.IsNullOrEmpty(expectedMessage))
         {
-            _fixture = fixture;
-            _fixture.TestLogs.UseTestLogger(testOutputHelper);
-        }
-
-        [Theory]
-        [InlineData("HelloCities_HttpStart", "", HttpStatusCode.Accepted, "")]
-        public async Task HttpTriggerTests(string functionName, string queryString, HttpStatusCode expectedStatusCode, string expectedMessage)
-        {
-            using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger(functionName, queryString);
-            string actualMessage = await response.Content.ReadAsStringAsync();
-
-            Assert.Equal(expectedStatusCode, response.StatusCode);
-
-            if (!string.IsNullOrEmpty(expectedMessage))
-            {
-                Assert.False(string.IsNullOrEmpty(actualMessage));
-                //Assert.Contains(expectedMessage, actualMessage);
-            }
+            Assert.False(string.IsNullOrEmpty(actualMessage));
         }
     }
 }

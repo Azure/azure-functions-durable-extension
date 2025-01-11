@@ -3,14 +3,13 @@
 
 using Microsoft.Extensions.Configuration;
 
-namespace Microsoft.Azure.Durable.Tests.DotnetIsolatedE2E
+namespace Microsoft.Azure.Durable.Tests.DotnetIsolatedE2E;
+
+internal class Constants
 {
-    internal class Constants
-    {
-        public static IConfiguration Configuration = TestUtility.GetTestConfiguration();
+    public static readonly IConfiguration Configuration = TestUtility.GetTestConfiguration();
 
-        internal static readonly string FunctionsHostUrl = Configuration["FunctionAppUrl"] ?? "http://localhost:7071";
+    internal static readonly string FunctionsHostUrl = Configuration["FunctionAppUrl"] ?? "http://localhost:7071";
 
-        internal const string FunctionAppCollectionName = "DurableTestsCollection";
-    }
+    internal const string FunctionAppCollectionName = "DurableTestsCollection";
 }

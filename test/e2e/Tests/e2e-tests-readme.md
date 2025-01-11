@@ -4,7 +4,6 @@ This document provides instructions on how to use the end-to-end (E2E) test proj
 
 ## Prerequisites
 
-- Visual Studio IDE
 - PowerShell
 - npm/Node
 - .NET SDK
