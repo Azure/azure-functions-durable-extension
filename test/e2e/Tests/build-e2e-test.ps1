@@ -133,9 +133,6 @@ $files | ForEach-Object {
         Remove-Item -Recurse -Force $_.FullName -ErrorAction Stop
       }
     }
-    
-    # Write-Host "Updating WebJobs.Extensions.DurableTask version to $webJobsExtensionVersion"
-    # dotnet add app.csproj package Microsoft.Azure.WebJobs.Extensions.DurableTask --version $webJobsExtensionVersion
   }
 }
 
@@ -153,7 +150,6 @@ if ($SkipStorageEmulator -And $SkipCosmosDBEmulator)
 }
 else 
 {
-  # Set-Location $ProjectTemporaryPath
   .\start-emulators.ps1 -SkipStorageEmulator:$SkipStorageEmulator -StartCosmosDBEmulator:$false -EmulatorStartDir $ProjectTemporaryPath
 }
 
