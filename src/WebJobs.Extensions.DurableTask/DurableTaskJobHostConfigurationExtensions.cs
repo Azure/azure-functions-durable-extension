@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
@@ -88,7 +89,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             serviceCollection.TryAddSingleton<IMessageSerializerSettingsFactory, MessageSerializerSettingsFactory>();
             serviceCollection.TryAddSingleton<IErrorSerializerSettingsFactory, ErrorSerializerSettingsFactory>();
             serviceCollection.TryAddSingleton<IApplicationLifetimeWrapper, HostLifecycleService>();
-            serviceCollection.AddSingleton<ITelemetryActivator, TelemetryActivator>();
+            serviceCollection.AddSingleton<ITelemetryModule, TelemetryActivator>();
             serviceCollection.TryAddSingleton<IDurableClientFactory, DurableClientFactory>();
 #pragma warning disable CS0612, CS0618 // Type or member is obsolete
             serviceCollection.TryAddSingleton<IConnectionStringResolver, WebJobsConnectionStringProvider>();

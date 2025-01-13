@@ -7,6 +7,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.ApplicationInsights.Channel;
+using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage;
@@ -89,7 +90,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                         if (onSend != null)
                         {
-                            serviceCollection.AddSingleton<ITelemetryActivator>(serviceProvider =>
+                            serviceCollection.AddSingleton<ITelemetryModule>(serviceProvider =>
                             {
                                 var durableTaskOptions = serviceProvider.GetService<IOptions<DurableTaskOptions>>();
                                 var nameResolver = serviceProvider.GetService<INameResolver>();
