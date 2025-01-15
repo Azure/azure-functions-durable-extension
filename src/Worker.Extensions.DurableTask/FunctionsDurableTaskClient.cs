@@ -77,11 +77,6 @@ internal sealed class FunctionsDurableTaskClient : DurableTaskClient
         StartOrchestrationOptions? options = null,
         CancellationToken cancellation = default)
     {
-        Activity? currActivity = Activity.Current;
-        if (options == null && options?.ParentTraceId == null && currActivity != null)
-        {
-            options = new StartOrchestrationOptions(ParentTraceId: currActivity?.Id?.ToString());
-        }
 
         return this.inner.ScheduleNewOrchestrationInstanceAsync(orchestratorName, input, options, cancellation);
     }

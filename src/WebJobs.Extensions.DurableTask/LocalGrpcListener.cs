@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection;
 using System.Reflection.Metadata.Ecma335;
 using System.Threading;
 using System.Threading.Tasks;
@@ -155,21 +156,33 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 try
                 {
-                    ActivitySource activityTraceSource = new ActivitySource("DurableTask.WebJobs");
+                    Activity? newActivity = new Activity("gRPC start orchestration");
 
-                    Activity? newActivity = activityTraceSource.CreateActivity("gRPC start orchestration", kind: ActivityKind.Server);
+                    string traceParentContext = request.ParentTraceContext.TraceParent.ToString();
 
-                    if (newActivity != null)
+                    string[] traceParentContextSplit = traceParentContext.Split('-');
+
+                    if (traceParentContextSplit.Length == 4)
                     {
-                        newActivity.SetParentId(request.ParentTraceContext.TraceParent);
+                        string traceId = traceParentContextSplit[1];
+                        string spanId = traceParentContextSplit[2];
+
+                        // reflection to set trace id and span id of newActivity
+                        if (newActivity != null)
+                        {
+                            typeof(Activity).GetField("_traceId", BindingFlags.Instance | BindingFlags.NonPublic)?.SetValue(newActivity, traceId);
+                            typeof(Activity).GetField("_spanId", BindingFlags.Instance | BindingFlags.NonPublic)?.SetValue(newActivity, spanId);
+                        }
                     }
 
-                    newActivity?.Start();
+                    // set Activity.Current as the new Activity, start the orchestration, and then reset Activity.Current to the previous Activity.Current
+                    Activity? currActivity = Activity.Current;
+                    Activity.Current = newActivity;
 
                     string instanceId = await this.GetClient(context).StartNewAsync(
                         request.Name, request.InstanceId, Raw(request.Input));
 
-                    newActivity?.Stop();
+                    Activity.Current = currActivity;
 
                     return new P.CreateInstanceResponse
                     {
