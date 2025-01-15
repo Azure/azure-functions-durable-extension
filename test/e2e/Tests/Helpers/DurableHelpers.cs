@@ -26,8 +26,8 @@ internal class DurableHelpers
             this.RuntimeStatus = statusQueryJsonNode["runtimeStatus"]?.GetValue<string>() ?? string.Empty;
             this.Input = statusQueryJsonNode["input"]?.ToString() ?? string.Empty;
             this.Output = statusQueryJsonNode["output"]?.ToString() ?? string.Empty;
-            this.CreatedTime = DateTime.Parse(statusQueryJsonNode["createdTime"]?.GetValue<string>() ?? string.Empty);
-            this.LastUpdatedTime = DateTime.Parse(statusQueryJsonNode["lastUpdatedTime"]?.GetValue<string>() ?? string.Empty);
+            this.CreatedTime = DateTime.Parse(statusQueryJsonNode["createdTime"]?.GetValue<string>() ?? string.Empty).ToUniversalTime();
+            this.LastUpdatedTime = DateTime.Parse(statusQueryJsonNode["lastUpdatedTime"]?.GetValue<string>() ?? string.Empty).ToUniversalTime();
         }
     }
 

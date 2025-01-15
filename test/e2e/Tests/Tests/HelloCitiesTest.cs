@@ -40,7 +40,7 @@ public class HttpEndToEndTests
     [InlineData("HelloCities_HttpStart_Scheduled", -5, HttpStatusCode.Accepted)]
     public async Task ScheduledStartTests(string functionName, int startDelaySeconds, HttpStatusCode expectedStatusCode)
     {
-        var testStartTime = DateTime.Now;
+        var testStartTime = DateTime.UtcNow;
         var scheduledStartTime = testStartTime + TimeSpan.FromSeconds(startDelaySeconds);
         string urlQueryString = $"?ScheduledStartTime={scheduledStartTime.ToString("o")}";
 
@@ -52,7 +52,7 @@ public class HttpEndToEndTests
         Assert.Equal(expectedStatusCode, response.StatusCode);
 
         var orchestrationDetails = DurableHelpers.GetRunningOrchestrationDetails(statusQueryGetUri);
-        while (DateTime.Now < scheduledStartTime)
+        while (DateTime.UtcNow < scheduledStartTime)
         {
             _output.WriteLine($"Test scheduled for {scheduledStartTime}, current time {DateTime.Now}");
             orchestrationDetails = DurableHelpers.GetRunningOrchestrationDetails(statusQueryGetUri);
