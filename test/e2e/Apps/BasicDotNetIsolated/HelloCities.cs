@@ -60,11 +60,11 @@ namespace Microsoft.Azure.Durable.Tests.E2E
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestData req,
             [DurableClient] DurableTaskClient client,
             FunctionContext executionContext,
-            DateTime ScheduledStartTime)
+            DateTime scheduledStartTime)
         {
             ILogger logger = executionContext.GetLogger("HelloCities_HttpStart");
 
-            var startOptions = new StartOrchestrationOptions(StartAt: ScheduledStartTime);
+            var startOptions = new StartOrchestrationOptions(StartAt: scheduledStartTime);
 
             // Function input comes from the request content.
             string instanceId = await client.ScheduleNewOrchestrationInstanceAsync(

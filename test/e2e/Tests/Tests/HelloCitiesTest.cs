@@ -11,42 +11,62 @@ namespace Microsoft.Azure.Durable.Tests.DotnetIsolatedE2E;
 public class HttpEndToEndTests
 {
     private readonly FunctionAppFixture _fixture;
+    private readonly ITestOutputHelper _output;
 
     public HttpEndToEndTests(FunctionAppFixture fixture, ITestOutputHelper testOutputHelper)
     {
         _fixture = fixture;
         _fixture.TestLogs.UseTestLogger(testOutputHelper);
+        _output = testOutputHelper;
     }
 
     [Theory]
-    [InlineData("HelloCities_HttpStart", HttpStatusCode.Accepted)]
-    public async Task HttpTriggerTests(string functionName, HttpStatusCode expectedStatusCode)
+    [InlineData("HelloCities_HttpStart", HttpStatusCode.Accepted, "Hello Tokyo!")]
+    public async Task HttpTriggerTests(string functionName, HttpStatusCode expectedStatusCode, string partialExpectedOutput)
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger(functionName, "");
         string actualMessage = await response.Content.ReadAsStringAsync();
 
         Assert.Equal(expectedStatusCode, response.StatusCode);
-        Assert.False(string.IsNullOrEmpty(actualMessage));
+        string statusQueryGetUri = DurableHelpers.ParseStatusQueryGetUri(response);
+        Thread.Sleep(1000);
+        var orchestrationDetails = DurableHelpers.GetRunningOrchestrationDetails(statusQueryGetUri);
+        Assert.Equal("Completed", orchestrationDetails.RuntimeStatus);
+        Assert.Contains(partialExpectedOutput, orchestrationDetails.Output);
     }
 
     [Theory]
-    [InlineData("HelloCities_HttpStart_Scheduled", HttpStatusCode.Accepted)]
-    public async Task ScheduledStartTests(string functionName, HttpStatusCode expectedStatusCode)
+    [InlineData("HelloCities_HttpStart_Scheduled", 5, HttpStatusCode.Accepted)]
+    [InlineData("HelloCities_HttpStart_Scheduled", -5, HttpStatusCode.Accepted)]
+    public async Task ScheduledStartTests(string functionName, int startDelaySeconds, HttpStatusCode expectedStatusCode)
     {
-        var scheduledStartDate = DateTime.Now + TimeSpan.FromSeconds(10);
+        var testStartTime = DateTime.Now;
+        var scheduledStartTime = testStartTime + TimeSpan.FromSeconds(startDelaySeconds);
+        string urlQueryString = $"?ScheduledStartTime={scheduledStartTime.ToString("o")}";
 
-        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger(functionName, $"?ScheduledStartTime={scheduledStartDate.ToString("o")}");
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger(functionName, urlQueryString);
         string actualMessage = await response.Content.ReadAsStringAsync();
 
         string statusQueryGetUri = DurableHelpers.ParseStatusQueryGetUri(response);
 
         Assert.Equal(expectedStatusCode, response.StatusCode);
 
-        string startRuntimeStatus = DurableHelpers.GetRuntimeStatus(statusQueryGetUri);
-        Assert.Equal("Pending", startRuntimeStatus);
-        Thread.Sleep(11000);
+        var orchestrationDetails = DurableHelpers.GetRunningOrchestrationDetails(statusQueryGetUri);
+        while (DateTime.Now < scheduledStartTime)
+        {
+            _output.WriteLine($"Test scheduled for {scheduledStartTime}, current time {DateTime.Now}");
+            orchestrationDetails = DurableHelpers.GetRunningOrchestrationDetails(statusQueryGetUri);
+            Assert.Equal("Pending", orchestrationDetails.RuntimeStatus);
+            Thread.Sleep(3000);
+        }
 
-        string endRuntimeStatus = DurableHelpers.GetRuntimeStatus(statusQueryGetUri);
-        Assert.Equal("Completed", endRuntimeStatus);
+        // Give a small amount of time for the orchestration to complete, even if scheduled to run immediately
+        Thread.Sleep(1000);
+        _output.WriteLine($"Test scheduled for {scheduledStartTime}, current time {DateTime.Now}, looking for completed");
+
+        var finalOrchestrationDetails = DurableHelpers.GetRunningOrchestrationDetails(statusQueryGetUri);
+        Assert.Equal("Completed", finalOrchestrationDetails.RuntimeStatus);
+
+        Assert.True(finalOrchestrationDetails.LastUpdatedTime > scheduledStartTime);
     }
 }

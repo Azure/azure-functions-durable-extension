@@ -7,9 +7,34 @@ namespace Microsoft.Azure.Durable.Tests.DotnetIsolatedE2E;
 
 internal class DurableHelpers
 {
+    static readonly HttpClient _httpClient = new HttpClient();
+
+    internal class OrchestrationStatusDetails
+    {
+        public string RuntimeStatus { get; set; } = string.Empty;
+        public string Input { get; set; } = string.Empty;
+        public string Output { get; set; } = string.Empty;
+        public DateTime CreatedTime { get; set; }
+        public DateTime LastUpdatedTime { get; set; }
+        public OrchestrationStatusDetails(string statusQueryResponse)
+        {
+            JsonNode? statusQueryJsonNode = JsonNode.Parse(statusQueryResponse);
+            if (statusQueryJsonNode == null)
+            {
+                return;
+            }
+            this.RuntimeStatus = statusQueryJsonNode["runtimeStatus"]?.GetValue<string>() ?? string.Empty;
+            this.Input = statusQueryJsonNode["input"]?.ToString() ?? string.Empty;
+            this.Output = statusQueryJsonNode["output"]?.ToString() ?? string.Empty;
+            this.CreatedTime = DateTime.Parse(statusQueryJsonNode["createdTime"]?.GetValue<string>() ?? string.Empty);
+            this.LastUpdatedTime = DateTime.Parse(statusQueryJsonNode["lastUpdatedTime"]?.GetValue<string>() ?? string.Empty);
+        }
+    }
+
     internal static string ParseStatusQueryGetUri(HttpResponseMessage invocationStartResponse)
     {
         string? responseString = invocationStartResponse.Content?.ReadAsStringAsync().Result;
+
         if (string.IsNullOrEmpty(responseString))
         {
             return string.Empty;
@@ -23,17 +48,12 @@ internal class DurableHelpers
         string? statusQueryGetUri = responseJsonNode["StatusQueryGetUri"]?.GetValue<string>();
         return statusQueryGetUri ?? string.Empty;
     }
-    internal static string GetRuntimeStatus(string statusQueryGetUri)
+    internal static OrchestrationStatusDetails GetRunningOrchestrationDetails(string statusQueryGetUri)
     {
-        HttpClient client = new HttpClient();
-        var statusQueryResponse = client.GetAsync(statusQueryGetUri);
+        var statusQueryResponse = _httpClient.GetAsync(statusQueryGetUri);
 
         string? statusQueryResponseString = statusQueryResponse.Result.Content.ReadAsStringAsync().Result;
-        JsonNode? statusQueryJsonNode = JsonNode.Parse(statusQueryResponseString);
-        if (statusQueryJsonNode == null)
-        {
-            return string.Empty;
-        }
-        return statusQueryJsonNode["runtimeStatus"]?.GetValue<string>() ?? string.Empty;
+
+        return new OrchestrationStatusDetails(statusQueryResponseString);
     }
 }
