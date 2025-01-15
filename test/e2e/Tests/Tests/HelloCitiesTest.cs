@@ -7,7 +7,7 @@ using Xunit.Abstractions;
 
 namespace Microsoft.Azure.Durable.Tests.DotnetIsolatedE2E;
 
-[Collection(Constants.FunctionAppCollectionName )]
+[Collection(Constants.FunctionAppCollectionName)]
 public class HttpEndToEndTests
 {
     private readonly FunctionAppFixture _fixture;
@@ -19,17 +19,34 @@ public class HttpEndToEndTests
     }
 
     [Theory]
-    [InlineData("HelloCities_HttpStart", "", HttpStatusCode.Accepted, "")]
-    public async Task HttpTriggerTests(string functionName, string queryString, HttpStatusCode expectedStatusCode, string expectedMessage)
+    [InlineData("HelloCities_HttpStart", HttpStatusCode.Accepted)]
+    public async Task HttpTriggerTests(string functionName, HttpStatusCode expectedStatusCode)
     {
-        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger(functionName, queryString);
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger(functionName, "");
         string actualMessage = await response.Content.ReadAsStringAsync();
 
         Assert.Equal(expectedStatusCode, response.StatusCode);
+        Assert.False(string.IsNullOrEmpty(actualMessage));
+    }
 
-        if (!string.IsNullOrEmpty(expectedMessage))
-        {
-            Assert.False(string.IsNullOrEmpty(actualMessage));
-        }
+    [Theory]
+    [InlineData("HelloCities_HttpStart_Scheduled", HttpStatusCode.Accepted)]
+    public async Task ScheduledStartTests(string functionName, HttpStatusCode expectedStatusCode)
+    {
+        var scheduledStartDate = DateTime.Now + TimeSpan.FromSeconds(10);
+
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger(functionName, $"?ScheduledStartTime={scheduledStartDate.ToString("o")}");
+        string actualMessage = await response.Content.ReadAsStringAsync();
+
+        string statusQueryGetUri = DurableHelpers.ParseStatusQueryGetUri(response);
+
+        Assert.Equal(expectedStatusCode, response.StatusCode);
+
+        string startRuntimeStatus = DurableHelpers.GetRuntimeStatus(statusQueryGetUri);
+        Assert.Equal("Pending", startRuntimeStatus);
+        Thread.Sleep(11000);
+
+        string endRuntimeStatus = DurableHelpers.GetRuntimeStatus(statusQueryGetUri);
+        Assert.Equal("Completed", endRuntimeStatus);
     }
 }
