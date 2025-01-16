@@ -87,6 +87,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DFPerfScenariosV4", "test\D
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Worker.Extensions.DurableTask.Tests", "test\Worker.Extensions.DurableTask.Tests\Worker.Extensions.DurableTask.Tests.csproj", "{76DEC17C-BF6A-498A-8E8A-7D6CB2E03284}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "E2ETests", "test\e2e\Tests\E2ETests.csproj", "{63628712-4196-4865-B268-5BA3D8F08DE1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -155,6 +157,10 @@ Global
 		{76DEC17C-BF6A-498A-8E8A-7D6CB2E03284}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{76DEC17C-BF6A-498A-8E8A-7D6CB2E03284}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{76DEC17C-BF6A-498A-8E8A-7D6CB2E03284}.Release|Any CPU.Build.0 = Release|Any CPU
+		{63628712-4196-4865-B268-5BA3D8F08DE1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{63628712-4196-4865-B268-5BA3D8F08DE1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{63628712-4196-4865-B268-5BA3D8F08DE1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{63628712-4196-4865-B268-5BA3D8F08DE1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -184,6 +190,7 @@ Global
 		{7387E723-E153-4B7A-B105-8C67BFBD48CF} = {78BCF152-C22C-408F-9FB1-0F8C99B154B5}
 		{FC8AD123-F949-4D21-B817-E5A4BBF7F69B} = {7387E723-E153-4B7A-B105-8C67BFBD48CF}
 		{76DEC17C-BF6A-498A-8E8A-7D6CB2E03284} = {78BCF152-C22C-408F-9FB1-0F8C99B154B5}
+		{63628712-4196-4865-B268-5BA3D8F08DE1} = {78BCF152-C22C-408F-9FB1-0F8C99B154B5}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {5E9AC327-DE18-41A5-A55D-E44CB4281943}

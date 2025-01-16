@@ -154,11 +154,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 try
                 {
-                    string instanceId = await this.GetClient(context).StartNewAsync(
-                        request.Name, request.InstanceId, Raw(request.Input));
+                    string instanceId = request.InstanceId ?? Guid.NewGuid().ToString("N");
+                    TaskHubClient taskhubClient = new TaskHubClient(this.GetDurabilityProvider(context));
+                    OrchestrationInstance instance;
+
+                    // TODO: Ideally, we'd have a single method in the taskhubClient that can handle both scheduled and non-scheduled starts.
+                    // TODO: the type of `ScheduledStartTimestamp` is not nullable. Can we change it to `DateTime?` in the proto file?
+                    if (request.ScheduledStartTimestamp != null)
+                    {
+                        instance = await taskhubClient.CreateScheduledOrchestrationInstanceAsync(
+                            name: request.Name, version: request.Version, instanceId: instanceId, input: Raw(request.Input), startAt: request.ScheduledStartTimestamp.ToDateTime());
+                    }
+                    else
+                    {
+                        instance = await taskhubClient.CreateOrchestrationInstanceAsync(request.Name, request.Version, instanceId, Raw(request.Input));
+                    }
+
+                    // TODO: should this not include the ExecutionId and other elements of the taskhubClient response?
                     return new P.CreateInstanceResponse
                     {
-                        InstanceId = instanceId,
+                        InstanceId = instance.InstanceId,
                     };
                 }
                 catch (OrchestrationAlreadyExistsException)
@@ -231,13 +246,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 EntityBackendQueries.EntityQueryResult result = await entityOrchestrationService.EntityBackendQueries!.QueryEntitiesAsync(
                     new EntityBackendQueries.EntityQuery()
                     {
-                         InstanceIdStartsWith = query.InstanceIdStartsWith,
-                         LastModifiedFrom = query.LastModifiedFrom?.ToDateTime(),
-                         LastModifiedTo = query.LastModifiedTo?.ToDateTime(),
-                         IncludeTransient = query.IncludeTransient,
-                         IncludeState = query.IncludeState,
-                         ContinuationToken = query.ContinuationToken,
-                         PageSize = query.PageSize,
+                        InstanceIdStartsWith = query.InstanceIdStartsWith,
+                        LastModifiedFrom = query.LastModifiedFrom?.ToDateTime(),
+                        LastModifiedTo = query.LastModifiedTo?.ToDateTime(),
+                        IncludeTransient = query.IncludeTransient,
+                        IncludeState = query.IncludeState,
+                        ContinuationToken = query.ContinuationToken,
+                        PageSize = query.PageSize,
                     },
                     context.CancellationToken);
 

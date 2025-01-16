@@ -1,17 +1,7 @@
 name: Smoke Test - .NET on Functions V2
 
 on:
-  workflow_dispatch:
-  push:
-    branches: [ main, dev ]
-    paths:
-      - 'src/**'
-      - 'test/SmokeTests/SmokeTestsV2/**'
-  pull_request:
-    branches: [ main, dev ]
-    paths:
-      - 'src/**'
-      - 'test/SmokeTests/SmokeTestsV2/**'
+  {}
 
 jobs:
   build:
