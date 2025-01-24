@@ -1,0 +1,37 @@
+name: End to End Test - .NET Isolated/Func V4
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, dev ]
+    paths:
+      - 'src/**'
+      - 'test/e2e/**'
+  pull_request:
+    branches: [ main, dev ]
+    paths:
+      - 'src/**'
+      - 'test/e2e/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup .NET Core
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 6.0.x
+      - name: Setup E2E tests
+        shell: pwsh
+        run: |
+          .\test\e2e\Tests\build-e2e-test.ps1
+      - name: Build
+        working-directory: test/e2e/Tests
+        run: dotnet build
+      - name: Test with the dotnet CLI
+        working-directory: test/e2e/Tests
+        run: dotnet test
+      - name: Run E2E tests
+        working-directory: test/e2e/Tests
+        run: dotnet test
