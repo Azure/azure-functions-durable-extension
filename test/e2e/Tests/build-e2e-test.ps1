@@ -101,7 +101,10 @@ else
 
 Write-Host "Removing old packages from test app"
 Set-Location $E2EAppProjectDirectory
-Get-ChildItem -Path ./packages -Include * -File -Recurse | ForEach-Object { $_.Delete()}
+if (Test-Path "./packages") 
+{
+  Get-ChildItem -Path ./packages -Include * -File -Recurse | ForEach-Object { $_.Delete()}
+}
 
 Write-Host "Building WebJobs extension project"
 
