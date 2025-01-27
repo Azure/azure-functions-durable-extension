@@ -16,4 +16,5 @@ jobs:
 
       - task: VSTest@2
         displayName: 'Run E2E Tests'
-        searchFolder: 'test/e2e/Tests/'
+        inputs:
+          searchFolder: 'test/e2e/Tests/'
