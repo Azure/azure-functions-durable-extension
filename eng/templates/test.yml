@@ -1,16 +1,19 @@
-trigger: none
-pr: none
+jobs:
+    - job: Build
 
-pool:
-  name: '1ES-Hosted-DurableTaskFramework'
-  demands:
-    - ImageOverride -equals MMS2022TLS
+      templateContext:
+        outputs:
+            - output: pipelineArtifact
+              path: $(build.artifactStagingDirectory)
+              artifact: drop
+              sbomBuildDropPath: $(build.artifactStagingDirectory)
+              sbomPackageName: 'Durable Functions Extension SBOM'
 
-# Must run _after_ build.yml to ensure dependencies are available and tests are built
-steps:
-- pwsh: |
-    .\test\e2e\Tests\build-e2e-test.ps1
+      # Must run _after_ build.yml to ensure dependencies are available and tests are built
+      steps:
+      - pwsh: |
+          .\test\e2e\Tests\build-e2e-test.ps1
 
-- task: VSTest@2
-  displayName: 'Run E2E Tests'
-  searchFolder: 'test/e2e/Tests/'
+      - task: VSTest@2
+        displayName: 'Run E2E Tests'
+        searchFolder: 'test/e2e/Tests/'
