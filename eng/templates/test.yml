@@ -1,0 +1,16 @@
+trigger: none
+pr: none
+
+pool:
+  name: '1ES-Hosted-DurableTaskFramework'
+  demands:
+    - ImageOverride -equals MMS2022TLS
+
+# Must run _after_ build.yml to ensure dependencies are available and tests are built
+steps:
+- pwsh: |
+    .\test\e2e\Tests\build-e2e-test.ps1
+
+- task: VSTest@2
+  displayName: 'Run E2E Tests'
+  searchFolder: 'test/e2e/Tests/'
