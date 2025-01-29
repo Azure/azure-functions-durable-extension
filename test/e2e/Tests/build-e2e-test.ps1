@@ -101,18 +101,20 @@ else
 
 Write-Host "Removing old packages from test app"
 
-$AppPackageLocation = Resolve-Path "$E2EAppProjectDirectory/packages"
+$AppPackageLocation = Join-Path $E2EAppProjectDirectory 'packages'
 if (!(Test-Path $AppPackageLocation)) {
   New-Item -Path $AppPackageLocation -ItemType Directory -ErrorAction SilentlyContinue
 }
+$AppPackageLocation = Resolve-Path $AppPackageLocation
 Get-ChildItem -Path $AppPackageLocation -Include * -File -Recurse | ForEach-Object { $_.Delete()}
 
 Write-Host "Building WebJobs extension project"
 
-$BuildOutputLocation = Resolve-Path "$WebJobsExtensionProjectDirectory/out"
+$BuildOutputLocation = Join-Path $WebJobsExtensionProjectDirectory 'out'
 if (!(Test-Path $BuildOutputLocation)) {
   New-Item -Path $BuildOutputLocation -ItemType Directory -ErrorAction SilentlyContinue
 }
+$BuildOutputLocation = Resolve-Path $BuildOutputLocation
 Get-ChildItem -Path $BuildOutputLocation -Include * -File -Recurse | ForEach-Object { $_.Delete()}
 dotnet build -c Debug "$WebJobsExtensionProjectDirectory\WebJobs.Extensions.DurableTask.csproj" --output $BuildOutputLocation
 
