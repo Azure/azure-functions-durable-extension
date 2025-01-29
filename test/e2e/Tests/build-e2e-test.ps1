@@ -24,7 +24,7 @@ param(
 
 $ProjectBaseDirectory = "$PSScriptRoot\..\..\..\"
 $ProjectTemporaryPath = Join-Path ([System.IO.Path]::GetTempPath()) "DurableTaskExtensionE2ETests"
-mkdir $ProjectTemporaryPath -ErrorAction SilentlyContinue > $Null
+New-Item -Path $ProjectTemporaryPath -ItemType Directory -ErrorAction SilentlyContinue
 $WebJobsExtensionProjectDirectory = Join-Path $ProjectBaseDirectory "src\WebJobs.Extensions.DurableTask"
 $WorkerExtensionProjectDirectory = Join-Path $ProjectBaseDirectory "src\Worker.Extensions.DurableTask"
 $E2EAppProjectDirectory = Join-Path $ProjectBaseDirectory "test\e2e\Apps\BasicDotNetIsolated"
@@ -107,7 +107,7 @@ Write-Host "Building WebJobs extension project"
 
 Set-Location $WebJobsExtensionProjectDirectory
 if (!(Test-Path "./out")) {
-  mkdir ./out -ErrorAction SilentlyContinue > $Null
+  New-Item -Path "./out" -ItemType Directory -ErrorAction SilentlyContinue
 }
 Get-ChildItem -Path ./out -Include * -File -Recurse | ForEach-Object { $_.Delete()}
 dotnet build -c Debug "$WebJobsExtensionProjectDirectory\WebJobs.Extensions.DurableTask.csproj" --output ./out
