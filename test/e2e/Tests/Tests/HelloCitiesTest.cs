@@ -77,8 +77,14 @@ public class HttpEndToEndTests
         // Give a small amount of time for the orchestration to complete, even if scheduled to run immediately
         Thread.Sleep(3000);
         WriteOutput($"Test scheduled for {scheduledStartTime}, current time {DateTime.Now}, looking for completed");
-
         var finalOrchestrationDetails = DurableHelpers.GetRunningOrchestrationDetails(statusQueryGetUri);
+        int retryAttempts = 0;
+        while (finalOrchestrationDetails.RuntimeStatus != "Completed" && retryAttempts < 10)
+        {
+            Thread.Sleep(1000);
+            finalOrchestrationDetails = DurableHelpers.GetRunningOrchestrationDetails(statusQueryGetUri);
+            retryAttempts++;
+        }
         Assert.Equal("Completed", finalOrchestrationDetails.RuntimeStatus);
 
         Assert.True(finalOrchestrationDetails.LastUpdatedTime > scheduledStartTime);
