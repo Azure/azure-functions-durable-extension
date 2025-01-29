@@ -131,7 +131,7 @@ $files | ForEach-Object {
     $webJobsExtensionVersion = $_.Name -replace 'Microsoft.Azure.WebJobs.Extensions.DurableTask\.|\.nupkg'
 
     Write-Host "Removing cached version $webJobsExtensionVersion of WebJobs extension from nuget cache, if exists"
-    $cachedVersionFolders = Get-ChildItem -Path (Join-Path $LocalNugetCacheDirectory "microsoft.azure.webjobs.extensions.durabletask") -Directory
+    $cachedVersionFolders = Get-ChildItem -Path (Join-Path $LocalNugetCacheDirectory "microsoft.azure.webjobs.extensions.durabletask") -Directory -ErrorAction Continue
     $cachedVersionFolders | ForEach-Object {
       if ($_.Name -eq $webJobsExtensionVersion)
       {
