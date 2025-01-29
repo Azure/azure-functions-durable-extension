@@ -13,7 +13,7 @@ param(
     $SkipStorageEmulator,
 
     [Switch]
-    $SkipCosmosDBEmulator,
+    $StartCosmosDBEmulator,
 
     [Switch]
     $SkipCoreTools,
@@ -145,7 +145,7 @@ dotnet build app.csproj
 
 Set-Location $PSScriptRoot
 
-if ($SkipStorageEmulator -And $SkipCosmosDBEmulator)
+if ($SkipStorageEmulator -And -not $StartCosmosDBEmulator)
 {
   Write-Host
   Write-Host "---Skipping emulator startup---"
@@ -153,7 +153,9 @@ if ($SkipStorageEmulator -And $SkipCosmosDBEmulator)
 }
 else 
 {
-  .\start-emulators.ps1 -SkipStorageEmulator:$SkipStorageEmulator -StartCosmosDBEmulator:$false -EmulatorStartDir $ProjectTemporaryPath
+  .\start-emulators.ps1 -SkipStorageEmulator:$SkipStorageEmulator -StartCosmosDBEmulator:$StartCosmosDBEmulator -EmulatorStartDir $ProjectTemporaryPath
 }
+
+Set-Location $PSScriptRoot
 
 StopOnFailedExecution
