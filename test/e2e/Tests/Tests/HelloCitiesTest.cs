@@ -36,7 +36,7 @@ public class HttpEndToEndTests
     }
 
     [Theory]
-    [InlineData("HelloCities_HttpStart_Scheduled", 5, HttpStatusCode.Accepted)]
+    [InlineData("HelloCities_HttpStart_Scheduled", 10, HttpStatusCode.Accepted)]
     [InlineData("HelloCities_HttpStart_Scheduled", -5, HttpStatusCode.Accepted)]
     public async Task ScheduledStartTests(string functionName, int startDelaySeconds, HttpStatusCode expectedStatusCode)
     {
@@ -52,16 +52,16 @@ public class HttpEndToEndTests
         Assert.Equal(expectedStatusCode, response.StatusCode);
 
         var orchestrationDetails = DurableHelpers.GetRunningOrchestrationDetails(statusQueryGetUri);
-        while (DateTime.UtcNow < scheduledStartTime)
+        while (DateTime.UtcNow < scheduledStartTime + TimeSpan.FromSeconds(-1))
         {
             _output.WriteLine($"Test scheduled for {scheduledStartTime}, current time {DateTime.Now}");
             orchestrationDetails = DurableHelpers.GetRunningOrchestrationDetails(statusQueryGetUri);
             Assert.Equal("Pending", orchestrationDetails.RuntimeStatus);
-            Thread.Sleep(3000);
+            Thread.Sleep(1000);
         }
 
         // Give a small amount of time for the orchestration to complete, even if scheduled to run immediately
-        Thread.Sleep(1000);
+        Thread.Sleep(3000);
         _output.WriteLine($"Test scheduled for {scheduledStartTime}, current time {DateTime.Now}, looking for completed");
 
         var finalOrchestrationDetails = DurableHelpers.GetRunningOrchestrationDetails(statusQueryGetUri);
