@@ -20,6 +20,20 @@ public class HttpEndToEndTests
         _output = testOutputHelper;
     }
 
+    // Due to some kind of asynchronous race condition in XUnit, when running these tests in pipelines,
+    // the output may be disposed before the message is written. Just ignore these types of errors for now. 
+    private void WriteOutput(string message)
+    {
+        try
+        {
+            _output.WriteLine(message);
+        }
+        catch
+        {
+            // Ignore
+        }
+    }
+
     [Theory]
     [InlineData("HelloCities_HttpStart", HttpStatusCode.Accepted, "Hello Tokyo!")]
     public async Task HttpTriggerTests(string functionName, HttpStatusCode expectedStatusCode, string partialExpectedOutput)
@@ -54,7 +68,7 @@ public class HttpEndToEndTests
         var orchestrationDetails = DurableHelpers.GetRunningOrchestrationDetails(statusQueryGetUri);
         while (DateTime.UtcNow < scheduledStartTime + TimeSpan.FromSeconds(-1))
         {
-            _output.WriteLine($"Test scheduled for {scheduledStartTime}, current time {DateTime.Now}");
+            WriteOutput($"Test scheduled for {scheduledStartTime}, current time {DateTime.Now}");
             orchestrationDetails = DurableHelpers.GetRunningOrchestrationDetails(statusQueryGetUri);
             Assert.Equal("Pending", orchestrationDetails.RuntimeStatus);
             Thread.Sleep(1000);
@@ -62,7 +76,7 @@ public class HttpEndToEndTests
 
         // Give a small amount of time for the orchestration to complete, even if scheduled to run immediately
         Thread.Sleep(3000);
-        _output.WriteLine($"Test scheduled for {scheduledStartTime}, current time {DateTime.Now}, looking for completed");
+        WriteOutput($"Test scheduled for {scheduledStartTime}, current time {DateTime.Now}, looking for completed");
 
         var finalOrchestrationDetails = DurableHelpers.GetRunningOrchestrationDetails(statusQueryGetUri);
         Assert.Equal("Completed", finalOrchestrationDetails.RuntimeStatus);
