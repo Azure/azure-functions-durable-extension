@@ -100,24 +100,25 @@ else
 }
 
 Write-Host "Removing old packages from test app"
-Set-Location $E2EAppProjectDirectory
-if (!(Test-Path "./packages")) {
-  New-Item -Path "./packages" -ItemType Directory -ErrorAction SilentlyContinue
+
+$AppPackageLocation = Resolve-Path "$E2EAppProjectDirectory/packages"
+if (!(Test-Path $AppPackageLocation)) {
+  New-Item -Path $AppPackageLocation -ItemType Directory -ErrorAction SilentlyContinue
 }
-Get-ChildItem -Path ./packages -Include * -File -Recurse | ForEach-Object { $_.Delete()}
+Get-ChildItem -Path $AppPackageLocation -Include * -File -Recurse | ForEach-Object { $_.Delete()}
 
 Write-Host "Building WebJobs extension project"
 
-Set-Location $WebJobsExtensionProjectDirectory
-if (!(Test-Path "./out")) {
-  New-Item -Path "./out" -ItemType Directory -ErrorAction SilentlyContinue
+$BuildOutputLocation = Resolve-Path "$WebJobsExtensionProjectDirectory/out"
+if (!(Test-Path $BuildOutputLocation)) {
+  New-Item -Path $BuildOutputLocation -ItemType Directory -ErrorAction SilentlyContinue
 }
-Get-ChildItem -Path ./out -Include * -File -Recurse | ForEach-Object { $_.Delete()}
-dotnet build -c Debug "$WebJobsExtensionProjectDirectory\WebJobs.Extensions.DurableTask.csproj" --output ./out
+Get-ChildItem -Path $BuildOutputLocation -Include * -File -Recurse | ForEach-Object { $_.Delete()}
+dotnet build -c Debug "$WebJobsExtensionProjectDirectory\WebJobs.Extensions.DurableTask.csproj" --output $BuildOutputLocation
 
-Write-Host "Moving nupkg from WebJobs extension to $E2EAppProjectDirectory/packages"
-Set-Location ./out
-dotnet nuget push *.nupkg --source "$E2EAppProjectDirectory/packages"
+Write-Host "Moving nupkg from WebJobs extension to $AppPackageLocation"
+Set-Location $BuildOutputLocation
+dotnet nuget push *.nupkg --source $AppPackageLocation
 
 Write-Host "Updating app .csproj to reference built package versions"
 Set-Location $E2EAppProjectDirectory
