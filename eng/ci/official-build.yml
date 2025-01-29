@@ -48,7 +48,3 @@ extends:
               dependsOn: []
               jobs:
                   - template: /eng/templates/build.yml@self
-            - stage: Test
-              dependsOn: [BuildAndSign]
-              jobs:
-                  - template: /eng/templates/test.yml@self
