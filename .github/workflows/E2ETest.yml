@@ -49,4 +49,4 @@ jobs:
 
       - name: Run E2E tests
         working-directory: test/e2e/Tests
-        run: dotnet test
+        run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 & dotnet test
