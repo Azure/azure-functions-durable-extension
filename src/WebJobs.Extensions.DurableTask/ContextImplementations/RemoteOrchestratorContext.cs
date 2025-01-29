@@ -134,7 +134,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // It's unclear if all OOMs are caught by the isolated process (probably not), and also if there are other platform-level
             // errors that are also caught in the isolated process and returned as a `OrchestratorExecutionResult`. Let's add them
             // to this method as we encounter them.
-            if (failureDetails.InnerFailure?.IsCausedBy<OutOfMemoryException>() ?? false)
+            if (failureDetails.IsCausedBy<OutOfMemoryException>())
             {
                 throw new SessionAbortedException(failureDetails.ErrorMessage);
             }
