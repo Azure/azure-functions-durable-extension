@@ -16,7 +16,7 @@
       This preview package is to enable better NuGet restore behavior with custom feeds.
       TODO: upgrade to 1.16.0 when it's released.
     -->
-    <PackageReference Include="Microsoft.Azure.Functions.Worker.Sdk" Version="1.16.0-preview2" OutputItemType="Analyzer" />
+    <PackageReference Include="Microsoft.Azure.Functions.Worker.Sdk" Version="1.18.1" OutputItemType="Analyzer" />
     <PackageReference Include="Microsoft.DurableTask.Generators" Version="1.0.0-preview.1" OutputItemType="Analyzer" />
   </ItemGroup>
 
