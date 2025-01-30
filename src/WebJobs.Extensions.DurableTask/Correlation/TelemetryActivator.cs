@@ -24,6 +24,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
         private EndToEndTraceHelper endToEndTraceHelper;
         private TelemetryClient telemetryClient;
         private IAsyncDisposable telemetryModule;
+        private IAsyncDisposable webJobsTelemetryModule;
 
         /// <summary>
         /// Constructor for initializing Distributed Tracing.
@@ -74,6 +75,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
                     DurableTelemetryModule module = new DurableTelemetryModule();
                     module.Initialize(telemetryConfiguration);
                     this.telemetryModule = module;
+
+                    WebJobsTelemetryModule webJobsModule = new WebJobsTelemetryModule();
+                    webJobsModule.Initialize(telemetryConfiguration);
+                    this.webJobsTelemetryModule = webJobsModule;
                 }
                 else
                 {
