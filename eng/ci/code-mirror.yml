@@ -5,7 +5,7 @@ trigger:
     # Keep this set limited as appropriate (don't mirror individual user branches).
     - main
     - dev
-    - v3.x
+    - v2.x
 
 resources:
   repositories:

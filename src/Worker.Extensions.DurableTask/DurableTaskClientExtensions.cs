@@ -225,17 +225,11 @@ public static class DurableTaskClientExtensions
             return url;
         }
 
-        // TODO: To better support scenarios involving proxies or application gateways, this
-        //       code should take the X-Forwarded-Host, X-Forwarded-Proto, and Forwarded HTTP
-        //       request headers into consideration and generate the base URL accordingly.
-        //       More info: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Forwarded.
-        //       One potential workaround is to set ASPNETCORE_FORWARDEDHEADERS_ENABLED to true.
-
         // If HttpRequestData is provided, use its URL; otherwise, get the baseUrl from the DurableTaskClient.
         // The base URL could be null if:
         // 1. The DurableTaskClient isn't a FunctionsDurableTaskClient (which would have the baseUrl from bindings)
         // 2. There's no valid HttpRequestData provided
-        string? baseUrl = ((request != null) ? GetBaseUrlFromRequest(request) : GetBaseUrl(client));
+        string? baseUrl = request != null ? GetBaseUrlFromRequest(request) : GetBaseUrl(client);
 
         if (baseUrl == null)
         {
@@ -307,11 +301,13 @@ public static class DurableTaskClientExtensions
                 }
             }
         }
+
         // Check for "X-Forwarded-Proto" and "X-Forwarded-Host" headers if "Forwarded" is not present
         if (request.Headers.TryGetValues("X-Forwarded-Proto", out var protos))
         {
             proto = protos.FirstOrDefault() ?? proto;
         }
+        
         if (request.Headers.TryGetValues("X-Forwarded-Host", out var hosts))
         {
             // Return base URL if either "X-Forwarded-Proto" or "X-Forwarded-Host" (or both) are found

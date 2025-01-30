@@ -335,13 +335,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 EntityBackendQueries.EntityQueryResult result = await entityOrchestrationService.EntityBackendQueries!.QueryEntitiesAsync(
                     new EntityBackendQueries.EntityQuery()
                     {
-                         InstanceIdStartsWith = query.InstanceIdStartsWith,
-                         LastModifiedFrom = query.LastModifiedFrom?.ToDateTime(),
-                         LastModifiedTo = query.LastModifiedTo?.ToDateTime(),
-                         IncludeTransient = query.IncludeTransient,
-                         IncludeState = query.IncludeState,
-                         ContinuationToken = query.ContinuationToken,
-                         PageSize = query.PageSize,
+                        InstanceIdStartsWith = query.InstanceIdStartsWith,
+                        LastModifiedFrom = query.LastModifiedFrom?.ToDateTime(),
+                        LastModifiedTo = query.LastModifiedTo?.ToDateTime(),
+                        IncludeTransient = query.IncludeTransient,
+                        IncludeState = query.IncludeState,
+                        ContinuationToken = query.ContinuationToken,
+                        PageSize = query.PageSize,
                     },
                     context.CancellationToken);
 
