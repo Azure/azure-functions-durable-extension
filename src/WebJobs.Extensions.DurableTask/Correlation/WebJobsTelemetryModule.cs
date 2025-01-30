@@ -79,7 +79,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
         private static T CreateTelemetryCore<T>(Activity activity)
             where T : OperationTelemetry, new()
         {
-            T telemetry = new()
+            T telemetry = new ()
             {
                 Name = activity.DisplayName,
                 Id = activity.SpanId.ToString(),
