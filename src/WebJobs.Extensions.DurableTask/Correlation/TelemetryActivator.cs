@@ -46,13 +46,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
         /// <inheritdoc/>
         public ValueTask DisposeAsync()
         {
-            return this.telemetryModule?.DisposeAsync() ?? default;
+            if (this.telemetryModule != null)
+            {
+                this.telemetryModule.DisposeAsync();
+            }
+
+            if (this.webJobsTelemetryModule != null)
+            {
+                this.webJobsTelemetryModule.DisposeAsync();
+            }
+
+            return default;
         }
 
         /// <inheritdoc/>
         public void Dispose()
         {
             this.telemetryModule?.DisposeAsync().AsTask().GetAwaiter().GetResult();
+            this.webJobsTelemetryModule?.DisposeAsync().AsTask().GetAwaiter().GetResult();
         }
 
         /// <summary>

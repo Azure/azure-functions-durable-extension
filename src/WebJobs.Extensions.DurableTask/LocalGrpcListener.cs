@@ -18,6 +18,7 @@ using DurableTask.Core.Serializing.Internal;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using Microsoft.ApplicationInsights.Extensibility.Implementation;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using DTCore = DurableTask.Core;
@@ -178,13 +179,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     string? traceParent = request.ParentTraceContext.TraceParent;
                     string? traceState = request.ParentTraceContext.TraceState;
 
+                    // Create a new activity with the parent context
                     ActivityContext.TryParse(traceParent, traceState, out ActivityContext parentActivityContext);
-
-                    // Create a new activity with the parent context above
-
                     Activity? scheduleOrchestrationActivity = StartActivityForNewOrchestration(executionStartedEvent, parentActivityContext);
 
-                    // Use IOrchestrationService* APIs to start the orchestration
+                    // Schedule the orchestration
                     try
                     {
                         await this.GetDurabilityProviderToScheduleOrchestration(context).CreateTaskOrchestrationAsync(
@@ -248,7 +247,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 // Start the new activity to represent scheduling the orchestration
                 Activity? newActivity = activitySource.CreateActivity(
-                    name: "create_orchestration from LocalGrpcListener", // CreateSpanName(TraceActivityConstants.CreateOrchestration, startEvent.Name, startEvent.Version),
+                    name: CreateSpanName(TraceActivityConstants.CreateOrchestration, startEvent.Name, startEvent.Version),
                     kind: ActivityKind.Producer,
                     parentContext: parentTraceContext);
 
@@ -256,7 +255,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 if (newActivity != null && !string.IsNullOrEmpty(newActivity.Id))
                 {
-                    /*
                     newActivity.SetTag(Schema.Task.Type, TraceActivityConstants.Orchestration);
                     newActivity.SetTag(Schema.Task.Name, startEvent.Name);
                     newActivity.SetTag(Schema.Task.InstanceId, startEvent.OrchestrationInstance.InstanceId);
@@ -266,15 +264,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     {
                         newActivity.SetTag(Schema.Task.Version, startEvent.Version);
                     }
-                    */
-
-                    // startEvent.SetParentTraceContext(newActivity);
 
                     // Set the parent trace context for the ExecutionStartedEvent
                     startEvent.ParentTraceContext = new DTCore.Tracing.DistributedTraceContext(newActivity?.Id!, newActivity?.TraceStateString);
                 }
 
                 return newActivity;
+            }
+
+            private static string CreateSpanName(string spanDescription, string? taskName, string? taskVersion)
+            {
+                if (!string.IsNullOrEmpty(taskVersion))
+                {
+                    return $"{spanDescription}:{taskName}@({taskVersion})";
+                }
+                else
+                {
+                    return $"{spanDescription}:{taskName}";
+                }
             }
 
             public async override Task<P.RaiseEventResponse> RaiseEvent(P.RaiseEventRequest request, ServerCallContext context)

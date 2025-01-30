@@ -47,7 +47,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
             this.telemetryClient.Track(telemetry);
         }
 
-        static OperationTelemetry CreateTelemetry(Activity activity)
+        private static OperationTelemetry CreateTelemetry(Activity activity)
         {
             OperationTelemetry telemetry;
             ActivityStatusCode status = activity.Status;
@@ -76,7 +76,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
             return telemetry;
         }
 
-        static T CreateTelemetryCore<T>(Activity activity)
+        private static T CreateTelemetryCore<T>(Activity activity)
             where T : OperationTelemetry, new()
         {
             T telemetry = new()
@@ -112,7 +112,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
             this.listener?.Dispose();
             if (this.telemetryClient != null)
             {
-                using CancellationTokenSource cts = new(millisecondsDelay: 5000);
+                using CancellationTokenSource cts = new (millisecondsDelay: 5000);
                 try
                 {
                     await this.telemetryClient.FlushAsync(cts.Token);
