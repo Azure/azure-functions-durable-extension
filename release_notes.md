@@ -11,6 +11,7 @@
 
 - Fix custom connection name not working when using IDurableClientFactory.CreateClient() - contributed by [@hctan](https://github.com/hctan)
 - Made durable extension for isolated worker configuration idempotent, allowing multiple calls safely. (#2950)
+- Fixed issue with passing null CreatedFrom date in PurgeInstancesFilter to client.PurgeAllInstancesAsync (#3021)
 
 ### Breaking Changes
 
