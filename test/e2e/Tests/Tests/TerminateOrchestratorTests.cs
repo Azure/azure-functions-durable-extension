@@ -20,28 +20,15 @@ public class TerminateOrchestratorTests
         _output = testOutputHelper;
     }
 
-    // Due to some kind of asynchronous race condition in XUnit, when running these tests in pipelines,
-    // the output may be disposed before the message is written. Just ignore these types of errors for now. 
-    private void WriteOutput(string message)
-    {
-        try
-        {
-            _output.WriteLine(message);
-        }
-        catch
-        {
-            // Ignore
-        }
-    }
 
     [Theory]
-    [InlineData("LongOrchestrator_HttpStart", HttpStatusCode.Accepted)]
-    public async Task HttpTriggerTests(string functionName, HttpStatusCode expectedStatusCode)
+    [InlineData("LongOrchestrator_HttpStart")]
+    public async Task TerminateRunningOrchestration_ShouldSucceed(string functionName)
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger(functionName, "");
         string actualMessage = await response.Content.ReadAsStringAsync();
 
-        Assert.Equal(expectedStatusCode, response.StatusCode);
+        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         string instanceId = DurableHelpers.ParseInstanceId(response);
         string statusQueryGetUri = DurableHelpers.ParseStatusQueryGetUri(response);
 
@@ -53,7 +40,7 @@ public class TerminateOrchestratorTests
         using HttpResponseMessage terminateResponse = await HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={instanceId}");
         Assert.Equal(HttpStatusCode.OK, terminateResponse.StatusCode);
 
-        string? terminateResponseMessage = terminateResponse.Content?.ReadAsStringAsync().Result;
+        string? terminateResponseMessage = await terminateResponse.Content.ReadAsStringAsync();
         Assert.NotNull(terminateResponseMessage);
         Assert.Empty(terminateResponseMessage);
 
