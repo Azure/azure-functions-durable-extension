@@ -47,23 +47,23 @@ internal class DurableHelpers
         return statusQueryGetUri ?? string.Empty;
     }
 
-    internal static string ParseStatusQueryGetUri(HttpResponseMessage invocationStartResponse)
+    internal static async Task<string> ParseStatusQueryGetUri(HttpResponseMessage invocationStartResponse)
     {
-        string? responseString = invocationStartResponse.Content?.ReadAsStringAsync().Result;
+        string? responseString = await invocationStartResponse.Content.ReadAsStringAsync();
         return TokenizeAndGetValueFromKeyAsString(responseString, "StatusQueryGetUri");
     }
 
-    internal static string ParseInstanceId(HttpResponseMessage invocationStartResponse)
+    internal static async Task<string> ParseInstanceId(HttpResponseMessage invocationStartResponse)
     {
-        string? responseString = invocationStartResponse.Content?.ReadAsStringAsync().Result;
+        string? responseString = await invocationStartResponse.Content.ReadAsStringAsync();
         return TokenizeAndGetValueFromKeyAsString(responseString, "Id");
     }
 
-    internal static OrchestrationStatusDetails GetRunningOrchestrationDetails(string statusQueryGetUri)
+    internal static async Task<OrchestrationStatusDetails> GetRunningOrchestrationDetails(string statusQueryGetUri)
     {
-        var statusQueryResponse = _httpClient.GetAsync(statusQueryGetUri);
+        var statusQueryResponse = await _httpClient.GetAsync(statusQueryGetUri);
 
-        string? statusQueryResponseString = statusQueryResponse.Result.Content.ReadAsStringAsync().Result;
+        string? statusQueryResponseString = statusQueryResponse.Content.ReadAsStringAsync().Result;
 
         return new OrchestrationStatusDetails(statusQueryResponseString);
     }

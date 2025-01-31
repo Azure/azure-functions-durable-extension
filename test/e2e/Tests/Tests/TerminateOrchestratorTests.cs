@@ -29,8 +29,8 @@ public class TerminateOrchestratorTests
         string actualMessage = await response.Content.ReadAsStringAsync();
 
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
-        string instanceId = DurableHelpers.ParseInstanceId(response);
-        string statusQueryGetUri = DurableHelpers.ParseStatusQueryGetUri(response);
+        string instanceId = await DurableHelpers.ParseInstanceId(response);
+        string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUri(response);
 
         Thread.Sleep(1000);
 

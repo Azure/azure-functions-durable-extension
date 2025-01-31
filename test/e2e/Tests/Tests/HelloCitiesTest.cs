@@ -61,15 +61,15 @@ public class HttpEndToEndTests
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger(functionName, urlQueryString);
         string actualMessage = await response.Content.ReadAsStringAsync();
 
-        string statusQueryGetUri = DurableHelpers.ParseStatusQueryGetUri(response);
+        string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUri(response);
 
         Assert.Equal(expectedStatusCode, response.StatusCode);
 
-        var orchestrationDetails = DurableHelpers.GetRunningOrchestrationDetails(statusQueryGetUri);
+        var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetails(statusQueryGetUri);
         while (DateTime.UtcNow < scheduledStartTime + TimeSpan.FromSeconds(-1))
         {
             WriteOutput($"Test scheduled for {scheduledStartTime}, current time {DateTime.Now}");
-            orchestrationDetails = DurableHelpers.GetRunningOrchestrationDetails(statusQueryGetUri);
+            orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetails(statusQueryGetUri);
             Assert.Equal("Pending", orchestrationDetails.RuntimeStatus);
             Thread.Sleep(1000);
         }
@@ -77,12 +77,12 @@ public class HttpEndToEndTests
         // Give a small amount of time for the orchestration to complete, even if scheduled to run immediately
         Thread.Sleep(3000);
         WriteOutput($"Test scheduled for {scheduledStartTime}, current time {DateTime.Now}, looking for completed");
-        var finalOrchestrationDetails = DurableHelpers.GetRunningOrchestrationDetails(statusQueryGetUri);
+        var finalOrchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetails(statusQueryGetUri);
         int retryAttempts = 0;
         while (finalOrchestrationDetails.RuntimeStatus != "Completed" && retryAttempts < 10)
         {
             Thread.Sleep(1000);
-            finalOrchestrationDetails = DurableHelpers.GetRunningOrchestrationDetails(statusQueryGetUri);
+            finalOrchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetails(statusQueryGetUri);
             retryAttempts++;
         }
         Assert.Equal("Completed", finalOrchestrationDetails.RuntimeStatus);
