@@ -42,9 +42,9 @@ public class HttpEndToEndTests
         string actualMessage = await response.Content.ReadAsStringAsync();
 
         Assert.Equal(expectedStatusCode, response.StatusCode);
-        string statusQueryGetUri = DurableHelpers.ParseStatusQueryGetUri(response);
+        string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUri(response);
         Thread.Sleep(1000);
-        var orchestrationDetails = DurableHelpers.GetRunningOrchestrationDetails(statusQueryGetUri);
+        var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetails(statusQueryGetUri);
         Assert.Equal("Completed", orchestrationDetails.RuntimeStatus);
         Assert.Contains(partialExpectedOutput, orchestrationDetails.Output);
     }
