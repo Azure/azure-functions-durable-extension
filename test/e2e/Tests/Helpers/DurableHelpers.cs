@@ -31,23 +31,34 @@ internal class DurableHelpers
         }
     }
 
-    internal static string ParseStatusQueryGetUri(HttpResponseMessage invocationStartResponse)
+    private static string TokenizeAndGetValueFromKeyAsString(string? json, string key)
     {
-        string? responseString = invocationStartResponse.Content?.ReadAsStringAsync().Result;
-
-        if (string.IsNullOrEmpty(responseString))
+        if (string.IsNullOrEmpty(json))
         {
             return string.Empty;
         }
-        JsonNode? responseJsonNode = JsonNode.Parse(responseString);
+        JsonNode? responseJsonNode = JsonNode.Parse(json);
         if (responseJsonNode == null)
         {
             return string.Empty;
         }
 
-        string? statusQueryGetUri = responseJsonNode["StatusQueryGetUri"]?.GetValue<string>();
+        string? statusQueryGetUri = responseJsonNode[key]?.GetValue<string>();
         return statusQueryGetUri ?? string.Empty;
     }
+
+    internal static string ParseStatusQueryGetUri(HttpResponseMessage invocationStartResponse)
+    {
+        string? responseString = invocationStartResponse.Content?.ReadAsStringAsync().Result;
+        return TokenizeAndGetValueFromKeyAsString(responseString, "StatusQueryGetUri");
+    }
+
+    internal static string ParseInstanceId(HttpResponseMessage invocationStartResponse)
+    {
+        string? responseString = invocationStartResponse.Content?.ReadAsStringAsync().Result;
+        return TokenizeAndGetValueFromKeyAsString(responseString, "Id");
+    }
+
     internal static OrchestrationStatusDetails GetRunningOrchestrationDetails(string statusQueryGetUri)
     {
         var statusQueryResponse = _httpClient.GetAsync(statusQueryGetUri);
