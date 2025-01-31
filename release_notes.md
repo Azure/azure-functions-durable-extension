@@ -11,6 +11,7 @@
 
 - Fix custom connection name not working when using IDurableClientFactory.CreateClient() - contributed by [@hctan](https://github.com/hctan)
 - Made durable extension for isolated worker configuration idempotent, allowing multiple calls safely. (#2950)
+- Fixes a bug with Out of Memory exception handling in Isolated, improving reliability of retries for this case. (part of #3020)
 
 ### Breaking Changes
 
