@@ -13,7 +13,7 @@ param(
     $SkipStorageEmulator,
 
     [Switch]
-    $SkipCosmosDBEmulator,
+    $StartCosmosDBEmulator,
 
     [Switch]
     $SkipCoreTools,
@@ -24,7 +24,7 @@ param(
 
 $ProjectBaseDirectory = "$PSScriptRoot\..\..\..\"
 $ProjectTemporaryPath = Join-Path ([System.IO.Path]::GetTempPath()) "DurableTaskExtensionE2ETests"
-mkdir $ProjectTemporaryPath -ErrorAction SilentlyContinue > $Null
+New-Item -Path $ProjectTemporaryPath -ItemType Directory -ErrorAction SilentlyContinue
 $WebJobsExtensionProjectDirectory = Join-Path $ProjectBaseDirectory "src\WebJobs.Extensions.DurableTask"
 $WorkerExtensionProjectDirectory = Join-Path $ProjectBaseDirectory "src\Worker.Extensions.DurableTask"
 $E2EAppProjectDirectory = Join-Path $ProjectBaseDirectory "test\e2e\Apps\BasicDotNetIsolated"
@@ -100,21 +100,27 @@ else
 }
 
 Write-Host "Removing old packages from test app"
-Set-Location $E2EAppProjectDirectory
-Get-ChildItem -Path ./packages -Include * -File -Recurse | ForEach-Object { $_.Delete()}
+
+$AppPackageLocation = Join-Path $E2EAppProjectDirectory 'packages'
+if (!(Test-Path $AppPackageLocation)) {
+  New-Item -Path $AppPackageLocation -ItemType Directory -ErrorAction SilentlyContinue
+}
+$AppPackageLocation = Resolve-Path $AppPackageLocation
+Get-ChildItem -Path $AppPackageLocation -Include * -File -Recurse | ForEach-Object { $_.Delete()}
 
 Write-Host "Building WebJobs extension project"
 
-Set-Location $WebJobsExtensionProjectDirectory
-if (!(Test-Path "./out")) {
-  mkdir ./out -ErrorAction SilentlyContinue > $Null
+$BuildOutputLocation = Join-Path $WebJobsExtensionProjectDirectory 'out'
+if (!(Test-Path $BuildOutputLocation)) {
+  New-Item -Path $BuildOutputLocation -ItemType Directory -ErrorAction SilentlyContinue
 }
-Get-ChildItem -Path ./out -Include * -File -Recurse | ForEach-Object { $_.Delete()}
-dotnet build -c Debug "$WebJobsExtensionProjectDirectory\WebJobs.Extensions.DurableTask.csproj" --output ./out
+$BuildOutputLocation = Resolve-Path $BuildOutputLocation
+Get-ChildItem -Path $BuildOutputLocation -Include * -File -Recurse | ForEach-Object { $_.Delete()}
+dotnet build -c Debug "$WebJobsExtensionProjectDirectory\WebJobs.Extensions.DurableTask.csproj" --output $BuildOutputLocation
 
-Write-Host "Moving nupkg from WebJobs extension to $E2EAppProjectDirectory/packages"
-Set-Location ./out
-dotnet nuget push *.nupkg --source "$E2EAppProjectDirectory/packages"
+Write-Host "Moving nupkg from WebJobs extension to $AppPackageLocation"
+Set-Location $BuildOutputLocation
+dotnet nuget push *.nupkg --source $AppPackageLocation
 
 Write-Host "Updating app .csproj to reference built package versions"
 Set-Location $E2EAppProjectDirectory
@@ -125,7 +131,7 @@ $files | ForEach-Object {
     $webJobsExtensionVersion = $_.Name -replace 'Microsoft.Azure.WebJobs.Extensions.DurableTask\.|\.nupkg'
 
     Write-Host "Removing cached version $webJobsExtensionVersion of WebJobs extension from nuget cache, if exists"
-    $cachedVersionFolders = Get-ChildItem -Path (Join-Path $LocalNugetCacheDirectory "microsoft.azure.webjobs.extensions.durabletask") -Directory
+    $cachedVersionFolders = Get-ChildItem -Path (Join-Path $LocalNugetCacheDirectory "microsoft.azure.webjobs.extensions.durabletask") -Directory -ErrorAction Continue
     $cachedVersionFolders | ForEach-Object {
       if ($_.Name -eq $webJobsExtensionVersion)
       {
@@ -142,7 +148,7 @@ dotnet build app.csproj
 
 Set-Location $PSScriptRoot
 
-if ($SkipStorageEmulator -And $SkipCosmosDBEmulator)
+if ($SkipStorageEmulator -And -not $StartCosmosDBEmulator)
 {
   Write-Host
   Write-Host "---Skipping emulator startup---"
@@ -150,7 +156,9 @@ if ($SkipStorageEmulator -And $SkipCosmosDBEmulator)
 }
 else 
 {
-  .\start-emulators.ps1 -SkipStorageEmulator:$SkipStorageEmulator -StartCosmosDBEmulator:$false -EmulatorStartDir $ProjectTemporaryPath
+  .\start-emulators.ps1 -SkipStorageEmulator:$SkipStorageEmulator -StartCosmosDBEmulator:$StartCosmosDBEmulator -EmulatorStartDir $ProjectTemporaryPath
 }
+
+Set-Location $PSScriptRoot
 
 StopOnFailedExecution

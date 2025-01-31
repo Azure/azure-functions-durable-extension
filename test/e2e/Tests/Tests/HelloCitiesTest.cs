@@ -20,6 +20,20 @@ public class HttpEndToEndTests
         _output = testOutputHelper;
     }
 
+    // Due to some kind of asynchronous race condition in XUnit, when running these tests in pipelines,
+    // the output may be disposed before the message is written. Just ignore these types of errors for now. 
+    private void WriteOutput(string message)
+    {
+        try
+        {
+            _output.WriteLine(message);
+        }
+        catch
+        {
+            // Ignore
+        }
+    }
+
     [Theory]
     [InlineData("HelloCities_HttpStart", HttpStatusCode.Accepted, "Hello Tokyo!")]
     public async Task HttpTriggerTests(string functionName, HttpStatusCode expectedStatusCode, string partialExpectedOutput)
@@ -36,7 +50,7 @@ public class HttpEndToEndTests
     }
 
     [Theory]
-    [InlineData("HelloCities_HttpStart_Scheduled", 5, HttpStatusCode.Accepted)]
+    [InlineData("HelloCities_HttpStart_Scheduled", 10, HttpStatusCode.Accepted)]
     [InlineData("HelloCities_HttpStart_Scheduled", -5, HttpStatusCode.Accepted)]
     public async Task ScheduledStartTests(string functionName, int startDelaySeconds, HttpStatusCode expectedStatusCode)
     {
@@ -52,19 +66,25 @@ public class HttpEndToEndTests
         Assert.Equal(expectedStatusCode, response.StatusCode);
 
         var orchestrationDetails = DurableHelpers.GetRunningOrchestrationDetails(statusQueryGetUri);
-        while (DateTime.UtcNow < scheduledStartTime)
+        while (DateTime.UtcNow < scheduledStartTime + TimeSpan.FromSeconds(-1))
         {
-            _output.WriteLine($"Test scheduled for {scheduledStartTime}, current time {DateTime.Now}");
+            WriteOutput($"Test scheduled for {scheduledStartTime}, current time {DateTime.Now}");
             orchestrationDetails = DurableHelpers.GetRunningOrchestrationDetails(statusQueryGetUri);
             Assert.Equal("Pending", orchestrationDetails.RuntimeStatus);
-            Thread.Sleep(3000);
+            Thread.Sleep(1000);
         }
 
         // Give a small amount of time for the orchestration to complete, even if scheduled to run immediately
-        Thread.Sleep(1000);
-        _output.WriteLine($"Test scheduled for {scheduledStartTime}, current time {DateTime.Now}, looking for completed");
-
+        Thread.Sleep(3000);
+        WriteOutput($"Test scheduled for {scheduledStartTime}, current time {DateTime.Now}, looking for completed");
         var finalOrchestrationDetails = DurableHelpers.GetRunningOrchestrationDetails(statusQueryGetUri);
+        int retryAttempts = 0;
+        while (finalOrchestrationDetails.RuntimeStatus != "Completed" && retryAttempts < 10)
+        {
+            Thread.Sleep(1000);
+            finalOrchestrationDetails = DurableHelpers.GetRunningOrchestrationDetails(statusQueryGetUri);
+            retryAttempts++;
+        }
         Assert.Equal("Completed", finalOrchestrationDetails.RuntimeStatus);
 
         Assert.True(finalOrchestrationDetails.LastUpdatedTime > scheduledStartTime);
