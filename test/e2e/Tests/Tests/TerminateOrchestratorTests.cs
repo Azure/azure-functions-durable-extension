@@ -34,7 +34,7 @@ public class TerminateOrchestratorTests
 
         Thread.Sleep(1000);
 
-        var orchestrationDetails = DurableHelpers.GetRunningOrchestrationDetails(statusQueryGetUri);
+        var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetails(statusQueryGetUri);
         Assert.Equal("Running", orchestrationDetails.RuntimeStatus);
 
         using HttpResponseMessage terminateResponse = await HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={instanceId}");
@@ -46,7 +46,7 @@ public class TerminateOrchestratorTests
 
         Thread.Sleep(1000);
 
-        orchestrationDetails = DurableHelpers.GetRunningOrchestrationDetails(statusQueryGetUri);
+        orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetails(statusQueryGetUri);
         Assert.Equal("Terminated", orchestrationDetails.RuntimeStatus);
     }
 }
