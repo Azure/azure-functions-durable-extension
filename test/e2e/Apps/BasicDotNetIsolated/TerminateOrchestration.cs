@@ -1,6 +1,8 @@
 // Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
+using System.Net;
+using Grpc.Core;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.DurableTask;
@@ -46,25 +48,33 @@ namespace Microsoft.Azure.Durable.Tests.E2E
         {
             ILogger logger = executionContext.GetLogger("LongOrchestrator_HttpStart");
 
-            // Function input comes from the request content.
             string instanceId = await client.ScheduleNewOrchestrationInstanceAsync(
                 nameof(LongRunningOrchestrator));
 
             logger.LogInformation("Started orchestration with ID = '{instanceId}'.", instanceId);
-
-            // Returns an HTTP 202 response with an instance management payload.
-            // See https://learn.microsoft.com/azure/azure-functions/durable/durable-functions-http-api#start-orchestration
+            
             return await client.CreateCheckStatusResponseAsync(req, instanceId);
         }
 
         [Function("TerminateInstance")]
-        public static Task Run(
+        public static async Task<HttpResponseData> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestData req,
             [DurableClient] DurableTaskClient client,
             string instanceId)
         {
             string reason = "Long-running orchestration was terminated early.";
-            return client.TerminateInstanceAsync(instanceId, reason);
+            try 
+            {
+                await client.TerminateInstanceAsync(instanceId, reason);
+                return req.CreateResponse(HttpStatusCode.OK);
+            }
+            catch (RpcException ex) 
+            {
+                var response = req.CreateResponse(HttpStatusCode.BadRequest);
+                response.Headers.Add("Content-Type", "text/plain");
+                await response.WriteStringAsync(ex.Message);
+                return response;
+            }
         }
     }
 }
