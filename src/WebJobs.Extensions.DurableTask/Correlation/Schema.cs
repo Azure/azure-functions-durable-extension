@@ -1,5 +1,6 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
+#nullable enable
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
 {
@@ -22,6 +23,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
         {
             internal const string Code = "otel.status_code";
             internal const string Description = "otel.status_description";
+        }
+
+        internal static class SpanNames
+        {
+            internal static string CreateOrchestration(string name, string? version)
+               => FormatName(TraceActivityConstants.CreateOrchestration, name, version);
+
+            private static string FormatName(string prefix, string name, string? version)
+                => string.IsNullOrEmpty(version) ? $"{prefix}:{name}" : $"{prefix}:{name}@{version}";
         }
     }
 }

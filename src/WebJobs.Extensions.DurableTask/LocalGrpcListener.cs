@@ -176,36 +176,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     };
 
                     // Get the parent trace context from CreateInstanceRequest
-                    string? traceParent = request.ParentTraceContext.TraceParent;
-                    string? traceState = request.ParentTraceContext.TraceState;
+                    string? traceParent = request.ParentTraceContext?.TraceParent;
+                    string? traceState = request.ParentTraceContext?.TraceState;
 
                     // Create a new activity with the parent context
                     ActivityContext.TryParse(traceParent, traceState, out ActivityContext parentActivityContext);
-                    Activity? scheduleOrchestrationActivity = StartActivityForNewOrchestration(executionStartedEvent, parentActivityContext);
+                    using Activity? scheduleOrchestrationActivity = StartActivityForNewOrchestration(executionStartedEvent, parentActivityContext);
 
                     // Schedule the orchestration
-                    try
-                    {
-                        await this.GetDurabilityProviderToScheduleOrchestration(context).CreateTaskOrchestrationAsync(
-                            new TaskMessage
-                            {
-                                Event = executionStartedEvent,
-                                OrchestrationInstance = instance,
-                            },
-                            this.GetStatusesNotToOverride());
-
-                        // Stop the activity
-                        scheduleOrchestrationActivity?.Stop();
-
-                        return new P.CreateInstanceResponse
+                    await this.GetDurabilityProvider(context).CreateTaskOrchestrationAsync(
+                        new TaskMessage
                         {
-                            InstanceId = instance.InstanceId,
-                        };
-                    }
-                    catch (InvalidOperationException)
+                            Event = executionStartedEvent,
+                            OrchestrationInstance = instance,
+                        },
+                        this.GetStatusesNotToOverride());
+
+                    return new P.CreateInstanceResponse
                     {
-                        throw new RpcException(new Status(StatusCode.AlreadyExists, $"An Orchestration instance with the ID {instance.InstanceId} already exists."));
-                    }
+                        InstanceId = instance.InstanceId,
+                    };
                 }
                 catch (OrchestrationAlreadyExistsException)
                 {
@@ -226,14 +216,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
             }
 
-            private DurabilityProvider GetDurabilityProviderToScheduleOrchestration(ServerCallContext context)
-            {
-                string? taskHub = context.RequestHeaders.GetValue("Durable-TaskHub");
-                string? connectionName = context.RequestHeaders.GetValue("Durable-ConnectionName");
-                var attribute = new DurableClientAttribute() { TaskHub = taskHub, ConnectionName = connectionName };
-                return this.extension.GetDurabilityProvider(attribute);
-            }
-
             private OrchestrationStatus[] GetStatusesNotToOverride()
             {
                 OverridableStates overridableStates = this.extension.Options.OverridableExistingInstanceStates;
@@ -247,7 +229,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 // Start the new activity to represent scheduling the orchestration
                 Activity? newActivity = activitySource.CreateActivity(
-                    name: CreateSpanName(TraceActivityConstants.CreateOrchestration, startEvent.Name, startEvent.Version),
+                    name: Schema.SpanNames.CreateOrchestration(startEvent.Name, startEvent.Version),
                     kind: ActivityKind.Producer,
                     parentContext: parentTraceContext);
 
