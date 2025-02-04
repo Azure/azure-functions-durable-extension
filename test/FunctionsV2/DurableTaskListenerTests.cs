@@ -37,7 +37,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             IScaleMonitor scaleMonitor = this.listener.GetMonitor();
 
             Assert.Equal(typeof(DurableTaskScaleMonitor), scaleMonitor.GetType());
-            Assert.Equal($"DurableTask-AzureStorage:DurableTaskHub", scaleMonitor.Descriptor.Id);
+            Assert.Equal(this.functionId, scaleMonitor.Descriptor.Id);
 
             IScaleMonitor scaleMonitor2 = this.listener.GetMonitor();
 
