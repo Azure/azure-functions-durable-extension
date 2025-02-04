@@ -37,10 +37,10 @@ public static class SuspendResumeOrchestration
         [DurableClient] DurableTaskClient client,
         string instanceId)
     {
-        string suspendReason = "Resuming the instance for test.";
+        string resumeReason = "Resuming the instance for test.";
         try 
         {
-            await client.ResumeInstanceAsync(instanceId, suspendReason);
+            await client.ResumeInstanceAsync(instanceId, resumeReason);
             return req.CreateResponse(HttpStatusCode.OK);
         }
         catch (RpcException ex) 
