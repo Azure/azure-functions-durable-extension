@@ -6,15 +6,14 @@ using Grpc.Core;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.DurableTask.Client;
-using DTC = Microsoft.DurableTask.Client;
 
 namespace Microsoft.Azure.Durable.Tests.E2E;
-public static class OrchestrationQuery
+public static class OrchestrationQueryFunctions
 {
     [Function(nameof(GetAllStatus))]
     public static async Task<HttpResponseData> GetAllStatus(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestData req,
-        [DurableClient] DTC.DurableTaskClient client)
+        [DurableClient] DurableTaskClient client)
     {
         try 
         {
@@ -32,15 +31,15 @@ public static class OrchestrationQuery
             return response;
         }
     }
-    
+
     [Function(nameof(GetRunningStatus))]
     public static async Task<HttpResponseData> GetRunningStatus(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestData req,
-        [DurableClient] DTC.DurableTaskClient client)
+        [DurableClient] DurableTaskClient client)
     {
         try 
         {
-            DTC.OrchestrationQuery filter = new DTC.OrchestrationQuery(Statuses: new List<OrchestrationRuntimeStatus> { OrchestrationRuntimeStatus.Running, OrchestrationRuntimeStatus.Pending, OrchestrationRuntimeStatus.Suspended });
+            OrchestrationQuery filter = new OrchestrationQuery(Statuses: new List<OrchestrationRuntimeStatus> { OrchestrationRuntimeStatus.Running, OrchestrationRuntimeStatus.Pending, OrchestrationRuntimeStatus.Suspended });
             var instances = client.GetAllInstancesAsync(filter);
 
             var response = req.CreateResponse(HttpStatusCode.OK);
