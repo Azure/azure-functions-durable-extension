@@ -20,7 +20,7 @@ public class TerminateOrchestratorTests
         _output = testOutputHelper;
     }
 
-    private static async Task AssertTerminateRequestFails(HttpResponseMessage terminateResponse)
+    private static async Task AssertTerminateRequestFailsAsync(HttpResponseMessage terminateResponse)
     {
         Assert.Equal(HttpStatusCode.BadRequest, terminateResponse.StatusCode);
 
@@ -29,7 +29,7 @@ public class TerminateOrchestratorTests
         Assert.Equal("Status(StatusCode=\"Unknown\", Detail=\"Exception was thrown by handler.\")", terminateResponseMessage);
     }
 
-    private static async Task AssertTerminateRequestSucceeds(HttpResponseMessage terminateResponse)
+    private static async Task AssertTerminateRequestSucceedsAsync(HttpResponseMessage terminateResponse)
     {
         Assert.Equal(HttpStatusCode.OK, terminateResponse.StatusCode);
 
@@ -45,52 +45,46 @@ public class TerminateOrchestratorTests
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("LongOrchestrator_HttpStart", "");
 
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
-        string instanceId = await DurableHelpers.ParseInstanceId(response);
-        string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUri(response);
+        string instanceId = await DurableHelpers.ParseInstanceIdAsync(response);
+        string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
 
         Thread.Sleep(1000);
 
-        var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetails(statusQueryGetUri);
+        var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
         Assert.Equal("Running", orchestrationDetails.RuntimeStatus);
 
         using HttpResponseMessage terminateResponse = await HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={instanceId}");
-        await AssertTerminateRequestSucceeds(terminateResponse);
+        await AssertTerminateRequestSucceedsAsync(terminateResponse);
 
         Thread.Sleep(1000);
 
-        orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetails(statusQueryGetUri);
+        orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
         Assert.Equal("Terminated", orchestrationDetails.RuntimeStatus);
     }
 
 
-    // This test is likely exposing some unintended behavior. Currently, attempting to terminate scheduled orchestrations has no effect.
-    // If the behavior of Terminate is changed to accomodate terminating scheduled orchestrations, this test will need to be modified accordingly.
-    [Fact]
-    public async Task TerminateScheduledOrchestration_ShouldDoNothing()
+    [Fact(Skip = "Will enable when https://github.com/Azure/azure-functions-durable-extension/issues/3025 is fixed")]
+    public async Task TerminateScheduledOrchestration_ShouldSucceed()
     {
         DateTime scheduledStartTime = DateTime.UtcNow + TimeSpan.FromMinutes(1);
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("HelloCities_HttpStart_Scheduled", $"?scheduledStartTime={scheduledStartTime.ToString("o")}");
 
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
-        string instanceId = await DurableHelpers.ParseInstanceId(response);
-        string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUri(response);
+        string instanceId = await DurableHelpers.ParseInstanceIdAsync(response);
+        string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
 
         Thread.Sleep(1000);
 
-        var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetails(statusQueryGetUri);
+        var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
         Assert.Equal("Pending", orchestrationDetails.RuntimeStatus);
 
         using HttpResponseMessage terminateResponse = await HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={instanceId}");
-        Assert.Equal(HttpStatusCode.OK, terminateResponse.StatusCode);
-
-        string? terminateResponseMessage = await terminateResponse.Content.ReadAsStringAsync();
-        Assert.NotNull(terminateResponseMessage);
-        Assert.Empty(terminateResponseMessage);
+        await AssertTerminateRequestSucceedsAsync(terminateResponse);
 
         Thread.Sleep(1000);
 
-        orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetails(statusQueryGetUri);
-        Assert.Equal("Pending", orchestrationDetails.RuntimeStatus);
+        orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
+        Assert.Equal("Terminated", orchestrationDetails.RuntimeStatus);
     }
 
 
@@ -100,20 +94,20 @@ public class TerminateOrchestratorTests
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("LongOrchestrator_HttpStart", "");
 
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
-        string instanceId = await DurableHelpers.ParseInstanceId(response);
-        string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUri(response);
+        string instanceId = await DurableHelpers.ParseInstanceIdAsync(response);
+        string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
 
         Thread.Sleep(1000);
 
-        var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetails(statusQueryGetUri);
+        var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
         Assert.Equal("Running", orchestrationDetails.RuntimeStatus);
 
         using HttpResponseMessage terminateResponse = await HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={instanceId}");
-        await AssertTerminateRequestSucceeds(terminateResponse);
+        await AssertTerminateRequestSucceedsAsync(terminateResponse);
 
         Thread.Sleep(1000);
         using HttpResponseMessage terminateAgainResponse = await HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={instanceId}");
-        await AssertTerminateRequestFails(terminateAgainResponse);
+        await AssertTerminateRequestFailsAsync(terminateAgainResponse);
 
         // Give some time for Core Tools to write logs out
         Thread.Sleep(500);
@@ -121,7 +115,7 @@ public class TerminateOrchestratorTests
         Assert.Contains(_fixture.TestLogs.CoreToolsLogs, x => x.Contains("Cannot terminate orchestration instance in the Terminated state.") &&
                                                               x.Contains(instanceId));
 
-        orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetails(statusQueryGetUri);
+        orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
         Assert.Equal("Terminated", orchestrationDetails.RuntimeStatus);
     }
 
@@ -132,16 +126,16 @@ public class TerminateOrchestratorTests
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("HelloCities_HttpStart", "");
 
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
-        string instanceId = await DurableHelpers.ParseInstanceId(response);
-        string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUri(response);
+        string instanceId = await DurableHelpers.ParseInstanceIdAsync(response);
+        string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
 
         Thread.Sleep(1000);
 
-        var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetails(statusQueryGetUri);
+        var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
         Assert.Equal("Completed", orchestrationDetails.RuntimeStatus);
 
         using HttpResponseMessage terminateResponse = await HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={instanceId}");
-        await AssertTerminateRequestFails(terminateResponse);
+        await AssertTerminateRequestFailsAsync(terminateResponse);
 
         // Give some time for Core Tools to write logs out
         Thread.Sleep(500);
@@ -154,6 +148,6 @@ public class TerminateOrchestratorTests
     public async Task TerminateNonExistantOrchestration_ShouldFail()
     {
         using HttpResponseMessage terminateResponse = await HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={Guid.NewGuid().ToString()}");
-        await AssertTerminateRequestFails(terminateResponse);
+        await AssertTerminateRequestFailsAsync(terminateResponse);
     }
 }
