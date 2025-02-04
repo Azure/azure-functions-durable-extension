@@ -49,8 +49,8 @@ public static class FixtureHelpers
 
     public static void StartProcessWithLogging(Process funcProcess, ILogger logger)
     {
-        funcProcess.ErrorDataReceived += (sender, e) => logger.LogError(e?.Data);
-        funcProcess.OutputDataReceived += (sender, e) => logger.LogInformation(e?.Data);
+        funcProcess.ErrorDataReceived += (sender, e) => { try { logger.LogError(e?.Data); } catch (Exception) { Console.WriteLine("ERROR: Could not write error to test logger!"); Console.WriteLine(e?.Data); } };
+        funcProcess.OutputDataReceived += (sender, e) => { try { logger.LogInformation(e?.Data); } catch (Exception) { Console.WriteLine("ERROR: Could not write information to test logger!"); Console.WriteLine(e?.Data); } } ;
 
         funcProcess.Start();
 
