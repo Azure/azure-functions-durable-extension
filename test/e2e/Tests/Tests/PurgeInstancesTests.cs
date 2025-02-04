@@ -23,27 +23,79 @@ public class PurgeInstancesTests
         _output = testOutputHelper;
     }
 
-    // Due to some kind of asynchronous race condition in XUnit, when running these tests in pipelines,
-    // the output may be disposed before the message is written. Just ignore these types of errors for now. 
-    private void WriteOutput(string message)
+    [Fact]
+    public async Task PurgeOrchestrationHistory_StartAndEnd_Succeeds()
     {
-        try
-        {
-            _output.WriteLine(message);
-        }
-        catch
-        {
-            // Ignore
-        }
+        DateTime purgeStartTime = DateTime.MinValue;
+        DateTime purgeEndTime = DateTime.UtcNow;
+        string queryParams = $"?purgeStartTime={purgeStartTime.ToString("o")}&purgeEndTime={purgeEndTime.ToString("o")}";
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("PurgeOrchestrationHistory", queryParams);
+        string actualMessage = await response.Content.ReadAsStringAsync();
+        Assert.Matches(@"^Purged [0-9]* records$", actualMessage);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
-    [Theory]
-    [InlineData("PurgeOrchestrationHistory", HttpStatusCode.OK, @"^Purged [0-9]* records$")]
-    public async Task HttpTriggerTests(string functionName, HttpStatusCode expectedStatusCode, string responseRegex)
+    [Fact]
+    public async Task PurgeOrchestrationHistory_Start_Succeeds()
     {
-        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger(functionName, "");
+        DateTime purgeStartTime = DateTime.MinValue;
+        DateTime purgeEndTime = DateTime.UtcNow;
+        string queryParams = $"?purgeStartTime={purgeStartTime.ToString("o")}";
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("PurgeOrchestrationHistory", queryParams);
         string actualMessage = await response.Content.ReadAsStringAsync();
-        Assert.Matches(responseRegex, actualMessage);
-        Assert.Equal(expectedStatusCode, response.StatusCode);
+        Assert.Matches(@"^Purged [0-9]* records$", actualMessage);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task PurgeOrchestrationHistory_End_Succeeds()
+    {
+        DateTime purgeStartTime = DateTime.MinValue;
+        DateTime purgeEndTime = DateTime.UtcNow;
+        string queryParams = $"?purgeEndTime={purgeEndTime.ToString("o")}";
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("PurgeOrchestrationHistory", queryParams);
+        string actualMessage = await response.Content.ReadAsStringAsync();
+        Assert.Matches(@"^Purged [0-9]* records$", actualMessage);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task PurgeOrchestrationHistory_NoBoundaries_Succeeds()
+    {
+        DateTime purgeStartTime = DateTime.MinValue;
+        DateTime purgeEndTime = DateTime.UtcNow;
+        string queryParams = $"";
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("PurgeOrchestrationHistory", queryParams);
+        string actualMessage = await response.Content.ReadAsStringAsync();
+        Assert.Matches(@"^Purged [0-9]* records$", actualMessage);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task PurgeOrchestrationHistoryAfterInvocation_Succeeds()
+    {
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("HelloCities_HttpStart", "");
+        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
+        Thread.Sleep(1000);
+
+        DateTime purgeEndTime = DateTime.UtcNow + TimeSpan.FromMinutes(1);
+        using HttpResponseMessage purgeResponse = await HttpHelpers.InvokeHttpTrigger("PurgeOrchestrationHistory", $"?purgeEndTime={purgeEndTime.ToString("o")}");
+        string purgeMessage = await purgeResponse.Content.ReadAsStringAsync();
+        Assert.Matches(@"^Purged [0-9]* records$", purgeMessage);
+        Assert.DoesNotMatch(@"^Purged 0 records$", purgeMessage);
+        Assert.Equal(HttpStatusCode.OK, purgeResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task PurgeAfterPurge_ZeroRows()
+    {
+        DateTime purgeEndTime = DateTime.UtcNow + TimeSpan.FromMinutes(1);
+        using HttpResponseMessage purgeResponse = await HttpHelpers.InvokeHttpTrigger("PurgeOrchestrationHistory", $"?purgeEndTime={purgeEndTime.ToString("o")}");
+        string purgeMessage = await purgeResponse.Content.ReadAsStringAsync();
+        Assert.Matches(@"^Purged [0-9]* records$", purgeMessage);
+        using HttpResponseMessage purgeAgainResponse = await HttpHelpers.InvokeHttpTrigger("PurgeOrchestrationHistory", $"?purgeEndTime={purgeEndTime.ToString("o")}");
+        string purgeAgainMessage = await purgeAgainResponse.Content.ReadAsStringAsync();
+        Assert.Matches(@"^Purged 0 records$", purgeAgainMessage);
+        Assert.Equal(HttpStatusCode.OK, purgeAgainResponse.StatusCode);
     }
 }
