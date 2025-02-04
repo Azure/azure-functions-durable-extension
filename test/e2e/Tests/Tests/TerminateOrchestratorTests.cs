@@ -139,6 +139,7 @@ public class TerminateOrchestratorTests
 
         string? terminateResponseMessage = await terminateResponse.Content.ReadAsStringAsync();
         Assert.NotNull(terminateResponseMessage);
+        // Unclear error message - see https://github.com/Azure/azure-functions-durable-extension/issues/3027, will update this code when that bug is fixed
         Assert.Equal("Status(StatusCode=\"Unknown\", Detail=\"Exception was thrown by handler.\")", terminateResponseMessage);
     }
 
