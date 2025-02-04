@@ -20,24 +20,6 @@ public class TerminateOrchestratorTests
         _output = testOutputHelper;
     }
 
-    private static async Task AssertTerminateRequestFailsAsync(HttpResponseMessage terminateResponse)
-    {
-        Assert.Equal(HttpStatusCode.BadRequest, terminateResponse.StatusCode);
-
-        string? terminateResponseMessage = await terminateResponse.Content.ReadAsStringAsync();
-        Assert.NotNull(terminateResponseMessage);
-        Assert.Equal("Status(StatusCode=\"Unknown\", Detail=\"Exception was thrown by handler.\")", terminateResponseMessage);
-    }
-
-    private static async Task AssertTerminateRequestSucceedsAsync(HttpResponseMessage terminateResponse)
-    {
-        Assert.Equal(HttpStatusCode.OK, terminateResponse.StatusCode);
-
-        string? terminateResponseMessage = await terminateResponse.Content.ReadAsStringAsync();
-        Assert.NotNull(terminateResponseMessage);
-        Assert.Empty(terminateResponseMessage);
-    }
-
 
     [Fact]
     public async Task TerminateRunningOrchestration_ShouldSucceed()
@@ -149,5 +131,23 @@ public class TerminateOrchestratorTests
     {
         using HttpResponseMessage terminateResponse = await HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={Guid.NewGuid().ToString()}");
         await AssertTerminateRequestFailsAsync(terminateResponse);
+    }
+
+    private static async Task AssertTerminateRequestFailsAsync(HttpResponseMessage terminateResponse)
+    {
+        Assert.Equal(HttpStatusCode.BadRequest, terminateResponse.StatusCode);
+
+        string? terminateResponseMessage = await terminateResponse.Content.ReadAsStringAsync();
+        Assert.NotNull(terminateResponseMessage);
+        Assert.Equal("Status(StatusCode=\"Unknown\", Detail=\"Exception was thrown by handler.\")", terminateResponseMessage);
+    }
+
+    private static async Task AssertTerminateRequestSucceedsAsync(HttpResponseMessage terminateResponse)
+    {
+        Assert.Equal(HttpStatusCode.OK, terminateResponse.StatusCode);
+
+        string? terminateResponseMessage = await terminateResponse.Content.ReadAsStringAsync();
+        Assert.NotNull(terminateResponseMessage);
+        Assert.Empty(terminateResponseMessage);
     }
 }
