@@ -108,6 +108,15 @@ internal partial class FunctionsDurableClientProvider : IAsyncDisposable
             if (this.clients!.TryGetValue(key, out ClientHolder? holder))
             {
                 this.logger.LogTrace("DurableTaskClient resolved from cache");
+
+                EtwEventSource.Instance.ExtensionConfiguration(
+                    taskHub,
+                    connectionName,
+                    connectionName,
+                    $"Connected to '{connectionName}' with '{endpoint}', DurableTaskClient resolved from cache",
+                    "1.2.3-log"
+                    );
+
                 return holder.Client;
             }
         }
@@ -123,6 +132,14 @@ internal partial class FunctionsDurableClientProvider : IAsyncDisposable
             if (this.clients!.TryGetValue(key, out ClientHolder? holder))
             {
                 this.logger.LogTrace("DurableTaskClient resolved from cache");
+                
+                EtwEventSource.Instance.ExtensionConfiguration(
+                    taskHub,
+                    connectionName,
+                    connectionName,
+                    $"Connected to '{connectionName}' with '{endpoint}', DurableTaskClient resolved from cache",
+                    "1.2.3-log"
+                    );
                 return holder.Client;
             }
 
@@ -131,6 +148,15 @@ internal partial class FunctionsDurableClientProvider : IAsyncDisposable
                 endpoint,
                 taskHub,
                 connectionName);
+            
+            EtwEventSource.Instance.ExtensionConfiguration(
+                    taskHub,
+                    connectionName,
+                    connectionName,
+                    $"DurableTaskClient cache miss, Connected to '{connectionName}' with '{endpoint}, Taskhub: '{taskHub}'",
+                    "1.2.3-log"
+                    );
+
             GrpcChannel channel = CreateChannel(key);
             GrpcDurableTaskClientOptions options = new()
             {
@@ -144,6 +170,18 @@ internal partial class FunctionsDurableClientProvider : IAsyncDisposable
             holder = new(client, channel);
             this.clients[key] = holder;
             return client;
+        }
+        catch (Exception ex)
+        {
+            EtwEventSource.Instance.ExtensionConfiguration(
+                    taskHub,
+                    connectionName,
+                    connectionName,
+                    $"Error occurred while building grpc channel, trying connected to '{connectionName}' with '{endpoint}, Taskhub: '{taskHub}'. Exception Type: {ex.GetType()}, Exception Message: '{ex.Message}' ",
+                    "1.2.3-log"
+                    );
+            this.sync.ExitWriteLock();
+            throw;
         }
         finally
         {
