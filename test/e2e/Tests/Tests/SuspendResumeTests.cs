@@ -35,25 +35,30 @@ public class SuspendResumeTests
         var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
         Assert.Equal("Running", orchestrationDetails.RuntimeStatus);
 
-        using HttpResponseMessage suspendResponse = await HttpHelpers.InvokeHttpTrigger("SuspendInstance", $"?instanceId={instanceId}");
-        await AssertRequestSucceedsAsync(suspendResponse);
+        try
+        {
+            using HttpResponseMessage suspendResponse = await HttpHelpers.InvokeHttpTrigger("SuspendInstance", $"?instanceId={instanceId}");
+            await AssertRequestSucceedsAsync(suspendResponse);
 
-        Thread.Sleep(1000);
+            Thread.Sleep(1000);
 
-        orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
-        Assert.Equal("Suspended", orchestrationDetails.RuntimeStatus);
+            orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
+            Assert.Equal("Suspended", orchestrationDetails.RuntimeStatus);
 
-        Thread.Sleep(1000);
+            Thread.Sleep(1000);
 
-        using HttpResponseMessage resumeResponse = await HttpHelpers.InvokeHttpTrigger("ResumeInstance", $"?instanceId={instanceId}");
-        await AssertRequestSucceedsAsync(resumeResponse);
+            using HttpResponseMessage resumeResponse = await HttpHelpers.InvokeHttpTrigger("ResumeInstance", $"?instanceId={instanceId}");
+            await AssertRequestSucceedsAsync(resumeResponse);
 
-        Thread.Sleep(1000);
+            Thread.Sleep(1000);
 
-        orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
-        Assert.Equal("Running", orchestrationDetails.RuntimeStatus);
-
-        await TryTerminateInstanceAsync(instanceId);
+            orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
+            Assert.Equal("Running", orchestrationDetails.RuntimeStatus);
+        }
+        finally
+        {
+            await TryTerminateInstanceAsync(instanceId);
+        }
     }
 
     [Fact]
@@ -67,24 +72,29 @@ public class SuspendResumeTests
 
         Thread.Sleep(1000);
 
-        var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
-        Assert.Equal("Running", orchestrationDetails.RuntimeStatus);
+        try
+        {
+            var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
+            Assert.Equal("Running", orchestrationDetails.RuntimeStatus);
 
-        using HttpResponseMessage suspendResponse = await HttpHelpers.InvokeHttpTrigger("SuspendInstance", $"?instanceId={instanceId}");
-        await AssertRequestSucceedsAsync(suspendResponse);
+            using HttpResponseMessage suspendResponse = await HttpHelpers.InvokeHttpTrigger("SuspendInstance", $"?instanceId={instanceId}");
+            await AssertRequestSucceedsAsync(suspendResponse);
 
-        Thread.Sleep(1000);
+            Thread.Sleep(1000);
 
-        using HttpResponseMessage resumeResponse = await HttpHelpers.InvokeHttpTrigger("SuspendInstance", $"?instanceId={instanceId}");
-        await AssertRequestFailsAsync(resumeResponse);
+            using HttpResponseMessage resumeResponse = await HttpHelpers.InvokeHttpTrigger("SuspendInstance", $"?instanceId={instanceId}");
+            await AssertRequestFailsAsync(resumeResponse);
 
-        // Give some time for Core Tools to write logs out
-        Thread.Sleep(500);
+            // Give some time for Core Tools to write logs out
+            Thread.Sleep(500);
 
-        Assert.Contains(_fixture.TestLogs.CoreToolsLogs, x => x.Contains("Cannot suspend orchestration instance in the Suspended state.") &&
-                                                              x.Contains(instanceId));
-
-        await TryTerminateInstanceAsync(instanceId);
+            Assert.Contains(_fixture.TestLogs.CoreToolsLogs, x => x.Contains("Cannot suspend orchestration instance in the Suspended state.") &&
+                                                                  x.Contains(instanceId));
+        }
+        finally
+        {
+            await TryTerminateInstanceAsync(instanceId);
+        }
     }
 
 
@@ -98,22 +108,26 @@ public class SuspendResumeTests
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
 
         Thread.Sleep(1000);
+        try
+        {
+            var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
+            Assert.Equal("Running", orchestrationDetails.RuntimeStatus);
 
-        var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
-        Assert.Equal("Running", orchestrationDetails.RuntimeStatus);
+            Thread.Sleep(1000);
 
-        Thread.Sleep(1000);
+            using HttpResponseMessage resumeResponse = await HttpHelpers.InvokeHttpTrigger("ResumeInstance", $"?instanceId={instanceId}");
+            await AssertRequestFailsAsync(resumeResponse);
 
-        using HttpResponseMessage resumeResponse = await HttpHelpers.InvokeHttpTrigger("ResumeInstance", $"?instanceId={instanceId}");
-        await AssertRequestFailsAsync(resumeResponse);
+            // Give some time for Core Tools to write logs out
+            Thread.Sleep(500);
 
-        // Give some time for Core Tools to write logs out
-        Thread.Sleep(500);
-
-        Assert.Contains(_fixture.TestLogs.CoreToolsLogs, x => x.Contains("Cannot resume orchestration instance in the Running state.") &&
-                                                              x.Contains(instanceId));
-
-        await TryTerminateInstanceAsync(instanceId);
+            Assert.Contains(_fixture.TestLogs.CoreToolsLogs, x => x.Contains("Cannot resume orchestration instance in the Running state.") &&
+                                                                  x.Contains(instanceId));
+        }
+        finally
+        {
+            await TryTerminateInstanceAsync(instanceId);
+        }
     }
 
 
@@ -127,23 +141,27 @@ public class SuspendResumeTests
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
 
         Thread.Sleep(1000);
+        try
+        {
+            using HttpResponseMessage suspendResponse = await HttpHelpers.InvokeHttpTrigger("SuspendInstance", $"?instanceId={instanceId}");
+            await AssertRequestFailsAsync(suspendResponse);
 
-        using HttpResponseMessage suspendResponse = await HttpHelpers.InvokeHttpTrigger("SuspendInstance", $"?instanceId={instanceId}");
-        await AssertRequestFailsAsync(suspendResponse);
+            using HttpResponseMessage resumeResponse = await HttpHelpers.InvokeHttpTrigger("ResumeInstance", $"?instanceId={instanceId}");
+            await AssertRequestFailsAsync(resumeResponse);
 
-        using HttpResponseMessage resumeResponse = await HttpHelpers.InvokeHttpTrigger("ResumeInstance", $"?instanceId={instanceId}");
-        await AssertRequestFailsAsync(resumeResponse);
-
-        // Give some time for Core Tools to write logs out
-        Thread.Sleep(500);
+            // Give some time for Core Tools to write logs out
+            Thread.Sleep(500);
 
 
-        Assert.Contains(_fixture.TestLogs.CoreToolsLogs, x => x.Contains("Cannot suspend orchestration instance in the Completed state.") &&
-                                                              x.Contains(instanceId));
-        Assert.Contains(_fixture.TestLogs.CoreToolsLogs, x => x.Contains("Cannot resume orchestration instance in the Completed state.") &&
-                                                              x.Contains(instanceId));
-
-        await TryTerminateInstanceAsync(instanceId);
+            Assert.Contains(_fixture.TestLogs.CoreToolsLogs, x => x.Contains("Cannot suspend orchestration instance in the Completed state.") &&
+                                                                  x.Contains(instanceId));
+            Assert.Contains(_fixture.TestLogs.CoreToolsLogs, x => x.Contains("Cannot resume orchestration instance in the Completed state.") &&
+                                                                  x.Contains(instanceId));
+        }
+        finally
+        {
+            await TryTerminateInstanceAsync(instanceId);
+        }
     }
 
     private static async Task AssertRequestSucceedsAsync(HttpResponseMessage suspendResponse)
@@ -173,7 +191,7 @@ public class SuspendResumeTests
             using HttpResponseMessage terminateResponse = await HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={instanceId}");
             return true;
         }
-        catch (Exception ex) { }
+        catch (Exception) { }
         return false;
     }
 }
