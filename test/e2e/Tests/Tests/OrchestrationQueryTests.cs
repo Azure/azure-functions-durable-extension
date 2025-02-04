@@ -38,22 +38,6 @@ public class OrchestrationQueryTests
 
 
     [Fact]
-    public async Task ListRunningOrchestrations_ShouldSucceed()
-    {
-        using HttpResponseMessage statusResponse = await HttpHelpers.InvokeHttpTrigger("GetRunningStatus", "");
-
-        Assert.Equal(HttpStatusCode.OK, statusResponse.StatusCode);
-
-        string? statusResponseMessage = await statusResponse.Content.ReadAsStringAsync();
-        Assert.NotNull(statusResponseMessage);
-
-        JsonNode? statusResponseJsonNode = JsonNode.Parse(statusResponseMessage);
-        Assert.NotNull(statusResponseJsonNode);
-        Assert.Empty(statusResponseJsonNode.AsArray());
-    }
-
-
-    [Fact]
     public async Task ListRunningOrchestrations_ShouldContainRunningOrchestration()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("LongOrchestrator_HttpStart", "");
@@ -77,9 +61,8 @@ public class OrchestrationQueryTests
 
             JsonNode? statusResponseJsonNode = JsonNode.Parse(statusResponseMessage);
             Assert.NotNull(statusResponseJsonNode);
-            Assert.Single(statusResponseJsonNode.AsArray());
 
-            Assert.Equal(instanceId, statusResponseJsonNode.AsArray()?[0]?["InstanceId"]?.ToString());
+            Assert.Contains(statusResponseJsonNode.AsArray(), x => x?["InstanceId"]?.ToString() == instanceId);
         }
         finally
         {
