@@ -6,6 +6,7 @@ trigger:
     - main
     - dev
     - v2.x
+    - nytian/grpclog
 
 resources:
   repositories:
