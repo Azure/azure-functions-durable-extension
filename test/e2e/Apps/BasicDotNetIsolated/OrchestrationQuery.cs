@@ -10,8 +10,8 @@ using Microsoft.DurableTask.Client;
 namespace Microsoft.Azure.Durable.Tests.E2E;
 public static class OrchestrationQueryFunctions
 {
-    [Function(nameof(GetAllStatus))]
-    public static async Task<HttpResponseData> GetAllStatus(
+    [Function(nameof(GetAllInstances))]
+    public static async Task<HttpResponseData> GetAllInstances(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestData req,
         [DurableClient] DurableTaskClient client)
     {
@@ -32,14 +32,18 @@ public static class OrchestrationQueryFunctions
         }
     }
 
-    [Function(nameof(GetRunningStatus))]
-    public static async Task<HttpResponseData> GetRunningStatus(
+    [Function(nameof(GetRunningInstances))]
+    public static async Task<HttpResponseData> GetRunningInstances(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestData req,
         [DurableClient] DurableTaskClient client)
     {
         try 
         {
-            OrchestrationQuery filter = new OrchestrationQuery(Statuses: new List<OrchestrationRuntimeStatus> { OrchestrationRuntimeStatus.Running, OrchestrationRuntimeStatus.Pending, OrchestrationRuntimeStatus.Suspended });
+            OrchestrationQuery filter = new OrchestrationQuery(Statuses: new List<OrchestrationRuntimeStatus> { 
+                OrchestrationRuntimeStatus.Running, 
+                OrchestrationRuntimeStatus.Pending, 
+                OrchestrationRuntimeStatus.Suspended 
+            });
             var instances = client.GetAllInstancesAsync(filter);
 
             var response = req.CreateResponse(HttpStatusCode.OK);

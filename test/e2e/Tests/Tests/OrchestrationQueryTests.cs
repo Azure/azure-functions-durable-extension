@@ -25,7 +25,7 @@ public class OrchestrationQueryTests
     [Fact]
     public async Task ListAllOrchestrations_ShouldSucceed()
     {
-        using HttpResponseMessage statusResponse = await HttpHelpers.InvokeHttpTrigger("GetAllStatus", "");
+        using HttpResponseMessage statusResponse = await HttpHelpers.InvokeHttpTrigger("GetAllInstances", "");
 
         Assert.Equal(HttpStatusCode.OK, statusResponse.StatusCode);
 
@@ -53,7 +53,7 @@ public class OrchestrationQueryTests
             var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
             Assert.Equal("Running", orchestrationDetails.RuntimeStatus);
 
-            using HttpResponseMessage statusResponse = await HttpHelpers.InvokeHttpTrigger("GetRunningStatus", "");
+            using HttpResponseMessage statusResponse = await HttpHelpers.InvokeHttpTrigger("GetRunningInstances", "");
 
             Assert.Equal(HttpStatusCode.OK, statusResponse.StatusCode);
             string? statusResponseMessage = await statusResponse.Content.ReadAsStringAsync();
