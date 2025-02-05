@@ -30,7 +30,7 @@
 
     <!-- Version information -->
     <VersionPrefix>1.2.3</VersionPrefix>
-    <VersionSuffix>log</VersionSuffix>
+    <VersionSuffix>grpclog</VersionSuffix>
     <AssemblyVersion>$(VersionPrefix).0</AssemblyVersion>
     <!-- FileVersionRevision is expected to be set by the CI.  -->
     <FileVersion Condition="'$(FileVersionRevision)' != ''">$(VersionPrefix).$(FileVersionRevision)</FileVersion>

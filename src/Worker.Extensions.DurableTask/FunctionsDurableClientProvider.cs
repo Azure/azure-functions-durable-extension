@@ -116,7 +116,7 @@ internal partial class FunctionsDurableClientProvider : IAsyncDisposable
                     FunctionName: string.Empty,
                     InstanceId: string.Empty,
                     $"Connecion Name:  '{connectionName}',  Endpoint: '{endpoint}', DurableTaskClient resolved from cache with read",
-                    "1.2.3-log"
+                    "1.2.3-grpclog"
                     );
 
                 return holder.Client;
@@ -141,8 +141,8 @@ internal partial class FunctionsDurableClientProvider : IAsyncDisposable
                     SlotName: string.Empty,
                     FunctionName: string.Empty,
                     InstanceId: string.Empty,
-                    $"Connecion Name:  '{connectionName}',  Endpoint: '{endpoint}, DurableTaskClient resolved from cache",
-                    "1.2.3-log"
+                    $"Connecion Name:  '{connectionName}',  Endpoint: '{endpoint}, DurableTaskClient resolved from cache with write",
+                    "1.2.3-grpclog"
                     );
                 return holder.Client;
             }
@@ -160,7 +160,7 @@ internal partial class FunctionsDurableClientProvider : IAsyncDisposable
                     FunctionName: string.Empty,
                     InstanceId: string.Empty,
                     $"DurableTaskClient cache miss, creating new grpc channel : Connecion Name:  '{connectionName}',  Endpoint: '{endpoint}. Curernt Grpc channel count: '{this.clients.Count}'",
-                    "1.2.3-log"
+                    "1.2.3-grpclog"
                     );
 
             GrpcChannel channel = CreateChannel(key);
@@ -186,7 +186,7 @@ internal partial class FunctionsDurableClientProvider : IAsyncDisposable
                     FunctionName: string.Empty,
                     InstanceId: string.Empty,
                     $"Error occurred while constructing grpc channel. ConnectionName: '{connectionName}', Endpoint: '{endpoint}'. Exception Type: {ex.GetType()}, Exception Message: '{ex.Message}' ",
-                    "1.2.3-log"
+                    "1.2.3-grpclog"
                     );
             throw;
         }
