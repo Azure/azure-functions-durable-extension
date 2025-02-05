@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using DurableTask.AzureStorage.Monitoring;
@@ -20,7 +21,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly DurableTaskMetricsProvider durableTaskMetricsProvider;
 
         public DurableTaskScaleMonitor(
-            string id,
+            string functionId,
             string hubName,
             ILogger logger,
             DurableTaskMetricsProvider durableTaskMetricsProvider)
@@ -30,8 +31,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.durableTaskMetricsProvider = durableTaskMetricsProvider;
 
             // Scalers in Durable Functions are shared for all functions in the same task hub.
-            // So instead of using a function ID, we use the task hub name as the basis for the descriptor ID.
-            this.scaleMonitorDescriptor = new ScaleMonitorDescriptor(id: id, functionId: id);
+            this.scaleMonitorDescriptor = new ScaleMonitorDescriptor(id: $"{functionId}-DurableTask-{hubName ?? "default"}".ToLower(CultureInfo.InvariantCulture), functionId: functionId);
         }
 
         public ScaleMonitorDescriptor Descriptor

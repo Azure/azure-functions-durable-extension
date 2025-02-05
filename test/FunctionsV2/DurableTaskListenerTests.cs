@@ -12,6 +12,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
     public class DurableTaskListenerTests
     {
+        private static string hubName = "DurableTaskHub";
         private readonly string functionId = "DurableTaskTriggerFunctionId";
         private readonly FunctionName functionName = new FunctionName("DurableTaskTriggerFunctionName");
         private readonly DurableTaskExtension config;
@@ -37,7 +38,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             IScaleMonitor scaleMonitor = this.listener.GetMonitor();
 
             Assert.Equal(typeof(DurableTaskScaleMonitor), scaleMonitor.GetType());
-            Assert.Equal($"DurableTask-AzureStorage:DurableTaskHub", scaleMonitor.Descriptor.Id);
+            Assert.Equal($"{this.functionId}-DurableTask-{hubName}".ToLower(), scaleMonitor.Descriptor.Id);
 
             IScaleMonitor scaleMonitor2 = this.listener.GetMonitor();
 
@@ -47,7 +48,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         private static DurableTaskExtension GetDurableTaskConfig()
         {
             var options = new DurableTaskOptions();
-            options.HubName = "DurableTaskHub";
+            options.HubName = hubName;
             options.WebhookUriProviderOverride = () => new Uri("https://sampleurl.net");
             var wrappedOptions = new OptionsWrapper<DurableTaskOptions>(options);
             var nameResolver = TestHelpers.GetTestNameResolver();
