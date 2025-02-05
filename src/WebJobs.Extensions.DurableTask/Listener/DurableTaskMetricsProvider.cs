@@ -16,6 +16,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly string hubName;
         private readonly ILogger logger;
         private readonly StorageAccountClientProvider storageAccountClientProvider;
+        private PerformanceHeartbeat heartbeat;
+        private DateTime heartbeatTimeStamp;
 
         private DisconnectedPerformanceMonitor performanceMonitor;
 
@@ -29,6 +31,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.logger = logger;
             this.performanceMonitor = performanceMonitor;
             this.storageAccountClientProvider = storageAccountClientProvider;
+            this.heartbeat = null;
+            this.heartbeatTimeStamp = DateTime.MinValue;
         }
 
         public virtual async Task<DurableTaskTriggerMetrics> GetMetricsAsync()
@@ -36,26 +40,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             DurableTaskTriggerMetrics metrics = new DurableTaskTriggerMetrics();
 
             // Durable stores its own metrics, so we just collect them here
-            PerformanceHeartbeat heartbeat = null;
             try
             {
                 DisconnectedPerformanceMonitor performanceMonitor = this.GetPerformanceMonitor();
-                heartbeat = await performanceMonitor.PulseAsync();
+
+                // We only want to call PulseAsync every 5 seconds
+                if (this.heartbeat == null || DateTime.UtcNow > this.heartbeatTimeStamp.AddSeconds(5))
+                {
+                    this.heartbeat = await performanceMonitor.PulseAsync();
+                    this.heartbeatTimeStamp = DateTime.UtcNow;
+                }
             }
             catch (Exception e) when (e.InnerException is RequestFailedException)
             {
                 this.logger.LogWarning("{details}. HubName: {hubName}.", e.ToString(), this.hubName);
             }
 
-            if (heartbeat != null)
+            if (this.heartbeat != null)
             {
-                metrics.PartitionCount = heartbeat.PartitionCount;
-                metrics.ControlQueueLengths = JsonConvert.SerializeObject(heartbeat.ControlQueueLengths);
-                metrics.ControlQueueLatencies = JsonConvert.SerializeObject(heartbeat.ControlQueueLatencies);
-                metrics.WorkItemQueueLength = heartbeat.WorkItemQueueLength;
-                if (heartbeat.WorkItemQueueLatency > TimeSpan.Zero)
+                metrics.PartitionCount = this.heartbeat.PartitionCount;
+                metrics.ControlQueueLengths = JsonConvert.SerializeObject(this.heartbeat.ControlQueueLengths);
+                metrics.ControlQueueLatencies = JsonConvert.SerializeObject(this.heartbeat.ControlQueueLatencies);
+                metrics.WorkItemQueueLength = this.heartbeat.WorkItemQueueLength;
+                if (this.heartbeat.WorkItemQueueLatency > TimeSpan.Zero)
                 {
-                    metrics.WorkItemQueueLatency = heartbeat.WorkItemQueueLatency.ToString();
+                    metrics.WorkItemQueueLatency = this.heartbeat.WorkItemQueueLatency.ToString();
                 }
             }
 

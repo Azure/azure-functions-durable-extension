@@ -15,7 +15,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
     - uses: actions/checkout@v2
 
@@ -73,11 +73,19 @@ jobs:
     # when building the smoke test app in docker, causing the build to fail. This is a temporary workaround until the
     # root cause is identified and fixed.
 
+    # Due to a known issue with class-based orchestrators, this test fails to discover the orchestrator definition. 
+    # Should re-enable once this bug is fixed: https://github.com/microsoft/durabletask-dotnet/issues/247
+    # - name: Run smoke tests (Hello Cities)
+    #   shell: pwsh
+    #   run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
+    #     cd ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated && func host start --port 7071 &
+    #     ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated/run-smoke-tests.ps1 -HttpStartPath api/StartHelloCitiesTyped
+        
     - name: Run smoke tests (Hello Cities)
       shell: pwsh
       run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
         cd ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated && func host start --port 7071 &
-        ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated/run-smoke-tests.ps1 -HttpStartPath api/StartHelloCitiesTyped
+        ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated/run-smoke-tests.ps1 -HttpStartPath api/StartHelloCitiesUntyped
 
     - name: Run smoke tests (Process Exit)
       shell: pwsh

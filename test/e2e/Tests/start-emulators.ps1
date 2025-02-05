@@ -104,13 +104,13 @@ if (!$SkipStorageEmulator)
         if ($IsWindows)
         {
             npm install -g azurite
-            mkdir "./azurite"
+            New-Item -Path "./azurite" -ItemType Directory -ErrorAction SilentlyContinue
             Start-Process azurite.cmd -WorkingDirectory "./azurite" -ArgumentList "--silent"
         }
         else
         {
             sudo npm install -g azurite
-            sudo mkdir azurite
+            New-Item -Path "./azurite" -ItemType Directory -ErrorAction SilentlyContinue
             sudo azurite --silent --location azurite --debug azurite\debug.log &
         }
 
