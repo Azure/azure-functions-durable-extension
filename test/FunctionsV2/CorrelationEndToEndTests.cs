@@ -200,10 +200,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             string siteNameEnvironmentVarName = "WEBSITE_SITE_NAME";
             string siteNameEnvironmentVarValue = TestSiteName;
 
-            Mock<INameResolver> mockNameResolver = GetNameResolverMock(new[]
-            {
-                (siteNameEnvironmentVarName, siteNameEnvironmentVarValue)
-            });
+            var mockNameResolver = GetNameResolverMock(new[] { (siteNameEnvironmentVarName, siteNameEnvironmentVarValue) });
 
             OptionsWrapper<DurableTaskOptions> optionsWrapper = new OptionsWrapper<DurableTaskOptions>(options);
 
