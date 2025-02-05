@@ -109,11 +109,13 @@ internal partial class FunctionsDurableClientProvider : IAsyncDisposable
             {
                 this.logger.LogTrace("DurableTaskClient resolved from cache");
 
-                EtwEventSource.Instance.ExtensionConfiguration(
+                EtwEventSource.Instance.ExtensionInformationalEvent(
                     taskHub,
-                    connectionName,
-                    connectionName,
-                    $"Connected to '{connectionName}' with '{endpoint}', DurableTaskClient resolved from cache",
+                    AppName: string.Empty,
+                    SlotName: string.Empty,
+                    FunctionName: string.Empty,
+                    InstanceId: string.Empty,
+                    $"Connecion Name:  '{connectionName}',  Endpoint: '{endpoint}', DurableTaskClient resolved from cache with read",
                     "1.2.3-log"
                     );
 
@@ -132,12 +134,14 @@ internal partial class FunctionsDurableClientProvider : IAsyncDisposable
             if (this.clients!.TryGetValue(key, out ClientHolder? holder))
             {
                 this.logger.LogTrace("DurableTaskClient resolved from cache");
-                
-                EtwEventSource.Instance.ExtensionConfiguration(
+
+                EtwEventSource.Instance.ExtensionInformationalEvent(
                     taskHub,
-                    connectionName,
-                    connectionName,
-                    $"Connected to '{connectionName}' with '{endpoint}', DurableTaskClient resolved from cache",
+                    AppName: string.Empty,
+                    SlotName: string.Empty,
+                    FunctionName: string.Empty,
+                    InstanceId: string.Empty,
+                    $"Connecion Name:  '{connectionName}',  Endpoint: '{endpoint}, DurableTaskClient resolved from cache",
                     "1.2.3-log"
                     );
                 return holder.Client;
@@ -148,12 +152,14 @@ internal partial class FunctionsDurableClientProvider : IAsyncDisposable
                 endpoint,
                 taskHub,
                 connectionName);
-            
-            EtwEventSource.Instance.ExtensionConfiguration(
+
+            EtwEventSource.Instance.ExtensionInformationalEvent(
                     taskHub,
-                    connectionName,
-                    connectionName,
-                    $"DurableTaskClient cache miss, Connected to '{connectionName}' with '{endpoint}, Taskhub: '{taskHub}'",
+                    AppName: string.Empty,
+                    SlotName: string.Empty,
+                    FunctionName: string.Empty,
+                    InstanceId: string.Empty,
+                    $"DurableTaskClient cache miss, constructing for Endpoint: Connecion Name:  '{connectionName}',  Endpoint: '{endpoint}",
                     "1.2.3-log"
                     );
 
@@ -165,6 +171,16 @@ internal partial class FunctionsDurableClientProvider : IAsyncDisposable
                 EnableEntitySupport = this.options.EnableEntitySupport,
             };
 
+            EtwEventSource.Instance.ExtensionInformationalEvent(
+                    taskHub,
+                    AppName: string.Empty,
+                    SlotName: string.Empty,
+                    FunctionName: string.Empty,
+                    InstanceId: string.Empty,
+                    $"Created new grpc channel, channel state '{channel.State}'",
+                    "1.2.3-log"
+                    );
+
             ILogger logger = this.loggerFactory.CreateLogger<GrpcDurableTaskClient>();
             GrpcDurableTaskClient client = new(taskHub, options, logger);
             holder = new(client, channel);
@@ -173,11 +189,13 @@ internal partial class FunctionsDurableClientProvider : IAsyncDisposable
         }
         catch (Exception ex)
         {
-            EtwEventSource.Instance.ExtensionConfiguration(
+            EtwEventSource.Instance.ExtensionInformationalEvent(
                     taskHub,
-                    connectionName,
-                    connectionName,
-                    $"Error occurred while building grpc channel, trying connected to '{connectionName}' with '{endpoint}, Taskhub: '{taskHub}'. Exception Type: {ex.GetType()}, Exception Message: '{ex.Message}' ",
+                    AppName: string.Empty,
+                    SlotName: string.Empty,
+                    FunctionName: string.Empty,
+                    InstanceId: string.Empty,
+                    $"Error occurred while constructing grpc channel. ConnectionName: '{connectionName}', Endpoint: '{endpoint}'. Exception Type: {ex.GetType()}, Exception Message: '{ex.Message}' ",
                     "1.2.3-log"
                     );
             this.sync.ExitWriteLock();
