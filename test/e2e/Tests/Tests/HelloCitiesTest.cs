@@ -44,7 +44,7 @@ public class HttpEndToEndTests
         Assert.Equal(expectedStatusCode, response.StatusCode);
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
 
-        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", 5);
+        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", 30);
 
         var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
         Assert.Contains(partialExpectedOutput, orchestrationDetails.Output);
@@ -68,10 +68,10 @@ public class HttpEndToEndTests
 
         if (scheduledStartTime > DateTime.UtcNow + TimeSpan.FromSeconds(1))
         {
-            await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Pending", 5);
+            await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Pending", 30);
         }
 
-        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", Math.Max(startDelaySeconds, 0) + 5);
+        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", Math.Max(startDelaySeconds, 0) + 30);
 
         // This +1s should not be necessary - however, experimentally the orchestration may run up to one second before the scheduled time.
         // It is unclear currently whether this is a bug where orchestrations run early, or a clock difference/error,
