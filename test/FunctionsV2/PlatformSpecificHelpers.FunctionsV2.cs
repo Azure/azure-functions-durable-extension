@@ -38,7 +38,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             IDurableHttpMessageHandlerFactory durableHttpMessageHandler,
             ILifeCycleNotificationHelper lifeCycleNotificationHelper,
             IMessageSerializerSettingsFactory serializerSettingsFactory,
-            Action<ITelemetry> onSend,
             bool addDurableClientFactory,
             ITypeLocator typeLocator,
             Action<ScaleOptions> configureScaleOptions = null)

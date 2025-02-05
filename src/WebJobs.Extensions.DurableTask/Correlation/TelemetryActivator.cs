@@ -22,9 +22,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
         private readonly DurableTaskOptions options;
         private readonly INameResolver nameResolver;
         private TelemetryClient telemetryClient;
-#pragma warning disable SA1401 // Fields should be private
-        internal IAsyncDisposable TelemetryModule;
-#pragma warning restore SA1401 // Fields should be private
 
         /// <summary>
         /// Constructor for initializing Distributed Tracing.
@@ -36,6 +33,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
             this.options = options.Value;
             this.nameResolver = nameResolver;
         }
+
+        internal IAsyncDisposable TelemetryModule { get; set; }
 
         /// <inheritdoc/>
         public ValueTask DisposeAsync()

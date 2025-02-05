@@ -188,7 +188,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 bool extendedSessions,
                 string protocol)
         {
-            ConcurrentQueue<ITelemetry> sendItems = new ConcurrentQueue<ITelemetry>();
             TraceOptions traceOptions = new TraceOptions()
             {
                 DistributedTracingEnabled = true,
@@ -212,7 +211,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             TestTelemetryChannel testTelemetryChannel = new TestTelemetryChannel();
             telemetryConfiguration.TelemetryChannel = testTelemetryChannel;
 
-            TelemetryActivator activator = new TelemetryActivator(optionsWrapper, mockNameResolver.Object);
+            TelemetryClient telemetryClient = new TelemetryClient(telemetryConfiguration);
+
+            using TelemetryActivator activator = new TelemetryActivator(optionsWrapper, mockNameResolver.Object);
 
             activator.Initialize(telemetryConfiguration);
 
@@ -230,7 +231,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
 
             // Flush the telemetry client
-            TelemetryClient telemetryClient = new TelemetryClient(telemetryConfiguration);
             telemetryClient.Flush();
             await Task.Delay(1000);
 
