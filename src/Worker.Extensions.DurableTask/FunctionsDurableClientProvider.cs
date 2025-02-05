@@ -159,7 +159,7 @@ internal partial class FunctionsDurableClientProvider : IAsyncDisposable
                     SlotName: string.Empty,
                     FunctionName: string.Empty,
                     InstanceId: string.Empty,
-                    $"DurableTaskClient cache miss, constructing for Endpoint: Connecion Name:  '{connectionName}',  Endpoint: '{endpoint}",
+                    $"DurableTaskClient cache miss, creating new grpc channel : Connecion Name:  '{connectionName}',  Endpoint: '{endpoint}. Curernt Grpc channel count: '{this.clients.Count}'",
                     "1.2.3-log"
                     );
 
@@ -170,16 +170,6 @@ internal partial class FunctionsDurableClientProvider : IAsyncDisposable
                 DataConverter = this.options.DataConverter,
                 EnableEntitySupport = this.options.EnableEntitySupport,
             };
-
-            EtwEventSource.Instance.ExtensionInformationalEvent(
-                    taskHub,
-                    AppName: string.Empty,
-                    SlotName: string.Empty,
-                    FunctionName: string.Empty,
-                    InstanceId: string.Empty,
-                    $"Created new grpc channel, channel state '{channel.State}'",
-                    "1.2.3-log"
-                    );
 
             ILogger logger = this.loggerFactory.CreateLogger<GrpcDurableTaskClient>();
             GrpcDurableTaskClient client = new(taskHub, options, logger);
@@ -198,7 +188,6 @@ internal partial class FunctionsDurableClientProvider : IAsyncDisposable
                     $"Error occurred while constructing grpc channel. ConnectionName: '{connectionName}', Endpoint: '{endpoint}'. Exception Type: {ex.GetType()}, Exception Message: '{ex.Message}' ",
                     "1.2.3-log"
                     );
-            this.sync.ExitWriteLock();
             throw;
         }
         finally
