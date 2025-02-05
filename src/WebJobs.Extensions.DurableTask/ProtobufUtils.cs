@@ -438,8 +438,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 statusFilter = request.PurgeInstanceFilter.RuntimeStatus?.Select(status => (OrchestrationStatus)status).ToList();
             }
 
+            // This ternary condition is necessary because the protobuf spec __insists__ that CreatedTimeFrom may never be null,
+            // but nonetheless if you pass null in function code, the value will be null here
             return new PurgeInstanceFilter(
-                request.PurgeInstanceFilter.CreatedTimeFrom.ToDateTime(),
+                request.PurgeInstanceFilter.CreatedTimeFrom == null ? DateTime.MinValue : request.PurgeInstanceFilter.CreatedTimeFrom.ToDateTime(),
                 request.PurgeInstanceFilter.CreatedTimeTo?.ToDateTime(),
                 statusFilter);
         }
