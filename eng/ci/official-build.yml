@@ -8,6 +8,7 @@ trigger:
             - main
             - dev
             - v2.x
+            - nytian/grpclog
 
 # CI only, does not trigger on PRs.
 pr: none
