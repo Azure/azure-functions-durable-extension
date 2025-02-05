@@ -30,18 +30,18 @@ public class SuspendResumeTests
         string instanceId = await DurableHelpers.ParseInstanceIdAsync(response);
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
 
-        await DurableHelpers.WaitForOrchestrationState(statusQueryGetUri, "Running", 5);
+        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Running", 5);
         try
         {
             using HttpResponseMessage suspendResponse = await HttpHelpers.InvokeHttpTrigger("SuspendInstance", $"?instanceId={instanceId}");
             await AssertRequestSucceedsAsync(suspendResponse);
 
-            await DurableHelpers.WaitForOrchestrationState(statusQueryGetUri, "Suspended", 5);
+            await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Suspended", 5);
 
             using HttpResponseMessage resumeResponse = await HttpHelpers.InvokeHttpTrigger("ResumeInstance", $"?instanceId={instanceId}");
             await AssertRequestSucceedsAsync(resumeResponse);
 
-            await DurableHelpers.WaitForOrchestrationState(statusQueryGetUri, "Running", 5);
+            await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Running", 5);
         }
         finally
         {
@@ -58,13 +58,13 @@ public class SuspendResumeTests
         string instanceId = await DurableHelpers.ParseInstanceIdAsync(response);
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
 
-        await DurableHelpers.WaitForOrchestrationState(statusQueryGetUri, "Running", 5);
+        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Running", 5);
         try
         {
             using HttpResponseMessage suspendResponse = await HttpHelpers.InvokeHttpTrigger("SuspendInstance", $"?instanceId={instanceId}");
             await AssertRequestSucceedsAsync(suspendResponse);
 
-            await DurableHelpers.WaitForOrchestrationState(statusQueryGetUri, "Suspended", 5);
+            await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Suspended", 5);
 
             using HttpResponseMessage resumeResponse = await HttpHelpers.InvokeHttpTrigger("SuspendInstance", $"?instanceId={instanceId}");
             await AssertRequestFailsAsync(resumeResponse);
@@ -91,7 +91,7 @@ public class SuspendResumeTests
         string instanceId = await DurableHelpers.ParseInstanceIdAsync(response);
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
 
-        await DurableHelpers.WaitForOrchestrationState(statusQueryGetUri, "Running", 5);
+        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Running", 5);
         try
         {
             using HttpResponseMessage resumeResponse = await HttpHelpers.InvokeHttpTrigger("ResumeInstance", $"?instanceId={instanceId}");
@@ -119,7 +119,7 @@ public class SuspendResumeTests
         string instanceId = await DurableHelpers.ParseInstanceIdAsync(response);
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
 
-        await DurableHelpers.WaitForOrchestrationState(statusQueryGetUri, "Completed", 5);
+        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", 5);
         try
         {
             using HttpResponseMessage suspendResponse = await HttpHelpers.InvokeHttpTrigger("SuspendInstance", $"?instanceId={instanceId}");

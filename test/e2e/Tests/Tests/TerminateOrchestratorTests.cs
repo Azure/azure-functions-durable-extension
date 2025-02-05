@@ -30,12 +30,12 @@ public class TerminateOrchestratorTests
         string instanceId = await DurableHelpers.ParseInstanceIdAsync(response);
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
 
-        await DurableHelpers.WaitForOrchestrationState(statusQueryGetUri, "Running", 5);
+        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Running", 5);
 
         using HttpResponseMessage terminateResponse = await HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={instanceId}");
         await AssertTerminateRequestSucceedsAsync(terminateResponse);
 
-        await DurableHelpers.WaitForOrchestrationState(statusQueryGetUri, "Terminated", 5);
+        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Terminated", 5);
     }
 
 
@@ -49,12 +49,12 @@ public class TerminateOrchestratorTests
         string instanceId = await DurableHelpers.ParseInstanceIdAsync(response);
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
 
-        await DurableHelpers.WaitForOrchestrationState(statusQueryGetUri, "Pending", 5);
+        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Pending", 5);
 
         using HttpResponseMessage terminateResponse = await HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={instanceId}");
         await AssertTerminateRequestSucceedsAsync(terminateResponse);
 
-        await DurableHelpers.WaitForOrchestrationState(statusQueryGetUri, "Terminated", 5);
+        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Terminated", 5);
     }
 
 
@@ -67,12 +67,12 @@ public class TerminateOrchestratorTests
         string instanceId = await DurableHelpers.ParseInstanceIdAsync(response);
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
 
-        await DurableHelpers.WaitForOrchestrationState(statusQueryGetUri, "Running", 5);
+        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Running", 5);
 
         using HttpResponseMessage terminateResponse = await HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={instanceId}");
         await AssertTerminateRequestSucceedsAsync(terminateResponse);
 
-        await DurableHelpers.WaitForOrchestrationState(statusQueryGetUri, "Terminated", 5);
+        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Terminated", 5);
 
         using HttpResponseMessage terminateAgainResponse = await HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={instanceId}");
         await AssertTerminateRequestFailsAsync(terminateAgainResponse);
@@ -94,7 +94,7 @@ public class TerminateOrchestratorTests
         string instanceId = await DurableHelpers.ParseInstanceIdAsync(response);
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
 
-        await DurableHelpers.WaitForOrchestrationState(statusQueryGetUri, "Completed", 5);
+        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", 5);
 
         using HttpResponseMessage terminateResponse = await HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={instanceId}");
         await AssertTerminateRequestFailsAsync(terminateResponse);

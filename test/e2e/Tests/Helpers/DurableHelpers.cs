@@ -52,7 +52,7 @@ internal class DurableHelpers
         return new OrchestrationStatusDetails(statusQueryResponseString);
     }
 
-    internal static async Task WaitForOrchestrationState(string statusQueryGetUri, string desiredState, int maxTimeoutSeconds)
+    internal static async Task WaitForOrchestrationStateAsync(string statusQueryGetUri, string desiredState, int maxTimeoutSeconds)
     {
         DateTime timeoutTime = DateTime.Now + TimeSpan.FromSeconds(maxTimeoutSeconds);
         while (DateTime.Now < timeoutTime)

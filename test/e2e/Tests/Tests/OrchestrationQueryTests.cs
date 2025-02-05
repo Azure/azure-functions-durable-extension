@@ -46,7 +46,7 @@ public class OrchestrationQueryTests
         string instanceId = await DurableHelpers.ParseInstanceIdAsync(response);
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
 
-        await DurableHelpers.WaitForOrchestrationState(statusQueryGetUri, "Running", 5);
+        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Running", 5);
         try
         {
             using HttpResponseMessage statusResponse = await HttpHelpers.InvokeHttpTrigger("GetRunningInstances", "");
