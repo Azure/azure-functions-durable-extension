@@ -87,20 +87,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                         {
                             serviceCollection.AddSingleton(serializerSettingsFactory);
                         }
-
-                        if (onSend != null)
-                        {
-                            serviceCollection.AddSingleton<ITelemetryModule>(serviceProvider =>
-                            {
-                                var durableTaskOptions = serviceProvider.GetService<IOptions<DurableTaskOptions>>();
-                                var nameResolver = serviceProvider.GetService<INameResolver>();
-                                var telemetryActivator = new TelemetryActivator(durableTaskOptions, nameResolver)
-                                {
-                                    OnSend = onSend,
-                                };
-                                return telemetryActivator;
-                            });
-                        }
                     });
 
             // if a configureScaleOptions action is provided, then we're probably trying to test the host's scaling logic

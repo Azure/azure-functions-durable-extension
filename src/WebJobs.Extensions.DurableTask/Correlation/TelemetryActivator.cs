@@ -22,7 +22,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
         private readonly DurableTaskOptions options;
         private readonly INameResolver nameResolver;
         private TelemetryClient telemetryClient;
-        private IAsyncDisposable telemetryModule;
+#pragma warning disable SA1401 // Fields should be private
+        internal IAsyncDisposable TelemetryModule;
+#pragma warning restore SA1401 // Fields should be private
 
         /// <summary>
         /// Constructor for initializing Distributed Tracing.
@@ -35,22 +37,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
             this.nameResolver = nameResolver;
         }
 
-        /// <summary>
-        /// OnSend is an action that enable to hook of sending telemetry.
-        /// You can use this property for testing.
-        /// </summary>
-        public Action<ITelemetry> OnSend { get; set; } = null;
-
         /// <inheritdoc/>
         public ValueTask DisposeAsync()
         {
-            return this.telemetryModule?.DisposeAsync() ?? default;
+            return this.TelemetryModule?.DisposeAsync() ?? default;
         }
 
         /// <inheritdoc/>
         public void Dispose()
         {
-            this.telemetryModule?.DisposeAsync().AsTask().GetAwaiter().GetResult();
+            this.TelemetryModule?.DisposeAsync().AsTask().GetAwaiter().GetResult();
         }
 
         /// <summary>
@@ -69,7 +65,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
                 {
                     DurableTelemetryModule module = new DurableTelemetryModule();
                     module.Initialize(configuration);
-                    this.telemetryModule = module;
+                    this.TelemetryModule = module;
                 }
                 else
                 {
