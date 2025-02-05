@@ -8,6 +8,7 @@ using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.DurableTask.Client;
 
 namespace Microsoft.Azure.Durable.Tests.E2E;
+
 public static class SuspendResumeOrchestration
 {
     [Function("SuspendInstance")]

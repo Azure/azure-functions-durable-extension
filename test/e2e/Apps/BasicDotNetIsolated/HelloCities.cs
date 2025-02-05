@@ -8,6 +8,7 @@ using Microsoft.DurableTask.Client;
 using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.Durable.Tests.E2E;
+
 public static class HelloCities
 {
     [Function(nameof(HelloCities))]
