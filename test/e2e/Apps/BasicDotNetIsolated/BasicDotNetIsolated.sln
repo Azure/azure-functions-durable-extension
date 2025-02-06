@@ -5,14 +5,6 @@ VisualStudioVersion = 17.5.002.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "app", "app.csproj", "{A3D6D881-0115-409E-92F0-3D50FB152524}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "obj", "obj", "{44B4C292-28D2-4963-89FE-41DDC7C13E97}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Debug", "Debug", "{CF64E527-9C6F-447E-AD05-0EE52407CCF1}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "net8.0", "net8.0", "{9ABF536C-4F1B-42F5-AAFE-7AD88832DBDB}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WorkerExtensions", "obj\Debug\net8.0\WorkerExtensions\WorkerExtensions.csproj", "{65AF45AC-6495-4740-BB7C-67BD125DF158}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -30,11 +22,6 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
-	EndGlobalSection
-	GlobalSection(NestedProjects) = preSolution
-		{CF64E527-9C6F-447E-AD05-0EE52407CCF1} = {44B4C292-28D2-4963-89FE-41DDC7C13E97}
-		{9ABF536C-4F1B-42F5-AAFE-7AD88832DBDB} = {CF64E527-9C6F-447E-AD05-0EE52407CCF1}
-		{65AF45AC-6495-4740-BB7C-67BD125DF158} = {9ABF536C-4F1B-42F5-AAFE-7AD88832DBDB}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {D4D85C8B-ADB6-47BE-A565-B37D31B6FCD5}

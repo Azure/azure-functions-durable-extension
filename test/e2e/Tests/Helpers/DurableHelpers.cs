@@ -9,6 +9,13 @@ internal class DurableHelpers
 {
     static readonly HttpClient _httpClient = new HttpClient();
 
+    static readonly List<string> finalStates = new List<string>()
+    {
+        "Completed",
+        "Terminated",
+        "Failed"
+    };
+
     internal class OrchestrationStatusDetails
     {
         public string RuntimeStatus { get; set; } = string.Empty;
@@ -50,6 +57,25 @@ internal class DurableHelpers
         string? statusQueryResponseString = await statusQueryResponse.Content.ReadAsStringAsync();
 
         return new OrchestrationStatusDetails(statusQueryResponseString);
+    }
+
+    internal static async Task WaitForOrchestrationStateAsync(string statusQueryGetUri, string desiredState, int maxTimeoutSeconds)
+    {
+        DateTime timeoutTime = DateTime.Now + TimeSpan.FromSeconds(maxTimeoutSeconds);
+        while (DateTime.Now < timeoutTime)
+        {
+            var currentStatus = await GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
+            if (currentStatus.RuntimeStatus == desiredState)
+            {
+                return;
+            }
+            if (finalStates.Contains(currentStatus.RuntimeStatus))
+            {
+                throw new TaskCanceledException($"Orchestration reached {currentStatus.RuntimeStatus} state when test was expecting {desiredState}");
+            }
+            await Task.Delay(100);
+        }
+        throw new TimeoutException($"Orchestration did not reach {desiredState} status within {maxTimeoutSeconds} seconds.");
     }
 
     private static string TokenizeAndGetValueFromKeyAsString(string? json, string key)

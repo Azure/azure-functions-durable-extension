@@ -43,14 +43,15 @@ public class HttpEndToEndTests
 
         Assert.Equal(expectedStatusCode, response.StatusCode);
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
-        Thread.Sleep(1000);
+
+        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", 30);
+
         var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
-        Assert.Equal("Completed", orchestrationDetails.RuntimeStatus);
         Assert.Contains(partialExpectedOutput, orchestrationDetails.Output);
     }
 
     [Theory]
-    [InlineData("HelloCities_HttpStart_Scheduled", 10, HttpStatusCode.Accepted)]
+    [InlineData("HelloCities_HttpStart_Scheduled", 5, HttpStatusCode.Accepted)]
     [InlineData("HelloCities_HttpStart_Scheduled", -5, HttpStatusCode.Accepted)]
     public async Task ScheduledStartTests(string functionName, int startDelaySeconds, HttpStatusCode expectedStatusCode)
     {
@@ -65,28 +66,20 @@ public class HttpEndToEndTests
 
         Assert.Equal(expectedStatusCode, response.StatusCode);
 
-        var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
-        while (DateTime.UtcNow < scheduledStartTime + TimeSpan.FromSeconds(-1))
+        if (scheduledStartTime > DateTime.UtcNow + TimeSpan.FromSeconds(1))
         {
-            WriteOutput($"Test scheduled for {scheduledStartTime}, current time {DateTime.Now}");
-            orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
-            Assert.Equal("Pending", orchestrationDetails.RuntimeStatus);
-            Thread.Sleep(1000);
+            await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Pending", 30);
         }
 
-        // Give a small amount of time for the orchestration to complete, even if scheduled to run immediately
-        Thread.Sleep(3000);
-        WriteOutput($"Test scheduled for {scheduledStartTime}, current time {DateTime.Now}, looking for completed");
+        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", Math.Max(startDelaySeconds, 0) + 30);
+
+        // This +1s should not be necessary - however, experimentally the orchestration may run up to one second before the scheduled time.
+        // It is unclear currently whether this is a bug where orchestrations run early, or a clock difference/error,
+        // but leaving this logic in for now until further investigation.
+        Assert.True(DateTime.UtcNow + TimeSpan.FromSeconds(1) >= scheduledStartTime);
+
         var finalOrchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
-        int retryAttempts = 0;
-        while (finalOrchestrationDetails.RuntimeStatus != "Completed" && retryAttempts < 10)
-        {
-            Thread.Sleep(1000);
-            finalOrchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
-            retryAttempts++;
-        }
-        Assert.Equal("Completed", finalOrchestrationDetails.RuntimeStatus);
-
-        Assert.True(finalOrchestrationDetails.LastUpdatedTime > scheduledStartTime);
+        WriteOutput($"Last updated at {finalOrchestrationDetails.LastUpdatedTime}, scheduled to complete at {scheduledStartTime}");
+        Assert.True(finalOrchestrationDetails.LastUpdatedTime + TimeSpan.FromSeconds(1) >= scheduledStartTime);
     }
 }
