@@ -29,15 +29,14 @@ internal class DurableTaskFunctionsMiddleware : IFunctionsWorkerMiddleware
             await RunEntityAsync(functionContext, triggerBinding, next);
             return;
         }
-        try
+
+        if (IsActivityTrigger(functionContext, out triggerBinding))
         {
-            await next(functionContext);
+            await RunActivityAsync(functionContext, triggerBinding, next);
             return;
         }
-        catch (Exception ex)
-        {
-            throw new DurableSerializationException(ex);
-        }
+
+        await next(functionContext);
     }
 
     private static bool IsOrchestrationTrigger(
@@ -103,5 +102,34 @@ internal class DurableTaskFunctionsMiddleware : IFunctionsWorkerMiddleware
 
         await next(context);
         context.GetInvocationResult().Value = dispatcher.Result;
+    }
+
+    private static bool IsActivityTrigger(
+        FunctionContext context, [NotNullWhen(true)] out BindingMetadata? activityTriggerBinding)
+    {
+        foreach (BindingMetadata binding in context.FunctionDefinition.InputBindings.Values)
+        {
+            if (string.Equals(binding.Type, "activityTrigger", StringComparison.OrdinalIgnoreCase))
+            {
+                activityTriggerBinding = binding;
+                return true;
+            }
+        }
+
+        activityTriggerBinding = null;
+        return false;
+    }
+
+    private static async Task RunActivityAsync(FunctionContext functionContext, BindingMetadata triggerBinding, FunctionExecutionDelegate next)
+    {
+        try
+        {
+            await next(functionContext);
+            return;
+        }
+        catch (Exception ex)
+        {
+            throw new DurableSerializationException(ex);
+        }
     }
 }
