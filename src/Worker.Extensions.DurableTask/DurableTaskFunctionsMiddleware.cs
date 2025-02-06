@@ -4,6 +4,7 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
+using Microsoft.Azure.Functions.Worker.Extensions.DurableTask.Exceptions;
 using Microsoft.Azure.Functions.Worker.Middleware;
 using Microsoft.DurableTask.Worker.Grpc;
 
@@ -15,19 +16,28 @@ namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
 internal class DurableTaskFunctionsMiddleware : IFunctionsWorkerMiddleware
 {
     /// <inheritdoc />
-    public Task Invoke(FunctionContext functionContext, FunctionExecutionDelegate next)
+    public async Task Invoke(FunctionContext functionContext, FunctionExecutionDelegate next)
     {
         if (IsOrchestrationTrigger(functionContext, out BindingMetadata? triggerBinding))
         {
-            return RunOrchestrationAsync(functionContext, triggerBinding, next);
+            await RunOrchestrationAsync(functionContext, triggerBinding, next);
+            return;
         }
 
         if (IsEntityTrigger(functionContext, out triggerBinding))
         {
-            return RunEntityAsync(functionContext, triggerBinding, next);
+            await RunEntityAsync(functionContext, triggerBinding, next);
+            return;
         }
-
-        return next(functionContext);
+        try
+        {
+            await next(functionContext);
+            return;
+        }
+        catch (Exception ex)
+        {
+            throw new DurableSerializationException(ex);
+        }
     }
 
     private static bool IsOrchestrationTrigger(

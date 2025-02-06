@@ -126,7 +126,7 @@ public static class ErrorHandlingOrchestration
             return false;
         });
 
-        var output = await context.CallActivityAsync<string>(nameof(RaiseException), context.InstanceId, options: options);
+        var output = await context.CallActivityAsync<string>(nameof(RaiseComplexException), context.InstanceId, options: options);
         return output;
     }
 
@@ -136,6 +136,20 @@ public static class ErrorHandlingOrchestration
         if (retryCount.AddOrUpdate(instanceId, 1, (key, oldValue) => oldValue + 1) == 1)
         {
             throw new InvalidOperationException("This activity failed");
+        }
+        else
+        {
+            return "Success";
+        }
+    }
+
+    [Function(nameof(RaiseComplexException))]
+    public static string RaiseComplexException([ActivityTrigger] string instanceId, FunctionContext executionContext)
+    {
+        if (retryCount.AddOrUpdate(instanceId, 1, (key, oldValue) => oldValue + 1) == 1)
+        {
+            var exception = new InvalidOperationException("This activity failed\r\nMore information about the failure", innerException: new OverflowException("Inner exception message"));
+            throw exception;
         }
         else
         {

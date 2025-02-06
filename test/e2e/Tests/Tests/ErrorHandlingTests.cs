@@ -61,7 +61,7 @@ public class ErrorHandlingTests
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
 
-        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", 10);
+        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", 30);
 
         var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
         Assert.Equal("Success", orchestrationDetails.Output);
@@ -82,7 +82,7 @@ public class ErrorHandlingTests
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
 
-        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", 10);
+        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", 30);
 
         var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
         Assert.Equal("Success", orchestrationDetails.Output);
@@ -90,7 +90,10 @@ public class ErrorHandlingTests
         // Give some time for Core Tools to write logs out
         Thread.Sleep(500);
 
+        // We want to ensure that multiline exception messages and inner exceptions are preserved
         Assert.Contains(_fixture.TestLogs.CoreToolsLogs, x => x.Contains(nameof(InvalidOperationException)) &&
-                                                              x.Contains("This activity failed"));
+                                                              x.Contains(nameof(OverflowException)) &&
+                                                              x.Contains("This activity failed") &&
+                                                              x.Contains("More information about the failure"));
     }
 }

@@ -13,6 +13,7 @@ using DurableTask.Core.Exceptions;
 using DurableTask.Core.History;
 using DurableTask.Core.Middleware;
 using Microsoft.Azure.WebJobs.Host.Executors;
+using Newtonsoft.Json;
 using P = Microsoft.DurableTask.Protobuf;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
@@ -606,6 +607,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 Exception rpcException = e.InnerException;
                 if (TryGetRpcExceptionFields(rpcException.Message, out string? exception, out string? stackTrace))
                 {
+                    if (TryExtractSerializedFailureDetailsFromException(exception, out FailureDetails? details) && details is not null)
+                    {
+                        return details;
+                    }
+
                     if (TrySplitExceptionTypeFromMessage(exception, out string? exceptionType, out string? exceptionMessage))
                     {
                         return new FailureDetails(exceptionType, exceptionMessage, stackTrace, innerFailure: null, isNonRetriable: false);
@@ -622,6 +628,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             // Don't recognize this exception - return it as-is
             return new FailureDetails(e);
+        }
+
+        private static FailureDetails? GetFailureDetails(P.TaskFailureDetails taskFailureDetails)
+        {
+            if (taskFailureDetails is null)
+            {
+                return null;
+            }
+
+            return new FailureDetails(
+                taskFailureDetails.ErrorType ?? string.Empty,
+                taskFailureDetails.ErrorMessage ?? string.Empty,
+                taskFailureDetails.StackTrace,
+                GetFailureDetails(taskFailureDetails.InnerFailure),
+                taskFailureDetails.IsNonRetriable);
         }
 
         private static bool TryGetRpcExceptionFields(
@@ -664,6 +685,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             return true;
+        }
+
+        private static bool TryExtractSerializedFailureDetailsFromException(string exception, out FailureDetails? details)
+        {
+            try
+            {
+                string serializedMessage = exception.Split('\n')[0];
+                P.TaskFailureDetails? taskFailureDetails = JsonConvert.DeserializeObject<P.TaskFailureDetails>(serializedMessage);
+                if (taskFailureDetails != null)
+                {
+                    details = GetFailureDetails(taskFailureDetails);
+                    return true;
+                }
+            }
+            catch (Exception)
+            {
+                // Apparently the exception message was not serialized by the worker middleware, continue
+            }
+
+            details = null;
+            return false;
         }
 
         private static bool TrySplitExceptionTypeFromMessage(
