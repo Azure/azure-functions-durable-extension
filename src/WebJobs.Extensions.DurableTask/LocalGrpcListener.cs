@@ -254,18 +254,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return newActivity;
             }
 
-            private static string CreateSpanName(string spanDescription, string? taskName, string? taskVersion)
-            {
-                if (!string.IsNullOrEmpty(taskVersion))
-                {
-                    return $"{spanDescription}:{taskName}@({taskVersion})";
-                }
-                else
-                {
-                    return $"{spanDescription}:{taskName}";
-                }
-            }
-
             public async override Task<P.RaiseEventResponse> RaiseEvent(P.RaiseEventRequest request, ServerCallContext context)
             {
                 await this.GetClient(context).RaiseEventAsync(request.InstanceId, request.Name, Raw(request.Input));
