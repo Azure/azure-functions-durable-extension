@@ -7,6 +7,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.ApplicationInsights.Channel;
+using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage;
@@ -37,7 +38,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             IDurableHttpMessageHandlerFactory durableHttpMessageHandler,
             ILifeCycleNotificationHelper lifeCycleNotificationHelper,
             IMessageSerializerSettingsFactory serializerSettingsFactory,
-            Action<ITelemetry> onSend,
             bool addDurableClientFactory,
             ITypeLocator typeLocator,
             Action<ScaleOptions> configureScaleOptions = null)
@@ -85,20 +85,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                         if (serializerSettingsFactory != null)
                         {
                             serviceCollection.AddSingleton(serializerSettingsFactory);
-                        }
-
-                        if (onSend != null)
-                        {
-                            serviceCollection.AddSingleton<ITelemetryActivator>(serviceProvider =>
-                            {
-                                var durableTaskOptions = serviceProvider.GetService<IOptions<DurableTaskOptions>>();
-                                var nameResolver = serviceProvider.GetService<INameResolver>();
-                                var telemetryActivator = new TelemetryActivator(durableTaskOptions, nameResolver)
-                                {
-                                    OnSend = onSend,
-                                };
-                                return telemetryActivator;
-                            });
                         }
                     });
 

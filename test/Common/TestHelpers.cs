@@ -63,7 +63,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             IMessageSerializerSettingsFactory serializerSettings = null,
             bool? localRpcEndpointEnabled = false,
             DurableTaskOptions options = null,
-            Action<ITelemetry> onSend = null,
             bool rollbackEntityOperationsOnExceptions = true,
             int entityMessageReorderWindowInMinutes = 30,
             string exactTaskHubName = null,
@@ -156,7 +155,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 durableHttpMessageHandler: durableHttpMessageHandler,
                 lifeCycleNotificationHelper: lifeCycleNotificationHelper,
                 serializerSettings: serializerSettings,
-                onSend: onSend,
                 addDurableClientFactory: addDurableClientFactory,
                 types: types,
                 configureScaleOptions: configureScaleOptions,
@@ -171,7 +169,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             IDurableHttpMessageHandlerFactory durableHttpMessageHandler = null,
             ILifeCycleNotificationHelper lifeCycleNotificationHelper = null,
             IMessageSerializerSettingsFactory serializerSettings = null,
-            Action<ITelemetry> onSend = null,
             Type durabilityProviderFactoryType = null,
             bool addDurableClientFactory = false,
             Action<ScaleOptions> configureScaleOptions = null,
@@ -202,8 +199,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 nameResolver: testNameResolver,
                 durableHttpMessageHandler: durableHttpMessageHandler,
                 lifeCycleNotificationHelper: lifeCycleNotificationHelper,
-                serializerSettingsFactory: serializerSettings,
-                onSend: onSend);
+                serializerSettingsFactory: serializerSettings);
         }
 
         public static IHost GetJobHostExternalEnvironment(IStorageServiceClientProviderFactory clientProviderFactory = null)
