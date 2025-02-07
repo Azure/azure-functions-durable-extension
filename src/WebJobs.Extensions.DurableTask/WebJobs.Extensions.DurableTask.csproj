@@ -6,7 +6,7 @@
     <RootNamespace>Microsoft.Azure.WebJobs.Extensions.DurableTask</RootNamespace>
     <MajorVersion>3</MajorVersion>
     <MinorVersion>0</MinorVersion>
-    <PatchVersion>2</PatchVersion>
+    <PatchVersion>3</PatchVersion>
     <VersionPrefix>$(MajorVersion).$(MinorVersion).$(PatchVersion)</VersionPrefix>
     <FileVersion>$(MajorVersion).$(MinorVersion).$(PatchVersion)</FileVersion>
     <AssemblyVersion>$(MajorVersion).0.0.0</AssemblyVersion>
@@ -50,6 +50,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Protobuf Include="**/*.proto" GrpcServices="Both" Access="Internal"  />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Azure.Identity" Version="1.12.1" />
     <PackageReference Include="Microsoft.Azure.WebJobs" Version="3.0.39" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.Rpc" Version="3.0.39" />
@@ -61,11 +65,11 @@
     <PackageReference Include="Microsoft.AspNetCore.Mvc.WebApiCompatShim" Version="2.2.0" />
     <PackageReference Include="Microsoft.Azure.DurableTask.ApplicationInsights" Version="0.2.0" />
     <!-- The gRPC dependencies in this package are not compatible with older frameworks, like .NET Core 2.x -->
-    <PackageReference Include="Microsoft.DurableTask.Grpc" Version="1.3.0" />
     <PackageReference Include="Grpc.Core" Version="2.46.6" /> <!-- Bring this in until we move to hosted RPC -->
     <!-- Build-time dependencies -->
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.*" PrivateAssets="All" />
     <PackageReference Include="StyleCop.Analyzers" Version="1.1.*" PrivateAssets="All" />
+    <PackageReference Include="Grpc.Tools" Version="2.49.0" PrivateAssets="All" />
   </ItemGroup>
 
   <ItemGroup>
