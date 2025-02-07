@@ -31,9 +31,8 @@ public class DistributedTracingTests
         ActivitySource.AddActivityListener(_activityListener);
     }
 
-    [Theory]
-    [InlineData("DistributedTracing_HttpStart")]
-    public async Task DistributedTracingTest(string functionName)
+    [Fact]
+    public async Task DistributedTracingTest()
     {
         // Start Activity
         ActivitySource activitySource = new ActivitySource("DistributedTracingTests");
@@ -41,7 +40,7 @@ public class DistributedTracingTests
 
         Assert.NotNull(activity);
 
-        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger(functionName, "");
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("DistributedTracing_HttpStart", "");
 
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
         var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
