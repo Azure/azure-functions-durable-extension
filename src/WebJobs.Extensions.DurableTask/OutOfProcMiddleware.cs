@@ -691,7 +691,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             try
             {
-                string serializedMessage = exception.Split('\n')[0];
+                if (exception[0] != '{')
+                {
+                    details = null;
+                    return false;
+                }
+
+                int newlineIndex = exception.IndexOf('\n');
+                string serializedMessage = newlineIndex < 0 ? exception : exception.Substring(0, newlineIndex).Trim();
                 P.TaskFailureDetails? taskFailureDetails = JsonConvert.DeserializeObject<P.TaskFailureDetails>(serializedMessage);
                 if (taskFailureDetails != null)
                 {

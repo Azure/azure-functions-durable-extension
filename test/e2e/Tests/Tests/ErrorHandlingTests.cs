@@ -24,7 +24,6 @@ public class ErrorHandlingTests
     public async Task OrchestratorWithUncaughtActivityException_ShouldFail()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("RethrowActivityException_HttpStart", "");
-        string actualMessage = await response.Content.ReadAsStringAsync();
 
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
@@ -37,10 +36,9 @@ public class ErrorHandlingTests
     }
 
     [Fact]
-    public async Task OrchestratorWithCaughtActivityException_ShouldSucced()
+    public async Task OrchestratorWithCaughtActivityException_ShouldSucceed()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("CatchActivityException_HttpStart", "");
-        string actualMessage = await response.Content.ReadAsStringAsync();
 
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
@@ -53,10 +51,9 @@ public class ErrorHandlingTests
     }
 
     [Fact]
-    public async Task OrchestratorWithRetriedActivityException_ShouldSucced()
+    public async Task OrchestratorWithRetriedActivityException_ShouldSucceed()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("RetryActivityException_HttpStart", "");
-        string actualMessage = await response.Content.ReadAsStringAsync();
 
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
@@ -74,10 +71,9 @@ public class ErrorHandlingTests
     }
 
     [Fact]
-    public async Task OrchestratorWithCustomRetriedActivityException_ShouldSucced()
+    public async Task OrchestratorWithCustomRetriedActivityException_ShouldSucceed()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("CustomRetryActivityException_HttpStart", "");
-        string actualMessage = await response.Content.ReadAsStringAsync();
 
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);

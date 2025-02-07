@@ -18,25 +18,9 @@ internal class DurableSerializationException : Exception
 
     public override string ToString()
     {
-        TaskFailureDetails? failureDetails = ExceptionToTaskFailureDetailsRecursive(this.FromException);
+        TaskFailureDetails? failureDetails = TaskFailureDetailsConverter.TaskFailureFromException(this.FromException);
         return JsonConvert.SerializeObject(failureDetails);
     }
 
     public override string? StackTrace => this.FromException.StackTrace;
-
-    private static TaskFailureDetails? ExceptionToTaskFailureDetailsRecursive(Exception? fromException)
-    {
-        if (fromException is null)
-        {
-            return null;
-        }
-        return new TaskFailureDetails()
-        {
-            ErrorType = fromException.GetType().FullName,
-            ErrorMessage = fromException.Message,
-            StackTrace = fromException.StackTrace,
-            InnerFailure = ExceptionToTaskFailureDetailsRecursive(fromException.InnerException),
-            IsNonRetriable = false
-        };
-    }
 }

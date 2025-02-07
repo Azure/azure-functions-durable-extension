@@ -39,7 +39,6 @@ public class HttpEndToEndTests
     public async Task HttpTriggerTests(string functionName, HttpStatusCode expectedStatusCode, string partialExpectedOutput)
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger(functionName, "");
-        string actualMessage = await response.Content.ReadAsStringAsync();
 
         Assert.Equal(expectedStatusCode, response.StatusCode);
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
@@ -60,7 +59,6 @@ public class HttpEndToEndTests
         string urlQueryString = $"?ScheduledStartTime={scheduledStartTime.ToString("o")}";
 
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger(functionName, urlQueryString);
-        string actualMessage = await response.Content.ReadAsStringAsync();
 
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
 
