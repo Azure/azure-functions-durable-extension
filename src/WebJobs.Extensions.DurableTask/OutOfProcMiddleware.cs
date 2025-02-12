@@ -596,7 +596,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         GetFailureDetails(result.Exception, out detailsParsedFromSerializedException)),
                 };
 
-                if (!detailsParsedFromSerializedException)
+                if (!detailsParsedFromSerializedException && this.extension.PlatformInformationService.GetWorkerRuntimeType() == WorkerRuntimeType.DotNetIsolated)
                 {
                     this.TraceHelper.ExtensionWarningEvent(
                         this.Options.HubName,
