@@ -8,11 +8,12 @@ using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.DurableTask;
 using Microsoft.DurableTask.Client;
+using Microsoft.DurableTask.Entities;
 using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.Durable.Tests.E2E;
 
-public static class ErrorHandlingOrchestration
+public static class ActivityErrorHandling
 {
     private static ConcurrentDictionary<string, int> retryCount = new ConcurrentDictionary<string, int>();
 
@@ -120,13 +121,16 @@ public static class ErrorHandlingOrchestration
         [OrchestrationTrigger] TaskOrchestrationContext context)
     {
         var options = TaskOptions.FromRetryHandler(retryContext => {
-            if (retryContext.LastFailure.IsCausedBy<InvalidOperationException>() && retryContext.LastAttemptNumber < 3) {
+            if (retryContext.LastFailure.IsCausedBy<InvalidOperationException>() && 
+                    retryContext.LastFailure.InnerFailure is not null && 
+                    retryContext.LastFailure.InnerFailure.IsCausedBy<OverflowException>() && 
+                    retryContext.LastAttemptNumber < 3) {
                 return true;
             }
             return false;
         });
 
-        var output = await context.CallActivityAsync<string>(nameof(RaiseComplexException), context.InstanceId, options: options);
+        string output = await context.CallActivityAsync<string>(nameof(RaiseComplexException), context.InstanceId, options: options);
         return output;
     }
 

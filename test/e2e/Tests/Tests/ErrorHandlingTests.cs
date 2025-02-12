@@ -36,6 +36,21 @@ public class ErrorHandlingTests
     }
 
     [Fact]
+    public async Task OrchestratorWithUncaughtEntityException_ShouldFail()
+    {
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("RethrowEntityException_HttpStart", "");
+
+        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
+        string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
+
+        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Failed", 30);
+
+        var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
+        Assert.StartsWith("Microsoft.DurableTask.Entities.EntityOperationFailedException", orchestrationDetails.Output);
+        Assert.Contains("This entity failed", orchestrationDetails.Output);
+    }
+
+    [Fact]
     public async Task OrchestratorWithCaughtActivityException_ShouldSucceed()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("CatchActivityException_HttpStart", "");
@@ -48,6 +63,26 @@ public class ErrorHandlingTests
         var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
         Assert.StartsWith("Task 'RaiseException' (#0) failed with an unhandled exception:", orchestrationDetails.Output);
         Assert.Contains("This activity failed", orchestrationDetails.Output);
+    }
+
+    [Fact]
+    public async Task OrchestratorWithCaughtEntityException_ShouldSucceed()
+    {
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("CatchEntityException_HttpStart", "");
+
+        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
+        string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
+
+        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", 30);
+
+        var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
+        Assert.StartsWith("Operation 'ThrowFirstTimeOnly' of entity '@counter@MyExceptionEntity' failed:", orchestrationDetails.Output);
+        Assert.Contains("This entity failed", orchestrationDetails.Output);
+        Assert.Contains("More information about the failure", orchestrationDetails.Output);
+
+        // For now, we deliberately do not return inner exception details on entity failure. 
+        // If this changes in the future, update this test. 
+        Assert.DoesNotContain("Inner exception message", orchestrationDetails.Output);
     }
 
     [Fact]
@@ -68,6 +103,31 @@ public class ErrorHandlingTests
 
         Assert.Contains(_fixture.TestLogs.CoreToolsLogs, x => x.Contains(nameof(InvalidOperationException)) &&
                                                               x.Contains("This activity failed"));
+    }
+
+    [Fact]
+    public async Task OrchestratorWithRetriedEntityException_ShouldSucceed()
+    {
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("RetryEntityException_HttpStart", "");
+
+        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
+        string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
+
+        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", 30);
+
+        var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
+        Assert.Equal("Success", orchestrationDetails.Output);
+
+        // Give some time for Core Tools to write logs out
+        Thread.Sleep(500);
+
+        // For entities, these logs are not emitted as one continuous log, but each line of the exception .ToString() is
+        // logged individually.
+        Assert.Contains(_fixture.TestLogs.CoreToolsLogs, x => x.Contains(nameof(InvalidOperationException)) &&
+                                                              x.Contains("This entity failed"));
+        Assert.Contains(_fixture.TestLogs.CoreToolsLogs, x => x.Contains("More information about the failure"));
+        Assert.Contains(_fixture.TestLogs.CoreToolsLogs, x => x.Contains(nameof(OverflowException)) &&
+                                                              x.Contains("Inner exception message"));
     }
 
     [Fact]

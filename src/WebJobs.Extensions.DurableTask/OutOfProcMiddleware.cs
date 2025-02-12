@@ -584,6 +584,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     isReplay: false,
                     scheduledEvent.EventId);
 
+                bool detailsParsedFromSerializedException;
+
                 activityResult = new ActivityExecutionResult
                 {
                     ResponseEvent = new TaskFailedEvent(
@@ -591,8 +593,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         taskScheduledId: scheduledEvent.EventId,
                         reason: $"Function '{functionName}' failed with an unhandled exception.",
                         details: null,
-                        GetFailureDetails(result.Exception)),
+                        GetFailureDetails(result.Exception, out detailsParsedFromSerializedException)),
                 };
+
+                if (!detailsParsedFromSerializedException)
+                {
+                    this.TraceHelper.ExtensionWarningEvent(
+                        this.Options.HubName,
+                        functionName.Name,
+                        instance.InstanceId,
+                        "Failure details not parsed from serialized exception details, worker failed to serialize exception");
+                }
             }
 
             // Send the result of the activity function to the DTFx dispatch pipeline.
@@ -600,8 +611,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             dispatchContext.SetProperty(activityResult);
         }
 
-        private static FailureDetails GetFailureDetails(Exception e)
+        private static FailureDetails GetFailureDetails(Exception e, out bool fromSerializedException)
         {
+            fromSerializedException = false;
             if (e.InnerException != null && e.InnerException.Message.StartsWith("Result:"))
             {
                 Exception rpcException = e.InnerException;
@@ -609,6 +621,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     if (TryExtractSerializedFailureDetailsFromException(exception, out FailureDetails? details) && details is not null)
                     {
+                        fromSerializedException = true;
                         return details;
                     }
 
@@ -708,7 +721,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             catch (Exception)
             {
-                // Apparently the exception message was not serialized by the worker middleware, continue
+                // Apparently the exception message was not serialized by the worker middleware, this will be logged in CallActivityAsync()
             }
 
             details = null;

@@ -16,27 +16,24 @@ namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
 internal class DurableTaskFunctionsMiddleware : IFunctionsWorkerMiddleware
 {
     /// <inheritdoc />
-    public async Task Invoke(FunctionContext functionContext, FunctionExecutionDelegate next)
+    public Task Invoke(FunctionContext functionContext, FunctionExecutionDelegate next)
     {
         if (IsOrchestrationTrigger(functionContext, out BindingMetadata? triggerBinding))
         {
-            await RunOrchestrationAsync(functionContext, triggerBinding, next);
-            return;
+            return RunOrchestrationAsync(functionContext, triggerBinding, next);
         }
 
         if (IsEntityTrigger(functionContext, out triggerBinding))
         {
-            await RunEntityAsync(functionContext, triggerBinding, next);
-            return;
+            return RunEntityAsync(functionContext, triggerBinding, next);
         }
 
         if (IsActivityTrigger(functionContext, out triggerBinding))
         {
-            await RunActivityAsync(functionContext, triggerBinding, next);
-            return;
+            return RunActivityAsync(functionContext, triggerBinding, next);
         }
 
-        await next(functionContext);
+        return next(functionContext);
     }
 
     private static bool IsOrchestrationTrigger(
