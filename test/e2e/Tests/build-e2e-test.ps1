@@ -13,7 +13,7 @@ param(
     $SkipStorageEmulator,
 
     [Switch]
-    $StartCosmosDBEmulator,
+    $StartMSSqlContainer,
 
     [Switch]
     $SkipCoreTools,
@@ -150,7 +150,7 @@ dotnet build app.csproj
 
 Set-Location $PSScriptRoot
 
-if ($SkipStorageEmulator -And -not $StartCosmosDBEmulator)
+if ($SkipStorageEmulator)
 {
   Write-Host
   Write-Host "---Skipping emulator startup---"
@@ -158,7 +158,29 @@ if ($SkipStorageEmulator -And -not $StartCosmosDBEmulator)
 }
 else 
 {
-  .\start-emulators.ps1 -SkipStorageEmulator:$SkipStorageEmulator -StartCosmosDBEmulator:$StartCosmosDBEmulator -EmulatorStartDir $ProjectTemporaryPath
+  .\start-emulators.ps1 -SkipStorageEmulator:$SkipStorageEmulator -EmulatorStartDir $ProjectTemporaryPath
+}
+
+if ($StartMSSqlContainer)
+{
+  $mssqlPassword = "IntentionallyExposedPassword1"
+  Write-Host "Pulling down the mcr.microsoft.com/mssql/server:2022-latest image..."
+  docker pull mcr.microsoft.com/mssql/server:2022-latest
+
+  # Start the SQL Server docker container with the specified edition
+  Write-Host "Starting SQL Server 2022-latest Express docker container on port 1433" -ForegroundColor DarkYellow
+  docker run --name mssql-server -e ACCEPT_EULA=Y -e "MSSQL_SA_PASSWORD=$mssqlPassword" -e "MSSQL_PID=Express" -p 1433:1433 -d mcr.microsoft.com/mssql/server:2022-latest
+
+  if ($LASTEXITCODE -ne 0) {
+      exit $LASTEXITCODE
+  }
+
+  # The container needs a bit more time before it can start accepting commands
+  Write-Host "Sleeping for 30 seconds to let the container finish initializing..." -ForegroundColor Yellow
+  Start-Sleep -Seconds 30
+
+  # Check to see what containers are running
+  docker ps
 }
 
 Set-Location $PSScriptRoot

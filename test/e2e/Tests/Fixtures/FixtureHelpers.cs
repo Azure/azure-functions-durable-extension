@@ -12,6 +12,8 @@ namespace Microsoft.Azure.Durable.Tests.DotnetIsolatedE2E;
 
 public static class FixtureHelpers
 {
+    private const string MSSQL_SA_PASSWORD = "IntentionallyExposedPassword1";
+
     public static Process GetFuncHostProcess(string appPath, bool enableAuth = false)
     {
         var cliPath = Path.Combine(Path.GetTempPath(), @"DurableTaskExtensionE2ETests/Azure.Functions.Cli/func");
@@ -78,6 +80,26 @@ public static class FixtureHelpers
             {
                 // Best effort
             }
+        }
+    }
+
+    internal static void AddDurableBackendEnvironmentVariables(Process funcProcess, ILogger testLogger)
+    {
+        string? durableBackendEnvVarValue = Environment.GetEnvironmentVariable("E2E_TEST_DURABLE_BACKEND");
+        Console.WriteLine($"E2E_TEST_DURABLE_BACKEND = {durableBackendEnvVarValue}");
+        switch ((durableBackendEnvVarValue ?? "").ToLowerInvariant())
+        {
+            case "azurestorage":
+                return;
+            case "mssql":
+                funcProcess.StartInfo.EnvironmentVariables["SQLDB_Connection"] = $"Server=localhost,1433;Database=DurableDB;User Id=sa;Password={MSSQL_SA_PASSWORD};";
+                funcProcess.StartInfo.EnvironmentVariables["AzureFunctionsJobHost__extensions__durableTask__storageProvider__type"] = "mssql";
+                funcProcess.StartInfo.EnvironmentVariables["AzureFunctionsJobHost__extensions__durableTask__storageProvider__connectionStringName"] = "SQLDB_Connection";
+                funcProcess.StartInfo.EnvironmentVariables["AzureFunctionsJobHost__extensions__durableTask__storageProvider__createDatabaseIfNotExists"] = "true";
+                return;
+            default:
+                testLogger.LogWarning("WARN: Environment variable E2E_TEST_DURABLE_BACKEND not set, tests configured for Azure Storage");
+                return;
         }
     }
 }

@@ -21,6 +21,7 @@ public class ErrorHandlingTests
     }
 
     [Fact]
+    [Trait("MSSQL", "Skip")] // This test fails for MSSQL until results are returned, as implemented here https://github.com/microsoft/durabletask-mssql/pull/286/files
     public async Task OrchestratorWithUncaughtActivityException_ShouldFail()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("RethrowActivityException_HttpStart", "");
@@ -36,6 +37,7 @@ public class ErrorHandlingTests
     }
 
     [Fact]
+    [Trait("MSSQL", "Skip")] // Durable Entities are not supported in MSSQL/Dotnet Isolated, see https://github.com/microsoft/durabletask-mssql/issues/205
     public async Task OrchestratorWithUncaughtEntityException_ShouldFail()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("RethrowEntityException_HttpStart", "");
@@ -66,6 +68,7 @@ public class ErrorHandlingTests
     }
 
     [Fact]
+    [Trait("MSSQL", "Skip")] // Durable Entities are not supported in MSSQL/Dotnet Isolated, see https://github.com/microsoft/durabletask-mssql/issues/205
     public async Task OrchestratorWithCaughtEntityException_ShouldSucceed()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("CatchEntityException_HttpStart", "");
@@ -106,6 +109,7 @@ public class ErrorHandlingTests
     }
 
     [Fact]
+    [Trait("MSSQL", "Skip")] // Durable Entities are not supported in MSSQL/Dotnet Isolated, see https://github.com/microsoft/durabletask-mssql/issues/205
     public async Task OrchestratorWithRetriedEntityException_ShouldSucceed()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("RetryEntityException_HttpStart", "");
