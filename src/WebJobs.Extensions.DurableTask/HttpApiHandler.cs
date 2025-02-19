@@ -11,6 +11,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Web;
 using DurableTask.Core;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Routing.Template;
@@ -295,7 +296,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     basePath = this.GetWebhookUri().AbsolutePath;
                 }
 
-                string path = "/" + request.RequestUri.AbsolutePath.Substring(basePath.Length).Trim('/');
+                string path = "/" + WebUtility.UrlDecode(request.RequestUri.AbsolutePath).Substring(basePath.Length).Trim('/');
                 var routeValues = new RouteValueDictionary();
                 if (StartOrchestrationRoute.TryMatch(path, routeValues))
                 {

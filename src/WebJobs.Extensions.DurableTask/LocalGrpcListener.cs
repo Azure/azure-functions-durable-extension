@@ -3,7 +3,9 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
+using System.Reflection;
 using System.Reflection.Metadata.Ecma335;
 using System.Threading;
 using System.Threading.Tasks;
@@ -15,7 +17,10 @@ using DurableTask.Core.Query;
 using DurableTask.Core.Serializing.Internal;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
+using Microsoft.ApplicationInsights.Extensibility.Implementation;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using DTCore = DurableTask.Core;
 using P = Microsoft.DurableTask.Protobuf;
 
@@ -154,23 +159,39 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 try
                 {
-                    string instanceId = request.InstanceId ?? Guid.NewGuid().ToString("N");
-                    TaskHubClient taskhubClient = new TaskHubClient(this.GetDurabilityProvider(context));
-                    OrchestrationInstance instance;
-
-                    // TODO: Ideally, we'd have a single method in the taskhubClient that can handle both scheduled and non-scheduled starts.
-                    // TODO: the type of `ScheduledStartTimestamp` is not nullable. Can we change it to `DateTime?` in the proto file?
-                    if (request.ScheduledStartTimestamp != null)
+                    // Create the orchestration instance
+                    var instance = new OrchestrationInstance
                     {
-                        instance = await taskhubClient.CreateScheduledOrchestrationInstanceAsync(
-                            name: request.Name, version: request.Version, instanceId: instanceId, input: Raw(request.Input), startAt: request.ScheduledStartTimestamp.ToDateTime());
-                    }
-                    else
-                    {
-                        instance = await taskhubClient.CreateOrchestrationInstanceAsync(request.Name, request.Version, instanceId, Raw(request.Input));
-                    }
+                        InstanceId = request.InstanceId ?? Guid.NewGuid().ToString("N"),
+                        ExecutionId = Guid.NewGuid().ToString(),
+                    };
 
-                    // TODO: should this not include the ExecutionId and other elements of the taskhubClient response?
+                    // Create the ExecutionStartedEvent
+                    ExecutionStartedEvent executionStartedEvent = new ExecutionStartedEvent(-1, request.Input)
+                    {
+                        Name = request.Name,
+                        Version = request.Version,
+                        OrchestrationInstance = instance,
+                        ScheduledStartTime = request.ScheduledStartTimestamp?.ToDateTime(),
+                    };
+
+                    // Get the parent trace context from CreateInstanceRequest
+                    string? traceParent = request.ParentTraceContext?.TraceParent;
+                    string? traceState = request.ParentTraceContext?.TraceState;
+
+                    // Create a new activity with the parent context
+                    ActivityContext.TryParse(traceParent, traceState, out ActivityContext parentActivityContext);
+                    using Activity? scheduleOrchestrationActivity = StartActivityForNewOrchestration(executionStartedEvent, parentActivityContext);
+
+                    // Schedule the orchestration
+                    await this.GetDurabilityProvider(context).CreateTaskOrchestrationAsync(
+                        new TaskMessage
+                        {
+                            Event = executionStartedEvent,
+                            OrchestrationInstance = instance,
+                        },
+                        this.GetStatusesNotToOverride());
+
                     return new P.CreateInstanceResponse
                     {
                         InstanceId = instance.InstanceId,
@@ -193,6 +214,44 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         message: $"Failed to start instanceId {request.InstanceId} due to internal exception.\n Exception trace: {ex}.");
                     throw new RpcException(new Status(StatusCode.Internal, $"Failed to start instance with ID {request.InstanceId}.\nInner Exception message: {ex.Message}."));
                 }
+            }
+
+            private OrchestrationStatus[] GetStatusesNotToOverride()
+            {
+                OverridableStates overridableStates = this.extension.Options.OverridableExistingInstanceStates;
+                return overridableStates.ToDedupeStatuses();
+            }
+
+            internal static Activity? StartActivityForNewOrchestration(ExecutionStartedEvent startEvent, ActivityContext parentTraceContext)
+            {
+                // Create the Activity Source for the WebJobs extension
+                ActivitySource activitySource = new ActivitySource("WebJobs.Extensions.DurableTask");
+
+                // Start the new activity to represent scheduling the orchestration
+                Activity? newActivity = activitySource.CreateActivity(
+                    name: Schema.SpanNames.CreateOrchestration(startEvent.Name, startEvent.Version),
+                    kind: ActivityKind.Producer,
+                    parentContext: parentTraceContext);
+
+                newActivity?.Start();
+
+                if (newActivity != null && !string.IsNullOrEmpty(newActivity.Id))
+                {
+                    newActivity.SetTag(Schema.Task.Type, TraceActivityConstants.Orchestration);
+                    newActivity.SetTag(Schema.Task.Name, startEvent.Name);
+                    newActivity.SetTag(Schema.Task.InstanceId, startEvent.OrchestrationInstance.InstanceId);
+                    newActivity.SetTag(Schema.Task.ExecutionId, startEvent.OrchestrationInstance.ExecutionId);
+
+                    if (!string.IsNullOrEmpty(startEvent.Version))
+                    {
+                        newActivity.SetTag(Schema.Task.Version, startEvent.Version);
+                    }
+
+                    // Set the parent trace context for the ExecutionStartedEvent
+                    startEvent.ParentTraceContext = new DTCore.Tracing.DistributedTraceContext(newActivity?.Id!, newActivity?.TraceStateString);
+                }
+
+                return newActivity;
             }
 
             public async override Task<P.RaiseEventResponse> RaiseEvent(P.RaiseEventRequest request, ServerCallContext context)

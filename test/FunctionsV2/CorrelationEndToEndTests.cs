@@ -11,12 +11,17 @@ using DurableTask.AzureStorage;
 using DurableTask.Core;
 using DurableTask.Core.Settings;
 using FluentAssertions.Collections;
+using Microsoft.ApplicationInsights;
 using Microsoft.ApplicationInsights.Channel;
 using Microsoft.ApplicationInsights.DataContracts;
+using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.ApplicationInsights.Extensibility.Implementation;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
+using Microsoft.Extensions.Options;
 using Moq;
 using Xunit;
 using Xunit.Abstractions;
@@ -42,7 +47,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [InlineData(true, "HttpCorrelationProtocol")]
         [InlineData(true, "W3CTraceContext")]
         [InlineData(false, "HttpCorrelationProtocol")]
-        public async Task SingleOrchestration_With_Activity(bool extendedSessions, string protocol)
+        public async Task SingleOrchestration_With_Activity_DTV1(bool extendedSessions, string protocol)
         {
             string[] orchestrationFunctionNames =
             {
@@ -76,7 +81,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [InlineData(true, "HttpCorrelationProtocol")]
         [InlineData(true, "W3CTraceContext")]
         [InlineData(false, "HttpCorrelationProtocol")]
-        public async Task CheckOperationName_RequestTelemetry_SingleOrchestration(bool extendedSessions, string protocol)
+        public async Task CheckOperationName_RequestTelemetry_SingleOrchestration_DTV1(bool extendedSessions, string protocol)
         {
             string[] orchestrationFunctionNames =
             {
@@ -104,7 +109,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [InlineData(true, "HttpCorrelationProtocol")]
         [InlineData(true, "W3CTraceContext")]
         [InlineData(false, "HttpCorrelationProtocol")]
-        public async Task CheckCloudRoleName_RequestTelemetry_SingleOrchestration(bool extendedSessions, string protocol)
+        public async Task CheckCloudRoleName_RequestTelemetry_SingleOrchestration_DTV1(bool extendedSessions, string protocol)
         {
             string[] orchestrationFunctionNames =
             {
@@ -183,7 +188,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 bool extendedSessions,
                 string protocol)
         {
-            ConcurrentQueue<ITelemetry> sendItems = new ConcurrentQueue<ITelemetry>();
             TraceOptions traceOptions = new TraceOptions()
             {
                 DistributedTracingEnabled = true,
@@ -191,20 +195,34 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             };
             DurableTaskOptions options = new DurableTaskOptions();
             options.Tracing = traceOptions;
-            var sendAction = new Action<ITelemetry>(
-                delegate(ITelemetry telemetry) { sendItems.Enqueue(telemetry); });
 
             string siteNameEnvironmentVarName = "WEBSITE_SITE_NAME";
             string siteNameEnvironmentVarValue = TestSiteName;
+
             var mockNameResolver = GetNameResolverMock(new[] { (siteNameEnvironmentVarName, siteNameEnvironmentVarValue) });
+
+            OptionsWrapper<DurableTaskOptions> optionsWrapper = new OptionsWrapper<DurableTaskOptions>(options);
+
+            TelemetryConfiguration telemetryConfiguration = new TelemetryConfiguration();
+            string connStringValue = "InstrumentationKey=xxxx;IngestionEndpoint =https://xxxx.applicationinsights.azure.com/;LiveEndpoint=https://xxxx.livediagnostics.monitor.azure.com/";
+            telemetryConfiguration.ConnectionString = connStringValue;
+
+            // Set up the custom telemetry channel
+            TestTelemetryChannel testTelemetryChannel = new TestTelemetryChannel();
+            telemetryConfiguration.TelemetryChannel = testTelemetryChannel;
+
+            TelemetryClient telemetryClient = new TelemetryClient(telemetryConfiguration);
+
+            using TelemetryActivator activator = new TelemetryActivator(optionsWrapper, mockNameResolver.Object);
+
+            activator.Initialize(telemetryConfiguration);
 
             using (var host = TestHelpers.GetJobHost(
                 this.loggerProvider,
                 testName,
                 extendedSessions,
                 options: options,
-                nameResolver: mockNameResolver.Object,
-                onSend: sendAction))
+                nameResolver: mockNameResolver.Object))
             {
                 await host.StartAsync();
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], input, this.output);
@@ -212,113 +230,54 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StopAsync();
             }
 
-            var sendItemList = this.ConvertTo(sendItems);
+            // Flush the telemetry client
+            telemetryClient.Flush();
+            await Task.Delay(1000);
+
+            // Get the telemetry items
+            ConcurrentQueue<ITelemetry> telemetryItems = testTelemetryChannel.TelemetryItems;
+
+            var sendItemList = this.ConvertTo(telemetryItems);
             var operationTelemetryList = sendItemList.OfType<OperationTelemetry>();
             var exceptionTelemetryList = sendItemList.OfType<ExceptionTelemetry>().ToList();
             var result = this.FilterOperationTelemetry(operationTelemetryList).ToList();
             return new Tuple<List<OperationTelemetry>, List<ExceptionTelemetry>>(result.CorrelationSort(), exceptionTelemetryList);
         }
 
-         /*
-         * End to end test that checks if a warning is logged when distributed tracing is
-         * enabled, but APPINSIGHTS_INSTRUMENTATIONKEY isn't set. The test also checks
-         * that the warning isn't logged when the environment variable is set.
-         */
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [InlineData(false, false, false)]
-        [InlineData(false, false, true)]
-        [InlineData(true, false, false)]
-        [InlineData(true, false, true)]
-        [InlineData(false, true, false)]
-        [InlineData(false, true, true)]
-        [InlineData(true, true, false)]
-        [InlineData(true, true, true)]
-        public void TelemetryClientSetup_AppInsights_Warnings(bool instrumentationKeyIsSet, bool connStringIsSet, bool extendedSessions)
+        [InlineData(true, DurableDistributedTracingVersion.None, false)]
+        [InlineData(true, DurableDistributedTracingVersion.V1, false)]
+        [InlineData(true, DurableDistributedTracingVersion.V2, true)]
+        [InlineData(false, DurableDistributedTracingVersion.V2, false)]
+        public void CheckDurableTelemetryModuleInitialization(bool enabled, DurableDistributedTracingVersion version, bool shouldInitializeDurableTelemetryModule)
         {
             TraceOptions traceOptions = new TraceOptions()
             {
-                DistributedTracingEnabled = true,
-                DistributedTracingProtocol = "W3CTraceContext",
+                DistributedTracingEnabled = enabled,
+                Version = version,
             };
 
             DurableTaskOptions options = new DurableTaskOptions();
             options.Tracing = traceOptions;
+            var optionsWrapper = new OptionsWrapper<DurableTaskOptions>(options);
 
-            string instKeyEnvVarName = "APPINSIGHTS_INSTRUMENTATIONKEY";
-            string connStringEnvVarName = "APPLICATIONINSIGHTS_CONNECTION_STRING";
-            string environmentVariableValue = "test value";
-            string connStringValue = "InstrumentationKey=xxxx;IngestionEndpoint =https://xxxx.applicationinsights.azure.com/;LiveEndpoint=https://xxxx.livediagnostics.monitor.azure.com/";
+            var nameResolverMock = new Mock<INameResolver>();
 
-            var mockNameResolver = GetNameResolverMock(new[] { (instKeyEnvVarName, string.Empty), (connStringEnvVarName, string.Empty) });
+            var telemetryConfiguration = new TelemetryConfiguration();
+            telemetryConfiguration.ConnectionString = "InstrumentationKey=xxxx;IngestionEndpoint =https://xxxx.applicationinsights.azure.com/;LiveEndpoint=https://xxxx.livediagnostics.monitor.azure.com/";
 
-            if (instrumentationKeyIsSet && connStringIsSet)
+            var activator = new TelemetryActivator(optionsWrapper, nameResolverMock.Object);
+
+            activator.Initialize(telemetryConfiguration);
+
+            if (shouldInitializeDurableTelemetryModule && version == DurableDistributedTracingVersion.V2)
             {
-                mockNameResolver = GetNameResolverMock(new[] { (instKeyEnvVarName, environmentVariableValue), (connStringEnvVarName, connStringValue) });
+                Assert.NotNull(activator.TelemetryModule);
             }
-            else if (instrumentationKeyIsSet)
+            else
             {
-                mockNameResolver = GetNameResolverMock(new[] { (instKeyEnvVarName, environmentVariableValue), (connStringEnvVarName, string.Empty) });
-            }
-            else if (connStringIsSet)
-            {
-                mockNameResolver = GetNameResolverMock(new[] { (instKeyEnvVarName, string.Empty), (connStringEnvVarName, connStringValue) });
-            }
-
-            using (var host = TestHelpers.GetJobHost(
-                this.loggerProvider,
-                "SingleOrchestration",
-                extendedSessions,
-                nameResolver: mockNameResolver.Object,
-                options: options))
-            {
-                string bothSettingsSetWarningMessage = "Both 'APPINSIGHTS_INSTRUMENTATIONKEY' and 'APPLICATIONINSIGHTS_CONNECTION_STRING' are defined in the current environment variables. Please specify one. We recommend specifying 'APPLICATIONINSIGHTS_CONNECTION_STRING'.";
-                var bothSettingsSetWarningLogMessage = this.loggerProvider.GetAllLogMessages().Where(l => l.FormattedMessage.StartsWith(bothSettingsSetWarningMessage));
-
-                string neitherSettingsSetWarningMessage = "'APPINSIGHTS_INSTRUMENTATIONKEY' or 'APPLICATIONINSIGHTS_CONNECTION_STRING' were not defined in the current environment variables, but distributed tracing is enabled. Please specify one. We recommend specifying 'APPLICATIONINSIGHTS_CONNECTION_STRING'.";
-                var neitherSettingsSetWarningLogMessage = this.loggerProvider.GetAllLogMessages().Where(l => l.FormattedMessage.StartsWith(neitherSettingsSetWarningMessage));
-
-                string settingUpTelemetryClientMessage = "Setting up the telemetry client...";
-                var settingUpTelemetryClientLogMessage = this.loggerProvider.GetAllLogMessages().Where(l => l.FormattedMessage.StartsWith(settingUpTelemetryClientMessage));
-
-                string readingInstrumentationKeyMessage = "Reading APPINSIGHTS_INSTRUMENTATIONKEY...";
-                var readingInstrumentationKeyLogMessage = this.loggerProvider.GetAllLogMessages().Where(l => l.FormattedMessage.StartsWith(readingInstrumentationKeyMessage));
-
-                string readingConnStringMessage = "Reading APPLICATIONINSIGHTS_CONNECTION_STRING...";
-                var readingConnStringLogMessage = this.loggerProvider.GetAllLogMessages().Where(l => l.FormattedMessage.StartsWith(readingConnStringMessage));
-
-                if (instrumentationKeyIsSet && connStringIsSet)
-                {
-                    Assert.Single(bothSettingsSetWarningLogMessage);
-                    Assert.Empty(neitherSettingsSetWarningLogMessage);
-                    Assert.Single(settingUpTelemetryClientLogMessage);
-                    Assert.Single(readingInstrumentationKeyLogMessage);
-                    Assert.Single(readingConnStringLogMessage);
-                }
-                else if (instrumentationKeyIsSet && !connStringIsSet)
-                {
-                    Assert.Empty(bothSettingsSetWarningLogMessage);
-                    Assert.Empty(neitherSettingsSetWarningLogMessage);
-                    Assert.Single(settingUpTelemetryClientLogMessage);
-                    Assert.Single(readingInstrumentationKeyLogMessage);
-                    Assert.Empty(readingConnStringLogMessage);
-                }
-                else if (!instrumentationKeyIsSet && connStringIsSet)
-                {
-                    Assert.Empty(bothSettingsSetWarningLogMessage);
-                    Assert.Empty(neitherSettingsSetWarningLogMessage);
-                    Assert.Single(settingUpTelemetryClientLogMessage);
-                    Assert.Empty(readingInstrumentationKeyLogMessage);
-                    Assert.Single(readingConnStringLogMessage);
-                }
-                else
-                {
-                    Assert.Empty(bothSettingsSetWarningLogMessage);
-                    Assert.Single(neitherSettingsSetWarningLogMessage);
-                    Assert.Single(settingUpTelemetryClientLogMessage);
-                    Assert.Empty(readingInstrumentationKeyLogMessage);
-                    Assert.Empty(readingConnStringLogMessage);
-                }
+                Assert.Null(activator.TelemetryModule);
             }
         }
 
@@ -423,5 +382,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     public class NonParallelCollectionDefinitionClass
     {
     }
+
+    public class TestTelemetryChannel : ITelemetryChannel
+    {
+        public ConcurrentQueue<ITelemetry> TelemetryItems { get; } = new ConcurrentQueue<ITelemetry>();
+
+        public bool? DeveloperMode { get; set; }
+
+        public string EndpointAddress { get; set; }
+
+        public void Send(ITelemetry item)
+        {
+            this.TelemetryItems.Enqueue(item);
+        }
+
+        public void Flush()
+        {
+            // No-op for testing
+        }
+
+        public void Dispose()
+        {
+            // No resources to dispose
+        }
+    }
+
 #pragma warning restore SA1402
 }

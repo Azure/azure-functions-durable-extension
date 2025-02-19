@@ -8,5 +8,13 @@
       },
       "enableLiveMetricsFilters": true
     }
+  },
+  "extensions": {
+    "durableTask": {
+      "tracing": {
+        "DistributedTracingEnabled": true,
+        "Version": "V2"
+      }
+    }
   }
 }
