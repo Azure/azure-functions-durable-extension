@@ -69,7 +69,7 @@ jobs:
       - name: Setup E2E tests
         shell: pwsh
         run: |
-          .\test\e2e\Tests\build-e2e-test.ps1 -StartMSSqlContainer -SkipStorageEmulator
+          .\test\e2e\Tests\build-e2e-test.ps1 -StartMSSqlContainer
 
       - name: Build
         working-directory: test/e2e/Tests
