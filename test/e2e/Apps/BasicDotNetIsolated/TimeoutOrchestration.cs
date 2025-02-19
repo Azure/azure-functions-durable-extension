@@ -1,9 +1,6 @@
 // Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
-using System.Collections.Concurrent;
-using System.Net;
-using Grpc.Core;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.DurableTask;
@@ -61,10 +58,7 @@ public static class TimeoutOrchestration
     [Function(nameof(LongActivity))]
     public static string LongActivity([ActivityTrigger] string instanceId, FunctionContext executionContext)
     {
-        for (int i = 0; i < 5; i++) 
-        {
-            Thread.Sleep(1000);
-        }
+        Thread.Sleep(5000);
         return "The activity function completed successfully";
     }
 }

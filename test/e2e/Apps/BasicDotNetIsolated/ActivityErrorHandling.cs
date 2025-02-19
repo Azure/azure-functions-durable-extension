@@ -2,20 +2,17 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System.Collections.Concurrent;
-using System.Net;
-using Grpc.Core;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.DurableTask;
 using Microsoft.DurableTask.Client;
-using Microsoft.DurableTask.Entities;
 using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.Durable.Tests.E2E;
 
 public static class ActivityErrorHandling
 {
-    private static ConcurrentDictionary<string, int> retryCount = new ConcurrentDictionary<string, int>();
+    private static ConcurrentDictionary<string, int> globalRetryCount = new ConcurrentDictionary<string, int>();
 
     [Function("RethrowActivityException_HttpStart")]
     public static async Task<HttpResponseData> RethrowHttpStart(
@@ -39,7 +36,7 @@ public static class ActivityErrorHandling
         [DurableClient] DurableTaskClient client,
         FunctionContext executionContext)
     {
-        ILogger logger = executionContext.GetLogger("RethrowActivityException_HttpStart");
+        ILogger logger = executionContext.GetLogger("CatchActivityException_HttpStart");
 
         string instanceId = await client.ScheduleNewOrchestrationInstanceAsync(
             nameof(CatchActivityException));
@@ -137,7 +134,7 @@ public static class ActivityErrorHandling
     [Function(nameof(RaiseException))]
     public static string RaiseException([ActivityTrigger] string instanceId, FunctionContext executionContext)
     {
-        if (retryCount.AddOrUpdate(instanceId, 1, (key, oldValue) => oldValue + 1) == 1)
+        if (globalRetryCount.AddOrUpdate(instanceId, 1, (key, oldValue) => oldValue + 1) == 1)
         {
             throw new InvalidOperationException("This activity failed");
         }
@@ -150,7 +147,7 @@ public static class ActivityErrorHandling
     [Function(nameof(RaiseComplexException))]
     public static string RaiseComplexException([ActivityTrigger] string instanceId, FunctionContext executionContext)
     {
-        if (retryCount.AddOrUpdate(instanceId, 1, (key, oldValue) => oldValue + 1) == 1)
+        if (globalRetryCount.AddOrUpdate(instanceId, 1, (key, oldValue) => oldValue + 1) == 1)
         {
             var exception = new InvalidOperationException("This activity failed\r\nMore information about the failure", innerException: new OverflowException("Inner exception message"));
             throw exception;
