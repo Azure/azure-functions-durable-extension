@@ -69,7 +69,7 @@ jobs:
       - name: Setup E2E tests
         shell: pwsh
         run: |
-          echo "MSSQL_SA_PASSWORD=$([Guid]::NewGuid())" >> $env:GITHUB_ENV
+          $env:MSSQL_SA_PASSWORD = "$([Guid]::NewGuid())"
           .\test\e2e\Tests\build-e2e-test.ps1 -StartMSSqlContainer
 
       - name: Build
