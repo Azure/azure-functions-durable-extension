@@ -6,9 +6,6 @@
 
 [CmdletBinding()]
 param(
-    [switch]
-    $Clean,
-
     [Switch]
     $SkipStorageEmulator,
 
@@ -19,7 +16,7 @@ param(
     $SkipCoreTools,
 
     [Switch]
-    $SkipBuildOnPack
+    $SkipBuild
 )
 
 $ErrorActionPreference = "Stop"
@@ -28,7 +25,6 @@ $ProjectBaseDirectory = "$PSScriptRoot\..\..\..\"
 $ProjectTemporaryPath = Join-Path ([System.IO.Path]::GetTempPath()) "DurableTaskExtensionE2ETests"
 New-Item -Path $ProjectTemporaryPath -ItemType Directory -ErrorAction SilentlyContinue
 $WebJobsExtensionProjectDirectory = Join-Path $ProjectBaseDirectory "src\WebJobs.Extensions.DurableTask"
-$WorkerExtensionProjectDirectory = Join-Path $ProjectBaseDirectory "src\Worker.Extensions.DurableTask"
 $E2EAppProjectDirectory = Join-Path $ProjectBaseDirectory "test\e2e\Apps\BasicDotNetIsolated"
 
 $LocalNugetCacheDirectory = $env:NUGET_PACKAGES
@@ -101,52 +97,55 @@ else
   Write-Host "------"
 }
 
-Write-Host "Removing old packages from test app"
+if (!$SkipBuild)
+{
+  Write-Host "Removing old packages from test app"
 
-$AppPackageLocation = Join-Path $E2EAppProjectDirectory 'packages'
-if (!(Test-Path $AppPackageLocation)) {
-  New-Item -Path $AppPackageLocation -ItemType Directory -ErrorAction SilentlyContinue
-}
-$AppPackageLocation = Resolve-Path $AppPackageLocation
-Get-ChildItem -Path $AppPackageLocation -Include * -File -Recurse | ForEach-Object { $_.Delete()}
-
-Write-Host "Building WebJobs extension project"
-
-$BuildOutputLocation = Join-Path $WebJobsExtensionProjectDirectory 'out'
-if (!(Test-Path $BuildOutputLocation)) {
-  New-Item -Path $BuildOutputLocation -ItemType Directory -ErrorAction SilentlyContinue
-}
-$BuildOutputLocation = Resolve-Path $BuildOutputLocation
-Get-ChildItem -Path $BuildOutputLocation -Include * -File -Recurse | ForEach-Object { $_.Delete()}
-dotnet build -c Debug "$WebJobsExtensionProjectDirectory\WebJobs.Extensions.DurableTask.csproj" --output $BuildOutputLocation
-
-Write-Host "Moving nupkg from WebJobs extension to $AppPackageLocation"
-Set-Location $BuildOutputLocation
-dotnet nuget push *.nupkg --source $AppPackageLocation
-
-Write-Host "Updating app .csproj to reference built package versions"
-Set-Location $E2EAppProjectDirectory
-$files = Get-ChildItem -Path ./packages -Include * -File -Recurse
-$files | ForEach-Object {
-  if ($_.Name -match 'Microsoft.Azure.WebJobs.Extensions.DurableTask')
-  {
-    $webJobsExtensionVersion = $_.Name -replace 'Microsoft.Azure.WebJobs.Extensions.DurableTask\.|\.nupkg'
-
-    Write-Host "Removing cached version $webJobsExtensionVersion of WebJobs extension from nuget cache, if exists"
-    $cachedVersionFolders = Get-ChildItem -Path (Join-Path $LocalNugetCacheDirectory "microsoft.azure.webjobs.extensions.durabletask") -Directory -ErrorAction Continue
-    $cachedVersionFolders | ForEach-Object {
-      if ($_.Name -eq $webJobsExtensionVersion)
-      {
-        Write-Host "Removing cached version $webJobsExtensionVersion from nuget cache"
-        Remove-Item -Recurse -Force $_.FullName -ErrorAction Stop
+  $AppPackageLocation = Join-Path $E2EAppProjectDirectory 'packages'
+  if (!(Test-Path $AppPackageLocation)) {
+    New-Item -Path $AppPackageLocation -ItemType Directory -ErrorAction SilentlyContinue
+  }
+  $AppPackageLocation = Resolve-Path $AppPackageLocation
+  Get-ChildItem -Path $AppPackageLocation -Include * -File -Recurse | ForEach-Object { $_.Delete()}
+  
+  Write-Host "Building WebJobs extension project"
+  
+  $BuildOutputLocation = Join-Path $WebJobsExtensionProjectDirectory 'out'
+  if (!(Test-Path $BuildOutputLocation)) {
+    New-Item -Path $BuildOutputLocation -ItemType Directory -ErrorAction SilentlyContinue
+  }
+  $BuildOutputLocation = Resolve-Path $BuildOutputLocation
+  Get-ChildItem -Path $BuildOutputLocation -Include * -File -Recurse | ForEach-Object { $_.Delete()}
+  dotnet build -c Debug "$WebJobsExtensionProjectDirectory\WebJobs.Extensions.DurableTask.csproj" --output $BuildOutputLocation
+  
+  Write-Host "Moving nupkg from WebJobs extension to $AppPackageLocation"
+  Set-Location $BuildOutputLocation
+  dotnet nuget push *.nupkg --source $AppPackageLocation
+  
+  Write-Host "Updating app .csproj to reference built package versions"
+  Set-Location $E2EAppProjectDirectory
+  $files = Get-ChildItem -Path ./packages -Include * -File -Recurse
+  $files | ForEach-Object {
+    if ($_.Name -match 'Microsoft.Azure.WebJobs.Extensions.DurableTask')
+    {
+      $webJobsExtensionVersion = $_.Name -replace 'Microsoft.Azure.WebJobs.Extensions.DurableTask\.|\.nupkg'
+  
+      Write-Host "Removing cached version $webJobsExtensionVersion of WebJobs extension from nuget cache, if exists"
+      $cachedVersionFolders = Get-ChildItem -Path (Join-Path $LocalNugetCacheDirectory "microsoft.azure.webjobs.extensions.durabletask") -Directory -ErrorAction Continue
+      $cachedVersionFolders | ForEach-Object {
+        if ($_.Name -eq $webJobsExtensionVersion)
+        {
+          Write-Host "Removing cached version $webJobsExtensionVersion from nuget cache"
+          Remove-Item -Recurse -Force $_.FullName -ErrorAction Stop
+        }
       }
     }
   }
+  
+  Write-Host "Building app project"
+  dotnet clean app.csproj
+  dotnet build app.csproj
 }
-
-Write-Host "Building app project"
-dotnet clean app.csproj
-dotnet build app.csproj
 
 Set-Location $PSScriptRoot
 
@@ -161,15 +160,13 @@ else
   .\start-emulators.ps1 -SkipStorageEmulator:$SkipStorageEmulator -EmulatorStartDir $ProjectTemporaryPath
 }
 
-if ($StartMSSqlContainer)
-{
-  $mssqlPassword = "IntentionallyExposedPassword1"
+function StartMSSQLContainer($mssqlPwd) {
   Write-Host "Pulling down the mcr.microsoft.com/mssql/server:2022-latest image..."
   docker pull mcr.microsoft.com/mssql/server:2022-latest
 
   # Start the SQL Server docker container with the specified edition
   Write-Host "Starting SQL Server 2022-latest Express docker container on port 1433" -ForegroundColor DarkYellow
-  docker run --name mssql-server -e ACCEPT_EULA=Y -e "MSSQL_SA_PASSWORD=$mssqlPassword" -e "MSSQL_PID=Express" -p 1433:1433 -d mcr.microsoft.com/mssql/server:2022-latest
+  docker run --name mssql-server -e ACCEPT_EULA=Y -e "MSSQL_SA_PASSWORD=$mssqlPwd" -e "MSSQL_PID=Express" -p 1433:1433 -d mcr.microsoft.com/mssql/server:2022-latest
 
   if ($LASTEXITCODE -ne 0) {
       exit $LASTEXITCODE
@@ -184,5 +181,16 @@ if ($StartMSSqlContainer)
 }
 
 Set-Location $PSScriptRoot
+
+if ($StartMSSqlContainer)
+{
+  $mssqlPwd = $env:MSSQL_SA_PASSWORD
+  if (!$mssqlPwd) {
+    Write-Warning "No MSSQL_SA_PASSWORD environment variable found! Skipping SQL Server container startup."
+  }
+  else {
+    StartMSSQLContainer $mssqlPwd
+  }
+}
 
 StopOnFailedExecution

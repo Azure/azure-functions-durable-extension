@@ -14,7 +14,7 @@ on:
       - 'test/e2e/**'
 
 jobs:
-  build-azurestorage:
+  e2e-azurestorage:
     runs-on: ubuntu-latest
     env:
       E2E_TEST_DURABLE_BACKEND: 'AzureStorage'
@@ -49,7 +49,7 @@ jobs:
         working-directory: test/e2e/Tests
         run: dotnet test --filter AzureStorage!=Skip
 
-  build-mssql:
+  e2e-mssql:
     runs-on: ubuntu-latest
     env:
       E2E_TEST_DURABLE_BACKEND: "MSSQL"
@@ -69,6 +69,7 @@ jobs:
       - name: Setup E2E tests
         shell: pwsh
         run: |
+          echo "MSSQL_SA_PASSWORD=$([Guid]::NewGuid())" >> $env:GITHUB_ENV
           .\test\e2e\Tests\build-e2e-test.ps1 -StartMSSqlContainer
 
       - name: Build
