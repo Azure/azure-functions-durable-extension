@@ -21,7 +21,7 @@ public class ErrorHandlingTests
     }
 
     [Fact]
-    [Trait("MSSQL", "Skip")] // This test fails for MSSQL until results are returned, as implemented here https://github.com/microsoft/durabletask-mssql/pull/286/files
+    [Trait("MSSQL", "Skip")] // This test fails for MSSQL this bug is fixed: https://github.com/microsoft/durabletask-mssql/issues/287
     public async Task OrchestratorWithUncaughtActivityException_ShouldFail()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("RethrowActivityException_HttpStart", "");
