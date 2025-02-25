@@ -5,8 +5,8 @@
   </PropertyGroup>
   <!-- Common packages for all targets -->
   <ItemGroup>
-    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.Http" Version="3.2.*" />
-    <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="3.1.*" />
+    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.Http" />
+    <PackageReference Include="Microsoft.NET.Sdk.Functions" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\src\WebJobs.Extensions.DurableTask\WebJobs.Extensions.DurableTask.csproj" />

@@ -54,22 +54,22 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Azure.Identity" Version="1.12.1" />
-    <PackageReference Include="Microsoft.Azure.WebJobs" Version="3.0.39" />
-    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.Rpc" Version="3.0.39" />
-    <PackageReference Include="Microsoft.Azure.DurableTask.Core" Version="3.0.0" />
-    <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" Version="2.0.1" />
-    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers" Version="0.5.*" />
-    <PackageReference Include="Microsoft.Extensions.Azure" Version="1.7.0" />
-    <PackageReference Include="Microsoft.Extensions.Http" Version="6.0.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.WebApiCompatShim" Version="2.2.0" />
-    <PackageReference Include="Microsoft.Azure.DurableTask.ApplicationInsights" Version="0.2.0" />
+    <PackageReference Include="Azure.Identity" />
+    <PackageReference Include="Microsoft.Azure.WebJobs" />
+    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.Rpc" />
+    <PackageReference Include="Microsoft.Azure.DurableTask.Core" />
+    <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" />
+    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers" />
+    <PackageReference Include="Microsoft.Extensions.Azure" />
+    <PackageReference Include="Microsoft.Extensions.Http" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.WebApiCompatShim" />
+    <PackageReference Include="Microsoft.Azure.DurableTask.ApplicationInsights" />
     <!-- The gRPC dependencies in this package are not compatible with older frameworks, like .NET Core 2.x -->
-    <PackageReference Include="Grpc.Core" Version="2.46.6" /> <!-- Bring this in until we move to hosted RPC -->
+    <PackageReference Include="Grpc.Core" /> <!-- Bring this in until we move to hosted RPC -->
     <!-- Build-time dependencies -->
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.*" PrivateAssets="All" />
-    <PackageReference Include="StyleCop.Analyzers" Version="1.1.*" PrivateAssets="All" />
-    <PackageReference Include="Grpc.Tools" Version="2.49.0" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="All" />
+    <PackageReference Include="StyleCop.Analyzers" PrivateAssets="All" />
+    <PackageReference Include="Grpc.Tools" PrivateAssets="All" />
   </ItemGroup>
 
   <ItemGroup>

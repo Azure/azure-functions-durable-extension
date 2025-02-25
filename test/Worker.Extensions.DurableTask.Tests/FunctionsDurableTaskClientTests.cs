@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Functions.Worker.Tests
         /// Exceptions are a risk since we inherit from an abstract class where default implementations are not provided.
         /// </summary>
         [Fact]
-        public async void TerminateDoesNotThrow()
+        public async Task TerminateDoesNotThrow()
         {
             FunctionsDurableTaskClient client = GetTestFunctionsDurableTaskClient();
 

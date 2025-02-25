@@ -179,7 +179,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async void DurableClient_ExternalApp_GetStatusAsync_ReturnsStatus()
+        public async Task DurableClient_ExternalApp_GetStatusAsync_ReturnsStatus()
         {
             var orchestrationServiceClientMock = new Mock<IOrchestrationServiceClient>();
             orchestrationServiceClientMock.Setup(x => x.GetOrchestrationStateAsync(It.IsAny<string>(), It.IsAny<bool>()))
@@ -192,7 +192,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async void DurableClient_ExternalApp_TerminateAsync_TerminateEventPlaced()
+        public async Task DurableClient_ExternalApp_TerminateAsync_TerminateEventPlaced()
         {
             var orchestrationServiceClientMock = new Mock<IOrchestrationServiceClient>();
             orchestrationServiceClientMock.Setup(x => x.GetOrchestrationStateAsync(It.IsAny<string>(), It.IsAny<bool>()))

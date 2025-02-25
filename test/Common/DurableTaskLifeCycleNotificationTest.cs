@@ -76,7 +76,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     }
                     else
                     {
-                        Assert.True(false, "The calls to Event Grid should be exactly 2 but we are registering more.");
+                        Assert.Fail("The calls to Event Grid should be exactly 2 but we are registering more.");
                     }
 
                     callCount++;
@@ -164,7 +164,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     }
                     else
                     {
-                        Assert.True(false, "The calls to Event Grid should be exactly 2 but we are registering more.");
+                        Assert.Fail("The calls to Event Grid should be exactly 2 but we are registering more.");
                     }
 
                     callCount++;
@@ -253,7 +253,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     }
                     else
                     {
-                        Assert.True(false, "The calls to Event Grid should be exactly 2 but we are registering more.");
+                        Assert.Fail("The calls to Event Grid should be exactly 2 but we are registering more.");
                     }
 
                     callCount++;
@@ -593,7 +593,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     }
                     else
                     {
-                        Assert.True(false, "The calls to Event Grid should be exactly 2 but we are registering more.");
+                        Assert.Fail("The calls to Event Grid should be exactly 2 but we are registering more.");
                     }
 
                     callCount++;

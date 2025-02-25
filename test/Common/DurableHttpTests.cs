@@ -86,7 +86,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal("application/xml", acceptValues[1]);
 
             Assert.True(request.Headers.TryGetValue("x-ms-foo", out StringValues customHeaderValues));
-            Assert.Empty(customHeaderValues);
+            Assert.Equal(0, customHeaderValues.Count);
         }
 
         [Fact]

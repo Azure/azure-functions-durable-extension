@@ -97,7 +97,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
-        public void TestGetTargetScaler(bool supportsTBS)
+        public async Task TestGetTargetScaler(bool supportsTBS)
         {
             ITargetScaler targetScaler = new Mock<ITargetScaler>().Object;
             this.durabilityProviderMock.Setup(m => m.TryGetTargetScaler(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), out targetScaler))
@@ -107,7 +107,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
             if (!supportsTBS)
             {
                 Assert.IsType<NoOpTargetScaler>(scaler);
-                Assert.ThrowsAsync<NotSupportedException>(() => scaler.GetScaleResultAsync(context: null));
+                await Assert.ThrowsAsync<NotSupportedException>(() => scaler.GetScaleResultAsync(context: null));
             }
             else
             {
@@ -141,7 +141,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true)]
         [InlineData(false)]
-        public async void ScaleHostE2ETest(bool isTbsEnabled)
+        public async Task ScaleHostE2ETest(bool isTbsEnabled)
         {
             Action<ScaleOptions> configureScaleOptions = (scaleOptions) =>
             {
