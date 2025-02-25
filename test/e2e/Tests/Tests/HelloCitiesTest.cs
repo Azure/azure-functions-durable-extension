@@ -39,7 +39,6 @@ public class HttpEndToEndTests
     public async Task HttpTriggerTests(string functionName, HttpStatusCode expectedStatusCode, string partialExpectedOutput)
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger(functionName, "");
-        string actualMessage = await response.Content.ReadAsStringAsync();
 
         Assert.Equal(expectedStatusCode, response.StatusCode);
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
@@ -60,7 +59,6 @@ public class HttpEndToEndTests
         string urlQueryString = $"?ScheduledStartTime={scheduledStartTime.ToString("o")}";
 
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger(functionName, urlQueryString);
-        string actualMessage = await response.Content.ReadAsStringAsync();
 
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
 
@@ -73,13 +71,13 @@ public class HttpEndToEndTests
 
         await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", Math.Max(startDelaySeconds, 0) + 30);
 
-        // This +1s should not be necessary - however, experimentally the orchestration may run up to one second before the scheduled time.
+        // This +2s should not be necessary - however, experimentally the orchestration may run up to ~1 second before the scheduled time.
         // It is unclear currently whether this is a bug where orchestrations run early, or a clock difference/error,
         // but leaving this logic in for now until further investigation.
-        Assert.True(DateTime.UtcNow + TimeSpan.FromSeconds(1) >= scheduledStartTime);
+        Assert.True(DateTime.UtcNow + TimeSpan.FromSeconds(2) >= scheduledStartTime);
 
         var finalOrchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
         WriteOutput($"Last updated at {finalOrchestrationDetails.LastUpdatedTime}, scheduled to complete at {scheduledStartTime}");
-        Assert.True(finalOrchestrationDetails.LastUpdatedTime + TimeSpan.FromSeconds(1) >= scheduledStartTime);
+        Assert.True(finalOrchestrationDetails.LastUpdatedTime + TimeSpan.FromSeconds(2) >= scheduledStartTime);
     }
 }

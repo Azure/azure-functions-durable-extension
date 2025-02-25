@@ -13,6 +13,7 @@ using DurableTask.Core.Exceptions;
 using DurableTask.Core.History;
 using DurableTask.Core.Middleware;
 using Microsoft.Azure.WebJobs.Host.Executors;
+using Newtonsoft.Json;
 using P = Microsoft.DurableTask.Protobuf;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
@@ -583,6 +584,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     isReplay: false,
                     scheduledEvent.EventId);
 
+                bool detailsParsedFromSerializedException;
+
                 activityResult = new ActivityExecutionResult
                 {
                     ResponseEvent = new TaskFailedEvent(
@@ -590,8 +593,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         taskScheduledId: scheduledEvent.EventId,
                         reason: $"Function '{functionName}' failed with an unhandled exception.",
                         details: null,
-                        GetFailureDetails(result.Exception)),
+                        GetFailureDetails(result.Exception, out detailsParsedFromSerializedException)),
                 };
+
+                if (!detailsParsedFromSerializedException && this.extension.PlatformInformationService.GetWorkerRuntimeType() == WorkerRuntimeType.DotNetIsolated)
+                {
+                    this.TraceHelper.ExtensionWarningEvent(
+                        this.Options.HubName,
+                        functionName.Name,
+                        instance.InstanceId,
+                        "Failure details not parsed from serialized exception details, worker failed to serialize exception");
+                }
             }
 
             // Send the result of the activity function to the DTFx dispatch pipeline.
@@ -599,13 +611,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             dispatchContext.SetProperty(activityResult);
         }
 
-        private static FailureDetails GetFailureDetails(Exception e)
+        private static FailureDetails GetFailureDetails(Exception e, out bool fromSerializedException)
         {
+            fromSerializedException = false;
             if (e.InnerException != null && e.InnerException.Message.StartsWith("Result:"))
             {
                 Exception rpcException = e.InnerException;
                 if (TryGetRpcExceptionFields(rpcException.Message, out string? exception, out string? stackTrace))
                 {
+                    if (TryExtractSerializedFailureDetailsFromException(exception, out FailureDetails? details) && details is not null)
+                    {
+                        fromSerializedException = true;
+                        return details;
+                    }
+
                     if (TrySplitExceptionTypeFromMessage(exception, out string? exceptionType, out string? exceptionMessage))
                     {
                         return new FailureDetails(exceptionType, exceptionMessage, stackTrace, innerFailure: null, isNonRetriable: false);
@@ -622,6 +641,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             // Don't recognize this exception - return it as-is
             return new FailureDetails(e);
+        }
+
+        private static FailureDetails? GetFailureDetails(P.TaskFailureDetails taskFailureDetails)
+        {
+            if (taskFailureDetails is null)
+            {
+                return null;
+            }
+
+            return new FailureDetails(
+                taskFailureDetails.ErrorType ?? string.Empty,
+                taskFailureDetails.ErrorMessage ?? string.Empty,
+                taskFailureDetails.StackTrace,
+                GetFailureDetails(taskFailureDetails.InnerFailure),
+                taskFailureDetails.IsNonRetriable);
         }
 
         private static bool TryGetRpcExceptionFields(
@@ -664,6 +698,34 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             return true;
+        }
+
+        private static bool TryExtractSerializedFailureDetailsFromException(string exception, out FailureDetails? details)
+        {
+            try
+            {
+                if (exception[0] != '{')
+                {
+                    details = null;
+                    return false;
+                }
+
+                int newlineIndex = exception.IndexOf('\n');
+                string serializedMessage = newlineIndex < 0 ? exception : exception.Substring(0, newlineIndex).Trim();
+                P.TaskFailureDetails? taskFailureDetails = JsonConvert.DeserializeObject<P.TaskFailureDetails>(serializedMessage);
+                if (taskFailureDetails != null)
+                {
+                    details = GetFailureDetails(taskFailureDetails);
+                    return true;
+                }
+            }
+            catch (Exception)
+            {
+                // Apparently the exception message was not serialized by the worker middleware, this will be logged in CallActivityAsync()
+            }
+
+            details = null;
+            return false;
         }
 
         private static bool TrySplitExceptionTypeFromMessage(

@@ -4,6 +4,7 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
+using Microsoft.Azure.Functions.Worker.Extensions.DurableTask.Exceptions;
 using Microsoft.Azure.Functions.Worker.Middleware;
 using Microsoft.DurableTask.Worker.Grpc;
 
@@ -25,6 +26,11 @@ internal class DurableTaskFunctionsMiddleware : IFunctionsWorkerMiddleware
         if (IsEntityTrigger(functionContext, out triggerBinding))
         {
             return RunEntityAsync(functionContext, triggerBinding, next);
+        }
+
+        if (IsActivityTrigger(functionContext, out triggerBinding))
+        {
+            return RunActivityAsync(functionContext, triggerBinding, next);
         }
 
         return next(functionContext);
@@ -93,5 +99,34 @@ internal class DurableTaskFunctionsMiddleware : IFunctionsWorkerMiddleware
 
         await next(context);
         context.GetInvocationResult().Value = dispatcher.Result;
+    }
+
+    private static bool IsActivityTrigger(
+        FunctionContext context, [NotNullWhen(true)] out BindingMetadata? activityTriggerBinding)
+    {
+        foreach (BindingMetadata binding in context.FunctionDefinition.InputBindings.Values)
+        {
+            if (string.Equals(binding.Type, "activityTrigger", StringComparison.OrdinalIgnoreCase))
+            {
+                activityTriggerBinding = binding;
+                return true;
+            }
+        }
+
+        activityTriggerBinding = null;
+        return false;
+    }
+
+    private static async Task RunActivityAsync(FunctionContext functionContext, BindingMetadata triggerBinding, FunctionExecutionDelegate next)
+    {
+        try
+        {
+            await next(functionContext);
+            return;
+        }
+        catch (Exception ex)
+        {
+            throw new DurableSerializationException(ex);
+        }
     }
 }

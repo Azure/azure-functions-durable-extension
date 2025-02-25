@@ -56,7 +56,7 @@ internal class TestLoggerProvider : ILoggerProvider, ILogger
         string formattedString = formatter(state, exception);
         _messageSink.OnMessage(new DiagnosticMessage(formattedString));
         _logs.Add(formattedString);
-        _currentTestOutput?.WriteLine(formattedString);
+        try { _currentTestOutput?.WriteLine(formattedString); } catch { }
     }
 
     private class DisposableOutput : IDisposable

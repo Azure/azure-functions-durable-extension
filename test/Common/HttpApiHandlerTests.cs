@@ -809,6 +809,42 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task HandleGetStatusRequestAsync_Correctly_Parses_InstanceId_With_Spaces()
+        {
+            var instanceId = "test instance id with spaces";
+            var list = new List<DurableOrchestrationStatus>
+            {
+                new DurableOrchestrationStatus
+                {
+                    Name = "DoThis",
+                    InstanceId = instanceId,
+                    RuntimeStatus = OrchestrationRuntimeStatus.Completed,
+                },
+            };
+
+            var clientMock = new Mock<IDurableClient>();
+            clientMock
+                .Setup(x => x.GetStatusAsync(instanceId, false, false, true))
+                .Returns(Task.FromResult(list.First()));
+            var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);
+
+            var getStatusRequestUriBuilder = new UriBuilder(TestConstants.NotificationUrl);
+            getStatusRequestUriBuilder.Path += $"/Instances/" + WebUtility.UrlEncode(instanceId);
+
+            var responseMessage = await httpApiHandler.HandleRequestAsync(
+                new HttpRequestMessage
+                {
+                    Method = HttpMethod.Get,
+                    RequestUri = getStatusRequestUriBuilder.Uri,
+                });
+
+            var actual = JsonConvert.DeserializeObject<StatusResponsePayload>(await responseMessage.Content.ReadAsStringAsync());
+            Assert.Equal(HttpStatusCode.OK, responseMessage.StatusCode);
+            Assert.Equal(instanceId, actual.InstanceId);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task TerminateInstanceWebhook()
         {
             string testInstanceId = Guid.NewGuid().ToString("N");
