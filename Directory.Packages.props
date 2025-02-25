@@ -6,7 +6,8 @@
     -->
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
-
+  
+  <!-- Product dependencies -->
   <ItemGroup>
     <PackageVersion Include="Azure.Identity" Version="1.12.1" />
     <PackageVersion Include="Grpc.Core" Version="2.46.6" /> 
@@ -36,6 +37,7 @@
     <PackageVersion Include="System.Text.Json" Version="6.0.10" />
   </ItemGroup>
 
+  <!-- Test dependencies -->
   <ItemGroup>
     <PackageVersion Include="coverlet.collector" Version="6.0.0" />
     <PackageVersion Include="FluentAssertions" Version="4.19.4" />
