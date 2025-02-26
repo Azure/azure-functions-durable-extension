@@ -23,7 +23,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
         private readonly INameResolver nameResolver;
         private EndToEndTraceHelper endToEndTraceHelper;
         private TelemetryClient telemetryClient;
-        private IAsyncDisposable telemetryModule;
 
         /// <summary>
         /// Constructor for initializing Distributed Tracing.
