@@ -66,7 +66,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
         {
             this.TelemetryModule.DisposeAsync().AsTask().GetAwaiter().GetResult();
             this.WebJobsTelemetryModule.DisposeAsync().AsTask().GetAwaiter().GetResult();
-
         }
 
         /// <summary>
