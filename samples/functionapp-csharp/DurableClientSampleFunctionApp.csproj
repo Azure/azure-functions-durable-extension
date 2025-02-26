@@ -3,6 +3,8 @@
     <TargetFramework>net6.0</TargetFramework>
     <AzureFunctionsVersion>v3</AzureFunctionsVersion>
   </PropertyGroup>
+
+  <!-- We Move to central package management: For version details, please refer to samples/Directory.packages.props -->
   <ItemGroup>
     <PackageReference Include="Microsoft.Azure.Functions.Extensions" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask" />

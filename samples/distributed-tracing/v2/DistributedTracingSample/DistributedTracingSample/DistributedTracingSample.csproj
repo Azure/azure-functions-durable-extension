@@ -3,6 +3,8 @@
     <TargetFramework>net6.0</TargetFramework>
     <AzureFunctionsVersion>v4</AzureFunctionsVersion>
   </PropertyGroup>
+
+  <!-- We Move to central package management: For version details, please refer to samples/Directory.packages.props -->
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Sdk.Functions" />
   </ItemGroup>

@@ -5,6 +5,7 @@
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
+  <!-- We Move to central package management: For version details, please refer to samples/Directory.packages.props -->
   <ItemGroup>
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />

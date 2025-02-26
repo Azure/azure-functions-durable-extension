@@ -4,7 +4,7 @@
     <TargetFramework>net6.0</TargetFramework>
   </PropertyGroup>
 
-
+  <!-- We Move to central package management: For version details, please refer to samples/Directory.packages.props -->
   <ItemGroup>
     <PackageReference Include="EntityFramework" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask" >
