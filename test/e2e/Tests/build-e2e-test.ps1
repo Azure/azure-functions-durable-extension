@@ -15,6 +15,8 @@ param(
     [Switch]
     $SkipCoreTools,
 
+    # This param can be used during local runs of the build script to deliberately skip the build and run only the azurite/mssql logic
+    # For instance, the command ./build-e2e-test.ps1 -SkipBuild -StartMSSqlContainer will start azurite and the MSSQL docker container only. 
     [Switch]
     $SkipBuild
 )
