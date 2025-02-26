@@ -80,4 +80,28 @@ public static class FixtureHelpers
             }
         }
     }
+
+    internal static void AddDurableBackendEnvironmentVariables(Process funcProcess, ILogger testLogger)
+    {
+        string? durableBackendEnvVarValue = Environment.GetEnvironmentVariable("E2E_TEST_DURABLE_BACKEND");
+        switch ((durableBackendEnvVarValue ?? "").ToLowerInvariant())
+        {
+            case "azurestorage":
+                return;
+            case "mssql":
+                string? sqlPassword = Environment.GetEnvironmentVariable("MSSQL_SA_PASSWORD");
+                if (string.IsNullOrEmpty(sqlPassword))
+                {
+                    testLogger.LogWarning("Environment variable MSSQL_SA_PASSWORD not set, connection string to SQL emulator may fail");
+                }
+                funcProcess.StartInfo.EnvironmentVariables["SQLDB_Connection"] = $"Server=localhost,1433;Database=DurableDB;User Id=sa;Password={sqlPassword};";
+                funcProcess.StartInfo.EnvironmentVariables["AzureFunctionsJobHost__extensions__durableTask__storageProvider__type"] = "mssql";
+                funcProcess.StartInfo.EnvironmentVariables["AzureFunctionsJobHost__extensions__durableTask__storageProvider__connectionStringName"] = "SQLDB_Connection";
+                funcProcess.StartInfo.EnvironmentVariables["AzureFunctionsJobHost__extensions__durableTask__storageProvider__createDatabaseIfNotExists"] = "true";
+                return;
+            default:
+                testLogger.LogWarning("Environment variable E2E_TEST_DURABLE_BACKEND not set, tests configured for Azure Storage");
+                return;
+        }
+    }
 }
