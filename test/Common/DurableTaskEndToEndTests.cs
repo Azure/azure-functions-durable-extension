@@ -3994,6 +3994,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await client.SignalEntity(this.output, "get", "https://www.microsoft.com");
                 await client.SignalEntity(this.output, "get", "https://bing.com");
 
+                // Sleeping for a short time here appears to ensure that the state is fully updated before the read
+                Thread.Sleep(500);
+
                 var state = await client.WaitForEntityState<IDictionary<string, string>>(this.output, TimeSpan.FromSeconds(10));
                 Assert.NotNull(state);
 
