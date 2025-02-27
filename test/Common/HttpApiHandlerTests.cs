@@ -128,7 +128,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(HttpStatusCode.Accepted, httpResponseMessage.StatusCode);
             var content = await httpResponseMessage.Content.ReadAsStringAsync();
             var status = JsonConvert.DeserializeObject<JObject>(content);
-            Assert.Equal((string)status["id"], TestConstants.InstanceId);
+            Assert.Equal(TestConstants.InstanceId, (string)status["id"]);
             Assert.Equal(
                 $"{TestConstants.NotificationUrlBase}/instances/7b59154ae666471993659902ed0ba742?taskHub=SampleHubVS&connection=Storage&code=mykey",
                 (string)status["statusQueryGetUri"]);
@@ -159,7 +159,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var httpApiHandler = new HttpApiHandler(GetTestExtension(), null);
             HttpManagementPayload httpManagementPayload = httpApiHandler.CreateHttpManagementPayload(TestConstants.InstanceId, null, null);
             Assert.NotNull(httpManagementPayload);
-            Assert.Equal(httpManagementPayload.Id, TestConstants.InstanceId);
+            Assert.Equal(TestConstants.InstanceId, httpManagementPayload.Id);
             Assert.Equal(
                 $"{TestConstants.NotificationUrlBase}/instances/7b59154ae666471993659902ed0ba742?taskHub=DurableFunctionsHub&connection=Storage&code=mykey",
                 httpManagementPayload.StatusQueryGetUri);
@@ -190,7 +190,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var httpApiHandler = new HttpApiHandler(GetTestExtension(), null);
             HttpManagementPayload httpManagementPayload = httpApiHandler.CreateHttpManagementPayload(TestConstants.InstanceId, TestConstants.TaskHub, null);
             Assert.NotNull(httpManagementPayload);
-            Assert.Equal(httpManagementPayload.Id, TestConstants.InstanceId);
+            Assert.Equal(TestConstants.InstanceId, httpManagementPayload.Id);
             Assert.Equal(
                 $"{TestConstants.NotificationUrlBase}/instances/7b59154ae666471993659902ed0ba742?taskHub=SampleHubVS&connection=Storage&code=mykey",
                 httpManagementPayload.StatusQueryGetUri);
@@ -221,7 +221,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var httpApiHandler = new HttpApiHandler(GetTestExtension(), null);
             HttpManagementPayload httpManagementPayload = httpApiHandler.CreateHttpManagementPayload(TestConstants.InstanceId, null, TestConstants.CustomConnectionName);
             Assert.NotNull(httpManagementPayload);
-            Assert.Equal(httpManagementPayload.Id, TestConstants.InstanceId);
+            Assert.Equal(TestConstants.InstanceId, httpManagementPayload.Id);
             Assert.Equal(
                 $"{TestConstants.NotificationUrlBase}/instances/7b59154ae666471993659902ed0ba742?taskHub=DurableFunctionsHub&connection=TestConnection&code=mykey",
                 httpManagementPayload.StatusQueryGetUri);
@@ -252,7 +252,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var httpApiHandler = new HttpApiHandler(GetTestExtension(), null);
             HttpManagementPayload httpManagementPayload = httpApiHandler.CreateHttpManagementPayload(TestConstants.InstanceId, TestConstants.TaskHub, TestConstants.CustomConnectionName, returnInternalServerErrorOnFailure: true);
             Assert.NotNull(httpManagementPayload);
-            Assert.Equal(httpManagementPayload.Id, TestConstants.InstanceId);
+            Assert.Equal(TestConstants.InstanceId, httpManagementPayload.Id);
             Assert.Equal(
                 $"{TestConstants.NotificationUrlBase}/instances/7b59154ae666471993659902ed0ba742?taskHub=SampleHubVS&connection=TestConnection&code=mykey&returnInternalServerErrorOnFailure=true",
                 httpManagementPayload.StatusQueryGetUri);

@@ -8,11 +8,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.2.0" />
-    <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" Version="2.0.0-preview.4" />
-    <PackageReference Include="Microsoft.Azure.DurableTask.Core" Version="2.15.1" />
-    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask" Version="2.4.3" />
-    <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="3.0.11" />
+    <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" />
+    <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" />
+    <PackageReference Include="Microsoft.Azure.DurableTask.Core"  />
+    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask" VersionOverride = "2.4.3"/>
+    <PackageReference Include="Microsoft.NET.Sdk.Functions"  />
   </ItemGroup>
 
   <ItemGroup>

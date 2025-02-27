@@ -857,7 +857,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 try
                 {
                     await t;
-                    Assert.True(false, "expected exception");
+                    Assert.Fail("expected exception");
                 }
                 catch (TargetInvocationException) when (isClassBased)
                 {
@@ -873,7 +873,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 }
                 catch (Exception e)
                 {
-                    Assert.True(false, $"wrong exception: {e}");
+                    Assert.Fail($"wrong exception: {e}");
                 }
             }
 

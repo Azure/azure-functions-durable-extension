@@ -3,12 +3,15 @@
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <AzureFunctionsVersion>v3</AzureFunctionsVersion>
   </PropertyGroup>
+
+  <!-- We use central package management. For version details, refer to `samples/Directory.packages.props`. -->
+  <!-- To specify a version in the package reference below, simply add `Version = ""`. -->
   <ItemGroup>
     <None Include="..\README.md" Link="README.md" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask" Version="2.4.*" />
-    <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="1.0.*" />
+    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask" />
+    <PackageReference Include="Microsoft.NET.Sdk.Functions" />
   </ItemGroup>
   <ItemGroup>
     <None Update="host.json">

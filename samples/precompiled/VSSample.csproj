@@ -4,13 +4,14 @@
     <AzureFunctionsVersion>v3</AzureFunctionsVersion>
   </PropertyGroup>
 
-  <!-- Common packages for all targets -->
+  <!-- We use central package management. For version details, refer to `samples/Directory.packages.props`. -->
+  <!-- To specify a version in the package reference below, simply add `Version = ""`. -->
   <ItemGroup>
-    <PackageReference Include="Microsoft.Azure.Functions.Extensions" Version="1.0.0" />
-    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask" Version="2.4.*" />
-    <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="1.0.*" />
-    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.Twilio" Version="3.0.0" />
-    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.Storage" Version="3.0.10" />
+    <PackageReference Include="Microsoft.Azure.Functions.Extensions" />
+    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask" />
+    <PackageReference Include="Microsoft.NET.Sdk.Functions" />
+    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.Twilio" />
+    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.Storage" />
   </ItemGroup>
 
   <ItemGroup>

@@ -7,8 +7,8 @@
     <ProjectReference Include="..\..\..\..\src\WebJobs.Extensions.DurableTask\WebJobs.Extensions.DurableTask.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="4.2.0" />
-    <PackageReference Include="Microsoft.DurableTask.SqlServer.AzureFunctions" Version="1.*" />
+    <PackageReference Include="Microsoft.NET.Sdk.Functions" />
+    <PackageReference Include="Microsoft.DurableTask.SqlServer.AzureFunctions" />
   </ItemGroup>
   <ItemGroup>
     <None Update="host.json">

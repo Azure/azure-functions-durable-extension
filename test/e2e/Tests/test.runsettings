@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+    <RunConfiguration>
+        <EnvironmentVariables>
+            <!-- Uncomment these environment variables if you want to run tests against MSSQL -->
+            <!-- Ensure the password in MSSQL_SA_PASSWORD is the same one you configured your MSSQL Docker container with -->
+            <!-- Do not commit changes to this file. -->
+            <!--
+            <MSSQL_SA_PASSWORD>{{YourPasswordHere}}</MSSQL_SA_PASSWORD>
+            <E2E_TEST_DURABLE_BACKEND>MSSQL</E2E_TEST_DURABLE_BACKEND>
+            -->
+            <E2E_TEST_DURABLE_BACKEND>AzureStorage</E2E_TEST_DURABLE_BACKEND>
+        </EnvironmentVariables>
+    </RunConfiguration>
+</RunSettings>

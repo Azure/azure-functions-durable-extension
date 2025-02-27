@@ -5,8 +5,8 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\..\src\WebJobs.Extensions.DurableTask\WebJobs.Extensions.DurableTask.csproj" />
-    <PackageReference Include="Microsoft.Azure.DurableTask.Netherite.AzureFunctions" Version="1.*" />
-    <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="4.1.1" />
+    <PackageReference Include="Microsoft.Azure.DurableTask.Netherite.AzureFunctions" />
+    <PackageReference Include="Microsoft.NET.Sdk.Functions" />
   </ItemGroup>
   <ItemGroup>
     <None Update="host.json">

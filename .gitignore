@@ -300,3 +300,6 @@ functions-extensions/
 
 # E2E Tests build output
 /src/WebJobs.Extensions.DurableTask/out/*
+
+# Runsettings files
+**/*.runsettings

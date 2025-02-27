@@ -73,6 +73,8 @@ public class FunctionAppFixture : IAsyncLifetime
             //    _funcProcess.StartInfo.EnvironmentVariables["DURABLE_ATTACH_DEBUGGER"] = "True";
             //}
 
+            FixtureHelpers.AddDurableBackendEnvironmentVariables(this._funcProcess, this._logger);
+
             FixtureHelpers.StartProcessWithLogging(this._funcProcess, this._logger);
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))

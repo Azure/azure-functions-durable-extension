@@ -1,0 +1,80 @@
+<Project>
+  <PropertyGroup>
+    <!--
+    More information about central package management:
+    https://learn.microsoft.com/nuget/consume-packages/central-package-management
+    -->
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+  
+  <!-- Product dependencies -->
+  <ItemGroup>
+    <PackageVersion Include="Azure.Identity" Version="1.12.1" />
+    <PackageVersion Include="Grpc.Core" Version="2.46.6" /> 
+    <PackageVersion Include="Grpc.Tools" Version="2.49.0"  />
+    <PackageVersion Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.2.0" />
+    <PackageVersion Include="Microsoft.AspNetCore.Mvc.WebApiCompatShim" Version="2.2.0" />
+    <PackageVersion Include="Microsoft.Azure.DurableTask.ApplicationInsights" Version="0.2.0" />
+    <PackageVersion Include="Microsoft.Azure.DurableTask.AzureStorage" Version="2.0.1" />
+    <PackageVersion Include="Microsoft.Azure.DurableTask.Core" Version="3.0.0" />
+    <PackageVersion Include="Microsoft.Azure.Functions.Worker.Core" Version="1.16.0" />
+    <PackageVersion Include="Microsoft.Azure.Functions.Worker.Extensions.Abstractions" Version="1.3.0" />
+    <PackageVersion Include="Microsoft.Azure.WebJobs" Version="3.0.39" />
+    <PackageVersion Include="Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers" Version="0.5.0" />
+    <PackageVersion Include="Microsoft.Azure.WebJobs.Extensions.Rpc" Version="3.0.39" />
+    <PackageVersion Include="Microsoft.Bcl.AsyncInterfaces" Version = "6.0.0" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="3.3.4"/>
+    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="3.9.0" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="3.9.0"  />
+    <PackageVersion Include="Microsoft.CodeAnalysis.Workspaces.Common" Version="3.9.0" />
+    <PackageVersion Include="Microsoft.DurableTask.Client.Grpc" Version="1.4.0" />
+    <PackageVersion Include="Microsoft.DurableTask.Worker.Grpc" Version="1.4.0" />
+    <PackageVersion Include="Microsoft.Extensions.Azure" Version="1.7.0" />
+    <PackageVersion Include="Microsoft.Extensions.Http" Version="6.0.0" />
+    <PackageVersion Include="Microsoft.NET.Sdk.Functions" Version="4.2.0" />
+    <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="1.0.0"  />
+    <PackageVersion Include="StyleCop.Analyzers" Version="1.1.118"  />
+    <PackageVersion Include="System.Text.Json" Version="6.0.10" />
+  </ItemGroup>
+
+  <!-- Test dependencies -->
+  <ItemGroup>
+    <PackageVersion Include="coverlet.collector" Version="6.0.0" />
+    <PackageVersion Include="FluentAssertions" Version="4.19.4" />
+    <PackageVersion Include="Microsoft.ApplicationInsights.WorkerService" Version="2.22.0" />
+    <PackageVersion Include="Microsoft.Azure.DurableTask.Emulator" Version="2.5.4" />
+    <PackageVersion Include="Microsoft.Azure.DurableTask.Netherite.AzureFunctions" Version="3.1.0" />
+    <PackageVersion Include="Microsoft.Azure.DurableTask.Redis" Version="0.1.9-alpha" />
+    <PackageVersion Include="Microsoft.Azure.Functions.Worker" Version="1.21.0" />
+    <PackageVersion Include="Microsoft.Azure.Functions.Worker.ApplicationInsights" Version="1.2.0" />
+    <PackageVersion Include="Microsoft.Azure.Functions.Worker.Extensions.DurableTask.SqlServer" Version="1.5.0" />
+    <PackageVersion Include="Microsoft.Azure.Functions.Worker.Extensions.Http" Version="3.2.0" />
+    <PackageVersion Include="Microsoft.Azure.Functions.Worker.Extensions.Http.AspNetCore" Version="1.2.0" />
+    <PackageVersion Include="Microsoft.Azure.Functions.Worker.Sdk" Version="1.18.1"/>
+    <PackageVersion Include="Microsoft.Azure.WebJobs.Extensions.DurableTask" Version="2.6.0" />
+    <PackageVersion Include="Microsoft.Azure.WebJobs.Extensions.Http" Version="3.2.0" />
+    <PackageVersion Include="Microsoft.Azure.WebJobs.Extensions.Storage" Version="5.1.3" />
+    <PackageVersion Include="Microsoft.Azure.WebJobs.Logging.ApplicationInsights" Version="3.0.33" />
+    <PackageVersion Include="Microsoft.Azure.WebJobs.Script.ExtensionsMetadataGenerator" Version="4.0.1" />
+    <PackageVersion Include="Microsoft.Build" Version="17.3.2" />
+    <PackageVersion Include="Microsoft.Build.Framework" Version="17.3.2" />
+    <PackageVersion Include="Microsoft.Build.Locator" Version="1.4.1" />
+    <PackageVersion Include="Microsoft.Build.Tasks.Core" Version="17.3.2" />
+    <PackageVersion Include="Microsoft.CodeAnalysis" Version="3.9.0" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.Workspaces.MSBuild" Version="3.9.0" />
+    <PackageVersion Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="2.0.65" />
+    <PackageVersion Include="Microsoft.DurableTask.Generators" Version="1.0.0-preview.1" />
+    <PackageVersion Include="Microsoft.DurableTask.SqlServer.AzureFunctions" Version="1.5.0" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration" Version="9.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="9.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration.Json" Version="9.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.Logging" Version="6.0.0" Condition="'$(TargetFramework)' == 'net6.0'" />
+    <PackageVersion Include="Microsoft.Extensions.Logging" Version="9.0.0" Condition="'$(TargetFramework)' == 'net8.0'" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageVersion Include="Moq" Version="4.16.1" />
+    <PackageVersion Include="MSTest.TestAdapter" Version="1.3.2" />
+    <PackageVersion Include="MSTest.TestFramework" Version="1.3.2" />
+    <PackageVersion Include="xunit" Version="2.9.2" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="2.8.2" />
+  </ItemGroup>
+</Project>

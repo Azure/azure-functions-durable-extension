@@ -60,7 +60,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void ScaleMonitorDescriptor_ReturnsExpectedValue()
         {
-            Assert.Equal(($"{this.functionId}-DurableTask-{this.hubName}").ToLower(), this.scaleMonitor.Descriptor.Id);
+            Assert.Equal($"{this.functionId}-DurableTask-{this.hubName}".ToLower(), this.scaleMonitor.Descriptor.Id);
         }
 
         [Fact]
