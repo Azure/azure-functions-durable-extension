@@ -4,7 +4,8 @@
     <AzureFunctionsVersion>v3</AzureFunctionsVersion>
   </PropertyGroup>
 
-  <!-- We Move to central package management: For version details, please refer to samples/Directory.packages.props -->
+  <!-- We use central package management. For version details, refer to `samples/Directory.packages.props`. -->
+  <!-- To specify a version in the package reference below, simply add `Version = ""`. -->
   <ItemGroup>
     <None Include="..\README.md" Link="README.md" />
   </ItemGroup>
