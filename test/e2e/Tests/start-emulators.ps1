@@ -13,6 +13,12 @@ param(
     $NoWait
 )
 
+if ($PSVersionTable.PSEdition -ne 'Core') {
+    Write-Warning "You are not running PowerShell Core. Please switch to PowerShell Core (>= PS 6) for better compatibility and performance."
+    Write-Warning "See https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell?view=powershell-7.5"
+    exit 1
+}
+
 if (Test-Path($EmulatorStartDir)) {
     Set-Location $EmulatorStartDir
 }

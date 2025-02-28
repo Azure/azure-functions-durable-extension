@@ -21,6 +21,12 @@ param(
     $SkipBuild
 )
 
+if ($PSVersionTable.PSEdition -ne 'Core') {
+    Write-Warning "You are not running PowerShell Core. Please switch to PowerShell Core (>= PS 6) for better compatibility and performance."
+    Write-Warning "See https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell?view=powershell-7.5"
+    exit 1
+}
+
 $ErrorActionPreference = "Stop"
 
 $ProjectBaseDirectory = "$PSScriptRoot\..\..\..\"
@@ -119,7 +125,9 @@ if (!$SkipBuild)
   $BuildOutputLocation = Resolve-Path $BuildOutputLocation
   Get-ChildItem -Path $BuildOutputLocation -Include * -File -Recurse | ForEach-Object { $_.Delete()}
   dotnet build -c Debug "$WebJobsExtensionProjectDirectory\WebJobs.Extensions.DurableTask.csproj" --output $BuildOutputLocation
-  
+
+  if ($LASTEXITCODE -ne 0) { Set-Location $PSScriptRoot; throw "WebJobs Extension build failed" }
+
   Write-Host "Moving nupkg from WebJobs extension to $AppPackageLocation"
   Set-Location $BuildOutputLocation
   dotnet nuget push *.nupkg --source $AppPackageLocation
@@ -147,6 +155,8 @@ if (!$SkipBuild)
   Write-Host "Building app project"
   dotnet clean app.csproj
   dotnet build app.csproj
+
+  if ($LASTEXITCODE -ne 0) { Set-Location $PSScriptRoot; throw "Test app build failed." }
 }
 
 Set-Location $PSScriptRoot
