@@ -79,3 +79,33 @@ jobs:
       - name: Run E2E tests
         working-directory: test/e2e/Tests
         run: dotnet test --filter MSSQL!=Skip
+
+  e2e-dts:
+    runs-on: ubuntu-latest
+    env:
+      E2E_TEST_DURABLE_BACKEND: "DTS"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET Core
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 6.0.x
+
+      - name: Setup .NET Core
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Setup E2E tests
+        shell: pwsh
+        run: |
+          .\test\e2e\Tests\build-e2e-test.ps1 -StartDTSContainer
+
+      - name: Build
+        working-directory: test/e2e/Tests
+        run: dotnet build
+
+      - name: Run E2E tests
+        working-directory: test/e2e/Tests
+        run: dotnet test --filter DTS!=Skip
