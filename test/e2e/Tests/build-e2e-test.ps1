@@ -230,7 +230,7 @@ if ($StartMSSqlContainer)
 
 if ($StartDTSContainer)
 {
-    StartDTSContainer $mssqlPwd
+    StartDTSContainer
 }
 
 StopOnFailedExecution
