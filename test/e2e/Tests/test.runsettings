@@ -10,8 +10,8 @@
             <E2E_TEST_DURABLE_BACKEND>MSSQL</E2E_TEST_DURABLE_BACKEND>
             -->
 			<!-- Enable this if you want to run tests against DTS
-            <E2E_TEST_DURABLE_BACKEND>azureManaged</E2E_TEST_DURABLE_BACKEND>
-			-->
+            <E2E_TEST_DURABLE_BACKEND>dts</E2E_TEST_DURABLE_BACKEND>
+            -->
 			<E2E_TEST_DURABLE_BACKEND>AzureStorage</E2E_TEST_DURABLE_BACKEND>
         </EnvironmentVariables>
     </RunConfiguration>
