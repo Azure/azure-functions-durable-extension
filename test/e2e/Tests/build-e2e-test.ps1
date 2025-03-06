@@ -196,9 +196,6 @@ function StartMSSQLContainer($mssqlPwd) {
 }
 
 function StartDTSContainer() {
-  Write-Host "logging in..."
-  az acr login --name durabletaskspublic
-
   Write-Host "Pulling down the durabletaskspublic.azurecr.io/dts-emulator:latest-amd64 image..."
   docker pull durabletaskspublic.azurecr.io/dts-emulator:latest-amd64
 
