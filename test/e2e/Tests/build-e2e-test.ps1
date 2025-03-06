@@ -196,10 +196,13 @@ function StartMSSQLContainer($mssqlPwd) {
 }
 
 function StartDTSContainer() {
+  Write-Host "logging in..."
+  az acr login --name durabletaskspublic
+
   Write-Host "Pulling down the durabletaskspublic.azurecr.io/dts-emulator:latest-amd64 image..."
   docker pull durabletaskspublic.azurecr.io/dts-emulator:latest-amd64
 
-  # Start the SQL Server docker container with the specified edition
+  # Start the DTS Server docker container with the specified edition
   Write-Host "Starting DTS docker container on default ports" -ForegroundColor DarkYellow
   docker run -itP -e ClientAuth__DisableAuthentication=true -d durabletaskspublic.azurecr.io/dts-emulator:latest-amd64
 
