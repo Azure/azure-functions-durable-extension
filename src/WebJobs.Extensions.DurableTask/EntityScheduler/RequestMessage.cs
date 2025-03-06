@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Diagnostics;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -79,6 +80,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </summary>
         [JsonProperty(PropertyName = "pos", DefaultValueHandling = DefaultValueHandling.Ignore)]
         public int Position { get; set; }
+
+        /// <summary>
+        /// The parent trace that called this operation.
+        /// </summary>
+        [JsonProperty(PropertyName = "parentTrace", DefaultValueHandling = DefaultValueHandling.Ignore)]
+        public string ParentTraceId { get; set; }
+
+        /// <summary>
+        /// The parent span that called this operation.
+        /// </summary>
+        [JsonProperty(PropertyName = "parentSpan", DefaultValueHandling = DefaultValueHandling.Ignore)]
+        public string ParentSpanId { get; set; }
+
+        /// <summary>
+        /// The trace flags of the parent that called this operation.
+        /// </summary>
+        [JsonProperty(PropertyName = "parentTraceFlags", DefaultValueHandling = DefaultValueHandling.Ignore)]
+        public ActivityTraceFlags ParentTraceFlags { get; set; }
+
+        /// <summary>
+        /// The trace state of the parent that called this operation.
+        /// </summary>
+        [JsonProperty(PropertyName = "parentTraceState", DefaultValueHandling = DefaultValueHandling.Ignore)]
+        public string ParentTraceState { get; set; }
 
         [JsonIgnore]
         public bool IsLockRequest => this.LockSet != null;

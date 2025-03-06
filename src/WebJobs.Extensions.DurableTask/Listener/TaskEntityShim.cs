@@ -454,108 +454,111 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             Exception exception = null;
 
-            try
+            using (var processEntityInvocationActivity = request.ParentTraceId != null && request.ParentSpanId != null ? TraceHelper.StartActivityForProcessingEntityInvocation(this.context.InstanceId, this.context.Name, request.Operation, request.IsSignal, new ActivityContext(ActivityTraceId.CreateFromString(request.ParentTraceId), ActivitySpanId.CreateFromString(request.ParentSpanId), request.ParentTraceFlags, request.ParentTraceState)) : null)
             {
-                Task invokeTask = this.FunctionInvocationCallback();
-                if (invokeTask is Task resultTask)
+                try
                 {
-                    var completedTask = await Task.WhenAny(resultTask, this.TimeoutTask);
-
-                    if (completedTask == this.TimeoutTask)
+                    Task invokeTask = this.FunctionInvocationCallback();
+                    if (invokeTask is Task resultTask)
                     {
-                        exception = await this.TimeoutTask;
+                        var completedTask = await Task.WhenAny(resultTask, this.TimeoutTask);
+
+                        if (completedTask == this.TimeoutTask)
+                        {
+                            exception = await this.TimeoutTask;
+                        }
+                        else
+                        {
+                            await resultTask;
+                        }
                     }
                     else
                     {
-                        await resultTask;
+                        throw new InvalidOperationException("The WebJobs runtime returned a invocation task that is not awaitable!");
                     }
+                }
+                catch (Exception e)
+                {
+                    exception = e;
+                }
+
+                stopwatch.Stop();
+
+                if (exception != null)
+                {
+                    this.context.CaptureApplicationError(exception);
+
+                    // exception must be sent with response back to caller
+                    this.context.CurrentOperationResponse.SetExceptionResult(
+                        exception,
+                        this.context.CurrentOperation.Operation,
+                        this.errorDataConverter);
+
+                    operationFailed = true;
+                }
+
+                if (this.RollbackFailedOperations)
+                {
+                    // we write back the entity state after each successful operation
+                    if (!operationFailed)
+                    {
+                        if (!this.context.TryWriteback(out var errorResponseMessage, out exception, request.Operation, request.Id.ToString()))
+                        {
+                            // state serialization failed; create error response and roll back.
+                            this.context.CurrentOperationResponse = errorResponseMessage;
+                            operationFailed = true;
+                        }
+                    }
+
+                    if (operationFailed)
+                    {
+                        // discard changes and don't send any signals
+                        this.context.Rollback(initialOutboxPosition);
+                    }
+                }
+
+                // clear the async-local static context that is visible to the application code
+                Entity.SetContext(null);
+
+                // read and clear context
+                var response = this.context.CurrentOperationResponse;
+                this.context.CurrentOperation = null;
+                this.context.CurrentOperationResponse = null;
+
+                if (!operationFailed)
+                {
+                    this.Config.TraceHelper.OperationCompleted(
+                            this.context.HubName,
+                            this.context.Name,
+                            this.context.InstanceId,
+                            request.Id.ToString(),
+                            request.Operation,
+                            this.context.RawInput,
+                            response.Result,
+                            stopwatch.Elapsed.TotalMilliseconds,
+                            isReplay: false);
                 }
                 else
                 {
-                    throw new InvalidOperationException("The WebJobs runtime returned a invocation task that is not awaitable!");
+                    this.Config.TraceHelper.OperationFailed(
+                            this.context.HubName,
+                            this.context.Name,
+                            this.context.InstanceId,
+                            request.Id.ToString(),
+                            request.Operation,
+                            this.context.RawInput,
+                            exception,
+                            stopwatch.Elapsed.TotalMilliseconds,
+                            isReplay: false);
                 }
-            }
-            catch (Exception e)
-            {
-                exception = e;
-            }
 
-            stopwatch.Stop();
-
-            if (exception != null)
-            {
-                this.context.CaptureApplicationError(exception);
-
-                // exception must be sent with response back to caller
-                this.context.CurrentOperationResponse.SetExceptionResult(
-                    exception,
-                    this.context.CurrentOperation.Operation,
-                    this.errorDataConverter);
-
-                operationFailed = true;
-            }
-
-            if (this.RollbackFailedOperations)
-            {
-                // we write back the entity state after each successful operation
-                if (!operationFailed)
+                // send response
+                if (!request.IsSignal)
                 {
-                    if (!this.context.TryWriteback(out var errorResponseMessage, out exception, request.Operation, request.Id.ToString()))
-                    {
-                        // state serialization failed; create error response and roll back.
-                        this.context.CurrentOperationResponse = errorResponseMessage;
-                        operationFailed = true;
-                    }
+                    var target = new OrchestrationInstance() { InstanceId = request.ParentInstanceId, ExecutionId = request.ParentExecutionId };
+                    var jresponse = JToken.FromObject(response, this.messageDataConverter.JsonSerializer);
+                    this.context.SendResponseMessage(target, request.Id, jresponse, response.IsException);
                 }
-
-                if (operationFailed)
-                {
-                    // discard changes and don't send any signals
-                    this.context.Rollback(initialOutboxPosition);
-                }
-            }
-
-            // clear the async-local static context that is visible to the application code
-            Entity.SetContext(null);
-
-            // read and clear context
-            var response = this.context.CurrentOperationResponse;
-            this.context.CurrentOperation = null;
-            this.context.CurrentOperationResponse = null;
-
-            if (!operationFailed)
-            {
-                this.Config.TraceHelper.OperationCompleted(
-                        this.context.HubName,
-                        this.context.Name,
-                        this.context.InstanceId,
-                        request.Id.ToString(),
-                        request.Operation,
-                        this.context.RawInput,
-                        response.Result,
-                        stopwatch.Elapsed.TotalMilliseconds,
-                        isReplay: false);
-            }
-            else
-            {
-                this.Config.TraceHelper.OperationFailed(
-                        this.context.HubName,
-                        this.context.Name,
-                        this.context.InstanceId,
-                        request.Id.ToString(),
-                        request.Operation,
-                        this.context.RawInput,
-                        exception,
-                        stopwatch.Elapsed.TotalMilliseconds,
-                        isReplay: false);
-            }
-
-            // send response
-            if (!request.IsSignal)
-            {
-                var target = new OrchestrationInstance() { InstanceId = request.ParentInstanceId, ExecutionId = request.ParentExecutionId };
-                var jresponse = JToken.FromObject(response, this.messageDataConverter.JsonSerializer);
-                this.context.SendResponseMessage(target, request.Id, jresponse, response.IsException);
             }
         }
 

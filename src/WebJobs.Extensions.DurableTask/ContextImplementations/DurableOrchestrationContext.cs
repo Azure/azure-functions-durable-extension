@@ -4,6 +4,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -690,11 +691,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         request.SetInput(input, this.messageDataConverter);
                     }
 
-                    this.SendEntityMessage(target, request);
-
-                    if (!oneWay)
+                    using (var callOrSignalEntityActivity = !this.IsReplaying ? TraceHelper.StartActivityForCallingOrSignalingEntity(instanceId, EntityId.GetEntityIdFromSchedulerId(instanceId).EntityName, operation, oneWay, Activity.Current?.Context) : null)
                     {
-                        callTask = this.WaitForEntityResponse<TResult>(guid, lockToUse);
+                        if (callOrSignalEntityActivity != null)
+                        {
+                            request.ParentTraceId = callOrSignalEntityActivity.TraceId.ToString();
+                            request.ParentSpanId = callOrSignalEntityActivity.SpanId.ToString();
+                            request.ParentTraceFlags = callOrSignalEntityActivity.ActivityTraceFlags;
+                            request.ParentTraceState = callOrSignalEntityActivity.TraceStateString;
+                        }
+
+                        this.SendEntityMessage(target, request);
+
+                        if (!oneWay)
+                        {
+                            callTask = this.WaitForEntityResponse<TResult>(guid, lockToUse);
+                        }
                     }
 
                     break;

@@ -19,6 +19,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
             internal const string FireAt = "durabletask.fire_at";
         }
 
+        // Should these have "entity" prefixes?
+        internal static class Entity
+        {
+            internal const string Type = Task.Type;
+            internal const string EntityId = "durabletask.entity.entity_id";
+            internal const string TargetInstanceId = "durabletask.entity.target_instance_id";
+            internal const string TargetEntityId = "durabletask.entity.target_entity_id";
+            internal const string EntityOperation = "durabletask.entity.entity_operation";
+        }
+
         internal static class Status
         {
             internal const string Code = "otel.status_code";
@@ -27,6 +37,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
 
         internal static class SpanNames
         {
+            internal static string CallOrSignalEntity(string name, string operation)
+                => $"{TraceActivityConstants.Entity}:{name}:{operation}";
+
+            internal static string EntityStartsAnOrchestration()
+                => $"{TraceActivityConstants.Entity}:{TraceActivityConstants.CreateOrchestration}";
+
             internal static string CreateOrchestration(string name, string? version)
                => FormatName(TraceActivityConstants.CreateOrchestration, name, version);
 

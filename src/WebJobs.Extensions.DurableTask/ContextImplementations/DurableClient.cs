@@ -328,10 +328,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             var guid = Guid.NewGuid(); // unique id for this request
             var instanceId = EntityId.GetSchedulerIdFromEntityId(entityId);
             var instance = new OrchestrationInstance() { InstanceId = instanceId };
+
+            using var signalEntityActivity = TraceHelper.StartActivityForCallingOrSignalingEntity(instanceId, entityId.EntityName, operationName, true, Activity.Current?.Context);
+
             var request = new RequestMessage()
             {
                 ParentInstanceId = null, // means this was sent by a client
                 ParentExecutionId = null,
+                ParentTraceId = signalEntityActivity.TraceId.ToString(),
+                ParentSpanId = signalEntityActivity.SpanId.ToString(),
+                ParentTraceFlags = signalEntityActivity.ActivityTraceFlags,
+                ParentTraceState = signalEntityActivity.TraceStateString,
                 Id = guid,
                 IsSignal = true,
                 Operation = operationName,

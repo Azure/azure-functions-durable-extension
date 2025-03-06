@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
@@ -424,10 +425,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 InstanceId = EntityId.GetSchedulerIdFromEntityId(entity),
             };
+
+            using var signalEntityActivity = TraceHelper.StartActivityForCallingOrSignalingEntity(target.InstanceId, entity.EntityName, operation, true, Activity.Current?.Context, this.InstanceId);
             var request = new RequestMessage()
             {
                 ParentInstanceId = this.InstanceId,
                 ParentExecutionId = null, // for entities, message sorter persists across executions
+                ParentTraceId = signalEntityActivity.TraceId.ToString(),
+                ParentSpanId = signalEntityActivity.SpanId.ToString(),
+                ParentTraceFlags = signalEntityActivity.ActivityTraceFlags,
+                ParentTraceState = signalEntityActivity.TraceStateString,
                 Id = Guid.NewGuid(),
                 IsSignal = true,
                 Operation = operation,
@@ -462,6 +469,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new ArgumentException(nameof(instanceId), "Orchestration instance ids must not start with @");
             }
 
+            using var startOrchestrationActivity = TraceHelper.StartActivityForEntityStartingAnOrchestration(EntityId.GetSchedulerIdFromEntityId(this.self), instanceId, Activity.Current?.Context);
+
             lock (this.outbox)
             {
                 this.outbox.Add(new FireAndForgetMessage()
@@ -469,6 +478,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     InstanceId = instanceId,
                     FunctionName = functionName,
                     Input = input,
+                    ParentTraceId = startOrchestrationActivity.TraceId.ToString(),
+                    ParentSpanId = startOrchestrationActivity.SpanId.ToString(),
+                    ParentTraceFlags = startOrchestrationActivity.ActivityTraceFlags,
+                    ParentTraceState = startOrchestrationActivity.TraceStateString,
                 });
             }
 
@@ -709,7 +722,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                           DurableOrchestrationContext.DefaultVersion,
                           fireAndForgetMessage.InstanceId,
                           fireAndForgetMessage.Input,
-                          new Dictionary<string, string>() { { OrchestrationTags.FireAndForget, "" } });
+                          new Dictionary<string, string>() { { OrchestrationTags.FireAndForget, "" } },
+                          fireAndForgetMessage.ParentTraceId,
+                          fireAndForgetMessage.ParentSpanId,
+                          fireAndForgetMessage.ParentTraceFlags,
+                          fireAndForgetMessage.ParentTraceState);
 
                         System.Diagnostics.Debug.Assert(dummyTask.IsCompleted, "task should be fire-and-forget");
                     }
@@ -776,6 +793,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             public string FunctionName { get; set; }
 
             public object Input { get; set; }
+
+            public string ParentTraceId { get; set; }
+
+            public string ParentSpanId { get; set; }
+
+            public ActivityTraceFlags ParentTraceFlags { get; set; }
+
+            public string ParentTraceState { get; set; }
         }
 
         private class OperationMessage : OutgoingMessage
