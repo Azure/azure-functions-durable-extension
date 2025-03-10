@@ -1,4 +1,4 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System;
@@ -94,7 +94,7 @@ public static class FixtureHelpers
                 {
                     testLogger.LogWarning("Environment variable MSSQL_SA_PASSWORD not set, connection string to SQL emulator may fail");
                 }
-                funcProcess.StartInfo.EnvironmentVariables["SQLDB_Connection"] = $"Server=localhost,1433;Database=DurableDB;User Id=sa;Password={sqlPassword};";
+                funcProcess.StartInfo.EnvironmentVariables["SQLDB_Connection"] = $"Server=localhost,1433;Database=DurableDB;User Id=sa;Password={sqlPassword};Encrypt=True;TrustServerCertificate=True";
                 funcProcess.StartInfo.EnvironmentVariables["AzureFunctionsJobHost__extensions__durableTask__storageProvider__type"] = "mssql";
                 funcProcess.StartInfo.EnvironmentVariables["AzureFunctionsJobHost__extensions__durableTask__storageProvider__connectionStringName"] = "SQLDB_Connection";
                 funcProcess.StartInfo.EnvironmentVariables["AzureFunctionsJobHost__extensions__durableTask__storageProvider__createDatabaseIfNotExists"] = "true";
