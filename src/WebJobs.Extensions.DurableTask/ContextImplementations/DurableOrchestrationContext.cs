@@ -695,9 +695,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     {
                         if (callOrSignalEntityActivity != null)
                         {
-                            request.ParentTraceContext = new RequestMessage.TraceContext(
-                                callOrSignalEntityActivity.TraceId.ToString(),
-                                callOrSignalEntityActivity.SpanId.ToString(),
+                            request.ParentTraceContext = new ActivityContext(
+                                callOrSignalEntityActivity.TraceId,
+                                callOrSignalEntityActivity.SpanId,
                                 callOrSignalEntityActivity.ActivityTraceFlags,
                                 callOrSignalEntityActivity.TraceStateString);
                         }

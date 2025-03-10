@@ -330,7 +330,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             var instance = new OrchestrationInstance() { InstanceId = instanceId };
 
             using var signalEntityActivity = TraceHelper.StartActivityForCallingOrSignalingEntity(instanceId, entityId.EntityName, operationName, true, Activity.Current?.Context);
-            var parentTraceContext = new RequestMessage.TraceContext(signalEntityActivity.TraceId.ToString(), signalEntityActivity.SpanId.ToString(), signalEntityActivity.ActivityTraceFlags, signalEntityActivity.TraceStateString);
+            var parentTraceContext = new ActivityContext(signalEntityActivity.TraceId, signalEntityActivity.SpanId, signalEntityActivity.ActivityTraceFlags, signalEntityActivity.TraceStateString);
             var request = new RequestMessage()
             {
                 ParentInstanceId = null, // means this was sent by a client

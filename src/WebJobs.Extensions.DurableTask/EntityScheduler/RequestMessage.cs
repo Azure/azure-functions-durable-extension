@@ -85,7 +85,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// The parent trace that called this operation.
         /// </summary>
         [JsonProperty(PropertyName = "parentTraceContext", DefaultValueHandling = DefaultValueHandling.Ignore)]
-        public TraceContext ParentTraceContext { get; set; }
+        public ActivityContext? ParentTraceContext { get; set; }
 
         [JsonIgnore]
         public bool IsLockRequest => this.LockSet != null;
@@ -163,25 +163,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 return $"[{(this.IsSignal ? "Signal" : "Call")} '{this.Operation}' operation {this.Id} by {this.ParentInstanceId} {this.ParentExecutionId}]";
             }
-        }
-
-        internal class TraceContext
-        {
-            public TraceContext(string parentTraceId, string parentSpanId, ActivityTraceFlags parentTraceFlags, string parentTraceState)
-            {
-                this.TraceId = parentTraceId;
-                this.SpanId = parentSpanId;
-                this.TraceFlags = parentTraceFlags;
-                this.TraceState = parentTraceState;
-            }
-
-            public string TraceId { get; set; }
-
-            public string SpanId { get; set; }
-
-            public ActivityTraceFlags TraceFlags { get; set; }
-
-            public string TraceState { get; set; }
         }
     }
 }

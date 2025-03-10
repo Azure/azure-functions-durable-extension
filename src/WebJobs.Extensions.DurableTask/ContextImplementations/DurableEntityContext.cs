@@ -428,7 +428,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             };
 
             using var signalEntityActivity = TraceHelper.StartActivityForCallingOrSignalingEntity(target.InstanceId, entity.EntityName, operation, true, Activity.Current?.Context, this.InstanceId);
-            var parentTraceContext = new RequestMessage.TraceContext(signalEntityActivity.TraceId.ToString(), signalEntityActivity.SpanId.ToString(), signalEntityActivity.ActivityTraceFlags, signalEntityActivity.TraceStateString);
+            var parentTraceContext = new ActivityContext(signalEntityActivity.TraceId, signalEntityActivity.SpanId, signalEntityActivity.ActivityTraceFlags, signalEntityActivity.TraceStateString);
             var request = new RequestMessage()
             {
                 ParentInstanceId = this.InstanceId,

@@ -460,11 +460,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.context.Name,
                     request.Operation,
                     request.IsSignal,
-                    new ActivityContext(
-                        ActivityTraceId.CreateFromString(request.ParentTraceContext.TraceId),
-                        ActivitySpanId.CreateFromString(request.ParentTraceContext.SpanId),
-                        request.ParentTraceContext.TraceFlags,
-                        request.ParentTraceContext.TraceState)) : null)
+                    request.ParentTraceContext) : null)
             {
                 try
                 {
