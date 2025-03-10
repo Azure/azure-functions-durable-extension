@@ -454,7 +454,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             Exception exception = null;
 
-            using (var processEntityInvocationActivity = request.ParentTraceId != null && request.ParentSpanId != null ? TraceHelper.StartActivityForProcessingEntityInvocation(this.context.InstanceId, this.context.Name, request.Operation, request.IsSignal, new ActivityContext(ActivityTraceId.CreateFromString(request.ParentTraceId), ActivitySpanId.CreateFromString(request.ParentSpanId), request.ParentTraceFlags, request.ParentTraceState)) : null)
+            using (var processEntityInvocationActivity = request.ParentTraceContext != null ?
+                TraceHelper.StartActivityForProcessingEntityInvocation(
+                    this.context.InstanceId,
+                    this.context.Name,
+                    request.Operation,
+                    request.IsSignal,
+                    new ActivityContext(
+                        ActivityTraceId.CreateFromString(request.ParentTraceContext.TraceId),
+                        ActivitySpanId.CreateFromString(request.ParentTraceContext.SpanId),
+                        request.ParentTraceContext.TraceFlags,
+                        request.ParentTraceContext.TraceState)) : null)
             {
                 try
                 {

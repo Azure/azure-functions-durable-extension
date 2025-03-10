@@ -84,26 +84,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <summary>
         /// The parent trace that called this operation.
         /// </summary>
-        [JsonProperty(PropertyName = "parentTrace", DefaultValueHandling = DefaultValueHandling.Ignore)]
-        public string ParentTraceId { get; set; }
-
-        /// <summary>
-        /// The parent span that called this operation.
-        /// </summary>
-        [JsonProperty(PropertyName = "parentSpan", DefaultValueHandling = DefaultValueHandling.Ignore)]
-        public string ParentSpanId { get; set; }
-
-        /// <summary>
-        /// The trace flags of the parent that called this operation.
-        /// </summary>
-        [JsonProperty(PropertyName = "parentTraceFlags", DefaultValueHandling = DefaultValueHandling.Ignore)]
-        public ActivityTraceFlags ParentTraceFlags { get; set; }
-
-        /// <summary>
-        /// The trace state of the parent that called this operation.
-        /// </summary>
-        [JsonProperty(PropertyName = "parentTraceState", DefaultValueHandling = DefaultValueHandling.Ignore)]
-        public string ParentTraceState { get; set; }
+        [JsonProperty(PropertyName = "parentTraceContext", DefaultValueHandling = DefaultValueHandling.Ignore)]
+        public TraceContext ParentTraceContext { get; set; }
 
         [JsonIgnore]
         public bool IsLockRequest => this.LockSet != null;
@@ -181,6 +163,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 return $"[{(this.IsSignal ? "Signal" : "Call")} '{this.Operation}' operation {this.Id} by {this.ParentInstanceId} {this.ParentExecutionId}]";
             }
+        }
+
+        internal class TraceContext
+        {
+            public TraceContext(string parentTraceId, string parentSpanId, ActivityTraceFlags parentTraceFlags, string parentTraceState)
+            {
+                this.TraceId = parentTraceId;
+                this.SpanId = parentSpanId;
+                this.TraceFlags = parentTraceFlags;
+                this.TraceState = parentTraceState;
+            }
+
+            public string TraceId { get; set; }
+
+            public string SpanId { get; set; }
+
+            public ActivityTraceFlags TraceFlags { get; set; }
+
+            public string TraceState { get; set; }
         }
     }
 }

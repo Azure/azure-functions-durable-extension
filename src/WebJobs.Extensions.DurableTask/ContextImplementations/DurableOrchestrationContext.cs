@@ -695,10 +695,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     {
                         if (callOrSignalEntityActivity != null)
                         {
-                            request.ParentTraceId = callOrSignalEntityActivity.TraceId.ToString();
-                            request.ParentSpanId = callOrSignalEntityActivity.SpanId.ToString();
-                            request.ParentTraceFlags = callOrSignalEntityActivity.ActivityTraceFlags;
-                            request.ParentTraceState = callOrSignalEntityActivity.TraceStateString;
+                            request.ParentTraceContext = new RequestMessage.TraceContext(
+                                callOrSignalEntityActivity.TraceId.ToString(),
+                                callOrSignalEntityActivity.SpanId.ToString(),
+                                callOrSignalEntityActivity.ActivityTraceFlags,
+                                callOrSignalEntityActivity.TraceStateString);
                         }
 
                         this.SendEntityMessage(target, request);
