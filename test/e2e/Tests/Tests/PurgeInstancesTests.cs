@@ -48,6 +48,7 @@ public class PurgeInstancesTests
     }
 
     [Fact]
+    [Trait("DTS", "Skip")] // Skip this test as there is a bug with current DTS backend, the createdTimeTo couldn't be null. 
     public async Task PurgeOrchestrationHistory_End_Succeeds()
     {
         DateTime purgeStartTime = DateTime.MinValue;
@@ -60,6 +61,7 @@ public class PurgeInstancesTests
     }
 
     [Fact]
+    [Trait("DTS", "Skip")] // Skip this test as there is a bug with current DTS backend, the createdTimeTo couldn't be null. 
     public async Task PurgeOrchestrationHistory_NoBoundaries_Succeeds()
     {
         DateTime purgeStartTime = DateTime.MinValue;
@@ -72,6 +74,7 @@ public class PurgeInstancesTests
     }
 
     [Fact]
+    [Trait("DTS", "Skip")] // Skip this test as there is a bug with current DTS backend, the createdTimeTo couldn't be null. 
     public async Task PurgeOrchestrationHistoryAfterInvocation_Succeeds()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("HelloCities_HttpStart", "");
@@ -89,6 +92,7 @@ public class PurgeInstancesTests
     }
 
     [Fact]
+    [Trait("DTS", "Skip")] // Skip this test as there is a bug with current DTS backend, the createdTimeTo couldn't be null. 
     public async Task PurgeAfterPurge_ZeroRows()
     {
         DateTime purgeEndTime = DateTime.UtcNow + TimeSpan.FromMinutes(1);

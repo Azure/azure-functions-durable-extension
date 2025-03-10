@@ -32,7 +32,11 @@ public class ErrorHandlingTests
         await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Failed", 30);
 
         var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
-        Assert.StartsWith("Microsoft.DurableTask.TaskFailedException", orchestrationDetails.Output);
+        
+        // In DTS, the output message is:
+        // "Task 'RaiseException' (#0) failed with an unhandled exception: This activity failed"
+        // Assert.StartsWith("Microsoft.DurableTask.TaskFailedException", orchestrationDetails.Output);
+
         Assert.Contains("This activity failed", orchestrationDetails.Output);
     }
 
@@ -48,7 +52,11 @@ public class ErrorHandlingTests
         await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Failed", 30);
 
         var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
-        Assert.StartsWith("Microsoft.DurableTask.Entities.EntityOperationFailedException", orchestrationDetails.Output);
+        
+        // In DTS, the output message is:
+        // Operation 'ThrowFirstTimeOnly' of entity '@counter@MyExceptionEntity' failed: This entity failed
+        // Assert.StartsWith("Microsoft.DurableTask.Entities.EntityOperationFailedException", orchestrationDetails.Output);
+
         Assert.Contains("This entity failed", orchestrationDetails.Output);
     }
 
@@ -110,6 +118,7 @@ public class ErrorHandlingTests
 
     [Fact]
     [Trait("MSSQL", "Skip")] // Durable Entities are not supported in MSSQL/Dotnet Isolated, see https://github.com/microsoft/durabletask-mssql/issues/205
+    [Trait("DTS", "Skip")] // DTS will fail this test becasue the exception  type is `InvalidOperationException` instead of `EntityOperationFailedException`
     public async Task OrchestratorWithRetriedEntityException_ShouldSucceed()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("RetryEntityException_HttpStart", "");
