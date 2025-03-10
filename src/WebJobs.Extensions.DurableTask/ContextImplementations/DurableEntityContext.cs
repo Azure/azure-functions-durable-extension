@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using DurableTask.Core;
 using DurableTask.Core.Common;
 using DurableTask.Core.Exceptions;
+using DurableTask.Core.Tracing;
 using Microsoft.Azure.WebJobs.Host.Bindings;
 using Newtonsoft.Json;
 
@@ -470,7 +471,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             using var startOrchestrationActivity = TraceHelper.StartActivityForEntityStartingAnOrchestration(EntityId.GetSchedulerIdFromEntityId(this.self), instanceId, Activity.Current?.Context);
-
+            var traceContext = new DistributedTraceContext(startOrchestrationActivity.TraceId.ToString(), startOrchestrationActivity.TraceStateString);
+            traceContext.ParentSpanId = startOrchestrationActivity.SpanId.ToString();
+            traceContext.ParentTraceFlags = startOrchestrationActivity.ActivityTraceFlags;
             lock (this.outbox)
             {
                 this.outbox.Add(new FireAndForgetMessage()
@@ -478,10 +481,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     InstanceId = instanceId,
                     FunctionName = functionName,
                     Input = input,
-                    ParentTraceId = startOrchestrationActivity.TraceId.ToString(),
-                    ParentSpanId = startOrchestrationActivity.SpanId.ToString(),
-                    ParentTraceFlags = startOrchestrationActivity.ActivityTraceFlags,
-                    ParentTraceState = startOrchestrationActivity.TraceStateString,
+                    ParentTraceContext = traceContext,
                 });
             }
 
@@ -723,10 +723,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                           fireAndForgetMessage.InstanceId,
                           fireAndForgetMessage.Input,
                           new Dictionary<string, string>() { { OrchestrationTags.FireAndForget, "" } },
-                          fireAndForgetMessage.ParentTraceId,
-                          fireAndForgetMessage.ParentSpanId,
-                          fireAndForgetMessage.ParentTraceFlags,
-                          fireAndForgetMessage.ParentTraceState);
+                          fireAndForgetMessage.ParentTraceContext);
 
                         System.Diagnostics.Debug.Assert(dummyTask.IsCompleted, "task should be fire-and-forget");
                     }
@@ -794,13 +791,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             public object Input { get; set; }
 
-            public string ParentTraceId { get; set; }
-
-            public string ParentSpanId { get; set; }
-
-            public ActivityTraceFlags ParentTraceFlags { get; set; }
-
-            public string ParentTraceState { get; set; }
+            public DistributedTraceContext ParentTraceContext { get; set; }
         }
 
         private class OperationMessage : OutgoingMessage
