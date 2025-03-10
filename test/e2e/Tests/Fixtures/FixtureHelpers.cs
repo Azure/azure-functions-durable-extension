@@ -99,7 +99,9 @@ public static class FixtureHelpers
                 funcProcess.StartInfo.EnvironmentVariables["AzureFunctionsJobHost__extensions__durableTask__storageProvider__connectionStringName"] = "SQLDB_Connection";
                 funcProcess.StartInfo.EnvironmentVariables["AzureFunctionsJobHost__extensions__durableTask__storageProvider__createDatabaseIfNotExists"] = "true";
                 return;
-            case "dts":
+            case "azuremanaged":
+                funcProcess.StartInfo.EnvironmentVariables["AzureFunctionsJobHost__logging__logLevel__default"] = "Debug";
+                funcProcess.StartInfo.EnvironmentVariables["AzureFunctionsJobHost__logging__logLevel__Host.Startup"] = "Debug";
                 funcProcess.StartInfo.EnvironmentVariables["AzureFunctionsJobHost__extensions__durableTask__hubName"] = "default";
                 funcProcess.StartInfo.EnvironmentVariables["AzureFunctionsJobHost__extensions__durableTask__storageProvider__type"] = "azureManaged";
                 funcProcess.StartInfo.EnvironmentVariables["AzureFunctionsJobHost__extensions__durableTask__storageProvider__connectionStringName"] = "DURABLE_TASK_SCHEDULER_CONNECTION_STRING";
