@@ -182,6 +182,10 @@ function StartMSSQLContainer($mssqlPwd) {
   # Start the SQL Server docker container with the specified edition
   Write-Host "Starting SQL Server 2022-latest Express docker container on port 1433" -ForegroundColor DarkYellow
   docker run --name mssql-server -e ACCEPT_EULA=Y -e "MSSQL_SA_PASSWORD=$mssqlPwd" -e "MSSQL_PID=Express" -p 1433:1433 -d mcr.microsoft.com/mssql/server:2022-latest
+  
+  # create the database with strict binary collation
+  Write-Host "Creating database" -ForegroundColor DarkYellow
+  docker exec -d mssql-server /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "$mssqlPwd" -Q "CREATE DATABASE [DurableDB] COLLATE Latin1_General_100_BIN2_UTF8"
 
   if ($LASTEXITCODE -ne 0) {
       exit $LASTEXITCODE
