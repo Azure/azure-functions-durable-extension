@@ -200,8 +200,8 @@ function StartDTSContainer() {
   docker pull durabletaskspublic.azurecr.io/dts-emulator:latest-amd64
 
   # Start the DTS Server docker container with the specified edition
-  Write-Host "Starting DTS docker container on default ports" -ForegroundColor DarkYellow
-  docker run -itP -e ClientAuth__DisableAuthentication=true -d durabletaskspublic.azurecr.io/dts-emulator:latest-amd64
+  Write-Host "Starting DTS docker container on port 8080" -ForegroundColor DarkYellow
+  docker run -itP -p 8080:8080 -p 8082:8082 -e ClientAuth__DisableAuthentication=true -d durabletaskspublic.azurecr.io/dts-emulator:latest-amd64
 
   if ($LASTEXITCODE -ne 0) {
       exit $LASTEXITCODE
