@@ -691,7 +691,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         request.SetInput(input, this.messageDataConverter);
                     }
 
-                    using (var callOrSignalEntityActivity = !this.IsReplaying ? TraceHelper.StartActivityForCallingOrSignalingEntity(instanceId, EntityId.GetEntityIdFromSchedulerId(instanceId).EntityName, operation, oneWay, Activity.Current?.Context) : null)
+                    using (var callOrSignalEntityActivity = !this.IsReplaying ?
+                        TraceHelper.StartActivityForCallingOrSignalingEntity(
+                            instanceId,
+                            EntityId.GetEntityIdFromSchedulerId(instanceId).EntityName, 
+                            operation,
+                            oneWay,
+                            Activity.Current?.Context) : null)
                     {
                         if (callOrSignalEntityActivity != null)
                         {
