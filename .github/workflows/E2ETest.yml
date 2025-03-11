@@ -69,7 +69,7 @@ jobs:
       - name: Setup E2E tests
         shell: pwsh
         run: |
-          $env:MSSQL_SA_PASSWORD = "Str0ngP@ss!2025"
+          $env:MSSQL_SA_PASSWORD = "TEST12_$([Guid]::NewGuid())!"
           .\test\e2e\Tests\build-e2e-test.ps1 -StartMSSqlContainer
 
       - name: Build
