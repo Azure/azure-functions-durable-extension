@@ -196,7 +196,7 @@ function StartMSSQLContainer($mssqlPwd) {
 
   # Create database
   Write-Host "Creating database DurableDB with Latin1_General_100_BIN2_UTF8 ollation" -ForegroundColor DarkYellow
-  docker exec -d mssql-server /opt/mssql-tools18/bin/sqlcmd -S . -U sa -P "$mssqlPwd" -Q "CREATE DATABASE [DurableDB] COLLATE Latin1_General_100_BIN2_UTF8"
+  docker exec -d mssql-server /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$mssqlPwd" -Q "CREATE DATABASE [DurableDB] COLLATE Latin1_General_100_BIN2_UTF8"
 }
 
 function StartDTSContainer() {
