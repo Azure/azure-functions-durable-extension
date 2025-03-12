@@ -19,7 +19,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// </summary>
     internal class TraceHelper
     {
-        private const string Source = "DurableTask.Core";
+        private const string Source = "WebJobs.Extensions.DurableTask";
 
         private static readonly ActivitySource ActivityTraceSource = new ActivitySource(Source);
 

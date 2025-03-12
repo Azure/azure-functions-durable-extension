@@ -694,19 +694,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     using (var callOrSignalEntityActivity = !this.IsReplaying ?
                         TraceHelper.StartActivityForCallingOrSignalingEntity(
                             instanceId,
-                            EntityId.GetEntityIdFromSchedulerId(instanceId).EntityName, 
+                            EntityId.GetEntityIdFromSchedulerId(instanceId).EntityName,
                             operation,
                             oneWay,
                             Activity.Current?.Context) : null)
                     {
-                        if (callOrSignalEntityActivity != null)
-                        {
-                            request.ParentTraceContext = new ActivityContext(
-                                callOrSignalEntityActivity.TraceId,
-                                callOrSignalEntityActivity.SpanId,
-                                callOrSignalEntityActivity.ActivityTraceFlags,
-                                callOrSignalEntityActivity.TraceStateString);
-                        }
+                        request.ParentTraceContext = callOrSignalEntityActivity?.Context;
 
                         this.SendEntityMessage(target, request);
 
