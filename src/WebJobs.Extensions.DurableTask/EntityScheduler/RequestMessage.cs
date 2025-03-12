@@ -175,11 +175,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.TraceState = parentTraceState;
             }
 
+            [JsonProperty(PropertyName = "traceId", DefaultValueHandling = DefaultValueHandling.Ignore)]
             public string TraceId { get; set; }
+
+            [JsonProperty(PropertyName = "spanId", DefaultValueHandling = DefaultValueHandling.Ignore)]
 
             public string SpanId { get; set; }
 
+            [JsonProperty(PropertyName = "traceFlags", DefaultValueHandling = DefaultValueHandling.Ignore)]
+
             public ActivityTraceFlags TraceFlags { get; set; }
+
+            [JsonProperty(PropertyName = "traceState", DefaultValueHandling = DefaultValueHandling.Ignore)]
 
             public string TraceState { get; set; }
         }
