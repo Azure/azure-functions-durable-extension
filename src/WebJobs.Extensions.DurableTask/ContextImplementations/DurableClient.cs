@@ -330,11 +330,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             var instance = new OrchestrationInstance() { InstanceId = instanceId };
 
             using var signalEntityActivity = TraceHelper.StartActivityForCallingOrSignalingEntity(instanceId, entityId.EntityName, operationName, true, Activity.Current?.Context);
+            var parentTraceContext = new RequestMessage.TraceContext(signalEntityActivity.TraceId.ToString(), signalEntityActivity.SpanId.ToString(), signalEntityActivity.ActivityTraceFlags, signalEntityActivity.TraceStateString);
             var request = new RequestMessage()
             {
                 ParentInstanceId = null, // means this was sent by a client
                 ParentExecutionId = null,
-                ParentTraceContext = signalEntityActivity?.Context,
+                ParentTraceContext = parentTraceContext,
                 Id = guid,
                 IsSignal = true,
                 Operation = operationName,
@@ -740,7 +741,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     EntityStatus status = this.messageDataConverter.Deserialize<EntityStatus>(state.CustomStatus.ToString());
                     if (releaseOrphanedLocks && status.LockedBy != null)
                     {
-                         tasks.Add(CheckForOrphanedLockAndFixIt(state, status.LockedBy));
+                        tasks.Add(CheckForOrphanedLockAndFixIt(state, status.LockedBy));
                     }
 
                     if (removeEmptyEntities)

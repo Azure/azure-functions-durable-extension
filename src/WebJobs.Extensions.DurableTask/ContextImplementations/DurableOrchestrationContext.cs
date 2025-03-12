@@ -699,7 +699,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             oneWay,
                             Activity.Current?.Context) : null)
                     {
-                        request.ParentTraceContext = callOrSignalEntityActivity?.Context;
+                        if (callOrSignalEntityActivity != null)
+                        {
+                            request.ParentTraceContext = new RequestMessage.TraceContext(
+                                callOrSignalEntityActivity.TraceId.ToString(),
+                                callOrSignalEntityActivity.SpanId.ToString(),
+                                callOrSignalEntityActivity.ActivityTraceFlags,
+                                callOrSignalEntityActivity.TraceStateString);
+                        }
 
                         this.SendEntityMessage(target, request);
 
