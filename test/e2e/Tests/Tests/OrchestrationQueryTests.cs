@@ -23,7 +23,6 @@ public class OrchestrationQueryTests
 
 
     [Fact]
-    [Trait("DTS", "Skip")] // Skip this test for now as there is a bug in DTS with GetAllInstances
     public async Task ListAllOrchestrations_ShouldSucceed()
     {
         using HttpResponseMessage statusResponse = await HttpHelpers.InvokeHttpTrigger("GetAllInstances", "");
@@ -39,7 +38,6 @@ public class OrchestrationQueryTests
 
 
     [Fact]
-    [Trait("DTS", "Skip")] // Skip this test for now as there is a bug in DTS with GetAllInstances
     public async Task ListRunningOrchestrations_ShouldContainRunningOrchestration()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("LongOrchestrator_HttpStart", "");

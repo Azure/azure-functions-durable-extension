@@ -22,6 +22,7 @@ public class ErrorHandlingTests
 
     [Fact]
     [Trait("MSSQL", "Skip")] // This test fails for MSSQL unless this bug is fixed: https://github.com/microsoft/durabletask-mssql/issues/287
+    [Trait("DTS", "Skip")] // DTS will fail this test unless this bug is fixed: https://msazure.visualstudio.com/Antares/_workitems/edit/30049587
     public async Task OrchestratorWithUncaughtActivityException_ShouldFail()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("RethrowActivityException_HttpStart", "");
@@ -33,15 +34,13 @@ public class ErrorHandlingTests
 
         var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
         
-        // In DTS, the output message is:
-        // "Task 'RaiseException' (#0) failed with an unhandled exception: This activity failed"
-        // Assert.StartsWith("Microsoft.DurableTask.TaskFailedException", orchestrationDetails.Output);
-
+        Assert.StartsWith("Microsoft.DurableTask.TaskFailedException", orchestrationDetails.Output);
         Assert.Contains("This activity failed", orchestrationDetails.Output);
     }
 
     [Fact]
     [Trait("MSSQL", "Skip")] // Durable Entities are not supported in MSSQL/Dotnet Isolated, see https://github.com/microsoft/durabletask-mssql/issues/205
+    [Trait("DTS", "Skip")] // DTS will fail this test unless this bug is fixed: https://msazure.visualstudio.com/Antares/_workitems/edit/30049587
     public async Task OrchestratorWithUncaughtEntityException_ShouldFail()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("RethrowEntityException_HttpStart", "");
@@ -53,10 +52,7 @@ public class ErrorHandlingTests
 
         var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
         
-        // In DTS, the output message is:
-        // Operation 'ThrowFirstTimeOnly' of entity '@counter@MyExceptionEntity' failed: This entity failed
-        // Assert.StartsWith("Microsoft.DurableTask.Entities.EntityOperationFailedException", orchestrationDetails.Output);
-
+        Assert.StartsWith("Microsoft.DurableTask.Entities.EntityOperationFailedException", orchestrationDetails.Output);
         Assert.Contains("This entity failed", orchestrationDetails.Output);
     }
 
@@ -118,7 +114,7 @@ public class ErrorHandlingTests
 
     [Fact]
     [Trait("MSSQL", "Skip")] // Durable Entities are not supported in MSSQL/Dotnet Isolated, see https://github.com/microsoft/durabletask-mssql/issues/205
-    [Trait("DTS", "Skip")] // DTS will fail this test becasue the exception  type is `InvalidOperationException` instead of `EntityOperationFailedException`
+    [Trait("DTS", "Skip")] // DTS will fail this test unless this issue is fixed, see https://msazure.visualstudio.com/Antares/_workitems/edit/31778744
     public async Task OrchestratorWithRetriedEntityException_ShouldSucceed()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("RetryEntityException_HttpStart", "");
