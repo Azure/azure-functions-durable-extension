@@ -66,10 +66,13 @@ jobs:
         with:
           dotnet-version: 8.0.x
 
+      - name: Initialize Environment Variables
+        run: | 
+          echo "MSSQL_SA_PASSWORD=TEST12_$(echo $RANDOM)!" >> $GITHUB_ENV
+
       - name: Setup E2E tests
         shell: pwsh
         run: |
-          $env:MSSQL_SA_PASSWORD = "TEST12_$([Guid]::NewGuid())!"
           .\test\e2e\Tests\build-e2e-test.ps1 -StartMSSqlContainer
 
       - name: Build
