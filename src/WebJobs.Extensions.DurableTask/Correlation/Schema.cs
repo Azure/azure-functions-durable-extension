@@ -19,7 +19,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
             internal const string FireAt = "durabletask.fire_at";
         }
 
-        // Should these have "entity" prefixes?
         internal static class Entity
         {
             internal const string Type = Task.Type;

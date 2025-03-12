@@ -1,12 +1,7 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using DurableTask.Core.History;
 using DurableTask.Core.Tracing;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
