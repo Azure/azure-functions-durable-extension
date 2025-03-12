@@ -196,12 +196,12 @@ function StartMSSQLContainer($mssqlPwd) {
 }
 
 function StartDTSContainer() {
-  Write-Host "Pulling down the durabletaskspublic.azurecr.io/dts-emulator:latest-amd64 image..."
-  docker pull durabletaskspublic.azurecr.io/dts-emulator:latest-amd64
+  Write-Host "Pulling down the mcr.microsoft.com/dts/dts-emulator image..."
+  docker pull mcr.microsoft.com/dts/dts-emulator
 
   # Start the DTS Server docker container with the specified edition
   Write-Host "Starting DTS docker container on port 8080" -ForegroundColor DarkYellow
-  docker run -itP -p 8080:8080 -p 8082:8082 -e ClientAuth__DisableAuthentication=true -d durabletaskspublic.azurecr.io/dts-emulator:latest-amd64
+  docker run -itP -p 8080:8080 -p 8082:8082 -d mcr.microsoft.com/dts/dts-emulator
 
   if ($LASTEXITCODE -ne 0) {
       exit $LASTEXITCODE
