@@ -80,7 +80,7 @@ public static class EntityErrorHandling
             return "Success";
         }
         // This is interesting - activities, when thrown, raise the native exception type. Entities, however, always raise
-        // EntityOperationFailedException with the 
+        // EntityOperationFailedException
         catch (EntityOperationFailedException ex) 
         {
             return ex.Message;
