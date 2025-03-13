@@ -428,17 +428,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             };
 
             using var signalEntityActivity = TraceHelper.StartActivityForCallingOrSignalingEntity(target.InstanceId, entity.EntityName, operation, true, Activity.Current?.Context, this.InstanceId);
-            var parentTraceContext = new RequestMessage.TraceContext(signalEntityActivity.TraceId.ToString(), signalEntityActivity.SpanId.ToString(), signalEntityActivity.ActivityTraceFlags, signalEntityActivity.TraceStateString);
             var request = new RequestMessage()
             {
                 ParentInstanceId = this.InstanceId,
                 ParentExecutionId = null, // for entities, message sorter persists across executions
-                ParentTraceContext = parentTraceContext,
                 Id = Guid.NewGuid(),
                 IsSignal = true,
                 Operation = operation,
                 ScheduledTime = scheduledTimeUtc,
             };
+            if (signalEntityActivity != null)
+            {
+                request.ParentTraceContext = new RequestMessage.TraceContext(signalEntityActivity.TraceId.ToString(), signalEntityActivity.SpanId.ToString(), signalEntityActivity.ActivityTraceFlags, signalEntityActivity.TraceStateString);
+            }
+
             if (input != null)
             {
                 request.SetInput(input, this.messageDataConverter);
@@ -469,9 +472,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             using var startOrchestrationActivity = TraceHelper.StartActivityForEntityStartingAnOrchestration(EntityId.GetSchedulerIdFromEntityId(this.self), instanceId, Activity.Current?.Context);
-            var traceContext = new DistributedTraceContext(startOrchestrationActivity.TraceId.ToString(), startOrchestrationActivity.TraceStateString);
-            traceContext.ParentSpanId = startOrchestrationActivity.SpanId.ToString();
-            traceContext.ParentTraceFlags = startOrchestrationActivity.ActivityTraceFlags;
+            DistributedTraceContext traceContext = null;
+            if (startOrchestrationActivity != null)
+            {
+                traceContext = new DistributedTraceContext(startOrchestrationActivity.TraceId.ToString(), startOrchestrationActivity.TraceStateString);
+                traceContext.ParentSpanId = startOrchestrationActivity.SpanId.ToString();
+                traceContext.ParentTraceFlags = startOrchestrationActivity.ActivityTraceFlags;
+            }
+
             lock (this.outbox)
             {
                 this.outbox.Add(new FireAndForgetMessage()
