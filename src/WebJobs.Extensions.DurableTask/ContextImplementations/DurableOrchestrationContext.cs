@@ -140,6 +140,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private MessageSorter MessageSorter => this.messageSorter ?? (this.messageSorter = new MessageSorter());
 
+        public string Version => "";
+
         /// <summary>
         /// Returns the orchestrator function input as a raw JSON string value.
         /// </summary>
