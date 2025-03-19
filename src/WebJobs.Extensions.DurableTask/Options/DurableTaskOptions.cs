@@ -23,6 +23,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private string resolvedHubName;
         private string defaultHubName;
 
+        public string AppVersion { get; set; }
+
         /// <summary>
         /// Settings used for Durable HTTP functionality.
         /// </summary>
