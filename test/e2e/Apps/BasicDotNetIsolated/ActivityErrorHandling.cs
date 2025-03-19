@@ -112,7 +112,7 @@ public static class ActivityErrorHandling
             return output;
         }
         catch (TaskFailedException ex)
-        {      
+        {  
             return ex.Message;
         }
     }
