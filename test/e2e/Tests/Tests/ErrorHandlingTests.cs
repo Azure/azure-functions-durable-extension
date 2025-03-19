@@ -1,7 +1,9 @@
-// Copyright (c) .NET Foundation. All rights reserved.
+﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System.Net;
+using Microsoft.DurableTask;
+using Newtonsoft.Json;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -69,6 +71,27 @@ public class ErrorHandlingTests
         var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
         Assert.StartsWith("Task 'RaiseException' (#0) failed with an unhandled exception:", orchestrationDetails.Output);
         Assert.Contains("This activity failed", orchestrationDetails.Output);
+    }
+
+    [Fact]
+    public async Task OrchestratorWithCaughtActivityExceptionFailuredetails_ContainRightErrorType()
+    {
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("CatchActivityExceptionFailureDetails_HttpStart", "");
+
+        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
+        string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
+
+        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", 30);
+
+        var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
+        // Deserialize the output to FailureDetails
+        var failureDetails = JsonConvert.DeserializeObject<TaskFailureDetails>(orchestrationDetails.Output);
+
+        // Check FailureDetails contains the right error type and error message,
+        // Here it should be the same one as the activity function Raise Exception throws.
+        Assert.NotNull(failureDetails);
+        Assert.Equal("System.InvalidOperationException", failureDetails.ErrorType);
+        Assert.Equal("This activity failed", failureDetails.ErrorMessage);
     }
 
     [Fact]
