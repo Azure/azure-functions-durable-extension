@@ -55,7 +55,7 @@ public static class ActivityErrorHandling
         ILogger logger = executionContext.GetLogger("CatchActivityExceptionFailureDetails_HttpStart");
 
         string instanceId = await client.ScheduleNewOrchestrationInstanceAsync(
-            nameof(CatchActivityExceptionFailreDetails));
+            nameof(CatchActivityExceptionFailureDetails));
 
         logger.LogInformation("Started orchestration with ID = '{instanceId}'.", instanceId);
 
@@ -117,8 +117,8 @@ public static class ActivityErrorHandling
         }
     }
 
-    [Function(nameof(CatchActivityExceptionFailreDetails))]
-    public static async Task<TaskFailureDetails> CatchActivityExceptionFailreDetails(
+    [Function(nameof(CatchActivityExceptionFailureDetails))]
+    public static async Task<TaskFailureDetails> CatchActivityExceptionFailureDetails(
         [OrchestrationTrigger] TaskOrchestrationContext context)
     {
         try 
