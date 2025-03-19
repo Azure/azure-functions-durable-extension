@@ -118,7 +118,7 @@ public static class ActivityErrorHandling
     }
 
     [Function(nameof(CatchActivityExceptionFailureDetails))]
-    public static async Task<TaskFailureDetails> CatchActivityExceptionFailureDetails(
+    public static async Task<TaskFailureDetails?> CatchActivityExceptionFailureDetails(
         [OrchestrationTrigger] TaskOrchestrationContext context)
     {
         try 
