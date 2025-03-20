@@ -19,7 +19,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </summary>
         string Name { get; }
 
-        string Version { get { return string.Empty; } }
+        /// <summary>
+        /// Gets the version of the current orchestration function.
+        /// </summary>
+        string Version => string.Empty;
 
         /// <summary>
         /// Gets the instance ID of the currently executing orchestration.
