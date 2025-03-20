@@ -129,6 +129,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         string IDurableOrchestrationContext.Name => this.OrchestrationName;
 
         /// <inheritdoc />
+        string IDurableOrchestrationContext.Version => this.InnerContext.Version;
+
+        /// <inheritdoc />
         string IDurableOrchestrationContext.InstanceId => this.InstanceId;
 
         /// <inheritdoc />
@@ -139,8 +142,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         protected string LockRequestId { get; set; }
 
         private MessageSorter MessageSorter => this.messageSorter ?? (this.messageSorter = new MessageSorter());
-
-        public string Version => this.InnerContext.Version;
 
         /// <summary>
         /// Returns the orchestrator function input as a raw JSON string value.
