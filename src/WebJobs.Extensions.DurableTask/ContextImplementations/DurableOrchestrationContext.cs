@@ -27,8 +27,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         DurableOrchestrationContextBase // for v1 legacy compatibility.
 #pragma warning restore 618
     {
-        public const string DefaultVersion = "";
-
         private readonly Dictionary<string, IEventTaskCompletionSource> pendingExternalEvents =
             new Dictionary<string, IEventTaskCompletionSource>(StringComparer.OrdinalIgnoreCase);
 
@@ -561,8 +559,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
             }
 
-            // TODO: Support for versioning
-            string version = DefaultVersion;
+            string version = ((IDurableOrchestrationContext)this).Version;
             this.Config.ThrowIfFunctionDoesNotExist(functionName, functionType);
 
             Task<TResult> callTask = null;
