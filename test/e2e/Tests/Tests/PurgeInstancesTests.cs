@@ -1,16 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
+﻿using System.Net;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace Microsoft.Azure.Durable.Tests.DotnetIsolatedE2E;
 
-[Collection(Constants.FunctionAppCollectionName)]
+[Collection(Constants.FunctionAppCollectionSequentialName)]
 public class PurgeInstancesTests
 {
     private readonly FunctionAppFixture _fixture;
@@ -95,6 +89,12 @@ public class PurgeInstancesTests
     [Trait("DTS", "Skip")] // Skip this test as there is a bug with current DTS backend, the createdTimeTo couldn't be null. 
     public async Task PurgeAfterPurge_ZeroRows()
     {
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("HelloCities_HttpStart", "");
+        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
+        string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
+
+        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", 30);
+
         DateTime purgeEndTime = DateTime.UtcNow + TimeSpan.FromMinutes(1);
         using HttpResponseMessage purgeResponse = await HttpHelpers.InvokeHttpTrigger("PurgeOrchestrationHistory", $"?purgeEndTime={purgeEndTime:o}");
         string purgeMessage = await purgeResponse.Content.ReadAsStringAsync();

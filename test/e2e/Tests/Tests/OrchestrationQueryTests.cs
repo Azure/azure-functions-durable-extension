@@ -8,7 +8,7 @@ using Xunit.Abstractions;
 
 namespace Microsoft.Azure.Durable.Tests.DotnetIsolatedE2E;
 
-[Collection(Constants.FunctionAppCollectionName)]
+[Collection(Constants.FunctionAppCollectionSequentialName)]
 public class OrchestrationQueryTests
 {
     private readonly FunctionAppFixture _fixture;
