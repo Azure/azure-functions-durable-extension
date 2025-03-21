@@ -22,23 +22,26 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
             this.loggerProvider = new TestLoggerProvider(output);
         }
 
-        [Fact]
+        [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task CanCheckOrchestrationVersion()
+        [InlineData(null, "null")]
+        [InlineData("", "''")]
+        [InlineData("4.5.6-preview", "'4.5.6-preview'")]
+        public async Task CanCheckOrchestrationVersion(string appVersion, string expectedContextVersion)
         {
             using (ITestHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
                 nameof(this.CanCheckOrchestrationVersion),
                 enableExtendedSessions: false,
-                options: new DurableTaskOptions()))
+                options: new DurableTaskOptions { AppVersion = appVersion }))
             {
                 await host.StartAsync();
 
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.GetOrchestrationVersion), null, this.output);
-                var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromMinutes(3));
+                var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromMinutes(1));
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
-                Assert.Equal("null", status.Output.ToString());
+                Assert.Equal(expectedContextVersion, status.Output.ToString());
                 await host.StopAsync();
             }
         }

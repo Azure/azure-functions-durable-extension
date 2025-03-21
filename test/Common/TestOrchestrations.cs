@@ -1553,7 +1553,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public static async Task<string> GetOrchestrationVersion([OrchestrationTrigger] IDurableOrchestrationContext ctx, ILogger log)
         {
             string version = ctx.Version;
-            return await Task.FromResult(version == null ? "null" : $"{version}");
+            return await Task.FromResult(version == null ? "null" : $"'{version}'");
         }
     }
 }
