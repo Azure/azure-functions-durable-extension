@@ -23,6 +23,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private string resolvedHubName;
         private string defaultHubName;
 
+        /// <summary>
+        /// The AppVersion value provided here will be automatically assigned to every orchestration
+        /// instance created by this app, and this value will be available on IDurableOrchestrationContext
+        /// passed to each orchestrator function replay invocation of this orchestration instance.
+        /// </summary>
         public string AppVersion { get; set; }
 
         /// <summary>
