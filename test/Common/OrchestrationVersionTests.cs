@@ -51,24 +51,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             var taskHubName = TestHelpers.GetTaskHubNameFromTestName(nameof(this.OrchestrationVersionIsImmutable), false);
 
-            using ITestHost host1 = GetJobHost(appVersion: "1.0");
+            // Start an orchestration on a host with appVersion set to 1.0, and wait until it's paused.
+            using ITestHost host1 = GetJobHost(taskHubName, appVersion: "1.0");
             await host1.StartAsync();
             var client = await host1.StartOrchestratorAsync(nameof(TestOrchestrations.GetOrchestrationVersion_AfterExternalEvent), null, this.output);
             var status = await client.WaitForCustomStatusAsync(TimeSpan.FromMinutes(1), this.output, "Waiting");
             Assert.Equal(OrchestrationRuntimeStatus.Running, status.RuntimeStatus);
             await host1.StopAsync();
 
-            using ITestHost host2 = GetJobHost(appVersion: "2.0");
+            // Resume the same orchestration on a host with appVersion set to 2.0.
+            using ITestHost host2 = GetJobHost(taskHubName, appVersion: "2.0");
             await host2.StartAsync();
             await client.RaiseEventAsync("Resume", this.output);
             status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromMinutes(1));
             Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
             await host2.StopAsync();
 
+            // The original orchestration version (1.0) persists. Furthermore, this version
+            // is propagated to the sub-orchestration started when this orchestration
+            // was already running on the host with appVersion set to 2.0.
             var expectedOutput = $"Orchestration: '1.0'; Sub-orchestration: '1.0'";
             Assert.Equal(expectedOutput, status.Output.ToString());
 
-            ITestHost GetJobHost(string appVersion)
+            ITestHost GetJobHost(string taskHubName, string appVersion)
             {
                 return TestHelpers.GetJobHost(
                                 this.loggerProvider,
