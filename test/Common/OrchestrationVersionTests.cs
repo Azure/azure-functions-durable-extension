@@ -3,13 +3,11 @@
 
 using System;
 using System.Threading.Tasks;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace WebJobs.Extensions.DurableTask.Tests.V2
+namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
     public class OrchestrationVersionTests
     {
