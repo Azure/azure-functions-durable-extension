@@ -46,5 +46,39 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
                 await host.StopAsync();
             }
         }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task OriginalOrchestrationVersionPersists()
+        {
+            var taskHubName = TestHelpers.GetTaskHubNameFromTestName(nameof(this.OriginalOrchestrationVersionPersists), false);
+
+            using ITestHost host1 = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.OriginalOrchestrationVersionPersists),
+                enableExtendedSessions: false,
+                exactTaskHubName: taskHubName,
+                options: new DurableTaskOptions { AppVersion = "1.0" });
+            await host1.StartAsync();
+            var client = await host1.StartOrchestratorAsync(nameof(TestOrchestrations.GetOrchestrationVersion_AfterExternalEvent), null, this.output);
+            var status = await client.WaitForCustomStatusAsync(TimeSpan.FromMinutes(1), this.output, "Waiting");
+            Assert.Equal(OrchestrationRuntimeStatus.Running, status.RuntimeStatus);
+            await host1.StopAsync();
+
+            using ITestHost host2 = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.OriginalOrchestrationVersionPersists),
+                enableExtendedSessions: false,
+                exactTaskHubName: taskHubName,
+                options: new DurableTaskOptions { AppVersion = "2.0" });
+            await host2.StartAsync();
+            await client.RaiseEventAsync("Resume", this.output);
+            status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromMinutes(1));
+            Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
+            await host2.StopAsync();
+
+            var expected = $"Orchestration: '1.0'; Sub-orchestration: '1.0'";
+            Assert.Equal(expected, status.Output.ToString());
+        }
     }
 }

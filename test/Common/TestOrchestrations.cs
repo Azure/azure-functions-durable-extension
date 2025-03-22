@@ -1557,6 +1557,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return $"Orchestration: {orchVersion}; Sub-orchestration: {subOrchVersion}";
         }
 
+        public static async Task<string> GetOrchestrationVersion_AfterExternalEvent([OrchestrationTrigger] IDurableOrchestrationContext ctx, ILogger log)
+        {
+            ctx.SetCustomStatus("Waiting");
+            await ctx.WaitForExternalEvent<object>("Resume");
+
+            string orchVersion = VersionToString(ctx.Version);
+            string subOrchVersion = await ctx.CallSubOrchestratorAsync<string>(nameof(GetOrchestrationVersion_SubOrchestrator), null);
+            return $"Orchestration: {orchVersion}; Sub-orchestration: {subOrchVersion}";
+        }
+
         public static async Task<string> GetOrchestrationVersion_SubOrchestrator([OrchestrationTrigger] IDurableOrchestrationContext ctx, ILogger log)
         {
             return await Task.FromResult(VersionToString(ctx.Version));
