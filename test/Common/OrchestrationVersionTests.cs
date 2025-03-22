@@ -51,24 +51,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             var taskHubName = TestHelpers.GetTaskHubNameFromTestName(nameof(this.OriginalOrchestrationVersionPersists), false);
 
-            using ITestHost host1 = TestHelpers.GetJobHost(
-                this.loggerProvider,
-                nameof(this.OriginalOrchestrationVersionPersists),
-                enableExtendedSessions: false,
-                exactTaskHubName: taskHubName,
-                options: new DurableTaskOptions { AppVersion = "1.0" });
+            using ITestHost host1 = GetJobHost(appVersion: "1.0");
             await host1.StartAsync();
             var client = await host1.StartOrchestratorAsync(nameof(TestOrchestrations.GetOrchestrationVersion_AfterExternalEvent), null, this.output);
             var status = await client.WaitForCustomStatusAsync(TimeSpan.FromMinutes(1), this.output, "Waiting");
             Assert.Equal(OrchestrationRuntimeStatus.Running, status.RuntimeStatus);
             await host1.StopAsync();
 
-            using ITestHost host2 = TestHelpers.GetJobHost(
-                this.loggerProvider,
-                nameof(this.OriginalOrchestrationVersionPersists),
-                enableExtendedSessions: false,
-                exactTaskHubName: taskHubName,
-                options: new DurableTaskOptions { AppVersion = "2.0" });
+            using ITestHost host2 = GetJobHost(appVersion: "2.0");
             await host2.StartAsync();
             await client.RaiseEventAsync("Resume", this.output);
             status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromMinutes(1));
@@ -77,6 +67,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             var expected = $"Orchestration: '1.0'; Sub-orchestration: '1.0'";
             Assert.Equal(expected, status.Output.ToString());
+
+            ITestHost GetJobHost(string appVersion)
+            {
+                return TestHelpers.GetJobHost(
+                                this.loggerProvider,
+                                nameof(this.OriginalOrchestrationVersionPersists),
+                                enableExtendedSessions: false,
+                                exactTaskHubName: taskHubName,
+                                options: new DurableTaskOptions { AppVersion = appVersion });
+            }
         }
     }
 }
