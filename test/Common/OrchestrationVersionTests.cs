@@ -39,8 +39,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromMinutes(1));
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
-                var expected = $"Orchestration: {expectedContextVersion}; Sub-orchestration: {expectedContextVersion}";
-                Assert.Equal(expected, status.Output.ToString());
+                var expectedOutput = $"Orchestration: {expectedContextVersion}; Sub-orchestration: {expectedContextVersion}";
+                Assert.Equal(expectedOutput, status.Output.ToString());
                 await host.StopAsync();
             }
         }
@@ -65,8 +65,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
             await host2.StopAsync();
 
-            var expected = $"Orchestration: '1.0'; Sub-orchestration: '1.0'";
-            Assert.Equal(expected, status.Output.ToString());
+            var expectedOutput = $"Orchestration: '1.0'; Sub-orchestration: '1.0'";
+            Assert.Equal(expectedOutput, status.Output.ToString());
 
             ITestHost GetJobHost(string appVersion)
             {
