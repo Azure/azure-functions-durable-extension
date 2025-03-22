@@ -25,11 +25,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [InlineData(null, "null")]
         [InlineData("", "''")]
         [InlineData("4.5.6-preview", "'4.5.6-preview'")]
-        public async Task CanCheckOrchestrationVersion(string appVersion, string expectedContextVersion)
+        public async Task OrchestrationVersionIsDeterminedByHostAppVersion(string appVersion, string expectedContextVersion)
         {
             using (ITestHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.CanCheckOrchestrationVersion),
+                nameof(this.OrchestrationVersionIsDeterminedByHostAppVersion),
                 enableExtendedSessions: false,
                 options: new DurableTaskOptions { AppVersion = appVersion }))
             {
@@ -47,9 +47,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task OriginalOrchestrationVersionPersists()
+        public async Task OrchestrationVersionIsImmutable()
         {
-            var taskHubName = TestHelpers.GetTaskHubNameFromTestName(nameof(this.OriginalOrchestrationVersionPersists), false);
+            var taskHubName = TestHelpers.GetTaskHubNameFromTestName(nameof(this.OrchestrationVersionIsImmutable), false);
 
             using ITestHost host1 = GetJobHost(appVersion: "1.0");
             await host1.StartAsync();
@@ -72,7 +72,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 return TestHelpers.GetJobHost(
                                 this.loggerProvider,
-                                nameof(this.OriginalOrchestrationVersionPersists),
+                                nameof(this.OrchestrationVersionIsImmutable),
                                 enableExtendedSessions: false,
                                 exactTaskHubName: taskHubName,
                                 options: new DurableTaskOptions { AppVersion = appVersion });
