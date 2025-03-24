@@ -24,6 +24,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(null, "null")]
         [InlineData("", "''")]
+        [InlineData("1.0", "'1.0'")]
         [InlineData("4.5.6-preview", "'4.5.6-preview'")]
         public async Task OrchestrationVersionIsDeterminedByHostAppVersion(string appVersion, string expectedContextVersion)
         {
