@@ -167,27 +167,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal class TraceContext
         {
-            public TraceContext(string parentTraceId, string parentSpanId, ActivityTraceFlags parentTraceFlags, string parentTraceState)
+            public TraceContext(string traceParent, string traceState)
             {
-                this.TraceId = parentTraceId;
-                this.SpanId = parentSpanId;
-                this.TraceFlags = parentTraceFlags;
-                this.TraceState = parentTraceState;
+                this.TraceParent = traceParent;
+                this.TraceState = traceState;
             }
 
-            [JsonProperty(PropertyName = "traceId", DefaultValueHandling = DefaultValueHandling.Ignore)]
-            public string TraceId { get; set; }
-
-            [JsonProperty(PropertyName = "spanId", DefaultValueHandling = DefaultValueHandling.Ignore)]
-
-            public string SpanId { get; set; }
-
-            [JsonProperty(PropertyName = "traceFlags", DefaultValueHandling = DefaultValueHandling.Ignore)]
-
-            public ActivityTraceFlags TraceFlags { get; set; }
+            [JsonProperty(PropertyName = "traceParent", DefaultValueHandling = DefaultValueHandling.Ignore)]
+            public string TraceParent { get; set; }
 
             [JsonProperty(PropertyName = "traceState", DefaultValueHandling = DefaultValueHandling.Ignore)]
-
             public string TraceState { get; set; }
         }
     }

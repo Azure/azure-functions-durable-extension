@@ -15,6 +15,7 @@ using DurableTask.Core.History;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.WebApiCompatShim;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using DTCore = DurableTask.Core;
@@ -329,7 +330,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             var instanceId = EntityId.GetSchedulerIdFromEntityId(entityId);
             var instance = new OrchestrationInstance() { InstanceId = instanceId };
 
-            using var signalEntityActivity = TraceHelper.StartActivityForCallingOrSignalingEntity(instanceId, entityId.EntityName, operationName, true, Activity.Current?.Context);
+            using var signalEntityActivity = TraceHelper.StartActivityForCallingOrSignalingEntity(instanceId, entityId.EntityName, operationName, true, Activity.Current?.Context, scheduledTime: scheduledTimeUtc);
             var request = new RequestMessage()
             {
                 ParentInstanceId = null, // means this was sent by a client
@@ -341,7 +342,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             };
             if (signalEntityActivity != null)
             {
-                request.ParentTraceContext = new RequestMessage.TraceContext(signalEntityActivity.TraceId.ToString(), signalEntityActivity.SpanId.ToString(), signalEntityActivity.ActivityTraceFlags, signalEntityActivity.TraceStateString);
+                request.ParentTraceContext = new RequestMessage.TraceContext(signalEntityActivity.Id, signalEntityActivity.TraceStateString);
             }
 
             if (operationInput != null)

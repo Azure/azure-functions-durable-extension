@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using DurableTask.Core.Exceptions;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -454,17 +455,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             Exception exception = null;
 
-            using var processEntityInvocationActivity = request.ParentTraceContext != null ?
+            bool successfullyParsed = ActivityContext.TryParse(request.ParentTraceContext?.TraceParent, request.ParentTraceContext?.TraceState, out ActivityContext parentTraceContext);
+            using var processEntityInvocationActivity = successfullyParsed ?
                 TraceHelper.StartActivityForProcessingEntityInvocation(
                     this.context.InstanceId,
                     this.context.Name,
                     request.Operation,
                     request.IsSignal,
-                    new ActivityContext(
-                        ActivityTraceId.CreateFromString(request.ParentTraceContext.TraceId),
-                        ActivitySpanId.CreateFromString(request.ParentTraceContext.SpanId),
-                        request.ParentTraceContext.TraceFlags,
-                        request.ParentTraceContext.TraceState)) : null;
+                    parentTraceContext) : null;
 
             try
             {
@@ -505,6 +503,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.errorDataConverter);
 
                 operationFailed = true;
+
+                processEntityInvocationActivity.SetTag(Schema.Entity.ErrorMessage, exception.Message);
             }
 
             if (this.RollbackFailedOperations)

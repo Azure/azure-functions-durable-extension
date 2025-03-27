@@ -14,6 +14,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using DurableTask.Core.Exceptions;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
 using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -697,14 +698,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             EntityId.GetEntityIdFromSchedulerId(instanceId).EntityName,
                             operation,
                             oneWay,
-                            Activity.Current?.Context) : null)
+                            Activity.Current?.Context,
+                            scheduledTime: scheduledTimeUtc) : null)
                     {
                         if (callOrSignalEntityActivity != null)
                         {
                             request.ParentTraceContext = new RequestMessage.TraceContext(
-                                callOrSignalEntityActivity.TraceId.ToString(),
-                                callOrSignalEntityActivity.SpanId.ToString(),
-                                callOrSignalEntityActivity.ActivityTraceFlags,
+                                callOrSignalEntityActivity.Id,
                                 callOrSignalEntityActivity.TraceStateString);
                         }
 

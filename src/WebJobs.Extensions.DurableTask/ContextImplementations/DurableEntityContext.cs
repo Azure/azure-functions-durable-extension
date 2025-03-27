@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 using DurableTask.Core;
 using DurableTask.Core.Common;
 using DurableTask.Core.Exceptions;
-using DurableTask.Core.Tracing;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
 using Microsoft.Azure.WebJobs.Host.Bindings;
 using Newtonsoft.Json;
 
@@ -427,7 +427,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 InstanceId = EntityId.GetSchedulerIdFromEntityId(entity),
             };
 
-            using var signalEntityActivity = TraceHelper.StartActivityForCallingOrSignalingEntity(target.InstanceId, entity.EntityName, operation, true, Activity.Current?.Context, this.InstanceId);
+            using var signalEntityActivity = TraceHelper.StartActivityForCallingOrSignalingEntity(target.InstanceId, entity.EntityName, operation, true, Activity.Current?.Context, this.InstanceId, scheduledTime: scheduledTimeUtc);
             var request = new RequestMessage()
             {
                 ParentInstanceId = this.InstanceId,
@@ -439,7 +439,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             };
             if (signalEntityActivity != null)
             {
-                request.ParentTraceContext = new RequestMessage.TraceContext(signalEntityActivity.TraceId.ToString(), signalEntityActivity.SpanId.ToString(), signalEntityActivity.ActivityTraceFlags, signalEntityActivity.TraceStateString);
+                request.ParentTraceContext = new RequestMessage.TraceContext(signalEntityActivity.Id, signalEntityActivity.TraceStateString);
             }
 
             if (input != null)
@@ -472,13 +472,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             using var startOrchestrationActivity = TraceHelper.StartActivityForEntityStartingAnOrchestration(EntityId.GetSchedulerIdFromEntityId(this.self), instanceId, Activity.Current?.Context);
-            DistributedTraceContext traceContext = null;
-            if (startOrchestrationActivity != null)
-            {
-                traceContext = new DistributedTraceContext(startOrchestrationActivity.TraceId.ToString(), startOrchestrationActivity.TraceStateString);
-                traceContext.ParentSpanId = startOrchestrationActivity.SpanId.ToString();
-                traceContext.ParentTraceFlags = startOrchestrationActivity.ActivityTraceFlags;
-            }
 
             lock (this.outbox)
             {
@@ -487,7 +480,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     InstanceId = instanceId,
                     FunctionName = functionName,
                     Input = input,
-                    ParentTraceContext = traceContext,
+                    TraceParent = startOrchestrationActivity?.Id,
+                    TraceState = startOrchestrationActivity?.TraceStateString,
                 });
             }
 
@@ -723,13 +717,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     }
                     else if (message is FireAndForgetMessage fireAndForgetMessage)
                     {
+                        var tags = new Dictionary<string, string>() { { OrchestrationTags.FireAndForget, "" } };
+                        if (fireAndForgetMessage.TraceParent != null)
+                        {
+                            tags[OrchestrationTags.TraceParent] = fireAndForgetMessage.TraceParent;
+
+                            // The trace state might be null even in a valid trace context
+                            tags[OrchestrationTags.TraceState] = fireAndForgetMessage.TraceState;
+                        }
+
                         var dummyTask = innerContext.CreateSubOrchestrationInstance<object>(
                           fireAndForgetMessage.FunctionName,
                           DurableOrchestrationContext.DefaultVersion,
                           fireAndForgetMessage.InstanceId,
                           fireAndForgetMessage.Input,
-                          new Dictionary<string, string>() { { OrchestrationTags.FireAndForget, "" } },
-                          fireAndForgetMessage.ParentTraceContext);
+                          tags);
 
                         System.Diagnostics.Debug.Assert(dummyTask.IsCompleted, "task should be fire-and-forget");
                     }
@@ -797,7 +799,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             public object Input { get; set; }
 
-            public DistributedTraceContext ParentTraceContext { get; set; }
+            public string TraceParent { get; set; }
+
+            public string TraceState { get; set; }
         }
 
         private class OperationMessage : OutgoingMessage

@@ -26,6 +26,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
             internal const string TargetInstanceId = "durabletask.entity.target_instance_id";
             internal const string TargetEntityId = "durabletask.entity.target_entity_id";
             internal const string EntityOperation = "durabletask.entity.entity_operation";
+            internal const string ErrorMessage = "durabletask.entity.error_message";
+            internal const string ScheduledTime = "durabletask.entity.scheduled_time";
         }
 
         internal static class Status
