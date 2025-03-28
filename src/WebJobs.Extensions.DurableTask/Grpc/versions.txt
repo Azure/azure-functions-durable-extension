@@ -1,2 +1,2 @@
-# The following files were downloaded from branch stevosyan/distributed-tracing-for-entities at 2025-03-24 23:02:11 UTC
-https://raw.githubusercontent.com/microsoft/durabletask-protobuf/36e201ae2972fe86d42c19c7bc463c52243e39d9/protos/orchestrator_service.proto
+# The following files were downloaded from branch stevosyan/distributed-tracing-for-entities-isolated at 2025-03-28 03:19:45 UTC
+https://raw.githubusercontent.com/microsoft/durabletask-protobuf/c3ba3cbd50904b16357ca747d0ab6f1b7aca7602/protos/orchestrator_service.proto

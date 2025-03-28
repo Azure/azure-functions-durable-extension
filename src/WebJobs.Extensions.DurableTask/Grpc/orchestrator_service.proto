@@ -573,7 +573,7 @@ message OperationRequest {
     string operation = 1;
     string requestId = 2;
     google.protobuf.StringValue input = 3;
-    TraceContext TraceContext = 4;
+    TraceContext traceContext = 4;
 }
 
 message OperationResult {
