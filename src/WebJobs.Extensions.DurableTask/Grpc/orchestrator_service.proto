@@ -75,6 +75,7 @@ message ExecutionStartedEvent {
     google.protobuf.Timestamp scheduledStartTimestamp = 6;
     TraceContext parentTraceContext = 7;
     google.protobuf.StringValue orchestrationSpanID = 8;
+    map<string, string> tags = 9;
 }
 
 message ExecutionCompletedEvent {
@@ -288,6 +289,15 @@ message TerminateOrchestrationAction {
     bool recurse = 3;
 }
 
+message SendEntityMessageAction {
+    oneof EntityMessageType {
+        EntityOperationSignaledEvent entityOperationSignaled = 1;
+        EntityOperationCalledEvent entityOperationCalled = 2;
+        EntityLockRequestedEvent entityLockRequested = 3;
+        EntityUnlockSentEvent entityUnlockSent = 4;
+    }
+}
+
 message OrchestratorAction {
     int32 id = 1;
     oneof orchestratorActionType {
@@ -297,6 +307,7 @@ message OrchestratorAction {
         SendEventAction sendEvent = 5;
         CompleteOrchestrationAction completeOrchestration = 6;
         TerminateOrchestrationAction terminateOrchestration = 7;
+        SendEntityMessageAction sendEntityMessage = 8;
     }
 }
 
@@ -333,14 +344,8 @@ message CreateInstanceRequest {
 }
 
 message OrchestrationIdReusePolicy {
-    repeated OrchestrationStatus operationStatus = 1;
-    CreateOrchestrationAction action = 2;
-}
-
-enum CreateOrchestrationAction {
-    ERROR = 0;
-    IGNORE = 1;
-    TERMINATE = 2;
+    repeated OrchestrationStatus replaceableStatus = 1;
+    reserved 2;
 }
 
 message CreateInstanceResponse {
@@ -381,6 +386,7 @@ message OrchestrationState {
     google.protobuf.StringValue executionId = 12;
     google.protobuf.Timestamp completedTimestamp = 13;
     google.protobuf.StringValue parentInstanceId = 14;
+    map<string, string> tags = 15;
 }
 
 message RaiseEventRequest {
@@ -481,6 +487,7 @@ message SignalEntityRequest {
     google.protobuf.StringValue input = 3;
     string requestId = 4;
     google.protobuf.Timestamp scheduledTime = 5;
+    TraceContext parentTraceContext = 6;
 }
 
 message SignalEntityResponse {
@@ -551,6 +558,8 @@ message EntityBatchResult {
     repeated OperationAction actions = 2;
     google.protobuf.StringValue entityState = 3;
     TaskFailureDetails failureDetails = 4;
+    string completionToken = 5;
+    repeated OperationInfo operationInfos = 6; // used only with DTS
 }
 
 message EntityRequest {
@@ -564,6 +573,7 @@ message OperationRequest {
     string operation = 1;
     string requestId = 2;
     google.protobuf.StringValue input = 3;
+    TraceContext TraceContext = 4;
 }
 
 message OperationResult {
@@ -573,12 +583,19 @@ message OperationResult {
     }
 }
 
+message OperationInfo {
+    string requestId = 1;
+    OrchestrationInstance responseDestination = 2; // null for signals
+}
+
 message OperationResultSuccess {
     google.protobuf.StringValue result = 1;
+    google.protobuf.Timestamp endTime = 2;
 }
 
 message OperationResultFailure {
     TaskFailureDetails failureDetails = 1;
+    google.protobuf.Timestamp endTime = 2;
 }
 
 message OperationAction {
@@ -594,6 +611,8 @@ message SendSignalAction {
     string name = 2;
     google.protobuf.StringValue input = 3;
     google.protobuf.Timestamp scheduledTime = 4;
+    google.protobuf.Timestamp requestTime = 5;
+    TraceContext parentTraceContext = 6;
 }
 
 message StartNewOrchestrationAction {
@@ -602,6 +621,8 @@ message StartNewOrchestrationAction {
     google.protobuf.StringValue version = 3;
     google.protobuf.StringValue input = 4;
     google.protobuf.Timestamp scheduledTime = 5;
+    google.protobuf.Timestamp requestTime = 6;
+    TraceContext parentTraceContext = 7;
 }
 
 service TaskHubSidecarService {
