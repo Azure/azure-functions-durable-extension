@@ -26,13 +26,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [InlineData("", "''")]
         [InlineData("1.0", "'1.0'")]
         [InlineData("4.5.6-preview", "'4.5.6-preview'")]
-        public async Task OrchestrationVersionIsDeterminedByHostAppVersion(string appVersion, string expectedContextVersion)
+        public async Task OrchestrationVersionIsDeterminedByHostAppVersion(string defaultVersion, string expectedContextVersion)
         {
             using (ITestHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
                 nameof(this.OrchestrationVersionIsDeterminedByHostAppVersion),
                 enableExtendedSessions: false,
-                options: new DurableTaskOptions { AppVersion = appVersion }))
+                options: new DurableTaskOptions { DefaultVersion = defaultVersion }))
             {
                 await host.StartAsync();
 
@@ -52,16 +52,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             var taskHubName = TestHelpers.GetTaskHubNameFromTestName(nameof(this.OrchestrationVersionIsImmutable), false);
 
-            // Start an orchestration on a host with appVersion set to 1.0, and wait until it's paused.
-            using ITestHost host1 = GetJobHost(taskHubName, appVersion: "1.0");
+            // Start an orchestration on a host with defaultVersion set to 1.0, and wait until it's paused.
+            using ITestHost host1 = GetJobHost(taskHubName, defaultVersion: "1.0");
             await host1.StartAsync();
             var client = await host1.StartOrchestratorAsync(nameof(TestOrchestrations.GetOrchestrationVersion_AfterExternalEvent), null, this.output);
             var status = await client.WaitForCustomStatusAsync(TimeSpan.FromMinutes(1), this.output, "Waiting");
             Assert.Equal(OrchestrationRuntimeStatus.Running, status.RuntimeStatus);
             await host1.StopAsync();
 
-            // Resume the same orchestration on a host with appVersion set to 2.0.
-            using ITestHost host2 = GetJobHost(taskHubName, appVersion: "2.0");
+            // Resume the same orchestration on a host with defaultVersion set to 2.0.
+            using ITestHost host2 = GetJobHost(taskHubName, defaultVersion: "2.0");
             await host2.StartAsync();
             await client.RaiseEventAsync("Resume", this.output);
             status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromMinutes(1));
@@ -70,18 +70,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             // The original orchestration version (1.0) persists. Furthermore, this version
             // is propagated to the sub-orchestration started when this orchestration
-            // was already running on the host with appVersion set to 2.0.
+            // was already running on the host with defaultVersion set to 2.0.
             var expectedOutput = $"Orchestration: '1.0'; Sub-orchestration: '1.0'";
             Assert.Equal(expectedOutput, status.Output.ToString());
 
-            ITestHost GetJobHost(string taskHubName, string appVersion)
+            ITestHost GetJobHost(string taskHubName, string defaultVersion)
             {
                 return TestHelpers.GetJobHost(
                                 this.loggerProvider,
                                 nameof(this.OrchestrationVersionIsImmutable),
                                 enableExtendedSessions: false,
                                 exactTaskHubName: taskHubName,
-                                options: new DurableTaskOptions { AppVersion = appVersion });
+                                options: new DurableTaskOptions { DefaultVersion = defaultVersion });
             }
         }
     }
