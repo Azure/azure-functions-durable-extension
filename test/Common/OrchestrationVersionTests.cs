@@ -48,9 +48,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task OrchestrationVersionIsImmutable()
+        public async Task ExistingOrchestrationVersionIsImmutable()
         {
-            var taskHubName = TestHelpers.GetTaskHubNameFromTestName(nameof(this.OrchestrationVersionIsImmutable), false);
+            var taskHubName = TestHelpers.GetTaskHubNameFromTestName(nameof(this.ExistingOrchestrationVersionIsImmutable), false);
 
             // Start an orchestration on a host with defaultVersion set to 1.0, and wait until it's paused.
             using ITestHost host1 = GetJobHost(taskHubName, defaultVersion: "1.0");
@@ -78,7 +78,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 return TestHelpers.GetJobHost(
                                 this.loggerProvider,
-                                nameof(this.OrchestrationVersionIsImmutable),
+                                nameof(this.ExistingOrchestrationVersionIsImmutable),
                                 enableExtendedSessions: false,
                                 exactTaskHubName: taskHubName,
                                 options: new DurableTaskOptions { DefaultVersion = defaultVersion });
