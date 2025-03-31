@@ -724,7 +724,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                             // The trace state might be null even in a valid trace context
                             tags[OrchestrationTags.TraceState] = fireAndForgetMessage.TraceState;
-                        }
+                        } //test
 
                         var dummyTask = innerContext.CreateSubOrchestrationInstance<object>(
                           fireAndForgetMessage.FunctionName,
