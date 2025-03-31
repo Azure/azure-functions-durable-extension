@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Xunit;
@@ -22,11 +23,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [InlineData(null, "null")]
-        [InlineData("", "''")]
-        [InlineData("1.0", "'1.0'")]
-        [InlineData("4.5.6-preview", "'4.5.6-preview'")]
-        public async Task OrchestrationVersionIsDeterminedByHostDefaultVersion(string defaultVersion, string expectedContextVersion)
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData("1.0")]
+        [InlineData("4.5.6-preview")]
+        public async Task OrchestrationVersionIsDeterminedByHostDefaultVersion(string defaultVersion)
         {
             using (ITestHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
@@ -39,6 +40,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.GetOrchestrationVersion), null, this.output);
                 var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromMinutes(1));
 
+                var expectedContextVersion = JsonSerializer.Serialize(defaultVersion);
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
                 var expectedOutput = $"Orchestration: {expectedContextVersion}; Sub-orchestration: {expectedContextVersion}";
                 Assert.Equal(expectedOutput, status.Output.ToString());
@@ -71,7 +73,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             // The original orchestration version (1.0) persists. Furthermore, this version
             // is propagated to the sub-orchestration started when this orchestration
             // was already running on the host with defaultVersion set to 2.0.
-            var expectedOutput = $"Orchestration: '1.0'; Sub-orchestration: '1.0'";
+            var expectedOutput = $"Orchestration: \"1.0\"; Sub-orchestration: \"1.0\"";
             Assert.Equal(expectedOutput, status.Output.ToString());
 
             ITestHost GetJobHost(string taskHubName, string defaultVersion)

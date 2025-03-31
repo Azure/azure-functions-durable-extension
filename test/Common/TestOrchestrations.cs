@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -1552,7 +1553,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         public static async Task<string> GetOrchestrationVersion([OrchestrationTrigger] IDurableOrchestrationContext ctx, ILogger log)
         {
-            string orchVersion = VersionToString(ctx.Version);
+            string orchVersion = JsonSerializer.Serialize(ctx.Version);
             string subOrchVersion = await ctx.CallSubOrchestratorAsync<string>(nameof(GetOrchestrationVersion_SubOrchestrator), null);
             return $"Orchestration: {orchVersion}; Sub-orchestration: {subOrchVersion}";
         }
@@ -1562,19 +1563,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             ctx.SetCustomStatus("Waiting");
             await ctx.WaitForExternalEvent<object>("Resume");
 
-            string orchVersion = VersionToString(ctx.Version);
+            string orchVersion = JsonSerializer.Serialize(ctx.Version);
             string subOrchVersion = await ctx.CallSubOrchestratorAsync<string>(nameof(GetOrchestrationVersion_SubOrchestrator), null);
             return $"Orchestration: {orchVersion}; Sub-orchestration: {subOrchVersion}";
         }
 
         public static async Task<string> GetOrchestrationVersion_SubOrchestrator([OrchestrationTrigger] IDurableOrchestrationContext ctx, ILogger log)
         {
-            return await Task.FromResult(VersionToString(ctx.Version));
-        }
-
-        private static string VersionToString(string version)
-        {
-            return version == null ? "null" : $"'{version}'";
+            return await Task.FromResult(JsonSerializer.Serialize(ctx.Version));
         }
     }
 }
