@@ -26,11 +26,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [InlineData("", "''")]
         [InlineData("1.0", "'1.0'")]
         [InlineData("4.5.6-preview", "'4.5.6-preview'")]
-        public async Task OrchestrationVersionIsDeterminedByHostAppVersion(string defaultVersion, string expectedContextVersion)
+        public async Task OrchestrationVersionIsDeterminedByHostDefaultVersion(string defaultVersion, string expectedContextVersion)
         {
             using (ITestHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.OrchestrationVersionIsDeterminedByHostAppVersion),
+                nameof(this.OrchestrationVersionIsDeterminedByHostDefaultVersion),
                 enableExtendedSessions: false,
                 options: new DurableTaskOptions { DefaultVersion = defaultVersion }))
             {
