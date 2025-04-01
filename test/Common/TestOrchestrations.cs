@@ -1179,6 +1179,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             ctx.SignalEntity(entityId, "done");
         }
 
+        public static async Task ScheduledByEntity([OrchestrationTrigger] IDurableOrchestrationContext ctx)
+        {
+            var entityId = ctx.GetInput<EntityId>();
+
+            await ctx.CreateTimer(ctx.CurrentUtcDateTime + TimeSpan.FromSeconds(.2), CancellationToken.None);
+
+            var version = ctx.Version;
+            ctx.SignalEntity(entityId, "done", JsonSerializer.Serialize(version));
+        }
+
         public static async Task<string> LargeEntity([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
             var entityId = ctx.GetInput<EntityId>();
@@ -1554,8 +1564,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public static async Task<string> GetOrchestrationVersion([OrchestrationTrigger] IDurableOrchestrationContext ctx, ILogger log)
         {
             string orchVersion = JsonSerializer.Serialize(ctx.Version);
-            string subOrchVersion = await ctx.CallSubOrchestratorAsync<string>(nameof(GetOrchestrationVersion_SubOrchestrator), null);
-            return $"Orchestration: {orchVersion}; Sub-orchestration: {subOrchVersion}";
+            string subOrchOutput = await ctx.CallSubOrchestratorAsync<string>(nameof(GetOrchestrationVersion_SubOrchestrator), null);
+            return $"Orchestration: {orchVersion}; Sub-orchestration: {subOrchOutput}";
         }
 
         public static async Task<string> GetOrchestrationVersion_AfterExternalEvent([OrchestrationTrigger] IDurableOrchestrationContext ctx, ILogger log)
@@ -1564,11 +1574,34 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             await ctx.WaitForExternalEvent<object>("Resume");
 
             string orchVersion = JsonSerializer.Serialize(ctx.Version);
-            string subOrchVersion = await ctx.CallSubOrchestratorAsync<string>(nameof(GetOrchestrationVersion_SubOrchestrator), null);
-            return $"Orchestration: {orchVersion}; Sub-orchestration: {subOrchVersion}";
+            string subOrchOutput = await ctx.CallSubOrchestratorAsync<string>(nameof(GetOrchestrationVersion_SubOrchestrator), null);
+            return $"Orchestration: {orchVersion}; Sub-orchestration: {subOrchOutput}";
         }
 
         public static async Task<string> GetOrchestrationVersion_SubOrchestrator([OrchestrationTrigger] IDurableOrchestrationContext ctx, ILogger log)
+        {
+            // Create an EntityId for a counter entity
+            var entityId = new EntityId("Launcher2", ctx.NewGuid().ToString());
+
+            await ctx.CallEntityAsync(entityId, "launch");
+
+            string entityResult;
+            while (true)
+            {
+                entityResult = await ctx.CallEntityAsync<string>(entityId, "get");
+                if (entityResult != null)
+                {
+                    break;
+                }
+
+                await ctx.CreateTimer(ctx.CurrentUtcDateTime + TimeSpan.FromSeconds(1), CancellationToken.None);
+            }
+
+            // Return both the orchestration version and entity info
+            return await Task.FromResult($"{JsonSerializer.Serialize(ctx.Version)}; Orchestration from entity: {entityResult}");
+        }
+
+        public static async Task<string> GetOrchestrationVersion_SubOrchestrator2([OrchestrationTrigger] IDurableOrchestrationContext ctx, ILogger log)
         {
             return await Task.FromResult(JsonSerializer.Serialize(ctx.Version));
         }
