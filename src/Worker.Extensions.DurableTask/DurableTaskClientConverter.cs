@@ -48,7 +48,22 @@ internal sealed partial class DurableTaskClientConverter : IInputConverter
                     new InvalidOperationException("Failed to parse the input binding payload data")));
             }
 
-            DurableTaskClient client = this.clientProvider.GetClient(endpoint, inputData?.taskHubName, inputData?.connectionName);
+            int? maxGrpcMessageSize = null;
+
+            // If maxGrpcMessageSize is explicitly set to "null", we preserve it as null.
+            if (!string.Equals(inputData?.maxGrpcMessageSize, "null", StringComparison.OrdinalIgnoreCase))
+            {
+                // If maxGrpcMessageSize is provided but cannot be parsed as an int, the format is invalid.
+                if (!int.TryParse(inputData?.maxGrpcMessageSize, out int parsedSize))
+                {
+                    return new ValueTask<ConversionResult>(ConversionResult.Failed(
+                        new InvalidOperationException("Failed to parse maxGrpcMessageSize from input binding payload")));
+                }
+
+                maxGrpcMessageSize = parsedSize;
+            }
+
+            DurableTaskClient client = this.clientProvider.GetClient(endpoint, inputData?.taskHubName, inputData?.connectionName, maxGrpcMessageSize);
             client = new FunctionsDurableTaskClient(client, inputData!.requiredQueryStringParameters, inputData!.httpBaseUrl);
             return new ValueTask<ConversionResult>(ConversionResult.Success(client));
         }
@@ -62,5 +77,5 @@ internal sealed partial class DurableTaskClientConverter : IInputConverter
     }
 
     // Serializer is case-sensitive and incoming JSON properties are camel-cased.
-    private record DurableClientInputData(string rpcBaseUrl, string taskHubName, string connectionName, string requiredQueryStringParameters, string httpBaseUrl);
+    private record DurableClientInputData(string rpcBaseUrl, string taskHubName, string connectionName, string requiredQueryStringParameters, string httpBaseUrl, string maxGrpcMessageSize);
 }
