@@ -11,13 +11,15 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Web;
 using DurableTask.Core;
+using DurableTask.Core.History;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Routing.Template;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using DTCore = DurableTask.Core;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
@@ -867,13 +869,53 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 var queryNameValuePairs = request.GetQueryNameValuePairs();
 
                 object input = null;
+                string json = null;
+
                 if (request.Content != null && request.Content.Headers?.ContentLength != 0)
                 {
-                    string json = await request.Content.ReadAsStringAsync();
+                    json = await request.Content.ReadAsStringAsync();
                     input = JsonConvert.DeserializeObject(json, this.messageDataConverter.JsonSettings);
                 }
 
-                string id = await client.StartNewAsync(functionName, instanceId, input);
+                // string id = await client.StartNewAsync(functionName, instanceId, input);
+                string id = "";
+                if (client is DurableClient durableClient1)
+                {
+                    var instance = new OrchestrationInstance
+                    {
+                        InstanceId = Guid.NewGuid().ToString("N"),
+                        ExecutionId = Guid.NewGuid().ToString(),
+                    };
+
+                    // Create the ExecutionStartedEvent
+                    ExecutionStartedEvent executionStartedEvent = new ExecutionStartedEvent(-1, json)
+                    {
+                        Name = functionName,
+                        Version = "",
+                        OrchestrationInstance = instance,
+                    };
+
+                    string traceParent = GetHeaderValueFromHeaders("traceparent", request.Headers);
+                    string traceState = GetHeaderValueFromHeaders("tracestate", request.Headers);
+
+                    if (traceParent != null)
+                    {
+                        ActivityContext.TryParse(traceParent, traceState, out ActivityContext parentActivityContext);
+                        using Activity scheduleOrchestrationActivity = StartActivityForNewOrchestration(executionStartedEvent, parentActivityContext);
+                    }
+
+                    await durableClient1.DurabilityProvider.CreateTaskOrchestrationAsync(
+                        new TaskMessage
+                        {
+                            Event = executionStartedEvent,
+                            OrchestrationInstance = instance,
+                        },
+                        this.config.Options.OverridableExistingInstanceStates.ToDedupeStatuses());
+                }
+                else
+                {
+                    id = await client.StartNewAsync(functionName, instanceId, input);
+                }
 
                 TryGetTimeSpanQueryParameterValue(queryNameValuePairs, TimeoutParameter, out TimeSpan? timeout);
                 TryGetTimeSpanQueryParameterValue(queryNameValuePairs, PollingInterval, out TimeSpan? pollingInterval);
@@ -897,6 +939,48 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 return request.CreateErrorResponse(HttpStatusCode.BadRequest, "Invalid JSON content", e);
             }
+        }
+
+        private static string GetHeaderValueFromHeaders(string header, HttpRequestHeaders headers)
+        {
+            if (headers.TryGetValues(header, out IEnumerable<string> values))
+            {
+                return values.FirstOrDefault();
+            }
+
+            return null;
+        }
+
+        internal static Activity? StartActivityForNewOrchestration(ExecutionStartedEvent startEvent, ActivityContext parentTraceContext)
+        {
+            // Create the Activity Source for the WebJobs extension
+            ActivitySource activitySource = new ActivitySource("WebJobs.Extensions.DurableTask");
+
+            // Start the new activity to represent scheduling the orchestration
+            Activity? newActivity = activitySource.CreateActivity(
+                name: Schema.SpanNames.CreateOrchestration(startEvent.Name, startEvent.Version),
+                kind: ActivityKind.Producer,
+                parentContext: parentTraceContext);
+
+            newActivity?.Start();
+
+            if (newActivity != null && !string.IsNullOrEmpty(newActivity.Id))
+            {
+                newActivity.SetTag(Schema.Task.Type, TraceActivityConstants.Orchestration);
+                newActivity.SetTag(Schema.Task.Name, startEvent.Name);
+                newActivity.SetTag(Schema.Task.InstanceId, startEvent.OrchestrationInstance.InstanceId);
+                newActivity.SetTag(Schema.Task.ExecutionId, startEvent.OrchestrationInstance.ExecutionId);
+
+                if (!string.IsNullOrEmpty(startEvent.Version))
+                {
+                    newActivity.SetTag(Schema.Task.Version, startEvent.Version);
+                }
+
+                // Set the parent trace context for the ExecutionStartedEvent
+                startEvent.ParentTraceContext = new DTCore.Tracing.DistributedTraceContext(newActivity?.Id!, newActivity?.TraceStateString);
+            }
+
+            return newActivity;
         }
 
         private async Task<HttpResponseMessage> HandleRestartInstanceRequestAsync(
