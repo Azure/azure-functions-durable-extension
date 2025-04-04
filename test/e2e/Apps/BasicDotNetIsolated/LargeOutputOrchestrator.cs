@@ -22,7 +22,7 @@ public static class LargeOutputOrchestrator
 
         // Add a large message to the outputs that exceeds the Azure Storage Queue message size limit (64 KB),
         // so that blobs will be used instead. 
-        outputs.Add(new string('A', 65 * 1024));
+        outputs.Add(GenerateLargeString(65)); 
 
         return outputs;
     }
@@ -77,5 +77,10 @@ public static class LargeOutputOrchestrator
         await response.WriteStringAsync(output.ToString());
 
         return response;
+    }
+
+    static string GenerateLargeString(int size)
+    {
+        return new string('A', size * 1024);
     }
 }

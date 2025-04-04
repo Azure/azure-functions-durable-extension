@@ -93,9 +93,9 @@ internal partial class FunctionsDurableClientProvider : IAsyncDisposable
     /// <param name="endpoint">The gRPC endpoint this client should connect to.</param>
     /// <param name="taskHub">The name of the task hub this client is for.</param>
     /// <param name="connectionName">The name of the connection to use for the task-hub.</param>
-    /// <param name="maxGrpcMessageSize">Max message size in bytes grpc channel can receive.</param>
+    /// <param name="maxGrpcMessageSizeInBytes">Max message size in bytes grpc channel can receive.</param>
     /// <returns>A <see cref="DurableTaskClient" />.</returns>
-    public DurableTaskClient GetClient(Uri endpoint, string? taskHub, string? connectionName, int? maxGrpcMessageSize)
+    public DurableTaskClient GetClient(Uri endpoint, string? taskHub, string? connectionName, int? maxGrpcMessageSizeInBytes)
     {
         this.VerifyNotDisposed();
         this.sync.EnterReadLock();
@@ -133,7 +133,7 @@ internal partial class FunctionsDurableClientProvider : IAsyncDisposable
                 taskHub,
                 connectionName);
 
-            GrpcChannel channel = CreateChannel(key, maxGrpcMessageSize);
+            GrpcChannel channel = CreateChannel(key, maxGrpcMessageSizeInBytes);
             GrpcDurableTaskClientOptions options = new()
             {
                 Channel = channel,
