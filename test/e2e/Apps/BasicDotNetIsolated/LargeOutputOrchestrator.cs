@@ -15,6 +15,8 @@ public static class LargeOutputOrchestrator
         [OrchestrationTrigger] TaskOrchestrationContext context)
     {
         ILogger logger = context.CreateReplaySafeLogger(nameof(HelloCities));
+        int size = context.GetInput<int>();
+
         logger.LogInformation("Saying hello.");
         var outputs = new List<string>();
 
@@ -22,7 +24,7 @@ public static class LargeOutputOrchestrator
 
         // Add a large message to the outputs that exceeds the Azure Storage Queue message size limit (64 KB),
         // so that blobs will be used instead. 
-        outputs.Add(GenerateLargeString(65)); 
+        outputs.Add(GenerateLargeString(size)); 
 
         return outputs;
     }
@@ -42,10 +44,11 @@ public static class LargeOutputOrchestrator
         FunctionContext executionContext)
     {
         ILogger logger = executionContext.GetLogger("LargeOutputOrchestrator_HttpStart");
-
+        int size = await req.ReadFromJsonAsync<int>();
+        
         // Function input comes from the request content.
         string instanceId = await client.ScheduleNewOrchestrationInstanceAsync(
-            nameof(LargeOutputOrchestrator));
+            nameof(LargeOutputOrchestrator), size);
 
         logger.LogInformation("Started orchestration with ID = '{instanceId}'.", instanceId);
 
@@ -61,7 +64,7 @@ public static class LargeOutputOrchestrator
         string id)
     {
         OrchestrationMetadata? metadata = await client.GetInstancesAsync(instanceId: id, getInputsAndOutputs:true);
-        
+   
         HttpResponseData response;
         if (metadata == null)
         {
