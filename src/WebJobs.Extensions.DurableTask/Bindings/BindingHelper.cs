@@ -144,7 +144,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             /// <summary>
             /// Optional setting that specifies the maximum gRPC receive message size (in bytes) for the DurableTaskClient.
             /// Defaults to 4,194,304 bytes (4 MB).
-            /// In .NET 6.0 or later, setting this value to <c>null</c> removes the receive message size limit.
             /// </summary>
             [JsonProperty("maxGrpcMessageSizeInBytes")]
             public string? MaxGrpcMessageSizeInBytes { get; set; }
