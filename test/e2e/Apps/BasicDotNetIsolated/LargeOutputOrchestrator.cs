@@ -77,7 +77,7 @@ public static class LargeOutputOrchestrator
 
         response = req.CreateResponse(HttpStatusCode.OK);
         response.Headers.Add("Content-Type", "application/json");
-        await response.WriteStringAsync(output.ToString());
+        await response.WriteStringAsync(output!.ToString());
 
         return response;
     }
