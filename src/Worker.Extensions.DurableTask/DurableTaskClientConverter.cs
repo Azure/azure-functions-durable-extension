@@ -47,20 +47,11 @@ internal sealed partial class DurableTaskClientConverter : IInputConverter
                 return new ValueTask<ConversionResult>(ConversionResult.Failed(
                     new InvalidOperationException("Failed to parse the input binding payload data")));
             }
-
-            int? maxGrpcMessageSizeInBytes = null;
-
-            // If maxGrpcMessageSizeInBytes is explicitly set to "null", we preserve it as null.
-            if (!string.Equals(inputData?.maxGrpcMessageSizeInBytes, "null", StringComparison.OrdinalIgnoreCase))
+            
+            if (!int.TryParse(inputData?.maxGrpcMessageSizeInBytes, out int maxGrpcMessageSizeInBytes))
             {
-                // If maxGrpcMessageSizeInBytes is provided but cannot be parsed as an int, the format is invalid.
-                if (!int.TryParse(inputData?.maxGrpcMessageSizeInBytes, out int parsedSize))
-                {
-                    return new ValueTask<ConversionResult>(ConversionResult.Failed(
-                        new InvalidOperationException("Failed to parse maxGrpcMessageSizeInBytes from input binding payload")));
-                }
-
-                maxGrpcMessageSizeInBytes = parsedSize;
+                return new ValueTask<ConversionResult>(ConversionResult.Failed(
+                    new InvalidOperationException("Failed to parse maxGrpcMessageSizeInBytes from input binding payload")));
             }
 
             DurableTaskClient client = this.clientProvider.GetClient(endpoint, inputData?.taskHubName, inputData?.connectionName, maxGrpcMessageSizeInBytes);
