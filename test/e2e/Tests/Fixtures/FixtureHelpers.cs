@@ -87,7 +87,7 @@ public static class FixtureHelpers
         switch ((durableBackendEnvVarValue ?? "").ToLowerInvariant())
         {
             case "azurestorage":
-                funcProcess.StartInfo.EnvironmentVariables["AzureFunctionsJobHost__extensions__durableTask__MaxGrpcMessageSizeInBytes"] = "5242880";
+                funcProcess.StartInfo.EnvironmentVariables["AzureFunctionsJobHost__extensions__durableTask__MaxGrpcMessageSizeInBytes"] = "6291456";
                 return;
             case "mssql":
                 string? sqlPassword = Environment.GetEnvironmentVariable("MSSQL_SA_PASSWORD");
@@ -99,14 +99,14 @@ public static class FixtureHelpers
                 funcProcess.StartInfo.EnvironmentVariables["AzureFunctionsJobHost__extensions__durableTask__storageProvider__type"] = "mssql";
                 funcProcess.StartInfo.EnvironmentVariables["AzureFunctionsJobHost__extensions__durableTask__storageProvider__connectionStringName"] = "SQLDB_Connection";
                 funcProcess.StartInfo.EnvironmentVariables["AzureFunctionsJobHost__extensions__durableTask__storageProvider__createDatabaseIfNotExists"] = "true";
-                funcProcess.StartInfo.EnvironmentVariables["AzureFunctionsJobHost__extensions__durableTask__MaxGrpcMessageSizeInBytes"] = "5242880";
+                funcProcess.StartInfo.EnvironmentVariables["AzureFunctionsJobHost__extensions__durableTask__MaxGrpcMessageSizeInBytes"] = "6291456";
                 return;
             case "azuremanaged":
                 funcProcess.StartInfo.EnvironmentVariables["AzureFunctionsJobHost__extensions__durableTask__hubName"] = "default";
                 funcProcess.StartInfo.EnvironmentVariables["AzureFunctionsJobHost__extensions__durableTask__storageProvider__type"] = "azureManaged";
                 funcProcess.StartInfo.EnvironmentVariables["AzureFunctionsJobHost__extensions__durableTask__storageProvider__connectionStringName"] = "DURABLE_TASK_SCHEDULER_CONNECTION_STRING";
                 funcProcess.StartInfo.EnvironmentVariables["DURABLE_TASK_SCHEDULER_CONNECTION_STRING"] = $"Endpoint=http://localhost:8080;Authentication=None";
-                funcProcess.StartInfo.EnvironmentVariables["AzureFunctionsJobHost__extensions__durableTask__MaxGrpcMessageSizeInBytes"] = "5242880";
+                funcProcess.StartInfo.EnvironmentVariables["AzureFunctionsJobHost__extensions__durableTask__MaxGrpcMessageSizeInBytes"] = "6291456";
                 return;
             default:
                 testLogger.LogWarning("Environment variable E2E_TEST_DURABLE_BACKEND not set, tests configured for Azure Storage");

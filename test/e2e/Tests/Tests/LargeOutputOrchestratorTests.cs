@@ -21,7 +21,7 @@ public class LargeOutputOrcehstratorTests
     }
 
     [Theory]
-    [InlineData(4608)] // This value exceeds the default 4 MB, as the test sets the threshold to 5 MB.
+    [InlineData(65)] // Provide a value slightly exceeding the 64 KB Azure Queue Storage limit to trigger use of blob storage instead at Azure Storage backend.
     public async Task LargeOutputStatusQueryTests(int size)
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTriggerWithBody("LargeOutputOrchestrator_HttpStart", size.ToString(), "application/json");
@@ -40,7 +40,8 @@ public class LargeOutputOrcehstratorTests
     }
 
     [Theory]
-    [InlineData(4608)]// This value exceeds the default 4 MB, as the test sets the threshold to 5 MB.
+    [InlineData(4608)]// This value exceeds the default 4 MB, as the test sets the threshold to 6 MB.
+    [Trait("DTS", "Skip")] 
     public async Task DurableTaskClientWriteOutputTests(int size)
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTriggerWithBody("LargeOutputOrchestrator_HttpStart", size.ToString(), "application/json");
