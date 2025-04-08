@@ -456,6 +456,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             Exception exception = null;
 
             bool successfullyParsed = ActivityContext.TryParse(request.ParentTraceContext?.TraceParent, request.ParentTraceContext?.TraceState, out ActivityContext parentTraceContext);
+
+            // We only want to create a trace activity for processing the entity invocation in the case that we can successfully parse the trace context of the request that led to this entity invocation.
+            // Otherwise, we will create an unlinked trace activity with no parent.
             using var processEntityInvocationActivity = successfullyParsed ?
                 TraceHelper.StartActivityForProcessingEntityInvocation(
                     this.context.InstanceId,

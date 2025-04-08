@@ -692,28 +692,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         request.SetInput(input, this.messageDataConverter);
                     }
 
-                    using (var callOrSignalEntityActivity = !this.IsReplaying ?
+                    var callOrSignalEntityActivity = !this.IsReplaying ?
                         TraceHelper.StartActivityForCallingOrSignalingEntity(
                             instanceId,
                             EntityId.GetEntityIdFromSchedulerId(instanceId).EntityName,
                             operation,
                             oneWay,
                             Activity.Current?.Context,
-                            scheduledTime: scheduledTimeUtc) : null)
+                            scheduledTime: scheduledTimeUtc) : null;
+
+                    if (!string.IsNullOrEmpty(callOrSignalEntityActivity?.Id))
                     {
-                        if (callOrSignalEntityActivity != null)
-                        {
-                            request.ParentTraceContext = new RequestMessage.TraceContext(
-                                callOrSignalEntityActivity.Id,
-                                callOrSignalEntityActivity.TraceStateString);
-                        }
+                        request.ParentTraceContext = new RequestMessage.TraceContext(
+                            callOrSignalEntityActivity.Id,
+                            callOrSignalEntityActivity.TraceStateString);
+                    }
 
-                        this.SendEntityMessage(target, request);
+                    this.SendEntityMessage(target, request);
 
-                        if (!oneWay)
-                        {
-                            callTask = this.WaitForEntityResponse<TResult>(guid, lockToUse);
-                        }
+                    // We want to end the activity before we potentially wait for a response, so that its duration reflects sending the entity message
+                    // and does not include the entity "doing the work" (this is captured by the Activity made upon entity invocation)
+                    callOrSignalEntityActivity?.Dispose();
+
+                    if (!oneWay)
+                    {
+                        callTask = this.WaitForEntityResponse<TResult>(guid, lockToUse);
                     }
 
                     break;
