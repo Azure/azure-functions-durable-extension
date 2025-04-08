@@ -951,18 +951,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return null;
         }
 
-        internal static Activity? StartActivityForNewOrchestration(ExecutionStartedEvent startEvent, ActivityContext parentTraceContext)
+        internal static Activity StartActivityForNewOrchestration(ExecutionStartedEvent startEvent, ActivityContext parentTraceContext)
         {
             // Create the Activity Source for the WebJobs extension
             ActivitySource activitySource = new ActivitySource("WebJobs.Extensions.DurableTask");
 
             // Start the new activity to represent scheduling the orchestration
-            Activity? newActivity = activitySource.CreateActivity(
+            Activity newActivity = activitySource.CreateActivity(
                 name: Schema.SpanNames.CreateOrchestration(startEvent.Name, startEvent.Version),
                 kind: ActivityKind.Producer,
                 parentContext: parentTraceContext);
 
-            newActivity?.Start();
+            newActivity.Start();
 
             if (newActivity != null && !string.IsNullOrEmpty(newActivity.Id))
             {
