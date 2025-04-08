@@ -559,6 +559,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
             }
 
+            // Propagate the default version to orchestrators.
+            // TODO: Decide whether we want to propagate the default version to actitities and entities as well.
+            string version = (functionType == FunctionType.Orchestrator)
+                             ? this.Config.Options.DefaultVersion
+                             : string.Empty;
+
             this.Config.ThrowIfFunctionDoesNotExist(functionName, functionType);
 
             Task<TResult> callTask = null;
@@ -572,22 +578,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     System.Diagnostics.Debug.Assert(instanceId == null, "The instanceId parameter should not be used for activity functions.");
                     System.Diagnostics.Debug.Assert(operation == null, "The operation parameter should not be used for activity functions.");
                     System.Diagnostics.Debug.Assert(!oneWay, "The oneWay parameter should not be used for activity functions.");
+                    if (retryOptions == null)
                     {
-                        string version = string.Empty;
-                        if (retryOptions == null)
-                        {
-                            this.IncrementActionsOrThrowException();
-                            callTask = this.InnerContext.ScheduleTask<TResult>(functionName, version, input);
-                        }
-                        else
-                        {
-                            this.IncrementActionsOrThrowException();
-                            callTask = this.InnerContext.ScheduleWithRetry<TResult>(
-                                functionName,
-                                version,
-                                retryOptions.GetRetryOptions(),
-                                input);
-                        }
+                        this.IncrementActionsOrThrowException();
+                        callTask = this.InnerContext.ScheduleTask<TResult>(functionName, version, input);
+                    }
+                    else
+                    {
+                        this.IncrementActionsOrThrowException();
+                        callTask = this.InnerContext.ScheduleWithRetry<TResult>(
+                            functionName,
+                            version,
+                            retryOptions.GetRetryOptions(),
+                            input);
                     }
 
                     break;
@@ -608,46 +611,43 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         throw new ArgumentException(nameof(instanceId), "Orchestration instance ids must not start with @");
                     }
 
+                    if (oneWay)
                     {
-                        string version = this.Config.Options.DefaultVersion;
-                        if (oneWay)
+                        this.IncrementActionsOrThrowException();
+                        var dummyTask = this.InnerContext.CreateSubOrchestrationInstance<TResult>(
+                                functionName,
+                                version,
+                                instanceId,
+                                input,
+                                new Dictionary<string, string>() { { OrchestrationTags.FireAndForget, "" } });
+
+                        System.Diagnostics.Debug.Assert(dummyTask.IsCompleted, "task should be fire-and-forget");
+                    }
+                    else
+                    {
+                        if (this.ContextLocks != null)
+                        {
+                            throw new LockingRulesViolationException("While holding locks, cannot call suborchestrators.");
+                        }
+
+                        if (retryOptions == null)
                         {
                             this.IncrementActionsOrThrowException();
-                            var dummyTask = this.InnerContext.CreateSubOrchestrationInstance<TResult>(
-                                    functionName,
-                                    version,
-                                    instanceId,
-                                    input,
-                                    new Dictionary<string, string>() { { OrchestrationTags.FireAndForget, "" } });
-
-                            System.Diagnostics.Debug.Assert(dummyTask.IsCompleted, "task should be fire-and-forget");
+                            callTask = this.InnerContext.CreateSubOrchestrationInstance<TResult>(
+                                functionName,
+                                version,
+                                instanceId,
+                                input);
                         }
                         else
                         {
-                            if (this.ContextLocks != null)
-                            {
-                                throw new LockingRulesViolationException("While holding locks, cannot call suborchestrators.");
-                            }
-
-                            if (retryOptions == null)
-                            {
-                                this.IncrementActionsOrThrowException();
-                                callTask = this.InnerContext.CreateSubOrchestrationInstance<TResult>(
-                                    functionName,
-                                    version,
-                                    instanceId,
-                                    input);
-                            }
-                            else
-                            {
-                                this.IncrementActionsOrThrowException();
-                                callTask = this.InnerContext.CreateSubOrchestrationInstanceWithRetry<TResult>(
-                                    functionName,
-                                    version,
-                                    instanceId,
-                                    retryOptions.GetRetryOptions(),
-                                    input);
-                            }
+                            this.IncrementActionsOrThrowException();
+                            callTask = this.InnerContext.CreateSubOrchestrationInstanceWithRetry<TResult>(
+                                functionName,
+                                version,
+                                instanceId,
+                                retryOptions.GetRetryOptions(),
+                                input);
                         }
                     }
 
