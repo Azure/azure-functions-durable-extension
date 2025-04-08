@@ -868,8 +868,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 var queryNameValuePairs = request.GetQueryNameValuePairs();
 
-                object input = null;
                 string json = null;
+                object input = null;
 
                 if (request.Content != null && request.Content.Headers?.ContentLength != 0)
                 {
@@ -877,9 +877,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     input = JsonConvert.DeserializeObject(json, this.messageDataConverter.JsonSettings);
                 }
 
-                // string id = await client.StartNewAsync(functionName, instanceId, input);
                 string id = "";
-                if (client is DurableClient durableClient1)
+                if (client is DurableClient durableClient)
                 {
                     var instance = new OrchestrationInstance
                     {
@@ -891,7 +890,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     ExecutionStartedEvent executionStartedEvent = new ExecutionStartedEvent(-1, json)
                     {
                         Name = functionName,
-                        Version = "",
                         OrchestrationInstance = instance,
                     };
 
@@ -904,13 +902,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         using Activity scheduleOrchestrationActivity = StartActivityForNewOrchestration(executionStartedEvent, parentActivityContext);
                     }
 
-                    await durableClient1.DurabilityProvider.CreateTaskOrchestrationAsync(
+                    await durableClient.DurabilityProvider.CreateTaskOrchestrationAsync(
                         new TaskMessage
                         {
                             Event = executionStartedEvent,
                             OrchestrationInstance = instance,
                         },
                         this.config.Options.OverridableExistingInstanceStates.ToDedupeStatuses());
+
+                    id = instance.InstanceId;
                 }
                 else
                 {
@@ -921,7 +921,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 TryGetTimeSpanQueryParameterValue(queryNameValuePairs, PollingInterval, out TimeSpan? pollingInterval);
 
                 // for durability providers that support poll-free waiting, we override the specified polling interval
-                if (client is DurableClient durableClient && durableClient.DurabilityProvider.SupportsPollFreeWait)
+                if (client is DurableClient pollFreeDurableClient && pollFreeDurableClient.DurabilityProvider.SupportsPollFreeWait)
                 {
                     pollingInterval = timeout;
                 }
