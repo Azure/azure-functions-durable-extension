@@ -8,8 +8,7 @@ using Microsoft.CodeAnalysis.Diagnostics;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 {
-    [DiagnosticAnalyzer(LanguageNames.CSharp)]
-    public class GuidAnalyzer : DiagnosticAnalyzer
+    public class GuidAnalyzer
     {
         public const string DiagnosticId = "DF0102";
 
@@ -21,8 +20,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         public static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, Severity, isEnabledByDefault: true, description: Description, 
             customTags: WellKnownDiagnosticTags.CompilationEnd);
-
-        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => new ImmutableArray<DiagnosticDescriptor>() { Rule };
 
         internal static bool RegisterDiagnostic(CompilationAnalysisContext context, SemanticModel semanticModel, SyntaxNode method)
         {
@@ -55,11 +52,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             }
 
             return diagnosedIssue;
-        }
-
-        public override void Initialize(AnalysisContext context)
-        {
-            context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.Analyze | GeneratedCodeAnalysisFlags.ReportDiagnostics);
         }
     }
 }

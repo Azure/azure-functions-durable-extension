@@ -5,13 +5,11 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 {
-    [DiagnosticAnalyzer(LanguageNames.CSharp)]
-    public class MethodInvocationAnalyzer : DiagnosticAnalyzer
+    public class MethodInvocationAnalyzer
     {
         public const string DiagnosticId = "DF0107";
 
@@ -25,8 +23,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             customTags: WellKnownDiagnosticTags.CompilationEnd);
 
         private readonly HashSet<MethodInformation> methodsVisited;
-
-        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => new ImmutableArray<DiagnosticDescriptor>() { Rule };
 
         public MethodInvocationAnalyzer()
         {
@@ -70,11 +66,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     }
                 }
             }
-        }
-
-        public override void Initialize(AnalysisContext context)
-        {
-            context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.Analyze | GeneratedCodeAnalysisFlags.ReportDiagnostics);
         }
     }
 }

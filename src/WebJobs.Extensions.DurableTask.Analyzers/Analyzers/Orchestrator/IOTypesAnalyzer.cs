@@ -1,15 +1,13 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 {
-    [DiagnosticAnalyzer(LanguageNames.CSharp)]
-    public class IOTypesAnalyzer : DiagnosticAnalyzer
+    public class IOTypesAnalyzer
     {
         public const string DiagnosticId = "DF0105";
 
@@ -21,8 +19,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         public static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, Severity, isEnabledByDefault: true, description: Description,
             customTags: WellKnownDiagnosticTags.CompilationEnd);
-
-        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => new ImmutableArray<DiagnosticDescriptor>() { Rule };
 
         internal static bool RegisterDiagnostic(CompilationAnalysisContext context, SemanticModel semanticModel, SyntaxNode method)
         {
@@ -55,11 +51,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         private static bool IsIOClass(string s)
         {
             return s.Contains("HttpClient") || s.Contains("SqlConnection") || s.Contains("CloudBlobClient") || s.Contains("CloudQueueClient") || s.Contains("CloudTableClient") || s.Contains("DocumentClient") || s.Contains("WebRequest");
-        }
-
-        public override void Initialize(AnalysisContext context)
-        {
-            context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.Analyze | GeneratedCodeAnalysisFlags.ReportDiagnostics);
         }
     }
 }
