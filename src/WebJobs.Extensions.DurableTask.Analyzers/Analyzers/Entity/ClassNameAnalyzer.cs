@@ -25,8 +25,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         private List<string> classNames = new List<string>();
         private List<SyntaxNode> entityTriggerAttributes = new List<SyntaxNode>();
 
-        public static readonly DiagnosticDescriptor ClassNameCloseRule = new DiagnosticDescriptor(DiagnosticId, Title, CloseMessageFormat, Category, Severity, isEnabledByDefault: true, description: Description);
-        public static readonly DiagnosticDescriptor ClassNameMissingRule = new DiagnosticDescriptor(DiagnosticId, Title, MissingMessageFormat, Category, Severity, isEnabledByDefault: true, description: Description);
+        public static readonly DiagnosticDescriptor ClassNameCloseRule = new DiagnosticDescriptor(DiagnosticId, Title, CloseMessageFormat, Category, Severity, isEnabledByDefault: true, description: Description, 
+            customTags: WellKnownDiagnosticTags.CompilationEnd);
+        public static readonly DiagnosticDescriptor ClassNameMissingRule = new DiagnosticDescriptor(DiagnosticId, Title, MissingMessageFormat, Category, Severity, isEnabledByDefault: true, description: Description, 
+            customTags: WellKnownDiagnosticTags.CompilationEnd);
         
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get { return ImmutableArray.Create(ClassNameCloseRule, ClassNameMissingRule); } }
 
