@@ -42,7 +42,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 var expectedContextVersion = JsonSerializer.Serialize(defaultVersion);
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
-                var expectedOutput = $"Orchestration: {expectedContextVersion}; Sub-orchestration: {expectedContextVersion}; Orchestration from entity: {expectedContextVersion}";
+                var expectedOutput = $"Orchestration: {expectedContextVersion}; Sub-orchestration: {expectedContextVersion}; Sub-orchestration from entity: {expectedContextVersion}";
                 Assert.Equal(expectedOutput, status.Output.ToString());
                 await host.StopAsync();
             }
@@ -73,7 +73,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             // The original orchestration version (1.0) persists. However, this version
             // is *not* propagated to the sub-orchestration started when this orchestration
             // was already running on the host with defaultVersion set to 2.0.
-            var expectedOutput = $"Orchestration: \"1.0\"; Sub-orchestration: \"2.0\"; Orchestration from entity: \"2.0\"";
+            var expectedOutput = $"Orchestration: \"1.0\"; Sub-orchestration: \"2.0\"; Sub-orchestration from entity: \"2.0\"";
             Assert.Equal(expectedOutput, status.Output.ToString());
 
             ITestHost GetJobHost(string taskHubName, string defaultVersion)

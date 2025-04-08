@@ -1580,7 +1580,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         public static async Task<string> GetOrchestrationVersion_SubOrchestrator([OrchestrationTrigger] IDurableOrchestrationContext ctx, ILogger log)
         {
-            // Create an EntityId for a counter entity
             var entityId = new EntityId("LauncherStoringOrchestrationOutput", ctx.NewGuid().ToString());
 
             await ctx.CallEntityAsync(entityId, "launch");
@@ -1598,12 +1597,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
 
             // Return both the orchestration version and entity info
-            return await Task.FromResult($"{JsonSerializer.Serialize(ctx.Version)}; Orchestration from entity: {entityResult}");
-        }
-
-        public static async Task<string> GetOrchestrationVersion_SubOrchestrator2([OrchestrationTrigger] IDurableOrchestrationContext ctx, ILogger log)
-        {
-            return await Task.FromResult(JsonSerializer.Serialize(ctx.Version));
+            return await Task.FromResult($"{JsonSerializer.Serialize(ctx.Version)}; Sub-orchestration from entity: {entityResult}");
         }
     }
 }
