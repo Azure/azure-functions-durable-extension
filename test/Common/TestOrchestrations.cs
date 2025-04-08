@@ -1581,7 +1581,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public static async Task<string> GetOrchestrationVersion_SubOrchestrator([OrchestrationTrigger] IDurableOrchestrationContext ctx, ILogger log)
         {
             // Create an EntityId for a counter entity
-            var entityId = new EntityId("Launcher2", ctx.NewGuid().ToString());
+            var entityId = new EntityId("LauncherStoringOrchestrationOutput", ctx.NewGuid().ToString());
 
             await ctx.CallEntityAsync(entityId, "launch");
 

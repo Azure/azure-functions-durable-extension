@@ -378,7 +378,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         //-------------- An entity that launches an orchestration and stores its output -----------------
 
-        public static void LauncherEntity2([EntityTrigger(EntityName = "Launcher2")] IDurableEntityContext context)
+        public static void LauncherStoringOrchestrationOutputEntity([EntityTrigger(EntityName = "LauncherStoringOrchestrationOutput")] IDurableEntityContext context)
         {
             var (output, done) = context.HasState ? context.GetState<(string, bool)>() : (null, false);
 
