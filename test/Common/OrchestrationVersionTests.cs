@@ -70,10 +70,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
             await host2.StopAsync();
 
-            // The original orchestration version (1.0) persists. Furthermore, this version
-            // is propagated to the sub-orchestration started when this orchestration
+            // The original orchestration version (1.0) persists. However, this version
+            // is *not* propagated to the sub-orchestration started when this orchestration
             // was already running on the host with defaultVersion set to 2.0.
-            var expectedOutput = $"Orchestration: \"1.0\"; Sub-orchestration: \"1.0\"; Orchestration from entity: \"2.0\"";
+            var expectedOutput = $"Orchestration: \"1.0\"; Sub-orchestration: \"2.0\"; Orchestration from entity: \"2.0\"";
             Assert.Equal(expectedOutput, status.Output.ToString());
 
             ITestHost GetJobHost(string taskHubName, string defaultVersion)
