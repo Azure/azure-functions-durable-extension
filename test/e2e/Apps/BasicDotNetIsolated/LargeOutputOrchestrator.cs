@@ -1,3 +1,6 @@
+// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the MIT License. See License.txt in the project root for license information.
+
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.DurableTask;
@@ -15,7 +18,7 @@ public static class LargeOutputOrchestrator
         [OrchestrationTrigger] TaskOrchestrationContext context)
     {
         ILogger logger = context.CreateReplaySafeLogger(nameof(HelloCities));
-        int size = context.GetInput<int>();
+        int sizeInKB = context.GetInput<int>();
 
         logger.LogInformation("Saying hello.");
         var outputs = new List<string>();
@@ -24,7 +27,7 @@ public static class LargeOutputOrchestrator
 
         // Add a large message to the outputs that exceeds the Azure Storage Queue message size limit (64 KB),
         // so that blobs will be used instead. 
-        outputs.Add(GenerateLargeString(size)); 
+        outputs.Add(GenerateLargeString(sizeInKB));
 
         return outputs;
     }
@@ -44,11 +47,11 @@ public static class LargeOutputOrchestrator
         FunctionContext executionContext)
     {
         ILogger logger = executionContext.GetLogger("LargeOutputOrchestrator_HttpStart");
-        int size = await req.ReadFromJsonAsync<int>();
+        int sizeInKB = await req.ReadFromJsonAsync<int>();
         
         // Function input comes from the request content.
         string instanceId = await client.ScheduleNewOrchestrationInstanceAsync(
-            nameof(LargeOutputOrchestrator), size);
+            nameof(LargeOutputOrchestrator), input: sizeInKB);
 
         logger.LogInformation("Started orchestration with ID = '{instanceId}'.", instanceId);
 
@@ -82,8 +85,8 @@ public static class LargeOutputOrchestrator
         return response;
     }
 
-    static string GenerateLargeString(int size)
+    static string GenerateLargeString(int sizeInKB)
     {
-        return new string('A', size * 1024);
+        return new string('A', sizeInKB * 1024);
     }
 }
