@@ -44,7 +44,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     RpcBaseUrl = localRpcAddress,
                     RequiredQueryStringParameters = this.config.HttpApiHandler.GetUniversalQueryStrings(),
                     HttpBaseUrl = this.config.HttpApiHandler.GetBaseUrl(),
-                    MaxGrpcMessageSizeInBytes = this.config.Options.MaxGrpcMessageSizeInBytes.ToString(),
+                    MaxGrpcMessageSizeInBytes = this.config.Options.MaxGrpcMessageSizeInBytes,
                 });
             }
 
@@ -146,7 +146,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             /// Defaults to 4,194,304 bytes (4 MB).
             /// </summary>
             [JsonProperty("maxGrpcMessageSizeInBytes")]
-            public string? MaxGrpcMessageSizeInBytes { get; set; }
+            public int? MaxGrpcMessageSizeInBytes { get; set; }
         }
     }
 }

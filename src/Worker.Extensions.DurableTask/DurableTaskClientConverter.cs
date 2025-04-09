@@ -47,14 +47,8 @@ internal sealed partial class DurableTaskClientConverter : IInputConverter
                 return new ValueTask<ConversionResult>(ConversionResult.Failed(
                     new InvalidOperationException("Failed to parse the input binding payload data")));
             }
-            
-            if (!int.TryParse(inputData?.maxGrpcMessageSizeInBytes, out int maxGrpcMessageSizeInBytes))
-            {
-                return new ValueTask<ConversionResult>(ConversionResult.Failed(
-                    new InvalidOperationException("Failed to parse maxGrpcMessageSizeInBytes from input binding payload")));
-            }
 
-            DurableTaskClient client = this.clientProvider.GetClient(endpoint, inputData?.taskHubName, inputData?.connectionName, maxGrpcMessageSizeInBytes);
+            DurableTaskClient client = this.clientProvider.GetClient(endpoint, inputData?.taskHubName, inputData?.connectionName, inputData?.maxGrpcMessageSizeInBytes);
             client = new FunctionsDurableTaskClient(client, inputData!.requiredQueryStringParameters, inputData!.httpBaseUrl);
             return new ValueTask<ConversionResult>(ConversionResult.Success(client));
         }
@@ -68,5 +62,5 @@ internal sealed partial class DurableTaskClientConverter : IInputConverter
     }
 
     // Serializer is case-sensitive and incoming JSON properties are camel-cased.
-    private record DurableClientInputData(string rpcBaseUrl, string taskHubName, string connectionName, string requiredQueryStringParameters, string httpBaseUrl, string maxGrpcMessageSizeInBytes);
+    private record DurableClientInputData(string rpcBaseUrl, string taskHubName, string connectionName, string requiredQueryStringParameters, string httpBaseUrl, int maxGrpcMessageSizeInBytes);
 }
