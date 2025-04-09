@@ -18,7 +18,7 @@ namespace WebJobs.Extensions.DurableTask.CodeGen.Example
         [FunctionName("SimpleOrchestrationHttp")]
         public static async Task<IActionResult> HttpStart_SimpleOrchestration(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get")] HttpRequest req,
-            [DurableClient] ITypedDurableClient client,
+            [DurableClient] IDurableClient client,
             ILogger log)
         {
             string instanceId = await client.Orchestrations.StartSimpleOrchestration(null);
@@ -28,7 +28,7 @@ namespace WebJobs.Extensions.DurableTask.CodeGen.Example
 
         [FunctionName("SimpleOrchestration")]
         public static async Task<List<string>> SimpleOrchestrator(
-            [OrchestrationTrigger] ITypedDurableOrchestrationContext context)
+            [OrchestrationTrigger] IDurableOrchestrationContext context)
         {
             var outputs = new List<string>();
 

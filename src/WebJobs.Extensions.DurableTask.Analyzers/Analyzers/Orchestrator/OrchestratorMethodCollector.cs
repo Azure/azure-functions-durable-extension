@@ -15,7 +15,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
     /// </summary>
     public class OrchestratorMethodCollector
     {
-        private readonly Dictionary<ISymbol, MethodInformation> orchestratorMethodDeclarations = new Dictionary<ISymbol, MethodInformation>();
+        private readonly Dictionary<ISymbol, MethodInformation> orchestratorMethodDeclarations = new Dictionary<ISymbol, MethodInformation>(SymbolEqualityComparer.Default);
 
         /// <summary>
         /// Method used to collect orchestrator methods and methods used in orchestrators that are defined in
