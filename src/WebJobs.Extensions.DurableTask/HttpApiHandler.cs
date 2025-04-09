@@ -893,13 +893,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         OrchestrationInstance = instance,
                     };
 
-                    string traceParent = GetHeaderValueFromHeaders("traceparent", request.Headers);
-                    string traceState = GetHeaderValueFromHeaders("tracestate", request.Headers);
+                    string traceParent = GetHeaderValueFromHeaders("x-client-traceparent", request.Headers);
+                    string traceState = GetHeaderValueFromHeaders("x-client-tracestate", request.Headers);
 
                     if (traceParent != null)
                     {
                         ActivityContext.TryParse(traceParent, traceState, out ActivityContext parentActivityContext);
                         using Activity scheduleOrchestrationActivity = StartActivityForNewOrchestration(executionStartedEvent, parentActivityContext);
+                    }
+                    else
+                    {
+                        using Activity scheduleOrchestrationActivity = StartActivityForNewOrchestration(executionStartedEvent, default);
                     }
 
                     await durableClient.DurabilityProvider.CreateTaskOrchestrationAsync(
