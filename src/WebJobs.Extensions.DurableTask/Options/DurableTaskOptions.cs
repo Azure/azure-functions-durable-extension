@@ -24,6 +24,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private string defaultHubName;
 
         /// <summary>
+        /// The DefaultVersion value provided here will be automatically assigned to every orchestration
+        /// instance created by this app, and this value will be available on IDurableOrchestrationContext
+        /// passed to each orchestrator function replay invocation of this orchestration instance.
+        /// </summary>
+        public string DefaultVersion { get; set; }
+
+        /// <summary>
         /// Settings used for Durable HTTP functionality.
         /// </summary>
         public HttpOptions HttpSettings { get; set; } = new HttpOptions();
