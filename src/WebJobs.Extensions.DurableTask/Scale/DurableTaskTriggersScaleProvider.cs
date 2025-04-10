@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using Grpc.Core;
 using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -37,12 +38,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
             string functionId = triggerMetadata.FunctionName;
             FunctionName functionName = new FunctionName(functionId);
 
+            var logger = loggerFactory.CreateLogger<DurableTaskTriggersScaleProvider>();
+            var jsonStringMetadata = JsonConvert.SerializeObject(triggerMetadata);
+            logger.LogInformation("Creating DurableTaskTriggersScaleProvider for function {FunctionName}: jsonStringMetadata = '{jsonStringMetadata}'", triggerMetadata.FunctionName, jsonStringMetadata);
+
             this.GetOptions(triggerMetadata);
 
             IDurabilityProviderFactory durabilityProviderFactory = this.GetDurabilityProviderFactory();
             DurabilityProvider defaultDurabilityProvider = durabilityProviderFactory.GetDurabilityProvider();
 
             string? connectionName = GetConnectionName(durabilityProviderFactory, this.options);
+
+            logger.LogInformation("Creating DurableTaskTriggersScaleProvider for function {FunctionName}: connectionName = '{ConnectionName}'", triggerMetadata.FunctionName, connectionName);
 
             this.targetScaler = ScaleUtils.GetTargetScaler(
                 defaultDurabilityProvider,
