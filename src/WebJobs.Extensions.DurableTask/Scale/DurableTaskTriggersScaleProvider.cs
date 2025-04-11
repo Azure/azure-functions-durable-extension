@@ -45,8 +45,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
             string? connectionName = GetConnectionName(durabilityProviderFactory, this.options);
 
             var logger = loggerFactory.CreateLogger<DurableTaskTriggersScaleProvider>();
-            logger.LogInformation("Creating DurableTaskTriggersScaleProvider for function {FunctionName}: connectionName = '{ConnectionName}'",
-                                  triggerMetadata.FunctionName, connectionName);
+            logger.LogInformation(
+                "Creating DurableTaskTriggersScaleProvider for function {FunctionName}: connectionName = '{ConnectionName}'",
+                triggerMetadata.FunctionName,
+                connectionName);
 
             this.targetScaler = ScaleUtils.GetTargetScaler(
                 defaultDurabilityProvider,
