@@ -38,10 +38,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
             string functionId = triggerMetadata.FunctionName;
             FunctionName functionName = new FunctionName(functionId);
 
-            var logger = loggerFactory.CreateLogger<DurableTaskTriggersScaleProvider>();
-            var jsonStringMetadata = JsonConvert.SerializeObject(triggerMetadata);
-            logger.LogInformation("Creating DurableTaskTriggersScaleProvider for function {FunctionName}: jsonStringMetadata = '{jsonStringMetadata}'", triggerMetadata.FunctionName, jsonStringMetadata);
-
             this.GetOptions(triggerMetadata);
 
             IDurabilityProviderFactory durabilityProviderFactory = this.GetDurabilityProviderFactory();
@@ -49,7 +45,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
 
             string? connectionName = GetConnectionName(durabilityProviderFactory, this.options);
 
-            logger.LogInformation("Creating DurableTaskTriggersScaleProvider for function {FunctionName}: connectionName = '{ConnectionName}'", triggerMetadata.FunctionName, connectionName);
+            var logger = loggerFactory.CreateLogger<DurableTaskTriggersScaleProvider>();
+            logger.LogInformation("Creating DurableTaskTriggersScaleProvider for function {FunctionName}: connectionName = '{ConnectionName}'",
+                                  triggerMetadata.FunctionName, connectionName);
 
             this.targetScaler = ScaleUtils.GetTargetScaler(
                 defaultDurabilityProvider,
