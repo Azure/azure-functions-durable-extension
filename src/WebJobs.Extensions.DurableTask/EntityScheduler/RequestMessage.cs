@@ -177,20 +177,5 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return $"[{(this.IsSignal ? "Signal" : "Call")} '{this.Operation}' operation {this.Id} by {this.ParentInstanceId} {this.ParentExecutionId}]";
             }
         }
-
-        internal class TraceContext
-        {
-            public TraceContext(string traceParent, string traceState)
-            {
-                this.TraceParent = traceParent;
-                this.TraceState = traceState;
-            }
-
-            [JsonProperty(PropertyName = "traceParent", DefaultValueHandling = DefaultValueHandling.Ignore)]
-            public string TraceParent { get; set; }
-
-            [JsonProperty(PropertyName = "traceState", DefaultValueHandling = DefaultValueHandling.Ignore)]
-            public string TraceState { get; set; }
-        }
     }
 }

@@ -58,8 +58,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private MessageSorter messageSorter;
 
-        private Activity callEntityActivity;
-
         internal DurableOrchestrationContext(DurableTaskExtension config, DurabilityProvider durabilityProvider, string functionName)
             : base(config, functionName)
         {
