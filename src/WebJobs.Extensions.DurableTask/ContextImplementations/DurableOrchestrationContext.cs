@@ -12,8 +12,10 @@ using System.Reflection;
 using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Azure.Core;
 using DurableTask.Core;
 using DurableTask.Core.Exceptions;
+using DurableTask.Core.Tracing;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
 using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json;
@@ -55,6 +57,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private LockReleaser lockReleaser = null;
 
         private MessageSorter messageSorter;
+
+        private Activity callEntityActivity;
 
         internal DurableOrchestrationContext(DurableTaskExtension config, DurabilityProvider durabilityProvider, string functionName)
             : base(config, functionName)
@@ -678,6 +682,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     var target = new OrchestrationInstance() { InstanceId = instanceId };
                     operationId = guid.ToString();
                     operationName = operation;
+
+                    // In the case that we are calling an entity, we want to create the Activity once the result for the call is returned and so we do not create now.
                     var request = new RequestMessage()
                     {
                         ParentInstanceId = this.InstanceId,
@@ -686,33 +692,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         IsSignal = oneWay,
                         Operation = operation,
                         ScheduledTime = scheduledTimeUtc,
+                        CreateTrace = oneWay,
+                        RequestTime = DateTimeOffset.UtcNow,
+                        ParentTraceContext = new DistributedTraceContext(Activity.Current?.Id, Activity.Current?.TraceStateString),
                     };
                     if (input != null)
                     {
                         request.SetInput(input, this.messageDataConverter);
                     }
 
-                    var callOrSignalEntityActivity = !this.IsReplaying ?
-                        TraceHelper.StartActivityForCallingOrSignalingEntity(
-                            instanceId,
-                            EntityId.GetEntityIdFromSchedulerId(instanceId).EntityName,
-                            operation,
-                            oneWay,
-                            Activity.Current?.Context,
-                            scheduledTime: scheduledTimeUtc) : null;
-
-                    if (!string.IsNullOrEmpty(callOrSignalEntityActivity?.Id))
-                    {
-                        request.ParentTraceContext = new RequestMessage.TraceContext(
-                            callOrSignalEntityActivity.Id,
-                            callOrSignalEntityActivity.TraceStateString);
-                    }
-
                     this.SendEntityMessage(target, request);
-
-                    // We want to end the activity before we potentially wait for a response, so that its duration reflects sending the entity message
-                    // and does not include the entity "doing the work" (this is captured by the Activity made upon entity invocation)
-                    callOrSignalEntityActivity?.Dispose();
 
                     if (!oneWay)
                     {

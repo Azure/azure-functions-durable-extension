@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using DurableTask.Core;
 using DurableTask.Core.Entities;
 using DurableTask.Core.History;
+using DurableTask.Core.Tracing;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.WebApiCompatShim;
@@ -330,7 +331,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             var instanceId = EntityId.GetSchedulerIdFromEntityId(entityId);
             var instance = new OrchestrationInstance() { InstanceId = instanceId };
 
-            using var signalEntityActivity = TraceHelper.StartActivityForCallingOrSignalingEntity(instanceId, entityId.EntityName, operationName, true, Activity.Current?.Context, scheduledTime: scheduledTimeUtc);
             var request = new RequestMessage()
             {
                 ParentInstanceId = null, // means this was sent by a client
@@ -339,11 +339,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 IsSignal = true,
                 Operation = operationName,
                 ScheduledTime = scheduledTimeUtc,
+                CreateTrace = true,
+                RequestTime = DateTimeOffset.UtcNow,
+                ParentTraceContext = new DistributedTraceContext(Activity.Current?.Id, Activity.Current?.TraceStateString),
             };
-            if (!string.IsNullOrEmpty(signalEntityActivity?.Id))
-            {
-                request.ParentTraceContext = new RequestMessage.TraceContext(signalEntityActivity.Id, signalEntityActivity.TraceStateString);
-            }
 
             if (operationInput != null)
             {

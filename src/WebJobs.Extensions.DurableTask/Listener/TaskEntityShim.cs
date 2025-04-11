@@ -444,6 +444,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.context.CurrentOperation = request;
             this.context.CurrentOperationResponse = new ResponseMessage();
 
+            // The trace context of the request message becomes the parent trace context of the DurableEntityContext.
+            // That way, if processing this operation request leads to the DurableEntityContext signaling another entity or starting an orchestration,
+            // then the parent trace context of these actions will be set to the trace context of whatever operation request triggered them
+            this.context.ParentTraceContext = request.ParentTraceContext;
+
             // set the async-local static context that is visible to the application code
             Entity.SetContext(this.context);
 
@@ -456,6 +461,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             Exception exception = null;
 
             bool successfullyParsed = ActivityContext.TryParse(request.ParentTraceContext?.TraceParent, request.ParentTraceContext?.TraceState, out ActivityContext parentTraceContext);
+            var clientSpanId = ActivitySpanId.CreateRandom();
+
+            // In that case that we are processing a call request, we want to generate a new span ID that will also be used by the Activity we create at the end corresponding to the call request
+            // That way, this Activity corresponding to process the call request will be correctly linked as the child of the Activit for the overall call request
+            if (!request.IsSignal && successfullyParsed)
+            {
+                parentTraceContext = new ActivityContext(parentTraceContext.TraceId, clientSpanId, parentTraceContext.TraceFlags, parentTraceContext.TraceState);
+            }
 
             // We only want to create a trace activity for processing the entity invocation in the case that we can successfully parse the trace context of the request that led to this entity invocation.
             // Otherwise, we will create an unlinked trace activity with no parent.
@@ -535,6 +548,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             // read and clear context
             var response = this.context.CurrentOperationResponse;
+            if (!request.IsSignal)
+            {
+                response.RequestInfo = new ResponseMessage.RequestInformation
+                {
+                    Operation = request.Operation,
+                    ScheduledTime = request.ScheduledTime,
+                    RequestTime = request.RequestTime,
+                    ClientSpanId = clientSpanId.ToString(),
+                    ParentTraceContext = request.ParentTraceContext,
+                };
+            }
+
             this.context.CurrentOperation = null;
             this.context.CurrentOperationResponse = null;
 

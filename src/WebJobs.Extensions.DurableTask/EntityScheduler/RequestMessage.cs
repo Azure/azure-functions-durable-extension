@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using DurableTask.Core.Tracing;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -81,14 +82,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         [JsonProperty(PropertyName = "pos", DefaultValueHandling = DefaultValueHandling.Ignore)]
         public int Position { get; set; }
 
-        /// <summary>
-        /// The parent trace that called this operation.
-        /// </summary>
-        [JsonProperty(PropertyName = "parentTraceContext", DefaultValueHandling = DefaultValueHandling.Ignore)]
-        public TraceContext ParentTraceContext { get; set; }
-
         [JsonIgnore]
         public bool IsLockRequest => this.LockSet != null;
+
+        /// <summary>
+        /// Parent trace context of this request message.
+        /// </summary>
+        [JsonProperty(PropertyName = "parentTraceContext", DefaultValueHandling = DefaultValueHandling.Ignore)]
+        public DistributedTraceContext ParentTraceContext { get; set; }
+
+        /// <summary>
+        /// Whether or not to create an entity-specific trace for this request message.
+        /// </summary>
+        [JsonProperty(PropertyName = "createTrace")]
+        public bool CreateTrace { get; set; }
+
+        /// <summary>
+        /// The time the request was generated.
+        /// </summary>
+        [JsonProperty(PropertyName = "requestTime", DefaultValueHandling = DefaultValueHandling.Ignore)]
+        public DateTimeOffset? RequestTime { get; set; }
 
         public void SetInput(object obj, MessagePayloadDataConverter dataConverter)
         {
