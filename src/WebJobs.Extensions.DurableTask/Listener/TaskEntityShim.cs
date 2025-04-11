@@ -463,8 +463,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             bool successfullyParsed = ActivityContext.TryParse(request.ParentTraceContext?.TraceParent, request.ParentTraceContext?.TraceState, out ActivityContext parentTraceContext);
             var clientSpanId = ActivitySpanId.CreateRandom();
 
-            // In that case that we are processing a call request, we want to generate a new span ID that will also be used by the Activity we create at the end corresponding to the call request
-            // That way, this Activity corresponding to process the call request will be correctly linked as the child of the Activit for the overall call request
+            // In that case that we are processing a call request as a server, we want to generate a new span ID that will also be used by the Activity we create at the end corresponding to the client call request
+            // That way, this server Activity corresponding to processing the call request will be correctly linked as the child of the Activity for the client call request
             if (!request.IsSignal && successfullyParsed)
             {
                 parentTraceContext = new ActivityContext(parentTraceContext.TraceId, clientSpanId, parentTraceContext.TraceFlags, parentTraceContext.TraceState);
