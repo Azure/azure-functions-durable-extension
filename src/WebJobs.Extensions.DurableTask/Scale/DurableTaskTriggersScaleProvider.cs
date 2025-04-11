@@ -68,12 +68,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
         {
             if (durabilityProviderFactory is AzureStorageDurabilityProviderFactory azureStorageDurabilityProviderFactory)
             {
+                // First, look for the connection name in the options initialized from the trigger metadata
                 var azureStorageOptions = new AzureStorageOptions();
                 if (options != null && options.StorageProvider != null)
                 {
                     JsonConvert.PopulateObject(JsonConvert.SerializeObject(options.StorageProvider), azureStorageOptions);
                 }
 
+                // If the connection name is not found in the options, use the default connection name from the factory
                 return azureStorageOptions.ConnectionName ?? azureStorageDurabilityProviderFactory.DefaultConnectionName;
             }
             else
