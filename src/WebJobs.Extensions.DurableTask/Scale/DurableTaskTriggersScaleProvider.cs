@@ -43,9 +43,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
             IDurabilityProviderFactory durabilityProviderFactory = this.GetDurabilityProviderFactory();
             DurabilityProvider defaultDurabilityProvider = durabilityProviderFactory.GetDurabilityProvider();
 
-            string? connectionName = durabilityProviderFactory is AzureStorageDurabilityProviderFactory azureStorageDurabilityProviderFactory
-                ? azureStorageDurabilityProviderFactory.DefaultConnectionName
-                : null;
+            string? connectionName = GetConnectionName(durabilityProviderFactory, this.options);
 
             this.targetScaler = ScaleUtils.GetTargetScaler(
                 defaultDurabilityProvider,
@@ -60,6 +58,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
                 functionName,
                 connectionName,
                 this.options.HubName);
+        }
+
+        private static string? GetConnectionName(IDurabilityProviderFactory durabilityProviderFactory, DurableTaskOptions options)
+        {
+            if (durabilityProviderFactory is AzureStorageDurabilityProviderFactory azureStorageDurabilityProviderFactory)
+            {
+                var azureStorageOptions = new AzureStorageOptions();
+                if (options != null && options.StorageProvider != null)
+                {
+                    JsonConvert.PopulateObject(JsonConvert.SerializeObject(options.StorageProvider), azureStorageOptions);
+                }
+
+                return azureStorageOptions.ConnectionName ?? azureStorageDurabilityProviderFactory.DefaultConnectionName;
+            }
+            else
+            {
+                return null;
+            }
         }
 
         private void GetOptions(TriggerMetadata triggerMetadata)
