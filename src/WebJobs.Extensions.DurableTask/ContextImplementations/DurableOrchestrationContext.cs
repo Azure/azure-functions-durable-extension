@@ -12,8 +12,10 @@ using System.Reflection;
 using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Azure.Core;
 using DurableTask.Core;
 using DurableTask.Core.Exceptions;
+using DurableTask.Core.Tracing;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
 using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json;
@@ -678,6 +680,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     var target = new OrchestrationInstance() { InstanceId = instanceId };
                     operationId = guid.ToString();
                     operationName = operation;
+
+                    // In the case that we are calling an entity, we want to create the Activity once the result for the call is returned and so we do not create now.
                     var request = new RequestMessage()
                     {
                         ParentInstanceId = this.InstanceId,
@@ -686,34 +690,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         IsSignal = oneWay,
                         Operation = operation,
                         ScheduledTime = scheduledTimeUtc,
+                        CreateTrace = oneWay,
+                        RequestTime = DateTimeOffset.UtcNow,
+                        ParentTraceContext = new DistributedTraceContext(Activity.Current?.Id, Activity.Current?.TraceStateString),
                     };
                     if (input != null)
                     {
                         request.SetInput(input, this.messageDataConverter);
                     }
 
-                    using (var callOrSignalEntityActivity = !this.IsReplaying ?
-                        TraceHelper.StartActivityForCallingOrSignalingEntity(
-                            instanceId,
-                            EntityId.GetEntityIdFromSchedulerId(instanceId).EntityName,
-                            operation,
-                            oneWay,
-                            Activity.Current?.Context,
-                            scheduledTime: scheduledTimeUtc) : null)
+                    this.SendEntityMessage(target, request);
+
+                    if (!oneWay)
                     {
-                        if (callOrSignalEntityActivity != null)
-                        {
-                            request.ParentTraceContext = new RequestMessage.TraceContext(
-                                callOrSignalEntityActivity.Id,
-                                callOrSignalEntityActivity.TraceStateString);
-                        }
-
-                        this.SendEntityMessage(target, request);
-
-                        if (!oneWay)
-                        {
-                            callTask = this.WaitForEntityResponse<TResult>(guid, lockToUse);
-                        }
+                        callTask = this.WaitForEntityResponse<TResult>(guid, lockToUse);
                     }
 
                     break;
