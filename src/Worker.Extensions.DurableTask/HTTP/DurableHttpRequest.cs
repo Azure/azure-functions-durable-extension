@@ -17,10 +17,22 @@ public class DurableHttpRequest
     /// <summary>
     /// Initializes a new instance of the <see cref="DurableHttpRequest"/> class.
     /// </summary>
-    public DurableHttpRequest(HttpMethod method, Uri uri)
+    public DurableHttpRequest(HttpMethod method, Uri uri, bool asynchronousPatternEnabled = true)
     {
         this.Method = method;
         this.Uri = uri;
+        this.AsynchronousPatternEnabled = asynchronousPatternEnabled;
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="DurableHttpRequest"/> class with headers.
+    /// </summary>
+    public DurableHttpRequest(HttpMethod method, Uri uri, IDictionary<string, StringValues> headers = null, bool asynchronousPatternEnabled = true)
+    {
+        this.Method = method;
+        this.Uri = uri;
+        this.Headers = headers;
+        this.AsynchronousPatternEnabled = asynchronousPatternEnabled;
     }
 
     /// <summary>
