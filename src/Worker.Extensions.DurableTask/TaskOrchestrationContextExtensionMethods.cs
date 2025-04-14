@@ -2,10 +2,14 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System;
+using System.Collections.Generic;
+using System.Net;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
 using Microsoft.Azure.Functions.Worker.Extensions.DurableTask.Http;
+using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.DurableTask;
 
@@ -20,14 +24,41 @@ public static class TaskOrchestrationContextExtensionMethods
     /// <param name="context">The task orchestration context.</param>
     /// <param name="request">The DurableHttpRequest used to make the HTTP call.</param>
     /// <returns>DurableHttpResponse</returns>
-    public static Task<DurableHttpResponse> CallHttpAsync(this TaskOrchestrationContext context, DurableHttpRequest request)
+    public static async Task<DurableHttpResponse> CallHttpAsync(this TaskOrchestrationContext context, DurableHttpRequest request)
     {
         if (context is null)
         {
             throw new ArgumentNullException(nameof(context));
         }
 
-        return context.CallActivityAsync<DurableHttpResponse>(Constants.HttpTaskActivityReservedName, request);
+        DurableHttpResponse response = await context.CallActivityAsync<DurableHttpResponse>(Constants.HttpTaskActivityReservedName, request);
+        
+        while (response.StatusCode == HttpStatusCode.Accepted && request.AsynchronousPatternEnabled )
+        {
+            var headersDictionary = new Dictionary<string, StringValues>(
+                       response.Headers,
+                       StringComparer.OrdinalIgnoreCase);
+
+            DateTime fireAt = default(DateTime);
+
+            if (headersDictionary.TryGetValue("Retry-After", out StringValues retryAfter))
+            {
+                fireAt = context.CurrentUtcDateTime.AddSeconds(int.Parse(retryAfter));
+            }
+            else
+            {
+                // to be updated to use the one from durabletaskextension
+                fireAt = context.CurrentUtcDateTime.AddMilliseconds(30000);
+            }
+
+            await context.CreateTimer(fireAt, CancellationToken.None);
+            
+            DurableHttpRequest newHttpRequest = CreateLocationPollRequest(request, response.Headers["Location"]);
+
+            response = await context.CallActivityAsync<DurableHttpResponse>(Constants.HttpTaskActivityReservedName, newHttpRequest);
+        }
+
+        return response;
     }
 
     /// <summary>
@@ -41,7 +72,7 @@ public static class TaskOrchestrationContextExtensionMethods
     /// <returns>A <see cref="Task{DurableHttpResponse}"/>Result of the HTTP call.</returns>
     public static Task<DurableHttpResponse> CallHttpAsync(this TaskOrchestrationContext context, HttpMethod method, Uri uri, string? content = null, HttpRetryOptions? retryOptions = null)
     {
-        DurableHttpRequest request = new DurableHttpRequest(method, uri)
+        DurableHttpRequest request = new DurableHttpRequest(method, uri, true)
         {
             Content = content,
             HttpRetryOptions = retryOptions,
@@ -49,4 +80,15 @@ public static class TaskOrchestrationContextExtensionMethods
 
         return context.CallHttpAsync(request);
     }
-}
+
+    private static DurableHttpRequest CreateLocationPollRequest(DurableHttpRequest durableHttpRequest, string locationUri)
+    {
+        DurableHttpRequest newDurableHttpRequest = new DurableHttpRequest(
+            method: HttpMethod.Get,
+            uri: new Uri(locationUri),
+            headers: durableHttpRequest.Headers);
+
+        return newDurableHttpRequest;
+    }
+
+    }
