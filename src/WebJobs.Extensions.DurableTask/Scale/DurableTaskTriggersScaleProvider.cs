@@ -42,6 +42,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
             IDurabilityProviderFactory durabilityProviderFactory = this.GetDurabilityProviderFactory();
             DurabilityProvider defaultDurabilityProvider = durabilityProviderFactory.GetDurabilityProvider();
 
+            // Note: `this.options` is populated from the trigger metadata above
             string? connectionName = GetConnectionName(durabilityProviderFactory, this.options);
 
             var logger = loggerFactory.CreateLogger<DurableTaskTriggersScaleProvider>();
@@ -69,7 +70,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
         {
             if (durabilityProviderFactory is AzureStorageDurabilityProviderFactory azureStorageDurabilityProviderFactory)
             {
-                // First, look for the connection name in the options initialized from the trigger metadata
+                // First, look for the connection name in the options
                 var azureStorageOptions = new AzureStorageOptions();
                 if (options != null && options.StorageProvider != null)
                 {
