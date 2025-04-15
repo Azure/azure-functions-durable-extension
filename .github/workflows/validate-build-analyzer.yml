@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - dev
+      - hotfix/3.0.3
     paths-ignore: [ '**.md' ]
   pull_request:
     branches:
