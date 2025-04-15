@@ -595,7 +595,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 var target = new OrchestrationInstance() { InstanceId = request.ParentInstanceId, ExecutionId = request.ParentExecutionId };
                 var jresponse = JToken.FromObject(response, this.messageDataConverter.JsonSerializer);
-                this.context.SendResponseMessage(target, request.Id, jresponse, response.IsException);
+                this.context.SendResponseMessage(target, request.Id, jresponse, response.IsException, createTrace: true);
             }
         }
 

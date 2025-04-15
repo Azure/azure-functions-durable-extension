@@ -353,7 +353,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             var eventName = scheduledTimeUtc.HasValue
                 ? EntityMessageEventNames.ScheduledRequestMessageEventName(request.GetAdjustedDeliveryTime(this.durabilityProvider))
                 : EntityMessageEventNames.RequestMessageEventName;
-            await durableClient.client.RaiseEventAsync(instance, eventName, jrequest);
+            await durableClient.client.RaiseEventAsync(instance, eventName, jrequest, new Dictionary<string, string> { { EventTags.CreateEntityRequestEventTrace, "" } });
 
             this.traceHelper.FunctionScheduled(
                 hubName,

@@ -454,7 +454,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 request.SetInput(input, this.messageDataConverter);
             }
 
-            this.SendOperationMessage(target, request);
+            this.SendOperationMessage(target, request, createTrace: true);
 
             this.Config.TraceHelper.FunctionScheduled(
                 this.Config.Options.HubName,
@@ -593,7 +593,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        internal void SendOperationMessage(OrchestrationInstance target, RequestMessage requestMessage)
+        internal void SendOperationMessage(OrchestrationInstance target, RequestMessage requestMessage, bool createTrace = false)
         {
             lock (this.outbox)
             {
@@ -614,11 +614,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     Target = target,
                     EventName = eventName,
                     EventContent = requestMessage,
+                    CreateTrace = createTrace,
                 });
             }
         }
 
-        internal void SendResponseMessage(OrchestrationInstance target, Guid requestId, object message, bool isException)
+        internal void SendResponseMessage(OrchestrationInstance target, Guid requestId, object message, bool isException, bool createTrace = false)
         {
             lock (this.outbox)
             {
@@ -628,6 +629,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     EventName = EntityMessageEventNames.ResponseMessageEventName(requestId),
                     EventContent = message,
                     IsError = isException,
+                    CreateTrace = createTrace,
                 });
             }
         }
@@ -696,7 +698,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             resultMessage.EventName,
                             resultMessage.EventContent);
 
-                        innerContext.SendEvent(resultMessage.Target, resultMessage.EventName, resultMessage.EventContent);
+                        innerContext.SendEvent(resultMessage.Target, resultMessage.EventName, resultMessage.EventContent, resultMessage.CreateTrace ? new Dictionary<string, string> { { EventTags.CreateEntityResponseEventTrace, "" } } : null);
                     }
                     else if (!writeBackSuccessful)
                     {
@@ -717,7 +719,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             operationMessage.EventName,
                             operationMessage.EventContent);
 
-                        innerContext.SendEvent(operationMessage.Target, operationMessage.EventName, operationMessage.EventContent);
+                        innerContext.SendEvent(operationMessage.Target, operationMessage.EventName, operationMessage.EventContent, operationMessage.CreateTrace ? new Dictionary<string, string> { { EventTags.CreateEntityRequestEventTrace, "" } } : null);
                     }
                     else if (message is FireAndForgetMessage fireAndForgetMessage)
                     {
@@ -815,6 +817,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             public string EventName { get; set; }
 
             public RequestMessage EventContent { get; set; }
+
+            public bool CreateTrace { get; set; }
         }
 
         private class ResultMessage : OutgoingMessage
@@ -826,6 +830,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             public object EventContent { get; set; }
 
             public bool IsError { get; set; }
+
+            public bool CreateTrace { get; set; }
         }
 
         private class LockMessage : OutgoingMessage
