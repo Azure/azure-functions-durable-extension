@@ -11,10 +11,9 @@ using System.Threading.Tasks;
 using DurableTask.Core;
 using DurableTask.Core.Common;
 using DurableTask.Core.Exceptions;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
+using DurableTask.Core.Tracing;
 using Microsoft.Azure.WebJobs.Host.Bindings;
 using Newtonsoft.Json;
-using DTCoreTracing = DurableTask.Core.Tracing;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
@@ -35,7 +34,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private List<OutgoingMessage> outbox = new List<OutgoingMessage>();
 
-        private DTCoreTracing.DistributedTraceContext parentTraceContext;
+        private DistributedTraceContext parentTraceContext;
 
         public DurableEntityContext(DurableTaskExtension config, DurabilityProvider durabilityProvider, EntityId entity, TaskEntityShim shim)
             : base(config, entity.EntityName)
@@ -122,7 +121,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public FunctionBindingContext FunctionBindingContext { get; set; }
 
-        internal DTCoreTracing.DistributedTraceContext ParentTraceContext
+        internal DistributedTraceContext ParentTraceContext
         {
             get => this.parentTraceContext;
             set => this.parentTraceContext = value;

@@ -57,9 +57,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
                 return null;
             }
 
-            newActivity.SetTag(Schema.Entity.Type, TraceActivityConstants.Entity);
-            newActivity.SetTag(Schema.Entity.EntityOperation, signalEntity ? TraceActivityConstants.SignalEntity : TraceActivityConstants.CallEntity);
-            newActivity.SetTag(Schema.Entity.EntityId, entityId);
+            newActivity.SetTag(Schema.Task.Type, TraceActivityConstants.Entity);
+            newActivity.SetTag(Schema.Task.Operation, signalEntity ? TraceActivityConstants.SignalEntity : TraceActivityConstants.CallEntity);
+            newActivity.SetTag(Schema.Task.InstanceId, entityId);
 
             return newActivity;
         }
