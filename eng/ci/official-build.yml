@@ -9,6 +9,7 @@ trigger:
             - dev
             - v2.x
             - nytian/dfv3-release-rc.2
+            - hotfix/3.0.3
 
 # CI only, does not trigger on PRs.
 pr: none
