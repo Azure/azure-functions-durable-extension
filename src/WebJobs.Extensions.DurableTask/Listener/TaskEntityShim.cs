@@ -520,7 +520,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 operationFailed = true;
 
-                processEntityInvocationActivity.SetTag(Schema.Task.ErrorMessage, exception.Message);
+                processEntityInvocationActivity?.SetTag(Schema.Task.ErrorMessage, exception.Message);
             }
 
             if (this.RollbackFailedOperations)
