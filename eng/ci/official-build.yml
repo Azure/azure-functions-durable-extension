@@ -8,7 +8,7 @@ trigger:
             - main
             - dev
             - v2.x
-            - nytian/sc-hotfix-release-rc.6
+            - nytian/dfv3-release-rc.2
 
 # CI only, does not trigger on PRs.
 pr: none
