@@ -394,7 +394,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         public static string GetStorageConnectionString()
         {
-            return Environment.GetEnvironmentVariable("AzureWebJobsStorage");
+            // Attempt to retrieve the connection string from the environment variable
+            string connectionString = Environment.GetEnvironmentVariable("AzureWebJobsStorage");
+
+            // Provide a fallback connection string for testing if the environment variable is not set
+            return connectionString ?? "UseDevelopmentStorage=true"; // Use Azurite or Azure Storage Emulator
         }
 
         public static Task DeleteTaskHubResources(string testName, bool enableExtendedSessions)

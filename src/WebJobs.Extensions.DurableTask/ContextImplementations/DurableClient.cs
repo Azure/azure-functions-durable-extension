@@ -29,7 +29,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         DurableOrchestrationClientBase // for v1 legacy compatibility.
 #pragma warning restore 618
     {
-        private const string DefaultVersion = "";
         private const int MaxInstanceIdLength = 256;
 
         private static readonly JValue NullJValue = JValue.CreateNull();
@@ -202,7 +201,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             OrchestrationStatus[] dedupeStatuses = this.GetStatusesNotToOverride();
             Task<OrchestrationInstance> createTask = this.client.CreateOrchestrationInstanceAsync(
-                orchestratorFunctionName, DefaultVersion, instanceId, input, null, dedupeStatuses);
+                orchestratorFunctionName, this.durableTaskOptions.DefaultVersion, instanceId, input, null, dedupeStatuses);
 
             this.traceHelper.FunctionScheduled(
                 this.TaskHubName,

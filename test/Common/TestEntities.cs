@@ -375,5 +375,39 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             return Task.CompletedTask;
         }
+
+        //-------------- An entity that launches an orchestration and stores its output -----------------
+
+        public static void LauncherStoringOrchestrationOutputEntity([EntityTrigger(EntityName = "LauncherStoringOrchestrationOutput")] IDurableEntityContext context)
+        {
+            var (output, done) = context.HasState ? context.GetState<(string, bool)>() : (null, false);
+
+            switch (context.OperationName)
+            {
+                case "launch":
+                    {
+                        context.StartNewOrchestration(nameof(TestOrchestrations.ScheduledByEntity), context.EntityId);
+                        break;
+                    }
+
+                case "done":
+                    {
+                        output = context.GetInput<string>();
+                        done = true;
+                        break;
+                    }
+
+                case "get":
+                    {
+                        context.Return(done ? output : null);
+                        break;
+                    }
+
+                default:
+                    throw new NotImplementedException("no such entity operation");
+            }
+
+            context.SetState((output, done));
+        }
     }
 }
