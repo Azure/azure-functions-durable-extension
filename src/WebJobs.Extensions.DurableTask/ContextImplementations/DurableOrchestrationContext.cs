@@ -292,7 +292,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
 
                 this.IncrementActionsOrThrowException();
-                await this.InnerContext.CreateTimer(fireAt, CancellationToken.None);
+                await this.InnerContext.CreateTimer(fireAt: fireAt, state: true, cancelToken: CancellationToken.None);
 
                 DurableHttpRequest durableAsyncHttpRequest = this.CreateLocationPollRequest(
                     req,
