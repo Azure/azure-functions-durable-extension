@@ -7,6 +7,7 @@
 - Fail fast if extendedSessionsEnabled set to 'true' for the worker type that doesn't support extended sessions (https://github.com/Azure/azure-functions-durable-extension/pull/2732).
 - Added an `IFunctionsWorkerApplicationBuilder.ConfigureDurableExtension()` extension method for cases where auto-registration does not work (no source gen running). (#2950)
 - Enable version-aware orchestrations (.NET in-proc) (https://github.com/Azure/azure-functions-durable-extension/pull/3072).
+- Fix scaling when using a non-default Azure Storage account (https://github.com/Azure/azure-functions-durable-extension/pull/3084).
 
 ### Bug Fixes
 
