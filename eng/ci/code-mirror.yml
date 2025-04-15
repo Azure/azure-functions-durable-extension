@@ -6,7 +6,7 @@ trigger:
     - main
     - dev
     - v2.x
-    - nytian/sc-hotfix-release-rc.6
+    - nytian/dfv3-release-rc.2
 
 resources:
   repositories:
