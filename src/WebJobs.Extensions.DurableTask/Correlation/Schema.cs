@@ -17,13 +17,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
             internal const string TaskId = "durabletask.task.task_id";
             internal const string EventTargetInstanceId = "durabletask.event.target_instance_id";
             internal const string FireAt = "durabletask.fire_at";
-        }
-
-        internal static class Entity
-        {
-            internal const string Type = Task.Type;
-            internal const string EntityId = "durabletask.entity.entity_id";
-            internal const string EntityOperation = "durabletask.entity.entity_operation";
+            internal const string Operation = "durabletask.task.operation";
+            internal const string ScheduledTime = "durabletask.task.scheduled_time";
             internal const string ErrorMessage = "durabletask.entity.error_message";
         }
 

@@ -12,11 +12,9 @@ using System.Reflection;
 using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
-using Azure.Core;
 using DurableTask.Core;
 using DurableTask.Core.Exceptions;
 using DurableTask.Core.Tracing;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
 using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -1177,6 +1175,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         internal void SendEntityMessage(OrchestrationInstance target, object eventContent)
         {
             string eventName;
+            Dictionary<string, string> eventTags = null;
 
             if (eventContent is RequestMessage requestMessage)
             {
@@ -1195,6 +1194,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                     eventName = EntityMessageEventNames.RequestMessageEventName;
                 }
+
+                eventTags = new () { { EventTags.CreateEntityRequestEventTrace, "" } };
             }
             else
             {
@@ -1212,7 +1213,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             this.IncrementActionsOrThrowException();
-            this.InnerContext.SendEvent(target, eventName, eventContent);
+            this.InnerContext.SendEvent(target, eventName, eventContent, eventTags);
         }
 
         private void IncrementActionsOrThrowException()

@@ -16,7 +16,6 @@ using DurableTask.Core.Tracing;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.WebApiCompatShim;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using DTCore = DurableTask.Core;
@@ -353,7 +352,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             var eventName = scheduledTimeUtc.HasValue
                 ? EntityMessageEventNames.ScheduledRequestMessageEventName(request.GetAdjustedDeliveryTime(this.durabilityProvider))
                 : EntityMessageEventNames.RequestMessageEventName;
-            await durableClient.client.RaiseEventAsync(instance, eventName, jrequest);
+            await durableClient.client.RaiseEventAsync(instance, eventName, jrequest, new Dictionary<string, string> { { EventTags.CreateEntityRequestEventTrace, "" } });
 
             this.traceHelper.FunctionScheduled(
                 hubName,
