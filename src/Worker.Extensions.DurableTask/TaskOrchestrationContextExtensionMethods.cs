@@ -35,8 +35,14 @@ public static class TaskOrchestrationContextExtensionMethods
         
         while (response.StatusCode == HttpStatusCode.Accepted && request.AsynchronousPatternEnabled )
         {
+            // If Headers is null or missing, we can't poll the Location URL, so return the response.
+            if (response.Headers is null)
+            {
+                break;
+            }
+
             var headersDictionary = new Dictionary<string, StringValues>(
-                       response.Headers,
+                       response.Headers!,
                        StringComparer.OrdinalIgnoreCase);
 
             DateTime fireAt = default(DateTime);
@@ -47,13 +53,13 @@ public static class TaskOrchestrationContextExtensionMethods
             }
             else
             {
-                // to be updated to use the one from durabletaskextension
+                // TODO: use the configuration DefaultAsyncRequestSleepTimeMilliseconds from durabletaskextension
                 fireAt = context.CurrentUtcDateTime.AddMilliseconds(30000);
             }
 
             await context.CreateTimer(fireAt, CancellationToken.None);
             
-            DurableHttpRequest newHttpRequest = CreateLocationPollRequest(request, response.Headers["Location"]);
+            DurableHttpRequest newHttpRequest = CreateLocationPollRequest(request, response.Headers!["Location"]);
 
             response = await context.CallActivityAsync<DurableHttpResponse>(Constants.HttpTaskActivityReservedName, newHttpRequest);
         }
@@ -72,10 +78,11 @@ public static class TaskOrchestrationContextExtensionMethods
     /// <returns>A <see cref="Task{DurableHttpResponse}"/>Result of the HTTP call.</returns>
     public static Task<DurableHttpResponse> CallHttpAsync(this TaskOrchestrationContext context, HttpMethod method, Uri uri, string? content = null, HttpRetryOptions? retryOptions = null)
     {
-        DurableHttpRequest request = new DurableHttpRequest(method, uri, true)
+        DurableHttpRequest request = new DurableHttpRequest(method, uri)
         {
             Content = content,
             HttpRetryOptions = retryOptions,
+            AsynchronousPatternEnabled = true,
         };
 
         return context.CallHttpAsync(request);

@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Text.Json.Serialization;
+using Microsoft.DurableTask.Protobuf;
 using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask.Http;
@@ -17,17 +18,17 @@ public class DurableHttpRequest
     /// <summary>
     /// Initializes a new instance of the <see cref="DurableHttpRequest"/> class.
     /// </summary>
-    public DurableHttpRequest(HttpMethod method, Uri uri, bool asynchronousPatternEnabled = true)
+    public DurableHttpRequest(HttpMethod method, Uri uri)
     {
         this.Method = method;
         this.Uri = uri;
-        this.AsynchronousPatternEnabled = asynchronousPatternEnabled;
     }
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="DurableHttpRequest"/> class with headers.
+    /// Initializes a new instance of the <see cref="DurableHttpRequest"/> class with specified HTTP method, URI, headers, 
+    /// and an option to enable asynchronous pattern handling.
     /// </summary>
-    public DurableHttpRequest(HttpMethod method, Uri uri, IDictionary<string, StringValues> headers = null, bool asynchronousPatternEnabled = true)
+    public DurableHttpRequest(HttpMethod method, Uri uri, IDictionary<string, StringValues>? headers, bool asynchronousPatternEnabled = true)
     {
         this.Method = method;
         this.Uri = uri;
