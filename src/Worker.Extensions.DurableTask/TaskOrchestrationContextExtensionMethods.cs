@@ -98,4 +98,4 @@ public static class TaskOrchestrationContextExtensionMethods
         return newDurableHttpRequest;
     }
 
-    }
+}
