@@ -56,8 +56,8 @@ public static class HTTPFeature
         [OrchestrationTrigger] TaskOrchestrationContext context)
     {
         ILogger logger = context.CreateReplaySafeLogger(nameof(HTTPPollingOrchestrator));
-        Uri url = context.GetInput<Uri>();
-        var response = await context.CallHttpAsync(HttpMethod.Get, url);   
+        Uri? url = context.GetInput<Uri>();
+        var response = await context.CallHttpAsync(HttpMethod.Get, url!);   
         return response;
     }
 
