@@ -49,7 +49,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         {
             foreach (AttributeSyntax entityTrigger in entityTriggerAttributes)
             {
-                SemanticModel semanticModel = context.SemanticModel;
+                SemanticModel semanticModel = context.Compilation.GetSemanticModel(entityTrigger.SyntaxTree);
                 if (SyntaxNodeUtils.TryGetFunctionNameAndNode(semanticModel, entityTrigger, out SyntaxNode attributeArgument, out string functionName))
                 {
                     if (!classNames.Contains(functionName))

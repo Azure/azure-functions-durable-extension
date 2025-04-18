@@ -28,7 +28,7 @@ namespace WebJobs.Extensions.DurableTask.CodeGen.Example
 
         [FunctionName("SimpleOrchestration")]
         public static async Task<List<string>> SimpleOrchestrator(
-            [OrchestrationTrigger] IDurableOrchestrationContext context)
+            [OrchestrationTrigger] ITypedDurableOrchestrationContext context)
         {
             var outputs = new List<string>();
 
