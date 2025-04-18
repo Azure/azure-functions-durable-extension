@@ -92,12 +92,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public DistributedTraceContext ParentTraceContext { get; set; }
 
         /// <summary>
-        /// Whether or not to create an entity-specific trace for this request message.
-        /// </summary>
-        [JsonProperty(PropertyName = "createTrace")]
-        public bool CreateTrace { get; set; }
-
-        /// <summary>
         /// The time the request was generated.
         /// </summary>
         [JsonProperty(PropertyName = "requestTime", DefaultValueHandling = DefaultValueHandling.Ignore)]

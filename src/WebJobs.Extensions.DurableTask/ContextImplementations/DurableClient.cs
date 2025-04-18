@@ -12,10 +12,10 @@ using System.Threading.Tasks;
 using DurableTask.Core;
 using DurableTask.Core.Entities;
 using DurableTask.Core.History;
-using DurableTask.Core.Tracing;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.WebApiCompatShim;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using DTCore = DurableTask.Core;
@@ -330,6 +330,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             var instanceId = EntityId.GetSchedulerIdFromEntityId(entityId);
             var instance = new OrchestrationInstance() { InstanceId = instanceId };
 
+            using var signalEntityActivity = TraceHelper.StartActivityForCallingOrSignalingEntity(instanceId, entityId.EntityName, operationName, signalEntity: true, scheduledTimeUtc, Activity.Current?.Context);
             var request = new RequestMessage()
             {
                 ParentInstanceId = null, // means this was sent by a client
@@ -338,10 +339,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 IsSignal = true,
                 Operation = operationName,
                 ScheduledTime = scheduledTimeUtc,
-                CreateTrace = true,
-                RequestTime = DateTimeOffset.UtcNow,
-                ParentTraceContext = new DistributedTraceContext(Activity.Current?.Id, Activity.Current?.TraceStateString),
             };
+            if (!string.IsNullOrEmpty(signalEntityActivity?.Id))
+            {
+                request.ParentTraceContext = new DTCore.Tracing.DistributedTraceContext(signalEntityActivity.Id, signalEntityActivity.TraceStateString);
+            }
 
             if (operationInput != null)
             {
@@ -352,7 +354,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             var eventName = scheduledTimeUtc.HasValue
                 ? EntityMessageEventNames.ScheduledRequestMessageEventName(request.GetAdjustedDeliveryTime(this.durabilityProvider))
                 : EntityMessageEventNames.RequestMessageEventName;
-            await durableClient.client.RaiseEventAsync(instance, eventName, jrequest, new Dictionary<string, string> { { EventTags.CreateEntityRequestEventTrace, "" } });
+            await durableClient.client.RaiseEventAsync(instance, eventName, jrequest);
 
             this.traceHelper.FunctionScheduled(
                 hubName,

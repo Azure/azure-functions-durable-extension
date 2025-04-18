@@ -12,6 +12,7 @@ using DurableTask.Core.Exceptions;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using DTCore = DurableTask.Core;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
@@ -460,25 +461,33 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             Exception exception = null;
 
-            bool successfullyParsed = ActivityContext.TryParse(request.ParentTraceContext?.TraceParent, request.ParentTraceContext?.TraceState, out ActivityContext parentTraceContext);
-            var clientSpanId = ActivitySpanId.CreateRandom();
-
-            // In that case that we are processing a call request as a server, we want to generate a new span ID that will also be used by the Activity we create at the end corresponding to the client call request
-            // That way, this server Activity corresponding to processing the call request will be correctly linked as the child of the Activity for the client call request
-            if (!request.IsSignal && successfullyParsed)
-            {
-                parentTraceContext = new ActivityContext(parentTraceContext.TraceId, clientSpanId, parentTraceContext.TraceFlags, parentTraceContext.TraceState);
-            }
+            Activity processEntityInvocationActivity = null;
+            Activity callEntityActivity = null;
 
             // We only want to create a trace activity for processing the entity invocation in the case that we can successfully parse the trace context of the request that led to this entity invocation.
             // Otherwise, we will create an unlinked trace activity with no parent.
-            using var processEntityInvocationActivity = successfullyParsed ?
-                TraceHelper.StartActivityForProcessingEntityInvocation(
-                    this.context.InstanceId,
-                    this.context.Name,
-                    request.Operation,
-                    request.IsSignal,
-                    parentTraceContext) : null;
+            if (ActivityContext.TryParse(request.ParentTraceContext?.TraceParent, request.ParentTraceContext?.TraceState, out ActivityContext parentTraceContext))
+            {
+                if (!request.IsSignal)
+                {
+                    callEntityActivity = TraceHelper.StartActivityForCallingOrSignalingEntity(
+                        this.context.InstanceId,
+                        this.context.Name,
+                        request.Operation,
+                        request.IsSignal,
+                        request.ScheduledTime,
+                        parentTraceContext,
+                        request.RequestTime);
+                    parentTraceContext = callEntityActivity.Context;
+                }
+
+                processEntityInvocationActivity = TraceHelper.StartActivityForProcessingEntityInvocation(
+                        this.context.InstanceId,
+                        this.context.Name,
+                        request.Operation,
+                        request.IsSignal,
+                        parentTraceContext);
+            }
 
             try
             {
@@ -548,18 +557,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             // read and clear context
             var response = this.context.CurrentOperationResponse;
-            if (!request.IsSignal)
-            {
-                response.RequestInfo = new ResponseMessage.RequestInformation
-                {
-                    Operation = request.Operation,
-                    ScheduledTime = request.ScheduledTime,
-                    RequestTime = request.RequestTime,
-                    ClientSpanId = clientSpanId.ToString(),
-                    ParentTraceContext = request.ParentTraceContext,
-                };
-            }
-
             this.context.CurrentOperation = null;
             this.context.CurrentOperationResponse = null;
 
@@ -595,8 +592,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 var target = new OrchestrationInstance() { InstanceId = request.ParentInstanceId, ExecutionId = request.ParentExecutionId };
                 var jresponse = JToken.FromObject(response, this.messageDataConverter.JsonSerializer);
-                this.context.SendResponseMessage(target, request.Id, jresponse, response.IsException, createTrace: true);
+                this.context.SendResponseMessage(target, request.Id, jresponse, response.IsException);
             }
+
+            processEntityInvocationActivity?.Dispose();
+            callEntityActivity?.Dispose();
         }
 
         private async Task ExecuteOutOfProcBatch()

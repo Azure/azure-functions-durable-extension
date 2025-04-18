@@ -11,9 +11,10 @@ using System.Threading.Tasks;
 using DurableTask.Core;
 using DurableTask.Core.Common;
 using DurableTask.Core.Exceptions;
-using DurableTask.Core.Tracing;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
 using Microsoft.Azure.WebJobs.Host.Bindings;
 using Newtonsoft.Json;
+using DTCore = DurableTask.Core;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
@@ -34,7 +35,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private List<OutgoingMessage> outbox = new List<OutgoingMessage>();
 
-        private DistributedTraceContext parentTraceContext;
+        private DTCore.Tracing.DistributedTraceContext parentTraceContext;
 
         public DurableEntityContext(DurableTaskExtension config, DurabilityProvider durabilityProvider, EntityId entity, TaskEntityShim shim)
             : base(config, entity.EntityName)
@@ -121,7 +122,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public FunctionBindingContext FunctionBindingContext { get; set; }
 
-        internal DistributedTraceContext ParentTraceContext
+        internal DTCore.Tracing.DistributedTraceContext ParentTraceContext
         {
             get => this.parentTraceContext;
             set => this.parentTraceContext = value;
@@ -435,6 +436,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 InstanceId = EntityId.GetSchedulerIdFromEntityId(entity),
             };
 
+            using var signalEntityActivity = TraceHelper.StartActivityForCallingOrSignalingEntity(target.InstanceId, entity.EntityName, operation, signalEntity: true, scheduledTimeUtc, Activity.Current?.Context, entityId: this.InstanceId);
             var request = new RequestMessage()
             {
                 ParentInstanceId = this.InstanceId,
@@ -443,17 +445,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 IsSignal = true,
                 Operation = operation,
                 ScheduledTime = scheduledTimeUtc,
-                CreateTrace = true,
-                RequestTime = DateTimeOffset.UtcNow,
-                ParentTraceContext = this.parentTraceContext,
             };
+            if (!string.IsNullOrEmpty(signalEntityActivity?.Id))
+            {
+                request.ParentTraceContext = new DTCore.Tracing.DistributedTraceContext(signalEntityActivity.Id, signalEntityActivity.TraceStateString);
+            }
 
             if (input != null)
             {
                 request.SetInput(input, this.messageDataConverter);
             }
 
-            this.SendOperationMessage(target, request, createTrace: true);
+            this.SendOperationMessage(target, request);
 
             this.Config.TraceHelper.FunctionScheduled(
                 this.Config.Options.HubName,
@@ -592,7 +595,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        internal void SendOperationMessage(OrchestrationInstance target, RequestMessage requestMessage, bool createTrace = false)
+        internal void SendOperationMessage(OrchestrationInstance target, RequestMessage requestMessage)
         {
             lock (this.outbox)
             {
@@ -613,12 +616,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     Target = target,
                     EventName = eventName,
                     EventContent = requestMessage,
-                    CreateTrace = createTrace,
                 });
             }
         }
 
-        internal void SendResponseMessage(OrchestrationInstance target, Guid requestId, object message, bool isException, bool createTrace = false)
+        internal void SendResponseMessage(OrchestrationInstance target, Guid requestId, object message, bool isException)
         {
             lock (this.outbox)
             {
@@ -628,7 +630,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     EventName = EntityMessageEventNames.ResponseMessageEventName(requestId),
                     EventContent = message,
                     IsError = isException,
-                    CreateTrace = createTrace,
                 });
             }
         }
@@ -697,7 +698,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             resultMessage.EventName,
                             resultMessage.EventContent);
 
-                        innerContext.SendEvent(resultMessage.Target, resultMessage.EventName, resultMessage.EventContent, resultMessage.CreateTrace ? new Dictionary<string, string> { { EventTags.CreateEntityResponseEventTrace, "" } } : null);
+                        innerContext.SendEvent(resultMessage.Target, resultMessage.EventName, resultMessage.EventContent);
                     }
                     else if (!writeBackSuccessful)
                     {
@@ -718,7 +719,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             operationMessage.EventName,
                             operationMessage.EventContent);
 
-                        innerContext.SendEvent(operationMessage.Target, operationMessage.EventName, operationMessage.EventContent, operationMessage.CreateTrace ? new Dictionary<string, string> { { EventTags.CreateEntityRequestEventTrace, "" } } : null);
+                        innerContext.SendEvent(operationMessage.Target, operationMessage.EventName, operationMessage.EventContent);
                     }
                     else if (message is FireAndForgetMessage fireAndForgetMessage)
                     {
@@ -816,8 +817,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             public string EventName { get; set; }
 
             public RequestMessage EventContent { get; set; }
-
-            public bool CreateTrace { get; set; }
         }
 
         private class ResultMessage : OutgoingMessage
@@ -829,8 +828,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             public object EventContent { get; set; }
 
             public bool IsError { get; set; }
-
-            public bool CreateTrace { get; set; }
         }
 
         private class LockMessage : OutgoingMessage
