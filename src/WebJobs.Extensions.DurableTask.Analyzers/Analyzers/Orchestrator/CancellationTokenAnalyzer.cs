@@ -7,7 +7,6 @@ using Microsoft.CodeAnalysis.Diagnostics;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 {
-    [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class CancellationTokenAnalyzer
     {
         public const string DiagnosticId = "DF0111";
