@@ -20,9 +20,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         [JsonIgnore]
         public bool IsException => this.ExceptionType != null;
 
-        [JsonProperty(PropertyName = "requestInfo", DefaultValueHandling = DefaultValueHandling.Ignore)]
-        public RequestInformation RequestInfo { get; set; }
-
         public void SetResult(object result, MessagePayloadDataConverter dataConverter)
         {
             this.ExceptionType = null;
@@ -103,28 +100,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 return $"[Response {this.Result}]";
             }
-        }
-
-        internal class RequestInformation
-        {
-            [JsonProperty(PropertyName = "operation")]
-            public string Operation { get; set; }
-
-            [JsonProperty(PropertyName = "scheduledTime")]
-            public DateTime? ScheduledTime { get; set; }
-
-            [JsonProperty(PropertyName = "requestTime")]
-            public DateTimeOffset? RequestTime { get; set; }
-
-            /// <summary>
-            /// Span ID to use when creating an Activity for the call entity request that led to this response.
-            /// This is used to correctly link the trace for the call request to the corresponding trace for fulfilling the call request <see cref="TaskEntityShim.ProcessOperationRequestAsync"/>.
-            /// </summary>
-            [JsonProperty(PropertyName = "clientSpanId")]
-            public string ClientSpanId { get; set; }
-
-            [JsonProperty(PropertyName = "parentTraceContext")]
-            public DistributedTraceContext ParentTraceContext { get; set; }
         }
     }
 }

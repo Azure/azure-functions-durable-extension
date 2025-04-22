@@ -14,10 +14,11 @@ using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using DurableTask.Core.Exceptions;
-using DurableTask.Core.Tracing;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
 using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using DTCore = DurableTask.Core;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
@@ -679,7 +680,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     operationId = guid.ToString();
                     operationName = operation;
 
-                    // In the case that we are calling an entity, we want to create the Activity once the result for the call is returned and so we do not create now.
                     var request = new RequestMessage()
                     {
                         ParentInstanceId = this.InstanceId,
@@ -688,13 +688,40 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         IsSignal = oneWay,
                         Operation = operation,
                         ScheduledTime = scheduledTimeUtc,
-                        CreateTrace = oneWay,
                         RequestTime = DateTimeOffset.UtcNow,
-                        ParentTraceContext = new DistributedTraceContext(Activity.Current?.Id, Activity.Current?.TraceStateString),
                     };
                     if (input != null)
                     {
                         request.SetInput(input, this.messageDataConverter);
+                    }
+
+                    Activity signalEntityActivity = null;
+
+                    // In the case that we are calling an entity, we want to create the Activity once the result for the call is returned and so we do not create now.
+                    if (!this.isReplaying && oneWay)
+                    {
+                        signalEntityActivity = TraceHelper.StartActivityForCallingOrSignalingEntity(
+                            instanceId,
+                            EntityId.GetEntityIdFromSchedulerId(instanceId).EntityName,
+                            operation,
+                            oneWay,
+                            scheduledTimeUtc,
+                            Activity.Current?.Context);
+
+                        if (!string.IsNullOrEmpty(signalEntityActivity?.Id))
+                        {
+                            request.ParentTraceContext = new DTCore.Tracing.DistributedTraceContext(
+                                signalEntityActivity.Id,
+                                signalEntityActivity.TraceStateString);
+                        }
+                    }
+
+                    // We still want to attach the current Activity as the parent trace context to the request in the case of a call to an entity so that when we create the Activity for the call this information is available.
+                    else if (!string.IsNullOrEmpty(Activity.Current?.Id))
+                    {
+                        request.ParentTraceContext = new DTCore.Tracing.DistributedTraceContext(
+                            Activity.Current.Id,
+                            Activity.Current.TraceStateString);
                     }
 
                     this.SendEntityMessage(target, request);
@@ -704,6 +731,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         callTask = this.WaitForEntityResponse<TResult>(guid, lockToUse);
                     }
 
+                    signalEntityActivity?.Dispose();
                     break;
 
                 default:
@@ -1175,7 +1203,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         internal void SendEntityMessage(OrchestrationInstance target, object eventContent)
         {
             string eventName;
-            Dictionary<string, string> eventTags = null;
 
             if (eventContent is RequestMessage requestMessage)
             {
@@ -1194,8 +1221,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                     eventName = EntityMessageEventNames.RequestMessageEventName;
                 }
-
-                eventTags = new () { { EventTags.CreateEntityRequestEventTrace, "" } };
             }
             else
             {
@@ -1213,7 +1238,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             this.IncrementActionsOrThrowException();
-            this.InnerContext.SendEvent(target, eventName, eventContent, eventTags);
+            this.InnerContext.SendEvent(target, eventName, eventContent);
         }
 
         private void IncrementActionsOrThrowException()
