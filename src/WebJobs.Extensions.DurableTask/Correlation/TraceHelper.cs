@@ -82,12 +82,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
             return newActivity;
         }
 
-        internal static Activity? StartActivityForProcessingEntityInvocation(string entityId, string entityName, string operationName, bool signalEntity, ActivityContext? parentTraceContext)
+        internal static Activity? StartActivityForProcessingEntityInvocation(string entityId, string entityName, string operationName, bool signalEntity, ActivityContext parentTraceContext)
         {
             Activity? newActivity = ActivityTraceSource.StartActivity(
                 Schema.SpanNames.CallOrSignalEntity(entityName, operationName),
                 kind: signalEntity ? ActivityKind.Consumer : ActivityKind.Server,
-                parentContext: parentTraceContext ?? default);
+                parentContext: parentTraceContext);
 
             if (newActivity == null)
             {
@@ -96,6 +96,32 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
 
             newActivity.SetTag(Schema.Task.Type, TraceActivityConstants.Entity);
             newActivity.SetTag(Schema.Task.Operation, signalEntity ? TraceActivityConstants.SignalEntity : TraceActivityConstants.CallEntity);
+            newActivity.SetTag(Schema.Task.InstanceId, entityId);
+
+            return newActivity;
+        }
+
+        internal static Activity? StartActivityForEntityStartingAnOrchestration(string entityId, string entityName, string targetInstanceId, ActivityContext? parentTraceContext)
+        {
+            // We only want to create a trace activity for an entity starting an orchestration in the case that we can successfully get the parent trace context of the request.
+            // Otherwise, we will create an unlinked trace activity with no parent.
+            if (parentTraceContext == null)
+            {
+                return null;
+            }
+
+            Activity? newActivity = ActivityTraceSource.StartActivity(
+                CreateSpanName(entityName, TraceActivityConstants.CreateOrchestration, null),
+                kind: ActivityKind.Producer,
+                parentContext: parentTraceContext);
+
+            if (newActivity == null)
+            {
+                return null;
+            }
+
+            newActivity.SetTag(Schema.Task.Type, TraceActivityConstants.Entity);
+            newActivity.SetTag(Schema.Task.EventTargetInstanceId, targetInstanceId);
             newActivity.SetTag(Schema.Task.InstanceId, entityId);
 
             return newActivity;

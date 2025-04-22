@@ -445,11 +445,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.context.CurrentOperation = request;
             this.context.CurrentOperationResponse = new ResponseMessage();
 
-            // The trace context of the request message becomes the parent trace context of the DurableEntityContext.
-            // That way, if processing this operation request leads to the DurableEntityContext signaling another entity or starting an orchestration,
-            // then the parent trace context of these actions will be set to the trace context of whatever operation request triggered them
-            this.context.ParentTraceContext = request.ParentTraceContext;
-
             // set the async-local static context that is visible to the application code
             Entity.SetContext(this.context);
 
