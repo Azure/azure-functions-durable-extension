@@ -14,6 +14,7 @@ using DurableTask.Core.Entities.OperationFormat;
 using DurableTask.Core.History;
 using DurableTask.Core.Query;
 using Google.Protobuf;
+using Google.Protobuf.Collections;
 using Google.Protobuf.WellKnownTypes;
 using P = Microsoft.DurableTask.Protobuf;
 
@@ -593,6 +594,42 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 default:
                     throw new NotSupportedException($"Deserialization of {operationResult.ResultTypeCase} is not supported.");
             }
+        }
+
+        /// <summary>
+        /// Converts a <see cref="Dictionary{TKey, TValue}"/> of <c>&lt;string, object?&gt;</c> to a <see cref="MapField{String, Value}"/> for gRPC transmission.
+        /// </summary>
+        /// <param name="input">The dictionary to convert.</param>
+        /// <returns>The corresponding <see cref="MapField{String, Value}"/>, or <c>null</c> if input is <c>null</c>.</returns>
+        internal static MapField<string, Value> ConvertDictionaryToStructMap(Dictionary<string, object?> input)
+        {
+            var result = new MapField<string, Value>();
+
+            foreach (var kvp in input)
+            {
+                result[kvp.Key] = ConvertObjectToValue(kvp.Value);
+            }
+
+            return result;
+        }
+
+        private static Value ConvertObjectToValue(object? obj)
+        {
+            if (obj is null)
+            {
+                return Value.ForNull();
+            }
+
+            return obj switch
+            {
+                string s => Value.ForString(s),
+                bool b => Value.ForBool(b),
+                int i => Value.ForNumber(i),
+                long l => Value.ForNumber(l),  // Protobuf `Value` only supports double for numbers
+                float f => Value.ForNumber(f),
+                double d => Value.ForNumber(d),
+                _ => throw new InvalidOperationException($"Unsupported type: {obj.GetType()}")
+            };
         }
     }
 }

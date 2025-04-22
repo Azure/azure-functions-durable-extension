@@ -171,6 +171,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         NewEvents = { remoteContext.NewEvents.Select(ProtobufUtils.ToHistoryEventProto) },
                         EntityParameters = remoteContext.EntityParameters.ToProtobuf(),
                     };
+                    orchestratorRequest.Properties.Add(ProtobufUtils.ConvertDictionaryToStructMap(remoteContext.Configurations));
 
                     // We convert the binary payload into a base64 string because that seems to be the most commonly supported
                     // format for Azure Functions language workers. Attempts to send unencoded byte[] payloads were unsuccessful.

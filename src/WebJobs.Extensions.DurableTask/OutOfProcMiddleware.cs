@@ -110,7 +110,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     isReplay: false);
             }
 
-            var context = new RemoteOrchestratorContext(runtimeState, entityParameters);
+            var context = new RemoteOrchestratorContext(runtimeState, entityParameters, this.extension.Options);
 
             var input = new TriggeredFunctionData
             {

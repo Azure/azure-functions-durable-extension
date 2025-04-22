@@ -53,8 +53,10 @@ public static class TaskOrchestrationContextExtensionMethods
             }
             else
             {
-                // TODO: use the configuration DefaultAsyncRequestSleepTimeMilliseconds from durabletaskextension
-                fireAt = context.CurrentUtcDateTime.AddMilliseconds(30000);
+                // Gets configuration DefaultAsyncRequestSleepTimeMilliseconds from durabletaskextension
+                int defaultAsyncRequestSleepTimeMilliseconds = context.Properties.TryGetValue("df.http.defaultAsyncRequestSleepTimeMilliseconds", out var value) && value is double d
+                                                                ? (int)d: 30000;
+                fireAt = context.CurrentUtcDateTime.AddMilliseconds(defaultAsyncRequestSleepTimeMilliseconds);
             }
 
             await context.CreateTimer(fireAt, CancellationToken.None);
