@@ -111,9 +111,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
             }
 
             Activity? newActivity = ActivityTraceSource.StartActivity(
-                CreateSpanName(entityName, TraceActivityConstants.CreateOrchestration, null),
+                Schema.SpanNames.EntityStartsAnOrchestration(entityName),
                 kind: ActivityKind.Producer,
-                parentContext: parentTraceContext);
+                parentContext: parentTraceContext.Value);
 
             if (newActivity == null)
             {

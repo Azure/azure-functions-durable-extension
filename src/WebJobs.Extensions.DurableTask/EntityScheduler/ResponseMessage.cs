@@ -20,9 +20,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         [JsonIgnore]
         public bool IsException => this.ExceptionType != null;
 
-        [JsonProperty(PropertyName = "requestInfo", DefaultValueHandling = DefaultValueHandling.Ignore)]
-        public RequestInformation RequestInfo { get; set; }
-
         public void SetResult(object result, MessagePayloadDataConverter dataConverter)
         {
             this.ExceptionType = null;

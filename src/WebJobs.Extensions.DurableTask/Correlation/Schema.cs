@@ -33,6 +33,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
             internal static string CallOrSignalEntity(string name, string operation)
                 => $"{TraceActivityConstants.Entity}:{name}:{operation}";
 
+            internal static string EntityStartsAnOrchestration(string name)
+                => $"{name}:{TraceActivityConstants.CreateOrchestration}";
+
             internal static string CreateOrchestration(string name, string? version)
                => FormatName(TraceActivityConstants.CreateOrchestration, name, version);
 
