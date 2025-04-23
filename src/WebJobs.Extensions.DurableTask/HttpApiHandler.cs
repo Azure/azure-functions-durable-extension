@@ -893,8 +893,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         OrchestrationInstance = instance,
                     };
 
-                    string traceParent = GetHeaderValueFromHeaders("x-client-traceparent", request.Headers);
-                    string traceState = GetHeaderValueFromHeaders("x-client-tracestate", request.Headers);
+                    string traceParent = GetHeaderValueFromHeaders("traceparent", request.Headers);
+                    string traceState = GetHeaderValueFromHeaders("tracestate", request.Headers);
 
                     if (traceParent != null)
                     {
