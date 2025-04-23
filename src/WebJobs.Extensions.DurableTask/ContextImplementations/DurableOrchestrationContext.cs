@@ -698,7 +698,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     Activity signalEntityActivity = null;
 
                     // In the case that we are calling an entity, we want to create the Activity once the result for the call is returned and so we do not create now.
-                    if (!this.isReplaying && oneWay)
+                    if (!this.IsReplaying && oneWay)
                     {
                         signalEntityActivity = TraceHelper.StartActivityForCallingOrSignalingEntity(
                             instanceId,
