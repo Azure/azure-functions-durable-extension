@@ -430,7 +430,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 InstanceId = EntityId.GetSchedulerIdFromEntityId(entity),
             };
 
-            using var signalEntityActivity = TraceHelper.StartActivityForCallingOrSignalingEntity(target.InstanceId, entity.EntityName, operation, signalEntity: true, scheduledTimeUtc, Activity.Current?.Context, entityId: this.InstanceId);
             var request = new RequestMessage()
             {
                 ParentInstanceId = this.InstanceId,
@@ -440,10 +439,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 Operation = operation,
                 ScheduledTime = scheduledTimeUtc,
             };
-            if (!string.IsNullOrEmpty(signalEntityActivity?.Id))
-            {
-                request.ParentTraceContext = new DTCore.Tracing.DistributedTraceContext(signalEntityActivity.Id, signalEntityActivity.TraceStateString);
-            }
 
             if (input != null)
             {
