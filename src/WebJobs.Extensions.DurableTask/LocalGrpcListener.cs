@@ -238,6 +238,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.CheckEntitySupport(context, out var durabilityProvider, out var entityOrchestrationService);
 
                 Activity? signalEntityActivity = null;
+
                 // We only want to create a trace activity for signaling the entity in the case that we can successfully parse the trace context of the signal entity request.
                 // Otherwise, we will create an unlinked trace activity with no parent.
                 if (ActivityContext.TryParse(request.ParentTraceContext?.TraceParent, request.ParentTraceContext?.TraceState, out ActivityContext parentTraceContext))

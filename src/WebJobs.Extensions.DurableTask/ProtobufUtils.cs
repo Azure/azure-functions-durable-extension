@@ -601,6 +601,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     return new OperationResult()
                     {
                         Result = operationResult.Success.Result,
+                        StartTime = operationResult.Success.StartTime?.ToDateTime(),
                         EndTime = operationResult.Success.EndTime?.ToDateTime(),
                     };
 
@@ -608,6 +609,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     return new OperationResult()
                     {
                         FailureDetails = GetFailureDetails(operationResult.Failure.FailureDetails),
+                        StartTime = operationResult.Failure.StartTime?.ToDateTime(),
                         EndTime = operationResult.Failure.EndTime?.ToDateTime(),
                     };
 
