@@ -430,7 +430,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 InstanceId = EntityId.GetSchedulerIdFromEntityId(entity),
             };
 
-            using var signalEntityActivity = TraceHelper.StartActivityForCallingOrSignalingEntity(target.InstanceId, entity.EntityName, operation, signalEntity: true, scheduledTimeUtc, Activity.Current?.Context, entityId: this.InstanceId);
             var request = new RequestMessage()
             {
                 ParentInstanceId = this.InstanceId,
@@ -440,17 +439,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 Operation = operation,
                 ScheduledTime = scheduledTimeUtc,
             };
-            if (!string.IsNullOrEmpty(signalEntityActivity?.Id))
-            {
-                request.ParentTraceContext = new DTCore.Tracing.DistributedTraceContext(signalEntityActivity.Id, signalEntityActivity.TraceStateString);
-            }
 
             if (input != null)
             {
                 request.SetInput(input, this.messageDataConverter);
             }
 
-            this.SendOperationMessage(target, request);
+            this.SendOperationMessage(target, request, Activity.Current?.Context);
 
             this.Config.TraceHelper.FunctionScheduled(
                 this.Config.Options.HubName,
@@ -596,8 +591,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        internal void SendOperationMessage(OrchestrationInstance target, RequestMessage requestMessage)
+        internal void SendOperationMessage(OrchestrationInstance target, RequestMessage requestMessage, ActivityContext? parentTraceContext, DateTimeOffset? startTime = null)
         {
+            using var signalEntityActivity = TraceHelper.StartActivityForCallingOrSignalingEntity(
+                target.InstanceId,
+                EntityId.GetEntityIdFromSchedulerId(target.InstanceId).EntityName,
+                requestMessage.Operation,
+                signalEntity: true,
+                requestMessage.ScheduledTime,
+                parentTraceContext,
+                startTime: startTime,
+                entityId: this.InstanceId);
+            if (!string.IsNullOrEmpty(signalEntityActivity?.Id))
+            {
+                requestMessage.ParentTraceContext = new DTCore.Tracing.DistributedTraceContext(signalEntityActivity.Id, signalEntityActivity.TraceStateString);
+            }
+
             lock (this.outbox)
             {
                 string eventName;
