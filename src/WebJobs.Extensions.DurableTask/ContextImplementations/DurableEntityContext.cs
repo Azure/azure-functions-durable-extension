@@ -450,7 +450,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 request.SetInput(input, this.messageDataConverter);
             }
 
-            this.SendOperationMessage(target, request);
+            this.SendOperationMessage(target, request, Activity.Current?.Context);
 
             this.Config.TraceHelper.FunctionScheduled(
                 this.Config.Options.HubName,
@@ -596,8 +596,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        internal void SendOperationMessage(OrchestrationInstance target, RequestMessage requestMessage)
+        internal void SendOperationMessage(OrchestrationInstance target, RequestMessage requestMessage, ActivityContext? parentTraceContext, DateTimeOffset? startTime = null)
         {
+            using var signalEntityActivity = TraceHelper.StartActivityForCallingOrSignalingEntity(
+                target.InstanceId,
+                EntityId.GetEntityIdFromSchedulerId(target.InstanceId).EntityName,
+                requestMessage.Operation,
+                signalEntity: true,
+                requestMessage.ScheduledTime,
+                parentTraceContext,
+                startTime: startTime,
+                entityId: this.InstanceId);
+            if (!string.IsNullOrEmpty(signalEntityActivity?.Id))
+            {
+                requestMessage.ParentTraceContext = new DTCore.Tracing.DistributedTraceContext(signalEntityActivity.Id, signalEntityActivity.TraceStateString);
+            }
+
             lock (this.outbox)
             {
                 string eventName;
