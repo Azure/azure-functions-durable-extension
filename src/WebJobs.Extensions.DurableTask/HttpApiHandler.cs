@@ -966,7 +966,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 kind: ActivityKind.Producer,
                 parentContext: parentTraceContext);
 
-            newActivity.Start();
+            if (newActivity != null)
+            {
+                newActivity.Start();
+            }
 
             if (newActivity != null && !string.IsNullOrEmpty(newActivity.Id))
             {
