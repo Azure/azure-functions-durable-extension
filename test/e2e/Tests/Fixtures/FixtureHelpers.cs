@@ -87,6 +87,7 @@ public static class FixtureHelpers
         switch ((durableBackendEnvVarValue ?? "").ToLowerInvariant())
         {
             case "azurestorage":
+                funcProcess.StartInfo.EnvironmentVariables["AzureFunctionsJobHost__extensions__durableTask__MaxGrpcMessageSizeInBytes"] = "6291456";
                 return;
             case "mssql":
                 string? sqlPassword = Environment.GetEnvironmentVariable("MSSQL_SA_PASSWORD");
@@ -98,6 +99,7 @@ public static class FixtureHelpers
                 funcProcess.StartInfo.EnvironmentVariables["AzureFunctionsJobHost__extensions__durableTask__storageProvider__type"] = "mssql";
                 funcProcess.StartInfo.EnvironmentVariables["AzureFunctionsJobHost__extensions__durableTask__storageProvider__connectionStringName"] = "SQLDB_Connection";
                 funcProcess.StartInfo.EnvironmentVariables["AzureFunctionsJobHost__extensions__durableTask__storageProvider__createDatabaseIfNotExists"] = "true";
+                funcProcess.StartInfo.EnvironmentVariables["AzureFunctionsJobHost__extensions__durableTask__MaxGrpcMessageSizeInBytes"] = "6291456";
                 return;
             case "azuremanaged":
                 funcProcess.StartInfo.EnvironmentVariables["AzureFunctionsJobHost__extensions__durableTask__hubName"] = "default";

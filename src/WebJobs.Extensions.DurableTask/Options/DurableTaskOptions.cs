@@ -24,6 +24,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private string defaultHubName;
 
         /// <summary>
+        /// The DefaultVersion value provided here will be automatically assigned to every orchestration
+        /// instance created by this app, and this value will be available on IDurableOrchestrationContext
+        /// passed to each orchestrator function replay invocation of this orchestration instance.
+        /// </summary>
+        public string DefaultVersion { get; set; }
+
+        /// <summary>
         /// Settings used for Durable HTTP functionality.
         /// </summary>
         public HttpOptions HttpSettings { get; set; } = new HttpOptions();
@@ -234,6 +241,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// If UseAppLease is true, gets or sets the AppLeaaseOptions used for acquiring the lease to start the application.
         /// </summary>
         public AppLeaseOptions AppLeaseOptions { get; set; } = AppLeaseOptions.DefaultOptions;
+
+        /// <summary>
+        /// Option to control the receive message size in bytes of the gRPC client, which is used by Durable Funsiont C# Isolated and Java.
+        /// Defaults to 4,194,304 (4 MB).
+        /// The maximum allowable value is <see cref="int.MaxValue"/>, which corresponds to the durable grpc server's receive limit.
+        /// </summary>
+        public int MaxGrpcMessageSizeInBytes { get; set; } = 4194304;
 
         // Used for mocking the lifecycle notification helper.
         internal HttpMessageHandler NotificationHandler { get; set; }

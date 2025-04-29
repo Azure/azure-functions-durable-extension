@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
 
 internal partial class FunctionsDurableClientProvider
 {
-    private static GrpcChannel CreateChannel(ClientKey key)
+    private static GrpcChannel CreateChannel(ClientKey key, int? maxGrpcMessageSize)
     {
         IReadOnlyDictionary<string, string> headers = key.GetHeaders();
         if (headers.Count == 0)
@@ -29,6 +29,7 @@ internal partial class FunctionsDurableClientProvider
         {
             HttpClient = httpClient,
             DisposeHttpClient = true,
+            MaxReceiveMessageSize = maxGrpcMessageSize
         };
 
         return GrpcChannel.ForAddress(key.Address, options);

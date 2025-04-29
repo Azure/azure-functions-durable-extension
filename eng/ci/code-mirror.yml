@@ -6,7 +6,8 @@ trigger:
     - main
     - dev
     - v2.x
-    - nytian/grpclog
+    - nytian/dfv3-release-rc.2
+    - hotfix/3.0.3
 
 resources:
   repositories:

@@ -706,7 +706,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     {
                         var dummyTask = innerContext.CreateSubOrchestrationInstance<object>(
                           fireAndForgetMessage.FunctionName,
-                          DurableOrchestrationContext.DefaultVersion,
+                          this.Config.Options.DefaultVersion,
                           fireAndForgetMessage.InstanceId,
                           fireAndForgetMessage.Input,
                           new Dictionary<string, string>() { { OrchestrationTags.FireAndForget, "" } });

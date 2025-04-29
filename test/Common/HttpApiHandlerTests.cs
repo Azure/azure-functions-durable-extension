@@ -1592,6 +1592,86 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(HttpStatusCode.Accepted, actualResponse.StatusCode);
         }
 
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async void GetClientResponseLinks_Uses_Forwarded_Headers_When_Enabled()
+        {
+            // Arrange
+            var options = new DurableTaskOptions
+            {
+                HttpSettings = new HttpOptions { UseForwardedHost = true },
+                WebhookUriProviderOverride = () => new Uri(TestConstants.NotificationUrl),
+            };
+
+            var httpApiHandler = new HttpApiHandler(GetTestExtension(options), null);
+            var request = new HttpRequestMessage
+            {
+                RequestUri = new Uri(TestConstants.RequestUri),
+            };
+
+            // Add headers that should be used
+            string forwardedHost = "example.com";
+            string forwardedProto = "https";
+            request.Headers.Add("X-Forwarded-Host", forwardedHost);
+            request.Headers.Add("X-Forwarded-Proto", forwardedProto);
+
+            // Act
+            var httpResponseMessage = httpApiHandler.CreateCheckStatusResponse(
+                request,
+                TestConstants.InstanceId,
+                new DurableClientAttribute
+                {
+                    TaskHub = TestConstants.TaskHub,
+                    ConnectionName = TestConstants.ConnectionName,
+                });
+
+            // Assert
+            var content = await httpResponseMessage.Content.ReadAsStringAsync();
+            var status = JsonConvert.DeserializeObject<JObject>(content);
+            Assert.StartsWith($"{forwardedProto}://{forwardedHost}", (string)status["statusQueryGetUri"]);
+            Assert.StartsWith($"{forwardedProto}://{forwardedHost}", (string)status["sendEventPostUri"]);
+            Assert.StartsWith($"{forwardedProto}://{forwardedHost}", (string)status["terminatePostUri"]);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async void GetClientResponseLinks_Ignores_Forwarded_Headers_When_Disabled()
+        {
+            // Arrange
+            var options = new DurableTaskOptions
+            {
+                HttpSettings = new HttpOptions { UseForwardedHost = false },
+                WebhookUriProviderOverride = () => new Uri(TestConstants.NotificationUrl),
+            };
+
+            var httpApiHandler = new HttpApiHandler(GetTestExtension(options), null);
+            var request = new HttpRequestMessage
+            {
+                RequestUri = new Uri(TestConstants.RequestUri),
+            };
+
+            // Add headers that should be ignored
+            request.Headers.Add("X-Forwarded-Host", "example.com");
+            request.Headers.Add("X-Forwarded-Proto", "https");
+
+            // Act
+            var httpResponseMessage = httpApiHandler.CreateCheckStatusResponse(
+                request,
+                TestConstants.InstanceId,
+                new DurableClientAttribute
+                {
+                    TaskHub = TestConstants.TaskHub,
+                    ConnectionName = TestConstants.ConnectionName,
+                });
+
+            // Assert
+            var content = await httpResponseMessage.Content.ReadAsStringAsync();
+            var status = JsonConvert.DeserializeObject<JObject>(content);
+            Assert.StartsWith("http://localhost:7071", (string)status["statusQueryGetUri"]);
+            Assert.StartsWith("http://localhost:7071", (string)status["sendEventPostUri"]);
+            Assert.StartsWith("http://localhost:7071", (string)status["terminatePostUri"]);
+        }
+
         private static DurableTaskExtension GetTestExtension()
         {
             var options = new DurableTaskOptions();
@@ -1638,11 +1718,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     new[]
                     {
                         new AzureStorageDurabilityProviderFactory(
-                        new OptionsWrapper<DurableTaskOptions>(options),
-                        new TestStorageServiceClientProviderFactory(),
-                        TestHelpers.GetTestNameResolver(),
-                        NullLoggerFactory.Instance,
-                        TestHelpers.GetMockPlatformInformationService()),
+                            new OptionsWrapper<DurableTaskOptions>(options),
+                            new TestStorageServiceClientProviderFactory(),
+                            TestHelpers.GetTestNameResolver(),
+                            NullLoggerFactory.Instance,
+                            TestHelpers.GetMockPlatformInformationService()),
                     },
                     new TestHostShutdownNotificationService(),
                     new DurableHttpMessageHandlerFactory(),
