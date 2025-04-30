@@ -64,7 +64,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return inLinuxDedicated;
         }
 
-        private bool IsInAzureContainerApps()
+        private bool IsManagedAppEnvironment()
         {
             string? managedEnvironmentValue = this.ReadEnviromentVariable("MANAGED_ENVIRONMENT");
             return !string.IsNullOrEmpty(managedEnvironmentValue);
@@ -72,7 +72,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public OperatingSystem GetOperatingSystem()
         {
-            if (this.IsInLinuxConsumption() || this.IsInLinuxAppService() || this.IsInAzureContainerApps())
+            if (this.IsInLinuxConsumption() || this.IsInLinuxAppService() || this.IsManagedAppEnvironment())
             {
                 return OperatingSystem.Linux;
             }
