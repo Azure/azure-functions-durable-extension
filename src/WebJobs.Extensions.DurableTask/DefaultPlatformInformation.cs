@@ -64,7 +64,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return inLinuxDedicated;
         }
 
-        private bool IsManagedAppEnvironment()
+        public bool IsManagedAppEnvironment()
         {
             string? managedEnvironmentValue = this.ReadEnviromentVariable("MANAGED_ENVIRONMENT");
             return !string.IsNullOrEmpty(managedEnvironmentValue);

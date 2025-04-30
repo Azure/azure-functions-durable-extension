@@ -84,6 +84,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         bool IsInConsumptionPlan();
 
         /// <summary>
+        /// Determine the underlying plan is Consumption or not.
+        /// </summary>
+        /// <returns> True if the plan is Consumption. Otherwise, False.</returns>
+        bool IsManagedAppEnvironment();
+
+        /// <summary>
         /// Determine the underlying operating system.
         /// </summary>
         /// <returns>An OperatingSystem enum.</returns>
