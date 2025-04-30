@@ -84,9 +84,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         bool IsInConsumptionPlan();
 
         /// <summary>
-        /// Determine the underlying plan is Consumption or not.
+        /// Gets a value indicating whether the application is running in Managed App environment.
         /// </summary>
-        /// <returns> True if the plan is Consumption. Otherwise, False.</returns>
+        /// <returns><see cref="true"/> if running in Managed App environment; otherwise, false.</returns>
         bool IsManagedAppEnvironment();
 
         /// <summary>
