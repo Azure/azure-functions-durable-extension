@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.DurableTask;
 using Microsoft.DurableTask.Client;
 using Microsoft.DurableTask.Client.Entities;
+using Microsoft.DurableTask.Protobuf;
 
 namespace Microsoft.Azure.Functions.Worker;
 
@@ -17,16 +18,18 @@ internal sealed class FunctionsDurableTaskClient : DurableTaskClient
 {
     private readonly DurableTaskClient inner;
 
-    public FunctionsDurableTaskClient(DurableTaskClient inner, string? queryString, string? httpBaseUrl)
+    public FunctionsDurableTaskClient(DurableTaskClient inner, string? queryString, string? httpBaseUrl, bool? throwStatusExceptionsOnRaiseEvent)
         : base(inner.Name)
     {
         this.inner = inner;
         this.QueryString = queryString;
         this.HttpBaseUrl = httpBaseUrl;
+        this.ThrowStatusExceptionsOnRaiseEvent = throwStatusExceptionsOnRaiseEvent;
     }
 
     public string? QueryString { get; }
     public string? HttpBaseUrl { get; }
+    public bool? ThrowStatusExceptionsOnRaiseEvent { get; }
     public override DurableEntityClient Entities => this.inner.Entities;
 
     public override ValueTask DisposeAsync()
@@ -61,6 +64,11 @@ internal sealed class FunctionsDurableTaskClient : DurableTaskClient
     public override Task RaiseEventAsync(
         string instanceId, string eventName, object? eventPayload = null, CancellationToken cancellation = default)
     {
+        if (this.ThrowStatusExceptionsOnRaiseEvent == false && string.IsNullOrEmpty(instanceId))
+        {
+            return Task.CompletedTask;
+        }
+
         return this.inner.RaiseEventAsync(instanceId, eventName, eventPayload, cancellation);
     }
 

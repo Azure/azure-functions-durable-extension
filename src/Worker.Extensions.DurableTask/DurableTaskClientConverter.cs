@@ -49,7 +49,7 @@ internal sealed partial class DurableTaskClientConverter : IInputConverter
             }
 
             DurableTaskClient client = this.clientProvider.GetClient(endpoint, inputData?.taskHubName, inputData?.connectionName, inputData?.maxGrpcMessageSizeInBytes);
-            client = new FunctionsDurableTaskClient(client, inputData!.requiredQueryStringParameters, inputData!.httpBaseUrl);
+            client = new FunctionsDurableTaskClient(client, inputData!.requiredQueryStringParameters, inputData!.httpBaseUrl,inputData!.throwStatusExceptionsOnRaiseEvent);
             return new ValueTask<ConversionResult>(ConversionResult.Success(client));
         }
         catch (Exception innerException)
@@ -62,5 +62,12 @@ internal sealed partial class DurableTaskClientConverter : IInputConverter
     }
 
     // Serializer is case-sensitive and incoming JSON properties are camel-cased.
-    private record DurableClientInputData(string rpcBaseUrl, string taskHubName, string connectionName, string requiredQueryStringParameters, string httpBaseUrl, int maxGrpcMessageSizeInBytes);
+    private record DurableClientInputData(
+        string rpcBaseUrl,
+        string taskHubName,
+        string connectionName,
+        string requiredQueryStringParameters,
+        string httpBaseUrl,
+        int maxGrpcMessageSizeInBytes,
+        bool throwStatusExceptionsOnRaiseEvent);
 }

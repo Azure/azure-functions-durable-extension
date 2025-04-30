@@ -256,7 +256,33 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             public async override Task<P.RaiseEventResponse> RaiseEvent(P.RaiseEventRequest request, ServerCallContext context)
             {
-                await this.GetClient(context).RaiseEventAsync(request.InstanceId, request.Name, Raw(request.Input));
+                bool throwStatusExceptionsOnRaiseEvent = this.extension.Options.ThrowStatusExceptionsOnRaiseEvent ?? this.extension.DefaultDurabilityProvider.CheckStatusBeforeRaiseEvent;
+                try
+                {
+                    await this.GetClient(context).RaiseEventAsync(request.InstanceId, request.Name, Raw(request.Input));
+                }
+                catch (ArgumentException)
+                {
+                    if (throwStatusExceptionsOnRaiseEvent)
+                    {
+                        throw new RpcException(new Status(StatusCode.InvalidArgument, "The instance id is invalid."));
+                    }
+                }
+                catch (InvalidOperationException)
+                {
+                    if (throwStatusExceptionsOnRaiseEvent)
+                    {
+                        throw new RpcException(new Status(StatusCode.FailedPrecondition, "The orchestration instance with the provided instance id is not running."));
+                    }
+                }
+                catch (Exception ex)
+                {
+                    if (throwStatusExceptionsOnRaiseEvent)
+                    {
+                        throw new RpcException(new Status(StatusCode.Unknown, ex.Message));
+                    }
+                }
+
                 return new P.RaiseEventResponse();
             }
 

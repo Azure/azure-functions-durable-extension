@@ -45,6 +45,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     RequiredQueryStringParameters = this.config.HttpApiHandler.GetUniversalQueryStrings(),
                     HttpBaseUrl = this.config.HttpApiHandler.GetBaseUrl(),
                     MaxGrpcMessageSizeInBytes = this.config.Options.MaxGrpcMessageSizeInBytes,
+                    ThrowStatusExceptionsOnRaiseEvent = this.config.Options.ThrowStatusExceptionsOnRaiseEvent ?? this.config.DefaultDurabilityProvider.CheckStatusBeforeRaiseEvent,
                 });
             }
 
@@ -147,6 +148,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             /// </summary>
             [JsonProperty("maxGrpcMessageSizeInBytes")]
             public int? MaxGrpcMessageSizeInBytes { get; set; }
+
+            /// <summary>
+            /// Controls the behavior of DurableTaskClient.RaiseEventAsync in situations where the specified orchestration
+            /// does not exist, or is not in a running state. If set to true, an exception is thrown. If set to false, the event is silently discarded.
+            /// Default value is determined by backend type.
+            /// </summary>
+            public bool? ThrowStatusExceptionsOnRaiseEvent { get; set; }
         }
     }
 }
