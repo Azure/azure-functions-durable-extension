@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Functions.Worker.Tests
             }
 
             DurableTaskClient durableClient = durableClientMock.Object;
-            FunctionsDurableTaskClient client = new FunctionsDurableTaskClient(durableClient, queryString: null, httpBaseUrl: baseUrl);
+            FunctionsDurableTaskClient client = new FunctionsDurableTaskClient(durableClient, queryString: null, httpBaseUrl: baseUrl, throwStatusExceptionsOnRaiseEvent: true);
             return client;
         }
 
