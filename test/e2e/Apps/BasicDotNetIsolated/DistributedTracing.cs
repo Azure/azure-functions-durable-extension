@@ -24,6 +24,7 @@ public static class DistributedTracing
     [Function(nameof(GetDistributedTraceId))]
     public static string? GetDistributedTraceId([ActivityTrigger] FunctionContext executionContext)
     {
+        executionContext.GetLogger(nameof(GetDistributedTraceId)).LogInformation($"Activity.Current is non-null: {Activity.Current != null}");
         return Activity.Current?.Id;
     }
 
