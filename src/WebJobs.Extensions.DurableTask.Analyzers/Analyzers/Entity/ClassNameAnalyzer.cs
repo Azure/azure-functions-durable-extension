@@ -49,7 +49,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         {
             foreach (AttributeSyntax entityTrigger in entityTriggerAttributes)
             {
+                // GetSemanticModel is expensive - if examining this code, refactor following guidance from RS1030
+#pragma warning disable RS1030
                 SemanticModel semanticModel = context.Compilation.GetSemanticModel(entityTrigger.SyntaxTree);
+#pragma warning restore RS1030
                 if (SyntaxNodeUtils.TryGetFunctionNameAndNode(semanticModel, entityTrigger, out SyntaxNode attributeArgument, out string functionName))
                 {
                     if (!classNames.Contains(functionName))
