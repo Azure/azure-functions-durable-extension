@@ -31,7 +31,8 @@ public class DistributedTracingTests
         ActivitySource.AddActivityListener(_activityListener);
     }
 
-    [Fact(Skip = "Need to release new versions of Microsoft.DurableTask.Client.Grpc and Microsoft.DurableTask.Worker.Grpc for this test to pass")]
+    //[Fact(Skip = "Need to release new versions of Microsoft.DurableTask.Client.Grpc and Microsoft.DurableTask.Worker.Grpc for this test to pass")]
+    [Fact]
     public async Task DistributedTracingTest()
     {
         // Start Activity
