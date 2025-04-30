@@ -47,7 +47,7 @@ public class ExternalEventTests
     public async Task NotValidInstanceTest()
     {
         // Send Event to a empty string Instance Id and a exception will return.
-        var response = await HttpHelpers.InvokeHttpTrigger("NotValidInstanceId_HttpStart", "");
+        var response = await HttpHelpers.InvokeHttpTrigger("NotValidInstance_HttpStart", "");
         string responseContent = await response.Content.ReadAsStringAsync();
 
         // Verify the returned exception contains the correct information. 

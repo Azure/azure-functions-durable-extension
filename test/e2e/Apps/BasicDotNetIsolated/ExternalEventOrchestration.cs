@@ -37,9 +37,9 @@ public static class ExternalEventOrchestration
         return "Orchestrator Finished!";
     }
 
-    [Function("NotValidInstanceId_HttpStart")]
-    public static async Task<HttpResponseData> NotValidInstanceId_HttpStart(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", "posst")] HttpRequestData req,
+    [Function("NotValidInstance_HttpStart")]
+    public static async Task<HttpResponseData> NotValidInstance_HttpStart(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestData req,
         [DurableClient] DurableTaskClient client,
         FunctionContext executionContext)
     {
