@@ -10,6 +10,7 @@
   <!-- To specify a version in the package reference below, simply add `Version = ""`. -->
   <ItemGroup>
     <PackageReference Include="TaskBuilder.fs" />
+    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.Http" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.Storage" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.Twilio" />

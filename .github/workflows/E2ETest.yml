@@ -66,10 +66,13 @@ jobs:
         with:
           dotnet-version: 8.0.x
 
+      - name: Initialize Environment Variables
+        run: | 
+          echo "MSSQL_SA_PASSWORD=TEST12_$(echo $RANDOM)!" >> $GITHUB_ENV
+
       - name: Setup E2E tests
         shell: pwsh
         run: |
-          $env:MSSQL_SA_PASSWORD = "$([Guid]::NewGuid())"
           .\test\e2e\Tests\build-e2e-test.ps1 -StartMSSqlContainer
 
       - name: Build
@@ -79,3 +82,33 @@ jobs:
       - name: Run E2E tests
         working-directory: test/e2e/Tests
         run: dotnet test --filter MSSQL!=Skip
+
+  e2e-dts:
+    runs-on: ubuntu-latest
+    env:
+      E2E_TEST_DURABLE_BACKEND: "azureManaged"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET Core
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 6.0.x
+
+      - name: Setup .NET Core
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Setup E2E tests
+        shell: pwsh
+        run: |
+          .\test\e2e\Tests\build-e2e-test.ps1 -StartDTSContainer
+
+      - name: Build
+        working-directory: test/e2e/Tests
+        run: dotnet build
+
+      - name: Run E2E tests
+        working-directory: test/e2e/Tests
+        run: dotnet test --logger "console;verbosity=detailed" --filter DTS!=Skip

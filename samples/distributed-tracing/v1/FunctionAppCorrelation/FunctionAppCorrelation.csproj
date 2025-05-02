@@ -14,8 +14,8 @@
     <PackageReference Include="StyleCop.Analyzers" PrivateAssets="All"/>
   </ItemGroup>
   <ItemGroup>
-    <AdditionalFiles Include="..\..\..\.stylecop\stylecop.json" />
-    <Compile Include="..\..\..\.stylecop\GlobalSuppressions.cs" Link="GlobalSuppressions.cs" />
+    <AdditionalFiles Include="..\..\..\..\.stylecop\stylecop.json" />
+    <Compile Include="..\..\..\..\.stylecop\GlobalSuppressions.cs" Link="GlobalSuppressions.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Update="host.json">

@@ -15,6 +15,7 @@
     <PackageReference Include="Microsoft.ApplicationInsights.WorkerService" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker.ApplicationInsights" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.DurableTask.SqlServer"/>
+    <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.DurableTask.AzureManaged"/>
   </ItemGroup>
 
   <ItemGroup>

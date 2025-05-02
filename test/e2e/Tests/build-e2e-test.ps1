@@ -13,6 +13,9 @@ param(
     $StartMSSqlContainer,
 
     [Switch]
+    $StartDTSContainer,
+
+    [Switch]
     $SkipCoreTools,
 
     # This param can be used during local runs of the build script to deliberately skip the build and run only the azurite/mssql logic
@@ -20,6 +23,12 @@ param(
     [Switch]
     $SkipBuild
 )
+
+if ($PSVersionTable.PSEdition -ne 'Core') {
+    Write-Warning "You are not running PowerShell Core. Please switch to PowerShell Core (>= PS 6) for better compatibility and performance."
+    Write-Warning "See https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell?view=powershell-7.5"
+    exit 1
+}
 
 $ErrorActionPreference = "Stop"
 
@@ -119,7 +128,9 @@ if (!$SkipBuild)
   $BuildOutputLocation = Resolve-Path $BuildOutputLocation
   Get-ChildItem -Path $BuildOutputLocation -Include * -File -Recurse | ForEach-Object { $_.Delete()}
   dotnet build -c Debug "$WebJobsExtensionProjectDirectory\WebJobs.Extensions.DurableTask.csproj" --output $BuildOutputLocation
-  
+
+  if ($LASTEXITCODE -ne 0) { Set-Location $PSScriptRoot; throw "WebJobs Extension build failed" }
+
   Write-Host "Moving nupkg from WebJobs extension to $AppPackageLocation"
   Set-Location $BuildOutputLocation
   dotnet nuget push *.nupkg --source $AppPackageLocation
@@ -147,6 +158,8 @@ if (!$SkipBuild)
   Write-Host "Building app project"
   dotnet clean app.csproj
   dotnet build app.csproj
+
+  if ($LASTEXITCODE -ne 0) { Set-Location $PSScriptRoot; throw "Test app build failed." }
 }
 
 Set-Location $PSScriptRoot
@@ -182,6 +195,26 @@ function StartMSSQLContainer($mssqlPwd) {
   docker ps
 }
 
+function StartDTSContainer() {
+  Write-Host "Pulling down the mcr.microsoft.com/dts/dts-emulator:v0.0.4 image..."
+  docker pull mcr.microsoft.com/dts/dts-emulator:v0.0.4
+
+  # Start the DTS Server docker container with the specified edition
+  Write-Host "Starting DTS docker container on port 8080" -ForegroundColor DarkYellow
+  docker run -i -p 8080:8080 -p 8082:8082 -d mcr.microsoft.com/dts/dts-emulator:v0.0.4
+
+  if ($LASTEXITCODE -ne 0) {
+      exit $LASTEXITCODE
+  }
+
+  # The container needs a bit more time before it can start accepting commands
+  Write-Host "Sleeping for 30 seconds to let the container finish initializing..." -ForegroundColor Yellow
+  Start-Sleep -Seconds 30
+
+  # Check to see what containers are running
+  docker ps
+}
+
 Set-Location $PSScriptRoot
 
 if ($StartMSSqlContainer)
@@ -193,6 +226,11 @@ if ($StartMSSqlContainer)
   else {
     StartMSSQLContainer $mssqlPwd
   }
+}
+
+if ($StartDTSContainer)
+{
+    StartDTSContainer
 }
 
 StopOnFailedExecution

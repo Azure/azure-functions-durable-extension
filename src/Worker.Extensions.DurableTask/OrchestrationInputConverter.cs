@@ -58,11 +58,13 @@ internal class OrchestrationInputConverter : IInputConverter
         // We only convert if:
         // 1. The "Source" is null - IE: there are no declared binding parameters.
         // 2. We have a cached input.
-        // 3. The TargetType matches our cached type.
+        // 3. The TargetType is either:
+        //    a. TargetType is in the inheritance hierarchy of the cached input (i.e. an ancestor type),
+        //    b. TargetType is an interface implemented by the cached input.
         // If these are met, then we assume this parameter is the orchestration input.
         if (context.Source is null
             && context.FunctionContext.Items.TryGetValue(OrchestrationInputKey, out object? value)
-            && context.TargetType == value?.GetType())
+            && context.TargetType.IsInstanceOfType(value))
         {
             // Remove this from the items so we bind this only once.
             context.FunctionContext.Items.Remove(OrchestrationInputKey);

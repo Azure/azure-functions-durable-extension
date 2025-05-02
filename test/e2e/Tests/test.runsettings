@@ -9,6 +9,8 @@
             <MSSQL_SA_PASSWORD>{{YourPasswordHere}}</MSSQL_SA_PASSWORD>
             <E2E_TEST_DURABLE_BACKEND>MSSQL</E2E_TEST_DURABLE_BACKEND>
             -->
+            <!-- Uncomment the following environment variables if you want to run test against azureManaged(DTS)
+            <E2E_TEST_DURABLE_BACKEND>azureManaged</E2E_TEST_DURABLE_BACKEND>-->
             <E2E_TEST_DURABLE_BACKEND>AzureStorage</E2E_TEST_DURABLE_BACKEND>
         </EnvironmentVariables>
     </RunConfiguration>

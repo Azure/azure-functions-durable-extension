@@ -10,8 +10,9 @@
     <None Include="..\README.md" Link="README.md" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask" />
-    <PackageReference Include="Microsoft.NET.Sdk.Functions"  />
+    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask" VersionOverride = "2.4.0"/>
+    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.Http" />
+    <PackageReference Include="Microsoft.NET.Sdk.Functions" />
   </ItemGroup>
   <ItemGroup>
     <None Update="host.json">
