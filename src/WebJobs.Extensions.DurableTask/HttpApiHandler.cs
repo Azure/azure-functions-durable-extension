@@ -899,11 +899,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     if (traceParent != null)
                     {
                         ActivityContext.TryParse(traceParent, traceState, out ActivityContext parentActivityContext);
-                        using Activity scheduleOrchestrationActivity = StartActivityForNewOrchestration(executionStartedEvent, parentActivityContext);
+                        using Activity scheduleOrchestrationActivity = TraceHelper.StartActivityForNewOrchestration(executionStartedEvent, parentActivityContext);
                     }
                     else
                     {
-                        using Activity scheduleOrchestrationActivity = StartActivityForNewOrchestration(executionStartedEvent, default);
+                        using Activity scheduleOrchestrationActivity = TraceHelper.StartActivityForNewOrchestration(executionStartedEvent, default);
                     }
 
                     await durableClient.DurabilityProvider.CreateTaskOrchestrationAsync(
@@ -953,41 +953,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             return null;
-        }
-
-        internal static Activity StartActivityForNewOrchestration(ExecutionStartedEvent startEvent, ActivityContext parentTraceContext)
-        {
-            // Create the Activity Source for the WebJobs extension
-            ActivitySource activitySource = new ActivitySource("WebJobs.Extensions.DurableTask");
-
-            // Start the new activity to represent scheduling the orchestration
-            Activity newActivity = activitySource.CreateActivity(
-                name: Schema.SpanNames.CreateOrchestration(startEvent.Name, startEvent.Version),
-                kind: ActivityKind.Producer,
-                parentContext: parentTraceContext);
-
-            if (newActivity != null)
-            {
-                newActivity.Start();
-            }
-
-            if (newActivity != null && !string.IsNullOrEmpty(newActivity.Id))
-            {
-                newActivity.SetTag(Schema.Task.Type, TraceActivityConstants.Orchestration);
-                newActivity.SetTag(Schema.Task.Name, startEvent.Name);
-                newActivity.SetTag(Schema.Task.InstanceId, startEvent.OrchestrationInstance.InstanceId);
-                newActivity.SetTag(Schema.Task.ExecutionId, startEvent.OrchestrationInstance.ExecutionId);
-
-                if (!string.IsNullOrEmpty(startEvent.Version))
-                {
-                    newActivity.SetTag(Schema.Task.Version, startEvent.Version);
-                }
-
-                // Set the parent trace context for the ExecutionStartedEvent
-                startEvent.ParentTraceContext = new DTCore.Tracing.DistributedTraceContext(newActivity?.Id!, newActivity?.TraceStateString);
-            }
-
-            return newActivity;
         }
 
         private async Task<HttpResponseMessage> HandleRestartInstanceRequestAsync(
@@ -1150,6 +1115,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             else
             {
                 operationName = request.GetQueryNameValuePairs()["op"] ?? string.Empty;
+            }
+
+            if (client is DurableClient durableClient)
+            {
+                string traceParent = GetHeaderValueFromHeaders("traceparent", request.Headers);
+                string traceState = GetHeaderValueFromHeaders("tracestate", request.Headers);
+
+                // Note that we break the pattern here of not creating the Activity for signaling the entity if we cannot successfully parse the parent trace context (since DurableClient will just use Activity.Current.Context instead)
+                // In that case the Activity will not correctly attach to the HTTP request, but will correctly propagate all the other Activities following the signal entity request
+                if (traceParent != null && ActivityContext.TryParse(traceParent, traceState, out ActivityContext parentTraceContext))
+                {
+                    durableClient.ParentTraceContext = parentTraceContext;
+                }
             }
 
             if (request.Content == null || request.Content.Headers.ContentLength == 0)

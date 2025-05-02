@@ -46,6 +46,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly MessagePayloadDataConverter messageDataConverter;
         private readonly DurableTaskOptions durableTaskOptions;
         private readonly ContextImplementations.IDurableClientFactory clientFactory;
+        private ActivityContext? parentTraceContext;
 
         internal DurableClient(
             DurabilityProvider serviceClient,
@@ -92,6 +93,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public string TaskHubName => this.hubName;
 
         internal DurabilityProvider DurabilityProvider => this.durabilityProvider;
+
+        internal ActivityContext? ParentTraceContext
+        {
+            get => this.parentTraceContext;
+            set => this.parentTraceContext = value;
+        }
 
         /// <inheritdoc />
         string IDurableOrchestrationClient.TaskHubName => this.TaskHubName;
@@ -329,7 +336,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             var instanceId = EntityId.GetSchedulerIdFromEntityId(entityId);
             var instance = new OrchestrationInstance() { InstanceId = instanceId };
 
-            using var signalEntityActivity = TraceHelper.StartActivityForCallingOrSignalingEntity(instanceId, entityId.EntityName, operationName, signalEntity: true, scheduledTimeUtc, Activity.Current?.Context);
+            using var signalEntityActivity = TraceHelper.StartActivityForCallingOrSignalingEntity(instanceId, entityId.EntityName, operationName, signalEntity: true, scheduledTimeUtc, this.ParentTraceContext ?? Activity.Current?.Context);
+
+            // Reset state so that subsequent requests do not use the same parent trace context
+            this.ParentTraceContext = null;
             var request = new RequestMessage()
             {
                 ParentInstanceId = null, // means this was sent by a client

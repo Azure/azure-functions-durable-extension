@@ -831,7 +831,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 public double DurationInMilliseconds { get; set; }
 
                 /// <summary>
-                /// The end time of this operation's execution, in milliseconds, since January 1st 1970 midnight in UTC.
+                /// The start time of this operation's execution, in milliseconds, since January 1st 1970 midnight in UTC.
                 /// </summary>
                 [JsonProperty("startTime")]
                 public long StartTimeInMilliseconds { get; set; }
