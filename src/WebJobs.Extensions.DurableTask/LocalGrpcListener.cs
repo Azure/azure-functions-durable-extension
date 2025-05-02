@@ -261,12 +261,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     await this.GetClient(context).RaiseEventAsync(request.InstanceId, request.Name, Raw(request.Input));
                 }
-                catch (ArgumentException)
+                catch (ArgumentException ex)
                 {
-                    if (throwStatusExceptionsOnRaiseEvent)
-                    {
-                        throw new RpcException(new Status(StatusCode.InvalidArgument, "The instance id is invalid."));
-                    }
+                    throw new RpcException(new Status(StatusCode.InvalidArgument, ex.Message));
                 }
                 catch (InvalidOperationException)
                 {
@@ -277,10 +274,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
                 catch (Exception ex)
                 {
-                    if (throwStatusExceptionsOnRaiseEvent)
-                    {
-                        throw new RpcException(new Status(StatusCode.Unknown, ex.Message));
-                    }
+                    throw new RpcException(new Status(StatusCode.Unknown, ex.Message));
                 }
 
                 return new P.RaiseEventResponse();

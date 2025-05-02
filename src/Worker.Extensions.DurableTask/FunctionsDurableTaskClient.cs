@@ -64,11 +64,6 @@ internal sealed class FunctionsDurableTaskClient : DurableTaskClient
     public override Task RaiseEventAsync(
         string instanceId, string eventName, object? eventPayload = null, CancellationToken cancellation = default)
     {
-        if (this.ThrowStatusExceptionsOnRaiseEvent == false && string.IsNullOrEmpty(instanceId))
-        {
-            return Task.CompletedTask;
-        }
-
         return this.inner.RaiseEventAsync(instanceId, eventName, eventPayload, cancellation);
     }
 
