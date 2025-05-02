@@ -154,6 +154,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             /// does not exist, or is not in a running state. If set to true, an exception is thrown. If set to false, the event is silently discarded.
             /// Default value is determined by backend type.
             /// </summary>
+            [JsonProperty("throwStatusExceptionsOnRaiseEvent")]
             public bool? ThrowStatusExceptionsOnRaiseEvent { get; set; }
         }
     }
