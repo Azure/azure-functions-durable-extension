@@ -62,7 +62,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.roleInstance = "App-" + containerName;
             }
 
-            this.tenant = tenant;
+            if (!string.IsNullOrEmpty(tenant))
+            {
+                this.tenant = tenant;
+            }
 
             if (!string.IsNullOrEmpty(stampName))
             {

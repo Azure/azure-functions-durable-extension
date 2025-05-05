@@ -472,7 +472,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                 return false;
             }
 
-            return (subclassOrMatching.Equals(superOrMatching)
+            return (subclassOrMatching.Equals(superOrMatching, SymbolEqualityComparer.Default)
                 || AreMatchingValueTuples(subclassOrMatching, superOrMatching)
                 || AreMatchingGenericTypes(subclassOrMatching, superOrMatching)
                 || IsSubclassOrImplementation(subclassOrMatching, superOrMatching)

@@ -18,7 +18,10 @@ namespace WebJobs.Extensions.DurableTask.CodeGen.Example
         [FunctionName("SimpleOrchestrationHttp")]
         public static async Task<IActionResult> HttpStart_SimpleOrchestration(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get")] HttpRequest req,
+            // This project intentionally violates this analyzer
+#pragma warning disable DF0203
             [DurableClient] ITypedDurableClient client,
+#pragma warning restore DF0203
             ILogger log)
         {
             string instanceId = await client.Orchestrations.StartSimpleOrchestration(null);
@@ -28,7 +31,10 @@ namespace WebJobs.Extensions.DurableTask.CodeGen.Example
 
         [FunctionName("SimpleOrchestration")]
         public static async Task<List<string>> SimpleOrchestrator(
+            // This project intentionally violates this analyzer
+#pragma warning disable DF0201
             [OrchestrationTrigger] ITypedDurableOrchestrationContext context)
+#pragma warning restore DF0201
         {
             var outputs = new List<string>();
 
