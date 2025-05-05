@@ -26,7 +26,7 @@ public class HttpEndToEndTests
     {
         try
         {
-            _output.WriteLine(message);
+            this.output.WriteLine(message);
         }
         catch
         {

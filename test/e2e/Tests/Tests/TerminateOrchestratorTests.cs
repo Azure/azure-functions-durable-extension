@@ -80,7 +80,7 @@ public class TerminateOrchestratorTests
         // Give some time for Core Tools to write logs out
         Thread.Sleep(500);
 
-        Assert.Contains(_fixture.TestLogs.CoreToolsLogs, x => x.Contains("Cannot terminate orchestration instance in the Terminated state.") &&
+        Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains("Cannot terminate orchestration instance in the Terminated state.") &&
                                                               x.Contains(instanceId));
     }
 
@@ -102,7 +102,7 @@ public class TerminateOrchestratorTests
         // Give some time for Core Tools to write logs out
         Thread.Sleep(500);
 
-        Assert.Contains(_fixture.TestLogs.CoreToolsLogs, x => x.Contains("Cannot terminate orchestration instance in the Completed state.") &&
+        Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains("Cannot terminate orchestration instance in the Completed state.") &&
                                                               x.Contains(instanceId));
     }
 

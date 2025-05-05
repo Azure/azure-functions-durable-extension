@@ -72,7 +72,7 @@ public class SuspendResumeTests
             // Give some time for Core Tools to write logs out
             Thread.Sleep(500);
 
-            Assert.Contains(_fixture.TestLogs.CoreToolsLogs, x => x.Contains("Cannot suspend orchestration instance in the Suspended state.") &&
+            Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains("Cannot suspend orchestration instance in the Suspended state.") &&
                                                                   x.Contains(instanceId));
         }
         finally
@@ -100,7 +100,7 @@ public class SuspendResumeTests
             // Give some time for Core Tools to write logs out
             Thread.Sleep(500);
 
-            Assert.Contains(_fixture.TestLogs.CoreToolsLogs, x => x.Contains("Cannot resume orchestration instance in the Running state.") &&
+            Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains("Cannot resume orchestration instance in the Running state.") &&
                                                                   x.Contains(instanceId));
         }
         finally
@@ -132,9 +132,9 @@ public class SuspendResumeTests
             Thread.Sleep(500);
 
 
-            Assert.Contains(_fixture.TestLogs.CoreToolsLogs, x => x.Contains("Cannot suspend orchestration instance in the Completed state.") &&
+            Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains("Cannot suspend orchestration instance in the Completed state.") &&
                                                                   x.Contains(instanceId));
-            Assert.Contains(_fixture.TestLogs.CoreToolsLogs, x => x.Contains("Cannot resume orchestration instance in the Completed state.") &&
+            Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains("Cannot resume orchestration instance in the Completed state.") &&
                                                                   x.Contains(instanceId));
         }
         finally

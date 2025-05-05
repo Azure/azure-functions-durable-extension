@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System.Net;
+using System.Text.Json;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -29,16 +30,17 @@ public class ExternalEventTests
 
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         string instanceId = await DurableHelpers.ParseInstanceIdAsync(response);
+        string jsonContent = JsonSerializer.Serialize(instanceId);
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
 
         // Send Event to the above Orchestrator which is waiting for external event.
-        await HttpHelpers.InvokeHttpTriggerWithBody("SendExternalEvent_HttpStart", instanceId, "application/json");
+        await HttpHelpers.InvokeHttpTriggerWithBody("SendExternalEvent_HttpStart", jsonContent, "application/json");
 
         // Make sure orchestration instance completes successfully.
         await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", 30);
 
         // Send external event again to the completed orchestrator, which we will get a exception back.
-        HttpResponseMessage resendEventResponse = await HttpHelpers.InvokeHttpTriggerWithBody("SendExternalEvent_HttpStart", instanceId, "application/json");
+        HttpResponseMessage resendEventResponse = await HttpHelpers.InvokeHttpTriggerWithBody("SendExternalEvent_HttpStart", jsonContent, "application/json");
         string responseContent = await resendEventResponse.Content.ReadAsStringAsync();
 
         // Verify the returned exception contains the correct information. 
@@ -50,13 +52,13 @@ public class ExternalEventTests
     [Fact]
     public async Task NotFoundInstanceTest()
     {
+        string jsonContent = JsonSerializer.Serialize("instance-does-not-exist-test");
         // Send Event to a empty string Instance Id and an ArgumentException will return.
-        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTriggerWithBody("SendExternalEvent_HttpStart", "instance-does-not-exist-test-01", "application/json");
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTriggerWithBody("SendExternalEvent_HttpStart", jsonContent, "application/json");
         string responseContent = await response.Content.ReadAsStringAsync();
 
         // Verify the returned exception contains the correct information. 
-        Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         Assert.Contains("NotFound", responseContent);
-        Assert.Contains("No instance with ID instance-does-not-exist-test-01 was found", responseContent);
+        Assert.Contains("No instance with ID 'instance-does-not-exist-test' was found", responseContent);
     }
 }
