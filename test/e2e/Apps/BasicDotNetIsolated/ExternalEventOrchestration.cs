@@ -20,10 +20,9 @@ public static class ExternalEventOrchestration
         FunctionContext executionContext)
     {
         ILogger logger = executionContext.GetLogger("ExternalEventOrchestrator_HttpStart");
-        
-        var option = new StartOrchestrationOptions(InstanceId : "ExternalEventTest");
+
         string instanceId = await client.ScheduleNewOrchestrationInstanceAsync(
-            nameof(ExternalEventOrchestrator), option);
+            nameof(ExternalEventOrchestrator));
 
         return await client.CreateCheckStatusResponseAsync(req, instanceId);
     }
@@ -37,42 +36,20 @@ public static class ExternalEventOrchestration
         return "Orchestrator Finished!";
     }
 
-    [Function("NotValidInstance_HttpStart")]
-    public static async Task<HttpResponseData> NotValidInstance_HttpStart(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestData req,
-        [DurableClient] DurableTaskClient client,
-        FunctionContext executionContext)
-    {
-        var response = req.CreateResponse();
-
-        try
-        {
-            await client.RaiseEventAsync("", "Approval", true);
-            response.StatusCode = HttpStatusCode.OK;
-            await response.WriteStringAsync("External event sent.");
-        }
-        catch (Exception ex)
-        {
-            response.StatusCode = HttpStatusCode.InternalServerError;
-            await response.WriteStringAsync($"Unhandled error of type {ex.GetType().Name}: {ex.Message}");
-        }
-
-        return response;
-    }
-    
     [Function("SendExternalEvent_HttpStart")]
     public static async Task<HttpResponseData> SendExternalEvent_HttpStart(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestData req,
         [DurableClient] DurableTaskClient client,
         FunctionContext executionContext)
     {
+        string? instanceId = await req.ReadFromJsonAsync<string>();
         var response = req.CreateResponse();
 
         try
         {
-            await client.RaiseEventAsync("ExternalEventTest", "Approval", true);
+            await client.RaiseEventAsync(instanceId!, "Approval", true);
             response.StatusCode = HttpStatusCode.OK;
-            await response.WriteStringAsync("External event sent.");
+            await response.WriteStringAsync($"External event sent to {instanceId}.");
         }
         catch (RpcException ex)
         {

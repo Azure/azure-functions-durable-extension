@@ -12,14 +12,14 @@ namespace Microsoft.Azure.Durable.Tests.DotnetIsolatedE2E;
 [Collection(Constants.FunctionAppCollectionName)]
 public class ErrorHandlingTests
 {
-    private readonly FunctionAppFixture _fixture;
-    private readonly ITestOutputHelper _output;
+    private readonly FunctionAppFixture fixture;
+    private readonly ITestOutputHelper output;
 
     public ErrorHandlingTests(FunctionAppFixture fixture, ITestOutputHelper testOutputHelper)
     {
-        _fixture = fixture;
-        _fixture.TestLogs.UseTestLogger(testOutputHelper);
-        _output = testOutputHelper;
+        this.fixture = fixture;
+        this.fixture.TestLogs.UseTestLogger(testOutputHelper);
+        this.output = testOutputHelper;
     }
 
     [Fact]
