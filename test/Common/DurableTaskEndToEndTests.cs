@@ -3936,38 +3936,38 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                         this.output);
                 }
 
-                await Task.WhenAll(clients);
+                var clientResults = await Task.WhenAll(clients);
 
                 // in parallel, wait for all transfers to complete
                 var stati = new Task<DurableOrchestrationStatus>[numberEntities];
                 for (int i = 0; i < numberEntities; i++)
                 {
-                    stati[i] = clients[i].Result.WaitForCompletionAsync(this.output);
+                    stati[i] = clientResults[i].WaitForCompletionAsync(this.output);
                 }
 
-                await Task.WhenAll(stati);
+                var statiResults = await Task.WhenAll(stati);
 
                 // check that they all completed
                 for (int i = 0; i < numberEntities; i++)
                 {
-                    Assert.Equal(OrchestrationRuntimeStatus.Completed, stati[i].Result?.RuntimeStatus);
+                    Assert.Equal(OrchestrationRuntimeStatus.Completed, statiResults[i]?.RuntimeStatus);
                 }
 
                 // in parallel, read all the entity states
                 var entityStates = new Task<EntityStateResponse<int>>[numberEntities];
                 for (int i = 0; i < numberEntities; i++)
                 {
-                    entityStates[i] = clients[i].Result.InnerClient.ReadEntityStateAsync<int>(counters[i]);
+                    entityStates[i] = clientResults[i].InnerClient.ReadEntityStateAsync<int>(counters[i]);
                 }
 
-                await Task.WhenAll(entityStates);
+                var entityStateResults = await Task.WhenAll(entityStates);
 
                 // check that the counter states are all back to 0
                 // (since each participated in 2 transfers, one incrementing and one decrementing)
                 for (int i = 0; i < numberEntities; i++)
                 {
-                    Assert.True(entityStates[i].Result.EntityExists);
-                    Assert.Equal(0, entityStates[i].Result.EntityState);
+                    Assert.True(entityStateResults[i].EntityExists);
+                    Assert.Equal(0, entityStateResults[i].EntityState);
                 }
 
                 await host.StopAsync();
@@ -5738,10 +5738,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], inputWithEnum, this.output);
                 await client.WaitForCompletionAsync(this.output);
-                var status = client.GetStatusAsync();
+                var status = await client.GetStatusAsync();
 
                 Assert.NotNull(status);
-                Assert.DoesNotContain("Value2", status.Result.Output.ToString());
+                Assert.DoesNotContain("Value2", status.Output.ToString());
 
                 await host.StopAsync();
             }
