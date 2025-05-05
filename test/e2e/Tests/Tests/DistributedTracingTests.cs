@@ -32,6 +32,7 @@ public class DistributedTracingTests
     }
 
     [Fact]
+    [Trait("DTS", "Skip")] // Distributed tracing is currently not working in DTS
     public async Task DistributedTracingTest()
     {
         // Start Activity
