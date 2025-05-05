@@ -103,7 +103,10 @@ namespace WebJobs.Extensions.DurableTask.CodeGen.Example
 
         [FunctionName("Multiply")]
         public async Task<int> Multiply(
+        // This project intentionally violates this analyzer
+# pragma warning disable DF0201
             [OrchestrationTrigger] ITypedDurableOrchestrationContext context
+# pragma warning restore DF0201
         )
         {
             var (num1, num2) = context.GetInput<(int, int)>();
