@@ -38,6 +38,7 @@
     <RepositoryUrl>https://github.com/Azure/azure-functions-durable-extension/</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
   </PropertyGroup>
 
 </Project>

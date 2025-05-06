@@ -18,8 +18,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         private const string Category = SupportedCategories.Activity;
         public const DiagnosticSeverity Severity = DiagnosticSeverity.Warning;
 
-        public static readonly DiagnosticDescriptor CloseRule = new DiagnosticDescriptor(DiagnosticId, Title, CloseMessageFormat, Category, Severity, isEnabledByDefault: true, description: Description);
-        public static readonly DiagnosticDescriptor MissingRule = new DiagnosticDescriptor(DiagnosticId, Title, MissingMessageFormat, Category, Severity, isEnabledByDefault: true, description: Description);
+        public static readonly DiagnosticDescriptor CloseRule = new DiagnosticDescriptor(DiagnosticId, Title, CloseMessageFormat, Category, Severity, isEnabledByDefault: true, description: Description,
+            customTags: WellKnownDiagnosticTags.CompilationEnd);
+        public static readonly DiagnosticDescriptor MissingRule = new DiagnosticDescriptor(DiagnosticId, Title, MissingMessageFormat, Category, Severity, isEnabledByDefault: true, description: Description,
+            customTags: WellKnownDiagnosticTags.CompilationEnd);
 
         public static void ReportProblems(
             CompilationAnalysisContext context,

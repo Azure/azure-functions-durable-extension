@@ -7,7 +7,6 @@ using Microsoft.CodeAnalysis.Diagnostics;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 {
-    [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class DateTimeAnalyzer
     {
         public const string DiagnosticId = "DF0101";
@@ -18,7 +17,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         private const string Category = SupportedCategories.Orchestrator;
         public const DiagnosticSeverity Severity = DiagnosticSeverity.Warning;
 
-        public static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, Severity, isEnabledByDefault: true, description: Description);
+        public static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, Severity, isEnabledByDefault: true, description: Description, 
+            customTags: WellKnownDiagnosticTags.CompilationEnd);
 
         public static bool RegisterDiagnostic(CompilationAnalysisContext context, SemanticModel semanticModel, SyntaxNode method)
         {
