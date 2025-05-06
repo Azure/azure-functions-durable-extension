@@ -53,7 +53,6 @@ public class ExternalEventTests
     public async Task NotFoundInstanceTest()
     {
         string jsonContent = JsonSerializer.Serialize("instance-does-not-exist-test");
-        // Send Event to a empty string Instance Id and an ArgumentException will return.
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTriggerWithBody("SendExternalEvent_HttpStart", jsonContent, "application/json");
         string responseContent = await response.Content.ReadAsStringAsync();
 
