@@ -31,7 +31,8 @@ public class DistributedTracingTests
         ActivitySource.AddActivityListener(_activityListener);
     }
 
-    [Fact(Skip = "Need to release new versions of Microsoft.DurableTask.Client.Grpc and Microsoft.DurableTask.Worker.Grpc for this test to pass")]
+    [Fact]
+    [Trait("DTS", "Skip")] // Distributed tracing is currently not working in DTS
     public async Task DistributedTracingTest()
     {
         // Start Activity
@@ -43,6 +44,7 @@ public class DistributedTracingTests
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("DistributedTracing_HttpStart", "");
 
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
+        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", 30);
         var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
         string output = orchestrationDetails.Output;
         ActivityContext.TryParse(output, null, out ActivityContext activityContext);
