@@ -64,9 +64,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return inLinuxDedicated;
         }
 
+        public bool IsManagedAppEnvironment()
+        {
+            string? managedEnvironmentValue = this.ReadEnviromentVariable("MANAGED_ENVIRONMENT");
+            return !string.IsNullOrEmpty(managedEnvironmentValue);
+        }
+
         public OperatingSystem GetOperatingSystem()
         {
-            if (this.IsInLinuxConsumption() || this.IsInLinuxAppService())
+            if (this.IsInLinuxConsumption() || this.IsInLinuxAppService() || this.IsManagedAppEnvironment())
             {
                 return OperatingSystem.Linux;
             }

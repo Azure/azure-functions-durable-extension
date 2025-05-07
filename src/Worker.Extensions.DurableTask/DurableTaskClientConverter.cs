@@ -62,5 +62,11 @@ internal sealed partial class DurableTaskClientConverter : IInputConverter
     }
 
     // Serializer is case-sensitive and incoming JSON properties are camel-cased.
-    private record DurableClientInputData(string rpcBaseUrl, string taskHubName, string connectionName, string requiredQueryStringParameters, string httpBaseUrl, int maxGrpcMessageSizeInBytes);
+    private record DurableClientInputData(
+        string rpcBaseUrl,
+        string taskHubName,
+        string connectionName,
+        string requiredQueryStringParameters,
+        string httpBaseUrl,
+        int maxGrpcMessageSizeInBytes);
 }

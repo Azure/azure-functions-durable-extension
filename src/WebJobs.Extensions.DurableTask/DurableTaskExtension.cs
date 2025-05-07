@@ -415,6 +415,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             // Determine host platform
             bool inConsumption = this.PlatformInformationService.IsInConsumptionPlan();
+            bool isManagedAppEnvironment = this.PlatformInformationService.IsManagedAppEnvironment();
 
             string tenant = this.PlatformInformationService.GetLinuxTenant();
             string stampName = this.PlatformInformationService.GetLinuxStampName();
@@ -422,7 +423,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             // in linux consumption, logs are emitted to the console.
             // In other linux plans, they are emitted to a logfile.
-            var linuxLogger = new LinuxAppServiceLogger(writeToConsole: inConsumption, containerName, tenant, stampName);
+            var linuxLogger = new LinuxAppServiceLogger(writeToConsole: inConsumption || isManagedAppEnvironment, containerName, tenant, stampName);
 
             // The logging service for linux works by capturing EventSource messages,
             // which our linux platform does not recognize, and logging them via a
