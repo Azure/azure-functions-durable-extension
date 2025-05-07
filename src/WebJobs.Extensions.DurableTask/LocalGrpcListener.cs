@@ -256,7 +256,39 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             public async override Task<P.RaiseEventResponse> RaiseEvent(P.RaiseEventRequest request, ServerCallContext context)
             {
-                await this.GetClient(context).RaiseEventAsync(request.InstanceId, request.Name, Raw(request.Input));
+                bool throwStatusExceptionsOnRaiseEvent = this.extension.Options.ThrowStatusExceptionsOnRaiseEvent ?? this.extension.DefaultDurabilityProvider.CheckStatusBeforeRaiseEvent;
+
+                try
+                {
+                    await this.GetClient(context).RaiseEventAsync(request.InstanceId, request.Name, Raw(request.Input));
+                }
+                catch (ArgumentNullException ex)
+                {
+                    // Indicates a required argument (e.g., instanceId, eventName, or input) is null or empty.
+                    throw new RpcException(new Status(StatusCode.InvalidArgument, ex.Message));
+                }
+                catch (ArgumentException ex)
+                {
+                    // Indicates the provided instanceId has no orchestration status.
+                    if (throwStatusExceptionsOnRaiseEvent)
+                    {
+                        throw new RpcException(new Status(StatusCode.NotFound, ex.Message));
+                    }
+                }
+                catch (InvalidOperationException)
+                {
+                    // Indicates the orchestration instance exists but is already in a completed state.
+                    if (throwStatusExceptionsOnRaiseEvent)
+                    {
+                        throw new RpcException(new Status(StatusCode.FailedPrecondition, "The orchestration instance with the provided instance id is not running."));
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // Any other unexpected exceptions.
+                    throw new RpcException(new Status(StatusCode.Unknown, ex.Message));
+                }
+
                 return new P.RaiseEventResponse();
             }
 
