@@ -16,7 +16,7 @@
       "direction": "out"
     },
     {
-      "name": "context",
+      "name": "starter",
       "type": "orchestrationClient",
       "direction": "in"
     }
