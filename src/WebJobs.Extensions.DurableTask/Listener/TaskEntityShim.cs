@@ -572,8 +572,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             OutOfProcResult outOfProcResult = null;
 
-            // We are crudely setting the start time of all the entity invocations to be the same since they are executed together in a batch
-            // var startTime = DateTimeOffset.UtcNow;
             Task invokeTask = await Task.WhenAny(this.FunctionInvocationCallback(), this.TimeoutTask);
 
             if (invokeTask == this.TimeoutTask)
@@ -640,7 +638,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 var request = this.OperationBatch[i];
                 var result = outOfProcResult.Results[i];
-                var startTime = DateTimeOffset.FromUnixTimeMilliseconds(result.StartTimeInMilliseconds).UtcDateTime;
+                var startTime = DateTimeOffset.FromUnixTimeMilliseconds(result.ExecutionStartTimeInMilliseconds).UtcDateTime;
 
                 var (callEntityActivity, processEntityInvocationActivity) = this.StartCallEntityAndEntityInvocationActivities(request, startTime);
                 if (processEntityInvocationActivity != null)
@@ -834,7 +832,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 /// The start time of this operation's execution, in milliseconds, since January 1st 1970 midnight in UTC.
                 /// </summary>
                 [JsonProperty("startTime")]
-                public long StartTimeInMilliseconds { get; set; }
+                public long ExecutionStartTimeInMilliseconds { get; set; }
             }
 
             /// <summary>
