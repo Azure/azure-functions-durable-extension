@@ -53,7 +53,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public string? ListenAddress { get; private set; }
 
-        public Task StartAsync(CancellationToken cancelToken = default)
+        public async Task StartAsync(CancellationToken cancelToken = default)
         {
             const int maxAttempts = 10;
             int numAttempts = 1;
@@ -64,6 +64,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     new ChannelOption(ChannelOptions.MaxReceiveMessageLength, int.MaxValue),
                     new ChannelOption(ChannelOptions.MaxSendMessageLength, int.MaxValue),
                 };
+
+                if (this.grpcServer != null)
+                {
+                    await this.grpcServer.ShutdownAsync();
+                }
 
                 this.grpcServer = new Server(options);
                 this.grpcServer.Services.Add(P.TaskHubSidecarService.BindService(new TaskHubGrpcServer(this)));
@@ -84,7 +89,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             message: $"Opened local gRPC endpoint: {this.ListenAddress}",
                             writeToUserLogs: true);
 
-                        return Task.CompletedTask;
+                        return;
                     }
                     catch (IOException)
                     {
