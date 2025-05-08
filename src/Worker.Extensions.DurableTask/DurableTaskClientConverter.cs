@@ -49,8 +49,8 @@ internal sealed partial class DurableTaskClientConverter : IInputConverter
             }
 
             // Deserialize the gRPC HTTP client timeout from inputData. If the value is null or missing, default to 100 seconds.
-            TimeSpan grpcHttpClientTimeout = inputData?.GrpcHttpClientTimeout != null
-                                                ? JsonSerializer.Deserialize<TimeSpan>(inputData.GrpcHttpClientTimeout) : TimeSpan.FromSeconds(100);
+            TimeSpan grpcHttpClientTimeout = inputData?.grpcHttpClientTimeout != null
+                                                ? JsonSerializer.Deserialize<TimeSpan>(inputData.grpcHttpClientTimeout) : TimeSpan.FromSeconds(100);
 
             DurableTaskClient client = this.clientProvider.GetClient(endpoint, inputData?.taskHubName, inputData?.connectionName, inputData?.maxGrpcMessageSizeInBytes, grpcHttpClientTimeout);
             client = new FunctionsDurableTaskClient(client, inputData!.requiredQueryStringParameters, inputData!.httpBaseUrl);
@@ -73,5 +73,5 @@ internal sealed partial class DurableTaskClientConverter : IInputConverter
         string requiredQueryStringParameters,
         string httpBaseUrl,
         int maxGrpcMessageSizeInBytes,
-        string GrpcHttpClientTimeout);
+        string grpcHttpClientTimeout);
 }

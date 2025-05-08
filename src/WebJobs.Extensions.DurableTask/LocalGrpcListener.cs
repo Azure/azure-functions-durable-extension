@@ -453,10 +453,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
                 catch (RpcException)
                 {
+                    // Rethrow RPC-related exceptions as-is.
                     throw;
                 }
                 catch (Exception ex)
                 {
+                    // Wrap all other exceptions in an RpcException.
                     throw new RpcException(new Status(StatusCode.Internal, $"Failed during purging instances: {ex.Message}"));
                 }
             }
