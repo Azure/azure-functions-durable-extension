@@ -121,7 +121,7 @@
     <value>Activity function call specifies a parameter that doesn't match the function definition parameter.</value>
   </data>
   <data name="ActivityArgumentAnalyzerMessageFormat" xml:space="preserve">
-    <value>Activity function named '{0}' takes a parameter of type '{1}' but was given '{2}'.</value>
+    <value>Activity function named '{0}' takes a parameter of type '{1}' but was given '{2}'</value>
   </data>
   <data name="ActivityArgumentAnalyzerMessageFormatInvalidNull" xml:space="preserve">
     <value>Activity function named '{0}' takes a parameter of type '{1}' but was given null. Cannot pass null on a value type.</value>
@@ -130,10 +130,10 @@
     <value>Activity function named '{0}' doesn't have an input. Pass null for the input parameter instead.</value>
   </data>
   <data name="ActivityArgumentAnalyzerTitle" xml:space="preserve">
-    <value>Activity function call is using the wrong argument type.</value>
+    <value>Activity function call is using the wrong argument type</value>
   </data>
   <data name="ActivityNameAnalyzerCloseMessageFormat" xml:space="preserve">
-    <value>Activity function named '{0}' does not exist. Did you mean '{1}'?</value>
+    <value>Activity function named '{0}' does not exist. You may have intended '{1}'.</value>
   </data>
   <data name="ActivityNameAnalyzerDescription" xml:space="preserve">
     <value>Activity function call references unknown activity function.</value>
@@ -142,120 +142,118 @@
     <value>Activity function named '{0}' does not exist. Could not find any function references.</value>
   </data>
   <data name="ActivityNameAnalyzerTitle" xml:space="preserve">
-    <value>Activity function call references unknown Activity function.</value>
+    <value>Activity function call references unknown Activity function</value>
   </data>
   <data name="ActivityReturnTypeAnalyzerDescription" xml:space="preserve">
     <value>Activity function call return type doesn't match function definition return type.</value>
   </data>
   <data name="ActivityReturnTypeAnalyzerMessageFormat" xml:space="preserve">
-    <value>Activity function named '{0}' returns '{1}' but '{2}' is expected.</value>
+    <value>Activity function named '{0}' returns '{1}' but '{2}' is expected</value>
   </data>
   <data name="ActivityReturnTypeAnalyzerTitle" xml:space="preserve">
-    <value>Activity function call return type doesn't match function definition return type.</value>
+    <value>Activity function call return type doesn't match function definition return type</value>
   </data>
   <data name="AwaitAnalyzerMessageFormat" xml:space="preserve">
-    <value>Code used in an orchestrator must not use await on non-Durable Functions methods.</value>
+    <value>Code used in an orchestrator must not use await on non-Durable Functions methods</value>
   </data>
   <data name="AwaitAnalyzerTitle" xml:space="preserve">
-    <value>Code used in an orchestrator must not use await on non-Durable Functions methods.</value>
+    <value>Code used in an orchestrator must not use await on non-Durable Functions methods</value>
   </data>
   <data name="BindingAnalyzerMessageFormat" xml:space="preserve">
-    <value>Using binding '{0}' with an OrchestrationTrigger method violates deterministic code constraints.</value>
+    <value>Using binding '{0}' with an OrchestrationTrigger method violates deterministic code constraints</value>
   </data>
   <data name="BindingAnalyzerTitle" xml:space="preserve">
-    <value>OrchestrationTrigger methods must not use any other binding.</value>
+    <value>OrchestrationTrigger methods must not use any other binding</value>
   </data>
   <data name="CancellationTokenAnalyzerMessageFormat" xml:space="preserve">
-    <value>CancellationToken should not be used as an orchestrator function parameter.</value>
+    <value>CancellationToken should not be used as an orchestrator function parameter</value>
   </data>
   <data name="CancellationTokenAnalyzerTitle" xml:space="preserve">
-    <value>CancellationToken should not be used as an orchestrator function parameter.</value>
+    <value>CancellationToken should not be used as an orchestrator function parameter</value>
   </data>
   <data name="DateTimeAnalyzerTitle" xml:space="preserve">
-    <value>DateTime calls must be deterministic inside an orchestrator function.</value>
+    <value>DateTime calls must be deterministic inside an orchestrator function</value>
   </data>
   <data name="DependencyInjectionAnalyzerTitle" xml:space="preserve">
-    <value>Injected dependencies cannot be used inside an orchestrator function.</value>
+    <value>Injected dependencies cannot be used inside an orchestrator function</value>
   </data>
   <data name="DeterministicAnalyzerDescription" xml:space="preserve">
-    <value>An orchestrator function must be deterministic. For more information on orchestrator code constraints, see:
-https://docs.microsoft.com/azure/azure-functions/durable/durable-functions-checkpointing-and-replay#orchestrator-code-constraints</value>
+    <value>An orchestrator function must be deterministic. For more information on orchestrator code constraints, see: https://docs.microsoft.com/azure/azure-functions/durable/durable-functions-checkpointing-and-replay#orchestrator-code-constraints.</value>
   </data>
   <data name="DeterministicAnalyzerMessageFormat" xml:space="preserve">
-    <value>'{0}' violates the orchestrator deterministic code constraint.</value>
+    <value>'{0}' violates the orchestrator deterministic code constraint</value>
   </data>
   <data name="DispatchEntityNameAnalyzerDescription" xml:space="preserve">
     <value>DispatchAsync must be used with the entity name, equal to the name of the function it's used in.</value>
   </data>
   <data name="DispatchEntityNameAnalyzerMessageFormat" xml:space="preserve">
-    <value>DispatchAsync was used with '{0}' but must be used with the entity name, '{1}'.</value>
+    <value>DispatchAsync was used with '{0}' but must be used with the entity name '{1}'</value>
   </data>
   <data name="DispatchEntityNameAnalyzerTitle" xml:space="preserve">
-    <value>DispatchAsync must be used with the entity name, equal to the name of the function it's used in.</value>
+    <value>DispatchAsync must be used with the entity name, equal to the name of the function it's used in</value>
   </data>
   <data name="EntityClassNameAnalyzerCloseMessageFormat" xml:space="preserve">
-    <value>Function named '{0}' doesn't have an entity class with the same name defined. Did you mean '{1}'?</value>
+    <value>Function named '{0}' doesn't have an entity class with the same name defined. You may have intended '{1}'.</value>
   </data>
   <data name="EntityClassNameAnalyzerDescription" xml:space="preserve">
     <value>Entity function name must match an existing entity class name.</value>
   </data>
   <data name="EntityClassNameAnalyzerMissingMessageFormat" xml:space="preserve">
-    <value>Function name '{0}' doesn't have an entity class with the same name defined.</value>
+    <value>Function name '{0}' doesn't have an entity class with the same name defined</value>
   </data>
   <data name="EntityClassNameAnalyzerTitle" xml:space="preserve">
-    <value>Entity function name must match an existing entity class name.</value>
+    <value>Entity function name must match an existing entity class name</value>
   </data>
   <data name="EntityContextAnalyzerDescription" xml:space="preserve">
     <value>EntityTrigger attribute must be used with an IDurableEntityContext.</value>
   </data>
   <data name="EntityContextAnalyzerMessageFormat" xml:space="preserve">
-    <value>EntityTrigger attribute is applied to a '{0}' but must be used with an IDurableEntityContext instead.</value>
+    <value>EntityTrigger attribute is applied to a '{0}' but must be used with an IDurableEntityContext instead</value>
   </data>
   <data name="EntityContextAnalyzerTitle" xml:space="preserve">
-    <value>EntityTrigger attribute must be used with an IDurableEntityContext.</value>
+    <value>EntityTrigger attribute must be used with an IDurableEntityContext</value>
   </data>
   <data name="EntityInterfaceContentAnalyzerDescription" xml:space="preserve">
     <value>An entity interface must only contain methods and must contain at least one method.</value>
   </data>
   <data name="EntityInterfaceContentAnalyzerMessageFormat" xml:space="preserve">
-    <value>Entity interface contains members other than methods:
- '{0}'.</value>
+    <value>Entity interface contains members other than methods: '{0}'</value>
   </data>
   <data name="EntityInterfaceContentAnalyzerNoMethodsMessageFormat" xml:space="preserve">
-    <value>Entity interface doesn't contain any methods and must contain at least one.</value>
+    <value>Entity interface doesn't contain any methods and must contain at least one</value>
   </data>
   <data name="EntityInterfaceContentAnalyzerTitle" xml:space="preserve">
-    <value>An entity interface must only contain methods and must contain at least one method.</value>
+    <value>An entity interface must only contain methods and must contain at least one method</value>
   </data>
   <data name="EntityInterfaceParameterAnalyzerDescription" xml:space="preserve">
     <value>An entity interface must only have methods with at most one parameter.</value>
   </data>
   <data name="EntityInterfaceParameterAnalyzerMessageFormat" xml:space="preserve">
-    <value>Method in entity interface has more than one parameter: '{0}'.</value>
+    <value>Method in entity interface has more than one parameter: '{0}'</value>
   </data>
   <data name="EntityInterfaceParameterAnalyzerTitle" xml:space="preserve">
-    <value>An entity interface must only have methods with at most one parameter.</value>
+    <value>An entity interface must only have methods with at most one parameter</value>
   </data>
   <data name="EntityInterfaceReturnTypeAnalyzerDescription" xml:space="preserve">
     <value>An entity interface must only have methods that return void, Task, or Task&lt;T&gt;.</value>
   </data>
   <data name="EntityInterfaceReturnTypeAnalyzerMessageFormat" xml:space="preserve">
-    <value>Method has a return type '{0}'; return type should only be void, Task, or Task&lt;T&gt;.</value>
+    <value>Method has a return type '{0}'; return type should only be void, Task, or Task&lt;T&gt;</value>
   </data>
   <data name="EntityInterfaceReturnTypeAnalyzerTitle" xml:space="preserve">
-    <value>An entity interface must only have methods that return void, Task, or Task&lt;T&gt;.</value>
+    <value>An entity interface must only have methods that return void, Task, or Task&lt;T&gt;</value>
   </data>
   <data name="EntityStaticAnalyzerDescription" xml:space="preserve">
     <value>Entity functions in an entity class must be static.</value>
   </data>
   <data name="EntityStaticAnalyzerMessageFormat" xml:space="preserve">
-    <value>Entity function '{0}' is not marked static.</value>
+    <value>Entity function '{0}' is not marked static</value>
   </data>
   <data name="EntityStaticAnalyzerTitle" xml:space="preserve">
-    <value>Entity functions in an entity class must be static.</value>
+    <value>Entity functions in an entity class must be static</value>
   </data>
   <data name="EnvironmentVariableAnalyzerTitle" xml:space="preserve">
-    <value>Environment variables must be accessed in a deterministic way inside an orchestrator function.</value>
+    <value>Environment variables must be accessed in a deterministic way inside an orchestrator function</value>
   </data>
   <data name="FixDateTimeInOrchestrator" xml:space="preserve">
     <value>Replace with (DurableOrchestrationContext).CurrentUtcDateTime</value>
@@ -300,69 +298,69 @@ https://docs.microsoft.com/azure/azure-functions/durable/durable-functions-check
     <value>Replace with (DurableOrchestrationContext).CreateTimer(DateTime, CancellationToken)</value>
   </data>
   <data name="GuidAnalyzerTitle" xml:space="preserve">
-    <value>Guid calls must be deterministic inside an orchestrator function.</value>
+    <value>Guid calls must be deterministic inside an orchestrator function</value>
   </data>
   <data name="IOTypesAnalyzerTitle" xml:space="preserve">
-    <value>I/O operations are not allowed inside an orchestrator function.</value>
+    <value>I/O operations are not allowed inside an orchestrator function</value>
   </data>
   <data name="MethodAnalyzerMessageFormat" xml:space="preserve">
     <value>Method call '{0}' violates the orchestrator deterministic code constraint. Methods defined in source code that are used in an orchestrator must be deterministic.</value>
   </data>
   <data name="MethodAnalyzerTitle" xml:space="preserve">
-    <value>Methods defined in source code that are used in an orchestrator must be deterministic.</value>
+    <value>Methods defined in source code that are used in an orchestrator must be deterministic</value>
   </data>
   <data name="SignalEntityAnalyzerDescription" xml:space="preserve">
     <value>SignalEntityAsync must use an Entity Interface.</value>
   </data>
   <data name="SignalEntityAnalyzerMessageFormat" xml:space="preserve">
-    <value>An entity interface must be used instead of '{0}'.</value>
+    <value>An entity interface must be used instead of '{0}'</value>
   </data>
   <data name="SignalEntityAnalyzerTitle" xml:space="preserve">
-    <value>SignalEntityAsync must use an entity interface.</value>
+    <value>SignalEntityAsync must use an entity interface</value>
   </data>
   <data name="ThreadTaskAnalyzerTitle" xml:space="preserve">
-    <value>Thread and Task calls must be deterministic inside an orchestrator function.</value>
+    <value>Thread and Task calls must be deterministic inside an orchestrator function</value>
   </data>
   <data name="TimerAnalyzerTitle" xml:space="preserve">
-    <value>Thread.Sleep and Task.Delay calls are not allowed inside an orchestrator function.</value>
+    <value>Thread.Sleep and Task.Delay calls are not allowed inside an orchestrator function</value>
   </data>
   <data name="V1ClientAnalyzerDescription" xml:space="preserve">
     <value>OrchestrationClient attribute must be used with a DurableOrchestrationClient.</value>
   </data>
   <data name="V1ClientAnalyzerMessageFormat" xml:space="preserve">
-    <value>OrchestrationClient attribute is applied to a '{0}' but must be used with a DurableOrchestrationClient.</value>
+    <value>OrchestrationClient attribute is applied to a '{0}' but must be used with a DurableOrchestrationClient</value>
   </data>
   <data name="V1ClientAnalyzerTitle" xml:space="preserve">
-    <value>OrchestrationClient attribute must be used with a DurableOrchestrationClient.</value>
+    <value>OrchestrationClient attribute must be used with a DurableOrchestrationClient</value>
   </data>
   <data name="V1OrchestratorContextAnalyzerDescription" xml:space="preserve">
     <value>OrchestrationTrigger must be used with an DurableOrchestrationContext or DurableOrchestrationContextBase.</value>
   </data>
   <data name="V1OrchestratorContextAnalyzerMessageFormat" xml:space="preserve">
-    <value>OrchestrationTrigger is applied to a '{0}' but must be used with a DurableOrchestrationContext or a DurableOrchestrationContextBase instead.</value>
+    <value>OrchestrationTrigger is applied to a '{0}' but must be used with a DurableOrchestrationContext or a DurableOrchestrationContextBase instead</value>
   </data>
   <data name="V1OrchestratorContextAnalyzerTitle" xml:space="preserve">
-    <value>OrchestrationTrigger must be used with a DurableOrchestrationContext or DurableOrchestrationContextBase.</value>
+    <value>OrchestrationTrigger must be used with a DurableOrchestrationContext or DurableOrchestrationContextBase</value>
   </data>
   <data name="V1TimerAnalyzerMessageFormat" xml:space="preserve">
-    <value>'{0}' violates the orchestrator deterministic code constraint. Consider using (DurableOrchestrationContext).CreateTimer&lt;T&gt;(DateTime fireAt, T state, CancellationToken cancelToken)</value>
+    <value>'{0}' violates the orchestrator deterministic code constraint. Consider using (DurableOrchestrationContext).CreateTimer&lt;T&gt;(DateTime fireAt, T state, CancellationToken cancelToken).</value>
   </data>
   <data name="V2ClientAnalyzerDescription" xml:space="preserve">
     <value>DurableClient attribute must be used with either an IDurableClient, IDurableEntityClient, or an IDurableOrchestrationClient.</value>
   </data>
   <data name="V2ClientAnalyzerMessageFormat" xml:space="preserve">
-    <value>DurableClient attribute is applied to a '{0}' but must be used with either an IDurableClient, IDurableEntityClient, or an IDurableOrchestrationClient.</value>
+    <value>DurableClient attribute is applied to a '{0}' but must be used with either an IDurableClient, IDurableEntityClient, or an IDurableOrchestrationClient</value>
   </data>
   <data name="V2ClientAnalyzerTitle" xml:space="preserve">
-    <value>DurableClient attribute must be used with either an IDurableClient, IDurableEntityClient, or an IDurableOrchestrationClient.</value>
+    <value>DurableClient attribute must be used with either an IDurableClient, IDurableEntityClient, or an IDurableOrchestrationClient</value>
   </data>
   <data name="V2OrchestratorContextAnalyzerDescription" xml:space="preserve">
     <value>OrchestrationTrigger must be used with an IDurableOrchestrationContext.</value>
   </data>
   <data name="V2OrchestratorContextAnalyzerMessageFormat" xml:space="preserve">
-    <value>OrchestrationTrigger is applied to a '{0}' but must be used with an IDurableOrchestrationContext instead.</value>
+    <value>OrchestrationTrigger is applied to a '{0}' but must be used with an IDurableOrchestrationContext instead</value>
   </data>
   <data name="V2OrchestratorContextAnalyzerTitle" xml:space="preserve">
-    <value>OrchestrationTrigger must be used with an IDurableOrchestrationContext.</value>
+    <value>OrchestrationTrigger must be used with an IDurableOrchestrationContext</value>
   </data>
 </root>

@@ -44,6 +44,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     RpcBaseUrl = localRpcAddress,
                     RequiredQueryStringParameters = this.config.HttpApiHandler.GetUniversalQueryStrings(),
                     HttpBaseUrl = this.config.HttpApiHandler.GetBaseUrl(),
+                    MaxGrpcMessageSizeInBytes = this.config.Options.MaxGrpcMessageSizeInBytes,
                 });
             }
 
@@ -139,6 +140,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             /// </summary>
             [JsonProperty("httpBaseUrl")]
             public string? HttpBaseUrl { get; set; }
+
+            /// <summary>
+            /// Optional setting that specifies the maximum gRPC receive message size (in bytes) for the DurableTaskClient.
+            /// Defaults to 4,194,304 bytes (4 MB).
+            /// </summary>
+            [JsonProperty("maxGrpcMessageSizeInBytes")]
+            public int? MaxGrpcMessageSizeInBytes { get; set; }
         }
     }
 }

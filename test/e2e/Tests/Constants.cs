@@ -12,4 +12,5 @@ internal class Constants
     internal static readonly string FunctionsHostUrl = Configuration["FunctionAppUrl"] ?? "http://localhost:7071";
 
     internal const string FunctionAppCollectionName = "DurableTestsCollection";
+    internal const string FunctionAppCollectionSequentialName = "DurableTestsCollectionSequential";
 }

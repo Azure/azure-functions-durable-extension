@@ -35,8 +35,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private List<OutgoingMessage> outbox = new List<OutgoingMessage>();
 
-        private DTCore.Tracing.DistributedTraceContext parentTraceContext;
-
         public DurableEntityContext(DurableTaskExtension config, DurabilityProvider durabilityProvider, EntityId entity, TaskEntityShim shim)
             : base(config, entity.EntityName)
         {
@@ -745,7 +743,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                         var dummyTask = innerContext.CreateSubOrchestrationInstance<object>(
                           fireAndForgetMessage.FunctionName,
-                          DurableOrchestrationContext.DefaultVersion,
+                          this.Config.Options.DefaultVersion,
                           fireAndForgetMessage.InstanceId,
                           fireAndForgetMessage.Input,
                           tags);

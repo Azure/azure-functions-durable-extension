@@ -11,13 +11,15 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Web;
 using DurableTask.Core;
+using DurableTask.Core.History;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Routing.Template;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using DTCore = DurableTask.Core;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
@@ -866,20 +868,64 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 var queryNameValuePairs = request.GetQueryNameValuePairs();
 
+                string json = null;
                 object input = null;
+
                 if (request.Content != null && request.Content.Headers?.ContentLength != 0)
                 {
-                    string json = await request.Content.ReadAsStringAsync();
+                    json = await request.Content.ReadAsStringAsync();
                     input = JsonConvert.DeserializeObject(json, this.messageDataConverter.JsonSettings);
                 }
 
-                string id = await client.StartNewAsync(functionName, instanceId, input);
+                string id = "";
+                if (client is DurableClient durableClient)
+                {
+                    var instance = new OrchestrationInstance
+                    {
+                        InstanceId = Guid.NewGuid().ToString("N"),
+                        ExecutionId = Guid.NewGuid().ToString(),
+                    };
+
+                    // Create the ExecutionStartedEvent
+                    ExecutionStartedEvent executionStartedEvent = new ExecutionStartedEvent(-1, json)
+                    {
+                        Name = functionName,
+                        OrchestrationInstance = instance,
+                    };
+
+                    string traceParent = GetHeaderValueFromHeaders("traceparent", request.Headers);
+                    string traceState = GetHeaderValueFromHeaders("tracestate", request.Headers);
+
+                    if (traceParent != null)
+                    {
+                        ActivityContext.TryParse(traceParent, traceState, out ActivityContext parentActivityContext);
+                        using Activity scheduleOrchestrationActivity = TraceHelper.StartActivityForNewOrchestration(executionStartedEvent, parentActivityContext);
+                    }
+                    else
+                    {
+                        using Activity scheduleOrchestrationActivity = TraceHelper.StartActivityForNewOrchestration(executionStartedEvent, default);
+                    }
+
+                    await durableClient.DurabilityProvider.CreateTaskOrchestrationAsync(
+                        new TaskMessage
+                        {
+                            Event = executionStartedEvent,
+                            OrchestrationInstance = instance,
+                        },
+                        this.config.Options.OverridableExistingInstanceStates.ToDedupeStatuses());
+
+                    id = instance.InstanceId;
+                }
+                else
+                {
+                    id = await client.StartNewAsync(functionName, instanceId, input);
+                }
 
                 TryGetTimeSpanQueryParameterValue(queryNameValuePairs, TimeoutParameter, out TimeSpan? timeout);
                 TryGetTimeSpanQueryParameterValue(queryNameValuePairs, PollingInterval, out TimeSpan? pollingInterval);
 
                 // for durability providers that support poll-free waiting, we override the specified polling interval
-                if (client is DurableClient durableClient && durableClient.DurabilityProvider.SupportsPollFreeWait)
+                if (client is DurableClient pollFreeDurableClient && pollFreeDurableClient.DurabilityProvider.SupportsPollFreeWait)
                 {
                     pollingInterval = timeout;
                 }
@@ -897,6 +943,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 return request.CreateErrorResponse(HttpStatusCode.BadRequest, "Invalid JSON content", e);
             }
+        }
+
+        private static string GetHeaderValueFromHeaders(string header, HttpRequestHeaders headers)
+        {
+            if (headers.TryGetValues(header, out IEnumerable<string> values))
+            {
+                return values.FirstOrDefault();
+            }
+
+            return null;
         }
 
         private async Task<HttpResponseMessage> HandleRestartInstanceRequestAsync(
@@ -1061,6 +1117,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 operationName = request.GetQueryNameValuePairs()["op"] ?? string.Empty;
             }
 
+            if (client is DurableClient durableClient)
+            {
+                string traceParent = GetHeaderValueFromHeaders("traceparent", request.Headers);
+                string traceState = GetHeaderValueFromHeaders("tracestate", request.Headers);
+
+                // Note that we break the pattern here of not creating the Activity for signaling the entity if we cannot successfully parse the parent trace context (since DurableClient will just use Activity.Current.Context instead)
+                // In that case the Activity will not correctly attach to the HTTP request, but will correctly propagate all the other Activities following the signal entity request
+                if (traceParent != null && ActivityContext.TryParse(traceParent, traceState, out ActivityContext parentTraceContext))
+                {
+                    durableClient.ParentTraceContext = parentTraceContext;
+                }
+            }
+
             if (request.Content == null || request.Content.Headers.ContentLength == 0)
             {
                 await client.SignalEntityAsync(entityId, operationName);
@@ -1171,6 +1240,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             Uri notificationUri = this.GetWebhookUri();
             Uri baseUri = request?.RequestUri ?? notificationUri;
+
+            bool useForwardedHost = this.config.Options.HttpSettings.UseForwardedHost;
+
+            if (useForwardedHost && request != null)
+            {
+                if (request.Headers.TryGetValues("X-Forwarded-Host", out var forwardedHost) &&
+                    request.Headers.TryGetValues("X-Forwarded-Proto", out var forwardedProto))
+                {
+                    baseUri = new UriBuilder(baseUri)
+                    {
+                        Host = forwardedHost.FirstOrDefault(),
+                        Scheme = forwardedProto.FirstOrDefault(),
+                    }.Uri;
+                }
+            }
 
             // e.g. http://{host}/runtime/webhooks/durabletask?code={systemKey}
             string hostUrl = baseUri.GetLeftPart(UriPartial.Authority);

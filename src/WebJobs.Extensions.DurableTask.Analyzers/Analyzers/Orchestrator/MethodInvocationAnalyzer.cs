@@ -9,7 +9,6 @@ using System.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 {
-    [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class MethodInvocationAnalyzer
     {
         public const string DiagnosticId = "DF0107";
@@ -20,7 +19,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         private const string Category = SupportedCategories.Orchestrator;
         public const DiagnosticSeverity Severity = DiagnosticSeverity.Warning;
 
-        public static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, Severity, isEnabledByDefault: true, description: Description);
+        public static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, Severity, isEnabledByDefault: true, description: Description,
+            customTags: WellKnownDiagnosticTags.CompilationEnd);
 
         private readonly HashSet<MethodInformation> methodsVisited;
 

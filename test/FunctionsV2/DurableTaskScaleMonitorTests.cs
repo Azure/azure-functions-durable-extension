@@ -229,7 +229,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             };
         }
 
+        // [Matcher] attribute is outdated, if maintenance is required, remove this suppression and refactor
+#pragma warning disable CS0618
         [Matcher]
+#pragma warning restore CS0618
         private PerformanceHeartbeat[] MatchEquivalentHeartbeats(PerformanceHeartbeat[] expected)
         {
             return Match.Create<PerformanceHeartbeat[]>(actual =>

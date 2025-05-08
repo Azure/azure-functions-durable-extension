@@ -30,8 +30,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         DurableOrchestrationContextBase // for v1 legacy compatibility.
 #pragma warning restore 618
     {
-        public const string DefaultVersion = "";
-
         private readonly Dictionary<string, IEventTaskCompletionSource> pendingExternalEvents =
             new Dictionary<string, IEventTaskCompletionSource>(StringComparer.OrdinalIgnoreCase);
 
@@ -130,6 +128,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         /// <inheritdoc />
         string IDurableOrchestrationContext.Name => this.OrchestrationName;
+
+        /// <inheritdoc />
+        string IDurableOrchestrationContext.Version => this.InnerContext.Version;
 
         /// <inheritdoc />
         string IDurableOrchestrationContext.InstanceId => this.InstanceId;
@@ -294,7 +295,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
 
                 this.IncrementActionsOrThrowException();
-                await this.InnerContext.CreateTimer(fireAt, CancellationToken.None);
+                await this.InnerContext.CreateTimer(fireAt: fireAt, state: true, cancelToken: CancellationToken.None);
 
                 DurableHttpRequest durableAsyncHttpRequest = this.CreateLocationPollRequest(
                     req,
@@ -561,8 +562,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
             }
 
-            // TODO: Support for versioning
-            string version = DefaultVersion;
+            // Propagate the default version to orchestrators.
+            // TODO: Decide whether we want to propagate the default version to actitities and entities as well.
+            string version = (functionType == FunctionType.Orchestrator)
+                             ? this.Config.Options.DefaultVersion
+                             : string.Empty;
+
             this.Config.ThrowIfFunctionDoesNotExist(functionName, functionType);
 
             Task<TResult> callTask = null;

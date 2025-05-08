@@ -46,6 +46,22 @@ public static class ActivityErrorHandling
         return await client.CreateCheckStatusResponseAsync(req, instanceId);
     }
 
+    [Function("CatchActivityExceptionFailureDetails_HttpStart")]
+    public static async Task<HttpResponseData> CatchFailureDetailsHttpStart(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestData req,
+        [DurableClient] DurableTaskClient client,
+        FunctionContext executionContext)
+    {
+        ILogger logger = executionContext.GetLogger("CatchActivityExceptionFailureDetails_HttpStart");
+
+        string instanceId = await client.ScheduleNewOrchestrationInstanceAsync(
+            nameof(CatchActivityExceptionFailureDetails));
+
+        logger.LogInformation("Started orchestration with ID = '{instanceId}'.", instanceId);
+
+        return await client.CreateCheckStatusResponseAsync(req, instanceId);
+    }
+
     [Function("RetryActivityException_HttpStart")]
     public static async Task<HttpResponseData> RetryHttpStart(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestData req,
@@ -96,8 +112,23 @@ public static class ActivityErrorHandling
             return output;
         }
         catch (TaskFailedException ex)
-        {
+        {  
             return ex.Message;
+        }
+    }
+
+    [Function(nameof(CatchActivityExceptionFailureDetails))]
+    public static async Task<TaskFailureDetails?> CatchActivityExceptionFailureDetails(
+        [OrchestrationTrigger] TaskOrchestrationContext context)
+    {
+        try 
+        {
+            await context.CallActivityAsync<string>(nameof(RaiseException), context.InstanceId);
+            return null;
+        }
+        catch (TaskFailedException ex)
+        {      
+            return ex.FailureDetails;
         }
     }
 

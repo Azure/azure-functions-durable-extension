@@ -17,5 +17,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// Gets or sets the default number of milliseconds between async HTTP status poll requests.
         /// </summary>
         public int DefaultAsyncRequestSleepTimeMilliseconds { get; set; } = 30000;
+
+        /// <summary>
+        /// Gets or sets a value indicating whether to use forwarded headers for URL construction.
+        /// </summary>
+        public bool UseForwardedHost { get; set; } = false;
     }
 }
