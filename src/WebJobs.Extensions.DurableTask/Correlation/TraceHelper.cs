@@ -127,5 +127,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
 
             return newActivity;
         }
+
+        internal static void StartActivityUsingTraceContext(ActivityContext traceContext)
+        {
+            Activity? newActivity = ActivityTraceSource.StartActivity(ActivityKind.Internal);
+
+            if (newActivity != null)
+            {
+                newActivity.ActivityTraceFlags = traceContext.TraceFlags;
+                newActivity.SetTraceId(traceContext.TraceId.ToString());
+                newActivity.SetSpanId(traceContext.SpanId.ToString());
+                newActivity.SetTraceState(traceContext.TraceState);
+            }
+        }
     }
 }
