@@ -5,7 +5,6 @@ using Xunit.Abstractions;
 using Xunit;
 using System.Diagnostics;
 using System.Net;
-using Castle.DynamicProxy.Generators;
 
 namespace Microsoft.Azure.Durable.Tests.DotnetIsolatedE2E;
 
