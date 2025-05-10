@@ -715,18 +715,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                         if (!string.IsNullOrEmpty(signalEntityActivity?.Id))
                         {
-                            request.ParentTraceContext = new DTCore.Tracing.DistributedTraceContext(
-                                signalEntityActivity.Id,
-                                signalEntityActivity.TraceStateString);
+                            request.ParentTraceContext = new DTCore.Tracing.DistributedTraceContext(signalEntityActivity.Id, signalEntityActivity.TraceStateString);
                         }
                     }
 
                     // We still want to attach the current Activity as the parent trace context to the request in the case of a call to an entity so that when we create the Activity for the call this information is available.
-                    else if (!string.IsNullOrEmpty(Activity.Current?.Id))
+                    else if (Activity.Current is { } activity)
                     {
-                        request.ParentTraceContext = new DTCore.Tracing.DistributedTraceContext(
-                            Activity.Current.Id,
-                            Activity.Current.TraceStateString);
+                        request.ParentTraceContext = new DTCore.Tracing.DistributedTraceContext(activity.Id, activity.TraceStateString);
                     }
 
                     this.SendEntityMessage(target, request);
