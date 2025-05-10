@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 #if NETSTANDARD
+using System;
 using System.Collections.Generic;
 using Grpc.Core;
 using Grpc.Core.Interceptors;
@@ -10,7 +11,7 @@ namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
 
 internal partial class FunctionsDurableClientProvider
 {
-    private static Channel CreateChannel(ClientKey key, int? maxGrpcMessageSize)
+    private static Channel CreateChannel(ClientKey key, int? maxGrpcMessageSize, TimeSpan grpcHttpClientTimeout)
     {
         IReadOnlyDictionary<string, string> headers = key.GetHeaders();
         string address = $"{key.Address.Host}:{key.Address.Port}";
