@@ -1,11 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
+using System;
 using System.Diagnostics;
-using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
 {
@@ -14,9 +13,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
     /// </summary>
     internal static class DiagnosticActivityExtensions
     {
+        // These fields are named in such an "unconventional" way to mimic the internal field names of the Activity class.
+        #pragma warning disable SA1311
+        #pragma warning disable SA1308
         private static readonly Action<Activity, string> s_setSpanId;
         private static readonly Action<Activity, string> s_setTraceId;
         private static readonly Action<Activity, string> s_setTraceState;
+        #pragma warning restore SA1308
+        #pragma warning restore SA1311
 
         static DiagnosticActivityExtensions()
         {
@@ -32,7 +36,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
         public static void SetSpanId(this Activity activity, string spanId)
             => s_setSpanId(activity, spanId);
 
-        public static void SetTraceState(this Activity activity, string? traceState)
+        public static void SetTraceState(this Activity activity, string traceState)
             => s_setTraceState(activity, traceState);
 
         /// <summary>
