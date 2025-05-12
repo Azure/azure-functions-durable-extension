@@ -1,11 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
+using System;
 using System.Diagnostics;
-using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
 {
@@ -32,7 +31,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
         public static void SetSpanId(this Activity activity, string spanId)
             => s_setSpanId(activity, spanId);
 
-        public static void SetTraceState(this Activity activity, string? traceState)
+        public static void SetTraceState(this Activity activity, string traceState)
             => s_setTraceState(activity, traceState);
 
         /// <summary>
