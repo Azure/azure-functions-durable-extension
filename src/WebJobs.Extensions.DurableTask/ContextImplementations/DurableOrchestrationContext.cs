@@ -713,7 +713,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             scheduledTimeUtc,
                             Activity.Current?.Context);
 
-                        if (!string.IsNullOrEmpty(signalEntityActivity?.Id))
+                        if (signalEntityActivity != null)
                         {
                             request.ParentTraceContext = new DTCore.Tracing.DistributedTraceContext(signalEntityActivity.Id, signalEntityActivity.TraceStateString);
                         }
