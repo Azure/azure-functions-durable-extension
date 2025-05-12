@@ -243,11 +243,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public AppLeaseOptions AppLeaseOptions { get; set; } = AppLeaseOptions.DefaultOptions;
 
         /// <summary>
-        /// Option to control the receive message size in bytes of the gRPC client, which is used by Durable Funsiont C# Isolated and Java.
+        /// Option to control the receive message size in bytes of the gRPC client, which is used by Durable Functions C# Isolated and Java (and potentially more languages in the future).
+        /// If the server does not respond within this period, the HTTP request will time out.
         /// Defaults to 4,194,304 (4 MB).
         /// The maximum allowable value is <see cref="int.MaxValue"/>, which corresponds to the durable grpc server's receive limit.
         /// </summary>
         public int MaxGrpcMessageSizeInBytes { get; set; } = 4194304;
+
+        /// <summary>
+        /// Sets the timeout for the HTTP client used by the gRPC client, which is used by Durable Functions C# Isolated and Java (and potentially more languages in the future).
+        /// If the server does not respond within this period, the HTTP request will time out.
+        /// Default is 100 seconds.
+        /// This settings only applies when .NET 6 or greater is used.
+        /// </summary>
+        public TimeSpan? GrpcHttpClientTimeout { get; set; } = TimeSpan.FromSeconds(100);
 
         // Used for mocking the lifecycle notification helper.
         internal HttpMessageHandler NotificationHandler { get; set; }

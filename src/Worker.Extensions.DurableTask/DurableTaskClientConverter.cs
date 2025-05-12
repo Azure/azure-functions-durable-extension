@@ -48,7 +48,11 @@ internal sealed partial class DurableTaskClientConverter : IInputConverter
                     new InvalidOperationException("Failed to parse the input binding payload data")));
             }
 
-            DurableTaskClient client = this.clientProvider.GetClient(endpoint, inputData?.taskHubName, inputData?.connectionName, inputData?.maxGrpcMessageSizeInBytes);
+            // Deserialize the gRPC HTTP client timeout from inputData. If the value is null or missing, default to 100 seconds.
+            TimeSpan grpcHttpClientTimeout = inputData?.grpcHttpClientTimeout != null
+                                                ? JsonSerializer.Deserialize<TimeSpan>(inputData.grpcHttpClientTimeout) : TimeSpan.FromSeconds(100);
+
+            DurableTaskClient client = this.clientProvider.GetClient(endpoint, inputData?.taskHubName, inputData?.connectionName, inputData?.maxGrpcMessageSizeInBytes, grpcHttpClientTimeout);
             client = new FunctionsDurableTaskClient(client, inputData!.requiredQueryStringParameters, inputData!.httpBaseUrl);
             return new ValueTask<ConversionResult>(ConversionResult.Success(client));
         }
@@ -68,5 +72,6 @@ internal sealed partial class DurableTaskClientConverter : IInputConverter
         string connectionName,
         string requiredQueryStringParameters,
         string httpBaseUrl,
-        int maxGrpcMessageSizeInBytes);
+        int maxGrpcMessageSizeInBytes,
+        string grpcHttpClientTimeout);
 }
