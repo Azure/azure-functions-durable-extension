@@ -27,21 +27,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
                 parentContext: parentTraceContext,
                 startTime: startTime ?? default);
 
-            if (newActivity != null && !string.IsNullOrEmpty(newActivity.Id))
+            if (newActivity == null)
             {
-                newActivity.SetTag(Schema.Task.Type, TraceActivityConstants.Orchestration);
-                newActivity.SetTag(Schema.Task.Name, startEvent.Name);
-                newActivity.SetTag(Schema.Task.InstanceId, startEvent.OrchestrationInstance.InstanceId);
-                newActivity.SetTag(Schema.Task.ExecutionId, startEvent.OrchestrationInstance.ExecutionId);
-
-                if (!string.IsNullOrEmpty(startEvent.Version))
-                {
-                    newActivity.SetTag(Schema.Task.Version, startEvent.Version);
-                }
-
-                // Set the parent trace context for the ExecutionStartedEvent
-                startEvent.ParentTraceContext = new DistributedTraceContext(newActivity.Id, newActivity.TraceStateString);
+                return null;
             }
+
+            newActivity.SetTag(Schema.Task.Type, TraceActivityConstants.Orchestration);
+            newActivity.SetTag(Schema.Task.Name, startEvent.Name);
+            newActivity.SetTag(Schema.Task.InstanceId, startEvent.OrchestrationInstance.InstanceId);
+            newActivity.SetTag(Schema.Task.ExecutionId, startEvent.OrchestrationInstance.ExecutionId);
+
+            if (!string.IsNullOrEmpty(startEvent.Version))
+            {
+                newActivity.SetTag(Schema.Task.Version, startEvent.Version);
+            }
+
+            // Set the parent trace context for the ExecutionStartedEvent
+            startEvent.ParentTraceContext = new DistributedTraceContext(newActivity.Id!, newActivity.TraceStateString);
 
             return newActivity;
         }
@@ -127,6 +129,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
             newActivity.SetTag(Schema.Task.InstanceId, entityId);
 
             return newActivity;
+        }
+
+        internal static void StartActivityUsingTraceContext(ActivityContext traceContext)
+        {
+            Activity? newActivity = ActivityTraceSource.StartActivity(ActivityKind.Internal);
+
+            if (newActivity != null)
+            {
+                newActivity.ActivityTraceFlags = traceContext.TraceFlags;
+                newActivity.SetTraceId(traceContext.TraceId.ToString());
+                newActivity.SetSpanId(traceContext.SpanId.ToString());
+                newActivity.SetTraceState(traceContext.TraceState);
+            }
         }
     }
 }

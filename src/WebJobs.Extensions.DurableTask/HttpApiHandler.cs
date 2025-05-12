@@ -1122,11 +1122,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 string traceParent = GetHeaderValueFromHeaders("traceparent", request.Headers);
                 string traceState = GetHeaderValueFromHeaders("tracestate", request.Headers);
 
-                // Note that we break the pattern here of not creating the Activity for signaling the entity if we cannot successfully parse the parent trace context (since DurableClient will just use Activity.Current.Context instead)
-                // In that case the Activity will not correctly attach to the HTTP request, but will correctly propagate all the other Activities following the signal entity request
+                // We create a sort of "dummy" Activity that contains only the information passed in the HTTP headers. This is so that Activity.Current.Context holds this information,
+                // and so when DurableClient passes it as the parent trace context to TraceHelper for creation of the signal entity Activity, the traces are correctly correlated.
+                // Note that we break the pattern here of not creating the Activity for signaling the entity if we cannot successfully parse the parent trace context
+                // (since Activity.Current.Context will not be set to contain this information, but will still be used by DurableClient when creating the signal entity Activity. Activity.Current will most likely
+                // be a non-recording internal span such that the signal entity Activity will appear without a parent).
                 if (traceParent != null && ActivityContext.TryParse(traceParent, traceState, out ActivityContext parentTraceContext))
                 {
-                    durableClient.ParentTraceContext = parentTraceContext;
+                    TraceHelper.StartActivityUsingTraceContext(parentTraceContext);
                 }
             }
 
