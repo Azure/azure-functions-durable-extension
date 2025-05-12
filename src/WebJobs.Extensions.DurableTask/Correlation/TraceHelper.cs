@@ -26,21 +26,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
                 kind: ActivityKind.Producer,
                 parentContext: parentTraceContext);
 
-            if (newActivity != null && !string.IsNullOrEmpty(newActivity.Id))
+            if (newActivity == null)
             {
-                newActivity.SetTag(Schema.Task.Type, TraceActivityConstants.Orchestration);
-                newActivity.SetTag(Schema.Task.Name, startEvent.Name);
-                newActivity.SetTag(Schema.Task.InstanceId, startEvent.OrchestrationInstance.InstanceId);
-                newActivity.SetTag(Schema.Task.ExecutionId, startEvent.OrchestrationInstance.ExecutionId);
-
-                if (!string.IsNullOrEmpty(startEvent.Version))
-                {
-                    newActivity.SetTag(Schema.Task.Version, startEvent.Version);
-                }
-
-                // Set the parent trace context for the ExecutionStartedEvent
-                startEvent.ParentTraceContext = new DistributedTraceContext(newActivity.Id, newActivity.TraceStateString);
+                return null;
             }
+
+            newActivity.SetTag(Schema.Task.Type, TraceActivityConstants.Orchestration);
+            newActivity.SetTag(Schema.Task.Name, startEvent.Name);
+            newActivity.SetTag(Schema.Task.InstanceId, startEvent.OrchestrationInstance.InstanceId);
+            newActivity.SetTag(Schema.Task.ExecutionId, startEvent.OrchestrationInstance.ExecutionId);
+
+            if (!string.IsNullOrEmpty(startEvent.Version))
+            {
+                newActivity.SetTag(Schema.Task.Version, startEvent.Version);
+            }
+
+            // Set the parent trace context for the ExecutionStartedEvent
+            startEvent.ParentTraceContext = new DistributedTraceContext(newActivity.Id!, newActivity.TraceStateString);
 
             return newActivity;
         }
