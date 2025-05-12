@@ -188,11 +188,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     ActivityContext.TryParse(traceParent, traceState, out ActivityContext parentActivityContext);
                     using Activity? scheduleOrchestrationActivity = TraceHelper.StartActivityForNewOrchestration(executionStartedEvent, parentActivityContext, request.RequestTime?.ToDateTimeOffset());
 
-                    if (!string.IsNullOrEmpty(scheduleOrchestrationActivity?.Id))
-                    {
-                        executionStartedEvent.ParentTraceContext = new DTCore.Tracing.DistributedTraceContext(scheduleOrchestrationActivity.Id, scheduleOrchestrationActivity.TraceStateString);
-                    }
-
                     // Schedule the orchestration
                     await this.GetDurabilityProvider(context).CreateTaskOrchestrationAsync(
                         new TaskMessage
