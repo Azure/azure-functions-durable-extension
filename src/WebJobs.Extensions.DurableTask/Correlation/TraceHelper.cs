@@ -18,14 +18,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
 
         private static readonly ActivitySource ActivityTraceSource = new ActivitySource(Source);
 
-        internal static Activity? StartActivityForNewOrchestration(ExecutionStartedEvent startEvent, ActivityContext parentTraceContext, DateTimeOffset? startTime = null)
+        internal static Activity? StartActivityForNewOrchestration(ExecutionStartedEvent startEvent, ActivityContext parentTraceContext, DateTimeOffset startTime = default)
         {
             // Start the new activity to represent scheduling the orchestration
             Activity? newActivity = ActivityTraceSource.StartActivity(
                 Schema.SpanNames.CreateOrchestration(startEvent.Name, startEvent.Version),
                 kind: ActivityKind.Producer,
                 parentContext: parentTraceContext,
-                startTime: startTime ?? default);
+                startTime: startTime);
 
             if (newActivity == null)
             {
