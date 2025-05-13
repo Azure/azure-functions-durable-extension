@@ -702,27 +702,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                     Activity signalEntityActivity = null;
 
-                    // In the case that we are calling an entity, we want to create the Activity once the result for the call is returned and so we do not create now.
-                    if (!this.IsReplaying && oneWay)
+                    if (!this.IsReplaying)
                     {
-                        signalEntityActivity = TraceHelper.StartActivityForCallingOrSignalingEntity(
-                            instanceId,
-                            EntityId.GetEntityIdFromSchedulerId(instanceId).EntityName,
-                            operation,
-                            oneWay,
-                            scheduledTimeUtc,
-                            Activity.Current?.Context);
-
-                        if (signalEntityActivity != null)
+                        // In the case that we are calling an entity, we want to create the Activity once the result for the call is returned and so we do not create now.
+                        if (oneWay)
                         {
-                            request.ParentTraceContext = new DTCore.Tracing.DistributedTraceContext(signalEntityActivity.Id, signalEntityActivity.TraceStateString);
+                            signalEntityActivity = TraceHelper.StartActivityForCallingOrSignalingEntity(
+                                instanceId,
+                                EntityId.GetEntityIdFromSchedulerId(instanceId).EntityName,
+                                operation,
+                                oneWay,
+                                scheduledTimeUtc,
+                                Activity.Current?.Context);
                         }
-                    }
+                        else
+                        {
+                            request.RequestTime = DateTimeOffset.UtcNow;
+                        }
 
-                    // We still want to attach the current Activity as the parent trace context to the request in the case of a call to an entity so that when we create the Activity for the call this information is available.
-                    else if (Activity.Current is { } activity)
-                    {
-                        request.ParentTraceContext = new DTCore.Tracing.DistributedTraceContext(activity.Id, activity.TraceStateString);
+                        // We still want to attach the current Activity as the parent trace context to the request in the case of a call to an entity so that when we create the Activity for the call this information is available.
+                        // In the case of signaling the entity, Activity.Current will be set to the signalEntityActivity just started.
+                        if (Activity.Current is { } activity)
+                        {
+                            request.ParentTraceContext = new DTCore.Tracing.DistributedTraceContext(activity.Id, activity.TraceStateString);
+                        }
                     }
 
                     this.SendEntityMessage(target, request);

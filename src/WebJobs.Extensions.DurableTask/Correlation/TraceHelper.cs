@@ -48,7 +48,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
             return newActivity;
         }
 
-        internal static Activity? StartActivityForCallingOrSignalingEntity(string targetEntityId, string entityName, string operationName, bool signalEntity, DateTime? scheduledTime, ActivityContext? parentTraceContext, DateTimeOffset? startTime = null, string? entityId = null)
+        internal static Activity? StartActivityForCallingOrSignalingEntity(string targetEntityId, string entityName, string operationName, bool signalEntity, DateTime? scheduledTime, ActivityContext? parentTraceContext, DateTimeOffset startTime = default, string? entityId = null)
         {
             // We only want to create a trace activity for calling or signaling an entity in the case that we can successfully get the parent trace context of the request.
             // Otherwise, we will create an unlinked trace activity with no parent.
@@ -61,7 +61,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
                 Schema.SpanNames.CallOrSignalEntity(entityName, operationName),
                 kind: signalEntity ? ActivityKind.Producer : ActivityKind.Client,
                 parentContext: parentTraceContext.Value,
-                startTime: startTime ?? default);
+                startTime: startTime);
 
             if (newActivity == null)
             {
@@ -85,13 +85,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
             return newActivity;
         }
 
-        internal static Activity? StartActivityForProcessingEntityInvocation(string entityId, string entityName, string operationName, bool signalEntity, ActivityContext parentTraceContext, DateTimeOffset? startTime)
+        internal static Activity? StartActivityForProcessingEntityInvocation(string entityId, string entityName, string operationName, bool signalEntity, ActivityContext parentTraceContext, DateTimeOffset startTime)
         {
             Activity? newActivity = ActivityTraceSource.StartActivity(
                 Schema.SpanNames.CallOrSignalEntity(entityName, operationName),
                 kind: signalEntity ? ActivityKind.Consumer : ActivityKind.Server,
                 parentContext: parentTraceContext,
-                startTime: startTime ?? default);
+                startTime: startTime);
 
             if (newActivity == null)
             {
