@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Linq.Expressions;
 using System.Reflection;
 
+#nullable enable
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
 {
     /// <summary>
@@ -18,16 +19,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
         #pragma warning disable SA1308
         private static readonly Action<Activity, string> s_setSpanId;
         private static readonly Action<Activity, string> s_setTraceId;
-        private static readonly Action<Activity, string> s_setTraceState;
+        private static readonly Action<Activity, string?> s_setTraceState;
         #pragma warning restore SA1308
         #pragma warning restore SA1311
 
         static DiagnosticActivityExtensions()
         {
             BindingFlags flags = BindingFlags.NonPublic | BindingFlags.Instance;
-            s_setSpanId = typeof(Activity).GetField("_spanId", flags).CreateSetter<Activity, string>();
-            s_setTraceId = typeof(Activity).GetField("_traceId", flags).CreateSetter<Activity, string>();
-            s_setTraceState = typeof(Activity).GetField("_traceState", flags).CreateSetter<Activity, string>();
+            s_setSpanId = typeof(Activity).GetField("_spanId", flags) !.CreateSetter<Activity, string>();
+            s_setTraceId = typeof(Activity).GetField("_traceId", flags) !.CreateSetter<Activity, string>();
+            s_setTraceState = typeof(Activity).GetField("_traceState", flags) !.CreateSetter<Activity, string?>();
         }
 
         public static void SetTraceId(this Activity activity, string traceId)
@@ -36,7 +37,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
         public static void SetSpanId(this Activity activity, string spanId)
             => s_setSpanId(activity, spanId);
 
-        public static void SetTraceState(this Activity activity, string traceState)
+        public static void SetTraceState(this Activity activity, string? traceState)
             => s_setTraceState(activity, traceState);
 
         /// <summary>
@@ -55,7 +56,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
 
             if (typeof(TTarget) != fieldInfo.DeclaringType)
             {
-                source = Expression.Convert(targetExp, fieldInfo.DeclaringType);
+                source = Expression.Convert(targetExp, fieldInfo.DeclaringType!);
             }
 
             // Creating the setter to set the value to the field
