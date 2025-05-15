@@ -93,7 +93,7 @@ public static class ActivityInputType
     {
         if (input.Data?.GetType() != typeof(byte[]))
         {
-            return $"Error: Expected Data to be byte[] but got {input.Data.GetType().Name}";
+            return $"Error: Expected Data to be byte[] but got {input.Data!.GetType().Name}";
         }
 
         return $"Received CustomClass: {{Name: {input.Name}, Age: {input.Age}, Duration: {input.Duration}, Data: [{string.Join(", ", input.Data)}]}}";
@@ -116,22 +116,22 @@ public static class ActivityInputType
     {
         for (int i = 0; i < input.Length; i++)
         {
-            if (input[i].Data.GetType() != typeof(byte[]))
+            if (input[i].Data!.GetType() != typeof(byte[]))
             {
-                return $"Error: Expected Data to be byte[] but got {input[i].Data.GetType().Name}";
+                return $"Error: Expected Data to be byte[] but got {input[i].Data!.GetType().Name}";
             }
         }
 
         var items = input.Select(item => 
-            $"{{Name: {item.Name}, Age: {item.Age}, Duration: {item.Duration}, Data: [{string.Join(", ", item.Data)}]}}");
+            $"{{Name: {item.Name}, Age: {item.Age}, Duration: {item.Duration}, Data: [{string.Join(", ", item.Data!)}]}}");
         return $"Received CustomClass[]: [{string.Join(", ", items)}]";
     }
 }
 
 public class CustomClass
 {
-    public string Name { get; set; }
+    public string? Name { get; set; }
     public int Age { get; set; }
-    public byte[] Data { get; set; }
+    public byte[]? Data { get; set; }
     public TimeSpan Duration { get; set; }
 }
