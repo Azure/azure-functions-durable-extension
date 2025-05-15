@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using DurableTask.AzureStorage.Partitioning;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Grpc;
 using Microsoft.Azure.WebJobs.Host;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
@@ -238,7 +239,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public bool StoreInputsInOrchestrationHistory { get; set; } = false;
 
         /// <summary>
-        /// If UseAppLease is true, gets or sets the AppLeaaseOptions used for acquiring the lease to start the application.
+        /// If UseAppLease is true, gets or sets the AppLeaseOptions used for acquiring the lease to start the application.
         /// </summary>
         public AppLeaseOptions AppLeaseOptions { get; set; } = AppLeaseOptions.DefaultOptions;
 
@@ -257,6 +258,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// This settings only applies when .NET 6 or greater is used.
         /// </summary>
         public TimeSpan? GrpcHttpClientTimeout { get; set; } = TimeSpan.FromSeconds(100);
+
+        /// <summary>
+        /// Gets or sets the local gRPC listener mode, controlling what version of gRPC listener is created.
+        /// </summary>
+        internal LocalGrpcListenerMode GrpcListenerMode { get; set; }
 
         // Used for mocking the lifecycle notification helper.
         internal HttpMessageHandler NotificationHandler { get; set; }
