@@ -554,7 +554,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         Input = operationAction.SendSignal.Input,
                         InstanceId = operationAction.SendSignal.InstanceId,
                         ScheduledTime = operationAction.SendSignal.ScheduledTime?.ToDateTime(),
-                        RequestTime = operationAction.SendSignal.RequestTime?.ToDateTime(),
+                        RequestTime = operationAction.SendSignal.RequestTime?.ToDateTimeOffset(),
                         ParentTraceContext = operationAction.SendSignal.ParentTraceContext != null ?
                             new DistributedTraceContext(
                                 operationAction.SendSignal.ParentTraceContext.TraceParent,
@@ -570,7 +570,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         Input = operationAction.StartNewOrchestration.Input,
                         InstanceId = operationAction.StartNewOrchestration.InstanceId,
                         Version = operationAction.StartNewOrchestration.Version,
-                        RequestTime = operationAction.StartNewOrchestration.RequestTime?.ToDateTime(),
+                        RequestTime = operationAction.StartNewOrchestration.RequestTime?.ToDateTimeOffset(),
                         ParentTraceContext = operationAction.StartNewOrchestration.ParentTraceContext != null ?
                             new DistributedTraceContext(
                                 operationAction.StartNewOrchestration.ParentTraceContext.TraceParent,
@@ -601,16 +601,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     return new OperationResult()
                     {
                         Result = operationResult.Success.Result,
-                        StartTime = operationResult.Success.StartTime?.ToDateTime(),
-                        EndTime = operationResult.Success.EndTime?.ToDateTime(),
+                        StartTimeUtc = operationResult.Success.StartTimeUtc?.ToDateTime(),
+                        EndTimeUtc = operationResult.Success.EndTimeUtc?.ToDateTime(),
                     };
 
                 case P.OperationResult.ResultTypeOneofCase.Failure:
                     return new OperationResult()
                     {
                         FailureDetails = GetFailureDetails(operationResult.Failure.FailureDetails),
-                        StartTime = operationResult.Failure.StartTime?.ToDateTime(),
-                        EndTime = operationResult.Failure.EndTime?.ToDateTime(),
+                        StartTimeUtc = operationResult.Failure.StartTimeUtc?.ToDateTime(),
+                        EndTimeUtc = operationResult.Failure.EndTimeUtc?.ToDateTime(),
                     };
 
                 default:
