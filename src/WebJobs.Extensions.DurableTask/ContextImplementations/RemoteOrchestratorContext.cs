@@ -74,8 +74,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal void SetResult(IEnumerable<OrchestratorAction> actions, string customStatus)
         {
-            // Azure Table Storage enforces a 32 KB limit if a property value is a UTF016 encoded string.
-            // We apply a 16 KB limit here to align with the in-process model.
+            // Azure Table Storage enforces a 32 KB limit if a property value is a UTF-16 encoded string.
+            // We apply a 16 KB limit here to align with our in-process model.
             const int maxCustomStatusSizeInKB = 16;
             int? customStatusSizeInKB = customStatus != null ?
                 (int)(Encoding.Unicode.GetByteCount(customStatus) / 1024.0) : null;
