@@ -1350,10 +1350,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     scheduledTimeUtc,
                     Activity.Current?.Context);
             }
-            else
-            {
-                request.RequestTime = DateTimeOffset.UtcNow;
-            }
 
             // We still want to attach the current Activity as the parent trace context to the request in the case of a call to an entity so that when we create the Activity for the call this information is available.
             // In the case of signaling the entity, Activity.Current will be set to the signalEntityActivity just started.
