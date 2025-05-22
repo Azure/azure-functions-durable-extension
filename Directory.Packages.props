@@ -36,6 +36,7 @@
     <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="1.0.0"  />
     <PackageVersion Include="StyleCop.Analyzers" Version="1.1.118"  />
     <PackageVersion Include="System.Text.Json" Version="6.0.10" />
+	<PackageVersion Include="System.Text.Encodings.Web" Version="6.0.0" />
   </ItemGroup>
 
   <!-- Test dependencies -->
