@@ -11,6 +11,7 @@ RUN cd /root/src/WebJobs.Extensions.DurableTask && \
     mkdir /packages && \
     dotnet nuget push /out/Microsoft.Azure.WebJobs.Extensions.DurableTask.*.nupkg --source /packages && \
     dotnet nuget add source /packages
+    dotnet restore --source /packages
 
 # Step 2: Build the sample app, which references the locally built extension from Step 1
 #         IMPORTANT: restore seems to need to be done separately to ensure the correct
