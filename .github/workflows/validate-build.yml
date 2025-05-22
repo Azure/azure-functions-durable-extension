@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - dev
+      - stevosyan/distributed-tracing-for-entities
     paths-ignore: [ '**.md' ]
   pull_request:
     branches:
