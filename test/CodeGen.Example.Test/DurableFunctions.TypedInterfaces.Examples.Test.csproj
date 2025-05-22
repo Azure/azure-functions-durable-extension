@@ -20,6 +20,7 @@
     <PackageReference Include="Moq" />
     <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio" />
+	<PackageReference Include="System.Text.Encodings.Web" />
   </ItemGroup>
   
   <ItemGroup>
