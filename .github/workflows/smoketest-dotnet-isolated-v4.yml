@@ -8,7 +8,7 @@ on:
       - 'src/**'
       - 'test/SmokeTests/OOProcSmokeTests/DotNetIsolated/**'
   pull_request:
-    branches: [ main, dev ]
+    branches: [ main, dev, stevosyan/distributed-tracing-for-entities ]
     paths:
       - 'src/**'
       - 'test/SmokeTests/OOProcSmokeTests/DotNetIsolated/**'
