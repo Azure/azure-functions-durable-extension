@@ -186,7 +186,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.executionResult = result;
         }
 
-        private void ValidateCustomStatusSize(string customStatus)
+        private static void ValidateCustomStatusSize(string customStatus)
         {
             // Azure Table Storage enforces a 32 KB limit if a property value is a UTF-16 encoded string.
             // We apply a 16 KB limit here to align with our in-process model.
