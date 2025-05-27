@@ -53,7 +53,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public string? ListenAddress { get; private set; }
 
-        public Task StartAsync(CancellationToken cancelToken = default)
+        public async Task StartAsync(CancellationToken cancelToken = default)
         {
             const int maxAttempts = 10;
             int numAttempts = 1;
@@ -64,6 +64,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     new ChannelOption(ChannelOptions.MaxReceiveMessageLength, int.MaxValue),
                     new ChannelOption(ChannelOptions.MaxSendMessageLength, int.MaxValue),
                 };
+
+                if (this.grpcServer != null)
+                {
+                    await this.grpcServer.ShutdownAsync();
+                }
 
                 this.grpcServer = new Server(options);
                 this.grpcServer.Services.Add(P.TaskHubSidecarService.BindService(new TaskHubGrpcServer(this)));
@@ -84,7 +89,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             message: $"Opened local gRPC endpoint: {this.ListenAddress}",
                             writeToUserLogs: true);
 
-                        return Task.CompletedTask;
+                        return;
                     }
                     catch (IOException)
                     {
@@ -256,7 +261,39 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             public async override Task<P.RaiseEventResponse> RaiseEvent(P.RaiseEventRequest request, ServerCallContext context)
             {
-                await this.GetClient(context).RaiseEventAsync(request.InstanceId, request.Name, Raw(request.Input));
+                bool throwStatusExceptionsOnRaiseEvent = this.extension.Options.ThrowStatusExceptionsOnRaiseEvent ?? this.extension.DefaultDurabilityProvider.CheckStatusBeforeRaiseEvent;
+
+                try
+                {
+                    await this.GetClient(context).RaiseEventAsync(request.InstanceId, request.Name, Raw(request.Input));
+                }
+                catch (ArgumentNullException ex)
+                {
+                    // Indicates a required argument (e.g., instanceId, eventName, or input) is null or empty.
+                    throw new RpcException(new Status(StatusCode.InvalidArgument, ex.Message));
+                }
+                catch (ArgumentException ex)
+                {
+                    // Indicates the provided instanceId has no orchestration status.
+                    if (throwStatusExceptionsOnRaiseEvent)
+                    {
+                        throw new RpcException(new Status(StatusCode.NotFound, ex.Message));
+                    }
+                }
+                catch (InvalidOperationException)
+                {
+                    // Indicates the orchestration instance exists but is already in a completed state.
+                    if (throwStatusExceptionsOnRaiseEvent)
+                    {
+                        throw new RpcException(new Status(StatusCode.FailedPrecondition, "The orchestration instance with the provided instance id is not running."));
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // Any other unexpected exceptions.
+                    throw new RpcException(new Status(StatusCode.Unknown, ex.Message));
+                }
+
                 return new P.RaiseEventResponse();
             }
 
@@ -400,22 +437,35 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 var purgeClient = (IOrchestrationServicePurgeClient)this.GetDurabilityProvider(context);
 
                 PurgeResult result;
-                switch (request.RequestCase)
+                try
                 {
-                    case P.PurgeInstancesRequest.RequestOneofCase.InstanceId:
-                        result = await purgeClient.PurgeInstanceStateAsync(request.InstanceId);
-                        break;
+                    switch (request.RequestCase)
+                    {
+                        case P.PurgeInstancesRequest.RequestOneofCase.InstanceId:
+                            result = await purgeClient.PurgeInstanceStateAsync(request.InstanceId);
+                            break;
 
-                    case P.PurgeInstancesRequest.RequestOneofCase.PurgeInstanceFilter:
-                        var purgeInstanceFilter = ProtobufUtils.ToPurgeInstanceFilter(request);
-                        result = await purgeClient.PurgeInstanceStateAsync(purgeInstanceFilter);
-                        break;
+                        case P.PurgeInstancesRequest.RequestOneofCase.PurgeInstanceFilter:
+                            var purgeInstanceFilter = ProtobufUtils.ToPurgeInstanceFilter(request);
+                            result = await purgeClient.PurgeInstanceStateAsync(purgeInstanceFilter);
+                            break;
 
-                    default:
-                        throw new ArgumentException($"Unknown purge request type '{request.RequestCase}'.");
+                        default:
+                            throw new RpcException(new Status(StatusCode.InvalidArgument, $"Unknown purge request type '{request.RequestCase}'."));
+                    }
+
+                    return ProtobufUtils.CreatePurgeInstancesResponse(result);
                 }
-
-                return ProtobufUtils.CreatePurgeInstancesResponse(result);
+                catch (RpcException)
+                {
+                    // Rethrow RPC-related exceptions as-is.
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    // Wrap all other exceptions in an RpcException.
+                    throw new RpcException(new Status(StatusCode.Internal, $"Failed during purging instances: {ex.Message}"));
+                }
             }
 
             public async override Task<P.GetInstanceResponse> WaitForInstanceStart(P.GetInstanceRequest request, ServerCallContext context)

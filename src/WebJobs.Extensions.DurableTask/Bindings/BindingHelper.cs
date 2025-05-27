@@ -45,6 +45,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     RequiredQueryStringParameters = this.config.HttpApiHandler.GetUniversalQueryStrings(),
                     HttpBaseUrl = this.config.HttpApiHandler.GetBaseUrl(),
                     MaxGrpcMessageSizeInBytes = this.config.Options.MaxGrpcMessageSizeInBytes,
+                    GrpcHttpClientTimeout = JsonConvert.SerializeObject(this.config.Options.GrpcHttpClientTimeout),
                 });
             }
 
@@ -147,6 +148,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             /// </summary>
             [JsonProperty("maxGrpcMessageSizeInBytes")]
             public int? MaxGrpcMessageSizeInBytes { get; set; }
+
+            /// <summary>
+            /// Sets the timeout for the HTTP client used by the gRPC client. If the server does not respond
+            /// within this period, the HTTP request will time out. Default is 100 seconds.
+            /// </summary>
+            [JsonProperty("grpcHttpClientTimeout")]
+            public string? GrpcHttpClientTimeout { get; set; }
         }
     }
 }
