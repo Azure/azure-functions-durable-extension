@@ -15,5 +15,6 @@
     "durableTask": {
       "hubName": "JavaScriptSmokeTest"
     }
-  }
+  },
+  "functions": ["src/functions/*"]
 }
