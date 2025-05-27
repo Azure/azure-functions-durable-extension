@@ -7,7 +7,8 @@
     <Nullable>enable</Nullable>
     <DebugType>embedded</DebugType>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-	<NoWarn>NU1103</NoWarn>
+	<TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+	<NoWarn>$(NoWarn);NU1103</NoWarn>
   </PropertyGroup>
 
   <!-- Assembly/NuGet package settings & metadata -->
