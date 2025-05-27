@@ -5,8 +5,8 @@
     <OutputType>Exe</OutputType>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-	<TreatWarningsAsErrors>false</TreatWarningsAsErrors>
-	<NoWarn>$(NoWarn);NU1103</NoWarn>
+	<VersionPrefix>1.0.0</VersionPrefix>
+	<VersionSuffix>test</VersionSuffix>
   </PropertyGroup>
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
