@@ -34,7 +34,7 @@ df.app.activity("PrintObject", {
 });
 
 app.http('DurableFunctionsHttpStart', {
-    route: 'orchestrators/DurableFunctionsOrchestratorJS',
+    route: 'DurableFunctionsHttpStart',
     extraInputs: [df.input.durableClient()],
     handler: async (request, context) => {
         const client = df.getClient(context);
