@@ -5,6 +5,7 @@
     <AzureFunctionsVersion>v4</AzureFunctionsVersion>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <CompilerGeneratedFilesOutputPath>$(BaseIntermediateOutputPath)Generated</CompilerGeneratedFilesOutputPath>
+	<NoWarn>NU1103</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
