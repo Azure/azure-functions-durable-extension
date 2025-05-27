@@ -74,7 +74,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal void SetResult(IEnumerable<OrchestratorAction> actions, string customStatus)
         {
-            this.ValidateCustomStatusSize(customStatus);
+            ValidateCustomStatusSize(customStatus);
 
             var result = new OrchestratorExecutionResult
             {
