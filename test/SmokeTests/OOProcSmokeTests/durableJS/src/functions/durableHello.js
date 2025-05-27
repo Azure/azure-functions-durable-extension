@@ -46,3 +46,5 @@ app.http('DurableFunctionsHttpStart', {
         return client.createCheckStatusResponse(request, instanceId);
     },
 });
+
+module.exports = app;
