@@ -1,11 +1,11 @@
 ﻿const df = require("durable-functions");
 
-module.exports = async function (context, req, starter) {
-    const instanceId = await starter.startNew("DurableFunctionsOrchestratorJS", {
-        input: req.body
-      });
+module.exports = async function (context, req) {
+  const client = df.getClient(context);
 
-    context.log(`Started orchestration with ID = '${instanceId}'.`);
+  const instanceId = await client.startNew("DurableFunctionsOrchestratorJS", undefined, req.body);
 
-    return starter.createCheckStatusResponse(context.bindingData.req, instanceId);
+  context.log(`Started orchestration with ID = '${instanceId}'.`);
+
+  return client.createCheckStatusResponse(context.bindingData.req, instanceId);
 };
