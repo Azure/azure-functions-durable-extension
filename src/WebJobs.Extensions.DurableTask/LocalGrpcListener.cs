@@ -90,7 +90,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 // Attempt to get an unused port. Note that while unlikely, it is possible that the port returned by this method
                 // may be utilized by another process between this call and the gRPC server create below, hence we still need to
                 // guard against port conflicts.
-                int listeningPort = this.GetLikelyAvailablePort();
+                int listeningPort = this.GetAvailablePort();
                 int portBindingResult = this.grpcServer.Ports.Add("localhost", listeningPort, ServerCredentials.Insecure);
                 if (portBindingResult != 0)
                 {
@@ -137,7 +137,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        private int GetLikelyAvailablePort()
+        private int GetAvailablePort()
         {
             // Get an available port for use in the gRPC server. Try 4001 first, then select a random open port
             // in the 30000-31000 range.
@@ -158,7 +158,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
             }
 
-            throw new Exception(string.Format("Failed to get free port for local gRPC server after {0} attempts", numAttempts));
+            throw new InvalidOperationException($"Failed to get free port for local gRPC server after {numAttempts} attempts");
         }
 
         private bool IsTcpPortFree(int port)
@@ -171,6 +171,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             catch (SocketException)
             {
+                this.extension.TraceHelper.ExtensionWarningEvent(
+                    this.extension.Options.HubName,
+                    functionName: string.Empty,
+                    instanceId: string.Empty,
+                    message: $"Starting Durable gRPC server - Port {port} is already in use.");
                 return false;
             }
             finally
