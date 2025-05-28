@@ -5,8 +5,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Net.NetworkInformation;
+using System.Net;
+using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
@@ -141,24 +141,42 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             // Get an available port for use in the gRPC server. Try 4001 first, then select a random open port
             // in the 30000-31000 range.
-            IPGlobalProperties ipGlobalProperties = IPGlobalProperties.GetIPGlobalProperties();
-            TcpConnectionInformation[] tcpConnInfoArray = ipGlobalProperties.GetActiveTcpConnections();
-            if (!tcpConnInfoArray.Where(x => x.LocalEndPoint.Port == DefaultPort).Any())
+            if (this.IsTcpPortFree(DefaultPort))
             {
                 return DefaultPort;
             }
 
+            int numAttempts = 50;
+
             int randomPort;
-            for (int i = 0; i < 10; i++)
+            for (int i = 0; i < numAttempts; i++)
             {
                 randomPort = this.portGenerator.Next(MinPort, MaxPort);
-                if (!tcpConnInfoArray.Where(x => x.LocalEndPoint.Port == randomPort).Any())
+                if (this.IsTcpPortFree(randomPort))
                 {
                     return randomPort;
                 }
             }
 
-            return 0;
+            throw new Exception(string.Format("Failed to get free port for local gRPC server after {0} attempts", numAttempts));
+        }
+
+        private bool IsTcpPortFree(int port)
+        {
+            var listener = new TcpListener(IPAddress.Loopback, port);
+            try
+            {
+                listener.Start();
+                return true;
+            }
+            catch (SocketException)
+            {
+                return false;
+            }
+            finally
+            {
+                listener.Stop();
+            }
         }
 
         private class TaskHubGrpcServer : P.TaskHubSidecarService.TaskHubSidecarServiceBase
