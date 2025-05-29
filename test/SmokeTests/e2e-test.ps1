@@ -37,7 +37,7 @@ function Start-And-Wait-Orchestration {
 	Write-Host "DEBUG: InstanceId = '$InstanceId'"
 
 	if ($InstanceId) {
-        $uri = "$BaseUri?instanceId=$InstanceId"
+		$uri = $BaseUri + "?instanceId=" + $InstanceId
     } else {
         $uri = $BaseUri
     }
