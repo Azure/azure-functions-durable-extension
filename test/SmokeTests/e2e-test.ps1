@@ -33,9 +33,6 @@ function Start-And-Wait-Orchestration {
         [int]$SleepSeconds = 1
     )
 
-    Write-Host "DEBUG: BaseUri = '$BaseUri'"
-	Write-Host "DEBUG: InstanceId = '$InstanceId'"
-
 	if ($InstanceId) {
 		$uri = $BaseUri + "?instanceId=" + $InstanceId
     } else {
@@ -169,7 +166,7 @@ try {
         }
 
         # Start and wait for orchestration WITH a specific instance ID
-        $customInstanceId = "my-custom-instance-001"
+        $customInstanceId = [guid]::NewGuid().ToString()
         $completedWithId = Start-And-Wait-Orchestration -BaseUri $startOrchestrationUri -InstanceId $customInstanceId
         if (-not $completedWithId) {
             throw "Orchestration (with Instance ID) didn't complete in time! :("
