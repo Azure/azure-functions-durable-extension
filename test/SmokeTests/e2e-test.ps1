@@ -9,6 +9,7 @@ param(
 	[switch]$NoSetup=$false,
 	[switch]$NoValidation=$false,
 	[int]$Sleep=30,
+	[switch]$TestWithCustomInstanceId = $false,
   	[switch]$SetupSQLServer=$false,
   	[string]$pw="$env:SA_PASSWORD",
     	[string]$sqlpid="Express",
@@ -171,12 +172,14 @@ try {
             throw "Orchestration (with no Instance ID) didn't complete in time! :("
         }
 
-        # Start and wait for orchestration WITH a specific instance ID
-        $customInstanceId = [guid]::NewGuid().ToString()
-        $completedWithId = Start-And-Wait-Orchestration -BaseUri $startOrchestrationUri -InstanceId $customInstanceId
-        if (-not $completedWithId) {
-            throw "Orchestration (with Instance ID) didn't complete in time! :("
-        }
+		if ($TestWithCustomInstanceId) {
+			# Start and wait for orchestration WITH a specific instance ID
+			$customInstanceId = [guid]::NewGuid().ToString()
+			$completedWithId = Start-And-Wait-Orchestration -BaseUri $startOrchestrationUri -InstanceId $customInstanceId
+			if (-not $completedWithId) {
+				throw "Orchestration (with Instance ID) didn't complete in time! :("
+			}
+		}
 	}
 } catch {
 	Write-Host "An error occurred:" -ForegroundColor Red
