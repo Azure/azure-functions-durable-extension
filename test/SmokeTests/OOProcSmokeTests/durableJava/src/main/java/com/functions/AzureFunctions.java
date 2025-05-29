@@ -26,7 +26,17 @@ public class AzureFunctions {
         context.getLogger().info("Java HTTP trigger processed a request.");
 
         DurableTaskClient client = durableContext.getClient();
-        String instanceId = client.scheduleNewOrchestrationInstance("Cities");
+
+        // Get instanceId from query parameter if provided
+        String providedInstanceId = request.getQueryParameters().get("instanceId");
+
+        String instanceId;
+        if (providedInstanceId != null && !providedInstanceId.isEmpty()) {
+            instanceId = client.scheduleNewOrchestrationInstance("Cities", null, providedInstanceId);
+        } else {
+            instanceId = client.scheduleNewOrchestrationInstance("Cities");
+        }
+    
         context.getLogger().info("Created new Java orchestration with instance ID = " + instanceId);
         return durableContext.createCheckStatusResponse(request, instanceId);
     }
