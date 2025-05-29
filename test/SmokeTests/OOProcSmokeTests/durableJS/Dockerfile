@@ -9,7 +9,7 @@ RUN cd /root/test/SmokeTests/OOProcSmokeTests/durableJS && \
     dotnet build -o bin
 
 # Step 2: Deploy and run npm install to get the Durable Functions SDK
-FROM mcr.microsoft.com/azure-functions/node:4
+FROM mcr.microsoft.com/azure-functions/node:4-node20
 COPY --from=build-env /root/test/SmokeTests/OOProcSmokeTests/durableJS /home/site/wwwroot
 ENV AzureWebJobsScriptRoot=/home/site/wwwroot \
     AzureFunctionsJobHost__Logging__Console__IsEnabled=true
