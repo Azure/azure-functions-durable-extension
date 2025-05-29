@@ -877,7 +877,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     input = JsonConvert.DeserializeObject(json, this.messageDataConverter.JsonSettings);
                 }
 
-                string id = instanceId ?? Guid.NewGuid().ToString("N");
+                string id = string.IsNullOrEmpty(instanceId) ? Guid.NewGuid().ToString("N") : instanceId;
 
                 if (client is DurableClient durableClient)
                 {
