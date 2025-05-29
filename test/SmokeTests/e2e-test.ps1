@@ -42,6 +42,12 @@ function Start-And-Wait-Orchestration {
     Write-Host "Starting orchestration via POST to $uri..." -ForegroundColor Yellow
     $result = Invoke-RestMethod -Method Post -Uri $uri
     Write-Host "Started orchestration with instance ID '$($result.id)'!" -ForegroundColor Yellow
+
+	# Check that the returned instance ID matches the requested one (if provided)
+    if ($InstanceId -and $result.id -ne $InstanceId) {
+        throw "Returned instance ID '$($result.id)' does not match requested instance ID '$InstanceId'"
+    }
+
     Write-Host "Waiting for orchestration to complete..." -ForegroundColor Yellow
 
     $retryCount = 0
