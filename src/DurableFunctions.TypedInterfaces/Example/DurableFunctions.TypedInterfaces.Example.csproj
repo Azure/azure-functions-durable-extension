@@ -13,7 +13,7 @@
     <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" />
     <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" />
     <PackageReference Include="Microsoft.Azure.DurableTask.Core"  />
-    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask" />
+    <ProjectReference Include="..\..\WebJobs.Extensions.DurableTask\WebJobs.Extensions.DurableTask.csproj" />
     <PackageReference Include="Microsoft.NET.Sdk.Functions"  />
   </ItemGroup>
 
