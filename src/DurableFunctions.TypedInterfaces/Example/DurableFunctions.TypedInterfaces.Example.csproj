@@ -1,17 +1,19 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <AzureFunctionsVersion>v4</AzureFunctionsVersion>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <CompilerGeneratedFilesOutputPath>$(BaseIntermediateOutputPath)Generated</CompilerGeneratedFilesOutputPath>
+	<VersionPrefix>1.0.0</VersionPrefix>
+	<VersionSuffix>test</VersionSuffix>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" />
     <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" />
     <PackageReference Include="Microsoft.Azure.DurableTask.Core"  />
-    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask" VersionOverride = "2.4.3"/>
+    <ProjectReference Include="..\..\WebJobs.Extensions.DurableTask\WebJobs.Extensions.DurableTask.csproj" />
     <PackageReference Include="Microsoft.NET.Sdk.Functions"  />
   </ItemGroup>
 
