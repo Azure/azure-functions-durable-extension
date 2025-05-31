@@ -1,4 +1,4 @@
-name: Smoke Test - Node 14 on Functions V4
+name: Smoke Test - Node 20 on Functions V4
 
 on:
   workflow_dispatch:
@@ -18,6 +18,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - name: Run V4 Node 14 Smoke Test
+    - name: Run V4 Node 20 Smoke Test
       run: test/SmokeTests/e2e-test.ps1 -DockerfilePath test/SmokeTests/OOProcSmokeTests/durableJS/Dockerfile -HttpStartPath api/DurableFunctionsHttpStart
       shell: pwsh

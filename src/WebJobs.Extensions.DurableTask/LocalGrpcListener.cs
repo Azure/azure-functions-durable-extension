@@ -5,8 +5,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Reflection;
-using System.Reflection.Metadata.Ecma335;
+using System.Net;
+using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
@@ -17,10 +17,8 @@ using DurableTask.Core.Query;
 using DurableTask.Core.Serializing.Internal;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
-using Microsoft.ApplicationInsights.Extensibility.Implementation;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using DTCore = DurableTask.Core;
 using P = Microsoft.DurableTask.Protobuf;
 
@@ -65,15 +63,34 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     new ChannelOption(ChannelOptions.MaxSendMessageLength, int.MaxValue),
                 };
 
-                if (this.grpcServer != null)
+                if (this.grpcServer is not null)
                 {
-                    await this.grpcServer.ShutdownAsync();
+                    try
+                    {
+                        await this.grpcServer.ShutdownAsync();
+                    }
+                    catch (IOException)
+                    {
+                        // Do nothing, IOException is a known exception type when trying to shutdown a server
+                        // when its port was already in use
+                    }
+                    catch (Exception ex)
+                    {
+                        this.extension.TraceHelper.ExtensionWarningEvent(
+                            this.extension.Options.HubName,
+                            functionName: string.Empty,
+                            instanceId: string.Empty,
+                            message: $"Unexpected error when closing gRPC server. Exception details: {ex}");
+                    }
                 }
 
                 this.grpcServer = new Server(options);
                 this.grpcServer.Services.Add(P.TaskHubSidecarService.BindService(new TaskHubGrpcServer(this)));
 
-                int listeningPort = numAttempts == 1 ? DefaultPort : this.GetRandomPort();
+                // Attempt to get an unused port. Note that while unlikely, it is possible that the port returned by this method
+                // may be utilized by another process between this call and the gRPC server create below, hence we still need to
+                // guard against port conflicts.
+                int listeningPort = this.GetAvailablePort();
                 int portBindingResult = this.grpcServer.Ports.Add("localhost", listeningPort, ServerCredentials.Insecure);
                 if (portBindingResult != 0)
                 {
@@ -120,18 +137,51 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        private int GetRandomPort()
+        private int GetAvailablePort()
         {
-            // Get a random port that has not already been attempted so we don't waste time trying
-            // to listen to a port we know is not free.
+            // Get an available port for use in the gRPC server. Try 4001 first, then select a random open port
+            // in the 30000-31000 range.
+            if (this.IsTcpPortFree(DefaultPort))
+            {
+                return DefaultPort;
+            }
+
+            int numAttempts = 50;
+
             int randomPort;
-            do
+            for (int i = 0; i < numAttempts; i++)
             {
                 randomPort = this.portGenerator.Next(MinPort, MaxPort);
+                if (this.IsTcpPortFree(randomPort))
+                {
+                    return randomPort;
+                }
             }
-            while (this.attemptedPorts.Contains(randomPort));
 
-            return randomPort;
+            throw new InvalidOperationException($"Failed to get free port for local gRPC server after {numAttempts} attempts");
+        }
+
+        private bool IsTcpPortFree(int port)
+        {
+            var listener = new TcpListener(IPAddress.Loopback, port);
+            try
+            {
+                listener.Start();
+                return true;
+            }
+            catch (SocketException)
+            {
+                this.extension.TraceHelper.ExtensionWarningEvent(
+                    this.extension.Options.HubName,
+                    functionName: string.Empty,
+                    instanceId: string.Empty,
+                    message: $"Starting Durable gRPC server - Port {port} is already in use.");
+                return false;
+            }
+            finally
+            {
+                listener.Stop();
+            }
         }
 
         private class TaskHubGrpcServer : P.TaskHubSidecarService.TaskHubSidecarServiceBase
