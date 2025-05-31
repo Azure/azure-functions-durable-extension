@@ -8,7 +8,7 @@ on:
     paths-ignore: [ '**.md' ]
   pull_request:
     branches:
-      - stevosyan/distributed-tracing-for-entities
+      - stevosyan/distributed-tracing-for-entities-isolated
       - '*'
     paths-ignore: [ '**.md' ]
 

@@ -8,7 +8,7 @@ on:
       - 'src/**'
       - 'test/e2e/**'
   pull_request:
-    branches: [ main, dev, stevosyan/distributed-tracing-for-entities ]
+    branches: [ main, dev, stevosyan/distributed-tracing-for-entities-isolated ]
     paths:
       - 'src/**'
       - 'test/e2e/**'
