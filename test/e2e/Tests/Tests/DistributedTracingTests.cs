@@ -10,25 +10,25 @@ namespace Microsoft.Azure.Durable.Tests.DotnetIsolatedE2E;
 [Collection(Constants.FunctionAppCollectionName)]
 public class DistributedTracingTests
 {
-    private readonly FunctionAppFixture _fixture;
-    private readonly ITestOutputHelper _output;
-    private readonly ActivityListener _activityListener;
+    private readonly FunctionAppFixture fixture;
+    private readonly ITestOutputHelper output;
+    private readonly ActivityListener activityListener;
 
     public DistributedTracingTests(FunctionAppFixture fixture, ITestOutputHelper testOutputHelper)
     {
-        _fixture = fixture;
-        _fixture.TestLogs.UseTestLogger(testOutputHelper);
-        _output = testOutputHelper;
+        this.fixture = fixture;
+        this.fixture.TestLogs.UseTestLogger(testOutputHelper);
+        this.output = testOutputHelper;
 
         // Initialize the ActivityListener here
-        _activityListener = new ActivityListener
+        this.activityListener = new ActivityListener
         {
             ShouldListenTo = source => source.Name == "DistributedTracingTests",
             Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
             ActivityStarted = activity => { /* Handle activity started */ },
             ActivityStopped = activity => { /* Handle activity stopped */ }
         };
-        ActivitySource.AddActivityListener(_activityListener);
+        ActivitySource.AddActivityListener(this.activityListener);
     }
 
     [Fact]
