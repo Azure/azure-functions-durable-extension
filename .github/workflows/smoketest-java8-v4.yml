@@ -15,7 +15,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v2
       - name: Set up JDK 8
@@ -33,5 +33,5 @@ jobs:
         run: |
           wget -P test/SmokeTests/OOProcSmokeTests/durableJava/build/azure-functions/durableJava/lib/ "https://repo.maven.apache.org/maven2/com/microsoft/azure/functions/azure-functions-java-library/2.0.1/azure-functions-java-library-2.0.1.jar" --show-progress
       - name: Run V4 Java 8 Smoke Test
+        shell: bash
         run: test/SmokeTests/e2e-test.ps1 -DockerfilePath test/SmokeTests/OOProcSmokeTests/durableJava/Dockerfile -HttpStartPath api/StartOrchestration
-        shell: pwsh

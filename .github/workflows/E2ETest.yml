@@ -49,8 +49,8 @@ jobs:
         working-directory: test/e2e/Tests
         run: dotnet test --filter AzureStorage!=Skip
 
-  e2e-azurestorage-windows:
-    runs-on: windows-latest
+  e2e-azurestorage-macos:
+    runs-on: macos-latest
     env:
       E2E_TEST_DURABLE_BACKEND: 'AzureStorage'
     steps:
@@ -74,7 +74,7 @@ jobs:
       - name: Setup E2E tests
         shell: pwsh
         run: |
-          .\test\e2e\Tests\build-e2e-test.ps1
+          ./test/e2e/Tests/build-e2e-test.ps1
 
       - name: Build
         working-directory: test/e2e/Tests
@@ -108,7 +108,7 @@ jobs:
       - name: Setup E2E tests
         shell: pwsh
         run: |
-          .\test\e2e\Tests\build-e2e-test.ps1 -StartMSSqlContainer
+          ./test/e2e/Tests/build-e2e-test.ps1 -StartMSSqlContainer
 
       - name: Build
         working-directory: test/e2e/Tests
@@ -138,7 +138,7 @@ jobs:
       - name: Setup E2E tests
         shell: pwsh
         run: |
-          .\test\e2e\Tests\build-e2e-test.ps1 -StartDTSContainer
+          ./test/e2e/Tests/build-e2e-test.ps1 -StartDTSContainer
 
       - name: Build
         working-directory: test/e2e/Tests
