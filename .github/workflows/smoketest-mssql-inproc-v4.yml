@@ -31,10 +31,15 @@ jobs:
         if xattr /Applications/Docker.app | grep -q com.apple.quarantine; then
             sudo xattr -d com.apple.quarantine /Applications/Docker.app
         fi
-        open -a Docker
-        # Wait for Docker to start
+        until [ -d "/Applications/Docker.app" ]; do
+          echo "Waiting for Docker.app to be installed..."
+          sleep 3
+        done
+
+        open -a Docker || echo "Warning: Could not open Docker app immediately, continuing..."
+
         while ! docker info > /dev/null 2>&1; do
-          echo "Waiting for Docker to start..."
+          echo "Waiting for Docker daemon to start..."
           sleep 5
         done
   

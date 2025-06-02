@@ -91,6 +91,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install Docker
+        run: |
+          brew install --cask docker
+          if xattr /Applications/Docker.app | grep -q com.apple.quarantine; then
+              sudo xattr -d com.apple.quarantine /Applications/Docker.app
+          fi
+          until [ -d "/Applications/Docker.app" ]; do
+            echo "Waiting for Docker.app to be installed..."
+            sleep 3
+          done
+
+          open -a Docker || echo "Warning: Could not open Docker app immediately, continuing..."
+
+          while ! docker info > /dev/null 2>&1; do
+            echo "Waiting for Docker daemon to start..."
+            sleep 5
+          done
+
       - name: Setup .NET Core
         uses: actions/setup-dotnet@v3
         with:
@@ -124,6 +142,24 @@ jobs:
       E2E_TEST_DURABLE_BACKEND: "azureManaged"
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install Docker
+        run: |
+          brew install --cask docker
+          if xattr /Applications/Docker.app | grep -q com.apple.quarantine; then
+              sudo xattr -d com.apple.quarantine /Applications/Docker.app
+          fi
+          until [ -d "/Applications/Docker.app" ]; do
+            echo "Waiting for Docker.app to be installed..."
+            sleep 3
+          done
+
+          open -a Docker || echo "Warning: Could not open Docker app immediately, continuing..."
+
+          while ! docker info > /dev/null 2>&1; do
+            echo "Waiting for Docker daemon to start..."
+            sleep 5
+          done
 
       - name: Setup .NET Core
         uses: actions/setup-dotnet@v3
