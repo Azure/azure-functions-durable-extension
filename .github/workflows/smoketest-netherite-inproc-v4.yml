@@ -22,7 +22,9 @@ jobs:
     - name: Install Docker
       run: |
         brew install --cask docker
-        sudo xattr -d com.apple.quarantine /Applications/Docker.app
+        if xattr /Applications/Docker.app | grep -q com.apple.quarantine; then
+            sudo xattr -d com.apple.quarantine /Applications/Docker.app
+        fi
         open -a Docker
         # Wait for Docker to start
         while ! docker info > /dev/null 2>&1; do

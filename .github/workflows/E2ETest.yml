@@ -85,7 +85,7 @@ jobs:
         run: dotnet test --filter AzureStorage!=Skip
 
   e2e-mssql:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     env:
       E2E_TEST_DURABLE_BACKEND: "MSSQL"
     steps:
@@ -119,7 +119,7 @@ jobs:
         run: dotnet test --filter MSSQL!=Skip
 
   e2e-dts:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     env:
       E2E_TEST_DURABLE_BACKEND: "azureManaged"
     steps:
