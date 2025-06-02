@@ -7,7 +7,9 @@
     "test": "echo \"No tests yet...\""
   },
   "dependencies": {
-    "durable-functions": "^1.5.4"
+    "@azure/functions": "^4.0.0",
+    "durable-functions": "^3.1.0"
   },
+  "main": "src/{index.js,functions/*.js}",
   "devDependencies": {}
 }

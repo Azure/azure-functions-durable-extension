@@ -39,6 +39,11 @@ internal class ActivityInputConverter : IInputConverter
 
         if (context.Source is not string source)
         {
+            if (context.Source is ReadOnlyMemory<byte> memory && context.TargetType == typeof(byte[]))
+            {
+                return new(ConversionResult.Success(memory.ToArray()));
+            }
+
             throw new InvalidOperationException($"Expected converter source to be a string, received {context.Source?.GetType()}.");
         }
 
