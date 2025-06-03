@@ -39,8 +39,19 @@ app.http('DurableFunctionsHttpStart', {
     handler: async (request, context) => {
         const client = df.getClient(context);
         const body = await request.text();
-        const instanceId = await client.startNew("DurableFunctionsOrchestratorJS", { input: body });
 
+        // Get instanceId from query parameters if provided
+        const url = new URL(request.url);
+        const providedInstanceId = url.searchParams.get('instanceId') || undefined;
+
+        const instanceId = await client.startNew(
+            "DurableFunctionsOrchestratorJS",
+            {
+                instanceId: providedInstanceId,
+                input: body
+            }
+        );
+        
         context.log(`Started orchestration with ID = '${instanceId}'.`);
 
         return client.createCheckStatusResponse(request, instanceId);

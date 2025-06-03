@@ -877,12 +877,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     input = JsonConvert.DeserializeObject(json, this.messageDataConverter.JsonSettings);
                 }
 
-                string id = "";
+                string id = string.IsNullOrEmpty(instanceId) ? Guid.NewGuid().ToString("N") : instanceId;
+
                 if (client is DurableClient durableClient)
                 {
                     var instance = new OrchestrationInstance
                     {
-                        InstanceId = Guid.NewGuid().ToString("N"),
+                        InstanceId = id,
                         ExecutionId = Guid.NewGuid().ToString(),
                     };
 
@@ -913,8 +914,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             OrchestrationInstance = instance,
                         },
                         this.config.Options.OverridableExistingInstanceStates.ToDedupeStatuses());
-
-                    id = instance.InstanceId;
                 }
                 else
                 {
