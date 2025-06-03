@@ -9,6 +9,7 @@ param(
 	[switch]$NoSetup=$false,
 	[switch]$NoValidation=$false,
 	[int]$Sleep=30,
+	[switch]$TestWithCustomInstanceId = $false,
   	[switch]$SetupSQLServer=$false,
   	[string]$pw="$env:SA_PASSWORD",
     	[string]$sqlpid="Express",
@@ -23,6 +24,49 @@ function Exit-OnError() {
 	# https://github.com/actions/runner-images/issues/6668#issuecomment-1364540817
 	# Therefore, we manually check if there was an error an fail if so.
 	if (!$LASTEXITCODE.Equals(0)) {exit $LASTEXITCODE}
+}
+
+function Start-And-Wait-Orchestration {
+    param(
+        [string]$BaseUri,
+        [string]$InstanceId = $null,
+        [int]$MaxRetries = 15,
+        [int]$SleepSeconds = 1
+    )
+
+	if ($InstanceId) {
+		$uri = $BaseUri + "?instanceId=" + $InstanceId
+    } else {
+        $uri = $BaseUri
+    }
+
+    Write-Host "Starting orchestration via POST to $uri..." -ForegroundColor Yellow
+    $result = Invoke-RestMethod -Method Post -Uri $uri
+    Write-Host "Started orchestration with instance ID '$($result.id)'!" -ForegroundColor Yellow
+
+	# Check that the returned instance ID matches the requested one (if provided)
+    if ($InstanceId -and $result.id -ne $InstanceId) {
+        throw "Returned instance ID '$($result.id)' does not match requested instance ID '$InstanceId'"
+    }
+
+    Write-Host "Waiting for orchestration to complete..." -ForegroundColor Yellow
+
+    $retryCount = 0
+    $statusUrl = $result.statusQueryGetUri
+    while ($retryCount -lt $MaxRetries) {
+        $statusResult = Invoke-RestMethod -Method Get -Uri $statusUrl
+        $runtimeStatus = $statusResult.runtimeStatus
+        Write-Host "Orchestration is $runtimeStatus" -ForegroundColor Yellow
+
+        if ($runtimeStatus -eq "Completed") {
+            return $true
+        }
+
+        Start-Sleep -Seconds $SleepSeconds
+        $retryCount++
+    }
+
+    return $false
 }
 
 $ErrorActionPreference = "Stop"
@@ -120,35 +164,22 @@ try {
 	Exit-OnError
 
 	if ($NoValidation -eq $false) {
-		# Note that any HTTP protocol errors (e.g. HTTP 4xx or 5xx) will cause an immediate failure
 		$startOrchestrationUri = "http://localhost:8080/$HttpStartPath"
-		Write-Host "Starting a new orchestration instance via POST to $startOrchestrationUri..." -ForegroundColor Yellow
 
-		$result = Invoke-RestMethod -Method Post -Uri $startOrchestrationUri
-		Write-Host "Started orchestration with instance ID '$($result.id)'!" -ForegroundColor Yellow
-		Write-Host "Waiting for orchestration to complete..." -ForegroundColor Yellow
+        # Start and wait for orchestration WITHOUT specifying an instance ID
+        $completed = Start-And-Wait-Orchestration -BaseUri $startOrchestrationUri
+        if (-not $completed) {
+            throw "Orchestration (with no Instance ID) didn't complete in time! :("
+        }
 
-		$retryCount = 0
-		$success = $false
-		$statusUrl = $result.statusQueryGetUri
-
-		while ($retryCount -lt 15) {
-			$result = Invoke-RestMethod -Method Get -Uri $statusUrl
-			$runtimeStatus = $result.runtimeStatus
-			Write-Host "Orchestration is $runtimeStatus" -ForegroundColor Yellow
-
-			if ($result.runtimeStatus -eq "Completed") {
-				$success = $true
-				break
+		if ($TestWithCustomInstanceId) {
+			# Start and wait for orchestration WITH a specific instance ID
+			$customInstanceId = [guid]::NewGuid().ToString()
+			$completedWithId = Start-And-Wait-Orchestration -BaseUri $startOrchestrationUri -InstanceId $customInstanceId
+			if (-not $completedWithId) {
+				throw "Orchestration (with Instance ID) didn't complete in time! :("
 			}
-
-			Start-Sleep -Seconds 1
-			$retryCount = $retryCount + 1
 		}
-	}
-
-	if ($success -eq $false) {
-		throw "Orchestration didn't complete in time! :("
 	}
 } catch {
 	Write-Host "An error occurred:" -ForegroundColor Red

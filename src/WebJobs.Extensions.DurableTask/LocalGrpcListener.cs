@@ -217,7 +217,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     // Create the orchestration instance
                     var instance = new OrchestrationInstance
                     {
-                        InstanceId = request.InstanceId ?? Guid.NewGuid().ToString("N"),
+                        InstanceId = string.IsNullOrEmpty(request.InstanceId) ? Guid.NewGuid().ToString("N") : request.InstanceId,
                         ExecutionId = Guid.NewGuid().ToString(),
                     };
 

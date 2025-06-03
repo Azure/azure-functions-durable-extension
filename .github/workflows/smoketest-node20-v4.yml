@@ -19,5 +19,5 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Run V4 Node 20 Smoke Test
-      run: test/SmokeTests/e2e-test.ps1 -DockerfilePath test/SmokeTests/OOProcSmokeTests/durableJS/Dockerfile -HttpStartPath api/DurableFunctionsHttpStart
+      run: test/SmokeTests/e2e-test.ps1 -DockerfilePath test/SmokeTests/OOProcSmokeTests/durableJS/Dockerfile -HttpStartPath api/DurableFunctionsHttpStart -TestWithCustomInstanceId
       shell: pwsh
