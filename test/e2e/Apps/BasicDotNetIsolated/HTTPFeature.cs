@@ -14,27 +14,19 @@ namespace Microsoft.Azure.Durable.Tests.E2E;
 
 public static class HTTPFeature
 {
+    // Orchestration that takes 2 minutes to complete and will return "Long-running orchestration completed." if completed.
     [Function(nameof(HTTPLongRunningOrchestrator))]
-    public static async Task<List<string>> HTTPLongRunningOrchestrator(
+    public static async Task<string> HTTPLongRunningOrchestrator(
         [OrchestrationTrigger] TaskOrchestrationContext context)
     {
         ILogger logger = context.CreateReplaySafeLogger(nameof(HTTPLongRunningOrchestrator));
-        var outputs = new List<string>();
 
-        outputs.Add(await context.CallActivityAsync<string>(nameof(HTTPSayHello), "Tokyo"));
         await context.CreateTimer(TimeSpan.FromMinutes(2),CancellationToken.None);
 
-        return outputs;
+        return "Long-running orchestration completed.";
     }
 
-
-    [Function(nameof(HTTPSayHello))]
-    public static string HTTPSayHello(
-        [ActivityTrigger] string name, FunctionContext executionContext)
-    {
-        return $"Hello {name}!";
-    }
-
+    // Http trigger that starts the HTTPLongRunningOrchestrator.
     [Function("HttpStart_HTTPLongRunningOrchestrator")]
     public static async Task<HttpResponseData> StartHTTPLongRunningOrchestrator(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestData req,
@@ -51,6 +43,9 @@ public static class HTTPFeature
         return response;
     }
 
+    // Orchestration that will calls the HTTP trigger to start the HTTPLongRunningOrchestrator.
+    // It should automatically poll the 202 response until it receive a non-202 response, which should be when the HTTPLongRunningOrchestrator is completed.
+    // And this orchestration will return the result of HTTPLongRunningOrchestrator that should contains "Long-running orchestration completed."
     [Function(nameof(HTTPPollingOrchestrator))]
     public static async Task<DurableHttpResponse> HTTPPollingOrchestrator(
         [OrchestrationTrigger] TaskOrchestrationContext context)
@@ -61,6 +56,7 @@ public static class HTTPFeature
         return response;
     }
 
+    // Http trigger that starts the HTTPPollingOrchestrator.
     [Function("HttpStart_HTTPPollingOrchestrator")]
     public static async Task<HttpResponseData> StartHTTPPollingOrchestrator(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestData req,

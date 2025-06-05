@@ -13,27 +13,32 @@ public class HTTPFeatureTests
     private readonly FunctionAppFixture fixture;
     private readonly ITestOutputHelper output;
 
-    public HttpEndToEndTests(FunctionAppFixture fixture, ITestOutputHelper testOutputHelper)
+    public HTTPFeatureTests(FunctionAppFixture fixture, ITestOutputHelper testOutputHelper)
     {
         this.fixture = fixture;
         this.fixture.TestLogs.UseTestLogger(testOutputHelper);
         this.output = testOutputHelper;
     }
 
+    // This test schedules an orchestration that calls a URL using CallHttpAsync, which starts a long-running orchestration.
+    // The URL initially returns a 202 Accepted response.
+    // The test verifies that the orchestrator automatically polls the URL until it receives a non-202 response.
     [Fact]
     public async Task HTTPAutomaticPollingTests()
     {
+        
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("HttpStart_HTTPPollingOrchestrator");
 
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
 
+        // Wait a few minutes as the long-running orchestrator requires 2 minutes to finish.
         await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", 150);
 
         var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
 
-        // Verify that the output contains the LongRunningOrchestrator's result,
-        // ensuring the orchestrator completed and did not just return a 202 Accepted.
+        // Verify that the output includes the result of the long-running orchestrator,
+        // ensuring that CallHttpAsync performed 202 polling and didn't just return immediately with a 202 Accepted response.
         Assert.Contains("Hello Tokyo", orchestrationDetails.Output);
     }
 }
