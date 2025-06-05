@@ -183,7 +183,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     operationBatch.Add(new JObject(
                         new JProperty("name", operation.Operation),
                         new JProperty("input", operation.Input),
-                        new JProperty("isSignal", operation.IsSignal)));
+                        new JProperty("isSignal", operation.IsSignal),
+                        new JProperty("id", operation.Id)));
                 }
 
                 // assemble the entity state information

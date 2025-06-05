@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using DurableTask.Core.Exceptions;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -454,6 +455,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             Exception exception = null;
 
+            var (callEntityActivity, processEntityInvocationActivity) = this.StartCallEntityAndEntityInvocationActivities(request);
+
             try
             {
                 Task invokeTask = this.FunctionInvocationCallback();
@@ -493,6 +496,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.errorDataConverter);
 
                 operationFailed = true;
+
+                processEntityInvocationActivity?.SetTag(Schema.Task.ErrorMessage, exception.Message);
             }
 
             if (this.RollbackFailedOperations)
@@ -557,6 +562,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 var jresponse = JToken.FromObject(response, this.messageDataConverter.JsonSerializer);
                 this.context.SendResponseMessage(target, request.Id, jresponse, response.IsException);
             }
+
+            processEntityInvocationActivity?.Dispose();
+            callEntityActivity?.Dispose();
         }
 
         private async Task ExecuteOutOfProcBatch()
@@ -622,11 +630,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         isReplay: false);
             }
 
+            Dictionary<string, ActivityContext> parentTraceContexts = new ();
+
             // for each operation, emit trace and send response message (if not a signal)
             for (int i = 0; i < this.OperationBatch.Count; i++)
             {
                 var request = this.OperationBatch[i];
                 var result = outOfProcResult.Results[i];
+                var startTime = DateTimeOffset.FromUnixTimeMilliseconds(result.ExecutionStartTimeInMilliseconds).UtcDateTime;
+
+                var (callEntityActivity, processEntityInvocationActivity) = this.StartCallEntityAndEntityInvocationActivities(request, startTime);
+                if (processEntityInvocationActivity != null)
+                {
+                    processEntityInvocationActivity.SetEndTime(startTime.AddMilliseconds(result.DurationInMilliseconds));
+                    parentTraceContexts[request.Id.ToString()] = processEntityInvocationActivity.Context;
+                }
 
                 if (!result.IsError)
                 {
@@ -656,6 +674,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         result.Result,
                         result.DurationInMilliseconds,
                         isReplay: false);
+
+                    processEntityInvocationActivity?.SetTag(Schema.Task.ErrorMessage, result.Result);
                 }
 
                 if (!request.IsSignal)
@@ -672,6 +692,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     };
                     this.context.SendResponseMessage(target, request.Id, responseMessage, !result.IsError);
                 }
+
+                processEntityInvocationActivity?.Dispose();
+                callEntityActivity?.Dispose();
             }
 
             this.BatchPosition = this.OperationBatch.Count;
@@ -692,7 +715,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     InstanceId = EntityId.GetSchedulerIdFromEntityId(signal.Target),
                 };
-                this.context.SendOperationMessage(target, request);
+
+                ActivityContext? parentTraceContext = null;
+                if (!string.IsNullOrEmpty(signal.RequestId) && parentTraceContexts.ContainsKey(signal.RequestId))
+                {
+                    parentTraceContext = parentTraceContexts[signal.RequestId];
+                }
+
+                this.context.SendOperationMessage(target, request, parentTraceContext, DateTimeOffset.FromUnixTimeMilliseconds(signal.RequestTimeInMilliseconds));
             }
 
             if (stateWasDeleted)
@@ -705,6 +735,40 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         "", // operation id left blank because it is a batch
                         isReplay: false);
             }
+        }
+
+        private (Activity, Activity) StartCallEntityAndEntityInvocationActivities(RequestMessage request, DateTimeOffset startTime = default)
+        {
+            Activity processEntityInvocationActivity = null;
+            Activity callEntityActivity = null;
+
+            // We only want to create a trace activity for processing the entity invocation in the case that we can successfully parse the trace context of the request that led to this entity invocation.
+            // Otherwise, we will create an unlinked trace activity with no parent.
+            if (ActivityContext.TryParse(request.ParentTraceContext?.TraceParent, request.ParentTraceContext?.TraceState, out ActivityContext parentTraceContext))
+            {
+                if (!request.IsSignal)
+                {
+                    callEntityActivity = TraceHelper.StartActivityForCallingOrSignalingEntity(
+                        this.context.InstanceId,
+                        this.context.Name,
+                        request.Operation,
+                        request.IsSignal,
+                        request.ScheduledTime,
+                        parentTraceContext,
+                        request.RequestTime.Value);
+                    parentTraceContext = callEntityActivity.Context;
+                }
+
+                processEntityInvocationActivity = TraceHelper.StartActivityForProcessingEntityInvocation(
+                        this.context.InstanceId,
+                        this.context.Name,
+                        request.Operation,
+                        request.IsSignal,
+                        parentTraceContext,
+                        startTime);
+            }
+
+            return (callEntityActivity, processEntityInvocationActivity);
         }
 
         /// <summary>
@@ -762,6 +826,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 /// </summary>
                 [JsonProperty("duration")]
                 public double DurationInMilliseconds { get; set; }
+
+                /// <summary>
+                /// The start time of this operation's execution, in milliseconds, since January 1st 1970 midnight in UTC.
+                /// </summary>
+                [JsonProperty("startTime")]
+                public long ExecutionStartTimeInMilliseconds { get; set; }
             }
 
             /// <summary>
@@ -786,6 +856,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 /// </summary>
                 [JsonProperty("input")]
                 public string Input { get; set; }
+
+                /// <summary>
+                /// The ID of the request that triggered this signal.
+                /// </summary>
+                [JsonProperty("requestId")]
+                public string RequestId { get; set; }
+
+                /// <summary>
+                /// The time the signal request was made, in milliseconds, since January 1st 1970 midnight in UTC.
+                /// </summary>
+                [JsonProperty("requestTime")]
+                public long RequestTimeInMilliseconds { get; set; }
             }
         }
     }
