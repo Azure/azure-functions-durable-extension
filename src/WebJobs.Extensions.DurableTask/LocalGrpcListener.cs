@@ -236,7 +236,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                     // Create a new activity with the parent context
                     ActivityContext.TryParse(traceParent, traceState, out ActivityContext parentActivityContext);
-                    using Activity? scheduleOrchestrationActivity = StartActivityForNewOrchestration(executionStartedEvent, parentActivityContext);
+                    using Activity? scheduleOrchestrationActivity = TraceHelper.StartActivityForNewOrchestration(executionStartedEvent, parentActivityContext);
 
                     // Schedule the orchestration
                     await this.GetDurabilityProvider(context).CreateTaskOrchestrationAsync(
@@ -275,38 +275,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 OverridableStates overridableStates = this.extension.Options.OverridableExistingInstanceStates;
                 return overridableStates.ToDedupeStatuses();
-            }
-
-            internal static Activity? StartActivityForNewOrchestration(ExecutionStartedEvent startEvent, ActivityContext parentTraceContext)
-            {
-                // Create the Activity Source for the WebJobs extension
-                ActivitySource activitySource = new ActivitySource("WebJobs.Extensions.DurableTask");
-
-                // Start the new activity to represent scheduling the orchestration
-                Activity? newActivity = activitySource.CreateActivity(
-                    name: Schema.SpanNames.CreateOrchestration(startEvent.Name, startEvent.Version),
-                    kind: ActivityKind.Producer,
-                    parentContext: parentTraceContext);
-
-                newActivity?.Start();
-
-                if (newActivity != null && !string.IsNullOrEmpty(newActivity.Id))
-                {
-                    newActivity.SetTag(Schema.Task.Type, TraceActivityConstants.Orchestration);
-                    newActivity.SetTag(Schema.Task.Name, startEvent.Name);
-                    newActivity.SetTag(Schema.Task.InstanceId, startEvent.OrchestrationInstance.InstanceId);
-                    newActivity.SetTag(Schema.Task.ExecutionId, startEvent.OrchestrationInstance.ExecutionId);
-
-                    if (!string.IsNullOrEmpty(startEvent.Version))
-                    {
-                        newActivity.SetTag(Schema.Task.Version, startEvent.Version);
-                    }
-
-                    // Set the parent trace context for the ExecutionStartedEvent
-                    startEvent.ParentTraceContext = new DTCore.Tracing.DistributedTraceContext(newActivity?.Id!, newActivity?.TraceStateString);
-                }
-
-                return newActivity;
             }
 
             public async override Task<P.RaiseEventResponse> RaiseEvent(P.RaiseEventRequest request, ServerCallContext context)

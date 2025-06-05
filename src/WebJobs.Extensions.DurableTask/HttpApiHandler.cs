@@ -900,11 +900,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     if (traceParent != null)
                     {
                         ActivityContext.TryParse(traceParent, traceState, out ActivityContext parentActivityContext);
-                        using Activity scheduleOrchestrationActivity = StartActivityForNewOrchestration(executionStartedEvent, parentActivityContext);
+                        using Activity scheduleOrchestrationActivity = TraceHelper.StartActivityForNewOrchestration(executionStartedEvent, parentActivityContext);
                     }
                     else
                     {
-                        using Activity scheduleOrchestrationActivity = StartActivityForNewOrchestration(executionStartedEvent, default);
+                        using Activity scheduleOrchestrationActivity = TraceHelper.StartActivityForNewOrchestration(executionStartedEvent, default);
                     }
 
                     await durableClient.DurabilityProvider.CreateTaskOrchestrationAsync(
@@ -952,41 +952,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             return null;
-        }
-
-        internal static Activity StartActivityForNewOrchestration(ExecutionStartedEvent startEvent, ActivityContext parentTraceContext)
-        {
-            // Create the Activity Source for the WebJobs extension
-            ActivitySource activitySource = new ActivitySource("WebJobs.Extensions.DurableTask");
-
-            // Start the new activity to represent scheduling the orchestration
-            Activity newActivity = activitySource.CreateActivity(
-                name: Schema.SpanNames.CreateOrchestration(startEvent.Name, startEvent.Version),
-                kind: ActivityKind.Producer,
-                parentContext: parentTraceContext);
-
-            if (newActivity != null)
-            {
-                newActivity.Start();
-            }
-
-            if (newActivity != null && !string.IsNullOrEmpty(newActivity.Id))
-            {
-                newActivity.SetTag(Schema.Task.Type, TraceActivityConstants.Orchestration);
-                newActivity.SetTag(Schema.Task.Name, startEvent.Name);
-                newActivity.SetTag(Schema.Task.InstanceId, startEvent.OrchestrationInstance.InstanceId);
-                newActivity.SetTag(Schema.Task.ExecutionId, startEvent.OrchestrationInstance.ExecutionId);
-
-                if (!string.IsNullOrEmpty(startEvent.Version))
-                {
-                    newActivity.SetTag(Schema.Task.Version, startEvent.Version);
-                }
-
-                // Set the parent trace context for the ExecutionStartedEvent
-                startEvent.ParentTraceContext = new DTCore.Tracing.DistributedTraceContext(newActivity?.Id!, newActivity?.TraceStateString);
-            }
-
-            return newActivity;
         }
 
         private async Task<HttpResponseMessage> HandleRestartInstanceRequestAsync(
@@ -1149,6 +1114,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             else
             {
                 operationName = request.GetQueryNameValuePairs()["op"] ?? string.Empty;
+            }
+
+            if (client is DurableClient durableClient)
+            {
+                string traceParent = GetHeaderValueFromHeaders("traceparent", request.Headers);
+                string traceState = GetHeaderValueFromHeaders("tracestate", request.Headers);
+
+                // We create a sort of "dummy" Activity that contains only the information passed in the HTTP headers. This is so that Activity.Current.Context holds this information,
+                // and so when DurableClient passes it as the parent trace context to TraceHelper for creation of the signal entity Activity, the traces are correctly correlated.
+                // Note that we break the pattern here of not creating the Activity for signaling the entity if we cannot successfully parse the parent trace context
+                // (since Activity.Current.Context will not be set to contain this information, but will still be used by DurableClient when creating the signal entity Activity. Activity.Current will most likely
+                // be a non-recording internal span such that the signal entity Activity will appear without a parent).
+                if (traceParent != null && ActivityContext.TryParse(traceParent, traceState, out ActivityContext parentTraceContext))
+                {
+                    TraceHelper.StartActivityUsingTraceContext(parentTraceContext);
+                }
             }
 
             if (request.Content == null || request.Content.Headers.ContentLength == 0)
