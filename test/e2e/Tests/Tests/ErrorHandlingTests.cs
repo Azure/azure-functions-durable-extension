@@ -12,14 +12,14 @@ namespace Microsoft.Azure.Durable.Tests.DotnetIsolatedE2E;
 [Collection(Constants.FunctionAppCollectionName)]
 public class ErrorHandlingTests
 {
-    private readonly FunctionAppFixture _fixture;
-    private readonly ITestOutputHelper _output;
+    private readonly FunctionAppFixture fixture;
+    private readonly ITestOutputHelper output;
 
     public ErrorHandlingTests(FunctionAppFixture fixture, ITestOutputHelper testOutputHelper)
     {
-        _fixture = fixture;
-        _fixture.TestLogs.UseTestLogger(testOutputHelper);
-        _output = testOutputHelper;
+        this.fixture = fixture;
+        this.fixture.TestLogs.UseTestLogger(testOutputHelper);
+        this.output = testOutputHelper;
     }
 
     [Fact]
@@ -131,7 +131,7 @@ public class ErrorHandlingTests
         // Give some time for Core Tools to write logs out
         Thread.Sleep(500);
 
-        Assert.Contains(_fixture.TestLogs.CoreToolsLogs, x => x.Contains(nameof(InvalidOperationException)) &&
+        Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains(nameof(InvalidOperationException)) &&
                                                               x.Contains("This activity failed"));
     }
 
@@ -155,10 +155,10 @@ public class ErrorHandlingTests
 
         // For entities, these logs are not emitted as one continuous log, but each line of the exception .ToString() is
         // logged individually.
-        Assert.Contains(_fixture.TestLogs.CoreToolsLogs, x => x.Contains(nameof(InvalidOperationException)) &&
+        Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains(nameof(InvalidOperationException)) &&
                                                               x.Contains("This entity failed"));
-        Assert.Contains(_fixture.TestLogs.CoreToolsLogs, x => x.Contains("More information about the failure"));
-        Assert.Contains(_fixture.TestLogs.CoreToolsLogs, x => x.Contains(nameof(OverflowException)) &&
+        Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains("More information about the failure"));
+        Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains(nameof(OverflowException)) &&
                                                               x.Contains("Inner exception message"));
     }
 
@@ -179,7 +179,7 @@ public class ErrorHandlingTests
         Thread.Sleep(500);
 
         // We want to ensure that multiline exception messages and inner exceptions are preserved
-        Assert.Contains(_fixture.TestLogs.CoreToolsLogs, x => x.Contains(nameof(InvalidOperationException)) &&
+        Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains(nameof(InvalidOperationException)) &&
                                                               x.Contains(nameof(OverflowException)) &&
                                                               x.Contains("This activity failed") &&
                                                               x.Contains("More information about the failure"));

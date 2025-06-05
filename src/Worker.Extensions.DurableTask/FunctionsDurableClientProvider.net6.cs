@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 #if NET6_0_OR_GREATER
+using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using Grpc.Net.Client;
@@ -10,7 +11,7 @@ namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
 
 internal partial class FunctionsDurableClientProvider
 {
-    private static GrpcChannel CreateChannel(ClientKey key, int? maxGrpcMessageSize)
+    private static GrpcChannel CreateChannel(ClientKey key, int? maxGrpcMessageSize, TimeSpan grpcHttpClientTimeout)
     {
         IReadOnlyDictionary<string, string> headers = key.GetHeaders();
         if (headers.Count == 0)
@@ -18,8 +19,11 @@ internal partial class FunctionsDurableClientProvider
             return GrpcChannel.ForAddress(key.Address);
         }
 
+        HttpClient httpClient = new()
+        {
+            Timeout = grpcHttpClientTimeout
+        };
 
-        HttpClient httpClient = new();
         foreach (KeyValuePair<string, string> header in headers)
         {
             httpClient.DefaultRequestHeaders.Add(header.Key, header.Value);

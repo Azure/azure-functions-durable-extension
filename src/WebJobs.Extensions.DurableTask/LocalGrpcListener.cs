@@ -5,8 +5,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Reflection;
-using System.Reflection.Metadata.Ecma335;
+using System.Net;
+using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
@@ -17,10 +17,8 @@ using DurableTask.Core.Query;
 using DurableTask.Core.Serializing.Internal;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
-using Microsoft.ApplicationInsights.Extensibility.Implementation;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using DTCore = DurableTask.Core;
 using P = Microsoft.DurableTask.Protobuf;
 
@@ -53,7 +51,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public string? ListenAddress { get; private set; }
 
-        public Task StartAsync(CancellationToken cancelToken = default)
+        public async Task StartAsync(CancellationToken cancelToken = default)
         {
             const int maxAttempts = 10;
             int numAttempts = 1;
@@ -65,10 +63,34 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     new ChannelOption(ChannelOptions.MaxSendMessageLength, int.MaxValue),
                 };
 
+                if (this.grpcServer is not null)
+                {
+                    try
+                    {
+                        await this.grpcServer.ShutdownAsync();
+                    }
+                    catch (IOException)
+                    {
+                        // Do nothing, IOException is a known exception type when trying to shutdown a server
+                        // when its port was already in use
+                    }
+                    catch (Exception ex)
+                    {
+                        this.extension.TraceHelper.ExtensionWarningEvent(
+                            this.extension.Options.HubName,
+                            functionName: string.Empty,
+                            instanceId: string.Empty,
+                            message: $"Unexpected error when closing gRPC server. Exception details: {ex}");
+                    }
+                }
+
                 this.grpcServer = new Server(options);
                 this.grpcServer.Services.Add(P.TaskHubSidecarService.BindService(new TaskHubGrpcServer(this)));
 
-                int listeningPort = numAttempts == 1 ? DefaultPort : this.GetRandomPort();
+                // Attempt to get an unused port. Note that while unlikely, it is possible that the port returned by this method
+                // may be utilized by another process between this call and the gRPC server create below, hence we still need to
+                // guard against port conflicts.
+                int listeningPort = this.GetAvailablePort();
                 int portBindingResult = this.grpcServer.Ports.Add("localhost", listeningPort, ServerCredentials.Insecure);
                 if (portBindingResult != 0)
                 {
@@ -84,7 +106,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             message: $"Opened local gRPC endpoint: {this.ListenAddress}",
                             writeToUserLogs: true);
 
-                        return Task.CompletedTask;
+                        return;
                     }
                     catch (IOException)
                     {
@@ -115,18 +137,51 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        private int GetRandomPort()
+        private int GetAvailablePort()
         {
-            // Get a random port that has not already been attempted so we don't waste time trying
-            // to listen to a port we know is not free.
+            // Get an available port for use in the gRPC server. Try 4001 first, then select a random open port
+            // in the 30000-31000 range.
+            if (this.IsTcpPortFree(DefaultPort))
+            {
+                return DefaultPort;
+            }
+
+            int numAttempts = 50;
+
             int randomPort;
-            do
+            for (int i = 0; i < numAttempts; i++)
             {
                 randomPort = this.portGenerator.Next(MinPort, MaxPort);
+                if (this.IsTcpPortFree(randomPort))
+                {
+                    return randomPort;
+                }
             }
-            while (this.attemptedPorts.Contains(randomPort));
 
-            return randomPort;
+            throw new InvalidOperationException($"Failed to get free port for local gRPC server after {numAttempts} attempts");
+        }
+
+        private bool IsTcpPortFree(int port)
+        {
+            var listener = new TcpListener(IPAddress.Loopback, port);
+            try
+            {
+                listener.Start();
+                return true;
+            }
+            catch (SocketException)
+            {
+                this.extension.TraceHelper.ExtensionWarningEvent(
+                    this.extension.Options.HubName,
+                    functionName: string.Empty,
+                    instanceId: string.Empty,
+                    message: $"Starting Durable gRPC server - Port {port} is already in use.");
+                return false;
+            }
+            finally
+            {
+                listener.Stop();
+            }
         }
 
         private class TaskHubGrpcServer : P.TaskHubSidecarService.TaskHubSidecarServiceBase
@@ -162,7 +217,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     // Create the orchestration instance
                     var instance = new OrchestrationInstance
                     {
-                        InstanceId = request.InstanceId ?? Guid.NewGuid().ToString("N"),
+                        InstanceId = string.IsNullOrEmpty(request.InstanceId) ? Guid.NewGuid().ToString("N") : request.InstanceId,
                         ExecutionId = Guid.NewGuid().ToString(),
                     };
 
@@ -256,7 +311,39 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             public async override Task<P.RaiseEventResponse> RaiseEvent(P.RaiseEventRequest request, ServerCallContext context)
             {
-                await this.GetClient(context).RaiseEventAsync(request.InstanceId, request.Name, Raw(request.Input));
+                bool throwStatusExceptionsOnRaiseEvent = this.extension.Options.ThrowStatusExceptionsOnRaiseEvent ?? this.extension.DefaultDurabilityProvider.CheckStatusBeforeRaiseEvent;
+
+                try
+                {
+                    await this.GetClient(context).RaiseEventAsync(request.InstanceId, request.Name, Raw(request.Input));
+                }
+                catch (ArgumentNullException ex)
+                {
+                    // Indicates a required argument (e.g., instanceId, eventName, or input) is null or empty.
+                    throw new RpcException(new Status(StatusCode.InvalidArgument, ex.Message));
+                }
+                catch (ArgumentException ex)
+                {
+                    // Indicates the provided instanceId has no orchestration status.
+                    if (throwStatusExceptionsOnRaiseEvent)
+                    {
+                        throw new RpcException(new Status(StatusCode.NotFound, ex.Message));
+                    }
+                }
+                catch (InvalidOperationException)
+                {
+                    // Indicates the orchestration instance exists but is already in a completed state.
+                    if (throwStatusExceptionsOnRaiseEvent)
+                    {
+                        throw new RpcException(new Status(StatusCode.FailedPrecondition, "The orchestration instance with the provided instance id is not running."));
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // Any other unexpected exceptions.
+                    throw new RpcException(new Status(StatusCode.Unknown, ex.Message));
+                }
+
                 return new P.RaiseEventResponse();
             }
 
@@ -400,22 +487,35 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 var purgeClient = (IOrchestrationServicePurgeClient)this.GetDurabilityProvider(context);
 
                 PurgeResult result;
-                switch (request.RequestCase)
+                try
                 {
-                    case P.PurgeInstancesRequest.RequestOneofCase.InstanceId:
-                        result = await purgeClient.PurgeInstanceStateAsync(request.InstanceId);
-                        break;
+                    switch (request.RequestCase)
+                    {
+                        case P.PurgeInstancesRequest.RequestOneofCase.InstanceId:
+                            result = await purgeClient.PurgeInstanceStateAsync(request.InstanceId);
+                            break;
 
-                    case P.PurgeInstancesRequest.RequestOneofCase.PurgeInstanceFilter:
-                        var purgeInstanceFilter = ProtobufUtils.ToPurgeInstanceFilter(request);
-                        result = await purgeClient.PurgeInstanceStateAsync(purgeInstanceFilter);
-                        break;
+                        case P.PurgeInstancesRequest.RequestOneofCase.PurgeInstanceFilter:
+                            var purgeInstanceFilter = ProtobufUtils.ToPurgeInstanceFilter(request);
+                            result = await purgeClient.PurgeInstanceStateAsync(purgeInstanceFilter);
+                            break;
 
-                    default:
-                        throw new ArgumentException($"Unknown purge request type '{request.RequestCase}'.");
+                        default:
+                            throw new RpcException(new Status(StatusCode.InvalidArgument, $"Unknown purge request type '{request.RequestCase}'."));
+                    }
+
+                    return ProtobufUtils.CreatePurgeInstancesResponse(result);
                 }
-
-                return ProtobufUtils.CreatePurgeInstancesResponse(result);
+                catch (RpcException)
+                {
+                    // Rethrow RPC-related exceptions as-is.
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    // Wrap all other exceptions in an RpcException.
+                    throw new RpcException(new Status(StatusCode.Internal, $"Failed during purging instances: {ex.Message}"));
+                }
             }
 
             public async override Task<P.GetInstanceResponse> WaitForInstanceStart(P.GetInstanceRequest request, ServerCallContext context)

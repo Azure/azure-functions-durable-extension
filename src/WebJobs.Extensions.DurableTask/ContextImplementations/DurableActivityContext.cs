@@ -125,6 +125,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return value.ToObject(destinationType);
             }
 
+            // Special case for byte[] inputs in the "modern" OOProc protocol case
+            if (this.rawInput && destinationType.Equals(typeof(byte[])) && jToken is JValue)
+            {
+                return jToken.ToObject(destinationType);
+            }
+
             string serializedValue = jToken.ToString(Formatting.None);
 
             if (this.rawInput) // the "modern" OOProc protocol case
