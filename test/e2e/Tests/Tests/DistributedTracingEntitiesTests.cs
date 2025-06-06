@@ -62,7 +62,7 @@ public class DistributedTracingEntitiesTests
         // Orchestration A and B return this list of Activities as part of their output. In order to access the output of orchestration B, we need to return its
         // instance ID as part of the output of orchestration A. It will be the last item in the list returned by A, so we will remove it from the list and use it
         // to get the output of orchestration B (which will have the final two Activities, that for orchestration B and its call to entity A).
-        Assert.True(ids.Count == 7);
+        Assert.Equal(7, ids.Count);
         var orchestrationId = ids[ids.Count - 1];
         ids.RemoveAt(ids.Count - 1);
 
@@ -70,7 +70,7 @@ public class DistributedTracingEntitiesTests
         Assert.Equal(HttpStatusCode.OK, result.StatusCode);
         var remainingIds = (await result.Content.ReadAsStringAsync()).Replace("\r", "").Replace("\n", "").Replace("\"", "").Replace("[", "").Replace("]", "").Replace(" ", "");
         ids.AddRange(remainingIds.Split(","));
-        Assert.True(ids.Count == 8);
+        Assert.Equal(8, ids.Count);
         Assert.True(ids.All(traceId => traceId.Equals(activity.TraceId.ToString())));
     }
 
@@ -104,7 +104,7 @@ public class DistributedTracingEntitiesTests
         // Client signals entity A which signals entity B. 
         // The orchestration then calls entities A and B and aftewards resets their state.
         // We expect 5 Activities to be created - one by the orchestration, two by entity A, and two by entity B.
-        Assert.True(ids.Count == 5);
+        Assert.Equal(5, ids.Count);
         Assert.True(ids.All(traceId => traceId.Equals(activity.TraceId.ToString())));
     }
 }
