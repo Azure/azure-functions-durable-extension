@@ -737,7 +737,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        private (Activity, Activity) StartCallEntityAndEntityInvocationActivities(RequestMessage request, DateTimeOffset? startTime = null)
+        private (Activity, Activity) StartCallEntityAndEntityInvocationActivities(RequestMessage request, DateTimeOffset startTime = default)
         {
             Activity processEntityInvocationActivity = null;
             Activity callEntityActivity = null;

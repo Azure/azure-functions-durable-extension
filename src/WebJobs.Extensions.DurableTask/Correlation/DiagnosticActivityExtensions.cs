@@ -1,12 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
+using System;
 using System.Diagnostics;
-using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 
+#nullable enable
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
 {
     /// <summary>
@@ -14,16 +14,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
     /// </summary>
     internal static class DiagnosticActivityExtensions
     {
+        // These fields are named in such an "unconventional" way to mimic the internal field names of the Activity class.
+        #pragma warning disable SA1311
+        #pragma warning disable SA1308
         private static readonly Action<Activity, string> s_setSpanId;
         private static readonly Action<Activity, string> s_setTraceId;
-        private static readonly Action<Activity, string> s_setTraceState;
+        private static readonly Action<Activity, string?> s_setTraceState;
+        #pragma warning restore SA1308
+        #pragma warning restore SA1311
 
         static DiagnosticActivityExtensions()
         {
             BindingFlags flags = BindingFlags.NonPublic | BindingFlags.Instance;
-            s_setSpanId = typeof(Activity).GetField("_spanId", flags).CreateSetter<Activity, string>();
-            s_setTraceId = typeof(Activity).GetField("_traceId", flags).CreateSetter<Activity, string>();
-            s_setTraceState = typeof(Activity).GetField("_traceState", flags).CreateSetter<Activity, string>();
+            s_setSpanId = typeof(Activity).GetField("_spanId", flags) !.CreateSetter<Activity, string>();
+            s_setTraceId = typeof(Activity).GetField("_traceId", flags) !.CreateSetter<Activity, string>();
+            s_setTraceState = typeof(Activity).GetField("_traceState", flags) !.CreateSetter<Activity, string?>();
         }
 
         public static void SetTraceId(this Activity activity, string traceId)
@@ -51,7 +56,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
 
             if (typeof(TTarget) != fieldInfo.DeclaringType)
             {
-                source = Expression.Convert(targetExp, fieldInfo.DeclaringType);
+                source = Expression.Convert(targetExp, fieldInfo.DeclaringType!);
             }
 
             // Creating the setter to set the value to the field

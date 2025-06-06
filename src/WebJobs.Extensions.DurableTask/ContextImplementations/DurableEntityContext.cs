@@ -589,7 +589,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        internal void SendOperationMessage(OrchestrationInstance target, RequestMessage requestMessage, ActivityContext? parentTraceContext, DateTimeOffset? startTime = null)
+        internal void SendOperationMessage(OrchestrationInstance target, RequestMessage requestMessage, ActivityContext? parentTraceContext, DateTimeOffset startTime = default)
         {
             using var signalEntityActivity = TraceHelper.StartActivityForCallingOrSignalingEntity(
                 target.InstanceId,
@@ -600,7 +600,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 parentTraceContext,
                 startTime: startTime,
                 entityId: this.InstanceId);
-            if (!string.IsNullOrEmpty(signalEntityActivity?.Id))
+            if (signalEntityActivity != null)
             {
                 requestMessage.ParentTraceContext = new DTCore.Tracing.DistributedTraceContext(signalEntityActivity.Id, signalEntityActivity.TraceStateString);
             }

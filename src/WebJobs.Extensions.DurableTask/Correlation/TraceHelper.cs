@@ -18,34 +18,37 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
 
         private static readonly ActivitySource ActivityTraceSource = new ActivitySource(Source);
 
-        internal static Activity? StartActivityForNewOrchestration(ExecutionStartedEvent startEvent, ActivityContext parentTraceContext)
+        internal static Activity? StartActivityForNewOrchestration(ExecutionStartedEvent startEvent, ActivityContext parentTraceContext, DateTimeOffset? startTime = default)
         {
             // Start the new activity to represent scheduling the orchestration
             Activity? newActivity = ActivityTraceSource.StartActivity(
                 Schema.SpanNames.CreateOrchestration(startEvent.Name, startEvent.Version),
                 kind: ActivityKind.Producer,
-                parentContext: parentTraceContext);
+                parentContext: parentTraceContext,
+                startTime: startTime ?? default);
 
-            if (newActivity != null && !string.IsNullOrEmpty(newActivity.Id))
+            if (newActivity == null)
             {
-                newActivity.SetTag(Schema.Task.Type, TraceActivityConstants.Orchestration);
-                newActivity.SetTag(Schema.Task.Name, startEvent.Name);
-                newActivity.SetTag(Schema.Task.InstanceId, startEvent.OrchestrationInstance.InstanceId);
-                newActivity.SetTag(Schema.Task.ExecutionId, startEvent.OrchestrationInstance.ExecutionId);
-
-                if (!string.IsNullOrEmpty(startEvent.Version))
-                {
-                    newActivity.SetTag(Schema.Task.Version, startEvent.Version);
-                }
-
-                // Set the parent trace context for the ExecutionStartedEvent
-                startEvent.ParentTraceContext = new DistributedTraceContext(newActivity.Id, newActivity.TraceStateString);
+                return null;
             }
+
+            newActivity.SetTag(Schema.Task.Type, TraceActivityConstants.Orchestration);
+            newActivity.SetTag(Schema.Task.Name, startEvent.Name);
+            newActivity.SetTag(Schema.Task.InstanceId, startEvent.OrchestrationInstance.InstanceId);
+            newActivity.SetTag(Schema.Task.ExecutionId, startEvent.OrchestrationInstance.ExecutionId);
+
+            if (!string.IsNullOrEmpty(startEvent.Version))
+            {
+                newActivity.SetTag(Schema.Task.Version, startEvent.Version);
+            }
+
+            // Set the parent trace context for the ExecutionStartedEvent
+            startEvent.ParentTraceContext = new DistributedTraceContext(newActivity.Id!, newActivity.TraceStateString);
 
             return newActivity;
         }
 
-        internal static Activity? StartActivityForCallingOrSignalingEntity(string targetEntityId, string entityName, string operationName, bool signalEntity, DateTime? scheduledTime, ActivityContext? parentTraceContext, DateTimeOffset? startTime = null, string? entityId = null)
+        internal static Activity? StartActivityForCallingOrSignalingEntity(string targetEntityId, string entityName, string operationName, bool signalEntity, DateTime? scheduledTime, ActivityContext? parentTraceContext, DateTimeOffset? startTime = default, string? entityId = null)
         {
             // We only want to create a trace activity for calling or signaling an entity in the case that we can successfully get the parent trace context of the request.
             // Otherwise, we will create an unlinked trace activity with no parent.
@@ -82,13 +85,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
             return newActivity;
         }
 
-        internal static Activity? StartActivityForProcessingEntityInvocation(string entityId, string entityName, string operationName, bool signalEntity, ActivityContext parentTraceContext, DateTimeOffset? startTime)
+        internal static Activity? StartActivityForProcessingEntityInvocation(string entityId, string entityName, string operationName, bool signalEntity, ActivityContext parentTraceContext, DateTimeOffset startTime)
         {
             Activity? newActivity = ActivityTraceSource.StartActivity(
                 Schema.SpanNames.CallOrSignalEntity(entityName, operationName),
                 kind: signalEntity ? ActivityKind.Consumer : ActivityKind.Server,
                 parentContext: parentTraceContext,
-                startTime: startTime ?? default);
+                startTime: startTime);
 
             if (newActivity == null)
             {
