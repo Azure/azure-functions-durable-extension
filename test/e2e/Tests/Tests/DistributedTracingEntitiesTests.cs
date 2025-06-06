@@ -35,6 +35,7 @@ public class DistributedTracingEntitiesTests
     /// we will just attempt to verify that the Activities we can see via "Activity.Current" from within the entities and orchestrations calling them have the same trace ID. 
     /// </summary>
     [Fact]
+    [Trait("MSSQL", "Skip")] // Entities are not implemented for the MSSQL backend
     [Trait("DTS", "Skip")] // Distributed tracing is currently not working in DTS
     public async Task DistributedTracingEntitiesTest()
     {
@@ -74,6 +75,7 @@ public class DistributedTracingEntitiesTests
     }
 
     [Fact]
+    [Trait("MSSQL", "Skip")] // Entities are not implemented for the MSSQL backend
     [Trait("DTS", "Skip")] // Distributed tracing is currently not working in DTS
     public async Task DistributedTracingEntitiesFromClientTest()
     {
