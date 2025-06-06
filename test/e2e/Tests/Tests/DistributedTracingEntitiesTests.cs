@@ -85,11 +85,15 @@ public class DistributedTracingEntitiesTests
 
         Assert.NotNull(activity);
 
-        await HttpHelpers.InvokeHttpTrigger("SignalActivityRecorderEntity", "");
-        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("GetActivityInfosAndResetStateOrchestration_HttpStart", "");
+        // We need to reset the state of the entities before running the test to removed any stored trace IDs
+        using HttpResponseMessage resetResponse = await HttpHelpers.InvokeHttpTrigger("ResetStateOrchestration_HttpStart", "");
+        string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(resetResponse);
+        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", 180);
 
-        string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
-        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", 30);
+        await HttpHelpers.InvokeHttpTrigger("SignalActivityRecorderEntity", "");
+        using HttpResponseMessage getActivityInfosResponse = await HttpHelpers.InvokeHttpTrigger("GetMainAndSecondaryActivityInfoOrchestration_HttpStart", "");
+        statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(getActivityInfosResponse);
+        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", 180);
         var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
 
         // Sanitize the JSON string to remove unwanted characters so we can easily parse it into a list

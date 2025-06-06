@@ -40,8 +40,8 @@ public static class DistributedTracingEntitiesOrchestration
         return activityAndOrchestrationIds;
     }
 
-    [Function("GetActivityInfoOrchestration")]
-    public static async Task<List<string?>> RunGetActivityInfoOrchestration(
+    [Function("GetMainActivityInfoOrchestration")]
+    public static async Task<List<string?>> RunGetMainActivityInfoOrchestration(
         [OrchestrationTrigger] TaskOrchestrationContext context)
     {
         var activityTraceIds = new List<string?> { Activity.Current?.TraceId.ToString() };
@@ -53,20 +53,28 @@ public static class DistributedTracingEntitiesOrchestration
         return activityTraceIds;
     }
 
-    [Function("GetActivityInfosAndResetStateOrchestration")]
-    public static async Task<List<string?>> RunGetActivityInfosAndResetStateOrchestration(
+    [Function("ResetStateOrchestration")]
+    public static async Task RunResetStateOrchestration(
+        [OrchestrationTrigger] TaskOrchestrationContext context)
+    {
+        var mainEntityId = new EntityInstanceId("ActivityRecorderEntity", "mainEntity");
+        var secondaryEntityId = new EntityInstanceId("ActivityRecorderEntity", "secondaryEntity");
+
+        // Reset the state to remove trace IDs from previous runs
+        await context.Entities.CallEntityAsync(mainEntityId, "reset");
+        await context.Entities.CallEntityAsync(secondaryEntityId, "reset");
+    }
+
+    [Function("GetMainAndSecondaryActivityInfoOrchestration")]
+    public static async Task<List<string?>> RunGetMainAndSecondaryActivityInfoOrchestration(
         [OrchestrationTrigger] TaskOrchestrationContext context)
     {
         var mainEntityId = new EntityInstanceId("ActivityRecorderEntity", "mainEntity");
         var secondaryEntityId = new EntityInstanceId("ActivityRecorderEntity", "secondaryEntity");
         var activityTraceIds = new List<string?> { Activity.Current?.TraceId.ToString() };
 
-
         activityTraceIds.AddRange(await context.Entities.CallEntityAsync<List<string?>>(mainEntityId, "get_activity_info"));
         activityTraceIds.AddRange(await context.Entities.CallEntityAsync<List<string?>>(secondaryEntityId, "get_activity_info"));
-
-        await context.Entities.CallEntityAsync(mainEntityId, "reset");
-        await context.Entities.CallEntityAsync(secondaryEntityId, "reset");
 
         return activityTraceIds;
     }
@@ -77,7 +85,7 @@ public static class DistributedTracingEntitiesOrchestration
         [DurableClient] DurableTaskClient client,
         string id)
     {
-        OrchestrationMetadata? metadata = await client.GetInstanceAsync(instanceId: id, getInputsAndOutputs: true);
+        OrchestrationMetadata? metadata = await client.WaitForInstanceCompletionAsync(instanceId: id, getInputsAndOutputs: true);
 
         HttpResponseData response;
         if (metadata == null)
@@ -115,16 +123,34 @@ public static class DistributedTracingEntitiesOrchestration
         return await client.CreateCheckStatusResponseAsync(req, instanceId);
     }
 
-    [Function("GetActivityInfosAndResetStateOrchestration_HttpStart")]
+    [Function("ResetStateOrchestration_HttpStart")]
+    public static async Task<HttpResponseData> ResetStateOrchestrationHttpStart(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestData req,
+        [DurableClient] DurableTaskClient client,
+        FunctionContext executionContext)
+    {
+        ILogger logger = executionContext.GetLogger("ResetStateOrchestration_HttpStart");
+
+        // Function input comes from the request content.
+        string instanceId = await client.ScheduleNewOrchestrationInstanceAsync("ResetStateOrchestration");
+
+        logger.LogInformation("Started orchestration with ID = '{instanceId}'.", instanceId);
+
+        // Returns an HTTP 202 response with an instance management payload.
+        // See https://learn.microsoft.com/azure/azure-functions/durable/durable-functions-http-api#start-orchestration
+        return await client.CreateCheckStatusResponseAsync(req, instanceId);
+    }
+
+    [Function("GetMainAndSecondaryActivityInfoOrchestration_HttpStart")]
     public static async Task<HttpResponseData> GetActivityInfosAndResetStateOrchestrationHttpStart(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestData req,
         [DurableClient] DurableTaskClient client,
         FunctionContext executionContext)
     {
-        ILogger logger = executionContext.GetLogger("GetActivityInfosAndResetStateOrchestration_HttpStart");
+        ILogger logger = executionContext.GetLogger("GetMainAndSecondaryActivityInfoOrchestration_HttpStart");
 
         // Function input comes from the request content.
-        string instanceId = await client.ScheduleNewOrchestrationInstanceAsync("GetActivityInfosAndResetStateOrchestration");
+        string instanceId = await client.ScheduleNewOrchestrationInstanceAsync("GetMainAndSecondaryActivityInfoOrchestration");
 
         logger.LogInformation("Started orchestration with ID = '{instanceId}'.", instanceId);
 
@@ -194,7 +220,7 @@ public static class DistributedTracingEntitiesOrchestration
 
             if (operation.Name.ToLowerInvariant() == "start_orchestration")
             {
-                state.Add(operation.Context.ScheduleNewOrchestration("GetActivityInfoOrchestration"));
+                state.Add(operation.Context.ScheduleNewOrchestration("GetMainActivityInfoOrchestration"));
                 operation.State.SetState(state);
                 return new(state);
             }
