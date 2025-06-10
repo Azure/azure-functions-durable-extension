@@ -658,30 +658,6 @@ message AbandonEntityTaskResponse {
     // Empty.
 }
 
-message AbandonActivityTaskRequest {
-    string completionToken = 1;
-}
-
-message AbandonActivityTaskResponse {
-    // Empty.
-}
-
-message AbandonOrchestrationTaskRequest {
-    string completionToken = 1;
-}
-
-message AbandonOrchestrationTaskResponse {
-    // Empty.
-}
-
-message AbandonEntityTaskRequest {
-    string completionToken = 1;
-}
-
-message AbandonEntityTaskResponse {
-    // Empty.
-}
-
 service TaskHubSidecarService {
     // Sends a hello request to the sidecar service.
     rpc Hello(google.protobuf.Empty) returns (google.protobuf.Empty);
