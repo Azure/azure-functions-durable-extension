@@ -13,6 +13,7 @@ using DurableTask.Core.Entities;
 using DurableTask.Core.Entities.OperationFormat;
 using DurableTask.Core.History;
 using DurableTask.Core.Query;
+using DurableTask.Core.Tracing;
 using Google.Protobuf;
 using Google.Protobuf.Collections;
 using Google.Protobuf.WellKnownTypes;
@@ -500,6 +501,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 Operation = operationRequest.Operation,
                 Input = operationRequest.Input,
                 RequestId = operationRequest.Id.ToString(),
+                TraceContext = operationRequest.TraceContext != null ? new P.TraceContext
+                {
+                    TraceParent = operationRequest.TraceContext.TraceParent,
+                    TraceState = operationRequest.TraceContext.TraceState,
+                }
+                : null,
             };
         }
 
@@ -548,6 +555,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         Input = operationAction.SendSignal.Input,
                         InstanceId = operationAction.SendSignal.InstanceId,
                         ScheduledTime = operationAction.SendSignal.ScheduledTime?.ToDateTime(),
+                        RequestTime = operationAction.SendSignal.RequestTime?.ToDateTimeOffset(),
+                        ParentTraceContext = operationAction.SendSignal.ParentTraceContext != null ?
+                            new DistributedTraceContext(
+                                operationAction.SendSignal.ParentTraceContext.TraceParent,
+                                operationAction.SendSignal.ParentTraceContext.TraceState)
+                            : null,
                     };
 
                 case P.OperationAction.OperationActionTypeOneofCase.StartNewOrchestration:
@@ -558,6 +571,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         Input = operationAction.StartNewOrchestration.Input,
                         InstanceId = operationAction.StartNewOrchestration.InstanceId,
                         Version = operationAction.StartNewOrchestration.Version,
+                        RequestTime = operationAction.StartNewOrchestration.RequestTime?.ToDateTimeOffset(),
+                        ParentTraceContext = operationAction.StartNewOrchestration.ParentTraceContext != null ?
+                            new DistributedTraceContext(
+                                operationAction.StartNewOrchestration.ParentTraceContext.TraceParent,
+                                operationAction.StartNewOrchestration.ParentTraceContext.TraceState)
+                            : null,
                     };
                 default:
                     throw new NotSupportedException($"Deserialization of {operationAction.OperationActionTypeCase} is not supported.");
@@ -583,12 +602,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     return new OperationResult()
                     {
                         Result = operationResult.Success.Result,
+                        StartTimeUtc = operationResult.Success.StartTimeUtc?.ToDateTime(),
+                        EndTimeUtc = operationResult.Success.EndTimeUtc?.ToDateTime(),
                     };
 
                 case P.OperationResult.ResultTypeOneofCase.Failure:
                     return new OperationResult()
                     {
                         FailureDetails = GetFailureDetails(operationResult.Failure.FailureDetails),
+                        StartTimeUtc = operationResult.Failure.StartTimeUtc?.ToDateTime(),
+                        EndTimeUtc = operationResult.Failure.EndTimeUtc?.ToDateTime(),
                     };
 
                 default:

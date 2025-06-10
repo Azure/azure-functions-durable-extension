@@ -236,7 +236,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                     // Create a new activity with the parent context
                     ActivityContext.TryParse(traceParent, traceState, out ActivityContext parentActivityContext);
-                    using Activity? scheduleOrchestrationActivity = TraceHelper.StartActivityForNewOrchestration(executionStartedEvent, parentActivityContext);
+                    using Activity? scheduleOrchestrationActivity = TraceHelper.StartActivityForNewOrchestration(executionStartedEvent, parentActivityContext, request.RequestTime?.ToDateTimeOffset());
 
                     // Schedule the orchestration
                     await this.GetDurabilityProvider(context).CreateTaskOrchestrationAsync(
@@ -319,6 +319,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 this.CheckEntitySupport(context, out var durabilityProvider, out var entityOrchestrationService);
 
+                Activity? signalEntityActivity = null;
+
+                // We only want to create a trace activity for signaling the entity in the case that we can successfully parse the trace context of the signal entity request.
+                // Otherwise, we will create an unlinked trace activity with no parent.
+                if (ActivityContext.TryParse(request.ParentTraceContext?.TraceParent, request.ParentTraceContext?.TraceState, out ActivityContext parentTraceContext))
+                {
+                    signalEntityActivity = TraceHelper.StartActivityForCallingOrSignalingEntity(
+                        request.InstanceId,
+                        EntityId.GetEntityIdFromSchedulerId(request.InstanceId).EntityName,
+                        request.Name,
+                        signalEntity: true,
+                        request.ScheduledTime?.ToDateTime(),
+                        parentTraceContext,
+                        request.RequestTime?.ToDateTime());
+                }
+
                 EntityMessageEvent eventToSend = ClientEntityHelpers.EmitOperationSignal(
                     new OrchestrationInstance() { InstanceId = request.InstanceId },
                     Guid.Parse(request.RequestId),
@@ -327,9 +343,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     EntityMessageEvent.GetCappedScheduledTime(
                         DateTime.UtcNow,
                         entityOrchestrationService.EntityBackendProperties!.MaximumSignalDelayTime,
-                        request.ScheduledTime?.ToDateTime()));
+                        request.ScheduledTime?.ToDateTime()),
+                    signalEntityActivity != null ? new DTCore.Tracing.DistributedTraceContext(signalEntityActivity.Id!, signalEntityActivity.TraceStateString) : null);
 
                 await durabilityProvider.SendTaskOrchestrationMessageAsync(eventToSend.AsTaskMessage());
+                signalEntityActivity?.Dispose();
 
                 // No fields in the response
                 return new P.SignalEntityResponse();
