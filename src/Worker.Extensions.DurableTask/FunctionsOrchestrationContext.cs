@@ -49,7 +49,7 @@ internal sealed partial class FunctionsOrchestrationContext : TaskOrchestrationC
 
     public override ParentOrchestrationInstance? Parent => this.innerContext.Parent;
 
-    public override IDictionary<string, object?> Properties => this.innerContext.Properties;
+    public override IReadOnlyDictionary<string, object?> Properties => this.innerContext.Properties;
 
     protected override ILoggerFactory LoggerFactory { get; }
 
