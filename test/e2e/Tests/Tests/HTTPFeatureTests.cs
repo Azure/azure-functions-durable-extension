@@ -37,9 +37,11 @@ public class HTTPFeatureTests
 
         var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
 
-        // Verify that the output includes the result of the long-running orchestrator,
-        // ensuring that CallHttpAsync performed 202 polling and didn't just return immediately with a 202 Accepted response.
-        Assert.Contains("Hello Tokyo", orchestrationDetails.Output);
+        // Ensure the final output includes the expected result, confirming that the orchestration
+        // waited for the long-running HTTP call to complete rather than returning immediately.
+        Assert.Contains("Long-running orchestration completed.", orchestrationDetails.Output);
+
+        // Check that logs include evidence of HTTP polling behavior.
         Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains("Polling HTTP status at location"));
     }
 }

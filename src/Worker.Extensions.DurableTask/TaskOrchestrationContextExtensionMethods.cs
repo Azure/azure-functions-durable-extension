@@ -58,7 +58,7 @@ public static class TaskOrchestrationContextExtensionMethods
             }
             else
             {
-                // Gets configuration DefaultAsyncRequestSleepTimeMilliseconds from durabletaskextension
+                // Gets configuration DefaultAsyncRequestSleepTimeMilliseconds from DurableTaskExtension
                 int asyncRequestSleepTimeMilliseconds = context.Properties.TryGetValue("df.http.defaultAsyncRequestSleepTimeMilliseconds", out var value) && value is double d
                                                                 ? (int)d: DefaultAsyncRequestSleepTimeMilliseconds;
                 fireAt = context.CurrentUtcDateTime.AddMilliseconds(asyncRequestSleepTimeMilliseconds);
