@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
 using Microsoft.Azure.Functions.Worker.Extensions.DurableTask.Http;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.DurableTask;
@@ -18,6 +19,8 @@ namespace Microsoft.DurableTask;
 /// </summary>
 public static class TaskOrchestrationContextExtensionMethods
 {
+    const int DefaultAsyncRequestSleepTimeMilliseconds = 30000;
+
     /// <summary>
     /// Makes an HTTP call using the information in the DurableHttpRequest.
     /// </summary>
@@ -30,6 +33,7 @@ public static class TaskOrchestrationContextExtensionMethods
         {
             throw new ArgumentNullException(nameof(context));
         }
+        ILogger logger = context.CreateReplaySafeLogger("CallHttpASync");
 
         DurableHttpResponse response = await context.CallActivityAsync<DurableHttpResponse>(Constants.HttpTaskActivityReservedName, request);
         
@@ -38,6 +42,7 @@ public static class TaskOrchestrationContextExtensionMethods
             // If Headers is null or missing, we can't poll the Location URL, so return the response.
             if (response.Headers is null)
             {
+                logger.LogWarning("HTTP response headers are null or missing; unable to retrieve 'Location' URL for polling.");
                 break;
             }
 
@@ -54,14 +59,18 @@ public static class TaskOrchestrationContextExtensionMethods
             else
             {
                 // Gets configuration DefaultAsyncRequestSleepTimeMilliseconds from durabletaskextension
-                int defaultAsyncRequestSleepTimeMilliseconds = context.Properties.TryGetValue("df.http.defaultAsyncRequestSleepTimeMilliseconds", out var value) && value is double d
-                                                                ? (int)d: 30000;
-                fireAt = context.CurrentUtcDateTime.AddMilliseconds(defaultAsyncRequestSleepTimeMilliseconds);
+                int asyncRequestSleepTimeMilliseconds = context.Properties.TryGetValue("df.http.defaultAsyncRequestSleepTimeMilliseconds", out var value) && value is double d
+                                                                ? (int)d: DefaultAsyncRequestSleepTimeMilliseconds;
+                fireAt = context.CurrentUtcDateTime.AddMilliseconds(asyncRequestSleepTimeMilliseconds);
             }
 
             await context.CreateTimer(fireAt, CancellationToken.None);
-            
-            DurableHttpRequest newHttpRequest = CreateLocationPollRequest(request, response.Headers!["Location"]);
+
+            string locationUrl = response.Headers!["Location"];
+
+            DurableHttpRequest newHttpRequest = CreateLocationPollRequest(request, locationUrl);
+
+            logger.LogInformation($"Polling HTTP status at location: {locationUrl}");
 
             response = await context.CallActivityAsync<DurableHttpResponse>(Constants.HttpTaskActivityReservedName, newHttpRequest);
         }

@@ -40,5 +40,6 @@ public class HTTPFeatureTests
         // Verify that the output includes the result of the long-running orchestrator,
         // ensuring that CallHttpAsync performed 202 polling and didn't just return immediately with a 202 Accepted response.
         Assert.Contains("Hello Tokyo", orchestrationDetails.Output);
+        Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains("Polling HTTP status at location"));
     }
 }
