@@ -14,14 +14,14 @@ namespace Microsoft.Azure.Durable.Tests.E2E;
 
 public static class HTTPFeature
 {
-    // Orchestration that takes 2 minutes to complete and will return "Long-running orchestration completed." if completed.
+    // Orchestration that takes 1 minutes to complete and will return "Long-running orchestration completed." if completed.
     [Function(nameof(HTTPLongRunningOrchestrator))]
     public static async Task<string> HTTPLongRunningOrchestrator(
         [OrchestrationTrigger] TaskOrchestrationContext context)
     {
         ILogger logger = context.CreateReplaySafeLogger(nameof(HTTPLongRunningOrchestrator));
 
-        await context.CreateTimer(TimeSpan.FromMinutes(2),CancellationToken.None);
+        await context.CreateTimer(TimeSpan.FromMinutes(1),CancellationToken.None);
 
         return "Long-running orchestration completed.";
     }

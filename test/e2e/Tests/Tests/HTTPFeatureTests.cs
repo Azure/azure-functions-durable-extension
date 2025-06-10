@@ -32,8 +32,8 @@ public class HTTPFeatureTests
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
 
-        // Wait a few minutes as the long-running orchestrator requires 2 minutes to finish.
-        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", 150);
+        // Wait a minutes here as the long-running orchestrator requires about 1 minutes to finish.
+        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", 100);
 
         var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
 
