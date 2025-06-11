@@ -19,7 +19,8 @@ namespace Microsoft.DurableTask;
 /// </summary>
 public static class TaskOrchestrationContextExtensionMethods
 {
-    const int DefaultAsyncRequestSleepTimeMilliseconds = 30000;
+    private const int DefaultPollingIntervalMilliseconds = 30000;
+    private const string PollingInterval = "df.http.defaultAsyncRequestSleepTimeMilliseconds";
 
     /// <summary>
     /// Makes an HTTP call using the information in the DurableHttpRequest.
@@ -58,9 +59,10 @@ public static class TaskOrchestrationContextExtensionMethods
             }
             else
             {
-                // Gets configuration DefaultAsyncRequestSleepTimeMilliseconds from DurableTaskExtension
-                int asyncRequestSleepTimeMilliseconds = context.Properties.TryGetValue("df.http.defaultAsyncRequestSleepTimeMilliseconds", out var value) && value is double d
-                                                                ? (int)d: DefaultAsyncRequestSleepTimeMilliseconds;
+                // Gets configuration DefaultAsyncRequestSleepTimeMilliseconds from DurableTaskExtension.
+                // If no value is provided, then use the default 30000 milliseconds.
+                int asyncRequestSleepTimeMilliseconds = context.Properties.TryGetValue(PollingInterval, out var value) && value is double d
+                                                                ? (int)d: DefaultPollingIntervalMilliseconds;
                 fireAt = context.CurrentUtcDateTime.AddMilliseconds(asyncRequestSleepTimeMilliseconds);
             }
 
