@@ -46,12 +46,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         // Verifies that the local gRPC listener can start and stop without errors.
-        // Also verify the occupied port will be released when stop. 
+        // Also verify the occupied port will be released when stop.
         private async Task GrpcListener_StartAndStopSuccessfully(LocalGrpcListenerMode mode)
         {
             // Create test local grpc listener.
             using DurableTaskExtension extension = this.CreateExtension("GrpcListenerStartAndStopBehavior");
             ILocalGrpcListener listener = LocalGrpcListener.Create(extension, mode);
+
+            // Verify correct listener type is created
+            if (mode == LocalGrpcListenerMode.Legacy)
+            {
+                Assert.IsType<LegacyLocalGrpcListener>(listener);
+            }
+            else if (mode == LocalGrpcListenerMode.AspNetCore)
+            {
+                Assert.IsType<AspNetCoreLocalGrpcListener>(listener);
+            }
 
             try
             {
@@ -63,6 +73,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Assert.True(uri.IsLoopback);
                 Assert.Equal("http", uri.Scheme);
                 Assert.True(IsPortInUse(uri.Port));
+
+                // Verify to use default port if it's LegacylocalGrpcListenerMode
+                if (mode == LocalGrpcListenerMode.Legacy)
+                {
+                    Assert.Equal(4001, uri.Port);
+                }
 
                 await listener.StopAsync(default);
 
@@ -89,23 +105,44 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             ILocalGrpcListener listener1 = LocalGrpcListener.Create(extension1, mode);
             ILocalGrpcListener listener2 = LocalGrpcListener.Create(extension2, mode);
 
-            await listener1.StartAsync(default);
-            await listener2.StartAsync(default);
+            try
+            {
+                await listener1.StartAsync(default);
+                await listener2.StartAsync(default);
 
-            // Assert
-            Assert.NotNull(listener1.ListenAddress);
-            Assert.NotNull(listener2.ListenAddress);
-            Assert.NotEqual(listener1.ListenAddress, listener2.ListenAddress);
+                // Assert
+                Assert.NotNull(listener1.ListenAddress);
+                Assert.NotNull(listener2.ListenAddress);
+                Assert.NotEqual(listener1.ListenAddress, listener2.ListenAddress);
 
-            var uri1 = new Uri(listener1.ListenAddress);
-            var uri2 = new Uri(listener2.ListenAddress);
+                var uri1 = new Uri(listener1.ListenAddress);
+                var uri2 = new Uri(listener2.ListenAddress);
 
-            Assert.NotEqual(uri1.Port, uri2.Port);
-            Assert.True(IsPortInUse(uri1.Port));
-            Assert.True(IsPortInUse(uri2.Port));
+                Assert.NotEqual(uri1.Port, uri2.Port);
+                Assert.True(IsPortInUse(uri1.Port));
+                Assert.True(IsPortInUse(uri2.Port));
+            }
+            finally
+            {
+                // Ensure both listeners are stopped.
+                try
+                {
+                    await listener1.StopAsync(default);
+                }
+                catch (Exception ex)
+                {
+                    this.output.WriteLine($"Failed to stop listener1: {ex.Message}");
+                }
 
-            await listener1.StopAsync(default);
-            await listener2.StopAsync(default);
+                try
+                {
+                    await listener2.StopAsync(default);
+                }
+                catch (Exception ex)
+                {
+                    this.output.WriteLine($"Failed to stop listener2: {ex.Message}");
+                }
+            }
         }
 
         [Fact]
