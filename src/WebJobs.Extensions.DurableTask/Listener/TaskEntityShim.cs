@@ -755,7 +755,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         request.IsSignal,
                         request.ScheduledTime,
                         parentTraceContext,
-                        request.RequestTime.Value);
+                        request.RequestTime);
                     parentTraceContext = callEntityActivity.Context;
                 }
 
