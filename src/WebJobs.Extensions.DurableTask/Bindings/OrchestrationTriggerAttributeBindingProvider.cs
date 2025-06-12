@@ -13,6 +13,7 @@ using Microsoft.Azure.WebJobs.Host.Triggers;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using static Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationShim;
+using proto = Google.Protobuf.WellKnownTypes;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
@@ -171,6 +172,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         NewEvents = { remoteContext.NewEvents.Select(ProtobufUtils.ToHistoryEventProto) },
                         EntityParameters = remoteContext.EntityParameters.ToProtobuf(),
                     };
+
+                    // We only do a null check as an empty string is a valid version.
+                    if (this.config.Options.DefaultVersion != null)
+                    {
+                        orchestratorRequest.Properties.Add("defaultVersion", proto.Value.ForString(this.config.Options.DefaultVersion));
+                    }
 
                     // We convert the binary payload into a base64 string because that seems to be the most commonly supported
                     // format for Azure Functions language workers. Attempts to send unencoded byte[] payloads were unsuccessful.

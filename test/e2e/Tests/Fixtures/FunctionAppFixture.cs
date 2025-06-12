@@ -15,6 +15,7 @@ public class FunctionAppFixture : IAsyncLifetime
     private readonly ILogger _logger;
     private bool _disposed;
     private Process? _funcProcess;
+    private string? _appName;
 
     private JobObjectRegistry? _jobObjectRegistry;
 
@@ -25,6 +26,7 @@ public class FunctionAppFixture : IAsyncLifetime
         this.TestLogs = new TestLoggerProvider(messageSink);
         loggerFactory.AddProvider(this.TestLogs);
         this._logger = loggerFactory.CreateLogger<FunctionAppFixture>();
+        this._appName = Environment.GetEnvironmentVariable("TEST_APP_NAME") ?? "BasicDotNetIsolated";
     }
 
     public async Task InitializeAsync()
@@ -40,7 +42,7 @@ public class FunctionAppFixture : IAsyncLifetime
             this._logger.LogInformation($"Starting functions host for {Constants.FunctionAppCollectionName}...");
 
             string rootDir = Path.GetFullPath(@"../../../../../../");
-            string e2eAppBinPath = Path.Combine(rootDir, @"test/e2e/Apps/BasicDotNetIsolated/bin");
+            string e2eAppBinPath = Path.Combine(rootDir, @$"test/e2e/Apps/{this._appName}/bin");
             string? e2eHostJson = Directory.GetFiles(e2eAppBinPath, "host.json", SearchOption.AllDirectories).FirstOrDefault();
 
             if (e2eHostJson == null)
