@@ -15,6 +15,28 @@ using Xunit.Abstractions;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
+    /// <summary>
+    /// Public test enum used to represent LocalGrpcListenerMode values in [Theory] tests,
+    /// since the original enum is internal and not directly accessible.
+    /// </summary>
+    public enum TestGrpcListenerMode
+    {
+        /// <summary>
+        /// Default gRPC listener mode.
+        /// </summary>
+        Default = 0,
+
+        /// <summary>
+        /// Legacy listener mode for backward compatibility.
+        /// </summary>
+        Legacy = 1,
+
+        /// <summary>
+        /// ASP.NET Core-based listener mode.
+        /// </summary>
+        AspNetCore = 2,
+    }
+
     public class LocalGrpcListenerTests
     {
         private readonly ITestOutputHelper output;
@@ -26,23 +48,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             this.loggerProvider = new TestLoggerProvider(output);
         }
 
-        [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task TestGrpcListener_ShouldStartAndStopSuccessfully()
+        [Theory]
+        [InlineData(TestGrpcListenerMode.Legacy)]
+        [InlineData(TestGrpcListenerMode.AspNetCore)]
+        public async Task TestGrpcListener_ShouldStartAndStopSuccessfully(TestGrpcListenerMode testMode)
         {
             // Test boh two version of grpc lisnter mode can start and stop successfully.
-            await this.GrpcListener_StartAndStopSuccessfully(LocalGrpcListenerMode.Legacy);
-            await this.GrpcListener_StartAndStopSuccessfully(LocalGrpcListenerMode.AspNetCore);
+            var internalMode = (LocalGrpcListenerMode)(int)testMode;
+            await this.GrpcListener_StartAndStopSuccessfully(internalMode);
         }
 
-        [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task TestMultipleGrpcListeners_ShouldListenToDifferentPorts()
+        [Theory]
+        [InlineData(TestGrpcListenerMode.Legacy)]
+        [InlineData(TestGrpcListenerMode.AspNetCore)]
+        public async Task TestMultipleGrpcListeners_ShouldListenToDifferentPorts(TestGrpcListenerMode testMode)
         {
             // Test that multiple gRPC listeners created through the same DurableTaskExtension or host
             // bind to different ports to avoid conflicts.
-            await this.MultipleGrpcListeners_ShouldListenToDifferentPorts(LocalGrpcListenerMode.Legacy);
-            await this.MultipleGrpcListeners_ShouldListenToDifferentPorts(LocalGrpcListenerMode.AspNetCore);
+            var internalMode = (LocalGrpcListenerMode)(int)testMode;
+            await this.MultipleGrpcListeners_ShouldListenToDifferentPorts(internalMode);
         }
 
         // Verifies that the local gRPC listener can start and stop without errors.
