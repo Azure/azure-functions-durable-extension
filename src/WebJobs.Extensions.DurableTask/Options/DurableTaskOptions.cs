@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using DurableTask.AzureStorage.Partitioning;
+using DurableTask.Core.Settings;
 using Microsoft.Azure.WebJobs.Host;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
@@ -29,6 +30,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// passed to each orchestrator function replay invocation of this orchestration instance.
         /// </summary>
         public string DefaultVersion { get; set; }
+
+        /// <summary>
+        /// The strategy that will be used for matching versions when running an orchestration. See <see cref="VersioningSettings.VersionMatchStrategy"/> for more information.
+        /// </summary>
+        public VersioningSettings.VersionMatchStrategy VersionMatchStrategy { get; set; } = VersioningSettings.VersionMatchStrategy.CurrentOrOlder;
+
+        /// <summary>
+        /// The strategy that will be used if a versioning failure is detected. See <see cref="VersioningSettings.VersionFailureStrategy"/> for more information.
+        /// </summary>
+        public VersioningSettings.VersionFailureStrategy VersionFailureStrategy { get; set; } = VersioningSettings.VersionFailureStrategy.Reject;
 
         /// <summary>
         /// Settings used for Durable HTTP functionality.

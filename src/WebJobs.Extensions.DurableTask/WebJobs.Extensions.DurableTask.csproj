@@ -50,7 +50,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Protobuf Include="**/*.proto" GrpcServices="Both" Access="Internal"  />
+    <Protobuf Include="**/*.proto" GrpcServices="Both" Access="Internal" />
   </ItemGroup>
 
   <ItemGroup>
