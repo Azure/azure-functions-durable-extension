@@ -51,6 +51,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Theory]
         [InlineData(TestGrpcListenerMode.Legacy)]
         [InlineData(TestGrpcListenerMode.AspNetCore)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task TestGrpcListener_ShouldStartAndStopSuccessfully(TestGrpcListenerMode testMode)
         {
             // Test boh two version of grpc lisnter mode can start and stop successfully.
@@ -61,6 +62,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Theory]
         [InlineData(TestGrpcListenerMode.Legacy)]
         [InlineData(TestGrpcListenerMode.AspNetCore)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task TestMultipleGrpcListeners_ShouldListenToDifferentPorts(TestGrpcListenerMode testMode)
         {
             // Test that multiple gRPC listeners created through the same DurableTaskExtension or host
