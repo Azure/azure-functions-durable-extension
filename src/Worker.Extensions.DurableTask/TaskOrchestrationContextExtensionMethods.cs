@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
@@ -72,7 +73,7 @@ public static class TaskOrchestrationContextExtensionMethods
 
             DurableHttpRequest newHttpRequest = CreateLocationPollRequest(request, locationUrl);
 
-            logger.LogInformation($"Polling HTTP status at location: {locationUrl}");
+            logger.LogInformation($"Polling Http status at location: {locationUrl}");
 
             response = await context.CallActivityAsync<DurableHttpResponse>(Constants.HttpTaskActivityReservedName, newHttpRequest);
         }
@@ -88,14 +89,21 @@ public static class TaskOrchestrationContextExtensionMethods
     /// <param name="uri">uri used to make the HTTP call.</param>
     /// <param name="content">Content passed in the HTTP request.</param>
     /// <param name="retryOptions">The retry option for the HTTP task.</param>
+    /// <param name="asynchronousPatternEnabled">Boolean controls Whether Durable HTTP should automatically handle async HTTP patterns like 202 with polling. Default to true. </param>
     /// <returns>A <see cref="Task{DurableHttpResponse}"/>Result of the HTTP call.</returns>
-    public static Task<DurableHttpResponse> CallHttpAsync(this TaskOrchestrationContext context, HttpMethod method, Uri uri, string? content = null, HttpRetryOptions? retryOptions = null)
+    public static Task<DurableHttpResponse> CallHttpAsync(
+        this TaskOrchestrationContext context, 
+        HttpMethod method,
+        Uri uri,
+        string? content = null,
+        HttpRetryOptions? retryOptions = null,
+        bool asynchronousPatternEnabled = true)
     {
         DurableHttpRequest request = new DurableHttpRequest(method, uri)
         {
             Content = content,
             HttpRetryOptions = retryOptions,
-            AsynchronousPatternEnabled = true,
+            AsynchronousPatternEnabled = asynchronousPatternEnabled,
         };
 
         return context.CallHttpAsync(request);

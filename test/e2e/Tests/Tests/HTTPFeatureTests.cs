@@ -8,12 +8,12 @@ using Xunit.Abstractions;
 namespace Microsoft.Azure.Durable.Tests.DotnetIsolatedE2E;
 
 [Collection(Constants.FunctionAppCollectionName)]
-public class HTTPFeatureTests
+public class HttpFeatureTests
 {
     private readonly FunctionAppFixture fixture;
     private readonly ITestOutputHelper output;
 
-    public HTTPFeatureTests(FunctionAppFixture fixture, ITestOutputHelper testOutputHelper)
+    public HttpFeatureTests(FunctionAppFixture fixture, ITestOutputHelper testOutputHelper)
     {
         this.fixture = fixture;
         this.fixture.TestLogs.UseTestLogger(testOutputHelper);
@@ -24,16 +24,17 @@ public class HTTPFeatureTests
     // The URL initially returns a 202 Accepted response.
     // The test verifies that the orchestrator automatically polls the URL until it receives a non-202 response.
     [Fact]
-    public async Task HTTPAutomaticPollingTests()
+    public async Task HttpAutomaticPollingTests()
     {
         
-        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("HttpStart_HTTPPollingOrchestrator");
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("HttpStart_HttpPollingOrchestrator");
 
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
 
-        // Wait a minutes here as the long-running orchestrator requires about 1 minutes to finish.
-        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", 100);
+        // Wait here as the long-running orchestrator requires about 1 minutes to finish.
+        // Set wait time to be 150 seconds becasue the DTS CI takes more time to finish. 
+        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", 150);
 
         var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
 
@@ -42,6 +43,6 @@ public class HTTPFeatureTests
         Assert.Contains("Long-running orchestration completed.", orchestrationDetails.Output);
 
         // Check that logs include evidence of HTTP polling behavior.
-        Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains("Polling HTTP status at location"));
+        Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains("Polling Http status at location"));
     }
 }
