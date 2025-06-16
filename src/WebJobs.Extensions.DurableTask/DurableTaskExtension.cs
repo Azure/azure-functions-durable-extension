@@ -17,6 +17,7 @@ using DurableTask.Core;
 using DurableTask.Core.Exceptions;
 using DurableTask.Core.History;
 using DurableTask.Core.Middleware;
+using DurableTask.Core.Settings;
 using Microsoft.Azure.WebJobs.Description;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener;
@@ -356,7 +357,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             context.AddBindingRule<EntityTriggerAttribute>()
                 .BindToTrigger(new EntityTriggerAttributeBindingProvider(this, connectionName));
 
-            this.taskHubWorker = new TaskHubWorker(this.defaultDurabilityProvider, this, this, this.loggerFactory);
+            this.taskHubWorker = new TaskHubWorker(this.defaultDurabilityProvider, this, this, loggerFactory: this.loggerFactory, versioningSettings: new VersioningSettings
+            {
+                Version = this.Options.DefaultVersion, // A null (or empty) version is valid as it signifies non-versioned case.
+                MatchStrategy = this.Options.VersionMatchStrategy, // The default value for this is to no-op on versioning.
+                FailureStrategy = this.Options.VersionFailureStrategy, // The default value for this is to ignore work if there is a mismatch.
+            });
 
             // Add middleware to the DTFx dispatcher so that we can inject our own logic
             // into and customize the orchestration execution pipeline.
@@ -415,6 +421,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             // Determine host platform
             bool inConsumption = this.PlatformInformationService.IsInConsumptionPlan();
+            bool isManagedAppEnvironment = this.PlatformInformationService.IsManagedAppEnvironment();
 
             string tenant = this.PlatformInformationService.GetLinuxTenant();
             string stampName = this.PlatformInformationService.GetLinuxStampName();
@@ -422,7 +429,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             // in linux consumption, logs are emitted to the console.
             // In other linux plans, they are emitted to a logfile.
-            var linuxLogger = new LinuxAppServiceLogger(writeToConsole: inConsumption, containerName, tenant, stampName);
+            var linuxLogger = new LinuxAppServiceLogger(writeToConsole: inConsumption || isManagedAppEnvironment, containerName, tenant, stampName);
 
             // The logging service for linux works by capturing EventSource messages,
             // which our linux platform does not recognize, and logging them via a
@@ -1290,6 +1297,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         Stopwatch sw = Stopwatch.StartNew();
                         await this.defaultDurabilityProvider.CreateIfNotExistsAsync();
                         await this.taskHubWorker.StartAsync();
+
+                        this.taskHubWorker.TaskOrchestrationDispatcher.EntitiesEnabled = true;
 
                         if (this.Options.StoreInputsInOrchestrationHistory)
                         {

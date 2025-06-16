@@ -11,6 +11,7 @@ import "google/protobuf/timestamp.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/wrappers.proto";
 import "google/protobuf/empty.proto";
+import "google/protobuf/struct.proto";
 
 message OrchestrationInstance {
     string instanceId = 1;
@@ -75,6 +76,7 @@ message ExecutionStartedEvent {
     google.protobuf.Timestamp scheduledStartTimestamp = 6;
     TraceContext parentTraceContext = 7;
     google.protobuf.StringValue orchestrationSpanID = 8;
+    map<string, string> tags = 9;
 }
 
 message ExecutionCompletedEvent {
@@ -93,6 +95,7 @@ message TaskScheduledEvent {
     google.protobuf.StringValue version = 2;
     google.protobuf.StringValue input = 3;
     TraceContext parentTraceContext = 4;
+    map<string, string> tags = 5;
 }
 
 message TaskCompletedEvent {
@@ -254,6 +257,7 @@ message ScheduleTaskAction {
     string name = 1;
     google.protobuf.StringValue version = 2;
     google.protobuf.StringValue input = 3;
+    map<string, string> tags = 4;
 }
 
 message CreateSubOrchestrationAction {
@@ -288,6 +292,15 @@ message TerminateOrchestrationAction {
     bool recurse = 3;
 }
 
+message SendEntityMessageAction {
+    oneof EntityMessageType {
+        EntityOperationSignaledEvent entityOperationSignaled = 1;
+        EntityOperationCalledEvent entityOperationCalled = 2;
+        EntityLockRequestedEvent entityLockRequested = 3;
+        EntityUnlockSentEvent entityUnlockSent = 4;
+    }
+}
+
 message OrchestratorAction {
     int32 id = 1;
     oneof orchestratorActionType {
@@ -297,6 +310,7 @@ message OrchestratorAction {
         SendEventAction sendEvent = 5;
         CompleteOrchestrationAction completeOrchestration = 6;
         TerminateOrchestrationAction terminateOrchestration = 7;
+        SendEntityMessageAction sendEntityMessage = 8;
     }
 }
 
@@ -307,6 +321,7 @@ message OrchestratorRequest {
     repeated HistoryEvent newEvents = 4;
     OrchestratorEntityParameters entityParameters = 5;
     bool requiresHistoryStreaming = 6;
+    map<string, google.protobuf.Value> properties = 7;
 }
 
 message OrchestratorResponse {
@@ -330,17 +345,12 @@ message CreateInstanceRequest {
     google.protobuf.StringValue executionId = 7;
     map<string, string> tags = 8;
     TraceContext parentTraceContext = 9;
+    google.protobuf.Timestamp requestTime = 10;
 }
 
 message OrchestrationIdReusePolicy {
-    repeated OrchestrationStatus operationStatus = 1;
-    CreateOrchestrationAction action = 2;
-}
-
-enum CreateOrchestrationAction {
-    ERROR = 0;
-    IGNORE = 1;
-    TERMINATE = 2;
+    repeated OrchestrationStatus replaceableStatus = 1;
+    reserved 2;
 }
 
 message CreateInstanceResponse {
@@ -381,6 +391,7 @@ message OrchestrationState {
     google.protobuf.StringValue executionId = 12;
     google.protobuf.Timestamp completedTimestamp = 13;
     google.protobuf.StringValue parentInstanceId = 14;
+    map<string, string> tags = 15;
 }
 
 message RaiseEventRequest {
@@ -457,6 +468,7 @@ message PurgeInstanceFilter {
 
 message PurgeInstancesResponse {
     int32 deletedInstanceCount = 1;
+    google.protobuf.BoolValue isComplete = 2;
 }
 
 message CreateTaskHubRequest {
@@ -481,6 +493,8 @@ message SignalEntityRequest {
     google.protobuf.StringValue input = 3;
     string requestId = 4;
     google.protobuf.Timestamp scheduledTime = 5;
+    TraceContext parentTraceContext = 6;
+    google.protobuf.Timestamp requestTime = 7;
 }
 
 message SignalEntityResponse {
@@ -551,6 +565,8 @@ message EntityBatchResult {
     repeated OperationAction actions = 2;
     google.protobuf.StringValue entityState = 3;
     TaskFailureDetails failureDetails = 4;
+    string completionToken = 5;
+    repeated OperationInfo operationInfos = 6; // used only with DTS
 }
 
 message EntityRequest {
@@ -564,6 +580,7 @@ message OperationRequest {
     string operation = 1;
     string requestId = 2;
     google.protobuf.StringValue input = 3;
+    TraceContext traceContext = 4;
 }
 
 message OperationResult {
@@ -573,12 +590,21 @@ message OperationResult {
     }
 }
 
+message OperationInfo {
+    string requestId = 1;
+    OrchestrationInstance responseDestination = 2; // null for signals
+}
+
 message OperationResultSuccess {
     google.protobuf.StringValue result = 1;
+    google.protobuf.Timestamp startTimeUtc = 2;
+    google.protobuf.Timestamp endTimeUtc = 3;
 }
 
 message OperationResultFailure {
     TaskFailureDetails failureDetails = 1;
+    google.protobuf.Timestamp startTimeUtc = 2;
+    google.protobuf.Timestamp endTimeUtc = 3;
 }
 
 message OperationAction {
@@ -594,6 +620,8 @@ message SendSignalAction {
     string name = 2;
     google.protobuf.StringValue input = 3;
     google.protobuf.Timestamp scheduledTime = 4;
+    google.protobuf.Timestamp requestTime = 5;
+    TraceContext parentTraceContext = 6;
 }
 
 message StartNewOrchestrationAction {
@@ -602,6 +630,32 @@ message StartNewOrchestrationAction {
     google.protobuf.StringValue version = 3;
     google.protobuf.StringValue input = 4;
     google.protobuf.Timestamp scheduledTime = 5;
+    google.protobuf.Timestamp requestTime = 6;
+    TraceContext parentTraceContext = 7;
+}
+
+message AbandonActivityTaskRequest {
+    string completionToken = 1;
+}
+
+message AbandonActivityTaskResponse {
+    // Empty.
+}
+
+message AbandonOrchestrationTaskRequest {
+    string completionToken = 1;
+}
+
+message AbandonOrchestrationTaskResponse {
+    // Empty.
+}
+
+message AbandonEntityTaskRequest {
+    string completionToken = 1;
+}
+
+message AbandonEntityTaskResponse {
+    // Empty.
 }
 
 service TaskHubSidecarService {
@@ -665,6 +719,15 @@ service TaskHubSidecarService {
 
     // clean entity storage
     rpc CleanEntityStorage(CleanEntityStorageRequest) returns (CleanEntityStorageResponse);
+
+    // Abandons a single work item
+    rpc AbandonTaskActivityWorkItem(AbandonActivityTaskRequest) returns (AbandonActivityTaskResponse);
+
+    // Abandon an orchestration work item
+    rpc AbandonTaskOrchestratorWorkItem(AbandonOrchestrationTaskRequest) returns (AbandonOrchestrationTaskResponse);
+
+    // Abandon an entity work item
+    rpc AbandonTaskEntityWorkItem(AbandonEntityTaskRequest) returns (AbandonEntityTaskResponse);
 }
 
 message GetWorkItemsRequest {

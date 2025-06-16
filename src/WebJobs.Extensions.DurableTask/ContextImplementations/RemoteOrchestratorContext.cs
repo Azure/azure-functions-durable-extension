@@ -3,6 +3,7 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using System.Text;
 using DurableTask.Core;
 using DurableTask.Core.Command;
 using DurableTask.Core.Entities;
@@ -73,6 +74,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal void SetResult(IEnumerable<OrchestratorAction> actions, string customStatus)
         {
+            ValidateCustomStatusSize(customStatus);
+
             var result = new OrchestratorExecutionResult
             {
                 CustomStatus = customStatus,
@@ -181,6 +184,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             this.executionResult = result;
+        }
+
+        private static void ValidateCustomStatusSize(string customStatus)
+        {
+            // Azure Table Storage enforces a 32 KB limit if a property value is a UTF-16 encoded string.
+            // We apply a 16 KB limit here to align with our in-process model.
+            const int MaxCustomStatusSizeInKB = 16;
+            double customStatusSizeInKB = customStatus != null ? Encoding.Unicode.GetByteCount(customStatus) / 1024.0 : 0;
+
+            // If the provided custom status value exceeds 16KB in size, fail the orchestration.
+            if (customStatusSizeInKB > MaxCustomStatusSizeInKB)
+            {
+                throw new ArgumentException(
+                    $"CustomStatus is too large: limit = {MaxCustomStatusSizeInKB} KB (UTF-16), actual = {customStatusSizeInKB:N2} KB.");
+            }
         }
     }
 }

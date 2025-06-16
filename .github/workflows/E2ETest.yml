@@ -3,19 +3,54 @@ name: End to End Test - .NET Isolated/Func V4
 on:
   workflow_dispatch:
   push:
-    branches: [ main, dev, andystaples/add-gh-action-for-e2e-tests ]
+    branches: [ main, dev ]
     paths:
       - 'src/**'
       - 'test/e2e/**'
   pull_request:
-    branches: [ main, dev, andystaples/add-gh-action-for-e2e-tests ]
+    branches: [ main, dev ]
     paths:
       - 'src/**'
       - 'test/e2e/**'
 
 jobs:
-  e2e-azurestorage:
+  e2e-azurestorage-linux:
     runs-on: ubuntu-latest
+    env:
+      E2E_TEST_DURABLE_BACKEND: 'AzureStorage'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET Core
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 6.0.x
+
+      - name: Setup .NET Core
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Set up Node.js (needed for Azurite)
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18.x' # Azurite requires at least Node 18
+
+      - name: Setup E2E tests
+        shell: pwsh
+        run: |
+          .\test\e2e\Tests\build-e2e-test.ps1
+
+      - name: Build
+        working-directory: test/e2e/Tests
+        run: dotnet build
+
+      - name: Run E2E tests
+        working-directory: test/e2e/Tests
+        run: dotnet test --filter AzureStorage!=Skip
+
+  e2e-azurestorage-windows:
+    runs-on: windows-latest
     env:
       E2E_TEST_DURABLE_BACKEND: 'AzureStorage'
     steps:
@@ -66,10 +101,13 @@ jobs:
         with:
           dotnet-version: 8.0.x
 
+      - name: Initialize Environment Variables
+        run: | 
+          echo "MSSQL_SA_PASSWORD=TEST12_$(echo $RANDOM)!" >> $GITHUB_ENV
+
       - name: Setup E2E tests
         shell: pwsh
         run: |
-          $env:MSSQL_SA_PASSWORD = "$([Guid]::NewGuid())"
           .\test\e2e\Tests\build-e2e-test.ps1 -StartMSSqlContainer
 
       - name: Build
@@ -79,3 +117,33 @@ jobs:
       - name: Run E2E tests
         working-directory: test/e2e/Tests
         run: dotnet test --filter MSSQL!=Skip
+
+  e2e-dts:
+    runs-on: ubuntu-latest
+    env:
+      E2E_TEST_DURABLE_BACKEND: "azureManaged"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET Core
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 6.0.x
+
+      - name: Setup .NET Core
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Setup E2E tests
+        shell: pwsh
+        run: |
+          .\test\e2e\Tests\build-e2e-test.ps1 -StartDTSContainer
+
+      - name: Build
+        working-directory: test/e2e/Tests
+        run: dotnet build
+
+      - name: Run E2E tests
+        working-directory: test/e2e/Tests
+        run: dotnet test --logger "console;verbosity=detailed" --filter DTS!=Skip

@@ -42,9 +42,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
             IDurabilityProviderFactory durabilityProviderFactory = this.GetDurabilityProviderFactory();
             DurabilityProvider defaultDurabilityProvider = durabilityProviderFactory.GetDurabilityProvider();
 
-            string? connectionName = durabilityProviderFactory is AzureStorageDurabilityProviderFactory azureStorageDurabilityProviderFactory
-                ? azureStorageDurabilityProviderFactory.DefaultConnectionName
-                : null;
+            // Note: `this.options` is populated from the trigger metadata above
+            string? connectionName = GetConnectionName(durabilityProviderFactory, this.options);
+
+            var logger = loggerFactory.CreateLogger<DurableTaskTriggersScaleProvider>();
+            logger.LogInformation(
+                "Creating DurableTaskTriggersScaleProvider for function {FunctionName}: connectionName = '{ConnectionName}'",
+                triggerMetadata.FunctionName,
+                connectionName);
 
             this.targetScaler = ScaleUtils.GetTargetScaler(
                 defaultDurabilityProvider,
@@ -59,6 +64,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
                 functionName,
                 connectionName,
                 this.options.HubName);
+        }
+
+        private static string? GetConnectionName(IDurabilityProviderFactory durabilityProviderFactory, DurableTaskOptions options)
+        {
+            if (durabilityProviderFactory is AzureStorageDurabilityProviderFactory azureStorageDurabilityProviderFactory)
+            {
+                // First, look for the connection name in the options
+                var azureStorageOptions = new AzureStorageOptions();
+                if (options != null && options.StorageProvider != null)
+                {
+                    JsonConvert.PopulateObject(JsonConvert.SerializeObject(options.StorageProvider), azureStorageOptions);
+                }
+
+                // If the connection name is not found in the options, use the default connection name from the factory
+                return azureStorageOptions.ConnectionName ?? azureStorageDurabilityProviderFactory.DefaultConnectionName;
+            }
+            else
+            {
+                return null;
+            }
         }
 
         private void GetOptions(TriggerMetadata triggerMetadata)

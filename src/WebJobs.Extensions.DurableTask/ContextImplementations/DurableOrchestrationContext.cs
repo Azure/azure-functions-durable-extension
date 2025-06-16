@@ -4,6 +4,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -13,9 +14,11 @@ using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using DurableTask.Core.Exceptions;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
 using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using DTCore = DurableTask.Core;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
@@ -27,8 +30,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         DurableOrchestrationContextBase // for v1 legacy compatibility.
 #pragma warning restore 618
     {
-        public const string DefaultVersion = "";
-
         private readonly Dictionary<string, IEventTaskCompletionSource> pendingExternalEvents =
             new Dictionary<string, IEventTaskCompletionSource>(StringComparer.OrdinalIgnoreCase);
 
@@ -127,6 +128,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         /// <inheritdoc />
         string IDurableOrchestrationContext.Name => this.OrchestrationName;
+
+        /// <inheritdoc />
+        string IDurableOrchestrationContext.Version => this.InnerContext.Version;
 
         /// <inheritdoc />
         string IDurableOrchestrationContext.InstanceId => this.InstanceId;
@@ -291,7 +295,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
 
                 this.IncrementActionsOrThrowException();
-                await this.InnerContext.CreateTimer(fireAt, CancellationToken.None);
+                await this.InnerContext.CreateTimer(fireAt: fireAt, state: true, cancelToken: CancellationToken.None);
 
                 DurableHttpRequest durableAsyncHttpRequest = this.CreateLocationPollRequest(
                     req,
@@ -558,8 +562,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
             }
 
-            // TODO: Support for versioning
-            string version = DefaultVersion;
+            // Propagate the default version to orchestrators.
+            // TODO: Decide whether we want to propagate the default version to actitities and entities as well.
+            string version = (functionType == FunctionType.Orchestrator)
+                             ? this.Config.Options.DefaultVersion
+                             : string.Empty;
+
             this.Config.ThrowIfFunctionDoesNotExist(functionName, functionType);
 
             Task<TResult> callTask = null;
@@ -676,6 +684,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     var target = new OrchestrationInstance() { InstanceId = instanceId };
                     operationId = guid.ToString();
                     operationName = operation;
+
                     var request = new RequestMessage()
                     {
                         ParentInstanceId = this.InstanceId,
@@ -684,10 +693,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         IsSignal = oneWay,
                         Operation = operation,
                         ScheduledTime = scheduledTimeUtc,
+                        RequestTime = DateTimeOffset.UtcNow,
                     };
                     if (input != null)
                     {
                         request.SetInput(input, this.messageDataConverter);
+                    }
+
+                    Activity signalEntityActivity = null;
+
+                    if (!this.IsReplaying)
+                    {
+                        signalEntityActivity = StartTraceActivityForSignalingEntity(oneWay, request, instanceId, operation, scheduledTimeUtc);
                     }
 
                     this.SendEntityMessage(target, request);
@@ -697,6 +714,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         callTask = this.WaitForEntityResponse<TResult>(guid, lockToUse);
                     }
 
+                    signalEntityActivity?.Dispose();
                     break;
 
                 default:
@@ -1315,6 +1333,32 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         TEntityInterface IDurableOrchestrationContext.CreateEntityProxy<TEntityInterface>(EntityId entityId)
         {
             return EntityProxyFactory.Create<TEntityInterface>(new OrchestrationContextProxy(this), entityId);
+        }
+
+        private static Activity StartTraceActivityForSignalingEntity(bool oneWay, RequestMessage request, string instanceId, string operation, DateTime? scheduledTimeUtc)
+        {
+            Activity signalEntityActivity = null;
+
+            // In the case that we are calling an entity, we want to create the Activity once the result for the call is returned and so we do not create now.
+            if (oneWay)
+            {
+                signalEntityActivity = TraceHelper.StartActivityForCallingOrSignalingEntity(
+                    instanceId,
+                    EntityId.GetEntityIdFromSchedulerId(instanceId).EntityName,
+                    operation,
+                    oneWay,
+                    scheduledTimeUtc,
+                    Activity.Current?.Context);
+            }
+
+            // We still want to attach the current Activity as the parent trace context to the request in the case of a call to an entity so that when we create the Activity for the call this information is available.
+            // In the case of signaling the entity, Activity.Current will be set to the signalEntityActivity just started.
+            if (Activity.Current is { } activity)
+            {
+                request.ParentTraceContext = new DTCore.Tracing.DistributedTraceContext(activity.Id, activity.TraceStateString);
+            }
+
+            return signalEntityActivity;
         }
 
         private class LockReleaser : IDisposable

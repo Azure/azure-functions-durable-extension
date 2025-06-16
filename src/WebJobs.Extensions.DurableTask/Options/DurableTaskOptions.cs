@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using DurableTask.AzureStorage.Partitioning;
+using DurableTask.Core.Settings;
 using Microsoft.Azure.WebJobs.Host;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
@@ -22,6 +23,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private string originalHubName;
         private string resolvedHubName;
         private string defaultHubName;
+
+        /// <summary>
+        /// The DefaultVersion value provided here will be automatically assigned to every orchestration
+        /// instance created by this app, and this value will be available on IDurableOrchestrationContext
+        /// passed to each orchestrator function replay invocation of this orchestration instance.
+        /// </summary>
+        public string DefaultVersion { get; set; }
+
+        /// <summary>
+        /// The strategy that will be used for matching versions when running an orchestration. See <see cref="VersioningSettings.VersionMatchStrategy"/> for more information.
+        /// </summary>
+        public VersioningSettings.VersionMatchStrategy VersionMatchStrategy { get; set; } = VersioningSettings.VersionMatchStrategy.CurrentOrOlder;
+
+        /// <summary>
+        /// The strategy that will be used if a versioning failure is detected. See <see cref="VersioningSettings.VersionFailureStrategy"/> for more information.
+        /// </summary>
+        public VersioningSettings.VersionFailureStrategy VersionFailureStrategy { get; set; } = VersioningSettings.VersionFailureStrategy.Reject;
 
         /// <summary>
         /// Settings used for Durable HTTP functionality.
@@ -234,6 +252,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// If UseAppLease is true, gets or sets the AppLeaaseOptions used for acquiring the lease to start the application.
         /// </summary>
         public AppLeaseOptions AppLeaseOptions { get; set; } = AppLeaseOptions.DefaultOptions;
+
+        /// <summary>
+        /// Option to control the receive message size in bytes of the gRPC client, which is used by Durable Functions C# Isolated and Java (and potentially more languages in the future).
+        /// If the server does not respond within this period, the HTTP request will time out.
+        /// Defaults to 4,194,304 (4 MB).
+        /// The maximum allowable value is <see cref="int.MaxValue"/>, which corresponds to the durable grpc server's receive limit.
+        /// </summary>
+        public int MaxGrpcMessageSizeInBytes { get; set; } = 4194304;
+
+        /// <summary>
+        /// Sets the timeout for the HTTP client used by the gRPC client, which is used by Durable Functions C# Isolated and Java (and potentially more languages in the future).
+        /// If the server does not respond within this period, the HTTP request will time out.
+        /// Default is 100 seconds.
+        /// This settings only applies when .NET 6 or greater is used.
+        /// </summary>
+        public TimeSpan? GrpcHttpClientTimeout { get; set; } = TimeSpan.FromSeconds(100);
 
         // Used for mocking the lifecycle notification helper.
         internal HttpMessageHandler NotificationHandler { get; set; }
