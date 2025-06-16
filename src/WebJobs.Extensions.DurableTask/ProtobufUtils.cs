@@ -624,7 +624,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </summary>
         /// <param name="input">The dictionary to convert.</param>
         /// <returns>The corresponding <see cref="MapField{String, Value}"/>, or <c>null</c> if input is <c>null</c>.</returns>
-        internal static MapField<string, Value> ConvertDictionaryToStructMap(Dictionary<string, object?> input)
+        internal static MapField<string, Value> ConvertDictionaryToMapField(Dictionary<string, object?> input)
         {
             var result = new MapField<string, Value>();
 

@@ -172,7 +172,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         NewEvents = { remoteContext.NewEvents.Select(ProtobufUtils.ToHistoryEventProto) },
                         EntityParameters = remoteContext.EntityParameters.ToProtobuf(),
                     };
-                    orchestratorRequest.Properties.Add(ProtobufUtils.ConvertDictionaryToStructMap(remoteContext.Configurations));
+                    orchestratorRequest.Properties.Add(ProtobufUtils.ConvertDictionaryToMapField(remoteContext.Configurations));
 
                     // We only do a null check as an empty string is a valid version.
                     if (this.config.Options.DefaultVersion != null)

@@ -34,7 +34,7 @@ public static class TaskOrchestrationContextExtensionMethods
         {
             throw new ArgumentNullException(nameof(context));
         }
-        ILogger logger = context.CreateReplaySafeLogger("CallHttpASync");
+        ILogger logger = context.CreateReplaySafeLogger("Microsoft.Azure.Functions.Worker.Extensions.DurableTask.CallHttp");
 
         DurableHttpResponse response = await context.CallActivityAsync<DurableHttpResponse>(Constants.HttpTaskActivityReservedName, request);
         
