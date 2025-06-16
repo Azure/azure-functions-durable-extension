@@ -93,7 +93,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 await listener.StartAsync(default);
 
-                // Test linsten address is valid.
+                // Test listen address is valid.
                 Assert.NotNull(listener.ListenAddress);
                 Assert.True(Uri.TryCreate(listener.ListenAddress, UriKind.Absolute, out Uri uri));
                 Assert.True(uri.IsLoopback);
@@ -202,11 +202,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var uri = new Uri(listener.ListenAddress);
                 Assert.NotEqual(4001, uri.Port); // Should not be using the blocked port
                 Assert.True(IsPortInUse(uri.Port));
-
-                await listener.StopAsync(default);
             }
             finally
             {
+                await listener.StopAsync(default);
+
                 // Only stop our port blocker if we successfully started it
                 if (portWasBlocked)
                 {
