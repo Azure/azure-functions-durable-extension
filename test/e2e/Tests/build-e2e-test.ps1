@@ -32,6 +32,8 @@ if ($PSVersionTable.PSEdition -ne 'Core') {
 
 $ErrorActionPreference = "Stop"
 
+$CORE_TOOLS_VERSION = '4.0.7317'
+
 $ProjectBaseDirectory = "$PSScriptRoot\..\..\..\"
 $ProjectTemporaryPath = Join-Path ([System.IO.Path]::GetTempPath()) "DurableTaskExtensionE2ETests"
 New-Item -Path $ProjectTemporaryPath -ItemType Directory -ErrorAction SilentlyContinue
@@ -76,8 +78,7 @@ else
 
   if ([string]::IsNullOrWhiteSpace($coreToolsURL))
   {
-    $coreToolsURL = "https://functionsclibuilds.blob.core.windows.net/builds/$FunctionsRuntimeVersion/latest/Azure.Functions.Cli.$os-$arch.zip"
-    $versionUrl = "https://functionsclibuilds.blob.core.windows.net/builds/$FunctionsRuntimeVersion/latest/version.txt"
+    $coreToolsURL = "https://github.com/Azure/azure-functions-core-tools/releases/download/$CORE_TOOLS_VERSION/Azure.Functions.Cli.$os-$arch.$CORE_TOOLS_VERSION.zip"
   }
 
   Write-Host ""
