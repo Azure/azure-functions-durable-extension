@@ -23,7 +23,7 @@ public class HelloCitiesOrchestrationTests
     }
 
     [Fact]
-    // Unit test for Orchestrator HelloCitiesOrchestration.
+    // Unit test for Orchestrator HelloCitiesOrchestration.HttpCities.
     public async Task HelloCitiesOrchestration_ReturnsExpectedGreetings()
     {
         // Mock TaskOrchestrationContext and setup logger.
@@ -61,19 +61,19 @@ public class HelloCitiesOrchestrationTests
             x => x.Log(
                 It.Is<LogLevel>(l => l == LogLevel.Information),
                 It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Saying hello")),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("Saying hello")),
                 It.IsAny<Exception>(),
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Once);
     }
 
     [Fact]
-    // Unit test for SayHello.
+    // Unit test for HelloCitiesOrchestration.SayHello.
     public void SayHello_ReturnsExpectedGreeting()
     {
         const string name = "Tokyo";
 
-        var result = Function1.SayHello(name, functionContextMock.Object);
+        var result = HelloCitiesOrchestration.SayHello(name, functionContextMock.Object);
 
         // Verify the activity function SayHello returns the right result. 
         Assert.Equal($"Hello {name}!", result);
@@ -111,7 +111,7 @@ public class HelloCitiesOrchestrationTests
         var serializedResponseBody = await System.Text.Json.JsonSerializer.DeserializeAsync<dynamic>(result.Body);
 
         // Verify the response returned contains the right data. 
-        Assert.Equal(instanceId, serializedResponseBody.GetProperty("Id").GetString());
+        Assert.Equal(instanceId, serializedResponseBody!.GetProperty("Id").GetString());
     }
 
     // Method to mock the HttpRequestData.
