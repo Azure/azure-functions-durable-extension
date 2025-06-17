@@ -86,6 +86,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
             {
                 if (this.options.Tracing.Version == Options.DurableDistributedTracingVersion.None)
                 {
+                    this.EmitDTV2Announcement();
                     return;
                 }
 
@@ -103,6 +104,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
                 }
                 else
                 {
+                    this.EmitDTV2Announcement();
+
                     this.SetUpV1DistributedTracing();
                     if (CorrelationSettings.Current.EnableDistributedTracing)
                     {
@@ -115,13 +118,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
                     }
                 }
             }
-            else if (!this.options.Tracing.DistributedTracingEnabled ||
-                (this.options.Tracing.DistributedTracingEnabled && this.options.Tracing.Version == Options.DurableDistributedTracingVersion.V1))
+            else
             {
-                this.endToEndTraceHelper.ExtensionWarningAnnouncement(
-                    "Durable Functions Distributed Tracing V2 is GA now! For more information, please visit, "
-                    + "https://learn.microsoft.com/en-us/azure/azure-functions/durable/durable-functions-diagnostics?tabs=csharp-inproc#distributed-tracing.");
+                this.EmitDTV2Announcement();
             }
+        }
+
+        private void EmitDTV2Announcement()
+        {
+            this.endToEndTraceHelper.ExtensionWarningAnnouncement(
+                "Durable Functions Distributed Tracing V2 is GA now! For more information, please visit, "
+                + "https://learn.microsoft.com/en-us/azure/azure-functions/durable/durable-functions-diagnostics?tabs=csharp-inproc#distributed-tracing.");
         }
 
         private void SetUpV1DistributedTracing()
