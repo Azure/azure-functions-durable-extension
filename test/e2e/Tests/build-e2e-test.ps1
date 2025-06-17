@@ -89,12 +89,6 @@ else
   Remove-Item -Force "$FUNC_CLI_DIRECTORY.zip" -ErrorAction Ignore
   Remove-Item -Recurse -Force $FUNC_CLI_DIRECTORY -ErrorAction Ignore
 
-  if ($versionUrl)
-  {
-    $version = Invoke-RestMethod -Uri $versionUrl
-    Write-Host "Downloading Functions Core Tools (Version: $version)..."
-  }
-
   $output = "$FUNC_CLI_DIRECTORY.zip"
   Invoke-RestMethod -Uri $coreToolsURL -OutFile $output
 
