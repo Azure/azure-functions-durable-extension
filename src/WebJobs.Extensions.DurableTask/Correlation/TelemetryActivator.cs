@@ -81,9 +81,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
         public void Initialize(ILogger logger)
         {
             this.endToEndTraceHelper = new EndToEndTraceHelper(logger, this.options.Tracing.TraceReplayEvents);
-            this.endToEndTraceHelper.ExtensionWarningAnnouncement(
-                "Durable Functions Distributed Tracing V2 is GA now! Fore more information, please visit, "
-                + "https://learn.microsoft.com/en-us/azure/azure-functions/durable/durable-functions-diagnostics?tabs=csharp-inproc#distributed-tracing.");
 
             if (this.options.Tracing.DistributedTracingEnabled)
             {
@@ -117,6 +114,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
                         }
                     }
                 }
+            }
+            else if (!this.options.Tracing.DistributedTracingEnabled ||
+                (this.options.Tracing.DistributedTracingEnabled && this.options.Tracing.Version == Options.DurableDistributedTracingVersion.V1))
+            {
+                this.endToEndTraceHelper.ExtensionWarningAnnouncement(
+                    "Durable Functions Distributed Tracing V2 is GA now! For more information, please visit, "
+                    + "https://learn.microsoft.com/en-us/azure/azure-functions/durable/durable-functions-diagnostics?tabs=csharp-inproc#distributed-tracing.");
             }
         }
 
