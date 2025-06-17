@@ -6,10 +6,10 @@ using Microsoft.Extensions.Logging;
 
 namespace IsolatedUnitTest;
 
-public static class Function1
+public static class HelloCitiesOrchestration
 {
-    [Function(nameof(Function1))]
-    public static async Task<List<string>> RunOrchestrator(
+    [Function(nameof(HelloCitiesOrchestration))]
+    public static async Task<List<string>> HelloCities(
         [OrchestrationTrigger] TaskOrchestrationContext context)
     {
         ILogger logger = context.CreateReplaySafeLogger(nameof(Function1));
@@ -31,7 +31,7 @@ public static class Function1
         return $"Hello {name}!";
     }
 
-    [Function("Function1_HttpStart")]
+    [Function("HelloCitiesOrchestration_HttpStart")]
     public static async Task<HttpResponseData> HttpStart(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestData req,
         [DurableClient] DurableTaskClient client,
@@ -39,7 +39,7 @@ public static class Function1
     {
         // Function input comes from the request content.
         string instanceId = await client.ScheduleNewOrchestrationInstanceAsync(
-            nameof(Function1));
+            nameof(HelloCitiesOrchestration));
 
         // Returns an HTTP 202 response with an instance management payload.
         // See https://learn.microsoft.com/azure/azure-functions/durable/durable-functions-http-api#start-orchestration

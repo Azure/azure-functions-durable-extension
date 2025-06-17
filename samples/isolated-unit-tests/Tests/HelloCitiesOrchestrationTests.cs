@@ -11,20 +11,20 @@ using Xunit;
 
 namespace IsolatedUnitTest.Tests;
 
-public class Function1Tests
+public class HelloCitiesOrchestrationTests
 {
     private readonly Mock<ILogger> testLogger;
     private readonly Mock<FunctionContext> functionContextMock;
 
-    public Function1Tests()
+    public HelloCitiesOrchestrationTests()
     {
         testLogger = new Mock<ILogger>();
         functionContextMock = new Mock<FunctionContext>();
     }
 
     [Fact]
-    // Unit test for Orchestrator Function1.
-    public async Task RunOrchestrator_ReturnsExpectedGreetings()
+    // Unit test for Orchestrator HelloCitiesOrchestration.
+    public async Task HelloCitiesOrchestration_ReturnsExpectedGreetings()
     {
         // Mock TaskOrchestrationContext and setup logger.
         var contextMock = new Mock<TaskOrchestrationContext>();
@@ -48,7 +48,7 @@ public class Function1Tests
             It.IsAny<TaskOptions>()))
             .ReturnsAsync("Hello London!");
 
-        var result = await Function1.RunOrchestrator(contextMock.Object);
+        var result = await HelloCitiesOrchestration.HelloCities(contextMock.Object);
 
         // Verify the orchestration result.
         Assert.Equal(3, result.Count);
@@ -80,7 +80,7 @@ public class Function1Tests
     }
 
     [Fact]
-    // Unit Test for HttpStart
+    // Unit Test for HelloCitiesOrchestration.HttpStart
     public async Task HttpStart_ReturnsExpectedResponse()
     {
         var instanceId = Guid.NewGuid().ToString();
@@ -101,7 +101,7 @@ public class Function1Tests
         var responseMock = new Mock<HttpResponseData>(functionContextMock.Object);
         responseMock.SetupGet(r => r.StatusCode).Returns(HttpStatusCode.Accepted);
 
-        var result = await Function1.HttpStart(mockRequest, durableClientMock.Object, functionContextMock.Object);
+        var result = await HelloCitiesOrchestration.HttpStart(mockRequest, durableClientMock.Object, functionContextMock.Object);
 
         // Verify the status code.
         Assert.Equal(HttpStatusCode.Accepted, result.StatusCode);
