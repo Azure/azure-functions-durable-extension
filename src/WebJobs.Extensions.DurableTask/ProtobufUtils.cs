@@ -635,10 +635,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             foreach (PropertyInfo property in properties)
             {
                 string propertyName = property.Name;
-                object? propertyValue = property.GetValue(property);
+                object? propertyValue = property.GetValue(configurations);
 
-                Value protoPropertyValue = ConvertToProtoValue(propertyValue);
-                map[propertyName] = protoPropertyValue;
+                map[propertyName] = ConvertToProtoValue(propertyValue);
             }
 
             return map;
