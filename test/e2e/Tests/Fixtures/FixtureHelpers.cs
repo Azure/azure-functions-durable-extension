@@ -36,7 +36,6 @@ public static class FixtureHelpers
         funcProcess.StartInfo.FileName = cliPath;
         funcProcess.StartInfo.ArgumentList.Add("host");
         funcProcess.StartInfo.ArgumentList.Add("start");
-        funcProcess.StartInfo.ArgumentList.Add("--csharp");
         funcProcess.StartInfo.ArgumentList.Add("--verbose");
 
         if (enableAuth)

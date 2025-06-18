@@ -20,6 +20,7 @@ using DurableTask.Core.Middleware;
 using DurableTask.Core.Settings;
 using Microsoft.Azure.WebJobs.Description;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Grpc;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage;
 using Microsoft.Azure.WebJobs.Host;
@@ -67,7 +68,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #pragma warning disable CS0169
         private readonly ITelemetryActivator telemetryActivator;
 #pragma warning restore CS0169
-        private readonly LocalGrpcListener localGrpcListener;
+        private readonly ILocalGrpcListener localGrpcListener;
         private readonly bool isOptionsConfigured;
         private readonly Guid extensionGuid;
 
@@ -175,7 +176,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 runtimeType == WorkerRuntimeType.Custom)
             {
                 this.OutOfProcProtocol = OutOfProcOrchestrationProtocol.MiddlewarePassthrough;
-                this.localGrpcListener = new LocalGrpcListener(this);
+                this.localGrpcListener = LocalGrpcListener.Create(this, this.Options.GrpcListenerMode);
                 this.HostLifetimeService.OnStopped.Register(this.StopLocalGrpcServer);
             }
             else
@@ -485,12 +486,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private void StartLocalGrpcServer()
         {
-            this.localGrpcListener.StartAsync().GetAwaiter().GetResult();
+            this.localGrpcListener.StartAsync(default).GetAwaiter().GetResult();
         }
 
         private void StopLocalGrpcServer()
         {
-            this.localGrpcListener.StopAsync().GetAwaiter().GetResult();
+            this.localGrpcListener.StopAsync(default).GetAwaiter().GetResult();
         }
 
         private void InitializeForFunctionsV1(ExtensionConfigContext context)
