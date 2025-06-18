@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using DurableTask.Core;
 using DurableTask.Core.Command;
 using DurableTask.Core.Entities;
@@ -619,39 +620,46 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        /// <summary>
-        /// Converts a <see cref="Dictionary{TKey, TValue}"/> of <c>&lt;string, object?&gt;</c> to a <see cref="MapField{String, Value}"/> for gRPC transmission.
-        /// </summary>
-        /// <param name="input">The dictionary to convert.</param>
-        /// <returns>The corresponding <see cref="MapField{String, Value}"/>, or <c>null</c> if input is <c>null</c>.</returns>
-        internal static MapField<string, Value> ConvertDictionaryToMapField(Dictionary<string, object?> input)
+        internal static MapField<string, Value> ConvertPocoToProtoMap(object? configurations)
         {
-            var result = new MapField<string, Value>();
+            var map = new MapField<string, Value>();
 
-            foreach (var kvp in input)
+            if (configurations == null)
             {
-                result[kvp.Key] = ConvertObjectToValue(kvp.Value);
+                return map;
             }
 
-            return result;
+            System.Type type = configurations.GetType();
+            PropertyInfo[] properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
+
+            foreach (PropertyInfo property in properties)
+            {
+                string propertyName = property.Name;
+                object? propertyValue = property.GetValue(property);
+
+                Value protoPropertyValue = ConvertToProtoValue(propertyValue);
+                map[propertyName] = protoPropertyValue;
+            }
+
+            return map;
         }
 
-        private static Value ConvertObjectToValue(object? obj)
+        private static Value ConvertToProtoValue(object? value)
         {
-            if (obj is null)
+            if (value is null)
             {
                 return Value.ForNull();
             }
 
-            return obj switch
+            return value switch
             {
                 string s => Value.ForString(s),
                 bool b => Value.ForBool(b),
                 int i => Value.ForNumber(i),
-                long l => Value.ForNumber(l),  // Protobuf `Value` only supports double for numbers
+                long l => Value.ForNumber(l),
                 float f => Value.ForNumber(f),
                 double d => Value.ForNumber(d),
-                _ => throw new InvalidOperationException($"Unsupported type: {obj.GetType()}")
+                _ => throw new InvalidOperationException($"Unsupported type: {value.GetType()} at durable ProtobufUtils.")
             };
         }
     }

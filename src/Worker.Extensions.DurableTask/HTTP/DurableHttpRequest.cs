@@ -27,7 +27,7 @@ public class DurableHttpRequest
     /// Initializes a new instance of the <see cref="DurableHttpRequest"/> class with specified HTTP method, URI, headers, 
     /// and an option to enable asynchronous pattern handling.
     /// </summary>
-    public DurableHttpRequest(HttpMethod method, Uri uri, IDictionary<string, StringValues>? headers, bool asynchronousPatternEnabled = true)
+    public DurableHttpRequest(HttpMethod method, Uri uri, IDictionary<string, StringValues>? headers, bool asynchronousPatternEnabled = false)
     {
         this.Method = method;
         this.Uri = uri;

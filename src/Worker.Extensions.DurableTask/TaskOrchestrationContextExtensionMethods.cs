@@ -21,7 +21,7 @@ namespace Microsoft.DurableTask;
 public static class TaskOrchestrationContextExtensionMethods
 {
     private const int DefaultPollingIntervalMilliseconds = 30000;
-    private const string PollingInterval = "df.http.defaultAsyncRequestSleepTimeMilliseconds";
+    private const string PollingInterval = "HttpDefaultAsyncRequestSleepTimeMilliseconds";
 
     /// <summary>
     /// Makes an HTTP call using the information in the DurableHttpRequest.
@@ -73,7 +73,7 @@ public static class TaskOrchestrationContextExtensionMethods
 
             DurableHttpRequest newHttpRequest = CreateLocationPollRequest(request, locationUrl);
 
-            logger.LogInformation($"Polling Http status at location: {locationUrl}");
+            logger.LogInformation($"Polling HTTP status at location: {locationUrl}");
 
             response = await context.CallActivityAsync<DurableHttpResponse>(Constants.HttpTaskActivityReservedName, newHttpRequest);
         }
@@ -89,7 +89,7 @@ public static class TaskOrchestrationContextExtensionMethods
     /// <param name="uri">uri used to make the HTTP call.</param>
     /// <param name="content">Content passed in the HTTP request.</param>
     /// <param name="retryOptions">The retry option for the HTTP task.</param>
-    /// <param name="asynchronousPatternEnabled">Boolean controls Whether Durable HTTP should automatically handle async HTTP patterns like 202 with polling. Default to true. </param>
+    /// <param name="asynchronousPatternEnabled">Boolean controls Whether Durable HTTP should automatically handle async HTTP patterns like 202 with polling. Default to false. </param>
     /// <returns>A <see cref="Task{DurableHttpResponse}"/>Result of the HTTP call.</returns>
     public static Task<DurableHttpResponse> CallHttpAsync(
         this TaskOrchestrationContext context, 
@@ -97,7 +97,7 @@ public static class TaskOrchestrationContextExtensionMethods
         Uri uri,
         string? content = null,
         HttpRetryOptions? retryOptions = null,
-        bool asynchronousPatternEnabled = true)
+        bool asynchronousPatternEnabled = false)
     {
         DurableHttpRequest request = new DurableHttpRequest(method, uri)
         {
