@@ -86,7 +86,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
             {
                 if (this.options.Tracing.Version == Options.DurableDistributedTracingVersion.None)
                 {
-                    this.EmitDTV2Announcement();
                     return;
                 }
 
