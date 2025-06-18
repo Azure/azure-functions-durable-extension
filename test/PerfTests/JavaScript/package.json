@@ -7,7 +7,7 @@
     "test": "echo \"No tests yet...\""
   },
   "dependencies": {
-    "durable-functions": "^1.5.4",
+    "durable-functions": "^3.1.0",
     "p-limit": "^3.1.0"
   },
   "devDependencies": {}
