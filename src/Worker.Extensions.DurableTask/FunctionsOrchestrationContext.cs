@@ -48,6 +48,8 @@ internal sealed partial class FunctionsOrchestrationContext : TaskOrchestrationC
 
     public override ParentOrchestrationInstance? Parent => this.innerContext.Parent;
 
+    public override string Version => this.innerContext.Version;
+
     protected override ILoggerFactory LoggerFactory { get; }
 
     public override TaskOrchestrationEntityFeature Entities =>
@@ -87,6 +89,29 @@ internal sealed partial class FunctionsOrchestrationContext : TaskOrchestrationC
         TaskName orchestratorName, object? input = null, TaskOptions? options = null)
     {
         this.EnsureLegalAccess();
+        // If we have a default version, add it to the TaskOptions and call the inner context with it.
+        if (this.innerContext.Properties.TryGetValue("defaultVersion", out var propVersion) && propVersion is string defaultVersion)
+        {
+            // TODO: Update to copy constructors when available - https://github.com/microsoft/durabletask-dotnet/issues/440
+            SubOrchestrationOptions subOptions;
+            if (options is SubOrchestrationOptions subOrchestrationOptions)
+            {
+                subOptions = new SubOrchestrationOptions(options)
+                {
+                    InstanceId = subOrchestrationOptions.InstanceId,
+                    Version = subOrchestrationOptions.Version?.Version ?? defaultVersion,
+                };
+            }
+            else
+            {
+                subOptions = new SubOrchestrationOptions(options ?? new TaskOptions())
+                {
+                    Version = defaultVersion
+                };
+            }
+            return this.innerContext.CallSubOrchestratorAsync<TResult>(orchestratorName, input, subOptions);
+        }
+
         return this.innerContext.CallSubOrchestratorAsync<TResult>(orchestratorName, input, options);
     }
 
