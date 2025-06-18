@@ -221,11 +221,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(false, DurableDistributedTracingVersion.None, true, false)]
-        [InlineData(true, DurableDistributedTracingVersion.None, true, false)]
+        [InlineData(true, DurableDistributedTracingVersion.None, false, false)]
         [InlineData(true, DurableDistributedTracingVersion.V1, true, false)]
         [InlineData(true, DurableDistributedTracingVersion.V2, false, false)]
         [InlineData(false, DurableDistributedTracingVersion.None, true, true)]
-        [InlineData(true, DurableDistributedTracingVersion.None, true, true)]
+        [InlineData(true, DurableDistributedTracingVersion.None, false, true)]
         [InlineData(true, DurableDistributedTracingVersion.V1, true, true)]
         [InlineData(true, DurableDistributedTracingVersion.V2, false, true)]
 

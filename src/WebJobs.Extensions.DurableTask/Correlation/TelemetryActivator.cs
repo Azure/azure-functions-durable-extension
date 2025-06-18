@@ -127,7 +127,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
         {
             this.endToEndTraceHelper.ExtensionWarningAnnouncement(
                 "Durable Functions Distributed Tracing V2 is GA now! For more information, please visit, "
-                + "https://learn.microsoft.com/en-us/azure/azure-functions/durable/durable-functions-diagnostics?tabs=csharp-inproc#distributed-tracing.");
+                + "https://learn.microsoft.com/en-us/azure/azure-functions/durable/durable-functions-diagnostics?tabs=csharp-inproc#distributed-tracing. "
+                + "To disable this message, you can configure your distributed trace version to \"V2\"");
         }
 
         private void SetUpV1DistributedTracing()
