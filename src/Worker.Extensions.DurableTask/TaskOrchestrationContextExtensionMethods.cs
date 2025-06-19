@@ -114,7 +114,8 @@ public static class TaskOrchestrationContextExtensionMethods
         DurableHttpRequest newDurableHttpRequest = new DurableHttpRequest(
             method: HttpMethod.Get,
             uri: new Uri(locationUri),
-            headers: durableHttpRequest.Headers);
+            headers: durableHttpRequest.Headers,
+            asynchronousPatternEnabled: durableHttpRequest.AsynchronousPatternEnabled);
 
         return newDurableHttpRequest;
     }

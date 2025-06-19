@@ -52,7 +52,7 @@ public static class HttpFeature
     {
         ILogger logger = context.CreateReplaySafeLogger(nameof(HttpPollingOrchestrator));
         Uri? url = context.GetInput<Uri>();
-        var response = await context.CallHttpAsync(HttpMethod.Get, url!);   
+        var response = await context.CallHttpAsync(HttpMethod.Get, url!, asynchronousPatternEnabled: true);   
         return response;
     }
 
