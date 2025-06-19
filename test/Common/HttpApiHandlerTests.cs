@@ -1594,7 +1594,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async void GetClientResponseLinks_Uses_Forwarded_Headers_When_Enabled()
+        public async Task GetClientResponseLinks_Uses_Forwarded_Headers_When_Enabled()
         {
             // Arrange
             var options = new DurableTaskOptions
@@ -1635,7 +1635,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async void GetClientResponseLinks_Ignores_Forwarded_Headers_When_Disabled()
+        public async Task GetClientResponseLinks_Ignores_Forwarded_Headers_When_Disabled()
         {
             // Arrange
             var options = new DurableTaskOptions
