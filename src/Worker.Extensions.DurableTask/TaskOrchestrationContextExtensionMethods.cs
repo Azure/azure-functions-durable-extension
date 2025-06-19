@@ -89,6 +89,25 @@ public static class TaskOrchestrationContextExtensionMethods
     /// <param name="uri">uri used to make the HTTP call.</param>
     /// <param name="content">Content passed in the HTTP request.</param>
     /// <param name="retryOptions">The retry option for the HTTP task.</param>
+    /// <returns>A <see cref="Task{DurableHttpResponse}"/>Result of the HTTP call.</returns>
+    public static Task<DurableHttpResponse> CallHttpAsync(
+        this TaskOrchestrationContext context,
+        HttpMethod method,
+        Uri uri,
+        string? content = null,
+        HttpRetryOptions? retryOptions = null)
+    {
+        return CallHttpAsync(context, method, uri, content, retryOptions, false);
+    }
+
+    /// <summary>
+    /// Makes an HTTP call to the specified uri.
+    /// </summary>
+    /// <param name="context">The task orchestration context.</param>
+    /// <param name="method">HttpMethod used for api call.</param>
+    /// <param name="uri">uri used to make the HTTP call.</param>
+    /// <param name="content">Content passed in the HTTP request.</param>
+    /// <param name="retryOptions">The retry option for the HTTP task.</param>
     /// <param name="asynchronousPatternEnabled">Boolean controls Whether Durable HTTP should automatically handle async HTTP patterns like 202 with polling. Default to false. </param>
     /// <returns>A <see cref="Task{DurableHttpResponse}"/>Result of the HTTP call.</returns>
     public static Task<DurableHttpResponse> CallHttpAsync(
