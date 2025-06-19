@@ -43,6 +43,6 @@ public class HttpFeatureTests
         Assert.Contains("Long-running orchestration completed.", orchestrationDetails.Output);
 
         // Check that logs include evidence of HTTP polling behavior.
-        Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains("Polling Http status at location"));
+        Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains("Polling HTTP status at location"));
     }
 }
