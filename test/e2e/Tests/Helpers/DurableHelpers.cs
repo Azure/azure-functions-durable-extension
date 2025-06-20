@@ -90,7 +90,6 @@ internal class DurableHelpers
             return string.Empty;
         }
 
-        string? statusQueryGetUri = responseJsonNode[key]?.GetValue<string>();
-        return statusQueryGetUri ?? string.Empty;
+        return responseJsonNode[key]?.GetValue<string>() ?? responseJsonNode[char.ToLower(key[0]) + key.Substring(1)]?.GetValue<string>() ?? string.Empty;
     }
 }

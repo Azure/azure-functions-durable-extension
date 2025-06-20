@@ -23,6 +23,7 @@ public class ActivityInputTypeTests
 
     // This test verifies that different types of inputs can be properly serialized and passed to activity functions.
     [Fact]
+    [Trait("PowerShell", "Skip")] // Test not yet implemented in PowerShell
     public async Task DifferentActivityInputTypeTests()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("ActivityInputType_HttpStart", "");

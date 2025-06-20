@@ -22,6 +22,7 @@ public class TerminateOrchestratorTests
 
 
     [Fact]
+    [Trait("PowerShell", "Skip")] // Test not yet implemented in PowerShell
     public async Task TerminateRunningOrchestration_ShouldSucceed()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("LongOrchestrator_HttpStart", "");
@@ -40,6 +41,7 @@ public class TerminateOrchestratorTests
 
 
     [Fact(Skip = "Will enable when https://github.com/Azure/azure-functions-durable-extension/issues/3025 is fixed")]
+    [Trait("PowerShell", "Skip")] // Test not yet implemented in PowerShell
     public async Task TerminateScheduledOrchestration_ShouldSucceed()
     {
         DateTime scheduledStartTime = DateTime.UtcNow + TimeSpan.FromMinutes(1);
@@ -59,6 +61,7 @@ public class TerminateOrchestratorTests
 
 
     [Fact]
+    [Trait("PowerShell", "Skip")] // Test not yet implemented in PowerShell
     public async Task TerminateTerminatedOrchestration_ShouldFail()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("LongOrchestrator_HttpStart", "");
@@ -86,6 +89,7 @@ public class TerminateOrchestratorTests
 
 
     [Fact]
+    [Trait("PowerShell", "Skip")] // Test not yet implemented in PowerShell
     public async Task TerminateCompletedOrchestration_ShouldFail()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("HelloCities_HttpStart", "");
@@ -107,6 +111,7 @@ public class TerminateOrchestratorTests
     }
 
     [Fact]
+    [Trait("PowerShell", "Skip")] // Test not yet implemented in PowerShell
     public async Task TerminateNonExistantOrchestration_ShouldFail()
     {
         using HttpResponseMessage terminateResponse = await HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={Guid.NewGuid().ToString()}");

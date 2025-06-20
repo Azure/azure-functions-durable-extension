@@ -22,6 +22,7 @@ public class SuspendResumeTests
 
 
     [Fact]
+    [Trait("PowerShell", "Skip")] // Test not yet implemented in PowerShell
     public async Task SuspendAndResumeRunningOrchestration_ShouldSucceed()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("LongOrchestrator_HttpStart", "");
@@ -50,6 +51,7 @@ public class SuspendResumeTests
     }
 
     [Fact]
+    [Trait("PowerShell", "Skip")] // Test not yet implemented in PowerShell
     public async Task SuspendSuspendedOrchestration_ShouldFail()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("LongOrchestrator_HttpStart", "");
@@ -83,6 +85,7 @@ public class SuspendResumeTests
 
 
     [Fact]
+    [Trait("PowerShell", "Skip")] // Test not yet implemented in PowerShell
     public async Task ResumeRunningOrchestration_ShouldFail()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("LongOrchestrator_HttpStart", "");
@@ -111,6 +114,7 @@ public class SuspendResumeTests
 
 
     [Fact]
+    [Trait("PowerShell", "Skip")] // Test not yet implemented in PowerShell
     public async Task SuspendResumeCompletedOrchestration_ShouldFail()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("HelloCities_HttpStart", "");

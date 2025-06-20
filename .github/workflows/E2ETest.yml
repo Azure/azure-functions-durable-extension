@@ -41,13 +41,29 @@ jobs:
         run: |
           .\test\e2e\Tests\build-e2e-test.ps1
 
-      - name: Build
+      - name: Build Test Project
         working-directory: test/e2e/Tests
         run: dotnet build
 
-      - name: Run E2E tests
+      - name: Setup Environment for dotnet
+        shell: pwsh
+        run: |
+          echo "E2E_TEST_FUNCTIONS_LANGUAGE=dotnet-isolated" >> $GITHUB_ENV
+          echo "TEST_APP_NAME=BasicDotnetIsolated" >> $GITHUB_ENV
+
+      - name: Run E2E tests (dotnet-isolated)
         working-directory: test/e2e/Tests
-        run: dotnet test --filter AzureStorage!=Skip
+        run: dotnet test --filter 'AzureStorage!=Skip&Dotnet!=Skip'
+
+      - name: Setup Environment for PowerShell
+        shell: pwsh
+        run: |
+          echo "E2E_TEST_FUNCTIONS_LANGUAGE=powershell" >> $GITHUB_ENV
+          echo "TEST_APP_NAME=BasicPowerShell" >> $GITHUB_ENV
+
+      - name: Run E2E tests (PowerShell)
+        working-directory: test/e2e/Tests
+        run: dotnet test --filter 'AzureStorage!=Skip&PowerShell!=Skip'
 
   e2e-azurestorage-windows:
     runs-on: windows-latest
@@ -76,13 +92,29 @@ jobs:
         run: |
           .\test\e2e\Tests\build-e2e-test.ps1
 
-      - name: Build
+      - name: Build Test Project
         working-directory: test/e2e/Tests
         run: dotnet build
 
-      - name: Run E2E tests
+      - name: Setup Environment for dotnet
+        shell: pwsh
+        run: |
+          echo "E2E_TEST_FUNCTIONS_LANGUAGE=dotnet-isolated" >> $GITHUB_ENV
+          echo "TEST_APP_NAME=BasicDotnetIsolated" >> $GITHUB_ENV
+
+      - name: Run E2E tests (dotnet-isolated)
         working-directory: test/e2e/Tests
-        run: dotnet test --filter AzureStorage!=Skip
+        run: dotnet test --filter 'AzureStorage!=Skip&Dotnet!=Skip'
+
+      - name: Setup Environment for PowerShell
+        shell: pwsh
+        run: |
+          echo "E2E_TEST_FUNCTIONS_LANGUAGE=powershell" >> $GITHUB_ENV
+          echo "TEST_APP_NAME=BasicPowerShell" >> $GITHUB_ENV
+
+      - name: Run E2E tests (PowerShell)
+        working-directory: test/e2e/Tests
+        run: dotnet test --filter 'AzureStorage!=Skip&PowerShell!=Skip'
 
   e2e-mssql:
     runs-on: ubuntu-latest
@@ -110,13 +142,29 @@ jobs:
         run: |
           .\test\e2e\Tests\build-e2e-test.ps1 -StartMSSqlContainer
 
-      - name: Build
+      - name: Build Test Project
         working-directory: test/e2e/Tests
         run: dotnet build
 
-      - name: Run E2E tests
+      - name: Setup Environment for dotnet
+        shell: pwsh
+        run: |
+          echo "E2E_TEST_FUNCTIONS_LANGUAGE=dotnet-isolated" >> $GITHUB_ENV
+          echo "TEST_APP_NAME=BasicDotnetIsolated" >> $GITHUB_ENV
+
+      - name: Run E2E tests (dotnet-isolated)
         working-directory: test/e2e/Tests
-        run: dotnet test --filter MSSQL!=Skip
+        run: dotnet test --filter 'MSSQL!=Skip&Dotnet!=Skip'
+
+      - name: Setup Environment for PowerShell
+        shell: pwsh
+        run: |
+          echo "E2E_TEST_FUNCTIONS_LANGUAGE=powershell" >> $GITHUB_ENV
+          echo "TEST_APP_NAME=BasicPowerShell" >> $GITHUB_ENV
+
+      - name: Run E2E tests (PowerShell)
+        working-directory: test/e2e/Tests
+        run: dotnet test --filter 'MSSQL!=Skip&PowerShell!=Skip'
 
   e2e-dts:
     runs-on: ubuntu-latest
@@ -140,10 +188,26 @@ jobs:
         run: |
           .\test\e2e\Tests\build-e2e-test.ps1 -StartDTSContainer
 
-      - name: Build
+      - name: Build Test Project
         working-directory: test/e2e/Tests
         run: dotnet build
 
-      - name: Run E2E tests
+      - name: Setup Environment for dotnet
+        shell: pwsh
+        run: |
+          echo "E2E_TEST_FUNCTIONS_LANGUAGE=dotnet-isolated" >> $GITHUB_ENV
+          echo "TEST_APP_NAME=BasicDotnetIsolated" >> $GITHUB_ENV
+
+      - name: Run E2E tests (dotnet-isolated)
         working-directory: test/e2e/Tests
-        run: dotnet test --logger "console;verbosity=detailed" --filter DTS!=Skip
+        run: dotnet test --filter 'DTS!=Skip&Dotnet!=Skip'
+
+      - name: Setup Environment for PowerShell
+        shell: pwsh
+        run: |
+          echo "E2E_TEST_FUNCTIONS_LANGUAGE=powershell" >> $GITHUB_ENV
+          echo "TEST_APP_NAME=BasicPowerShell" >> $GITHUB_ENV
+
+      - name: Run E2E tests (PowerShell)
+        working-directory: test/e2e/Tests
+        run: dotnet test --filter 'DTS!=Skip&PowerShell!=Skip'

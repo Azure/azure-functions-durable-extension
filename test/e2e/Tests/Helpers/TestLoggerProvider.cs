@@ -1,16 +1,13 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Microsoft.Extensions.Logging;
 using Xunit.Abstractions;
 using Xunit.Sdk;
 
 namespace Microsoft.Azure.Durable.Tests.DotnetIsolatedE2E;
 
-internal class TestLoggerProvider : ILoggerProvider, ILogger
+public class TestLoggerProvider : ILoggerProvider, ILogger
 {
     private readonly IMessageSink _messageSink;
     private ITestOutputHelper? _currentTestOutput;
