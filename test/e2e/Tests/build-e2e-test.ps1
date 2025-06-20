@@ -141,7 +141,7 @@ function InstallExtensionAndBuildTestApp($testAppDir) {
         if (Test-Path ".\extensions.csproj") {
           Write-Host "Updating extensions.csproj to reference WebJobs extension version $webJobsExtensionVersion"
           
-          dotnet package add Microsoft.Azure.WebJobs.Extensions.DurableTask --version $webJobsExtensionVersion --project extensions.csproj --source ".\packages" --no-restore
+          dotnet add 'extensions.csproj' package 'Microsoft.Azure.WebJobs.Extensions.DurableTask' --version $webJobsExtensionVersion --source ".\packages" --no-restore
         }
       }
     }
