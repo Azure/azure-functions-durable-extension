@@ -12,7 +12,7 @@ public static class HelloCitiesOrchestration
     public static async Task<List<string>> HelloCities(
         [OrchestrationTrigger] TaskOrchestrationContext context)
     {
-        ILogger logger = context.CreateReplaySafeLogger(nameof(Function1));
+        ILogger logger = context.CreateReplaySafeLogger(nameof(HelloCities));
         logger.LogInformation("Saying hello.");
         var outputs = new List<string>();
 
