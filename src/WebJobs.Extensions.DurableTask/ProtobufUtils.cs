@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using DurableTask.Core;
 using DurableTask.Core.Command;
 using DurableTask.Core.Entities;
@@ -15,6 +16,7 @@ using DurableTask.Core.History;
 using DurableTask.Core.Query;
 using DurableTask.Core.Tracing;
 using Google.Protobuf;
+using Google.Protobuf.Collections;
 using Google.Protobuf.WellKnownTypes;
 using P = Microsoft.DurableTask.Protobuf;
 
@@ -616,6 +618,48 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 default:
                     throw new NotSupportedException($"Deserialization of {operationResult.ResultTypeCase} is not supported.");
             }
+        }
+
+        internal static MapField<string, Value> ConvertPocoToProtoMap(object? configurations)
+        {
+            var map = new MapField<string, Value>();
+
+            if (configurations == null)
+            {
+                return map;
+            }
+
+            System.Type type = configurations.GetType();
+            PropertyInfo[] properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
+
+            foreach (PropertyInfo property in properties)
+            {
+                string propertyName = property.Name;
+                object? propertyValue = property.GetValue(configurations);
+
+                map[propertyName] = ConvertToProtoValue(propertyValue);
+            }
+
+            return map;
+        }
+
+        private static Value ConvertToProtoValue(object? value)
+        {
+            if (value is null)
+            {
+                return Value.ForNull();
+            }
+
+            return value switch
+            {
+                string s => Value.ForString(s),
+                bool b => Value.ForBool(b),
+                int i => Value.ForNumber(i),
+                long l => Value.ForNumber(l),
+                float f => Value.ForNumber(f),
+                double d => Value.ForNumber(d),
+                _ => throw new InvalidOperationException($"Unsupported type: {value.GetType()} at durable ProtobufUtils.")
+            };
         }
     }
 }

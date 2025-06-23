@@ -33,17 +33,17 @@ public class HelloCitiesOrchestrationTests
 
         // Mock the activity function calls
         contextMock.Setup(x => x.CallActivityAsync<string>(
-            It.Is<TaskName>(n => n.Name == nameof(Function1.SayHello)),
+            It.Is<TaskName>(n => n.Name == nameof(HelloCitiesOrchestration.SayHello)),
             It.Is<string>(n => n == "Tokyo"),
             It.IsAny<TaskOptions>()))
             .ReturnsAsync("Hello Tokyo!");
         contextMock.Setup(x => x.CallActivityAsync<string>(
-            It.Is<TaskName>(n => n.Name == nameof(Function1.SayHello)),
+            It.Is<TaskName>(n => n.Name == nameof(HelloCitiesOrchestration.SayHello)),
             It.Is<string>(n => n == "Seattle"),
             It.IsAny<TaskOptions>()))
             .ReturnsAsync("Hello Seattle!");
         contextMock.Setup(x => x.CallActivityAsync<string>(
-            It.Is<TaskName>(n => n.Name == nameof(Function1.SayHello)),
+            It.Is<TaskName>(n => n.Name == nameof(HelloCitiesOrchestration.SayHello)),
             It.Is<string>(n => n == "London"),
             It.IsAny<TaskOptions>()))
             .ReturnsAsync("Hello London!");
@@ -150,7 +150,7 @@ public class HelloCitiesOrchestrationTests
         var mockHttpRequestData = new Mock<HttpRequestData>(mockFunctionContext.Object);
 
         // Set up the URL property.
-        mockHttpRequestData.SetupGet(r => r.Url).Returns(new Uri("https://localhost:7075/orchestrators/Function1"));
+        mockHttpRequestData.SetupGet(r => r.Url).Returns(new Uri("https://localhost:7075/orchestrators/HelloCities"));
 
         // If headers are provided, use them, otherwise create a new empty HttpHeadersCollection
         headers ??= new HttpHeadersCollection();
