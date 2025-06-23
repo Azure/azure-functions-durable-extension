@@ -33,7 +33,7 @@ public class HttpFeatureTests
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
 
-        // Wait here as the long-running orchestrator requires about 1 minutes to finish.
+        // Wait here as the long-running orchestration requires about 1 minutes to finish.
         // Set wait time to be 150 seconds becasue the DTS CI takes more time to finish. 
         await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", 150);
 
@@ -45,5 +45,27 @@ public class HttpFeatureTests
 
         // Check that logs include evidence of HTTP polling behavior.
         Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains("Polling HTTP status at location"));
+    }
+
+    // This test verifies that CallHttpAsync works correctly with token credential authentication.
+    [Fact]
+    public async Task HttpWithTokenCredentialTests()
+    {
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("HttpStart_HttpWithTokenCredentialOrchestrator");
+
+        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
+        string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
+
+        // Wait for the orchestration to complete
+        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", 60);
+
+        var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
+
+        // Ensure the orchestration completed successfully by checking output.
+        Assert.Contains("HTTP call with managed identity completed successfully.", orchestrationDetails.Output);
+        Assert.Contains("Status: OK", orchestrationDetails.Output);
+
+        // Check that logs include evidence of the HTTP call being made
+        Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains("HTTP call completed with status code"));
     }
 }

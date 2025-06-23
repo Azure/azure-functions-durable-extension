@@ -36,6 +36,38 @@ public class DurableHttpRequest
     }
 
     /// <summary>
+    /// Initializes a new instance of the <see cref="DurableHttpRequest"/> class with specified HTTP method, URI, headers, 
+    /// content, token source, and options to enable asynchronous pattern handling.
+    /// </summary>
+    /// <param name="method">Method used for HTTP request.</param>
+    /// <param name="uri">Uri used to make the HTTP request.</param>
+    /// <param name="headers">Headers added to the HTTP request.</param>
+    /// <param name="content">Content added to the body of the HTTP request.</param>
+    /// <param name="tokenSource">Token source for authentication.</param>
+    /// <param name="asynchronousPatternEnabled">Specifies whether the DurableHttpRequest should handle the asynchronous pattern.</param>
+    /// <param name="timeout">TimeSpan used for HTTP request timeout.</param>
+    /// <param name="httpRetryOptions">Retry options used for the HTTP request.</param>
+    public DurableHttpRequest(
+        HttpMethod method,
+        Uri uri,
+        IDictionary<string, StringValues>? headers = null,
+        string? content = null,
+        ITokenSource? tokenSource = null,
+        bool asynchronousPatternEnabled = false,
+        TimeSpan? timeout = null,
+        HttpRetryOptions? httpRetryOptions = null)
+    {
+        this.Method = method;
+        this.Uri = uri;
+        this.Headers = headers;
+        this.Content = content;
+        this.TokenSource = tokenSource;
+        this.AsynchronousPatternEnabled = asynchronousPatternEnabled;
+        this.Timeout = timeout;
+        this.HttpRetryOptions = httpRetryOptions;
+    }
+
+    /// <summary>
     /// HttpMethod used in the HTTP request made by the Durable Function.
     /// </summary>
     [JsonPropertyName("method")]
@@ -60,6 +92,13 @@ public class DurableHttpRequest
     /// </summary>
     [JsonPropertyName("content")]
     public string? Content { get; set; }
+
+    /// <summary>
+    /// Token source for authentication.
+    /// </summary>
+    [JsonPropertyName("tokenSource")]
+    [JsonConverter(typeof(TokenSourceConverter))]
+    public ITokenSource? TokenSource { get; set; }
 
     /// <summary>
     /// Specifies whether the Durable HTTP APIs should automatically
