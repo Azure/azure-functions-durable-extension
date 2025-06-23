@@ -36,4 +36,4 @@ namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask
         [JsonPropertyName("tenantid")]
         public string? TenantId { get; set; }
     }
-} 
+}

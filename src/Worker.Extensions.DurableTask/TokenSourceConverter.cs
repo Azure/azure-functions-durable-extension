@@ -53,10 +53,9 @@ namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask
             }
             else
             {
-                // Only ManagedIdentityTokenSource is supported for serialization
-                // Other ITokenSource implementations should use the "kind" pattern
+                // Only ManagedIdentityTokenSource is supported for serialization for now as that's what we used at Webjob.Extensions.DurableTask.
                 throw new NotSupportedException($"Token source type {value.GetType().Name} is not supported. Only ManagedIdentityTokenSource is supported for serialization.");
             }
         }
     }
-} 
+}

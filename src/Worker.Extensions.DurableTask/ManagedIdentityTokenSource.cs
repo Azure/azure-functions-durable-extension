@@ -55,4 +55,4 @@ namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask
             throw new NotImplementedException("GetTokenAsync is not implemented. Token acquisition is handled by WebJobs.Extensions.DurableTask.");
         }
     }
-} 
+}
