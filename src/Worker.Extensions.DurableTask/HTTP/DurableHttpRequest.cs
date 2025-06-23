@@ -52,7 +52,7 @@ public class DurableHttpRequest
         Uri uri,
         IDictionary<string, StringValues>? headers = null,
         string? content = null,
-        ITokenSource? tokenSource = null,
+        ManagedIdentityTokenSource? tokenSource = null,
         bool asynchronousPatternEnabled = false,
         TimeSpan? timeout = null,
         HttpRetryOptions? httpRetryOptions = null)
@@ -98,7 +98,7 @@ public class DurableHttpRequest
     /// </summary>
     [JsonPropertyName("tokenSource")]
     [JsonConverter(typeof(TokenSourceConverter))]
-    public ITokenSource? TokenSource { get; set; }
+    public ManagedIdentityTokenSource? TokenSource { get; set; }
 
     /// <summary>
     /// Specifies whether the Durable HTTP APIs should automatically

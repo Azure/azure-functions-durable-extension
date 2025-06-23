@@ -3,7 +3,6 @@
 
 using System;
 using System.Text.Json.Serialization;
-using System.Threading.Tasks;
 
 namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask
 {
@@ -12,7 +11,7 @@ namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask
     /// This calss is the same as the one in WebJobs.Extensions.DurableTask/ManagedIdentityTokenSource.cs
     /// The implementation is kept in sync to ensure compatibility.
     /// </summary>
-    public class ManagedIdentityTokenSource : ITokenSource
+    public class ManagedIdentityTokenSource
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="ManagedIdentityTokenSource"/> class.
@@ -45,14 +44,5 @@ namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask
         /// </summary>
         [JsonPropertyName("options")]
         public ManagedIdentityOptions? Options { get; }
-
-        /// <summary>
-        /// This method is not implemented as it will never be called.
-        /// Token acquisition is handled by WebJobs.Extensions.DurableTask when it deserializes this and creates its own ManagedIdentityTokenSource instance.
-        /// </summary>
-        public Task<string> GetTokenAsync()
-        {
-            throw new NotImplementedException("GetTokenAsync is not implemented. Token acquisition is handled by WebJobs.Extensions.DurableTask.");
-        }
     }
 }

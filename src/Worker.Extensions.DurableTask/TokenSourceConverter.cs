@@ -8,19 +8,19 @@ using System.Text.Json.Serialization;
 namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask
 {
     /// <summary>
-    /// JSON converter for ITokenSource implementations - handles serialization only.
+    /// JSON converter for ManagedIdentityTokenSource - handles serialization only.
     /// Deserialization is handled by WebJobs.Extensions.DurableTask.
     /// </summary>
-    public class TokenSourceConverter : JsonConverter<ITokenSource>
+    public class TokenSourceConverter : JsonConverter<ManagedIdentityTokenSource>
     {
         /// <inheritdoc/>
         public override bool CanConvert(Type typeToConvert)
         {
-            return typeof(ITokenSource).IsAssignableFrom(typeToConvert);
+            return typeof(ManagedIdentityTokenSource).IsAssignableFrom(typeToConvert);
         }
 
         /// <inheritdoc/>
-        public override ITokenSource Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        public override ManagedIdentityTokenSource Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             // Deserialization is handled by WebJobs.Extensions.DurableTask
             // We don't need to implement this for Worker.Extensions.DurableTask
@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask
         }
 
         /// <inheritdoc/>
-        public override void Write(Utf8JsonWriter writer, ITokenSource value, JsonSerializerOptions options)
+        public override void Write(Utf8JsonWriter writer, ManagedIdentityTokenSource value, JsonSerializerOptions options)
         {
             if (value == null)
             {
@@ -36,26 +36,24 @@ namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask
                 return;
             }
 
-            if (value is ManagedIdentityTokenSource tokenSource)
+            // Defensive check to ensure we're only serializing ManagedIdentityTokenSource
+            if (value.GetType() != typeof(ManagedIdentityTokenSource))
             {
-                // Use the same serialization pattern as WebJobs.Extensions.DurableTask
-                writer.WriteStartObject();
-                writer.WriteString("kind", "AzureManagedIdentity");
-                writer.WriteString("resource", tokenSource.Resource);
-
-                if (tokenSource.Options != null)
-                {
-                    writer.WritePropertyName("options");
-                    JsonSerializer.Serialize(writer, tokenSource.Options, options);
-                }
-
-                writer.WriteEndObject();
-            }
-            else
-            {
-                // Only ManagedIdentityTokenSource is supported for serialization for now as that's what we used at Webjob.Extensions.DurableTask.
                 throw new NotSupportedException($"Token source type {value.GetType().Name} is not supported. Only ManagedIdentityTokenSource is supported for serialization.");
             }
+
+            // Use the same serialization pattern as WebJobs.Extensions.DurableTask
+            writer.WriteStartObject();
+            writer.WriteString("kind", "AzureManagedIdentity");
+            writer.WriteString("resource", value.Resource);
+
+            if (value.Options != null)
+            {
+                writer.WritePropertyName("options");
+                JsonSerializer.Serialize(writer, value.Options, options);
+            }
+
+            writer.WriteEndObject();
         }
     }
 }
