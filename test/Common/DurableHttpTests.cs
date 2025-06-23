@@ -286,7 +286,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// Test that DurableHttpRequest serialized by Worker.Extensions.DurableTask can be correctly deserialized by WebJobs.Extensions.DurableTask.
         /// This validates cross-extension compatibility for the token credential feature.
         /// </summary>
-        [Theory]
+        [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void DeserializeWorkerDurableHttpRequestCorrectly()
         {
