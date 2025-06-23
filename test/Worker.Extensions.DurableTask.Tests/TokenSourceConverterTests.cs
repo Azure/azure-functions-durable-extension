@@ -49,7 +49,7 @@ namespace Worker.Extensions.DurableTask.Tests
         public void TokenSourceConverter_SerializeNull_ProducesNullJson()
         {
             // Test that a null ITokenSource will be serialized to null. 
-            ITokenSource? tokenSource = null;
+            ManagedIdentityTokenSource? tokenSource = null;
             var options = new JsonSerializerOptions();
             options.Converters.Add(new TokenSourceConverter());
 
