@@ -300,8 +300,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.NotNull(durableHttpRequest);
             Assert.Equal(HttpMethod.Get, durableHttpRequest.Method);
             Assert.Equal(new Uri("https://httpbin.org/get"), durableHttpRequest.Uri);
-            Assert.NotNull(durableHttpRequest.Headers); // Headers should be an empty dictionary, not null
-            Assert.Empty(durableHttpRequest.Headers); // Should be empty
+            Assert.NotNull(durableHttpRequest.Headers); // Headers should be an empty list
+            Assert.Empty(durableHttpRequest.Headers); 
             Assert.Null(durableHttpRequest.Content);
             Assert.False(durableHttpRequest.AsynchronousPatternEnabled);
             Assert.Null(durableHttpRequest.HttpRetryOptions);
