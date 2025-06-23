@@ -58,4 +58,4 @@ namespace Worker.Extensions.DurableTask.Tests
             Assert.Equal("null", json);
         }
     }
-} 
+}
