@@ -17,7 +17,7 @@ public static class LargeOutputOrchestrator
     public static async Task<List<string>> RunOrchestrator(
         [OrchestrationTrigger] TaskOrchestrationContext context)
     {
-        ILogger logger = context.CreateReplaySafeLogger(nameof(HelloCities));
+        ILogger logger = context.CreateReplaySafeLogger(nameof(LargeOutputOrchestrator));
         int sizeInKB = context.GetInput<int>();
 
         logger.LogInformation("Saying hello.");
@@ -35,8 +35,6 @@ public static class LargeOutputOrchestrator
     [Function(nameof(LargeOutputSayHello))]
     public static string LargeOutputSayHello([ActivityTrigger] string name, FunctionContext executionContext)
     {
-        ILogger logger = executionContext.GetLogger("SayHello");
-        logger.LogInformation("Saying hello to {name}.", name);
         return $"Hello {name}!";
     }
 

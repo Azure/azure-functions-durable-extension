@@ -22,10 +22,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private Exception? failure;
 
-        public RemoteOrchestratorContext(OrchestrationRuntimeState runtimeState, TaskOrchestrationEntityParameters? entityParameters)
+        public RemoteOrchestratorContext(OrchestrationRuntimeState runtimeState, TaskOrchestrationEntityParameters? entityParameters, DurableTaskOptions options)
         {
             this.runtimeState = runtimeState ?? throw new ArgumentNullException(nameof(runtimeState));
             this.EntityParameters = entityParameters;
+            this.Configurations = new RemoteOrchestratorConfiguration
+            {
+                HttpDefaultAsyncRequestSleepTimeMilliseconds = options.HttpSettings.DefaultAsyncRequestSleepTimeMilliseconds,
+            };
         }
 
         [JsonProperty("instanceId")]
@@ -39,6 +43,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         [JsonProperty("upperSchemaVersion")]
         internal int UpperSchemaVersion { get; } = 4;
+
+        [JsonProperty("configurations")]
+        public RemoteOrchestratorConfiguration Configurations { get; private set; }
 
         [JsonIgnore]
         internal bool OrchestratorCompleted { get; private set; }

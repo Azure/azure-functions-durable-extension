@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System;
+using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -49,6 +50,8 @@ internal sealed partial class FunctionsOrchestrationContext : TaskOrchestrationC
     public override ParentOrchestrationInstance? Parent => this.innerContext.Parent;
 
     public override string Version => this.innerContext.Version;
+
+    public override IReadOnlyDictionary<string, object?> Properties => this.innerContext.Properties;
 
     protected override ILoggerFactory LoggerFactory { get; }
 
