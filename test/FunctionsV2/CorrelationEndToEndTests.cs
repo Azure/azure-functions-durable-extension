@@ -252,7 +252,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 nameResolver: mockNameResolver.Object,
                 options: options))
             {
-                string tracingWarningMessage = "Durable Functions Distributed Tracing V2 is GA now! For more information, please visit";
+                string tracingWarningMessage = "Durable Functions Distributed Tracing V2 is GA now! Learn how to enable the feature by visiting";
                 var foundTracingWarningLog = this.loggerProvider.GetAllLogMessages().Any(l => l.FormattedMessage.StartsWith(tracingWarningMessage));
 
                 Assert.Equal(warningExpected, foundTracingWarningLog);
