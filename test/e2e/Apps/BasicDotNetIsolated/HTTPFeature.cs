@@ -3,7 +3,6 @@
 
 using System.Net;
 using System.Text.Json.Nodes;
-using Azure.Identity;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
 using Microsoft.Azure.Functions.Worker.Extensions.DurableTask.Http;
@@ -83,61 +82,6 @@ public static class HttpFeature
             nameof(HttpPollingOrchestrator),targetUri);
 
         logger.LogInformation("Started orchestration with ID = '{instanceId}'.", instanceId);
-
-        var response = await client.CreateCheckStatusResponseAsync(req, instanceId);
-        return response;
-    }
-
-    // Orchestration that Call HTTP with token credential.
-    [Function(nameof(HttpWithTokenCredentialOrchestrator))]
-    public static async Task<string> HttpWithTokenCredentialOrchestrator(
-        [OrchestrationTrigger] TaskOrchestrationContext context)
-    {
-        ILogger logger = context.CreateReplaySafeLogger(nameof(HttpWithTokenCredentialOrchestrator));
-        
-        // Create a token source using managed identity for Azure Management API
-        var tokenSource = new ManagedIdentityTokenSource("https://management.core.windows.net/.default");
-        
-        // For testing purposes, we'll use a mock URL that doesn't actually require authentication
-        // In a real scenario, this would be an Azure service endpoint
-        var testUrl = new Uri("https://httpbin.org/get");
-        
-        try
-        {
-            // Make an HTTP call with token authentication
-            var response = await context.CallHttpAsync(
-                HttpMethod.Get,
-                testUrl,
-                content: null,
-                retryOptions: null,
-                asynchronousPatternEnabled: false,
-                tokenSource: tokenSource,
-                timeout: null);
-
-            logger.LogInformation("HTTP call completed with status code: {StatusCode}", response.StatusCode);
-            
-            return $"HTTP call with managed identity completed successfully. Status: {response.StatusCode}";
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "HTTP call with managed identity failed");
-            return $"HTTP call with managed identity failed: {ex.Message}";
-        }
-    }
-
-    // Http trigger that starts the HttpWithTokenCredentialOrchestrator.
-    [Function("HttpStart_HttpWithTokenCredentialOrchestrator")]
-    public static async Task<HttpResponseData> StartHttpWithTokenCredentialOrchestrator(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestData req,
-        [DurableClient] DurableTaskClient client,
-        FunctionContext executionContext)
-    {
-        ILogger logger = executionContext.GetLogger("HttpStart_HttpWithTokenCredentialOrchestrator");
-
-        string instanceId = await client.ScheduleNewOrchestrationInstanceAsync(
-            nameof(HttpWithTokenCredentialOrchestrator));
-
-        logger.LogInformation("Started managed identity orchestration with ID = '{instanceId}'.", instanceId);
 
         var response = await client.CreateCheckStatusResponseAsync(req, instanceId);
         return response;
