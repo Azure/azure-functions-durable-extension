@@ -4,15 +4,14 @@
 namespace Microsoft.Azure.Durable.Tests.DotnetIsolatedE2E;
 internal class PowerShellTestLanguageLocalizer : ITestLanguageLocalizer
 {
-    private readonly Dictionary<string, string> powerShellLocalizedStrings = new Dictionary<string, string>
+    private readonly Dictionary<string, string> _powerShellLocalizedStrings = new Dictionary<string, string>
     {
         { "CaughtActivityException.ErrorMessage", "One or more errors occurred. (Task 'RaiseException' (#0) failed with an unhandled exception:" },
         { "RethrownActivityException.ErrorMessage", "Orchestrator function 'RethrowActivityException' failed: " }
-
     };
 
     public string GetLocalizedStringValue(string key)
     {
-        return powerShellLocalizedStrings.GetValueOrDefault(key, "");
+        return _powerShellLocalizedStrings.GetValueOrDefault(key, "");
     }
 }

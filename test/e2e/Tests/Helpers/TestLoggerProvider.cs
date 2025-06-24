@@ -1,6 +1,7 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
+using System.Collections.Concurrent;
 using Microsoft.Extensions.Logging;
 using Xunit.Abstractions;
 using Xunit.Sdk;
@@ -11,7 +12,7 @@ public class TestLoggerProvider : ILoggerProvider, ILogger
 {
     private readonly IMessageSink _messageSink;
     private ITestOutputHelper? _currentTestOutput;
-    IList<string> _logs = new List<string>();
+    private ConcurrentBag<string> _logs = new ConcurrentBag<string>();
 
     public TestLoggerProvider(IMessageSink messageSink)
     {

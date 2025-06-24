@@ -9,7 +9,7 @@ internal class DurableHelpers
 {
     static readonly HttpClient _httpClient = new HttpClient();
 
-    static readonly List<string> finalStates = new List<string>()
+    static readonly List<string> _finalStates = new List<string>()
     {
         "Completed",
         "Terminated",
@@ -69,7 +69,7 @@ internal class DurableHelpers
             {
                 return;
             }
-            if (finalStates.Contains(currentStatus.RuntimeStatus))
+            if (_finalStates.Contains(currentStatus.RuntimeStatus))
             {
                 throw new TaskCanceledException($"Orchestration reached {currentStatus.RuntimeStatus} state when test was expecting {desiredState}");
             }

@@ -138,7 +138,18 @@ function InstallExtensionAndBuildTestApp($testAppDir) {
           }
         }
 
-        if (Test-Path ".\extensions.csproj") {
+        if (!(Test-Path ".\app.csproj")) {
+          if (!(Test-Path ".\extensions.csproj")) {
+            Write-Host "Creating extensions.csproj file"
+
+            .(Join-Path $FUNC_CLI_DIRECTORY "func.exe") extensions install --package Microsoft.Azure.Functions.Worker.Extensions.DurableTask --version $webJobsExtensionVersion
+
+            # Fix for central package management being enabled in the project root
+            $csprojContent = Get-Content -Path ".\extensions.csproj"
+            $csprojContent = $csprojContent -replace '</TargetFramework>', "</TargetFramework>`n    <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>"
+            Set-Content -Path ".\extensions.csproj" -Value $csprojContent
+          }
+
           Write-Host "Updating extensions.csproj to reference WebJobs extension version $webJobsExtensionVersion"
           
           dotnet add 'extensions.csproj' package 'Microsoft.Azure.WebJobs.Extensions.DurableTask' --version $webJobsExtensionVersion --source ".\packages" --no-restore
