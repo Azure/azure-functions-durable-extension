@@ -13,6 +13,7 @@ public class FunctionAppFixture : IAsyncLifetime
     internal TestLoggerProvider TestLogs { get; private set; }
 
     internal FunctionAppProcess? _functionAppProcess;
+    internal ITestLanguageLocalizer? _functionLanguageLocalizer;
 
     public FunctionAppFixture(IMessageSink messageSink)
     {
@@ -30,13 +31,16 @@ public class FunctionAppFixture : IAsyncLifetime
         {
             case "dotnet-isolated":
                 _functionAppProcess = new IsolatedFunctionAppProcess(this._logger, this.TestLogs);
+                _functionLanguageLocalizer = new IsolatedTestLanguageLocalizer();
                 break;
             case "powershell":
                 _functionAppProcess = new PowerShellFunctionAppProcess(this._logger, this.TestLogs);
+                _functionLanguageLocalizer = new PowerShellTestLanguageLocalizer();
                 break;
             default:
                 _logger.LogWarning("Environment variable E2E_TEST_FUNCTIONS_LANGUAGE not set, tests configured for dotnet-isolated");
                 _functionAppProcess = new IsolatedFunctionAppProcess(this._logger, this.TestLogs);
+                _functionLanguageLocalizer = new IsolatedTestLanguageLocalizer();
                 break;
         }
 

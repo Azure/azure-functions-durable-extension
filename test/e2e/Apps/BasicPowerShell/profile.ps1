@@ -20,3 +20,7 @@
 # Enable-AzureRmAlias
 
 # You can also define functions or aliases that can be referenced in any of your PowerShell functions.
+
+Import-Module -Name AzureFunctions.PowerShell.Durable.SDK -ErrorAction Stop
+
+$ErrorActionPreference = "Stop"

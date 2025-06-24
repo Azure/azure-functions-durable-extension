@@ -25,7 +25,6 @@ public class ErrorHandlingTests
     [Fact]
     [Trait("MSSQL", "Skip")] // This test fails for MSSQL unless this bug is fixed: https://github.com/microsoft/durabletask-mssql/issues/287
     [Trait("DTS", "Skip")] // DTS will fail this test unless this bug is fixed: https://msazure.visualstudio.com/Antares/_workitems/edit/31779638
-    [Trait("PowerShell", "Skip")] // Test not yet implemented in PowerShell
     public async Task OrchestratorWithUncaughtActivityException_ShouldFail()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("RethrowActivityException_HttpStart", "");
@@ -37,7 +36,7 @@ public class ErrorHandlingTests
 
         var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
         
-        Assert.StartsWith("Microsoft.DurableTask.TaskFailedException", orchestrationDetails.Output);
+        Assert.StartsWith(this.fixture._functionLanguageLocalizer?.GetLocalizedStringValue("RethrownActivityException.ErrorMessage"), orchestrationDetails.Output);
         Assert.Contains("This activity failed", orchestrationDetails.Output);
     }
 
@@ -61,7 +60,6 @@ public class ErrorHandlingTests
     }
 
     [Fact]
-    [Trait("PowerShell", "Skip")] // Test not yet implemented in PowerShell
     public async Task OrchestratorWithCaughtActivityException_ShouldSucceed()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("CatchActivityException_HttpStart", "");
@@ -72,13 +70,13 @@ public class ErrorHandlingTests
         await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", 30);
 
         var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
-        Assert.StartsWith("Task 'RaiseException' (#0) failed with an unhandled exception:", orchestrationDetails.Output);
+        Assert.StartsWith(this.fixture._functionLanguageLocalizer?.GetLocalizedStringValue("CaughtActivityException.ErrorMessage"), orchestrationDetails.Output);
         Assert.Contains("This activity failed", orchestrationDetails.Output);
     }
 
     [Fact]
-    [Trait("PowerShell", "Skip")] // Test not yet implemented in PowerShell
-    public async Task OrchestratorWithCaughtActivityExceptionFailuredetails_ContainRightErrorType()
+    [Trait("PowerShell", "Skip")] // FailureDetails is a dotnet-isolated implementation detail
+    public async Task OrchestratorWithCaughtActivityExceptionFailureDetails_ContainRightErrorType()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("CatchActivityExceptionFailureDetails_HttpStart", "");
 
@@ -121,7 +119,6 @@ public class ErrorHandlingTests
     }
 
     [Fact]
-    [Trait("PowerShell", "Skip")] // Test not yet implemented in PowerShell
     public async Task OrchestratorWithRetriedActivityException_ShouldSucceed()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("RetryActivityException_HttpStart", "");
@@ -170,7 +167,6 @@ public class ErrorHandlingTests
     }
 
     [Fact]
-    [Trait("PowerShell", "Skip")] // Test not yet implemented in PowerShell
     public async Task OrchestratorWithCustomRetriedActivityException_ShouldSucceed()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("CustomRetryActivityException_HttpStart", "");
