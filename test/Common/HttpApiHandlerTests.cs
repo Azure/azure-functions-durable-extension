@@ -1807,6 +1807,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     Assert.Equal(this.expectedTaskHub, attribute.TaskHub);
                     Assert.Equal(this.expectedConnectionName, attribute.ConnectionName);
                 }
+
                 return new DurableClientMock(this.durabilityProvider, this, attribute);
             }
 
