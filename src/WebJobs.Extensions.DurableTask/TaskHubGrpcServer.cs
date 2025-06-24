@@ -260,8 +260,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public async override Task<P.TerminateResponse> TerminateInstance(P.TerminateRequest request, ServerCallContext context)
         {
-            await this.GetClient(context).TerminateAsync(request.InstanceId, request.Output);
-            return new P.TerminateResponse();
+            try
+            {
+                await this.GetClient(context).TerminateAsync(request.InstanceId, request.Output);
+                return new P.TerminateResponse();
+            }
+            catch (ArgumentNullException ex)
+            {
+                // Thrown when required arguments like InstanceId are null
+                throw new RpcException(new Status(StatusCode.InvalidArgument, ex.Message));
+            }
+            catch (InvalidOperationException ex)
+            {
+                // Thrown when the orchestration is in a state that cannot be terminated
+                throw new RpcException(new Status(StatusCode.FailedPrecondition, $"InvalidOperationException: {ex.Message}"));
+            }
+            catch (ArgumentException ex)
+            {
+                // Thrown when the InstanceId does not match any existing orchestration
+                throw new RpcException(new Status(StatusCode.NotFound, $"ArgumentException: {ex.Message}"));
+            }
+            catch (Exception ex)
+            {
+                // Any other unexpected exceptions.
+                throw new RpcException(new Status(StatusCode.Unknown, ex.Message));
+            }
         }
 
         public async override Task<P.SuspendResponse> SuspendInstance(P.SuspendRequest request, ServerCallContext context)
