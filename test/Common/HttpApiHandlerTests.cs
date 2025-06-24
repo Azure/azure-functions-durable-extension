@@ -1783,12 +1783,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     TestHelpers.GetTestNameResolver(),
                     new[]
                     {
-                new AzureStorageDurabilityProviderFactory(
-                    new OptionsWrapper<DurableTaskOptions>(options),
-                    new TestStorageServiceClientProviderFactory(),
-                    TestHelpers.GetTestNameResolver(),
-                    NullLoggerFactory.Instance,
-                    TestHelpers.GetMockPlatformInformationService()),
+                        new AzureStorageDurabilityProviderFactory(
+                            new OptionsWrapper<DurableTaskOptions>(options),
+                            new TestStorageServiceClientProviderFactory(),
+                            TestHelpers.GetTestNameResolver(),
+                            NullLoggerFactory.Instance,
+                            TestHelpers.GetMockPlatformInformationService()),
                     },
                     new TestHostShutdownNotificationService(),
                     new DurableHttpMessageHandlerFactory(),
