@@ -33,7 +33,7 @@ public class DistributedTracingTests
 
     [Fact]
     [Trait("DTS", "Skip")] // Distributed tracing is currently not working in DTS
-    [Trait("PowerShell", "Skip")] // Test not yet implemented in PowerShell
+    [Trait("PowerShell", "Skip")] // Distributed tracing is currently not implemented in PowerShell
     public async Task DistributedTracingTest()
     {
         // Start Activity
