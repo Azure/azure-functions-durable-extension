@@ -75,7 +75,15 @@ public class TerminateOrchestratorTests
         await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Terminated", 30);
 
         using HttpResponseMessage terminateAgainResponse = await HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={instanceId}");
-        await AssertTerminateRequestFailsAsync(terminateAgainResponse);
+        
+        Assert.Equal(HttpStatusCode.BadRequest, terminateAgainResponse.StatusCode);
+
+        // Check the exception returned contains the right statusCode and message. 
+        string? terminateAgainResponseMessage = await terminateAgainResponse.Content.ReadAsStringAsync();
+        Assert.NotNull(terminateAgainResponseMessage);
+
+        Assert.Contains("StatusCode=\"FailedPrecondition\"", terminateAgainResponseMessage);
+        Assert.Contains($"InvalidOperationException: Cannot terminate the orchestration instance {instanceId} because instance is in the Terminated state.", terminateAgainResponseMessage);
 
         // Give some time for Core Tools to write logs out
         Thread.Sleep(500);
@@ -97,7 +105,15 @@ public class TerminateOrchestratorTests
         await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", 30);
 
         using HttpResponseMessage terminateResponse = await HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={instanceId}");
-        await AssertTerminateRequestFailsAsync(terminateResponse);
+        
+        Assert.Equal(HttpStatusCode.BadRequest, terminateResponse.StatusCode);
+
+        string? terminateResponseMessage = await terminateResponse.Content.ReadAsStringAsync();
+        Assert.NotNull(terminateResponseMessage);
+
+        // Check the exception returned contains the right statusCode and message. 
+        Assert.Contains("StatusCode=\"FailedPrecondition\"", terminateResponseMessage);
+        Assert.Contains($"InvalidOperationException: Cannot terminate the orchestration instance {instanceId} because instance is in the Completed state.", terminateResponseMessage);
 
         // Give some time for Core Tools to write logs out
         Thread.Sleep(500);
@@ -109,18 +125,16 @@ public class TerminateOrchestratorTests
     [Fact]
     public async Task TerminateNonExistantOrchestration_ShouldFail()
     {
-        using HttpResponseMessage terminateResponse = await HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={Guid.NewGuid().ToString()}");
-        await AssertTerminateRequestFailsAsync(terminateResponse);
-    }
-
-    private static async Task AssertTerminateRequestFailsAsync(HttpResponseMessage terminateResponse)
-    {
+        string instanceId = Guid.NewGuid().ToString();
+        using HttpResponseMessage terminateResponse = await HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={instanceId}");
         Assert.Equal(HttpStatusCode.BadRequest, terminateResponse.StatusCode);
 
         string? terminateResponseMessage = await terminateResponse.Content.ReadAsStringAsync();
         Assert.NotNull(terminateResponseMessage);
-        // Unclear error message - see https://github.com/Azure/azure-functions-durable-extension/issues/3027, will update this code when that bug is fixed
-        Assert.Equal("Status(StatusCode=\"Unknown\", Detail=\"Exception was thrown by handler.\")", terminateResponseMessage);
+
+        // Check the exception returned contains the right statusCode and message. 
+        Assert.Contains("Status(StatusCode=\"NotFound\"", terminateResponseMessage);
+        Assert.Contains($"ArgumentException: No instance with ID '{instanceId}' was found.", terminateResponseMessage);
     }
 
     private static async Task AssertTerminateRequestSucceedsAsync(HttpResponseMessage terminateResponse)

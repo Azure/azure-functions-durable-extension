@@ -11,6 +11,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
+using DurableTask.Core.History;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -1672,6 +1673,61 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.StartsWith("http://localhost:7071", (string)status["terminatePostUri"]);
         }
 
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task StartNewInstance_Uses_DefaultVersion_And_Calls_CreateTaskOrchestrationAsync()
+        {
+            var functionName = "TestOrchestrator";
+            var instanceId = Guid.NewGuid().ToString("N");
+            var defaultVersion = "4.0";
+            var requestUri = new Uri($"http://localhost/runtime/webhooks/durabletask/orchestrators/{functionName}/{instanceId}");
+
+            ExecutionStartedEvent capturedEvent = null;
+
+            var orchestrationServiceMock = new Mock<IOrchestrationService>(MockBehavior.Strict);
+            var orchestrationServiceClientMock = new Mock<IOrchestrationServiceClient>();
+
+            orchestrationServiceClientMock
+                .Setup(p => p.CreateTaskOrchestrationAsync(It.IsAny<TaskMessage>(), It.IsAny<OrchestrationStatus[]>()))
+                .Callback<TaskMessage, OrchestrationStatus[]>((msg, _) =>
+                {
+                    capturedEvent = msg.Event as ExecutionStartedEvent;
+                })
+                .Returns(Task.CompletedTask);
+
+            orchestrationServiceClientMock
+                .Setup(p => p.GetOrchestrationStateAsync(instanceId, false))
+                .ReturnsAsync(new List<OrchestrationState>());
+
+            var durabilityProvider = new DurabilityProvider(
+                "storageProviderName",
+                orchestrationServiceMock.Object,
+                orchestrationServiceClientMock.Object,
+                "connectionName");
+
+            var options = new DurableTaskOptions
+            {
+                WebhookUriProviderOverride = () => new Uri("http://localhost/runtime/webhooks/durabletask"),
+                HubName = TestConstants.TaskHub,
+                DefaultVersion = defaultVersion,
+            };
+
+            var customExtension = TestDurableTaskExtension.CreateWithProvider(options, durabilityProvider);
+            var handler = new HttpApiHandler(customExtension, NullLogger.Instance);
+            var request = new HttpRequestMessage(HttpMethod.Post, requestUri);
+
+            var response = await handler.HandleRequestAsync(request);
+
+            // Verify mock interactions
+            orchestrationServiceClientMock.Verify(
+                p => p.CreateTaskOrchestrationAsync(It.IsAny<TaskMessage>(), It.IsAny<OrchestrationStatus[]>()),
+                Times.Once);
+
+            Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
+            Assert.NotNull(capturedEvent);
+            Assert.Equal(defaultVersion, capturedEvent.Version);
+        }
+
         private static DurableTaskExtension GetTestExtension()
         {
             var options = new DurableTaskOptions();
@@ -1683,7 +1739,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         private static DurableTaskExtension GetTestExtension(DurableTaskOptions options)
         {
-            return new MockDurableTaskExtension(options);
+            return TestDurableTaskExtension.CreateWithMockProvider(options, assertAttributeValues: true);
         }
 
         // Same as regular HTTP Api handler except you can specify a custom client object.
@@ -1708,9 +1764,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             public Uri WebhookUri { get; set; }
         }
 
-        private class MockDurableTaskExtension : DurableTaskExtension
+        private class TestDurableTaskExtension : DurableTaskExtension
         {
-            public MockDurableTaskExtension(DurableTaskOptions options)
+            private readonly DurabilityProvider durabilityProvider;
+            private readonly bool assertAttributeValues;
+            private readonly string expectedTaskHub;
+            private readonly string expectedConnectionName;
+
+            public TestDurableTaskExtension(
+                DurableTaskOptions options,
+                DurabilityProvider durabilityProvider,
+                bool assertAttributeValues = false,
+                string expectedTaskHub = null,
+                string expectedConnectionName = null)
                 : base(
                     new OptionsWrapper<DurableTaskOptions>(options),
                     new LoggerFactory(),
@@ -1728,17 +1794,39 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     new DurableHttpMessageHandlerFactory(),
                     platformInformationService: TestHelpers.GetMockPlatformInformationService())
             {
+                this.durabilityProvider = durabilityProvider;
+                this.assertAttributeValues = assertAttributeValues;
+                this.expectedTaskHub = expectedTaskHub;
+                this.expectedConnectionName = expectedConnectionName;
             }
 
             protected internal override IDurableClient GetClient(DurableClientAttribute attribute)
             {
+                if (this.assertAttributeValues)
+                {
+                    Assert.Equal(this.expectedTaskHub, attribute.TaskHub);
+                    Assert.Equal(this.expectedConnectionName, attribute.ConnectionName);
+                }
+
+                return new DurableClientMock(this.durabilityProvider, this, attribute);
+            }
+
+            public static TestDurableTaskExtension CreateWithMockProvider(DurableTaskOptions options, bool assertAttributeValues = false)
+            {
                 var orchestrationServiceClientMock = new Mock<IOrchestrationServiceClient>();
                 var orchestrationServiceMock = new Mock<IOrchestrationService>();
-                var storageProvider = new DurabilityProvider("Mock", orchestrationServiceMock.Object, orchestrationServiceClientMock.Object, "mock");
+                var provider = new DurabilityProvider("Mock", orchestrationServiceMock.Object, orchestrationServiceClientMock.Object, "mock");
+                return new TestDurableTaskExtension(
+                    options,
+                    provider,
+                    assertAttributeValues,
+                    TestConstants.TaskHub,
+                    TestConstants.ConnectionName);
+            }
 
-                Assert.Equal(TestConstants.TaskHub, attribute.TaskHub);
-                Assert.Equal(TestConstants.ConnectionName, attribute.ConnectionName);
-                return new DurableClientMock(storageProvider, this, attribute);
+            public static TestDurableTaskExtension CreateWithProvider(DurableTaskOptions options, DurabilityProvider provider)
+            {
+                return new TestDurableTaskExtension(options, provider);
             }
         }
     }
