@@ -8,19 +8,19 @@ using System.Text.Json.Serialization;
 namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
 
 /// <summary>
-/// JSON converter for TokenSourceBase implementations - handles serialization only.
+/// JSON converter for TokenSource implementations - handles serialization only.
 /// Deserialization is handled by WebJobs.Extensions.DurableTask.
 /// </summary>
-public class TokenSourceConverter : JsonConverter<TokenSourceBase>
+public class TokenSourceConverter : JsonConverter<TokenSource>
 {
     /// <inheritdoc/>
     public override bool CanConvert(Type typeToConvert)
     {
-        return typeof(TokenSourceBase).IsAssignableFrom(typeToConvert);
+        return typeof(TokenSource).IsAssignableFrom(typeToConvert);
     }
 
     /// <inheritdoc/>
-    public override TokenSourceBase Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    public override TokenSource Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
         // Deserialization is handled by WebJobs.Extensions.DurableTask
         // We don't need to implement this for Worker.Extensions.DurableTask
@@ -28,7 +28,7 @@ public class TokenSourceConverter : JsonConverter<TokenSourceBase>
     }
 
     /// <inheritdoc/>
-    public override void Write(Utf8JsonWriter writer, TokenSourceBase value, JsonSerializerOptions options)
+    public override void Write(Utf8JsonWriter writer, TokenSource value, JsonSerializerOptions options)
     {
         if (value == null)
         {
