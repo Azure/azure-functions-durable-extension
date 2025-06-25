@@ -120,14 +120,6 @@ public class FunctionAppProcess
                 }
             }, userMessageCallback: () => string.Join(System.Environment.NewLine, TestLogs.CoreToolsLogs));
         }
-
-        //TODO: This line would launch the jit debugger for func - still some issues here, however. 
-        //      ISSUE 1: Windows only implementation
-        //      ISSUE 2: For some reason, the loaded symbols for the WebJobs extension 
-        //          a) don't load automatically
-        //          b) don't match the version from the local repo
-        //      ISSUE 3: See the worker attach comments above
-        //Process.Start("cmd.exe", "/C vsjitdebugger.exe -p " + _funcProcess.Id.ToString());
     }
 
     public Task DisposeAsync()
