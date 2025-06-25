@@ -48,6 +48,10 @@ public class HttpFeatureTests
     }
 
     [Fact]
+    // Tests HTTP call using managed identity credentials.
+    // Note: Currently uses DefaultAzureCredential based on available information.
+    // Since GitHub CI doesn't support this, the orchestrator will fail in CI but succeed locally.
+    // Therefore, the test verifies results conditionally based on the execution environment.
     public async Task HttpCallWithTokenSourceTest()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("HttpStart_HttpWithTokenSourceOrchestrator");
@@ -64,16 +68,22 @@ public class HttpFeatureTests
         
         if (isGitHubCI)
         {
-            // In GitHub CI, DefaultAzureCredential is not supported so the orchestrator should fail
+            // In GitHub CI, verify that the error message indicates failure due to absence of valid token credentials.
+            // Check output to verify CallHttpAsync fails.
             Assert.Contains("Token source HTTP call failed", orchestrationDetails.Output);
-            
-            // Check that logs contain evidence of credential failure
-            Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => 
-                x.Contains("DefaultAzureCredential") || 
-                x.Contains("credential") || 
-                x.Contains("authentication") ||
-                x.Contains("ManagedIdentity") ||
-                x.Contains("HTTP call with token source failed"));
+
+            // Check that logs to verify orchestrator fails becasue of credential failure. 
+            Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, log =>
+                log.Contains("Task 'BuiltIn::HttpActivity' (#0) failed with an unhandled exception: DefaultAzureCredential failed to retrieve a token from the included credentials."));
+
+            Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, log =>
+                log.Contains("WorkloadIdentityCredential authentication unavailable"));
+
+            Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, log =>
+                log.Contains("ManagedIdentityCredential authentication unavailable."));
+
+            Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, log =>
+                log.Contains("EnvironmentCredential authentication unavailable."));
         }
         else
         {
