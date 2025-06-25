@@ -64,8 +64,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
         /// <inheritdoc/>
         public void Dispose()
         {
-            this.TelemetryModule.DisposeAsync().AsTask().GetAwaiter().GetResult();
-            this.WebJobsTelemetryModule.DisposeAsync().AsTask().GetAwaiter().GetResult();
+            if (this.TelemetryModule != null)
+            {
+                this.TelemetryModule.DisposeAsync().AsTask().GetAwaiter().GetResult();
+            }
+
+            if (this.WebJobsTelemetryModule != null)
+            {
+                this.WebJobsTelemetryModule.DisposeAsync().AsTask().GetAwaiter().GetResult();
+            }
         }
 
         /// <summary>
@@ -73,6 +80,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
         /// </summary>
         public void Initialize(ILogger logger)
         {
+            this.endToEndTraceHelper = new EndToEndTraceHelper(logger, this.options.Tracing.TraceReplayEvents);
+
             if (this.options.Tracing.DistributedTracingEnabled)
             {
                 if (this.options.Tracing.Version == Options.DurableDistributedTracingVersion.None)
@@ -80,7 +89,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
                     return;
                 }
 
-                this.endToEndTraceHelper = new EndToEndTraceHelper(logger, this.options.Tracing.TraceReplayEvents);
                 TelemetryConfiguration telemetryConfiguration = this.SetupTelemetryConfiguration();
 
                 if (this.options.Tracing.Version == Options.DurableDistributedTracingVersion.V2)
@@ -95,6 +103,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
                 }
                 else
                 {
+                    this.EmitDTV2Announcement();
+
                     this.SetUpV1DistributedTracing();
                     if (CorrelationSettings.Current.EnableDistributedTracing)
                     {
@@ -107,6 +117,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
                     }
                 }
             }
+            else
+            {
+                this.EmitDTV2Announcement();
+            }
+        }
+
+        private void EmitDTV2Announcement()
+        {
+            this.endToEndTraceHelper.ExtensionWarningAnnouncement(
+                "Durable Functions Distributed Tracing V2 is GA now! Learn how to enable the feature by visiting "
+                + "aka.ms/durable-distributed-tracing. "
+                + "To disable this message, you can configure your distributed trace version to \"V2\" or \"None\".");
         }
 
         private void SetUpV1DistributedTracing()

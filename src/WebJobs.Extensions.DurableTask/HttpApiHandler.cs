@@ -892,6 +892,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     {
                         Name = functionName,
                         OrchestrationInstance = instance,
+                        Version = this.config.Options.DefaultVersion,
                     };
 
                     string traceParent = GetHeaderValueFromHeaders("traceparent", request.Headers);
