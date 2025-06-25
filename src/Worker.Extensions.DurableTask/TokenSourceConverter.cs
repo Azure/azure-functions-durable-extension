@@ -5,55 +5,59 @@ using System;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask
+namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
+
+/// <summary>
+/// JSON converter for TokenSourceBase implementations - handles serialization only.
+/// Deserialization is handled by WebJobs.Extensions.DurableTask.
+/// </summary>
+public class TokenSourceConverter : JsonConverter<TokenSourceBase>
 {
-    /// <summary>
-    /// JSON converter for ManagedIdentityTokenSource - handles serialization only.
-    /// Deserialization is handled by WebJobs.Extensions.DurableTask.
-    /// </summary>
-    public class TokenSourceConverter : JsonConverter<ManagedIdentityTokenSource>
+    /// <inheritdoc/>
+    public override bool CanConvert(Type typeToConvert)
     {
-        /// <inheritdoc/>
-        public override bool CanConvert(Type typeToConvert)
+        return typeof(TokenSourceBase).IsAssignableFrom(typeToConvert);
+    }
+
+    /// <inheritdoc/>
+    public override TokenSourceBase Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        // Deserialization is handled by WebJobs.Extensions.DurableTask
+        // We don't need to implement this for Worker.Extensions.DurableTask
+        throw new NotImplementedException("Deserialization is handled by WebJobs.Extensions.DurableTask");
+    }
+
+    /// <inheritdoc/>
+    public override void Write(Utf8JsonWriter writer, TokenSourceBase value, JsonSerializerOptions options)
+    {
+        if (value == null)
         {
-            return typeof(ManagedIdentityTokenSource).IsAssignableFrom(typeToConvert);
+            writer.WriteNullValue();
+            return;
         }
 
-        /// <inheritdoc/>
-        public override ManagedIdentityTokenSource Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        // Use the same serialization pattern as WebJobs.Extensions.DurableTask
+        writer.WriteStartObject();
+        
+        // Currently the kind must be AzureManagedIdentity. This is a limitation of the WebJobs.Extensions.DurableTask package.
+        writer.WriteString("kind", "AzureManagedIdentity");
+        writer.WriteString("resource", value.Resource);
+
+        // Handle specific token source types
+        switch (value)
         {
-            // Deserialization is handled by WebJobs.Extensions.DurableTask
-            // We don't need to implement this for Worker.Extensions.DurableTask
-            throw new NotImplementedException("Deserialization is handled by WebJobs.Extensions.DurableTask");
+            case ManagedIdentityTokenSource managedIdentityTokenSource:
+                if (managedIdentityTokenSource.Options != null)
+                {
+                    writer.WritePropertyName("options");
+                    JsonSerializer.Serialize(writer, managedIdentityTokenSource.Options, options);
+                }
+                break;
+            
+            default:
+                throw new NotSupportedException($"Token source type '{value.GetType().Name}' is not supported for serialization. Only ManagedIdentityTokenSource is currently supported.");
         }
 
-        /// <inheritdoc/>
-        public override void Write(Utf8JsonWriter writer, ManagedIdentityTokenSource value, JsonSerializerOptions options)
-        {
-            if (value == null)
-            {
-                writer.WriteNullValue();
-                return;
-            }
-
-            // Defensive check to ensure we're only serializing ManagedIdentityTokenSource
-            if (value.GetType() != typeof(ManagedIdentityTokenSource))
-            {
-                throw new NotSupportedException($"Token source type {value.GetType().Name} is not supported. Only ManagedIdentityTokenSource is supported for serialization.");
-            }
-
-            // Use the same serialization pattern as WebJobs.Extensions.DurableTask
-            writer.WriteStartObject();
-            writer.WriteString("kind", "AzureManagedIdentity");
-            writer.WriteString("resource", value.Resource);
-
-            if (value.Options != null)
-            {
-                writer.WritePropertyName("options");
-                JsonSerializer.Serialize(writer, value.Options, options);
-            }
-
-            writer.WriteEndObject();
-        }
+        writer.WriteEndObject();
     }
 }

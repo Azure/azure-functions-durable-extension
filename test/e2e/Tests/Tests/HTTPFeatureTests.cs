@@ -46,4 +46,39 @@ public class HttpFeatureTests
         // Check that logs include evidence of HTTP polling behavior.
         Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains("Polling HTTP status at location"));
     }
+
+    [Fact]
+    public async Task HttpCallWithTokenSourceTest()
+    {
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("HttpStart_HttpWithTokenSourceOrchestrator");
+
+        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
+        string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
+
+        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", 60);
+
+        var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
+
+        // Check if we're running in GitHub CI
+        bool isGitHubCI = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"));
+        
+        if (isGitHubCI)
+        {
+            // In GitHub CI, DefaultAzureCredential is not supported so the orchestrator should fail
+            Assert.Contains("Token source HTTP call failed", orchestrationDetails.Output);
+            
+            // Check that logs contain evidence of credential failure
+            Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => 
+                x.Contains("DefaultAzureCredential") || 
+                x.Contains("credential") || 
+                x.Contains("authentication") ||
+                x.Contains("ManagedIdentity") ||
+                x.Contains("HTTP call with token source failed"));
+        }
+        else
+        {
+            // If run locally, this test should compelete successfully. 
+            Assert.Contains("Token source HTTP call completed successfully", orchestrationDetails.Output);
+        }
+    }
 }

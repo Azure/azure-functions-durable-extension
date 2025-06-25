@@ -4,36 +4,35 @@
 using System;
 using System.Text.Json.Serialization;
 
-namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask
+namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
+
+/// <summary>
+/// Configuration options for Managed Identity.
+/// This calss is the same as the one in WebJobs.Extensions.DurableTask/ManagedIdentityOptions.cs.
+/// The implementation is kept in sync to ensure compatibility.
+/// </summary>
+public class ManagedIdentityOptions
 {
     /// <summary>
-    /// Configuration options for Managed Identity.
-    /// This calss is the same as the one in WebJobs.Extensions.DurableTask/ManagedIdentityOptions.cs.
-    /// The implementation is kept in sync to ensure compatibility.
+    /// Initializes a new instance of the <see cref="ManagedIdentityOptions"/> class.
     /// </summary>
-    public class ManagedIdentityOptions
+    /// <param name="authorityHost">The host of the Azure Active Directory authority.</param>
+    /// <param name="tenantId">The tenant id of the user to authenticate.</param>
+    public ManagedIdentityOptions(Uri? authorityHost = null, string? tenantId = null)
     {
-        /// <summary>
-        /// Initializes a new instance of the <see cref="ManagedIdentityOptions"/> class.
-        /// </summary>
-        /// <param name="authorityHost">The host of the Azure Active Directory authority.</param>
-        /// <param name="tenantId">The tenant id of the user to authenticate.</param>
-        public ManagedIdentityOptions(Uri? authorityHost = null, string? tenantId = null)
-        {
-            this.AuthorityHost = authorityHost;
-            this.TenantId = tenantId;
-        }
-
-        /// <summary>
-        /// The host of the Azure Active Directory authority. The default is https://login.microsoftonline.com/.
-        /// </summary>
-        [JsonPropertyName("authorityhost")]
-        public Uri? AuthorityHost { get; set; }
-
-        /// <summary>
-        /// The tenant id of the user to authenticate.
-        /// </summary>
-        [JsonPropertyName("tenantid")]
-        public string? TenantId { get; set; }
+        this.AuthorityHost = authorityHost;
+        this.TenantId = tenantId;
     }
+
+    /// <summary>
+    /// The host of the Azure Active Directory authority. The default is https://login.microsoftonline.com/.
+    /// </summary>
+    [JsonPropertyName("authorityhost")]
+    public Uri? AuthorityHost { get; set; }
+
+    /// <summary>
+    /// The tenant id of the user to authenticate.
+    /// </summary>
+    [JsonPropertyName("tenantid")]
+    public string? TenantId { get; set; }
 }

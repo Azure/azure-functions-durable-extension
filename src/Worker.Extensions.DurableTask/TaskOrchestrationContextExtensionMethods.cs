@@ -147,7 +147,7 @@ public static class TaskOrchestrationContextExtensionMethods
         string? content = null,
         HttpRetryOptions? retryOptions = null,
         bool asynchronousPatternEnabled = false,
-        ManagedIdentityTokenSource? tokenSource = null,
+        TokenSource? tokenSource = null,
         TimeSpan? timeout = null)
     {
         DurableHttpRequest request = new DurableHttpRequest(
