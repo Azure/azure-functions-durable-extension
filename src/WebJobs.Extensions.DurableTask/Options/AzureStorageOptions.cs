@@ -226,8 +226,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// This helps detect potential silent hangs caused by internal Azure Storage retries.
         /// If the timeout is exceeded, a PartitionManagerWarning is logged and the operation is retried.
         /// Default is 2 seconds.
-        /// This setting is only effective when <see cref="UseTablePartitionManagement"/> is set to true.
         /// </summary>
+        /// <remarks>
+        /// This setting is only effective when <see cref="UseTablePartitionManagement"/> is set to true.
+        /// </remarks>
         public TimeSpan PartitionTableOperationTimeout { get; set; } = TimeSpan.FromSeconds(2);
 
         /// <summary>
