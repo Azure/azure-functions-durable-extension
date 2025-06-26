@@ -12,7 +12,16 @@ internal class IsolatedTestLanguageLocalizer : ITestLanguageLocalizer
         { "ExternalEvent.CompletedInstance.ErrorMessage", "The orchestration instance with the provided instance id is not running." },
         { "ExternalEvent.InvalidInstance.ErrorName", "NotFound" },
         { "ExternalEvent.InvalidInstance.ErrorMessage", "No instance with ID 'instance-does-not-exist-test' was found" },
+        { "SuspendCompletedInstance.FailureMessage", "Status(StatusCode=\"Unknown\", Detail=\"Exception was thrown by handler.\")" },
+        { "ResumeCompletedInstance.FailureMessage", "Status(StatusCode=\"Unknown\", Detail=\"Exception was thrown by handler.\")" },
+        { "SuspendSuspendedInstance.FailureMessage", "Status(StatusCode=\"Unknown\", Detail=\"Exception was thrown by handler.\")" },
+        { "ResumeRunningInstance.FailureMessage", "Status(StatusCode=\"Unknown\", Detail=\"Exception was thrown by handler.\")" },
     };
+
+    public LanguageType GetLanguageType()
+    {
+        return LanguageType.DotnetIsolated;
+    }
 
     public string GetLocalizedStringValue(string key)
     {
