@@ -16,6 +16,9 @@ internal class PowerShellTestLanguageLocalizer : ITestLanguageLocalizer
         { "ResumeCompletedInstance.FailureMessage", "Response status code does not indicate success: 410 (Gone)." },
         { "SuspendSuspendedInstance.FailureMessage", "Response status code does not indicate success: 500 (Internal Server Error)." },
         { "ResumeRunningInstance.FailureMessage", "Response status code does not indicate success: 500 (Internal Server Error)." },
+        { "TerminateCompletedInstance.FailureMessage", "Response status code does not indicate success: 410 (Gone)." },
+        { "TerminateTerminatedInstance.FailureMessage", "Response status code does not indicate success: 410 (Gone)." },
+        { "TerminateInvalidInstance.FailureMessage", "Response status code does not indicate success: 404 (Not Found)." },
     };
 
     public LanguageType GetLanguageType()

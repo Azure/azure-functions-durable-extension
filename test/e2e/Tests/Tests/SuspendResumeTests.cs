@@ -67,12 +67,7 @@ public class SuspendResumeTests
             await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Suspended", 5);
 
             using HttpResponseMessage resumeResponse = await HttpHelpers.InvokeHttpTrigger("SuspendInstance", $"?instanceId={instanceId}");
-            Assert.Equal(HttpStatusCode.BadRequest, resumeResponse.StatusCode);
-
-            string? responseMessage = await resumeResponse.Content.ReadAsStringAsync();
-            Assert.NotNull(responseMessage);
-            // Unclear error message - see https://github.com/Azure/azure-functions-durable-extension/issues/3027, will update this code when that bug is fixed
-            Assert.Equal(fixture._functionLanguageLocalizer!.GetLocalizedStringValue("SuspendSuspendedInstance.FailureMessage"), responseMessage);
+            await AssertRequestFailsAsync(resumeResponse, fixture._functionLanguageLocalizer!.GetLocalizedStringValue("SuspendSuspendedInstance.FailureMessage"));
 
             // Give some time for Core Tools to write logs out
             Thread.Sleep(500);
@@ -100,12 +95,7 @@ public class SuspendResumeTests
         try
         {
             using HttpResponseMessage resumeResponse = await HttpHelpers.InvokeHttpTrigger("ResumeInstance", $"?instanceId={instanceId}");
-            Assert.Equal(HttpStatusCode.BadRequest, resumeResponse.StatusCode);
-
-            string? responseMessage = await resumeResponse.Content.ReadAsStringAsync();
-            Assert.NotNull(responseMessage);
-            // Unclear error message - see https://github.com/Azure/azure-functions-durable-extension/issues/3027, will update this code when that bug is fixed
-            Assert.Equal(fixture._functionLanguageLocalizer!.GetLocalizedStringValue("ResumeRunningInstance.FailureMessage"), responseMessage);
+            await this.AssertRequestFailsAsync(resumeResponse, fixture._functionLanguageLocalizer!.GetLocalizedStringValue("ResumeRunningInstance.FailureMessage"));
 
             // Give some time for Core Tools to write logs out
             Thread.Sleep(500);
@@ -133,21 +123,10 @@ public class SuspendResumeTests
         try
         {
             using HttpResponseMessage suspendResponse = await HttpHelpers.InvokeHttpTrigger("SuspendInstance", $"?instanceId={instanceId}");
-            Assert.Equal(HttpStatusCode.BadRequest, suspendResponse.StatusCode);
-
-            string? responseMessage = await suspendResponse.Content.ReadAsStringAsync();
-            Assert.NotNull(responseMessage);
-            // Unclear error message - see https://github.com/Azure/azure-functions-durable-extension/issues/3027, will update this code when that bug is fixed
-            Assert.Equal(fixture._functionLanguageLocalizer!.GetLocalizedStringValue("SuspendCompletedInstance.FailureMessage"), responseMessage);
-
+            await this.AssertRequestFailsAsync(suspendResponse, fixture._functionLanguageLocalizer!.GetLocalizedStringValue("SuspendCompletedInstance.FailureMessage"));
 
             using HttpResponseMessage resumeResponse = await HttpHelpers.InvokeHttpTrigger("ResumeInstance", $"?instanceId={instanceId}");
-            Assert.Equal(HttpStatusCode.BadRequest, resumeResponse.StatusCode);
-
-            responseMessage = await resumeResponse.Content.ReadAsStringAsync();
-            Assert.NotNull(responseMessage);
-            // Unclear error message - see https://github.com/Azure/azure-functions-durable-extension/issues/3027, will update this code when that bug is fixed
-            Assert.Equal(fixture._functionLanguageLocalizer!.GetLocalizedStringValue("ResumeCompletedInstance.FailureMessage"), responseMessage);
+            await this.AssertRequestFailsAsync(resumeResponse, fixture._functionLanguageLocalizer!.GetLocalizedStringValue("ResumeCompletedInstance.FailureMessage"));
 
             // Give some time for Core Tools to write logs out
             Thread.Sleep(500);
@@ -166,6 +145,15 @@ public class SuspendResumeTests
         {
             await TryTerminateInstanceAsync(instanceId);
         }
+    }
+
+    private async Task AssertRequestFailsAsync(HttpResponseMessage resumeResponse, string expectedErrorMessage)
+    {
+        Assert.Equal(HttpStatusCode.BadRequest, resumeResponse.StatusCode);
+
+        string? responseMessage = await resumeResponse.Content.ReadAsStringAsync();
+        Assert.NotNull(responseMessage);
+        Assert.Equal(expectedErrorMessage, responseMessage);
     }
 
     private static async Task AssertRequestSucceedsAsync(HttpResponseMessage response)
