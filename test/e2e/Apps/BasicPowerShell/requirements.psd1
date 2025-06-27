@@ -4,5 +4,5 @@
 #
 
 @{
-    'AzureFunctions.PowerShell.Durable.SDK' = '1.*'
+    'AzureFunctions.PowerShell.Durable.SDK' = '2.*'
 }

@@ -7,7 +7,7 @@ param($InstanceId)
 
 Import-Module -Name "MyHelperModule"
 
-if (GetExecutionCount($InstanceId) -gt 0) {
+if ((GetExecutionCount $InstanceId) -gt 0) {
     IncrementExecutionCount($InstanceId)
     "Success"
 }
