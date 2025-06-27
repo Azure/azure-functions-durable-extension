@@ -27,7 +27,7 @@ public class ExternalEventTests
     [Trait("PowerShell", "Skip")] // Test not yet implemented in PowerShell
     public async Task RaiseExternalEventTests()
     {
-        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("ExternalEventOrchestrator_HttpStart", "");
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=ExternalEventOrchestrator");
 
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         string instanceId = await DurableHelpers.ParseInstanceIdAsync(response);

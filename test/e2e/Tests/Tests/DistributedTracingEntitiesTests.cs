@@ -46,7 +46,7 @@ public class DistributedTracingEntitiesTests
 
         Assert.NotNull(activity);
 
-        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("DistributedTracingEntities_HttpStart", "");
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=DistributedTracingEntitiesOrchestration");
 
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
         await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", 30);
@@ -88,12 +88,12 @@ public class DistributedTracingEntitiesTests
         Assert.NotNull(activity);
 
         // We need to reset the state of the entities before running the test to removed any stored trace IDs
-        using HttpResponseMessage resetResponse = await HttpHelpers.InvokeHttpTrigger("ResetStateOrchestration_HttpStart", "");
+        using HttpResponseMessage resetResponse = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=ResetStateOrchestration");
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(resetResponse);
         await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", 30);
 
         await HttpHelpers.InvokeHttpTrigger("SignalActivityRecorderEntity", "");
-        using HttpResponseMessage getActivityInfosResponse = await HttpHelpers.InvokeHttpTrigger("GetMainAndSecondaryActivityInfoOrchestration_HttpStart", "");
+        using HttpResponseMessage getActivityInfosResponse = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=GetMainAndSecondaryActivityInfoOrchestration");
         statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(getActivityInfosResponse);
         await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", 30);
         var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);

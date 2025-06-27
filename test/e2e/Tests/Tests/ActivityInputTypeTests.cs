@@ -26,7 +26,7 @@ public class ActivityInputTypeTests
     [Trait("PowerShell", "Skip")] // Test not yet implemented in PowerShell
     public async Task DifferentActivityInputTypeTests()
     {
-        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("ActivityInputType_HttpStart", "");
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=ActivityInputTypeOrchestrator");
 
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);

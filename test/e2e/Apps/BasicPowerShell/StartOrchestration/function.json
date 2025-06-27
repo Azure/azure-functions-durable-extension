@@ -5,7 +5,7 @@
       "name": "Request",
       "type": "httpTrigger",
       "direction": "in",
-      "route": "RethrowActivityException_HttpStart",
+      "route": "StartOrchestration",
       "methods": [
         "post",
         "get"

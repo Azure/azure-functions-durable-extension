@@ -6,27 +6,12 @@ using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.DurableTask;
 using Microsoft.DurableTask.Client;
-using Microsoft.Extensions.Logging;
 using System.Net;
 
 namespace Microsoft.Azure.Durable.Tests.E2E;
 
 public static class ExternalEventOrchestration
 {
-    [Function("ExternalEventOrchestrator_HttpStart")]
-    public static async Task<HttpResponseData> ExternalEventOrchestrator_HttpStart(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestData req,
-        [DurableClient] DurableTaskClient client,
-        FunctionContext executionContext)
-    {
-        ILogger logger = executionContext.GetLogger("ExternalEventOrchestrator_HttpStart");
-
-        string instanceId = await client.ScheduleNewOrchestrationInstanceAsync(
-            nameof(ExternalEventOrchestrator));
-
-        return await client.CreateCheckStatusResponseAsync(req, instanceId);
-    }
-
     [Function(nameof(ExternalEventOrchestrator))]
     public static async Task<string> ExternalEventOrchestrator(
         [OrchestrationTrigger] TaskOrchestrationContext context)

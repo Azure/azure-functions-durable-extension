@@ -9,7 +9,6 @@ using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.DurableTask;
 using Microsoft.DurableTask.Client;
 using Microsoft.DurableTask.Entities;
-using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.Durable.Tests.E2E;
 
@@ -102,61 +101,6 @@ public static class DistributedTracingEntitiesOrchestration
         await response.WriteStringAsync(output!.ToString());
 
         return response;
-    }
-
-    [Function("DistributedTracingEntities_HttpStart")]
-    public static async Task<HttpResponseData> DistributedTracingEntitiesHttpStart(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestData req,
-        [DurableClient] DurableTaskClient client,
-        FunctionContext executionContext)
-    {
-        ILogger logger = executionContext.GetLogger("DistributedTracingEntities_HttpStart");
-
-        // Function input comes from the request content.
-        string instanceId = await client.ScheduleNewOrchestrationInstanceAsync(
-            nameof(DistributedTracingEntitiesOrchestration));
-
-        logger.LogInformation("Started orchestration with ID = '{instanceId}'.", instanceId);
-
-        // Returns an HTTP 202 response with an instance management payload.
-        // See https://learn.microsoft.com/azure/azure-functions/durable/durable-functions-http-api#start-orchestration
-        return await client.CreateCheckStatusResponseAsync(req, instanceId);
-    }
-
-    [Function("ResetStateOrchestration_HttpStart")]
-    public static async Task<HttpResponseData> ResetStateOrchestrationHttpStart(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestData req,
-        [DurableClient] DurableTaskClient client,
-        FunctionContext executionContext)
-    {
-        ILogger logger = executionContext.GetLogger("ResetStateOrchestration_HttpStart");
-
-        // Function input comes from the request content.
-        string instanceId = await client.ScheduleNewOrchestrationInstanceAsync("ResetStateOrchestration");
-
-        logger.LogInformation("Started orchestration with ID = '{instanceId}'.", instanceId);
-
-        // Returns an HTTP 202 response with an instance management payload.
-        // See https://learn.microsoft.com/azure/azure-functions/durable/durable-functions-http-api#start-orchestration
-        return await client.CreateCheckStatusResponseAsync(req, instanceId);
-    }
-
-    [Function("GetMainAndSecondaryActivityInfoOrchestration_HttpStart")]
-    public static async Task<HttpResponseData> GetActivityInfosAndResetStateOrchestrationHttpStart(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestData req,
-        [DurableClient] DurableTaskClient client,
-        FunctionContext executionContext)
-    {
-        ILogger logger = executionContext.GetLogger("GetMainAndSecondaryActivityInfoOrchestration_HttpStart");
-
-        // Function input comes from the request content.
-        string instanceId = await client.ScheduleNewOrchestrationInstanceAsync("GetMainAndSecondaryActivityInfoOrchestration");
-
-        logger.LogInformation("Started orchestration with ID = '{instanceId}'.", instanceId);
-
-        // Returns an HTTP 202 response with an instance management payload.
-        // See https://learn.microsoft.com/azure/azure-functions/durable/durable-functions-http-api#start-orchestration
-        return await client.CreateCheckStatusResponseAsync(req, instanceId);
     }
 
     [Function("SignalActivityRecorderEntity")]

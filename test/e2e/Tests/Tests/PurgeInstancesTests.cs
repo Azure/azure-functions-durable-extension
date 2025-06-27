@@ -76,7 +76,7 @@ public class PurgeInstancesTests
     [Trait("PowerShell", "Skip")] // Test not yet implemented in PowerShell
     public async Task PurgeOrchestrationHistoryAfterInvocation_Succeeds()
     {
-        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("HelloCities_HttpStart", "");
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=HelloCities");
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
 
@@ -95,7 +95,7 @@ public class PurgeInstancesTests
     [Trait("PowerShell", "Skip")] // Test not yet implemented in PowerShell
     public async Task PurgeAfterPurge_ZeroRows()
     {
-        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("HelloCities_HttpStart", "");
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=HelloCities");
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
 
