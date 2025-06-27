@@ -12,6 +12,6 @@ public class PowerShellFunctionAppProcess : FunctionAppProcess
     internal override string GetAppPath()
     {
         string rootDir = Path.GetFullPath(@"../../../../../../");
-        return Path.Combine(rootDir, @$"test/e2e/Apps/{this._appName}");
+        return Path.Combine(rootDir, @$"test/e2e/Apps/{this.appName}");
     }
 }

@@ -10,23 +10,23 @@ namespace Microsoft.Azure.Durable.Tests.DotnetIsolatedE2E;
 
 public class TestLoggerProvider : ILoggerProvider, ILogger
 {
-    private readonly IMessageSink _messageSink;
-    private ITestOutputHelper? _currentTestOutput;
-    private ConcurrentBag<string> _logs = new ConcurrentBag<string>();
+    private readonly IMessageSink messageSink;
+    private ITestOutputHelper? currentTestOutput;
+    private ConcurrentBag<string> logs = new ConcurrentBag<string>();
 
     public TestLoggerProvider(IMessageSink messageSink)
     {
-        _messageSink = messageSink;
+        this.messageSink = messageSink;
     }
 
-    public IEnumerable<string> CoreToolsLogs => _logs.ToArray();
+    public IEnumerable<string> CoreToolsLogs => this.logs.ToArray();
 
     // This needs to be created/disposed per-test so we can associate logs
     // with the specific running test.
     public IDisposable UseTestLogger(ITestOutputHelper testOutput)
     {
         // reset these every test
-        _currentTestOutput = testOutput;
+        this.currentTestOutput = testOutput;
         return new DisposableOutput(this);
     }
 
@@ -52,23 +52,23 @@ public class TestLoggerProvider : ILoggerProvider, ILogger
     public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
     {
         string formattedString = formatter(state, exception);
-        _messageSink.OnMessage(new DiagnosticMessage(formattedString));
-        _logs.Add(formattedString);
-        try { _currentTestOutput?.WriteLine(formattedString); } catch { }
+        this.messageSink.OnMessage(new DiagnosticMessage(formattedString));
+        this.logs.Add(formattedString);
+        try { this.currentTestOutput?.WriteLine(formattedString); } catch { }
     }
 
     private class DisposableOutput : IDisposable
     {
-        private readonly TestLoggerProvider _xunitLogger;
+        private readonly TestLoggerProvider xunitLogger;
 
         public DisposableOutput(TestLoggerProvider xunitLogger)
         {
-            _xunitLogger = xunitLogger;
+            this.xunitLogger = xunitLogger;
         }
 
         public void Dispose()
         {
-            _xunitLogger._currentTestOutput = null;
+            this.xunitLogger.currentTestOutput = null;
         }
     }
 }

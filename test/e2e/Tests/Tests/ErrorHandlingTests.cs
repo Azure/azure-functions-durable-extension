@@ -36,7 +36,7 @@ public class ErrorHandlingTests
 
         var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
         
-        Assert.StartsWith(this.fixture._functionLanguageLocalizer?.GetLocalizedStringValue("RethrownActivityException.ErrorMessage"), orchestrationDetails.Output);
+        Assert.StartsWith(this.fixture.functionLanguageLocalizer?.GetLocalizedStringValue("RethrownActivityException.ErrorMessage"), orchestrationDetails.Output);
         Assert.Contains("This activity failed", orchestrationDetails.Output);
     }
 
@@ -70,7 +70,7 @@ public class ErrorHandlingTests
         await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", 30);
 
         var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
-        Assert.StartsWith(this.fixture._functionLanguageLocalizer?.GetLocalizedStringValue("CaughtActivityException.ErrorMessage"), orchestrationDetails.Output);
+        Assert.StartsWith(this.fixture.functionLanguageLocalizer?.GetLocalizedStringValue("CaughtActivityException.ErrorMessage"), orchestrationDetails.Output);
         Assert.Contains("This activity failed", orchestrationDetails.Output);
     }
 

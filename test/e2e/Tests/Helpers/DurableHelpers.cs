@@ -7,9 +7,9 @@ namespace Microsoft.Azure.Durable.Tests.DotnetIsolatedE2E;
 
 internal class DurableHelpers
 {
-    static readonly HttpClient _httpClient = new HttpClient();
+    static readonly HttpClient httpClient = new HttpClient();
 
-    static readonly List<string> _finalStates = new List<string>()
+    static readonly List<string> finalStates = new List<string>()
     {
         "Completed",
         "Terminated",
@@ -52,7 +52,7 @@ internal class DurableHelpers
 
     internal static async Task<OrchestrationStatusDetails> GetRunningOrchestrationDetailsAsync(string statusQueryGetUri)
     {
-        var statusQueryResponse = await _httpClient.GetAsync(statusQueryGetUri);
+        var statusQueryResponse = await httpClient.GetAsync(statusQueryGetUri);
 
         string? statusQueryResponseString = await statusQueryResponse.Content.ReadAsStringAsync();
 
@@ -69,7 +69,7 @@ internal class DurableHelpers
             {
                 return;
             }
-            if (_finalStates.Contains(currentStatus.RuntimeStatus))
+            if (finalStates.Contains(currentStatus.RuntimeStatus))
             {
                 throw new TaskCanceledException($"Orchestration reached {currentStatus.RuntimeStatus} state when test was expecting {desiredState}");
             }

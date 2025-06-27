@@ -12,19 +12,19 @@ namespace Microsoft.Azure.Durable.Tests.DotnetIsolatedE2E;
 
 public abstract class FunctionAppProcess
 {
-    private bool _disposed;
-    private Process? _funcProcess;
-    internal string? _appName;
+    private bool disposed;
+    private Process? funcProcess;
+    internal string? appName;
 
-    private JobObjectRegistry? _jobObjectRegistry;
-    private ILogger _logger;
+    private JobObjectRegistry? jobObjectRegistry;
+    private ILogger logger;
     private TestLoggerProvider TestLogs;
 
     public FunctionAppProcess(ILogger logger, TestLoggerProvider TestLogs)
     {
-        this._logger = logger;
+        this.logger = logger;
         this.TestLogs = TestLogs;
-        this._appName = Environment.GetEnvironmentVariable("TEST_APP_NAME") ?? "BasicDotNetIsolated";
+        this.appName = Environment.GetEnvironmentVariable("TEST_APP_NAME") ?? "BasicDotNetIsolated";
     }
 
     public async Task InitializeAsync()
@@ -33,33 +33,33 @@ public abstract class FunctionAppProcess
         if (Constants.FunctionsHostUrl.Contains("localhost"))
         {
             // kill existing func processes
-            this._logger.LogInformation("Shutting down any running functions hosts..");
+            this.logger.LogInformation("Shutting down any running functions hosts..");
             FixtureHelpers.KillExistingProcessesMatchingName("func");
 
             // start functions process
-            this._logger.LogInformation($"Starting functions host for {Constants.FunctionAppCollectionName}...");
+            this.logger.LogInformation($"Starting functions host for {Constants.FunctionAppCollectionName}...");
 
             string e2eAppPath = this.GetAppPath();
 
-            this._funcProcess = FixtureHelpers.GetFuncHostProcess(e2eAppPath);
-            string workingDir = this._funcProcess.StartInfo.WorkingDirectory;
-            this._logger.LogInformation($"  Working dir: '${workingDir}' Exists: '{Directory.Exists(workingDir)}'");
-            string fileName = this._funcProcess.StartInfo.FileName;
-            this._logger.LogInformation($"  File name:   '${fileName}' Exists: '{File.Exists(fileName)}'");
+            this.funcProcess = FixtureHelpers.GetFuncHostProcess(e2eAppPath);
+            string workingDir = this.funcProcess.StartInfo.WorkingDirectory;
+            this.logger.LogInformation($"  Working dir: '${workingDir}' Exists: '{Directory.Exists(workingDir)}'");
+            string fileName = this.funcProcess.StartInfo.FileName;
+            this.logger.LogInformation($"  File name:   '${fileName}' Exists: '{File.Exists(fileName)}'");
 
-            FixtureHelpers.AddDurableBackendEnvironmentVariables(this._funcProcess, this._logger);
+            FixtureHelpers.AddDurableBackendEnvironmentVariables(this.funcProcess, this.logger);
 
-            FixtureHelpers.StartProcessWithLogging(this._funcProcess, this._logger);
+            FixtureHelpers.StartProcessWithLogging(this.funcProcess, this.logger);
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 // ensure child processes are cleaned up
-                _jobObjectRegistry = new JobObjectRegistry();
-                _jobObjectRegistry.Register(this._funcProcess);
+                this.jobObjectRegistry = new JobObjectRegistry();
+                this.jobObjectRegistry.Register(this.funcProcess);
             }
 
             using var httpClient = new HttpClient();
-            this._logger.LogInformation("Waiting for host to be running...");
+            this.logger.LogInformation("Waiting for host to be running...");
             await TestUtility.RetryAsync(async () =>
             {
                 try
@@ -70,24 +70,24 @@ public abstract class FunctionAppProcess
                     if (doc.RootElement.TryGetProperty("state", out JsonElement value) &&
                         value.GetString() == "Running")
                     {
-                        this._logger.LogInformation($"  Current state: Running");
+                        this.logger.LogInformation($"  Current state: Running");
                         return true;
                     }
 
-                    this._logger.LogInformation($"  Current state: {value}");
+                    this.logger.LogInformation($"  Current state: {value}");
                     return false;
                 }
                 catch
                 {
-                    if (_funcProcess.HasExited)
+                    if (this.funcProcess.HasExited)
                     {
                         // Something went wrong starting the host - check the logs
-                        this._logger.LogInformation($"  Current state: process exited - something may have gone wrong.");
+                        this.logger.LogInformation($"  Current state: process exited - something may have gone wrong.");
                         return false;
                     }
 
                     // Can get exceptions before host is running.
-                    this._logger.LogInformation($"  Current state: process starting");
+                    this.logger.LogInformation($"  Current state: process starting");
                     return false;
                 }
             }, userMessageCallback: () => string.Join(System.Environment.NewLine, TestLogs.CoreToolsLogs));
@@ -106,14 +106,14 @@ public abstract class FunctionAppProcess
 
     public Task DisposeAsync()
     {
-        if (!this._disposed)
+        if (!this.disposed)
         {
-            if (this._funcProcess != null)
+            if (this.funcProcess != null)
             {
                 try
                 {
-                    this._funcProcess.Kill();
-                    this._funcProcess.Dispose();
+                    this.funcProcess.Kill();
+                    this.funcProcess.Dispose();
                 }
                 catch
                 {
@@ -121,10 +121,10 @@ public abstract class FunctionAppProcess
                 }
             }
 
-            this._jobObjectRegistry?.Dispose();
+            this.jobObjectRegistry?.Dispose();
         }
 
-        this._disposed = true;
+        this.disposed = true;
 
         return Task.CompletedTask;
     }

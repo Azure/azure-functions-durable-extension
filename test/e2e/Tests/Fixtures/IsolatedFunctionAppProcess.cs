@@ -13,7 +13,7 @@ public class IsolatedFunctionAppProcess : FunctionAppProcess
     internal override string GetAppPath()
     {
         string rootDir = Path.GetFullPath(@"../../../../../../");
-        string e2eAppBinPath = Path.Combine(rootDir, @$"test/e2e/Apps/{this._appName}/bin");
+        string e2eAppBinPath = Path.Combine(rootDir, @$"test/e2e/Apps/{this.appName}/bin");
         string? e2eHostJson = Directory.GetFiles(e2eAppBinPath, "host.json", SearchOption.AllDirectories).FirstOrDefault();
 
         if (e2eHostJson == null)

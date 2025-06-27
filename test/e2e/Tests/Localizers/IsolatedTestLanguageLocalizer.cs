@@ -4,7 +4,7 @@
 namespace Microsoft.Azure.Durable.Tests.DotnetIsolatedE2E;
 internal class IsolatedTestLanguageLocalizer : ITestLanguageLocalizer
 {
-    private readonly Dictionary<string, string> _isolatedLocalizedStrings = new Dictionary<string, string>
+    private readonly Dictionary<string, string> isolatedLocalizedStrings = new Dictionary<string, string>
     {
         { "CaughtActivityException.ErrorMessage", "Task 'RaiseException' (#0) failed with an unhandled exception:" },
         { "RethrownActivityException.ErrorMessage", "Microsoft.DurableTask.TaskFailedException" }
@@ -12,6 +12,6 @@ internal class IsolatedTestLanguageLocalizer : ITestLanguageLocalizer
 
     public string GetLocalizedStringValue(string key)
     {
-        return _isolatedLocalizedStrings.GetValueOrDefault(key, "");
+        return this.isolatedLocalizedStrings.GetValueOrDefault(key, "");
     }
 }
