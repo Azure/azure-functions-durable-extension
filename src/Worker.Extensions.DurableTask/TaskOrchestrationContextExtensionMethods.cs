@@ -150,14 +150,14 @@ public static class TaskOrchestrationContextExtensionMethods
         TokenSource? tokenSource = null,
         TimeSpan? timeout = null)
     {
-        DurableHttpRequest request = new DurableHttpRequest(
-            method, 
-            uri, 
-            content: content, 
-            tokenSource: tokenSource, 
-            asynchronousPatternEnabled: asynchronousPatternEnabled, 
-            timeout: timeout, 
-            httpRetryOptions: retryOptions);
+        DurableHttpRequest request = new DurableHttpRequest(method, uri)
+        { 
+            Content = content,
+            HttpRetryOptions = retryOptions,
+            AsynchronousPatternEnabled = asynchronousPatternEnabled,
+            TokenSource = tokenSource,
+            Timeout = timeout
+        };
 
         return context.CallHttpAsync(request);
     }

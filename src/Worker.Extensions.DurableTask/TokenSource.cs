@@ -14,7 +14,6 @@ public abstract class TokenSource
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="TokenSource"/> class.
-    /// This constructor is internal to prevent customers from constructing their own token source types.
     /// </summary>
     /// <param name="resource">The resource identifier for the token source.</param>
     internal TokenSource(string resource)

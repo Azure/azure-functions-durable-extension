@@ -7,16 +7,14 @@ using System.Text.Json.Serialization;
 namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
 
 /// <summary>
-/// Configuration options for Managed Identity.
-/// This calss is the same as the one in WebJobs.Extensions.DurableTask/ManagedIdentityOptions.cs.
-/// The implementation is kept in sync to ensure compatibility.
+/// Configuration options for ManagedIdentityTokenSource.
 /// </summary>
 public class ManagedIdentityOptions
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="ManagedIdentityOptions"/> class.
     /// </summary>
-    /// <param name="authorityHost">The host of the Azure Active Directory authority.</param>
+    /// <param name="authorityHost">The host of the Entra ID authority.</param>
     /// <param name="tenantId">The tenant id of the user to authenticate.</param>
     public ManagedIdentityOptions(Uri? authorityHost = null, string? tenantId = null)
     {
@@ -25,7 +23,7 @@ public class ManagedIdentityOptions
     }
 
     /// <summary>
-    /// The host of the Azure Active Directory authority. The default is https://login.microsoftonline.com/.
+    /// The host of the Entra ID authority. The default is https://login.microsoftonline.com/.
     /// </summary>
     [JsonPropertyName("authorityhost")]
     public Uri? AuthorityHost { get; set; }

@@ -8,8 +8,6 @@ namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
 
 /// <summary>
 /// Token Source implementation for Azure Managed Identities.
-/// This calss is the same as the one in WebJobs.Extensions.DurableTask/ManagedIdentityTokenSource.cs
-/// The implementation is kept in sync to ensure compatibility.
 /// </summary>
 public class ManagedIdentityTokenSource : TokenSource
 {
