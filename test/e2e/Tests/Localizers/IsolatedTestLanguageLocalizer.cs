@@ -4,7 +4,7 @@
 namespace Microsoft.Azure.Durable.Tests.DotnetIsolatedE2E;
 internal class IsolatedTestLanguageLocalizer : ITestLanguageLocalizer
 {
-    private readonly Dictionary<string, string> _isolatedLocalizedStrings = new Dictionary<string, string>
+    private readonly Dictionary<string, string> isolatedLocalizedStrings = new Dictionary<string, string>
     {
         { "CaughtActivityException.ErrorMessage", "Task 'RaiseException' (#0) failed with an unhandled exception:" },
         { "RethrownActivityException.ErrorMessage", "Microsoft.DurableTask.TaskFailedException" },
@@ -17,9 +17,9 @@ internal class IsolatedTestLanguageLocalizer : ITestLanguageLocalizer
         { "ResumeCompletedInstance.FailureMessage", "Status(StatusCode=\"Unknown\", Detail=\"Exception was thrown by handler.\")" },
         { "SuspendSuspendedInstance.FailureMessage", "Status(StatusCode=\"Unknown\", Detail=\"Exception was thrown by handler.\")" },
         { "ResumeRunningInstance.FailureMessage", "Status(StatusCode=\"Unknown\", Detail=\"Exception was thrown by handler.\")" },
-        { "TerminateCompletedInstance.FailureMessage", "Status(StatusCode=\"Unknown\", Detail=\"Exception was thrown by handler.\")" },
-        { "TerminateTerminatedInstance.FailureMessage", "Status(StatusCode=\"Unknown\", Detail=\"Exception was thrown by handler.\")" },
-        { "TerminateInvalidInstance.FailureMessage", "Status(StatusCode=\"Unknown\", Detail=\"Exception was thrown by handler.\")" },
+        { "TerminateCompletedInstance.FailureMessage", "InvalidOperationException: Cannot terminate the orchestration instance {0} because instance is in the Completed state." },
+        { "TerminateTerminatedInstance.FailureMessage", "InvalidOperationException: Cannot terminate the orchestration instance {0} because instance is in the Terminated state." },
+        { "TerminateInvalidInstance.FailureMessage", "ArgumentException: No instance with ID '{0}' was found." },
     };
 
     public LanguageType GetLanguageType()
@@ -27,8 +27,8 @@ internal class IsolatedTestLanguageLocalizer : ITestLanguageLocalizer
         return LanguageType.DotnetIsolated;
     }
 
-    public string GetLocalizedStringValue(string key)
+    public string GetLocalizedStringValue(string key, params object[] args)
     {
-        return this.isolatedLocalizedStrings.GetValueOrDefault(key, "");
+        return String.Format(this.isolatedLocalizedStrings.GetValueOrDefault(key, ""), args:args);
     }
 }

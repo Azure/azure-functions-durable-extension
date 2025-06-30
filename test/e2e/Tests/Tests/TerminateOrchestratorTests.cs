@@ -84,16 +84,14 @@ public class TerminateOrchestratorTests
         Assert.NotNull(terminateAgainResponseMessage);
 
         Assert.Contains("StatusCode=\"FailedPrecondition\"", terminateAgainResponseMessage);
-        // Todo: Cleanup
-        Assert.Contains($"InvalidOperationException: Cannot terminate the orchestration instance {instanceId} because instance is in the Terminated state.", terminateAgainResponseMessage);
-        await AssertTerminateRequestFailsAsync(terminateAgainResponse, fixture._functionLanguageLocalizer!.GetLocalizedStringValue("TerminateTerminatedInstance.FailureMessage"));
+        Assert.Contains(fixture.functionLanguageLocalizer!.GetLocalizedStringValue("TerminateTerminatedInstance.FailureMessage", instanceId), terminateAgainResponseMessage);
 
         // Give some time for Core Tools to write logs out
         Thread.Sleep(500);
 
         // For some reason, PowerShell does not log these warnings - instead the status code is 410 (Gone) with no log
         // when the instance is completed
-        if (fixture._functionLanguageLocalizer.GetLanguageType() == LanguageType.DotnetIsolated)
+        if (fixture.functionLanguageLocalizer.GetLanguageType() == LanguageType.DotnetIsolated)
         {
             Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains("Cannot terminate orchestration instance in the Terminated state.") &&
                                                               x.Contains(instanceId));
@@ -121,16 +119,14 @@ public class TerminateOrchestratorTests
 
         // Check the exception returned contains the right statusCode and message. 
         Assert.Contains("StatusCode=\"FailedPrecondition\"", terminateResponseMessage);
-        // TODO: Cleanup
-        Assert.Contains($"InvalidOperationException: Cannot terminate the orchestration instance {instanceId} because instance is in the Completed state.", terminateResponseMessage);
-        await AssertTerminateRequestFailsAsync(terminateResponse, fixture._functionLanguageLocalizer!.GetLocalizedStringValue("TerminateCompletedInstance.FailureMessage"));
+        Assert.Contains(fixture.functionLanguageLocalizer!.GetLocalizedStringValue("TerminateCompletedInstance.FailureMessage", instanceId), terminateResponseMessage);
 
         // Give some time for Core Tools to write logs out
         Thread.Sleep(500);
 
         // For some reason, PowerShell does not log these warnings - instead the status code is 410 (Gone) with no log
         // when the instance is completed
-        if (fixture._functionLanguageLocalizer.GetLanguageType() == LanguageType.DotnetIsolated)
+        if (fixture.functionLanguageLocalizer.GetLanguageType() == LanguageType.DotnetIsolated)
         {
             Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains("Cannot terminate orchestration instance in the Completed state.") &&
                                                                   x.Contains(instanceId));
@@ -140,18 +136,16 @@ public class TerminateOrchestratorTests
     [Fact]
     public async Task TerminateNonExistantOrchestration_ShouldFail()
     {
-        using HttpResponseMessage terminateResponse = await HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={Guid.NewGuid().ToString()}");
-        await AssertTerminateRequestFailsAsync(terminateResponse, fixture._functionLanguageLocalizer!.GetLocalizedStringValue("TerminateInvalidInstance.FailureMessage"));
-    }
-
-    private static async Task AssertTerminateRequestFailsAsync(HttpResponseMessage terminateResponse, string expectedErrorMessage)
-    {
+        string instanceId = Guid.NewGuid().ToString();
+        using HttpResponseMessage terminateResponse = await HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={instanceId}");
         Assert.Equal(HttpStatusCode.BadRequest, terminateResponse.StatusCode);
 
         string? terminateResponseMessage = await terminateResponse.Content.ReadAsStringAsync();
         Assert.NotNull(terminateResponseMessage);
-        // Unclear error message - see https://github.com/Azure/azure-functions-durable-extension/issues/3027, will update this code when that bug is fixed
-        Assert.Equal(expectedErrorMessage, terminateResponseMessage);
+
+        // Check the exception returned contains the right statusCode and message. 
+        Assert.Contains("Status(StatusCode=\"NotFound\"", terminateResponseMessage);
+        Assert.Contains(fixture.functionLanguageLocalizer!.GetLocalizedStringValue("TerminateInvalidInstance.FailureMessage", instanceId), terminateResponseMessage);
     }
 
     private static async Task AssertTerminateRequestSucceedsAsync(HttpResponseMessage terminateResponse)

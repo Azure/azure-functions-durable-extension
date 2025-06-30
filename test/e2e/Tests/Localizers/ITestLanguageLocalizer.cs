@@ -11,7 +11,7 @@ enum LanguageType
 
 internal interface ITestLanguageLocalizer
 {
-    string GetLocalizedStringValue(string key);
+    string GetLocalizedStringValue(string key, params object[] args);
 
     LanguageType GetLanguageType();
 }
