@@ -34,7 +34,7 @@ public class HttpFeatureTests
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
 
-        // Wait here as the long-running orchestrator requires about 1 minutes to finish.
+        // Wait here as the long-running orchestration requires about 1 minutes to finish.
         // Set wait time to be 150 seconds becasue the DTS CI takes more time to finish. 
         await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", 150);
 
@@ -46,5 +46,50 @@ public class HttpFeatureTests
 
         // Check that logs include evidence of HTTP polling behavior.
         Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains("Polling HTTP status at location"));
+    }
+
+    [Fact]
+    // Tests HTTP call using managed identity credentials.
+    // Note: Currently uses DefaultAzureCredential based on available information.
+    // Since GitHub CI doesn't support this, the orchestrator will fail in CI but succeed locally.
+    // Therefore, the test verifies results conditionally based on the execution environment.
+    public async Task HttpCallWithTokenSourceTest()
+    {
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("HttpStart_HttpWithTokenSourceOrchestrator");
+
+        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
+        string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
+
+        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", 60);
+
+        var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
+
+        // Check if we're running in GitHub CI
+        bool isGitHubCI = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"));
+        
+        if (isGitHubCI)
+        {
+            // In GitHub CI, verify that the error message indicates failure due to absence of valid token credentials.
+            // Check output to verify CallHttpAsync fails.
+            Assert.Contains("Token source HTTP call failed", orchestrationDetails.Output);
+
+            // Check that logs to verify orchestrator fails becasue of credential failure. 
+            Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, log =>
+                log.Contains("Task 'BuiltIn::HttpActivity' (#0) failed with an unhandled exception: DefaultAzureCredential failed to retrieve a token from the included credentials."));
+
+            Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, log =>
+                log.Contains("WorkloadIdentityCredential authentication unavailable"));
+
+            Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, log =>
+                log.Contains("ManagedIdentityCredential authentication unavailable."));
+
+            Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, log =>
+                log.Contains("EnvironmentCredential authentication unavailable."));
+        }
+        else
+        {
+            // If run locally, this test should compelete successfully. 
+            Assert.Contains("Token source HTTP call completed successfully", orchestrationDetails.Output);
+        }
     }
 }
