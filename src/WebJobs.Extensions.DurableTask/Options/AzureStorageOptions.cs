@@ -221,11 +221,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </remarks>
         public bool AllowReplayingTerminalInstances { get; set; } = false;
 
+        /// <summary>
         /// Specifies the timeout (in seconds) for read and write operations on the partition table using PartitionManager V3 (TablePartitionManager) in Azure Storage.
         /// This helps detect potential silent hangs caused by internal Azure Storage retries.
         /// If the timeout is exceeded, a PartitionManagerWarning is logged and the operation is retried.
         /// Default is 2 seconds.
+        /// </summary>
+        /// <remarks>
         /// This setting is only effective when <see cref="UseTablePartitionManagement"/> is set to true.
+        /// </remarks>
         public TimeSpan PartitionTableOperationTimeout { get; set; } = TimeSpan.FromSeconds(2);
 
         /// <summary>
