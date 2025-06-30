@@ -33,6 +33,7 @@ public class DistributedTracingTests
 
     [Fact]
     [Trait("DTS", "Skip")] // Distributed tracing is currently not working in DTS
+    [Trait("PowerShell", "Skip")] // Test not yet implemented in PowerShell
     public async Task DistributedTracingTest()
     {
         // Start Activity
@@ -41,7 +42,7 @@ public class DistributedTracingTests
 
         Assert.NotNull(activity);
 
-        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("DistributedTracing_HttpStart", "");
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=DistributedTracing");
 
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
         await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", 30);

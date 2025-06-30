@@ -40,22 +40,6 @@ public static class LongRunningOrchestration
         return $"Slept for {sleepMs}ms.";
     }
 
-    [Function("LongOrchestrator_HttpStart")]
-    public static async Task<HttpResponseData> HttpStart(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestData req,
-        [DurableClient] DurableTaskClient client,
-        FunctionContext executionContext)
-    {
-        ILogger logger = executionContext.GetLogger("LongOrchestrator_HttpStart");
-
-        string instanceId = await client.ScheduleNewOrchestrationInstanceAsync(
-            nameof(LongRunningOrchestrator));
-
-        logger.LogInformation("Started orchestration with ID = '{instanceId}'.", instanceId);
-        
-        return await client.CreateCheckStatusResponseAsync(req, instanceId);
-    }
-
     [Function("TerminateInstance")]
     public static async Task<HttpResponseData> Run(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestData req,

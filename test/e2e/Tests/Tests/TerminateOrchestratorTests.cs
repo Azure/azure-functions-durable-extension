@@ -22,9 +22,10 @@ public class TerminateOrchestratorTests
 
 
     [Fact]
+    [Trait("PowerShell", "Skip")] // Test not yet implemented in PowerShell
     public async Task TerminateRunningOrchestration_ShouldSucceed()
     {
-        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("LongOrchestrator_HttpStart", "");
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=LongRunningOrchestrator");
 
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         string instanceId = await DurableHelpers.ParseInstanceIdAsync(response);
@@ -40,6 +41,7 @@ public class TerminateOrchestratorTests
 
 
     [Fact(Skip = "Will enable when https://github.com/Azure/azure-functions-durable-extension/issues/3025 is fixed")]
+    [Trait("PowerShell", "Skip")] // Test not yet implemented in PowerShell
     public async Task TerminateScheduledOrchestration_ShouldSucceed()
     {
         DateTime scheduledStartTime = DateTime.UtcNow + TimeSpan.FromMinutes(1);
@@ -59,9 +61,10 @@ public class TerminateOrchestratorTests
 
 
     [Fact]
+    [Trait("PowerShell", "Skip")] // Test not yet implemented in PowerShell
     public async Task TerminateTerminatedOrchestration_ShouldFail()
     {
-        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("LongOrchestrator_HttpStart", "");
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=LongRunningOrchestrator");
 
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         string instanceId = await DurableHelpers.ParseInstanceIdAsync(response);
@@ -94,9 +97,10 @@ public class TerminateOrchestratorTests
 
 
     [Fact]
+    [Trait("PowerShell", "Skip")] // Test not yet implemented in PowerShell
     public async Task TerminateCompletedOrchestration_ShouldFail()
     {
-        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("HelloCities_HttpStart", "");
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=HelloCities");
 
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         string instanceId = await DurableHelpers.ParseInstanceIdAsync(response);
@@ -123,6 +127,7 @@ public class TerminateOrchestratorTests
     }
 
     [Fact]
+    [Trait("PowerShell", "Skip")] // Test not yet implemented in PowerShell
     public async Task TerminateNonExistantOrchestration_ShouldFail()
     {
         string instanceId = Guid.NewGuid().ToString();

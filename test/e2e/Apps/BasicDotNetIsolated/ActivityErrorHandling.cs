@@ -3,96 +3,13 @@
 
 using System.Collections.Concurrent;
 using Microsoft.Azure.Functions.Worker;
-using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.DurableTask;
-using Microsoft.DurableTask.Client;
-using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.Durable.Tests.E2E;
 
 public static class ActivityErrorHandling
 {
     private static ConcurrentDictionary<string, int> globalRetryCount = new ConcurrentDictionary<string, int>();
-
-    [Function("RethrowActivityException_HttpStart")]
-    public static async Task<HttpResponseData> RethrowHttpStart(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestData req,
-        [DurableClient] DurableTaskClient client,
-        FunctionContext executionContext)
-    {
-        ILogger logger = executionContext.GetLogger("RethrowActivityException_HttpStart");
-
-        string instanceId = await client.ScheduleNewOrchestrationInstanceAsync(
-            nameof(RethrowActivityException));
-
-        logger.LogInformation("Started orchestration with ID = '{instanceId}'.", instanceId);
-
-        return await client.CreateCheckStatusResponseAsync(req, instanceId);
-    }
-
-    [Function("CatchActivityException_HttpStart")]
-    public static async Task<HttpResponseData> CatchHttpStart(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestData req,
-        [DurableClient] DurableTaskClient client,
-        FunctionContext executionContext)
-    {
-        ILogger logger = executionContext.GetLogger("CatchActivityException_HttpStart");
-
-        string instanceId = await client.ScheduleNewOrchestrationInstanceAsync(
-            nameof(CatchActivityException));
-
-        logger.LogInformation("Started orchestration with ID = '{instanceId}'.", instanceId);
-
-        return await client.CreateCheckStatusResponseAsync(req, instanceId);
-    }
-
-    [Function("CatchActivityExceptionFailureDetails_HttpStart")]
-    public static async Task<HttpResponseData> CatchFailureDetailsHttpStart(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestData req,
-        [DurableClient] DurableTaskClient client,
-        FunctionContext executionContext)
-    {
-        ILogger logger = executionContext.GetLogger("CatchActivityExceptionFailureDetails_HttpStart");
-
-        string instanceId = await client.ScheduleNewOrchestrationInstanceAsync(
-            nameof(CatchActivityExceptionFailureDetails));
-
-        logger.LogInformation("Started orchestration with ID = '{instanceId}'.", instanceId);
-
-        return await client.CreateCheckStatusResponseAsync(req, instanceId);
-    }
-
-    [Function("RetryActivityException_HttpStart")]
-    public static async Task<HttpResponseData> RetryHttpStart(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestData req,
-        [DurableClient] DurableTaskClient client,
-        FunctionContext executionContext)
-    {
-        ILogger logger = executionContext.GetLogger("RetryActivityException_HttpStart");
-
-        string instanceId = await client.ScheduleNewOrchestrationInstanceAsync(
-            nameof(RetryActivityFunction));
-
-        logger.LogInformation("Started orchestration with ID = '{instanceId}'.", instanceId);
-
-        return await client.CreateCheckStatusResponseAsync(req, instanceId);
-    }
-
-    [Function("CustomRetryActivityException_HttpStart")]
-    public static async Task<HttpResponseData> CustomRetryHttpStart(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestData req,
-        [DurableClient] DurableTaskClient client,
-        FunctionContext executionContext)
-    {
-        ILogger logger = executionContext.GetLogger("CustomRetryActivityException_HttpStart");
-
-        string instanceId = await client.ScheduleNewOrchestrationInstanceAsync(
-            nameof(CustomRetryActivityFunction));
-
-        logger.LogInformation("Started orchestration with ID = '{instanceId}'.", instanceId);
-
-        return await client.CreateCheckStatusResponseAsync(req, instanceId);
-    }
 
     [Function(nameof(RethrowActivityException))]
     public static async Task<string> RethrowActivityException(

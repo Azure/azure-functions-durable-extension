@@ -35,10 +35,10 @@ public class HttpEndToEndTests
     }
 
     [Theory]
-    [InlineData("HelloCities_HttpStart", HttpStatusCode.Accepted, "Hello Tokyo!")]
-    public async Task HttpTriggerTests(string functionName, HttpStatusCode expectedStatusCode, string partialExpectedOutput)
+    [InlineData("HelloCities", HttpStatusCode.Accepted, "Hello Tokyo!")]
+    public async Task HttpTriggerTests(string orchestrationName, HttpStatusCode expectedStatusCode, string partialExpectedOutput)
     {
-        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger(functionName, "");
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", $"?orchestrationName={orchestrationName}");
 
         Assert.Equal(expectedStatusCode, response.StatusCode);
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
@@ -52,6 +52,7 @@ public class HttpEndToEndTests
     [Theory]
     [InlineData("HelloCities_HttpStart_Scheduled", 5, HttpStatusCode.Accepted)]
     [InlineData("HelloCities_HttpStart_Scheduled", -5, HttpStatusCode.Accepted)]
+    [Trait("PowerShell", "Skip")] // Test not yet implemented in PowerShell
     public async Task ScheduledStartTests(string functionName, int startDelaySeconds, HttpStatusCode expectedStatusCode)
     {
         var testStartTime = DateTime.UtcNow;

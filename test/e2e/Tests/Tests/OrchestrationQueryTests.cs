@@ -23,6 +23,7 @@ public class OrchestrationQueryTests
 
 
     [Fact]
+    [Trait("PowerShell", "Skip")] // Test not yet implemented in PowerShell
     public async Task ListAllOrchestrations_ShouldSucceed()
     {
         using HttpResponseMessage statusResponse = await HttpHelpers.InvokeHttpTrigger("GetAllInstances", "");
@@ -38,9 +39,10 @@ public class OrchestrationQueryTests
 
 
     [Fact]
+    [Trait("PowerShell", "Skip")] // Test not yet implemented in PowerShell
     public async Task ListRunningOrchestrations_ShouldContainRunningOrchestration()
     {
-        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("LongOrchestrator_HttpStart", "");
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=LongRunningOrchestrator");
 
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         string instanceId = await DurableHelpers.ParseInstanceIdAsync(response);

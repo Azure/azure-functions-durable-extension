@@ -21,7 +21,10 @@ param(
     # This param can be used during local runs of the build script to deliberately skip the build and run only the azurite/mssql logic
     # For instance, the command ./build-e2e-test.ps1 -SkipBuild -StartMSSqlContainer will start azurite and the MSSQL docker container only. 
     [Switch]
-    $SkipBuild
+    $SkipBuild,
+
+    [string]
+    $E2EAppName = ""
 )
 
 if ($PSVersionTable.PSEdition -ne 'Core') {
@@ -38,7 +41,7 @@ $ProjectBaseDirectory = "$PSScriptRoot\..\..\..\"
 $ProjectTemporaryPath = Join-Path ([System.IO.Path]::GetTempPath()) "DurableTaskExtensionE2ETests"
 New-Item -Path $ProjectTemporaryPath -ItemType Directory -ErrorAction SilentlyContinue
 $WebJobsExtensionProjectDirectory = Join-Path $ProjectBaseDirectory "src\WebJobs.Extensions.DurableTask"
-$E2EAppProjectDirectory = Join-Path $ProjectBaseDirectory "test\e2e\Apps\BasicDotNetIsolated"
+$E2EAppParentDirectory = Join-Path $ProjectBaseDirectory "test\e2e\Apps"
 
 $LocalNugetCacheDirectory = $env:NUGET_PACKAGES
 if (!$LocalNugetCacheDirectory) {
@@ -103,17 +106,66 @@ else
   Write-Host "------"
 }
 
+function InstallExtensionAndBuildTestApp($testAppDir) {
+    Write-Host "Removing old packages from test app $testAppDir"
+
+    $AppPackageLocation = Join-Path $testAppDir 'packages'
+    if (!(Test-Path $AppPackageLocation)) {
+      New-Item -Path $AppPackageLocation -ItemType Directory -ErrorAction SilentlyContinue
+    }
+    $AppPackageLocation = Resolve-Path $AppPackageLocation
+    Get-ChildItem -Path $AppPackageLocation -Include * -File -Recurse | ForEach-Object { $_.Delete()}
+    
+    Write-Host "Moving nupkg from WebJobs extension to $AppPackageLocation"
+    Set-Location $BuildOutputLocation
+    dotnet nuget push *.nupkg --source $AppPackageLocation
+    
+    Write-Host "Updating app .csproj to reference built package versions"
+    Set-Location $testAppDir
+    $files = Get-ChildItem -Path ./packages -Include * -File -Recurse
+    $files | ForEach-Object {
+      if ($_.Name -match 'Microsoft.Azure.WebJobs.Extensions.DurableTask')
+      {
+        $webJobsExtensionVersion = $_.Name -replace 'Microsoft.Azure.WebJobs.Extensions.DurableTask\.|\.nupkg'
+    
+        Write-Host "Removing cached version $webJobsExtensionVersion of WebJobs extension from nuget cache, if exists"
+        $cachedVersionFolders = Get-ChildItem -Path (Join-Path $LocalNugetCacheDirectory "microsoft.azure.webjobs.extensions.durabletask") -Directory -ErrorAction Continue
+        $cachedVersionFolders | ForEach-Object {
+          if ($_.Name -eq $webJobsExtensionVersion)
+          {
+            Write-Host "Removing cached version $webJobsExtensionVersion from nuget cache"
+            Remove-Item -Recurse -Force $_.FullName -ErrorAction Stop
+          }
+        }
+
+        if (!(Test-Path ".\app.csproj")) {
+          if (!(Test-Path ".\extensions.csproj")) {
+            Write-Host "Creating extensions.csproj file"
+
+            .(Join-Path $FUNC_CLI_DIRECTORY "func") extensions install --package Microsoft.Azure.Functions.Worker.Extensions.DurableTask --version $webJobsExtensionVersion
+
+            # Fix for central package management being enabled in the project root
+            $csprojContent = Get-Content -Path ".\extensions.csproj"
+            $csprojContent = $csprojContent -replace '</TargetFramework>', "</TargetFramework>`n    <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>"
+            Set-Content -Path ".\extensions.csproj" -Value $csprojContent
+          }
+
+          Write-Host "Updating extensions.csproj to reference WebJobs extension version $webJobsExtensionVersion"
+          
+          dotnet add 'extensions.csproj' package 'Microsoft.Azure.WebJobs.Extensions.DurableTask' --version $webJobsExtensionVersion --source ".\packages" --no-restore
+        }
+      }
+    }
+    
+    if (Test-Path ".\app.csproj") {
+      Write-Host "Building app project"
+      dotnet clean app.csproj
+      dotnet build app.csproj
+    }
+}
+
 if (!$SkipBuild)
 {
-  Write-Host "Removing old packages from test app"
-
-  $AppPackageLocation = Join-Path $E2EAppProjectDirectory 'packages'
-  if (!(Test-Path $AppPackageLocation)) {
-    New-Item -Path $AppPackageLocation -ItemType Directory -ErrorAction SilentlyContinue
-  }
-  $AppPackageLocation = Resolve-Path $AppPackageLocation
-  Get-ChildItem -Path $AppPackageLocation -Include * -File -Recurse | ForEach-Object { $_.Delete()}
-  
   Write-Host "Building WebJobs extension project"
   
   $BuildOutputLocation = Join-Path $WebJobsExtensionProjectDirectory 'out'
@@ -126,33 +178,17 @@ if (!$SkipBuild)
 
   if ($LASTEXITCODE -ne 0) { Set-Location $PSScriptRoot; throw "WebJobs Extension build failed" }
 
-  Write-Host "Moving nupkg from WebJobs extension to $AppPackageLocation"
-  Set-Location $BuildOutputLocation
-  dotnet nuget push *.nupkg --source $AppPackageLocation
-  
-  Write-Host "Updating app .csproj to reference built package versions"
-  Set-Location $E2EAppProjectDirectory
-  $files = Get-ChildItem -Path ./packages -Include * -File -Recurse
-  $files | ForEach-Object {
-    if ($_.Name -match 'Microsoft.Azure.WebJobs.Extensions.DurableTask')
-    {
-      $webJobsExtensionVersion = $_.Name -replace 'Microsoft.Azure.WebJobs.Extensions.DurableTask\.|\.nupkg'
-  
-      Write-Host "Removing cached version $webJobsExtensionVersion of WebJobs extension from nuget cache, if exists"
-      $cachedVersionFolders = Get-ChildItem -Path (Join-Path $LocalNugetCacheDirectory "microsoft.azure.webjobs.extensions.durabletask") -Directory -ErrorAction Continue
-      $cachedVersionFolders | ForEach-Object {
-        if ($_.Name -eq $webJobsExtensionVersion)
-        {
-          Write-Host "Removing cached version $webJobsExtensionVersion from nuget cache"
-          Remove-Item -Recurse -Force $_.FullName -ErrorAction Stop
-        }
-      }
+  if ($E2EAppName)
+  {
+    InstallExtensionAndBuildTestApp (Join-Path $E2EAppParentDirectory $E2EAppName)
+  }
+  else {
+    Get-ChildItem -Path $E2EAppParentDirectory -Directory | ForEach-Object {
+      $E2EAppProjectDirectory = $_.FullName
+
+      InstallExtensionAndBuildTestApp $E2EAppProjectDirectory
     }
   }
-  
-  Write-Host "Building app project"
-  dotnet clean app.csproj
-  dotnet build app.csproj
 
   if ($LASTEXITCODE -ne 0) { Set-Location $PSScriptRoot; throw "Test app build failed." }
 }

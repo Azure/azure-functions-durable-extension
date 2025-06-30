@@ -25,6 +25,7 @@ public class VersioningTests
     [InlineData("")] // Non-versioned/empty-versioned case.
     [InlineData("1.0")]
     [InlineData("2.0")]
+    [Trait("PowerShell", "Skip")] // Test not yet implemented in PowerShell
     public async Task TestVersionedOrchestration_OKWithMatchingVersion(string? version)
     {
         string queryString = version == null ? string.Empty : $"?version={version}";
@@ -52,6 +53,7 @@ public class VersioningTests
     [InlineData("")] // Non-versioned/empty-versioned case.
     [InlineData("1.0")]
     [InlineData("2.0")]
+    [Trait("PowerShell", "Skip")] // Test not yet implemented in PowerShell
     public async Task TestVersionedSubOrchestration_OKWithMatchingVersion(string? subOrchestrationVersion)
     {
         string queryString = subOrchestrationVersion == null ? string.Empty : $"?subOrchestrationVersion={subOrchestrationVersion}";
@@ -75,6 +77,7 @@ public class VersioningTests
     }
 
     [Fact]
+    [Trait("PowerShell", "Skip")] // Test not yet implemented in PowerShell
     public async Task TestVersionedOrchestration_FailsWithNonMatchingVersion()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("OrchestrationVersion_HttpStart", $"?version=3.0");

@@ -25,6 +25,7 @@ public class HttpFeatureTests
     // The test verifies that the orchestrator automatically polls the URL until it receives a non-202 response.
     [Fact]
     [Trait("DTS", "Skip")] // DTS will timeout this test. Need to fix it later. 
+    [Trait("PowerShell", "Skip")] // Test not yet implemented in PowerShell
     public async Task HttpAutomaticPollingTests()
     {
         

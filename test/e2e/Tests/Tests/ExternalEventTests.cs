@@ -24,9 +24,10 @@ public class ExternalEventTests
     // Test that sending an event to a running orchestrator waiting for an external event will complete successfully,
     // and sending an event to a completed instance will throw a FailedPrecondition RpcException with details error message.
     [Fact]
+    [Trait("PowerShell", "Skip")] // Test not yet implemented in PowerShell
     public async Task RaiseExternalEventTests()
     {
-        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("ExternalEventOrchestrator_HttpStart", "");
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=ExternalEventOrchestrator");
 
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         string instanceId = await DurableHelpers.ParseInstanceIdAsync(response);
@@ -50,6 +51,7 @@ public class ExternalEventTests
 
     // Test that sending an event to a not-exist InstanceId will throw an NotFoundRpc Exception.
     [Fact]
+    [Trait("PowerShell", "Skip")] // Test not yet implemented in PowerShell
     public async Task NotFoundInstanceTest()
     {
         string jsonContent = JsonSerializer.Serialize("instance-does-not-exist-test");

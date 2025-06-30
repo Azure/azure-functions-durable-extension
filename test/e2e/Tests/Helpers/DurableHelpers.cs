@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Durable.Tests.DotnetIsolatedE2E;
 
 internal class DurableHelpers
 {
-    static readonly HttpClient _httpClient = new HttpClient();
+    static readonly HttpClient httpClient = new HttpClient();
 
     static readonly List<string> finalStates = new List<string>()
     {
@@ -52,7 +52,7 @@ internal class DurableHelpers
 
     internal static async Task<OrchestrationStatusDetails> GetRunningOrchestrationDetailsAsync(string statusQueryGetUri)
     {
-        var statusQueryResponse = await _httpClient.GetAsync(statusQueryGetUri);
+        var statusQueryResponse = await httpClient.GetAsync(statusQueryGetUri);
 
         string? statusQueryResponseString = await statusQueryResponse.Content.ReadAsStringAsync();
 
@@ -90,7 +90,6 @@ internal class DurableHelpers
             return string.Empty;
         }
 
-        string? statusQueryGetUri = responseJsonNode[key]?.GetValue<string>();
-        return statusQueryGetUri ?? string.Empty;
+        return responseJsonNode[key]?.GetValue<string>() ?? responseJsonNode[char.ToLower(key[0]) + key.Substring(1)]?.GetValue<string>() ?? string.Empty;
     }
 }

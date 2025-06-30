@@ -1,34 +1,13 @@
 // Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
-using Grpc.Core;
 using Microsoft.Azure.Functions.Worker;
-using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.DurableTask;
-using Microsoft.DurableTask.Client;
-using Microsoft.Extensions.Logging;
-using System.Net;
-using System.Text;
-using System.Linq;
 
 namespace Microsoft.Azure.Durable.Tests.E2E;
 
 public static class ActivityInputType
 {
-    [Function("ActivityInputType_HttpStart")]
-    public static async Task<HttpResponseData> ActivityInputType_HttpStart(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestData req,
-        [DurableClient] DurableTaskClient client,
-        FunctionContext executionContext)
-    {
-        ILogger logger = executionContext.GetLogger("ActivityInputType_HttpStart");
-
-        string instanceId = await client.ScheduleNewOrchestrationInstanceAsync(
-            nameof(ActivityInputTypeOrchestrator));
-
-        return await client.CreateCheckStatusResponseAsync(req, instanceId);
-    }
-
     [Function(nameof(ActivityInputTypeOrchestrator))]
     public static async Task<List<string>> ActivityInputTypeOrchestrator(
         [OrchestrationTrigger] TaskOrchestrationContext context)

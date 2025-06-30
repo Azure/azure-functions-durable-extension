@@ -12,6 +12,8 @@
             <!-- Uncomment the following environment variables if you want to run test against azureManaged(DTS)
             <E2E_TEST_DURABLE_BACKEND>azureManaged</E2E_TEST_DURABLE_BACKEND>-->
             <E2E_TEST_DURABLE_BACKEND>AzureStorage</E2E_TEST_DURABLE_BACKEND>
+            <E2E_TEST_FUNCTIONS_LANGUAGE>dotnet-isolated</E2E_TEST_FUNCTIONS_LANGUAGE>
+            <TEST_APP_NAME>BasicDotNetIsolated</TEST_APP_NAME>
         </EnvironmentVariables>
     </RunConfiguration>
 </RunSettings>
