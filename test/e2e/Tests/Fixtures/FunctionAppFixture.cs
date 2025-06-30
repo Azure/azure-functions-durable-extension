@@ -41,7 +41,7 @@ public class FunctionAppFixture : IAsyncLifetime
                 break;
         }
         
-        this.functionAppProcess = new FunctionAppProcess(this.logger, this.TestLogs, e2eTestLanguageEnvVarValue ?? "");
+        this.functionAppProcess = new FunctionAppProcess(this.logger, this.TestLogs, this.functionLanguageLocalizer.GetLanguageType());
 
         return this.functionAppProcess.InitializeAsync();
     }
