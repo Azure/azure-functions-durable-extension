@@ -10,21 +10,23 @@ using Xunit.Abstractions;
 
 namespace Microsoft.Azure.Durable.Tests.DotnetIsolatedE2E;
 
-public abstract class FunctionAppProcess
+public class FunctionAppProcess
 {
     private bool disposed;
     private Process? funcProcess;
     internal string? appName;
+    internal string e2eTestLanguageEnvVarValue;
 
     private JobObjectRegistry? jobObjectRegistry;
     private ILogger logger;
     private TestLoggerProvider TestLogs;
 
-    public FunctionAppProcess(ILogger logger, TestLoggerProvider TestLogs)
+    public FunctionAppProcess(ILogger logger, TestLoggerProvider TestLogs, string e2eTestLanguageEnvVarValue)
     {
         this.logger = logger;
         this.TestLogs = TestLogs;
         this.appName = Environment.GetEnvironmentVariable("TEST_APP_NAME") ?? "BasicDotNetIsolated";
+        this.e2eTestLanguageEnvVarValue = e2eTestLanguageEnvVarValue;
     }
 
     public async Task InitializeAsync()
@@ -39,7 +41,33 @@ public abstract class FunctionAppProcess
             // start functions process
             this.logger.LogInformation($"Starting functions host for {Constants.FunctionAppCollectionName}...");
 
-            string e2eAppPath = this.GetAppPath();
+            string? e2eAppPath;
+
+            string rootDir = Path.GetFullPath(@"../../../../../../");
+            string binDir = @$"test/e2e/Apps/{this.appName}/bin";
+
+            // Intentional bad logic - this will be updated to a switch case against an enum value in a future PR
+            if (string.Equals(this.e2eTestLanguageEnvVarValue.ToLower(), "powershell", StringComparison.OrdinalIgnoreCase))
+            {
+                e2eAppPath = Path.Combine(rootDir, @$"test/e2e/Apps/{this.appName}");
+            }
+            else
+            {
+                string e2eAppBinPath = Path.Combine(rootDir, @$"test/e2e/Apps/{this.appName}/bin");
+                string? e2eHostJson = Directory.GetFiles(e2eAppBinPath, "host.json", SearchOption.AllDirectories).FirstOrDefault();
+
+                if (e2eHostJson == null)
+                {
+                    throw new InvalidOperationException($"Could not find a built worker app under '{e2eAppBinPath}'");
+                }
+
+                e2eAppPath = Path.GetDirectoryName(e2eHostJson);
+            }
+
+            if (e2eAppPath == null)
+            {
+                throw new InvalidOperationException($"Could not resolve app path for app name {this.appName}.");
+            }
 
             this.funcProcess = FixtureHelpers.GetFuncHostProcess(e2eAppPath);
             string workingDir = this.funcProcess.StartInfo.WorkingDirectory;
@@ -101,8 +129,6 @@ public abstract class FunctionAppProcess
         //      ISSUE 3: See the worker attach comments above
         //Process.Start("cmd.exe", "/C vsjitdebugger.exe -p " + _funcProcess.Id.ToString());
     }
-
-    internal abstract string GetAppPath();
 
     public Task DisposeAsync()
     {

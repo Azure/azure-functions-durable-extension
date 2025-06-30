@@ -30,19 +30,18 @@ public class FunctionAppFixture : IAsyncLifetime
         switch ((e2eTestLanguageEnvVarValue ?? "").ToLowerInvariant())
         {
             case "dotnet-isolated":
-                this.functionAppProcess = new IsolatedFunctionAppProcess(this.logger, this.TestLogs);
                 this.functionLanguageLocalizer = new IsolatedTestLanguageLocalizer();
                 break;
             case "powershell":
-                this.functionAppProcess = new PowerShellFunctionAppProcess(this.logger, this.TestLogs);
                 this.functionLanguageLocalizer = new PowerShellTestLanguageLocalizer();
                 break;
             default:
                 this.logger.LogWarning("Environment variable E2E_TEST_FUNCTIONS_LANGUAGE not set, tests configured for dotnet-isolated");
-                this.functionAppProcess = new IsolatedFunctionAppProcess(this.logger, this.TestLogs);
                 this.functionLanguageLocalizer = new IsolatedTestLanguageLocalizer();
                 break;
         }
+        
+        this.functionAppProcess = new FunctionAppProcess(this.logger, this.TestLogs, e2eTestLanguageEnvVarValue ?? "");
 
         return this.functionAppProcess.InitializeAsync();
     }

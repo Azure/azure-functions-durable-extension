@@ -144,7 +144,7 @@ public class ErrorHandlingTests
     [Trait("PowerShell", "Skip")] // Test not yet implemented in PowerShell
     public async Task OrchestratorWithRetriedEntityException_ShouldSucceed()
     {
-        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("RetryEntityException_HttpStart", "");
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=RetryEntityOrchestration");
 
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
