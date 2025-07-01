@@ -67,7 +67,7 @@ public class SuspendResumeTests
             await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Suspended", 5);
 
             using HttpResponseMessage resumeResponse = await HttpHelpers.InvokeHttpTrigger("SuspendInstance", $"?instanceId={instanceId}");
-            await AssertRequestFailsAsync(resumeResponse, fixture.functionLanguageLocalizer!.GetLocalizedStringValue("SuspendSuspendedInstance.FailureMessage"));
+            await AssertRequestFailsAsync(resumeResponse, fixture.functionLanguageLocalizer.GetLocalizedStringValue("SuspendSuspendedInstance.FailureMessage"));
 
             // Give some time for Core Tools to write logs out
             Thread.Sleep(500);
@@ -95,7 +95,7 @@ public class SuspendResumeTests
         try
         {
             using HttpResponseMessage resumeResponse = await HttpHelpers.InvokeHttpTrigger("ResumeInstance", $"?instanceId={instanceId}");
-            await this.AssertRequestFailsAsync(resumeResponse, fixture.functionLanguageLocalizer!.GetLocalizedStringValue("ResumeRunningInstance.FailureMessage"));
+            await this.AssertRequestFailsAsync(resumeResponse, fixture.functionLanguageLocalizer.GetLocalizedStringValue("ResumeRunningInstance.FailureMessage"));
 
             // Give some time for Core Tools to write logs out
             Thread.Sleep(500);
@@ -123,17 +123,17 @@ public class SuspendResumeTests
         try
         {
             using HttpResponseMessage suspendResponse = await HttpHelpers.InvokeHttpTrigger("SuspendInstance", $"?instanceId={instanceId}");
-            await this.AssertRequestFailsAsync(suspendResponse, fixture.functionLanguageLocalizer!.GetLocalizedStringValue("SuspendCompletedInstance.FailureMessage"));
+            await this.AssertRequestFailsAsync(suspendResponse, fixture.functionLanguageLocalizer.GetLocalizedStringValue("SuspendCompletedInstance.FailureMessage"));
 
             using HttpResponseMessage resumeResponse = await HttpHelpers.InvokeHttpTrigger("ResumeInstance", $"?instanceId={instanceId}");
-            await this.AssertRequestFailsAsync(resumeResponse, fixture.functionLanguageLocalizer!.GetLocalizedStringValue("ResumeCompletedInstance.FailureMessage"));
+            await this.AssertRequestFailsAsync(resumeResponse, fixture.functionLanguageLocalizer.GetLocalizedStringValue("ResumeCompletedInstance.FailureMessage"));
 
             // Give some time for Core Tools to write logs out
             Thread.Sleep(500);
 
             // For some reason, PowerShell does not log these warnings - instead the status code is 410 (Gone) with no log
             // when the instance is completed
-            if (this.fixture.functionLanguageLocalizer!.GetLanguageType() == LanguageType.DotnetIsolated)
+            if (this.fixture.functionLanguageLocalizer.GetLanguageType() != LanguageType.PowerShell)
             {
                 Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains("Cannot suspend orchestration instance in the Completed state.") &&
                                                                         x.Contains(instanceId));
