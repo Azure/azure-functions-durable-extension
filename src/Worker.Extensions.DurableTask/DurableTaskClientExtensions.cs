@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Azure.Core.Serialization;
 using Microsoft.Azure.Functions.Worker.Http;
+using Microsoft.DurableTask;
 using Microsoft.DurableTask.Client;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -259,6 +260,7 @@ public static class DurableTaskClientExtensions
         {
             Id = instanceId,
             PurgeHistoryDeleteUri = BuildUrl(instanceUrl, commonQueryParameters),
+            RestartPostUri = BuildUrl($"{instanceUrl}/restart", commonQueryParameters),
             SendEventPostUri = BuildUrl($"{instanceUrl}/raiseEvent/{{eventName}}", commonQueryParameters),
             StatusQueryGetUri = BuildUrl(instanceUrl, commonQueryParameters),
             TerminatePostUri = BuildUrl($"{instanceUrl}/terminate", "reason={{text}}", commonQueryParameters),
@@ -271,6 +273,41 @@ public static class DurableTaskClientExtensions
     {
         return response.FunctionContext.InstanceServices.GetService<IOptions<WorkerOptions>>()?.Value?.Serializer
             ?? throw new InvalidOperationException("A serializer is not configured for the worker.");
+    }
+
+    /// <summary>
+    /// Restarts an existing orchestration instance with the original input.
+    /// </summary>
+    /// <param name="client">The <see cref="DurableTaskClient"/>.</param>
+    /// <param name="instanceId">The ID of the orchestration instance to restart.</param>
+    /// <param name="restartWithNewInstanceId">If true, starts with a new instance ID; otherwise, uses the same instance ID.</param>
+    /// <param name="cancellation">A token that signals if the operation should be canceled.</param>
+    /// <returns>The new instance ID.</returns>
+    public static async Task<string> RestartAsync(
+        this DurableTaskClient client,
+        string instanceId,
+        bool restartWithNewInstanceId = true,
+        CancellationToken cancellation = default)
+    {
+        // Get the status of the existing instance, including input
+        OrchestrationMetadata? status = await client.GetInstancesAsync(instanceId, getInputsAndOutputs: true, cancellation) 
+            ?? throw new ArgumentException($"An orchestration with the instanceId {instanceId} was not found.");
+        
+        // Deserialize the input.
+        string orchestratorName = status.Name;
+        string? input = status.SerializedInput != null
+            ? System.Text.Json.JsonSerializer.Deserialize<string>(status.SerializedInput)
+            : null;
+        
+        if (restartWithNewInstanceId)
+        {
+            return await client.ScheduleNewOrchestrationInstanceAsync(orchestratorName, input, null, cancellation);
+        }
+        else
+        {
+            var options = new StartOrchestrationOptions { InstanceId = instanceId };
+            return await client.ScheduleNewOrchestrationInstanceAsync(orchestratorName, input, options, cancellation);
+        }
     }
 
     private static string? GetBaseUrlFromRequest(HttpRequestData request)
@@ -318,7 +355,6 @@ public static class DurableTaskClientExtensions
         // Construct and return the base URL from default fallback values
         return $"{proto}://{host}";
     }
-
 
     private static string? GetQueryParams(DurableTaskClient client)
     {
