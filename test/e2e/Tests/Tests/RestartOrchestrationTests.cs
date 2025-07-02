@@ -78,4 +78,4 @@ public class RestartOrchestrationTests
             Assert.Equal(instanceId, restartInstanceId);
         }
     }
-} 
+}
