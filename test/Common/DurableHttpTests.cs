@@ -283,6 +283,42 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
+        /// Test that DurableHttpRequest serialized by Worker.Extensions.DurableTask can be correctly deserialized by WebJobs.Extensions.DurableTask.
+        /// This validates cross-extension compatibility for the token credential feature.
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void DeserializeWorkerDurableHttpRequestCorrectly()
+        {
+            // Raw input from Worker.Extensions.DurableTask with options
+            string rawInputFromWorkerExtensions = @"{""method"":""GET"",""uri"":""https://httpbin.org/get"",""headers"":null,""content"":null,""tokenSource"":{""kind"":""AzureManagedIdentity"",""resource"":""https://graph.microsoft.com/.default"",""options"":{""authorityhost"":""https://login.microsoftonline.com/"",""tenantid"":""test-tenant-id""}},""asynchronousPatternEnabled"":false,""retryOptions"":null,""timeout"":null}";
+
+            // Deserialize the raw input directly to DurableHttpRequest
+            DurableHttpRequest durableHttpRequest = JsonConvert.DeserializeObject<DurableHttpRequest>(rawInputFromWorkerExtensions);
+
+            // Validate the deserialized DurableHttpRequest
+            Assert.NotNull(durableHttpRequest);
+            Assert.Equal(HttpMethod.Get, durableHttpRequest.Method);
+            Assert.Equal(new Uri("https://httpbin.org/get"), durableHttpRequest.Uri);
+            Assert.NotNull(durableHttpRequest.Headers); // Headers should be an empty list
+            Assert.Empty(durableHttpRequest.Headers); 
+            Assert.Null(durableHttpRequest.Content);
+            Assert.False(durableHttpRequest.AsynchronousPatternEnabled);
+            Assert.Null(durableHttpRequest.HttpRetryOptions);
+            Assert.Null(durableHttpRequest.Timeout);
+
+            // Validate the TokenSource was correctly deserialized with options
+            Assert.NotNull(durableHttpRequest.TokenSource);
+            Assert.IsType<ManagedIdentityTokenSource>(durableHttpRequest.TokenSource);
+
+            ManagedIdentityTokenSource tokenSource = durableHttpRequest.TokenSource as ManagedIdentityTokenSource;
+            Assert.Equal("https://graph.microsoft.com/.default", tokenSource.Resource);
+            Assert.NotNull(tokenSource.Options);
+            Assert.Equal(new Uri("https://login.microsoftonline.com/"), tokenSource.Options.AuthorityHost);
+            Assert.Equal("test-tenant-id", tokenSource.Options.TenantId);
+        }
+
+        /// <summary>
         /// End-to-end test which checks if the CallHttpAsync Orchestrator returns an OK (200) status code
         /// when a DurableHttpRequest timeout value is set and the request completes within the timeout.
         /// </summary>

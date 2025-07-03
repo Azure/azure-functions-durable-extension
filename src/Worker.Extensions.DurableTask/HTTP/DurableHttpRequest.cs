@@ -62,6 +62,13 @@ public class DurableHttpRequest
     public string? Content { get; set; }
 
     /// <summary>
+    /// Token source for authentication.
+    /// </summary>
+    [JsonPropertyName("tokenSource")]
+    [JsonConverter(typeof(TokenSourceConverter))]
+    public TokenSource? TokenSource { get; set; }
+
+    /// <summary>
     /// Specifies whether the Durable HTTP APIs should automatically
     /// handle the asynchronous HTTP pattern.
     /// </summary>

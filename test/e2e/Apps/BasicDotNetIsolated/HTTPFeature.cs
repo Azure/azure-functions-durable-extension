@@ -1,14 +1,16 @@
 // Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
+using System.Net;
+using System.Text.Json.Nodes;
 using Microsoft.Azure.Functions.Worker;
-using Microsoft.Azure.Functions.Worker.Http;
+using Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
 using Microsoft.Azure.Functions.Worker.Extensions.DurableTask.Http;
+using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.DurableTask;
 using Microsoft.DurableTask.Client;
 using Microsoft.Extensions.Logging;
-using System.Net;
-using System.Text.Json.Nodes;
+using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.Azure.Durable.Tests.E2E;
 
@@ -52,7 +54,12 @@ public static class HttpFeature
     {
         ILogger logger = context.CreateReplaySafeLogger(nameof(HttpPollingOrchestrator));
         Uri? url = context.GetInput<Uri>();
-        var response = await context.CallHttpAsync(HttpMethod.Get, url!, asynchronousPatternEnabled: true);   
+        var response = await context.CallHttpAsync(
+            HttpMethod.Get,
+            url!,
+            content: null,
+            retryOptions: null,
+            asynchronousPatternEnabled: true);   
         return response;
     }
 
@@ -77,6 +84,48 @@ public static class HttpFeature
 
         logger.LogInformation("Started orchestration with ID = '{instanceId}'.", instanceId);
 
+        var response = await client.CreateCheckStatusResponseAsync(req, instanceId);
+        return response;
+    }
+
+    // Orchestration that calls HTTP with ManagedIdentityTokenSource
+    [Function(nameof(HttpWithTokenSourceOrchestrator))]
+    public static async Task<string> HttpWithTokenSourceOrchestrator(
+        [OrchestrationTrigger] TaskOrchestrationContext context)
+    {
+        ILogger logger = context.CreateReplaySafeLogger(nameof(HttpWithTokenSourceOrchestrator));
+        
+        var tokenSource = new ManagedIdentityTokenSource("https://management.core.windows.net/.default");
+        
+        try
+        {
+            var response = await context.CallHttpAsync(
+                HttpMethod.Get,
+                new Uri("https://httpbin.org/get"),
+                tokenSource: tokenSource);
+            
+            return "Token source HTTP call completed successfully";
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "HTTP call with token source failed");
+            return $"Token source HTTP call failed: {ex.Message}";
+        }
+    }
+
+    // Http trigger that starts the HttpWithTokenSourceOrchestrator
+    [Function("HttpStart_HttpWithTokenSourceOrchestrator")]
+    public static async Task<HttpResponseData> StartHttpWithTokenSourceOrchestrator(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestData req,
+        [DurableClient] DurableTaskClient client,
+        FunctionContext executionContext)
+    {
+        ILogger logger = executionContext.GetLogger("HttpStart_HttpWithTokenSourceOrchestrator");
+
+        string instanceId = await client.ScheduleNewOrchestrationInstanceAsync(
+            nameof(HttpWithTokenSourceOrchestrator));
+
+        logger.LogInformation("Started orchestration with ID = '{instanceId}'.", instanceId);
         var response = await client.CreateCheckStatusResponseAsync(req, instanceId);
         return response;
     }

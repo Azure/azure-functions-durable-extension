@@ -128,6 +128,40 @@ public static class TaskOrchestrationContextExtensionMethods
         return context.CallHttpAsync(request);
     }
 
+    /// <summary>
+    /// Makes an HTTP call to the specified uri with token source for authentication.
+    /// </summary>
+    /// <param name="context">The task orchestration context.</param>
+    /// <param name="method">HttpMethod used for api call.</param>
+    /// <param name="uri">uri used to make the HTTP call.</param>
+    /// <param name="content">Content passed in the HTTP request.</param>
+    /// <param name="retryOptions">The retry option for the HTTP task.</param>
+    /// <param name="asynchronousPatternEnabled">Boolean controls Whether Durable HTTP should automatically handle async HTTP patterns like 202 with polling. Default to false.</param>
+    /// <param name="tokenSource">Token source for authentication.</param>
+    /// <param name="timeout">TimeSpan used for HTTP request timeout.</param>
+    /// <returns>A <see cref="Task{DurableHttpResponse}"/>Result of the HTTP call.</returns>
+    public static Task<DurableHttpResponse> CallHttpAsync(
+        this TaskOrchestrationContext context,
+        HttpMethod method,
+        Uri uri,
+        string? content = null,
+        HttpRetryOptions? retryOptions = null,
+        bool asynchronousPatternEnabled = false,
+        TokenSource? tokenSource = null,
+        TimeSpan? timeout = null)
+    {
+        DurableHttpRequest request = new DurableHttpRequest(method, uri)
+        { 
+            Content = content,
+            HttpRetryOptions = retryOptions,
+            AsynchronousPatternEnabled = asynchronousPatternEnabled,
+            TokenSource = tokenSource,
+            Timeout = timeout
+        };
+
+        return context.CallHttpAsync(request);
+    }
+
     private static DurableHttpRequest CreateLocationPollRequest(DurableHttpRequest durableHttpRequest, string locationUri)
     {
         DurableHttpRequest newDurableHttpRequest = new DurableHttpRequest(
