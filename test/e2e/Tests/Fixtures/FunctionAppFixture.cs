@@ -32,6 +32,9 @@ public class FunctionAppFixture : IAsyncLifetime
             case "powershell":
                 this.functionLanguageLocalizer = new PowerShellTestLanguageLocalizer();
                 break;
+            case "python":
+                this.functionLanguageLocalizer = new PythonTestLanguageLocalizer();
+                break;
             default:
                 this.logger.LogWarning("Environment variable E2E_TEST_FUNCTIONS_LANGUAGE not set, tests configured for dotnet-isolated");
                 this.functionLanguageLocalizer = new IsolatedTestLanguageLocalizer();

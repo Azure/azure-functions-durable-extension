@@ -65,6 +65,16 @@ jobs:
         working-directory: test/e2e/Tests
         run: dotnet test --filter 'AzureStorage!=Skip&PowerShell!=Skip'
 
+      - name: Setup Environment for Python
+        shell: pwsh
+        run: |
+          echo "E2E_TEST_FUNCTIONS_LANGUAGE=python" >> $GITHUB_ENV
+          echo "TEST_APP_NAME=BasicPython" >> $GITHUB_ENV
+
+      - name: Run E2E tests (Python)
+        working-directory: test/e2e/Tests
+        run: dotnet test --filter 'AzureStorage!=Skip&Python!=Skip'
+
   e2e-azurestorage-windows:
     runs-on: windows-latest
     env:
@@ -116,6 +126,16 @@ jobs:
         working-directory: test/e2e/Tests
         run: dotnet test --filter 'AzureStorage!=Skip&PowerShell!=Skip'
 
+      - name: Setup Environment for Python
+        shell: pwsh
+        run: |
+          echo "E2E_TEST_FUNCTIONS_LANGUAGE=python" >> $GITHUB_ENV
+          echo "TEST_APP_NAME=BasicPython" >> $GITHUB_ENV
+
+      - name: Run E2E tests (Python)
+        working-directory: test/e2e/Tests
+        run: dotnet test --filter 'AzureStorage!=Skip&Python!=Skip'
+
   e2e-mssql:
     runs-on: ubuntu-latest
     env:
@@ -166,6 +186,16 @@ jobs:
         working-directory: test/e2e/Tests
         run: dotnet test --filter 'MSSQL!=Skip&PowerShell!=Skip'
 
+      - name: Setup Environment for Python
+        shell: pwsh
+        run: |
+          echo "E2E_TEST_FUNCTIONS_LANGUAGE=python" >> $GITHUB_ENV
+          echo "TEST_APP_NAME=BasicPython" >> $GITHUB_ENV
+
+      - name: Run E2E tests (Python)
+        working-directory: test/e2e/Tests
+        run: dotnet test --filter 'MSSQL!=Skip&Python!=Skip'
+
   e2e-dts:
     runs-on: ubuntu-latest
     env:
@@ -211,3 +241,13 @@ jobs:
       - name: Run E2E tests (PowerShell)
         working-directory: test/e2e/Tests
         run: dotnet test --filter 'DTS!=Skip&PowerShell!=Skip'
+
+      - name: Setup Environment for Python
+        shell: pwsh
+        run: |
+          echo "E2E_TEST_FUNCTIONS_LANGUAGE=python" >> $GITHUB_ENV
+          echo "TEST_APP_NAME=BasicPython" >> $GITHUB_ENV
+
+      - name: Run E2E tests (Python)
+        working-directory: test/e2e/Tests
+        run: dotnet test --filter 'DTS!=Skip&Python!=Skip'

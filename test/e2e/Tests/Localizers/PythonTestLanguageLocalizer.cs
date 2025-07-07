@@ -2,14 +2,14 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 namespace Microsoft.Azure.Durable.Tests.DotnetIsolatedE2E;
-internal class PowerShellTestLanguageLocalizer : ITestLanguageLocalizer
+internal class PythonTestLanguageLocalizer : ITestLanguageLocalizer
 {
-    private readonly Dictionary<string, string> powerShellLocalizedStrings = new Dictionary<string, string>
+    private readonly Dictionary<string, string> pythonLocalizedStrings = new Dictionary<string, string>
     {
-        { "CaughtActivityException.ErrorMessage", "One or more errors occurred. (Task 'RaiseException' (#0) failed with an unhandled exception:" },
-        { "RethrownActivityException.ErrorMessage", "Orchestrator function 'RethrowActivityException' failed: " },
-        { "CaughtEntityException.ErrorMessage", "Test not implemented!" },
-        { "RethrownEntityException.ErrorMessage", "Test not implemented!" },
+        { "CaughtActivityException.ErrorMessage", "Caught exception: Activity function 'raise_exception' failed: " },
+        { "RethrownActivityException.ErrorMessage", "Orchestrator function 'RethrowActivityException' failed: Activity function 'raise_exception' failed: " },
+        { "CaughtEntityException.ErrorMessage", "This entity failed\r\nMore information about the failure" },
+        { "RethrownEntityException.ErrorMessage", "Orchestrator function 'ThrowEntityOrchestration' failed:" },
         { "ExternalEvent.CompletedInstance.ErrorName", "HttpResponseException" },
         { "ExternalEvent.CompletedInstance.ErrorMessage", "Response status code does not indicate success: 410 (Gone)." },
         { "ExternalEvent.InvalidInstance.ErrorName", "HttpResponseException" },
@@ -25,11 +25,11 @@ internal class PowerShellTestLanguageLocalizer : ITestLanguageLocalizer
 
     public LanguageType GetLanguageType()
     {
-        return LanguageType.PowerShell;
+        return LanguageType.Python;
     }
 
     public string GetLocalizedStringValue(string key, params object[] args)
     {
-        return String.Format(this.powerShellLocalizedStrings.GetValueOrDefault(key, ""), args:args);
+        return String.Format(this.pythonLocalizedStrings.GetValueOrDefault(key, ""), args:args);
     }
 }

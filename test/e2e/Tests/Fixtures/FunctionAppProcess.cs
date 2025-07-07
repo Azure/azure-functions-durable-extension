@@ -50,6 +50,7 @@ internal class FunctionAppProcess
             switch (this.testLanguage)
             {
                 case LanguageType.PowerShell:
+                case LanguageType.Python:
                     e2eAppPath = Path.Combine(rootDir, @$"test/e2e/Apps/{this.appName}");
                     break;
                 case LanguageType.DotnetIsolated:
