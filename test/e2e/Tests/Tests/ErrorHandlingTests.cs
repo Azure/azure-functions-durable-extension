@@ -43,7 +43,7 @@ public class ErrorHandlingTests
     [Fact]
     [Trait("MSSQL", "Skip")] // Durable Entities are not supported in MSSQL/Dotnet Isolated, see https://github.com/microsoft/durabletask-mssql/issues/205
     [Trait("DTS", "Skip")] // DTS will fail this test unless this bug is fixed: https://msazure.visualstudio.com/Antares/_workitems/edit/31779638
-    [Trait("PowerShell", "Skip")] // Test not yet implemented in PowerShell
+    [Trait("PowerShell", "Skip")] // Durable Entities not yet implemented in PowerShell
     public async Task OrchestratorWithUncaughtEntityException_ShouldFail()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=ThrowEntityOrchestration");
@@ -98,7 +98,7 @@ public class ErrorHandlingTests
 
     [Fact]
     [Trait("MSSQL", "Skip")] // Durable Entities are not supported in MSSQL/Dotnet Isolated, see https://github.com/microsoft/durabletask-mssql/issues/205
-    [Trait("PowerShell", "Skip")] // Test not yet implemented in PowerShell
+    [Trait("PowerShell", "Skip")] // Durable Entities not yet implemented in PowerShell
     public async Task OrchestratorWithCaughtEntityException_ShouldSucceed()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=CatchEntityOrchestration");
@@ -141,7 +141,7 @@ public class ErrorHandlingTests
     [Fact]
     [Trait("MSSQL", "Skip")] // Durable Entities are not supported in MSSQL/Dotnet Isolated, see https://github.com/microsoft/durabletask-mssql/issues/205
     [Trait("DTS", "Skip")] // DTS will fail this test unless this issue is fixed, see https://msazure.visualstudio.com/Antares/_workitems/edit/31778744
-    [Trait("PowerShell", "Skip")] // Test not yet implemented in PowerShell
+    [Trait("PowerShell", "Skip")] // Durable Entities not yet implemented in PowerShell
     public async Task OrchestratorWithRetriedEntityException_ShouldSucceed()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=RetryEntityOrchestration");

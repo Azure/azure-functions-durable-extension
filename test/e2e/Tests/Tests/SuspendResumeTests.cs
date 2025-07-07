@@ -22,7 +22,6 @@ public class SuspendResumeTests
 
 
     [Fact]
-    [Trait("PowerShell", "Skip")] // Test not yet implemented in PowerShell
     public async Task SuspendAndResumeRunningOrchestration_ShouldSucceed()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=LongRunningOrchestrator");
@@ -51,7 +50,6 @@ public class SuspendResumeTests
     }
 
     [Fact]
-    [Trait("PowerShell", "Skip")] // Test not yet implemented in PowerShell
     public async Task SuspendSuspendedOrchestration_ShouldFail()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=LongRunningOrchestrator");
@@ -69,13 +67,13 @@ public class SuspendResumeTests
             await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Suspended", 5);
 
             using HttpResponseMessage resumeResponse = await HttpHelpers.InvokeHttpTrigger("SuspendInstance", $"?instanceId={instanceId}");
-            await AssertRequestFailsAsync(resumeResponse);
+            await AssertRequestFailsAsync(resumeResponse, fixture.functionLanguageLocalizer.GetLocalizedStringValue("SuspendSuspendedInstance.FailureMessage"));
 
             // Give some time for Core Tools to write logs out
             Thread.Sleep(500);
 
             Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains("Cannot suspend orchestration instance in the Suspended state.") &&
-                                                                  x.Contains(instanceId));
+                                                                x.Contains(instanceId));
         }
         finally
         {
@@ -85,7 +83,6 @@ public class SuspendResumeTests
 
 
     [Fact]
-    [Trait("PowerShell", "Skip")] // Test not yet implemented in PowerShell
     public async Task ResumeRunningOrchestration_ShouldFail()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=LongRunningOrchestrator");
@@ -98,13 +95,13 @@ public class SuspendResumeTests
         try
         {
             using HttpResponseMessage resumeResponse = await HttpHelpers.InvokeHttpTrigger("ResumeInstance", $"?instanceId={instanceId}");
-            await AssertRequestFailsAsync(resumeResponse);
+            await this.AssertRequestFailsAsync(resumeResponse, fixture.functionLanguageLocalizer.GetLocalizedStringValue("ResumeRunningInstance.FailureMessage"));
 
             // Give some time for Core Tools to write logs out
             Thread.Sleep(500);
 
             Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains("Cannot resume orchestration instance in the Running state.") &&
-                                                                  x.Contains(instanceId));
+                                                                x.Contains(instanceId));
         }
         finally
         {
@@ -114,7 +111,6 @@ public class SuspendResumeTests
 
 
     [Fact]
-    [Trait("PowerShell", "Skip")] // Test not yet implemented in PowerShell
     public async Task SuspendResumeCompletedOrchestration_ShouldFail()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=HelloCities");
@@ -127,24 +123,37 @@ public class SuspendResumeTests
         try
         {
             using HttpResponseMessage suspendResponse = await HttpHelpers.InvokeHttpTrigger("SuspendInstance", $"?instanceId={instanceId}");
-            await AssertRequestFailsAsync(suspendResponse);
+            await this.AssertRequestFailsAsync(suspendResponse, fixture.functionLanguageLocalizer.GetLocalizedStringValue("SuspendCompletedInstance.FailureMessage"));
 
             using HttpResponseMessage resumeResponse = await HttpHelpers.InvokeHttpTrigger("ResumeInstance", $"?instanceId={instanceId}");
-            await AssertRequestFailsAsync(resumeResponse);
+            await this.AssertRequestFailsAsync(resumeResponse, fixture.functionLanguageLocalizer.GetLocalizedStringValue("ResumeCompletedInstance.FailureMessage"));
 
             // Give some time for Core Tools to write logs out
             Thread.Sleep(500);
 
-
-            Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains("Cannot suspend orchestration instance in the Completed state.") &&
-                                                                  x.Contains(instanceId));
-            Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains("Cannot resume orchestration instance in the Completed state.") &&
-                                                                  x.Contains(instanceId));
+            // For some reason, PowerShell does not log these warnings - instead the status code is 410 (Gone) with no log
+            // when the instance is completed
+            if (this.fixture.functionLanguageLocalizer.GetLanguageType() != LanguageType.PowerShell)
+            {
+                Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains("Cannot suspend orchestration instance in the Completed state.") &&
+                                                                        x.Contains(instanceId));
+                Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains("Cannot resume orchestration instance in the Completed state.") &&
+                                                                        x.Contains(instanceId));
+            }
         }
         finally
         {
             await TryTerminateInstanceAsync(instanceId);
         }
+    }
+
+    private async Task AssertRequestFailsAsync(HttpResponseMessage resumeResponse, string expectedErrorMessage)
+    {
+        Assert.Equal(HttpStatusCode.BadRequest, resumeResponse.StatusCode);
+
+        string? responseMessage = await resumeResponse.Content.ReadAsStringAsync();
+        Assert.NotNull(responseMessage);
+        Assert.Equal(expectedErrorMessage, responseMessage);
     }
 
     private static async Task AssertRequestSucceedsAsync(HttpResponseMessage response)
@@ -154,16 +163,6 @@ public class SuspendResumeTests
         string? responseMessage = await response.Content.ReadAsStringAsync();
         Assert.NotNull(responseMessage);
         Assert.Empty(responseMessage);
-    }
-
-    private static async Task AssertRequestFailsAsync(HttpResponseMessage response)
-    {
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-
-        string? responseMessage = await response.Content.ReadAsStringAsync();
-        Assert.NotNull(responseMessage);
-        // Unclear error message - see https://github.com/Azure/azure-functions-durable-extension/issues/3027, will update this code when that bug is fixed
-        Assert.Equal("Status(StatusCode=\"Unknown\", Detail=\"Exception was thrown by handler.\")", responseMessage);
     }
 
     private static async Task<bool> TryTerminateInstanceAsync(string instanceId)

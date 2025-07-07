@@ -7,11 +7,27 @@ internal class PowerShellTestLanguageLocalizer : ITestLanguageLocalizer
     private readonly Dictionary<string, string> powerShellLocalizedStrings = new Dictionary<string, string>
     {
         { "CaughtActivityException.ErrorMessage", "One or more errors occurred. (Task 'RaiseException' (#0) failed with an unhandled exception:" },
-        { "RethrownActivityException.ErrorMessage", "Orchestrator function 'RethrowActivityException' failed: " }
+        { "RethrownActivityException.ErrorMessage", "Orchestrator function 'RethrowActivityException' failed: " },
+        { "ExternalEvent.CompletedInstance.ErrorName", "HttpResponseException" },
+        { "ExternalEvent.CompletedInstance.ErrorMessage", "Response status code does not indicate success: 410 (Gone)." },
+        { "ExternalEvent.InvalidInstance.ErrorName", "HttpResponseException" },
+        { "ExternalEvent.InvalidInstance.ErrorMessage", "Response status code does not indicate success: 404 (Not Found)." },
+        { "SuspendCompletedInstance.FailureMessage", "Response status code does not indicate success: 410 (Gone)." },
+        { "ResumeCompletedInstance.FailureMessage", "Response status code does not indicate success: 410 (Gone)." },
+        { "SuspendSuspendedInstance.FailureMessage", "Response status code does not indicate success: 500 (Internal Server Error)." },
+        { "ResumeRunningInstance.FailureMessage", "Response status code does not indicate success: 500 (Internal Server Error)." },
+        { "TerminateCompletedInstance.FailureMessage", "Response status code does not indicate success: 410 (Gone)." },
+        { "TerminateTerminatedInstance.FailureMessage", "Response status code does not indicate success: 410 (Gone)." },
+        { "TerminateInvalidInstance.FailureMessage", "Response status code does not indicate success: 404 (Not Found)." },
     };
 
-    public string GetLocalizedStringValue(string key)
+    public LanguageType GetLanguageType()
     {
-        return this.powerShellLocalizedStrings.GetValueOrDefault(key, "");
+        return LanguageType.PowerShell;
+    }
+
+    public string GetLocalizedStringValue(string key, params object[] args)
+    {
+        return String.Format(this.powerShellLocalizedStrings.GetValueOrDefault(key, ""), args:args);
     }
 }

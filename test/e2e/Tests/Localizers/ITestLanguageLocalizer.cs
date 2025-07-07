@@ -2,7 +2,16 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 namespace Microsoft.Azure.Durable.Tests.DotnetIsolatedE2E;
+
+enum LanguageType
+{
+    DotnetIsolated,
+    PowerShell
+}
+
 internal interface ITestLanguageLocalizer
 {
-    string GetLocalizedStringValue(string key);
+    string GetLocalizedStringValue(string key, params object[] args);
+
+    LanguageType GetLanguageType();
 }
