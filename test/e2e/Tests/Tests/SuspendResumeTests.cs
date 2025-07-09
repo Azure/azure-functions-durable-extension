@@ -129,17 +129,17 @@ public class SuspendResumeTests
 
             if (languageType == LanguageType.Python)
             {
+                // In python specifically, suspending or resuming a completed, failed, or terminated instance swallows the failure
+                // and acts as if the instance was suspended/resumed successfully. This might be a consistency issue, but is it
+                // a bug?
+                // see https://github.com/Azure/azure-functions-durable-python/blob/97a0891f80ccb4cb357e9f39b79a4eb4326f6d98/azure/durable_functions/models/DurableOrchestrationClient.py#L747
+                // see https://github.com/Azure/azure-functions-durable-python/blob/97a0891f80ccb4cb357e9f39b79a4eb4326f6d98/azure/durable_functions/models/DurableOrchestrationClient.py#L782
                 await AssertRequestSucceedsAsync(suspendResponse);
 
                 await AssertRequestSucceedsAsync(resumeResponse);
             }
             else
             {
-                // In python specifically, suspending or resuming a completed, failed, or terminated instance swallows the failure
-                // and acts as if the instance was terminated successfully. This might be a consistency issue, but is it
-                // a bug?
-                // see https://github.com/Azure/azure-functions-durable-python/blob/97a0891f80ccb4cb357e9f39b79a4eb4326f6d98/azure/durable_functions/models/DurableOrchestrationClient.py#L747
-                // see https://github.com/Azure/azure-functions-durable-python/blob/97a0891f80ccb4cb357e9f39b79a4eb4326f6d98/azure/durable_functions/models/DurableOrchestrationClient.py#L782
                 await this.AssertRequestFailsAsync(suspendResponse, fixture.functionLanguageLocalizer.GetLocalizedStringValue("SuspendCompletedInstance.FailureMessage"));
 
                 await this.AssertRequestFailsAsync(resumeResponse, fixture.functionLanguageLocalizer.GetLocalizedStringValue("ResumeCompletedInstance.FailureMessage"));
