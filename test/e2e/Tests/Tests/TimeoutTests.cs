@@ -23,7 +23,6 @@ public class TimeoutTests
     [Theory]
     [InlineData(2, "The activity function timed out")]
     [InlineData(10, "The activity function completed successfully")]
-    [Trait("PowerShell", "Skip")] // Test not yet implemented in PowerShell
     public async Task TimeoutFunction_ShouldTimeoutWhenAppropriate(int timeoutSeconds, string expectedOutput)
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("TimeoutOrchestrator_HttpStart", $"?timeoutSeconds={timeoutSeconds}");

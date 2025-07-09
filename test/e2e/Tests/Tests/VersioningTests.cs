@@ -22,10 +22,13 @@ public class VersioningTests
 
     [Theory]
     [InlineData(null)] // Represents a non-versioned case.
-    [InlineData("")] // Non-versioned/empty-versioned case.
+    [InlineData("")] // Empty version case - default behavior
     [InlineData("1.0")]
     [InlineData("2.0")]
-    [Trait("PowerShell", "Skip")] // Test not yet implemented in PowerShell
+    [Trait("PowerShell", "Skip")] // Intentional orchestration versioning not yet implemented in PowerShell.
+                                  // This test can be implemented using default versions but will require the
+                                  // testing framework to implement host.json modifications and host restarts
+                                  // mid-test.
     public async Task TestVersionedOrchestration_OKWithMatchingVersion(string? version)
     {
         string queryString = version == null ? string.Empty : $"?version={version}";
@@ -53,7 +56,7 @@ public class VersioningTests
     [InlineData("")] // Non-versioned/empty-versioned case.
     [InlineData("1.0")]
     [InlineData("2.0")]
-    [Trait("PowerShell", "Skip")] // Test not yet implemented in PowerShell
+    [Trait("PowerShell", "Skip")] // See notes on first test.
     public async Task TestVersionedSubOrchestration_OKWithMatchingVersion(string? subOrchestrationVersion)
     {
         string queryString = subOrchestrationVersion == null ? string.Empty : $"?subOrchestrationVersion={subOrchestrationVersion}";
@@ -77,7 +80,7 @@ public class VersioningTests
     }
 
     [Fact]
-    [Trait("PowerShell", "Skip")] // Test not yet implemented in PowerShell
+    [Trait("PowerShell", "Skip")] // See notes on first test.
     public async Task TestVersionedOrchestration_FailsWithNonMatchingVersion()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("OrchestrationVersion_HttpStart", $"?version=3.0");

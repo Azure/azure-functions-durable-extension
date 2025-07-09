@@ -22,7 +22,6 @@ public class TerminateOrchestratorTests
 
 
     [Fact]
-    [Trait("PowerShell", "Skip")] // Test not yet implemented in PowerShell
     public async Task TerminateRunningOrchestration_ShouldSucceed()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=LongRunningOrchestrator");
@@ -41,7 +40,7 @@ public class TerminateOrchestratorTests
 
 
     [Fact(Skip = "Will enable when https://github.com/Azure/azure-functions-durable-extension/issues/3025 is fixed")]
-    [Trait("PowerShell", "Skip")] // Test not yet implemented in PowerShell
+    [Trait("PowerShell", "Skip")] // Scheduled orchestrations not implemented in PowerShell
     public async Task TerminateScheduledOrchestration_ShouldSucceed()
     {
         DateTime scheduledStartTime = DateTime.UtcNow + TimeSpan.FromMinutes(1);
@@ -61,7 +60,6 @@ public class TerminateOrchestratorTests
 
 
     [Fact]
-    [Trait("PowerShell", "Skip")] // Test not yet implemented in PowerShell
     public async Task TerminateTerminatedOrchestration_ShouldFail()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=LongRunningOrchestrator");
@@ -86,18 +84,22 @@ public class TerminateOrchestratorTests
         Assert.NotNull(terminateAgainResponseMessage);
 
         Assert.Contains("StatusCode=\"FailedPrecondition\"", terminateAgainResponseMessage);
-        Assert.Contains($"InvalidOperationException: Cannot terminate the orchestration instance {instanceId} because instance is in the Terminated state.", terminateAgainResponseMessage);
+        Assert.Contains(fixture.functionLanguageLocalizer.GetLocalizedStringValue("TerminateTerminatedInstance.FailureMessage", instanceId), terminateAgainResponseMessage);
 
         // Give some time for Core Tools to write logs out
         Thread.Sleep(500);
 
-        Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains("Cannot terminate orchestration instance in the Terminated state.") &&
+        // For some reason, PowerShell does not log these warnings - instead the status code is 410 (Gone) with no log
+        // when the instance is completed
+        if (fixture.functionLanguageLocalizer.GetLanguageType() != LanguageType.PowerShell)
+        {
+            Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains("Cannot terminate orchestration instance in the Terminated state.") &&
                                                               x.Contains(instanceId));
+        }
     }
 
 
     [Fact]
-    [Trait("PowerShell", "Skip")] // Test not yet implemented in PowerShell
     public async Task TerminateCompletedOrchestration_ShouldFail()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=HelloCities");
@@ -117,17 +119,21 @@ public class TerminateOrchestratorTests
 
         // Check the exception returned contains the right statusCode and message. 
         Assert.Contains("StatusCode=\"FailedPrecondition\"", terminateResponseMessage);
-        Assert.Contains($"InvalidOperationException: Cannot terminate the orchestration instance {instanceId} because instance is in the Completed state.", terminateResponseMessage);
+        Assert.Contains(fixture.functionLanguageLocalizer.GetLocalizedStringValue("TerminateCompletedInstance.FailureMessage", instanceId), terminateResponseMessage);
 
         // Give some time for Core Tools to write logs out
         Thread.Sleep(500);
 
-        Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains("Cannot terminate orchestration instance in the Completed state.") &&
-                                                              x.Contains(instanceId));
+        // For some reason, PowerShell does not log these warnings - instead the status code is 410 (Gone) with no log
+        // when the instance is completed
+        if (fixture.functionLanguageLocalizer.GetLanguageType() != LanguageType.PowerShell)
+        {
+            Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains("Cannot terminate orchestration instance in the Completed state.") &&
+                                                                  x.Contains(instanceId));
+        }
     }
 
     [Fact]
-    [Trait("PowerShell", "Skip")] // Test not yet implemented in PowerShell
     public async Task TerminateNonExistantOrchestration_ShouldFail()
     {
         string instanceId = Guid.NewGuid().ToString();
@@ -139,7 +145,7 @@ public class TerminateOrchestratorTests
 
         // Check the exception returned contains the right statusCode and message. 
         Assert.Contains("Status(StatusCode=\"NotFound\"", terminateResponseMessage);
-        Assert.Contains($"ArgumentException: No instance with ID '{instanceId}' was found.", terminateResponseMessage);
+        Assert.Contains(fixture.functionLanguageLocalizer.GetLocalizedStringValue("TerminateInvalidInstance.FailureMessage", instanceId), terminateResponseMessage);
     }
 
     private static async Task AssertTerminateRequestSucceedsAsync(HttpResponseMessage terminateResponse)

@@ -112,21 +112,4 @@ public static class HttpFeature
             return $"Token source HTTP call failed: {ex.Message}";
         }
     }
-
-    // Http trigger that starts the HttpWithTokenSourceOrchestrator
-    [Function("HttpStart_HttpWithTokenSourceOrchestrator")]
-    public static async Task<HttpResponseData> StartHttpWithTokenSourceOrchestrator(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestData req,
-        [DurableClient] DurableTaskClient client,
-        FunctionContext executionContext)
-    {
-        ILogger logger = executionContext.GetLogger("HttpStart_HttpWithTokenSourceOrchestrator");
-
-        string instanceId = await client.ScheduleNewOrchestrationInstanceAsync(
-            nameof(HttpWithTokenSourceOrchestrator));
-
-        logger.LogInformation("Started orchestration with ID = '{instanceId}'.", instanceId);
-        var response = await client.CreateCheckStatusResponseAsync(req, instanceId);
-        return response;
-    }
 }

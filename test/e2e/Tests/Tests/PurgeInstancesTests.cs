@@ -18,7 +18,7 @@ public class PurgeInstancesTests
     }
 
     [Fact]
-    [Trait("PowerShell", "Skip")] // Test not yet implemented in PowerShell
+    [Trait("PowerShell", "Skip")] // Instance purging not supported in PowerShell
     public async Task PurgeOrchestrationHistory_StartAndEnd_Succeeds()
     {
         DateTime purgeStartTime = DateTime.MinValue;
@@ -31,7 +31,7 @@ public class PurgeInstancesTests
     }
 
     [Fact]
-    [Trait("PowerShell", "Skip")] // Test not yet implemented in PowerShell
+    [Trait("PowerShell", "Skip")] // Instance purging not supported in PowerShell
     public async Task PurgeOrchestrationHistory_Start_Succeeds()
     {
         DateTime purgeStartTime = DateTime.MinValue;
@@ -45,7 +45,7 @@ public class PurgeInstancesTests
 
     [Fact]
     [Trait("DTS", "Skip")] // Skip this test as there is a bug with current DTS backend, the createdTimeTo couldn't be null. 
-    [Trait("PowerShell", "Skip")] // Test not yet implemented in PowerShell
+    [Trait("PowerShell", "Skip")] // Instance purging not supported in PowerShell
     public async Task PurgeOrchestrationHistory_End_Succeeds()
     {
         DateTime purgeStartTime = DateTime.MinValue;
@@ -59,7 +59,7 @@ public class PurgeInstancesTests
 
     [Fact]
     [Trait("DTS", "Skip")] // Skip this test as there is a bug with current DTS backend, the createdTimeTo couldn't be null. 
-    [Trait("PowerShell", "Skip")] // Test not yet implemented in PowerShell
+    [Trait("PowerShell", "Skip")] // Instance purging not supported in PowerShell
     public async Task PurgeOrchestrationHistory_NoBoundaries_Succeeds()
     {
         DateTime purgeStartTime = DateTime.MinValue;
@@ -73,7 +73,7 @@ public class PurgeInstancesTests
 
     [Fact]
     [Trait("DTS", "Skip")] // Skip this test as there is a bug with current DTS backend, the createdTimeTo couldn't be null. 
-    [Trait("PowerShell", "Skip")] // Test not yet implemented in PowerShell
+    [Trait("PowerShell", "Skip")] // Instance purging not supported in PowerShell
     public async Task PurgeOrchestrationHistoryAfterInvocation_Succeeds()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=HelloCities");
@@ -92,7 +92,7 @@ public class PurgeInstancesTests
 
     [Fact]
     [Trait("DTS", "Skip")] // Skip this test as there is a bug with current DTS backend, the createdTimeTo couldn't be null. 
-    [Trait("PowerShell", "Skip")] // Test not yet implemented in PowerShell
+    [Trait("PowerShell", "Skip")] // Instance purging not supported in PowerShell
     public async Task PurgeAfterPurge_ZeroRows()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=HelloCities");

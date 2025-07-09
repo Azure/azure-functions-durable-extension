@@ -7,11 +7,28 @@ internal class IsolatedTestLanguageLocalizer : ITestLanguageLocalizer
     private readonly Dictionary<string, string> isolatedLocalizedStrings = new Dictionary<string, string>
     {
         { "CaughtActivityException.ErrorMessage", "Task 'RaiseException' (#0) failed with an unhandled exception:" },
-        { "RethrownActivityException.ErrorMessage", "Microsoft.DurableTask.TaskFailedException" }
+        { "RethrownActivityException.ErrorMessage", "Microsoft.DurableTask.TaskFailedException" },
+        { "ExternalEvent.CompletedInstance.ErrorName", "FailedPrecondition" },
+        { "ExternalEvent.CompletedInstance.ErrorMessage", "The orchestration instance with the provided instance id is not running." },
+        { "ExternalEvent.InvalidInstance.ErrorName", "NotFound" },
+        { "ExternalEvent.InvalidInstance.ErrorMessage", "No instance with ID 'instance-does-not-exist-test' was found" },
+        // Unclear error message - see https://github.com/Azure/azure-functions-durable-extension/issues/3027, will update this code when that bug is fixed
+        { "SuspendCompletedInstance.FailureMessage", "Status(StatusCode=\"Unknown\", Detail=\"Exception was thrown by handler.\")" },
+        { "ResumeCompletedInstance.FailureMessage", "Status(StatusCode=\"Unknown\", Detail=\"Exception was thrown by handler.\")" },
+        { "SuspendSuspendedInstance.FailureMessage", "Status(StatusCode=\"Unknown\", Detail=\"Exception was thrown by handler.\")" },
+        { "ResumeRunningInstance.FailureMessage", "Status(StatusCode=\"Unknown\", Detail=\"Exception was thrown by handler.\")" },
+        { "TerminateCompletedInstance.FailureMessage", "InvalidOperationException: Cannot terminate the orchestration instance {0} because instance is in the Completed state." },
+        { "TerminateTerminatedInstance.FailureMessage", "InvalidOperationException: Cannot terminate the orchestration instance {0} because instance is in the Terminated state." },
+        { "TerminateInvalidInstance.FailureMessage", "ArgumentException: No instance with ID '{0}' was found." },
     };
 
-    public string GetLocalizedStringValue(string key)
+    public LanguageType GetLanguageType()
     {
-        return this.isolatedLocalizedStrings.GetValueOrDefault(key, "");
+        return LanguageType.DotnetIsolated;
+    }
+
+    public string GetLocalizedStringValue(string key, params object[] args)
+    {
+        return String.Format(this.isolatedLocalizedStrings.GetValueOrDefault(key, ""), args:args);
     }
 }

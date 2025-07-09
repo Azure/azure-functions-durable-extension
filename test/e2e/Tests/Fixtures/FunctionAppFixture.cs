@@ -12,8 +12,8 @@ public class FunctionAppFixture : IAsyncLifetime
     internal readonly ILogger logger;
     internal TestLoggerProvider TestLogs { get; private set; }
 
-    internal FunctionAppProcess? functionAppProcess;
-    internal ITestLanguageLocalizer? functionLanguageLocalizer;
+    internal FunctionAppProcess functionAppProcess;
+    internal ITestLanguageLocalizer functionLanguageLocalizer;
 
     public FunctionAppFixture(IMessageSink messageSink)
     {
@@ -21,10 +21,7 @@ public class FunctionAppFixture : IAsyncLifetime
         this.TestLogs = new TestLoggerProvider(messageSink);
         loggerFactory.AddProvider(this.TestLogs);
         this.logger = loggerFactory.CreateLogger<FunctionAppProcess>();
-    }
 
-    public Task InitializeAsync()
-    {
         string? e2eTestLanguageEnvVarValue = Environment.GetEnvironmentVariable("E2E_TEST_FUNCTIONS_LANGUAGE");
         this.logger.LogInformation("E2E_TEST_FUNCTIONS_LANGUAGE set to " + e2eTestLanguageEnvVarValue);
         switch ((e2eTestLanguageEnvVarValue ?? "").ToLowerInvariant())
@@ -40,19 +37,17 @@ public class FunctionAppFixture : IAsyncLifetime
                 this.functionLanguageLocalizer = new IsolatedTestLanguageLocalizer();
                 break;
         }
-        
-        this.functionAppProcess = new FunctionAppProcess(this.logger, this.TestLogs, e2eTestLanguageEnvVarValue ?? "");
 
+        this.functionAppProcess = new FunctionAppProcess(this.logger, this.TestLogs, this.functionLanguageLocalizer.GetLanguageType());
+    }
+
+    public Task InitializeAsync()
+    {
         return this.functionAppProcess.InitializeAsync();
     }
 
     public Task DisposeAsync()
     {
-        if (this.functionAppProcess != null)
-        {
-            return this.functionAppProcess.DisposeAsync();
-        }
-
-        return Task.CompletedTask;
+        return this.functionAppProcess.DisposeAsync();
     }
 }
