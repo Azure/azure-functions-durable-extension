@@ -60,7 +60,8 @@ public class OrchestrationQueryTests
             JsonNode? statusResponseJsonNode = JsonNode.Parse(statusResponseMessage);
             Assert.NotNull(statusResponseJsonNode);
 
-            Assert.Contains(statusResponseJsonNode.AsArray(), x => x?["InstanceId"]?.ToString() == instanceId);
+            Assert.Contains(statusResponseJsonNode.AsArray(), x => x?["InstanceId"]?.ToString() == instanceId ||
+                                                                   x?["instanceId"]?.ToString() == instanceId);
         }
         finally
         {

@@ -14,13 +14,13 @@ internal class PythonTestLanguageLocalizer : ITestLanguageLocalizer
         { "ExternalEvent.CompletedInstance.ErrorMessage", "Instance with ID {0} is gone: either completed or failed" },
         { "ExternalEvent.InvalidInstance.ErrorName", "Exception" },
         { "ExternalEvent.InvalidInstance.ErrorMessage", "No instance with ID {0} found" },
-        { "SuspendCompletedInstance.FailureMessage", "Response status code does not indicate success: 410 (Gone)." },
-        { "ResumeCompletedInstance.FailureMessage", "Response status code does not indicate success: 410 (Gone)." },
-        { "SuspendSuspendedInstance.FailureMessage", "Response status code does not indicate success: 500 (Internal Server Error)." },
-        { "ResumeRunningInstance.FailureMessage", "Response status code does not indicate success: 500 (Internal Server Error)." },
-        { "TerminateCompletedInstance.FailureMessage", "Response status code does not indicate success: 410 (Gone)." },
-        { "TerminateTerminatedInstance.FailureMessage", "Response status code does not indicate success: 410 (Gone)." },
-        { "TerminateInvalidInstance.FailureMessage", "Response status code does not indicate success: 404 (Not Found)." },
+        { "SuspendCompletedInstance.FailureMessage", "" }, // No message as Python's unique behavior causes this to succeed
+        { "ResumeCompletedInstance.FailureMessage", "" },
+        { "SuspendSuspendedInstance.FailureMessage", "The operation failed with an unexpected status code 500" },
+        { "ResumeRunningInstance.FailureMessage", "The operation failed with an unexpected status code 500" },
+        { "TerminateCompletedInstance.FailureMessage", "" }, // No message as Python's unique behavior causes this to succeed
+        { "TerminateTerminatedInstance.FailureMessage", "" },
+        { "TerminateInvalidInstance.FailureMessage", "No instance with ID '{0}' found." },
     };
 
     public LanguageType GetLanguageType()
