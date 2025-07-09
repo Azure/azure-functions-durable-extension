@@ -4,6 +4,9 @@ import logging
 from hello_cities import bp
 from activity_error_handling import bp as error_handling_bp
 from entity_error_handling import bp as entity_error_handling_bp
+from activity_input_type import bp as activity_input_type_bp
+from external_event_orchestration import bp as external_event_bp
+from large_output_orchestrator import bp as large_output_bp
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 
@@ -31,3 +34,6 @@ def http_trigger(req: func.HttpRequest) -> func.HttpResponse:
 app.register_blueprint(bp)
 app.register_blueprint(error_handling_bp)
 app.register_blueprint(entity_error_handling_bp)
+app.register_blueprint(activity_input_type_bp)
+app.register_blueprint(external_event_bp)
+app.register_blueprint(large_output_bp)

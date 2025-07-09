@@ -13,7 +13,7 @@ internal class IsolatedTestLanguageLocalizer : ITestLanguageLocalizer
         { "ExternalEvent.CompletedInstance.ErrorName", "FailedPrecondition" },
         { "ExternalEvent.CompletedInstance.ErrorMessage", "The orchestration instance with the provided instance id is not running." },
         { "ExternalEvent.InvalidInstance.ErrorName", "NotFound" },
-        { "ExternalEvent.InvalidInstance.ErrorMessage", "No instance with ID 'instance-does-not-exist-test' was found" },
+        { "ExternalEvent.InvalidInstance.ErrorMessage", "No instance with ID '{0}' was found" },
         // Unclear error message - see https://github.com/Azure/azure-functions-durable-extension/issues/3027, will update this code when that bug is fixed
         { "SuspendCompletedInstance.FailureMessage", "Status(StatusCode=\"Unknown\", Detail=\"Exception was thrown by handler.\")" },
         { "ResumeCompletedInstance.FailureMessage", "Status(StatusCode=\"Unknown\", Detail=\"Exception was thrown by handler.\")" },
