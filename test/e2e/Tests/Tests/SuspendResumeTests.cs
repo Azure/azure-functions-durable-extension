@@ -164,9 +164,9 @@ public class SuspendResumeTests
         }
     }
 
-    private async Task AssertRequestFailsAsync(HttpResponseMessage resumeResponse, string expectedErrorMessage, HttpStatusCode expectedStatusCode = HttpStatusCode.BadRequest)
+    private async Task AssertRequestFailsAsync(HttpResponseMessage resumeResponse, string expectedErrorMessage)
     {
-        Assert.Equal(expectedStatusCode, resumeResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, resumeResponse.StatusCode);
 
         string? responseMessage = await resumeResponse.Content.ReadAsStringAsync();
         Assert.NotNull(responseMessage);
