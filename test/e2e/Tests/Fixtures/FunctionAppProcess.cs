@@ -56,6 +56,11 @@ internal class FunctionAppProcess
                 case LanguageType.DotnetIsolated:
                 default:
                     string e2eAppBinPath = Path.Combine(rootDir, @$"test/e2e/Apps/{this.appName}/bin");
+                    if (!Path.Exists(e2eAppBinPath))
+                    {
+                        throw new InvalidOperationException($"The app bin path {e2eAppBinPath} does not exist!");
+                    }
+
                     string? e2eHostJson = Directory.GetFiles(e2eAppBinPath, "host.json", SearchOption.AllDirectories).FirstOrDefault();
 
                     if (e2eHostJson == null)
