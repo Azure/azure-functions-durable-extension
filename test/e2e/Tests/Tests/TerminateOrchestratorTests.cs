@@ -96,14 +96,6 @@ public class TerminateOrchestratorTests
         string? terminateAgainResponseMessage = await terminateAgainResponse.Content.ReadAsStringAsync();
         Assert.NotNull(terminateAgainResponseMessage);
 
-        // Check the exception returned contains the right statusCode and message. 
-        if (languageType != LanguageType.Python)
-        {
-            // This particular part of the error is not emitted in Python
-            // It probably does not exist in the other shim languages either
-            // But we will prove this when implementing these tests for these languages
-            Assert.Contains("StatusCode=\"FailedPrecondition\"", terminateAgainResponseMessage);
-        }
         Assert.Contains(fixture.functionLanguageLocalizer.GetLocalizedStringValue("TerminateTerminatedInstance.FailureMessage", instanceId), terminateAgainResponseMessage);
 
         // Give some time for Core Tools to write logs out
@@ -113,6 +105,8 @@ public class TerminateOrchestratorTests
         // when the instance is completed
         if (languageType != LanguageType.PowerShell && languageType != LanguageType.Python)
         {
+            Assert.Contains("StatusCode=\"FailedPrecondition\"", terminateAgainResponseMessage);
+
             Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains("Cannot terminate orchestration instance in the Terminated state.") &&
                                                               x.Contains(instanceId));
         }
@@ -150,14 +144,6 @@ public class TerminateOrchestratorTests
         string? terminateResponseMessage = await terminateResponse.Content.ReadAsStringAsync();
         Assert.NotNull(terminateResponseMessage);
 
-        // Check the exception returned contains the right statusCode and message. 
-        if (languageType != LanguageType.Python)
-        {
-            // This particular part of the error is not emitted in Python
-            // It probably does not exist in the other shim languages either
-            // But we will prove this when implementing these tests for these languages
-            Assert.Contains("StatusCode=\"FailedPrecondition\"", terminateResponseMessage);
-        }
         Assert.Contains(fixture.functionLanguageLocalizer.GetLocalizedStringValue("TerminateCompletedInstance.FailureMessage", instanceId), terminateResponseMessage);
 
         // Give some time for Core Tools to write logs out
@@ -167,6 +153,8 @@ public class TerminateOrchestratorTests
         // when the instance is completed
         if (languageType != LanguageType.PowerShell && languageType != LanguageType.Python)
         {
+            Assert.Contains("StatusCode=\"FailedPrecondition\"", terminateResponseMessage);
+
             Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains("Cannot terminate orchestration instance in the Completed state.") &&
                                                                   x.Contains(instanceId));
         }
@@ -184,9 +172,9 @@ public class TerminateOrchestratorTests
         Assert.NotNull(terminateResponseMessage);
 
         // Check the exception returned contains the right statusCode and message. 
-        if (languageType != LanguageType.Python)
+        if (languageType != LanguageType.PowerShell && languageType != LanguageType.Python)
         {
-            // This particular part of the error is not emitted in Python
+            // This particular part of the error is not emitted in Python or PowerShell
             // It probably does not exist in the other shim languages either
             // But we will prove this when implementing these tests for these languages
             Assert.Contains("Status(StatusCode=\"NotFound\"", terminateResponseMessage);
