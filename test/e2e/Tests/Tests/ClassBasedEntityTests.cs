@@ -22,6 +22,7 @@ public class ClassBasedEntityTests
 
     [Fact]
     [Trait("PowerShell", "Skip")] // Durable Entities not yet implemented in PowerShell
+    [Trait("MSSQL", "Skip")] // Durable Entities are not supported in MSSQL for out-of-proc (see https://github.com/microsoft/durabletask-mssql/issues/205)
     public async Task ClassBasedEntityTest()
     {
         // Start the orchestration that invokes the class-based entity
