@@ -1,19 +1,25 @@
-import azure.functions as func
+#
+# Copyright (c) Microsoft. All rights reserved.
+# Licensed under the MIT license. See LICENSE file in the project root for full license information.
+#
 
-from azure.durable_functions import DurableOrchestrationContext
-from azure.durable_functions import Blueprint
 import http
 
-bp = Blueprint()
+import azure.functions as func
+import azure.durable_functions as df
+
+bp = df.Blueprint()
+
 
 @bp.orchestration_trigger(context_name="context", orchestration="ExternalEventOrchestrator")
-def external_event_orchestrator(context: DurableOrchestrationContext) -> str:
+def external_event_orchestrator(context: df.DurableOrchestrationContext) -> str:
     context.wait_for_external_event("Approval")
     return "Orchestrator Finished!"
 
+
 @bp.route(route="SendExternalEvent_HttpStart", methods=["GET", "POST"])
 @bp.durable_client_input(client_name="client")
-async def send_external_event_http_start(req: func.HttpRequest, client) -> func.HttpResponse:
+async def send_external_event_http_start(req: func.HttpRequest, client):
     try:
         instance_id = req.get_json()
         if isinstance(instance_id, dict):

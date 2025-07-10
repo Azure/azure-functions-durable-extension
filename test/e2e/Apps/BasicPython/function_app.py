@@ -1,5 +1,11 @@
-import azure.functions as func
+#
+# Copyright (c) Microsoft. All rights reserved.
+# Licensed under the MIT license. See LICENSE file in the project root for full license information.
+#
+
 import logging
+
+import azure.functions as func
 
 from hello_cities import bp
 from activity_error_handling import bp as error_handling_bp
@@ -15,8 +21,9 @@ from purge_orchestration_history import bp as purge_orchestration_history_bp
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 
+
 @app.route(route="http_trigger")
-def http_trigger(req: func.HttpRequest) -> func.HttpResponse:
+def http_trigger(req: func.HttpRequest):
     logging.info('Python HTTP trigger function processed a request.')
 
     name = req.params.get('name')
@@ -32,9 +39,10 @@ def http_trigger(req: func.HttpRequest) -> func.HttpResponse:
         return func.HttpResponse(f"Hello, {name}. This HTTP triggered function executed successfully.")
     else:
         return func.HttpResponse(
-             "This HTTP triggered function executed successfully. Pass a name in the query string or in the request body for a personalized response.",
-             status_code=200
+            "This HTTP triggered function executed successfully. Pass a name in the query string or in the request body for a personalized response.",
+            status_code=200
         )
+
 
 app.register_blueprint(bp)
 app.register_blueprint(error_handling_bp)

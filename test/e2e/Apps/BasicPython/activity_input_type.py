@@ -1,33 +1,40 @@
-# Copyright (c) .NET Foundation. All rights reserved.
-# Licensed under the MIT License. See License.txt in the project root for license information.
+#
+# Copyright (c) Microsoft. All rights reserved.
+# Licensed under the MIT license. See LICENSE file in the project root for full license information.
+#
 
 import json
 import typing
 from datetime import timedelta
-from azure.durable_functions import DurableOrchestrationContext, Blueprint
 from dateutil.parser import parse
 
+import azure.durable_functions as df
 
-bp = Blueprint()
+bp = df.Blueprint()
 
-class MyCustomClassToAvoidConflict:
+# Note: This class is named so as to avoid conflicts with Functions components - CustomClass seems to
+# exist in the Azure Functions SDK and was causing issues with serialization/deserialization
+# when passing instances of this class as input to activities.
+
+
+class MyCustomClass:
     name: typing.Optional[str]
     age: int
-    data: typing.Optional[typing.List[int]]
+    data: typing.Optional[bytes]
     duration: timedelta
 
-    def __init__(self, name: typing.Optional[str], age: int, data: typing.Optional[typing.List[int]], duration: timedelta):
+    def __init__(self, name: typing.Optional[str], age: int, data: typing.Optional[bytes], duration: timedelta):
         self.name = name
         self.age = age
-        self.data = data if data is not None else []
+        self.data = data if data is not None else bytes()
         self.duration = duration
 
     def __str__(self):
         # Leading 0 before datetime duration is to match the expected output format
         # in the test cases, which expects zero-padded hours in duration
         # This only works because no test case uses a duration with hours > 9
-        return f"{{Name: {self.name}, Age: {self.age}, Duration: 0{self.duration}, Data: {self.data}}}"
-    
+        return f"{{Name: {self.name}, Age: {self.age}, Duration: 0{self.duration}, Data: {list(self.data)}}}"
+
     __repr__ = __str__
 
     # These methods must be defined to allow serialization and deserialization
@@ -36,7 +43,10 @@ class MyCustomClassToAvoidConflict:
         return json.dumps({
             "Name": self.name,
             "Age": self.age,
-            "Data": self.data,
+            # Because bytes does not expose to_json and from_json methods,
+            # we convert it to a list of integers for serialization.
+            # See the notes surrounding the byte_array_input activity
+            "Data": list(self.data),
             "Duration": str(self.duration)
         })
 
@@ -44,50 +54,39 @@ class MyCustomClassToAvoidConflict:
         data = json.loads(data)
         Name = data.get("Name")
         Age = data.get("Age")
-        Data = data.get("Data")
+        Data = bytes(data.get("Data"))
         # Note - this is a buggy implementation when the Days component of the duration
         # is greater than the remaining days in the current month. Thanks Python. Fortunately,
         # this is not a problem for the test cases in this module
         Duration = parse(data.get("Duration")) - parse("0:00:00")
-        return MyCustomClassToAvoidConflict(Name, Age, Data, Duration)
+        return MyCustomClass(Name, Age, Data, Duration)
 
-def _parse_duration(duration: str) -> timedelta:
-    # Azure serializes timedelta as ISO 8601 duration strings, e.g. "PT1H"
-    # Python's timedelta can't parse ISO 8601 directly, so we use a simple parser for this test case
-    # Only supports hours and minutes for this scenario
-    if duration.startswith("PT"):
-        duration = duration[2:]
-        hours, minutes = 0, 0
-        if "H" in duration:
-            hours_str, duration = duration.split("H")
-            hours = int(hours_str)
-        if "M" in duration:
-            minutes_str = duration.replace("M", "")
-            minutes = int(minutes_str)
-        return timedelta(hours=hours, minutes=minutes)
-    return timedelta()
 
 @bp.orchestration_trigger(context_name="context", orchestration="ActivityInputTypeOrchestrator")
-def activity_input_type_orchestrator(context: DurableOrchestrationContext):
+def activity_input_type_orchestrator(context: df.DurableOrchestrationContext):
     output = []
 
     # Test byte array input
-    byte_array_input = [1, 2, 3, 4, 5]
-    r_1 = yield context.call_activity("byte_array_input", byte_array_input)
+    byte_array_input = bytes([1, 2, 3, 4, 5])
+    # Note: Byte arrays are __not__ valid as activity inputs in Python, as they do not expose to_json and from_json methods.
+    # This test passes them as int[] instead - we should decide if this constitutes a bug or not, as there are other
+    # types affected by this issue (such as custom types like MyCustomClass above that must define to_json and from_json).
+    r_1 = yield context.call_activity("byte_array_input", list(byte_array_input))
     output.append(r_1)
 
     # Test empty byte array input
-    empty_byte_array = []
-    r_2 = yield context.call_activity("byte_array_input", empty_byte_array)
+    empty_byte_array = bytes()
+    r_2 = yield context.call_activity("byte_array_input", list(empty_byte_array))
     output.append(r_2)
 
-    # Test single byte input
+    # Test single byte input - Note - in Python, there does not exist a single byte type. We will use an int
+    # to represent a single byte value, as it is the closest equivalent.
     single_byte_input = 42
     r_3 = yield context.call_activity("single_byte_input", single_byte_input)
     output.append(r_3)
 
     # Test custom class input
-    custom_class_input = MyCustomClassToAvoidConflict("Test", 25, [1, 2, 3], timedelta(hours=1))
+    custom_class_input = MyCustomClass("Test", 25, bytes([1, 2, 3]), timedelta(hours=1))
     r_4 = yield context.call_activity("custom_class_input", custom_class_input)
     output.append(r_4)
 
@@ -103,55 +102,66 @@ def activity_input_type_orchestrator(context: DurableOrchestrationContext):
 
     # Test array of custom class input
     complex_input = [
-        MyCustomClassToAvoidConflict("Test1", 25, [1, 2, 3], timedelta(minutes=30)),
-        MyCustomClassToAvoidConflict("Test2", 30, [], timedelta(minutes=45))
+        MyCustomClass("Test1", 25, bytes([1, 2, 3]), timedelta(minutes=30)),
+        MyCustomClass("Test2", 30, bytes(), timedelta(minutes=45))
     ]
     r_7 = yield context.call_activity("custom_class_array_input", complex_input)
     output.append(r_7)
 
     return output
 
-@bp.activity_trigger(input_name="input")
-def byte_array_input(input: typing.Any, context) -> str:
-    if not isinstance(input, list) or not all(isinstance(x, int) for x in input):
-        return f"Error: Expected byte[] but got {type(input).__name__}"
-    return f"Received byte[]: [{', '.join(str(x) for x in input)}]"
 
 @bp.activity_trigger(input_name="input")
-def single_byte_input(input: typing.Any, context) -> str:
+def byte_array_input(input: typing.Any) -> str:
+    if not isinstance(input, list) or not all(isinstance(x, int) for x in input):
+        return f"Error: Expected byte[] but got {type(input).__name__}"
+    # Convert list of integers back to bytes - this is superflous but if we decide to change activity input serialization 
+    # to support bytes directly, we can cut out this conversion and the check above
+    input = bytes(input)
+    if not isinstance(input, bytes):
+        return f"Error: Expected byte[] but got {type(input).__name__}"
+    return f"Received byte[]: {list(input)}"
+
+
+@bp.activity_trigger(input_name="input")
+def single_byte_input(input: typing.Any) -> str:
     if not isinstance(input, int):
         return f"Error: Expected byte but got {type(input).__name__}"
     return f"Received byte: {input}"
 
+
 @bp.activity_trigger(input_name="input")
-def custom_class_input(input: MyCustomClassToAvoidConflict, context) -> str:
-    if not isinstance(input, MyCustomClassToAvoidConflict):
-        return f"Error: Expected MyCustomClassToAvoidConflict but got {type(input).__name__}"
+def custom_class_input(input: MyCustomClass) -> str:
+    if not isinstance(input, MyCustomClass):
+        return f"Error: Expected MyCustomClass but got {type(input).__name__}"
     data = input.data
-    if not isinstance(data, list):
+    if not isinstance(data, bytes):
         return f"Error: Expected Data to be byte[] but got {type(data).__name__}"
     return (
         f"Received CustomClass: {input}"
     )
 
+
 @bp.activity_trigger(input_name="input")
-def int_array_input(input: typing.Any, context) -> str:
+def int_array_input(input: typing.Any) -> str:
     if not isinstance(input, list) or not all(isinstance(x, int) for x in input):
         return f"Error: Expected int[] but got {type(input).__name__}"
     return f"Received int[]: [{', '.join(str(x) for x in input)}]"
 
+
 @bp.activity_trigger(input_name="input")
-def string_input(input: typing.Any, context) -> str:
+def string_input(input: typing.Any) -> str:
     if not isinstance(input, str):
         return f"Error: Expected string but got {type(input).__name__}"
     return f"Received string: {input}"
 
+
 @bp.activity_trigger(input_name="input")
-def custom_class_array_input(input: typing.List[MyCustomClassToAvoidConflict], context) -> str:
+def custom_class_array_input(input: typing.List[MyCustomClass]) -> str:
     if not isinstance(input, list):
-        return f"Error: Expected MyCustomClassToAvoidConflict[] but got {type(input).__name__}"
+        return f"Error: Expected MyCustomClass[] but got {type(input).__name__}"
     for item in input:
-        if not isinstance(item, MyCustomClassToAvoidConflict):
-            return f"Error: Expected MyCustomClassToAvoidConflict but got {type(item).__name__}"
+        if not isinstance(item, MyCustomClass):
+            return f"Error: Expected MyCustomClass but got {type(item).__name__}"
 
     return f"Received CustomClass[]: {input}"

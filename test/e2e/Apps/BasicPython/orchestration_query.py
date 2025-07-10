@@ -1,20 +1,19 @@
-import json
-from azure.durable_functions import DurableOrchestrationClient
-from azure.durable_functions.models import OrchestrationRuntimeStatus
-from azure.functions import HttpRequest, HttpResponse
-import logging
+#
+# Copyright (c) Microsoft. All rights reserved.
+# Licensed under the MIT license. See LICENSE file in the project root for full license information.
+#
 
-# Copyright (c) .NET Foundation. All rights reserved.
-# Licensed under the MIT License. See License.txt in the project root for license information.
+import json
 
 import azure.functions as func
 import azure.durable_functions as df
 
 bp = df.Blueprint()
 
+
 @bp.route(route="GetAllInstances", methods=["GET", "POST"])
 @bp.durable_client_input(client_name="client")
-async def get_all_instances(req: HttpRequest, client: DurableOrchestrationClient) -> HttpResponse:
+async def get_all_instances(req: func.HttpRequest, client: df.DurableOrchestrationClient):
     try:
         instances = await client.get_status_all()
         # This would not be necessary if we implemnted __str__ for DurableOrchestrationStatus using to_json under the hood
@@ -33,14 +32,15 @@ async def get_all_instances(req: HttpRequest, client: DurableOrchestrationClient
         )
         return response
 
+
 @bp.route(route="GetRunningInstances", methods=["GET", "POST"])
 @bp.durable_client_input(client_name="client")
-async def get_running_instances(req: HttpRequest, client: DurableOrchestrationClient) -> HttpResponse:
+async def get_running_instances(req: func.HttpRequest, client: df.DurableOrchestrationClient):
     try:
         filter_statuses = [
-            OrchestrationRuntimeStatus.Running,
-            OrchestrationRuntimeStatus.Pending,
-            OrchestrationRuntimeStatus.ContinuedAsNew
+            df.OrchestrationRuntimeStatus.Running,
+            df.OrchestrationRuntimeStatus.Pending,
+            df.OrchestrationRuntimeStatus.ContinuedAsNew
         ]
         instances = await client.get_status_by(runtime_status=filter_statuses)
         # This would not be necessary if we implemnted __str__ for DurableOrchestrationStatus using to_json under the hood

@@ -1,19 +1,17 @@
-
-# Copyright (c) .NET Foundation. All rights reserved.
-# Licensed under the MIT License. See License.txt in the project root for license information.
+#
+# Copyright (c) Microsoft. All rights reserved.
+# Licensed under the MIT license. See LICENSE file in the project root for full license information.
+#
 
 import azure.functions as func
+import azure.durable_functions as df
 
-from azure.durable_functions import DurableOrchestrationClient
-from azure.functions import HttpRequest, HttpResponse
-from azure.durable_functions import Blueprint
+bp = df.Blueprint()
 
-
-bp = Blueprint()
 
 @bp.route(route="SuspendInstance", methods=["GET", "POST"])
 @bp.durable_client_input(client_name="client")
-async def suspend_instance(req: HttpRequest, client: DurableOrchestrationClient) -> HttpResponse:
+async def suspend_instance(req: func.HttpRequest, client: df.DurableOrchestrationClient):
     instance_id = req.params.get("instanceId")
     suspend_reason = "Suspending the instance for test."
     try:
@@ -28,9 +26,10 @@ async def suspend_instance(req: HttpRequest, client: DurableOrchestrationClient)
         )
         return response
 
+
 @bp.route(route="ResumeInstance", methods=["GET", "POST"])
 @bp.durable_client_input(client_name="client")
-async def resume_instance(req: HttpRequest, client: DurableOrchestrationClient) -> HttpResponse:
+async def resume_instance(req: func.HttpRequest, client: df.DurableOrchestrationClient):
     instance_id = req.params.get("instanceId")
     resume_reason = "Resuming the instance for test."
     try:

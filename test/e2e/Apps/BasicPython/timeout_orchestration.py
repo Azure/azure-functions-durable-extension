@@ -1,20 +1,24 @@
-# Copyright (c) .NET Foundation. All rights reserved.
-# Licensed under the MIT License. See License.txt in the project root for license information.
+#
+# Copyright (c) Microsoft. All rights reserved.
+# Licensed under the MIT license. See LICENSE file in the project root for full license information.
+#
 
 import logging
 import time
 from datetime import timedelta
-from azure.durable_functions import Blueprint, DurableOrchestrationContext
-from azure.functions import HttpRequest, HttpResponse
 
-bp = Blueprint()
+import azure.functions as func
+import azure.durable_functions as df
+
+bp = df.Blueprint()
+
 
 @bp.route(route="TimeoutOrchestrator_HttpStart", methods=["GET", "POST"])
 @bp.durable_client_input(client_name="client")
-async def timer_http_start(req: HttpRequest, client) -> HttpResponse:
+async def timer_http_start(req: func.HttpRequest, client: df.DurableOrchestrationClient):
     timeoutSeconds = req.params.get("timeoutSeconds")
     if not timeoutSeconds or not str.isnumeric(timeoutSeconds):
-        return HttpResponse(
+        return func.HttpResponse(
             "Please pass a valid timeoutSeconds value in the query string or in the request body.",
             status_code=400
         )
@@ -22,8 +26,9 @@ async def timer_http_start(req: HttpRequest, client) -> HttpResponse:
     logging.info(f"Started orchestration with ID = '{instance_id}'.")
     return client.create_check_status_response(req, instance_id)
 
+
 @bp.orchestration_trigger(context_name="context", orchestration="TimeoutOrchestrator")
-def timeout_orchestrator(context: DurableOrchestrationContext):
+def timeout_orchestrator(context: df.DurableOrchestrationContext):
     timeoutSeconds = context.get_input()
     if not timeoutSeconds or not isinstance(timeoutSeconds, int):
         raise "Timeout value is required for this orchestration."
@@ -40,10 +45,11 @@ def timeout_orchestrator(context: DurableOrchestrationContext):
     else:
         return "The activity function timed out"
 
+
 @bp.activity_trigger(input_name="instanceid")
 def long_activity(instanceid) -> str:
     # The duration of 5 seconds for this activity was chosen because
-    # it is long enough to demonstrate both the activity timeout and the 
-    # activity success case in the tests for activity timeout. 
+    # it is long enough to demonstrate both the activity timeout and the
+    # activity success case in the tests for activity timeout.
     time.sleep(5)
     return "The activity function completed successfully"

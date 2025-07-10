@@ -1,19 +1,21 @@
-# Copyright (c) .NET Foundation. All rights reserved.
-# Licensed under the MIT License. See License.txt in the project root for license information.
+#
+# Copyright (c) Microsoft. All rights reserved.
+# Licensed under the MIT license. See LICENSE file in the project root for full license information.
+#
 
 import logging
 from datetime import datetime
 from typing import Optional
-from azure.durable_functions import DurableOrchestrationClient, OrchestrationRuntimeStatus
 
 import azure.functions as func
 import azure.durable_functions as df
 
 bp = df.Blueprint()
 
+
 @bp.route(route="PurgeOrchestrationHistory", methods=["GET", "POST"])
 @bp.durable_client_input(client_name="client")
-async def purge_history(req: func.HttpRequest, client: DurableOrchestrationClient) -> func.HttpResponse:
+async def purge_history(req: func.HttpRequest, client: df.DurableOrchestrationClient):
     logging.info("Starting purge all instance history")
     try:
         # Parse optional query parameters for purgeStartTime and purgeEndTime
@@ -29,9 +31,9 @@ async def purge_history(req: func.HttpRequest, client: DurableOrchestrationClien
             created_time_from=purge_start_time,
             created_time_to=purge_end_time,
             runtime_status=[
-                OrchestrationRuntimeStatus.Completed,
-                OrchestrationRuntimeStatus.Failed,
-                OrchestrationRuntimeStatus.Terminated,
+                df.OrchestrationRuntimeStatus.Completed,
+                df.OrchestrationRuntimeStatus.Failed,
+                df.OrchestrationRuntimeStatus.Terminated,
             ],
         )
         logging.info("Finished purge all instance history")
