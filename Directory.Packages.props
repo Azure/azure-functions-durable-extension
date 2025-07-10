@@ -30,6 +30,7 @@
     <PackageVersion Include="Microsoft.CodeAnalysis.Workspaces.Common" Version="3.9.0" />
     <PackageVersion Include="Microsoft.DurableTask.Client.Grpc" Version="1.11.0" />
     <PackageVersion Include="Microsoft.DurableTask.Worker.Grpc" Version="1.11.0" />
+    <PackageVersion Include="Microsoft.DurableTask.Analyzers" Version="0.1.0" />
     <PackageVersion Include="Microsoft.Extensions.Azure" Version="1.7.0" />
     <PackageVersion Include="Microsoft.Extensions.Http" Version="6.0.0" />
     <PackageVersion Include="Microsoft.NET.Sdk.Functions" Version="4.2.0" />
