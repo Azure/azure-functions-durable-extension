@@ -169,12 +169,12 @@ jobs:
       - name: Setup Environment for dotnet
         shell: pwsh
         run: |
-          echo "E2E_TEST_FUNCTIONS_LANGUAGE=dotnet-isolated" >> $GITHUB_ENV
+          echo "E2E_TEST_FUNCTIONS_LANGUAGE=dotnet-isolated" >> $GITHUB_ENV 
           echo "TEST_APP_NAME=BasicDotnetIsolated" >> $GITHUB_ENV
 
       - name: Run E2E tests (dotnet-isolated)
         working-directory: test/e2e/Tests
-        run: dotnet test --filter 'MSSQL!=Skip&Dotnet!=Skip'
+        run: dotnet test --filter 'MSSQL!=Skip&Dotnet!=Skip' --logger "console;verbosity=detailed"
 
       - name: Setup Environment for PowerShell
         shell: pwsh
@@ -184,7 +184,7 @@ jobs:
 
       - name: Run E2E tests (PowerShell)
         working-directory: test/e2e/Tests
-        run: dotnet test --filter 'MSSQL!=Skip&PowerShell!=Skip'
+        run: dotnet test --filter 'MSSQL!=Skip&PowerShell!=Skip' --logger "console;verbosity=detailed"
 
       - name: Setup Environment for Python
         shell: pwsh
@@ -194,7 +194,7 @@ jobs:
 
       - name: Run E2E tests (Python)
         working-directory: test/e2e/Tests
-        run: dotnet test --filter 'MSSQL!=Skip&Python!=Skip'
+        run: dotnet test --filter 'MSSQL!=Skip&Python!=Skip' --logger "console;verbosity=detailed"
 
   e2e-dts:
     runs-on: ubuntu-latest
@@ -230,7 +230,7 @@ jobs:
 
       - name: Run E2E tests (dotnet-isolated)
         working-directory: test/e2e/Tests
-        run: dotnet test --filter 'DTS!=Skip&Dotnet!=Skip'
+        run: dotnet test --filter 'DTS!=Skip&Dotnet!=Skip' --logger "console;verbosity=detailed"
 
       - name: Setup Environment for PowerShell
         shell: pwsh
@@ -240,7 +240,7 @@ jobs:
 
       - name: Run E2E tests (PowerShell)
         working-directory: test/e2e/Tests
-        run: dotnet test --filter 'DTS!=Skip&PowerShell!=Skip'
+        run: dotnet test --filter 'DTS!=Skip&PowerShell!=Skip' --logger "console;verbosity=detailed"
 
       - name: Setup Environment for Python
         shell: pwsh
@@ -250,4 +250,4 @@ jobs:
 
       - name: Run E2E tests (Python)
         working-directory: test/e2e/Tests
-        run: dotnet test --filter 'DTS!=Skip&Python!=Skip'
+        run: dotnet test --filter 'DTS!=Skip&Python!=Skip' --logger "console;verbosity=detailed"
