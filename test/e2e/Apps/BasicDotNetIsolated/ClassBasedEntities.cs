@@ -36,7 +36,7 @@ public class ClassBasedEntities
         [OrchestrationTrigger] TaskOrchestrationContext context)
     {
         var entityId = new EntityInstanceId(nameof(TestEntity), "singleton");
-        await context.Entities.CallEntityAsync(entityId, nameof(TestEntity.SetState));
+        await context.Entities.CallEntityAsync(entityId, nameof(TestEntity.SetState), 42);
         return await context.Entities.CallEntityAsync<string>(entityId, nameof(TestEntity.GetState));
     }
 
@@ -57,14 +57,15 @@ public class ClassBasedEntities
         private readonly MyInjectedService testService = testService;
         private readonly BlobContainerClient container = container;
 
-        public void SetState()
+        public void SetState(int number)
         {
             this.State ??= new StateContainer();
             this.State.StringValue = string.Format(
-                "IConfiguration: {0}, MyInjectedService: {1}, BlobContainerClient: {2}",
+                "IConfiguration: {0}, MyInjectedService: {1}, BlobContainerClient: {2}, Number: {3}",
                 this.injectedConfiguration is not null ? "yes" : "no",
                 this.testService is not null ? "yes" : "no",
-                this.container is not null ? "yes" : "no");
+                this.container is not null ? "yes" : "no",
+                number);
         }
 
         public string GetState()

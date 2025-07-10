@@ -21,6 +21,7 @@ public class ClassBasedEntityTests
     }
 
     [Fact]
+    [Trait("PowerShell", "Skip")] // Durable Entities not yet implemented in PowerShell
     public async Task ClassBasedEntityTest()
     {
         // Start the orchestration that invokes the class-based entity
@@ -37,7 +38,7 @@ public class ClassBasedEntityTests
         this.output.WriteLine(
             $"Orchestration {orchestrationDetails.RuntimeStatus}. Output = {orchestrationDetails.Output}");
 
-        string expectedOutput = "IConfiguration: yes, MyInjectedService: yes, BlobContainerClient: yes";
+        string expectedOutput = "IConfiguration: yes, MyInjectedService: yes, BlobContainerClient: yes, Number: 42";
         Assert.Equal(expectedOutput, orchestrationDetails.Output);
     }
 }
