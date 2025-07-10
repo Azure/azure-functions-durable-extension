@@ -24,6 +24,7 @@ public class FunctionAppFixture : IAsyncLifetime
 
         string? e2eTestLanguageEnvVarValue = Environment.GetEnvironmentVariable("E2E_TEST_FUNCTIONS_LANGUAGE");
         this.logger.LogInformation("E2E_TEST_FUNCTIONS_LANGUAGE set to " + e2eTestLanguageEnvVarValue);
+        Console.WriteLine("E2E_TEST_FUNCTIONS_LANGUAGE set to " + e2eTestLanguageEnvVarValue);
         switch ((e2eTestLanguageEnvVarValue ?? "").ToLowerInvariant())
         {
             case "dotnet-isolated":
