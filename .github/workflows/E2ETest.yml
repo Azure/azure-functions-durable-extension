@@ -36,6 +36,11 @@ jobs:
         with:
           node-version: '18.x' # Azurite requires at least Node 18
 
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+
       - name: Setup E2E tests
         shell: pwsh
         run: |
@@ -96,6 +101,11 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '18.x' # Azurite requires at least Node 18
+          
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
 
       - name: Setup E2E tests
         shell: pwsh
@@ -152,6 +162,16 @@ jobs:
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: 8.0.x
+
+      - name: Set up Node.js (needed for Azurite)
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18.x' # Azurite requires at least Node 18
+          
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
 
       - name: Initialize Environment Variables
         run: | 
@@ -212,6 +232,16 @@ jobs:
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: 8.0.x
+
+      - name: Set up Node.js (needed for Azurite)
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18.x' # Azurite requires at least Node 18
+          
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
 
       - name: Setup E2E tests
         shell: pwsh

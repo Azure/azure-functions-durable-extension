@@ -146,6 +146,10 @@ function InstallExtensionAndBuildTestApp($testAppDir) {
           Write-Host "Syncing extensions"
           .(Join-Path $FUNC_CLI_DIRECTORY "func") extensions sync
         }
+
+        if (Test-Path ".\requirements.txt") {
+          python -m pip install -r .\requirements.txt
+        }
       }
     }
     
