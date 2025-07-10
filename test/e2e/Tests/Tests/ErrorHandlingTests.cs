@@ -179,6 +179,7 @@ public class ErrorHandlingTests
     }
 
     [Fact]
+    [Trait("Python", "Skip")] // Bug: https://github.com/Azure/azure-functions-durable-python/issues/561
     public async Task OrchestratorWithCustomRetriedActivityException_ShouldSucceed()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=CustomRetryActivityFunction");
