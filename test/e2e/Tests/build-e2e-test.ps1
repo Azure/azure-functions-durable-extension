@@ -148,7 +148,7 @@ function InstallExtensionAndBuildTestApp($testAppDir) {
         }
 
         if (Test-Path ".\requirements.txt") {
-          python -m pip install -r .\requirements.txt
+          python -m pip install -r requirements.txt
         }
       }
     }
