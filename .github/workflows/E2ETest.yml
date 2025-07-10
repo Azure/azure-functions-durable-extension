@@ -155,7 +155,7 @@ jobs:
 
       - name: Initialize Environment Variables
         run: | 
-          Add-Content -Path $GITHUB_ENV -Value "MSSQL_SA_PASSWORD=TEST12_${Get-Random}!"
+          echo "MSSQL_SA_PASSWORD=TEST12_$(echo $RANDOM)!" >> $GITHUB_ENV
 
       - name: Setup E2E tests
         shell: pwsh
