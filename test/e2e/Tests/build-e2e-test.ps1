@@ -153,6 +153,9 @@ function InstallExtensionAndBuildTestApp($testAppDir) {
           Write-Host "Updating extensions.csproj to reference WebJobs extension version $webJobsExtensionVersion"
           
           dotnet add 'extensions.csproj' package 'Microsoft.Azure.WebJobs.Extensions.DurableTask' --version $webJobsExtensionVersion --source ".\packages" --no-restore
+
+          Write-Host "Syncing extensions"
+          .(Join-Path $FUNC_CLI_DIRECTORY "func") extensions sync
         }
       }
     }
