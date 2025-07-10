@@ -48,8 +48,8 @@ jobs:
       - name: Setup Environment for dotnet
         shell: pwsh
         run: |
-          echo "E2E_TEST_FUNCTIONS_LANGUAGE=dotnet-isolated" >> $GITHUB_ENV
-          echo "TEST_APP_NAME=BasicDotnetIsolated" >> $GITHUB_ENV
+          Add-Content -Path $env:GITHUB_ENV -Value "E2E_TEST_FUNCTIONS_LANGUAGE=dotnet-isolated"
+          Add-Content -Path $env:GITHUB_ENV -Value "TEST_APP_NAME=BasicDotnetIsolated"
 
       - name: Run E2E tests (dotnet-isolated)
         working-directory: test/e2e/Tests
@@ -58,8 +58,8 @@ jobs:
       - name: Setup Environment for PowerShell
         shell: pwsh
         run: |
-          echo "E2E_TEST_FUNCTIONS_LANGUAGE=powershell" >> $GITHUB_ENV
-          echo "TEST_APP_NAME=BasicPowerShell" >> $GITHUB_ENV
+          Add-Content -Path $env:GITHUB_ENV -Value "E2E_TEST_FUNCTIONS_LANGUAGE=powershell"
+          Add-Content -Path $env:GITHUB_ENV -Value "TEST_APP_NAME=BasicPowerShell"
 
       - name: Run E2E tests (PowerShell)
         working-directory: test/e2e/Tests
@@ -68,8 +68,8 @@ jobs:
       - name: Setup Environment for Python
         shell: pwsh
         run: |
-          echo "E2E_TEST_FUNCTIONS_LANGUAGE=python" >> $GITHUB_ENV
-          echo "TEST_APP_NAME=BasicPython" >> $GITHUB_ENV
+          Add-Content -Path $env:GITHUB_ENV -Value "E2E_TEST_FUNCTIONS_LANGUAGE=python"
+          Add-Content -Path $env:GITHUB_ENV -Value "TEST_APP_NAME=BasicPython"
 
       - name: Run E2E tests (Python)
         working-directory: test/e2e/Tests
@@ -109,8 +109,8 @@ jobs:
       - name: Setup Environment for dotnet
         shell: pwsh
         run: |
-          echo "E2E_TEST_FUNCTIONS_LANGUAGE=dotnet-isolated" >> $GITHUB_ENV
-          echo "TEST_APP_NAME=BasicDotnetIsolated" >> $GITHUB_ENV
+          Add-Content -Path $env:GITHUB_ENV -Value "E2E_TEST_FUNCTIONS_LANGUAGE=dotnet-isolated"
+          Add-Content -Path $env:GITHUB_ENV -Value "TEST_APP_NAME=BasicDotnetIsolated"
 
       - name: Run E2E tests (dotnet-isolated)
         working-directory: test/e2e/Tests
@@ -119,8 +119,8 @@ jobs:
       - name: Setup Environment for PowerShell
         shell: pwsh
         run: |
-          echo "E2E_TEST_FUNCTIONS_LANGUAGE=powershell" >> $GITHUB_ENV
-          echo "TEST_APP_NAME=BasicPowerShell" >> $GITHUB_ENV
+          Add-Content -Path $env:GITHUB_ENV -Value "E2E_TEST_FUNCTIONS_LANGUAGE=powershell"
+          Add-Content -Path $env:GITHUB_ENV -Value "TEST_APP_NAME=BasicPowerShell"
 
       - name: Run E2E tests (PowerShell)
         working-directory: test/e2e/Tests
@@ -129,8 +129,8 @@ jobs:
       - name: Setup Environment for Python
         shell: pwsh
         run: |
-          echo "E2E_TEST_FUNCTIONS_LANGUAGE=python" >> $GITHUB_ENV
-          echo "TEST_APP_NAME=BasicPython" >> $GITHUB_ENV
+          Add-Content -Path $env:GITHUB_ENV -Value "E2E_TEST_FUNCTIONS_LANGUAGE=python"
+          Add-Content -Path $env:GITHUB_ENV -Value "TEST_APP_NAME=BasicPython"
 
       - name: Run E2E tests (Python)
         working-directory: test/e2e/Tests
@@ -169,8 +169,8 @@ jobs:
       - name: Setup Environment for dotnet
         shell: pwsh
         run: |
-          echo "E2E_TEST_FUNCTIONS_LANGUAGE=dotnet-isolated" >> $GITHUB_ENV 
-          echo "TEST_APP_NAME=BasicDotnetIsolated" >> $GITHUB_ENV
+          Add-Content -Path $env:GITHUB_ENV -Value "E2E_TEST_FUNCTIONS_LANGUAGE=dotnet-isolated"
+          Add-Content -Path $env:GITHUB_ENV -Value "TEST_APP_NAME=BasicDotnetIsolated"
 
       - name: Run E2E tests (dotnet-isolated)
         working-directory: test/e2e/Tests
@@ -179,8 +179,8 @@ jobs:
       - name: Setup Environment for PowerShell
         shell: pwsh
         run: |
-          echo "E2E_TEST_FUNCTIONS_LANGUAGE=powershell" >> $GITHUB_ENV
-          echo "TEST_APP_NAME=BasicPowerShell" >> $GITHUB_ENV
+          Add-Content -Path $env:GITHUB_ENV -Value "E2E_TEST_FUNCTIONS_LANGUAGE=powershell"
+          Add-Content -Path $env:GITHUB_ENV -Value "TEST_APP_NAME=BasicPowerShell"
 
       - name: Run E2E tests (PowerShell)
         working-directory: test/e2e/Tests
@@ -189,8 +189,8 @@ jobs:
       - name: Setup Environment for Python
         shell: pwsh
         run: |
-          echo "E2E_TEST_FUNCTIONS_LANGUAGE=python" >> $GITHUB_ENV
-          echo "TEST_APP_NAME=BasicPython" >> $GITHUB_ENV
+          Add-Content -Path $env:GITHUB_ENV -Value "E2E_TEST_FUNCTIONS_LANGUAGE=python"
+          Add-Content -Path $env:GITHUB_ENV -Value "TEST_APP_NAME=BasicPython"
 
       - name: Run E2E tests (Python)
         working-directory: test/e2e/Tests
@@ -225,8 +225,8 @@ jobs:
       - name: Setup Environment for dotnet
         shell: pwsh
         run: |
-          echo "E2E_TEST_FUNCTIONS_LANGUAGE=dotnet-isolated" >> $GITHUB_ENV
-          echo "TEST_APP_NAME=BasicDotnetIsolated" >> $GITHUB_ENV
+          Add-Content -Path $env:GITHUB_ENV -Value "E2E_TEST_FUNCTIONS_LANGUAGE=dotnet-isolated"
+          Add-Content -Path $env:GITHUB_ENV -Value "TEST_APP_NAME=BasicDotnetIsolated"
 
       - name: Run E2E tests (dotnet-isolated)
         working-directory: test/e2e/Tests
@@ -235,8 +235,8 @@ jobs:
       - name: Setup Environment for PowerShell
         shell: pwsh
         run: |
-          echo "E2E_TEST_FUNCTIONS_LANGUAGE=powershell" >> $GITHUB_ENV
-          echo "TEST_APP_NAME=BasicPowerShell" >> $GITHUB_ENV
+          Add-Content -Path $env:GITHUB_ENV -Value "E2E_TEST_FUNCTIONS_LANGUAGE=powershell"
+          Add-Content -Path $env:GITHUB_ENV -Value "TEST_APP_NAME=BasicPowerShell"
 
       - name: Run E2E tests (PowerShell)
         working-directory: test/e2e/Tests
@@ -245,8 +245,8 @@ jobs:
       - name: Setup Environment for Python
         shell: pwsh
         run: |
-          echo "E2E_TEST_FUNCTIONS_LANGUAGE=python" >> $GITHUB_ENV
-          echo "TEST_APP_NAME=BasicPython" >> $GITHUB_ENV
+          Add-Content -Path $env:GITHUB_ENV -Value "E2E_TEST_FUNCTIONS_LANGUAGE=python"
+          Add-Content -Path $env:GITHUB_ENV -Value "TEST_APP_NAME=BasicPython"
 
       - name: Run E2E tests (Python)
         working-directory: test/e2e/Tests
