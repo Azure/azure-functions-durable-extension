@@ -8,7 +8,8 @@
 
 param(
 	[Parameter(Mandatory=$true)]
-	[string]$HttpStartPath
+	[string]$HttpStartPath,
+    [switch]$TestWithCustomInstanceId = $false
 )
 
 $retryCount = 0;
@@ -42,10 +43,25 @@ Do {
 
         # Start orchestrator if it hasn't been started yet
         if ($statusUrl -eq $null){
-            $startOrchestrationUri = "http://localhost:7071/$HttpStartPath"
+            $baseUri = "http://localhost:7071/$HttpStartPath"
+
+            $customInstanceId = $null
+            if ($TestWithCustomInstanceId) {
+                $customInstanceId = [guid]::NewGuid().ToString()
+                $startOrchestrationUri = $baseUri + "?instanceId=" + $customInstanceId
+            } else {
+                $startOrchestrationUri = $baseUri
+            }
+
             Write-Host "Starting a new orchestration instance via POST to $startOrchestrationUri..." -ForegroundColor Yellow
 
             $result = Invoke-RestMethod -Method Post -Uri $startOrchestrationUri
+
+            # Check that the returned instance ID matches the requested one (if provided)
+            if ($TestWithCustomInstanceId -and $customInstanceId -and $result.id -ne $customInstanceId) {
+                throw "Returned instance ID '$($result.id)' does not match requested instance ID '$customInstanceId'"
+            }
+
             Write-Host "Started orchestration with instance ID '$($result.id)'!" -ForegroundColor Yellow
             Write-Host "Waiting for orchestration to complete..." -ForegroundColor Yellow
 

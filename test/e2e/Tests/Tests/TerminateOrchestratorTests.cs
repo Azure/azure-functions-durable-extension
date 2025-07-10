@@ -24,7 +24,7 @@ public class TerminateOrchestratorTests
     [Fact]
     public async Task TerminateRunningOrchestration_ShouldSucceed()
     {
-        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("LongOrchestrator_HttpStart", "");
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=LongRunningOrchestrator");
 
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         string instanceId = await DurableHelpers.ParseInstanceIdAsync(response);
@@ -40,6 +40,7 @@ public class TerminateOrchestratorTests
 
 
     [Fact(Skip = "Will enable when https://github.com/Azure/azure-functions-durable-extension/issues/3025 is fixed")]
+    [Trait("PowerShell", "Skip")] // Scheduled orchestrations not implemented in PowerShell
     public async Task TerminateScheduledOrchestration_ShouldSucceed()
     {
         DateTime scheduledStartTime = DateTime.UtcNow + TimeSpan.FromMinutes(1);
@@ -61,7 +62,7 @@ public class TerminateOrchestratorTests
     [Fact]
     public async Task TerminateTerminatedOrchestration_ShouldFail()
     {
-        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("LongOrchestrator_HttpStart", "");
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=LongRunningOrchestrator");
 
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         string instanceId = await DurableHelpers.ParseInstanceIdAsync(response);
@@ -75,20 +76,33 @@ public class TerminateOrchestratorTests
         await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Terminated", 30);
 
         using HttpResponseMessage terminateAgainResponse = await HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={instanceId}");
-        await AssertTerminateRequestFailsAsync(terminateAgainResponse);
+        
+        Assert.Equal(HttpStatusCode.BadRequest, terminateAgainResponse.StatusCode);
+
+        // Check the exception returned contains the right statusCode and message. 
+        string? terminateAgainResponseMessage = await terminateAgainResponse.Content.ReadAsStringAsync();
+        Assert.NotNull(terminateAgainResponseMessage);
+
+        Assert.Contains("StatusCode=\"FailedPrecondition\"", terminateAgainResponseMessage);
+        Assert.Contains(fixture.functionLanguageLocalizer.GetLocalizedStringValue("TerminateTerminatedInstance.FailureMessage", instanceId), terminateAgainResponseMessage);
 
         // Give some time for Core Tools to write logs out
         Thread.Sleep(500);
 
-        Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains("Cannot terminate orchestration instance in the Terminated state.") &&
+        // For some reason, PowerShell does not log these warnings - instead the status code is 410 (Gone) with no log
+        // when the instance is completed
+        if (fixture.functionLanguageLocalizer.GetLanguageType() != LanguageType.PowerShell)
+        {
+            Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains("Cannot terminate orchestration instance in the Terminated state.") &&
                                                               x.Contains(instanceId));
+        }
     }
 
 
     [Fact]
     public async Task TerminateCompletedOrchestration_ShouldFail()
     {
-        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("HelloCities_HttpStart", "");
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=HelloCities");
 
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         string instanceId = await DurableHelpers.ParseInstanceIdAsync(response);
@@ -97,30 +111,41 @@ public class TerminateOrchestratorTests
         await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", 30);
 
         using HttpResponseMessage terminateResponse = await HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={instanceId}");
-        await AssertTerminateRequestFailsAsync(terminateResponse);
+        
+        Assert.Equal(HttpStatusCode.BadRequest, terminateResponse.StatusCode);
+
+        string? terminateResponseMessage = await terminateResponse.Content.ReadAsStringAsync();
+        Assert.NotNull(terminateResponseMessage);
+
+        // Check the exception returned contains the right statusCode and message. 
+        Assert.Contains("StatusCode=\"FailedPrecondition\"", terminateResponseMessage);
+        Assert.Contains(fixture.functionLanguageLocalizer.GetLocalizedStringValue("TerminateCompletedInstance.FailureMessage", instanceId), terminateResponseMessage);
 
         // Give some time for Core Tools to write logs out
         Thread.Sleep(500);
 
-        Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains("Cannot terminate orchestration instance in the Completed state.") &&
-                                                              x.Contains(instanceId));
+        // For some reason, PowerShell does not log these warnings - instead the status code is 410 (Gone) with no log
+        // when the instance is completed
+        if (fixture.functionLanguageLocalizer.GetLanguageType() != LanguageType.PowerShell)
+        {
+            Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains("Cannot terminate orchestration instance in the Completed state.") &&
+                                                                  x.Contains(instanceId));
+        }
     }
 
     [Fact]
     public async Task TerminateNonExistantOrchestration_ShouldFail()
     {
-        using HttpResponseMessage terminateResponse = await HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={Guid.NewGuid().ToString()}");
-        await AssertTerminateRequestFailsAsync(terminateResponse);
-    }
-
-    private static async Task AssertTerminateRequestFailsAsync(HttpResponseMessage terminateResponse)
-    {
+        string instanceId = Guid.NewGuid().ToString();
+        using HttpResponseMessage terminateResponse = await HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={instanceId}");
         Assert.Equal(HttpStatusCode.BadRequest, terminateResponse.StatusCode);
 
         string? terminateResponseMessage = await terminateResponse.Content.ReadAsStringAsync();
         Assert.NotNull(terminateResponseMessage);
-        // Unclear error message - see https://github.com/Azure/azure-functions-durable-extension/issues/3027, will update this code when that bug is fixed
-        Assert.Equal("Status(StatusCode=\"Unknown\", Detail=\"Exception was thrown by handler.\")", terminateResponseMessage);
+
+        // Check the exception returned contains the right statusCode and message. 
+        Assert.Contains("Status(StatusCode=\"NotFound\"", terminateResponseMessage);
+        Assert.Contains(fixture.functionLanguageLocalizer.GetLocalizedStringValue("TerminateInvalidInstance.FailureMessage", instanceId), terminateResponseMessage);
     }
 
     private static async Task AssertTerminateRequestSucceedsAsync(HttpResponseMessage terminateResponse)

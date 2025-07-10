@@ -17,6 +17,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
             internal const string TaskId = "durabletask.task.task_id";
             internal const string EventTargetInstanceId = "durabletask.event.target_instance_id";
             internal const string FireAt = "durabletask.fire_at";
+            internal const string Operation = "durabletask.task.operation";
+            internal const string ScheduledTime = "durabletask.task.scheduled_time";
+            internal const string ErrorMessage = "durabletask.entity.error_message";
         }
 
         internal static class Status
@@ -27,6 +30,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
 
         internal static class SpanNames
         {
+            internal static string CallOrSignalEntity(string name, string operation)
+                => $"{TraceActivityConstants.Entity}:{name}:{operation}";
+
+            internal static string EntityStartsAnOrchestration(string name)
+                => $"{name}:{TraceActivityConstants.CreateOrchestration}";
+
             internal static string CreateOrchestration(string name, string? version)
                => FormatName(TraceActivityConstants.CreateOrchestration, name, version);
 

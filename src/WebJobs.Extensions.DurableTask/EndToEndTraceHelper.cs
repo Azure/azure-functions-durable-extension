@@ -147,6 +147,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 message, instanceId, functionName, hubName, LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++);
         }
 
+        public void ExtensionWarningAnnouncement(string message)
+        {
+            this.logger.LogWarning(message);
+        }
+
         public void FunctionScheduled(
             string hubName,
             string functionName,

@@ -1,0 +1,9 @@
+{
+  "bindings": [
+    {
+      "name": "InstanceId",
+      "type": "activityTrigger",
+      "direction": "in"
+    }
+  ]
+}

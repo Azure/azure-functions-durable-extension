@@ -5,8 +5,8 @@
     <AssemblyName>Microsoft.Azure.WebJobs.Extensions.DurableTask</AssemblyName>
     <RootNamespace>Microsoft.Azure.WebJobs.Extensions.DurableTask</RootNamespace>
     <MajorVersion>3</MajorVersion>
-    <MinorVersion>1</MinorVersion>
-    <PatchVersion>1</PatchVersion>
+    <MinorVersion>3</MinorVersion>
+    <PatchVersion>0</PatchVersion>
     <VersionPrefix>$(MajorVersion).$(MinorVersion).$(PatchVersion)</VersionPrefix>
     <FileVersion>$(MajorVersion).$(MinorVersion).$(PatchVersion)</FileVersion>
     <AssemblyVersion>$(MajorVersion).0.0.0</AssemblyVersion>
@@ -27,7 +27,6 @@
   <PropertyGroup Condition="$(VersionSuffix) != ''">
     <Version>$(MajorVersion).$(MinorVersion).$(PatchVersion)-$(VersionSuffix)</Version>
   </PropertyGroup>
-
 
   <!-- NuGet Publishing Metadata -->
   <PropertyGroup>
@@ -50,7 +49,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Protobuf Include="**/*.proto" GrpcServices="Both" Access="Internal"  />
+    <Protobuf Include="Grpc/Protos/**/*.proto" GrpcServices="Both" Access="Internal" />
   </ItemGroup>
 
   <ItemGroup>

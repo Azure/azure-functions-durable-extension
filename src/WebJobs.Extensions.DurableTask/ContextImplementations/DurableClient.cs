@@ -15,6 +15,7 @@ using DurableTask.Core.History;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.WebApiCompatShim;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using DTCore = DurableTask.Core;
@@ -327,6 +328,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             var guid = Guid.NewGuid(); // unique id for this request
             var instanceId = EntityId.GetSchedulerIdFromEntityId(entityId);
             var instance = new OrchestrationInstance() { InstanceId = instanceId };
+
+            using var signalEntityActivity = TraceHelper.StartActivityForCallingOrSignalingEntity(instanceId, entityId.EntityName, operationName, signalEntity: true, scheduledTimeUtc, Activity.Current?.Context);
+
             var request = new RequestMessage()
             {
                 ParentInstanceId = null, // means this was sent by a client
@@ -336,6 +340,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 Operation = operationName,
                 ScheduledTime = scheduledTimeUtc,
             };
+            if (signalEntityActivity != null)
+            {
+                request.ParentTraceContext = new DTCore.Tracing.DistributedTraceContext(signalEntityActivity.Id, signalEntityActivity.TraceStateString);
+            }
+
             if (operationInput != null)
             {
                 request.SetInput(operationInput, this.messageDataConverter);
@@ -345,7 +354,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             var eventName = scheduledTimeUtc.HasValue
                 ? EntityMessageEventNames.ScheduledRequestMessageEventName(request.GetAdjustedDeliveryTime(this.durabilityProvider))
                 : EntityMessageEventNames.RequestMessageEventName;
-            await durableClient.client.RaiseEventAsync(instance, eventName, jrequest);
+
+            // We have our own tracing logic for entities so we do not want DTFx to emit a trace activity in this case.
+            await durableClient.client.RaiseEventAsync(instance, eventName, jrequest, emitTraceActivity: false);
 
             this.traceHelper.FunctionScheduled(
                 hubName,

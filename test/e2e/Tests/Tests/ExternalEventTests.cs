@@ -26,7 +26,7 @@ public class ExternalEventTests
     [Fact]
     public async Task RaiseExternalEventTests()
     {
-        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("ExternalEventOrchestrator_HttpStart", "");
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=ExternalEventOrchestrator");
 
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         string instanceId = await DurableHelpers.ParseInstanceIdAsync(response);
@@ -44,8 +44,13 @@ public class ExternalEventTests
         string responseContent = await resendEventResponse.Content.ReadAsStringAsync();
 
         // Verify the returned exception contains the correct information. 
-        Assert.Contains("FailedPrecondition", responseContent);
-        Assert.Contains("The orchestration instance with the provided instance id is not running.", responseContent);
+        // In dotnet-isolated, this is the StatusCode of the RPC exception. 
+        // In other languages, it is the exception type
+        Assert.Contains(fixture.functionLanguageLocalizer.GetLocalizedStringValue("ExternalEvent.CompletedInstance.ErrorName"), responseContent);
+
+        // In dotnet-isolated, this is the deliberate error text from the RpcException
+        // In other languages, it is the symptom error
+        Assert.Contains(fixture.functionLanguageLocalizer.GetLocalizedStringValue("ExternalEvent.CompletedInstance.ErrorMessage"), responseContent);
     }
 
     // Test that sending an event to a not-exist InstanceId will throw an NotFoundRpc Exception.
@@ -57,7 +62,12 @@ public class ExternalEventTests
         string responseContent = await response.Content.ReadAsStringAsync();
 
         // Verify the returned exception contains the correct information. 
-        Assert.Contains("NotFound", responseContent);
-        Assert.Contains("No instance with ID 'instance-does-not-exist-test' was found", responseContent);
+        // In dotnet-isolated, this is the StatusCode of the RPC exception. 
+        // In other languages, it is the exception type
+        Assert.Contains(fixture.functionLanguageLocalizer.GetLocalizedStringValue("ExternalEvent.InvalidInstance.ErrorName"), responseContent);
+
+        // In dotnet-isolated, this is the deliberate error text from the RpcException
+        // In other languages, it is the symptom error
+        Assert.Contains(fixture.functionLanguageLocalizer.GetLocalizedStringValue("ExternalEvent.InvalidInstance.ErrorMessage"), responseContent);
     }
 }

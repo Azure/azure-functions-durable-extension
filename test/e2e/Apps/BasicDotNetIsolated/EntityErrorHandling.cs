@@ -3,62 +3,14 @@
 
 using System.Collections.Concurrent;
 using Microsoft.Azure.Functions.Worker;
-using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.DurableTask;
-using Microsoft.DurableTask.Client;
 using Microsoft.DurableTask.Entities;
-using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.Durable.Tests.E2E;
 
 public static class EntityErrorHandling
 {
     private static ConcurrentDictionary<string, int> retryCount = new ConcurrentDictionary<string, int>();
-
-    [Function("RethrowEntityException_HttpStart")]
-    public static async Task<HttpResponseData> ThrowEntityHttpStart(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestData req,
-        [DurableClient] DurableTaskClient client,
-        FunctionContext executionContext)
-    {
-        ILogger logger = executionContext.GetLogger("ThrowEntityException_HttpStart");
-
-        string instanceId = await client.ScheduleNewOrchestrationInstanceAsync(nameof(ThrowEntityOrchestration));
-
-        logger.LogInformation("Started orchestration with ID = '{instanceId}'.", instanceId);
-
-        return await client.CreateCheckStatusResponseAsync(req, instanceId);
-    }
-
-    [Function("CatchEntityException_HttpStart")]
-    public static async Task<HttpResponseData> CatchEntityHttpStart(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestData req,
-        [DurableClient] DurableTaskClient client,
-        FunctionContext executionContext)
-    {
-        ILogger logger = executionContext.GetLogger("CatchEntityException_HttpStart");
-
-        string instanceId = await client.ScheduleNewOrchestrationInstanceAsync(nameof(CatchEntityOrchestration));
-
-        logger.LogInformation("Started orchestration with ID = '{instanceId}'.", instanceId);
-
-        return await client.CreateCheckStatusResponseAsync(req, instanceId);
-    }
-
-    [Function("RetryEntityException_HttpStart")]
-    public static async Task<HttpResponseData> RetryEntityHttpStart(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestData req,
-        [DurableClient] DurableTaskClient client,
-        FunctionContext executionContext)
-    {
-        ILogger logger = executionContext.GetLogger("RetryEntityException_HttpStart");
-
-        string instanceId = await client.ScheduleNewOrchestrationInstanceAsync(nameof(RetryEntityOrchestration));
-
-        logger.LogInformation("Started orchestration with ID = '{instanceId}'.", instanceId);
-
-        return await client.CreateCheckStatusResponseAsync(req, instanceId);
-    }
 
     [Function(nameof(ThrowEntityOrchestration))]
     public static async Task<string> ThrowEntityOrchestration([OrchestrationTrigger] TaskOrchestrationContext context)
