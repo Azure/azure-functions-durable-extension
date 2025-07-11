@@ -26,16 +26,7 @@ def catch_activity_exception(context: df.DurableOrchestrationContext):
     except Exception as e:
         logging.error(f"Caught exception: {e}")
         return f"Caught exception: {e}"
-
-
-@bp.orchestration_trigger(context_name="context", orchestration="CatchActivityExceptionFailureDetails")
-def catch_activity_exception_failure_details(context: df.DurableOrchestrationContext):
-    try:
-        yield context.call_activity('raise_exception', context.instance_id)
-    except Exception as e:
-        logging.error(f"Caught exception: {e}")
-        return f"Caught exception: {e}"
-
+    
 
 @bp.orchestration_trigger(context_name="context", orchestration="RetryActivityFunction")
 def retry_activity_function(context: df.DurableOrchestrationContext):
