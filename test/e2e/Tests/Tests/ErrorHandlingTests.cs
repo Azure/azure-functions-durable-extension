@@ -61,6 +61,7 @@ public class ErrorHandlingTests
 
     [Fact]
     [Trait("PowerShell-MSSQL", "Skip")] // Bug: https://github.com/Azure/azure-functions-durable-powershell/issues/98
+    [Trait("PowerShell-DTS", "Skip")] // Same bug as above
     public async Task OrchestratorWithCaughtActivityException_ShouldSucceed()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=CatchActivityException");
