@@ -112,7 +112,7 @@ def activity_input_type_orchestrator(context: df.DurableOrchestrationContext):
 
 
 @bp.activity_trigger(input_name="input")
-def byte_array_input(input: typing.Any) -> str:
+def byte_array_input(input) -> str:
     if not isinstance(input, list) or not all(isinstance(x, int) for x in input):
         return f"Error: Expected byte[] but got {type(input).__name__}"
     # Convert list of integers back to bytes - this is superflous but if we decide to change activity input serialization 
@@ -124,7 +124,7 @@ def byte_array_input(input: typing.Any) -> str:
 
 
 @bp.activity_trigger(input_name="input")
-def single_byte_input(input: typing.Any) -> str:
+def single_byte_input(input) -> str:
     if not isinstance(input, int):
         return f"Error: Expected byte but got {type(input).__name__}"
     return f"Received byte: {input}"
@@ -143,14 +143,14 @@ def custom_class_input(input: MyCustomClass) -> str:
 
 
 @bp.activity_trigger(input_name="input")
-def int_array_input(input: typing.Any) -> str:
+def int_array_input(input) -> str:
     if not isinstance(input, list) or not all(isinstance(x, int) for x in input):
         return f"Error: Expected int[] but got {type(input).__name__}"
     return f"Received int[]: [{', '.join(str(x) for x in input)}]"
 
 
 @bp.activity_trigger(input_name="input")
-def string_input(input: typing.Any) -> str:
+def string_input(input) -> str:
     if not isinstance(input, str):
         return f"Error: Expected string but got {type(input).__name__}"
     return f"Received string: {input}"
