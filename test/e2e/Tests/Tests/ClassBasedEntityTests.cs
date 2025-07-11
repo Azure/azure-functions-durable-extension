@@ -26,8 +26,11 @@ public class ClassBasedEntityTests
     public async Task ClassBasedEntityTest()
     {
         // Start the orchestration that invokes the class-based entity
-        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartClassBasedEntityOrchestration");
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger(
+            functionName: "StartOrchestration",
+            queryString: "?orchestrationName=ClassBasedEntityOrchestration");
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
+
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
         await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", 30);
 
@@ -35,9 +38,6 @@ public class ClassBasedEntityTests
         // The entity state is a simple string that shows whether the injected services are available.
         DurableHelpers.OrchestrationStatusDetails orchestrationDetails =
             await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
-
-        this.output.WriteLine(
-            $"Orchestration {orchestrationDetails.RuntimeStatus}. Output = {orchestrationDetails.Output}");
 
         string expectedOutput = "IConfiguration: yes, MyInjectedService: yes, BlobContainerClient: yes, Number: 42";
         Assert.Equal(expectedOutput, orchestrationDetails.Output);
