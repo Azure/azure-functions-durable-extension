@@ -1,20 +1,22 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+     <TargetFramework>net6.0</TargetFramework>
     <LangVersion>8.0</LangVersion>
     <Version>0.1.0-preview</Version>
 	<NoWarn>NU1507</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
-	  <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask" />
+	  <ProjectReference Include="..\..\WebJobs.Extensions.DurableTask\WebJobs.Extensions.DurableTask.csproj" />
+	  <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" PrivateAssets="All">
     <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" PrivateAssets="All">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" PrivateAssets="all"/>
     <PackageReference Include="Microsoft.CodeAnalysis.Workspaces.Common" PrivateAssets="all" />
+    <PackageReference Include="System.Text.Encodings.Web" />
   </ItemGroup>
 
   <ItemGroup>
