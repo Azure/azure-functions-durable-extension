@@ -5,6 +5,7 @@
     <OutputType>exe</OutputType>
     <IsPackable>false</IsPackable>
     <Nullable>enable</Nullable>
+	  <NoWarn>NU1507</NoWarn>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 

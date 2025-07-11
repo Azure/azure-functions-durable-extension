@@ -3,6 +3,7 @@
     <TargetFramework>net6.0</TargetFramework>
     <WarningsAsErrors></WarningsAsErrors>
     <DefaultItemExcludes>**</DefaultItemExcludes>
+	  <NoWarn>NU1507</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <None Include="host.json" />

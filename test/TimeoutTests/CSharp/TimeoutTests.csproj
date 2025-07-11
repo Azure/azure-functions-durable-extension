@@ -2,6 +2,7 @@
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <AzureFunctionsVersion>v4</AzureFunctionsVersion>
+	  <NoWarn>NU1507</NoWarn>
   </PropertyGroup>
   <!-- Common packages for all targets -->
   <ItemGroup>

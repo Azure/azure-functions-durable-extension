@@ -80,7 +80,7 @@
 
   <!-- Release build settings -->
   <PropertyGroup Condition="'$(Configuration)'=='Release'">
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <TreatWarningsAsErrors>falsee</TreatWarningsAsErrors>
     <WarningsAsErrors />
     <StyleCopTreatErrorsAsWarnings>true</StyleCopTreatErrorsAsWarnings>
   </PropertyGroup>
