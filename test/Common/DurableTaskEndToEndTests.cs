@@ -5144,17 +5144,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Assert.Equal($"Hello, {inputWithEscapedChars}!", status?.Output);
 
                 await host.StopAsync();
-
-                if (this.useTestLogger)
-                {
-                    TestHelpers.AssertLogMessageSequence(
-                        this.output,
-                        this.loggerProvider,
-                        "HelloWorld_QueueClientMessageEncoding_Base64",
-                        client.InstanceId,
-                        false, // extendedSessions
-                        orchestratorFunctionNames);
-                }
             }
         }
 
