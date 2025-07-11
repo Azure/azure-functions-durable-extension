@@ -358,10 +358,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string runtimeLanguage = environmentVariableResolver.Resolve("FUNCTIONS_WORKER_RUNTIME");
             if (this.ExtendedSessionsEnabled &&
                 runtimeLanguage != null && // If we don't know from the environment variable, don't assume customer isn't .NET
-                !string.Equals(runtimeLanguage, "dotnet", StringComparison.OrdinalIgnoreCase))
+                !(string.Equals(runtimeLanguage, "dotnet", StringComparison.OrdinalIgnoreCase) || string.Equals(runtimeLanguage, "dotnet-isolated", StringComparison.OrdinalIgnoreCase)))
             {
                 throw new InvalidOperationException(
-                    "Durable Functions with extendedSessionsEnabled set to 'true' is only supported when using the in-process .NET worker. Please remove the setting or change it to 'false'." +
+                    "Durable Functions with extendedSessionsEnabled set to 'true' is only supported when using the in-process or isolated .NET worker. Please remove the setting or change it to 'false'." +
                     "See https://docs.microsoft.com/azure/azure-functions/durable/durable-functions-perf-and-scale#extended-sessions for more details.");
             }
 

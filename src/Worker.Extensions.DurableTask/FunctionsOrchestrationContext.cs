@@ -107,7 +107,7 @@ internal sealed partial class FunctionsOrchestrationContext : TaskOrchestrationC
             }
             else
             {
-                subOptions = new SubOrchestrationOptions(options ?? new TaskOptions())
+                subOptions = new SubOrchestrationOptions(options ?? new TaskOptions(retry: null))
                 {
                     Version = defaultVersion
                 };

@@ -22,13 +22,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private Exception? failure;
 
-        public RemoteOrchestratorContext(OrchestrationRuntimeState runtimeState, TaskOrchestrationEntityParameters? entityParameters, DurableTaskOptions options)
+        public RemoteOrchestratorContext(OrchestrationRuntimeState runtimeState, TaskOrchestrationEntityParameters? entityParameters, DurableTaskOptions options, bool extendedSession, bool includePastEvents)
         {
             this.runtimeState = runtimeState ?? throw new ArgumentNullException(nameof(runtimeState));
             this.EntityParameters = entityParameters;
             this.Configurations = new RemoteOrchestratorConfiguration
             {
                 HttpDefaultAsyncRequestSleepTimeMilliseconds = options.HttpSettings.DefaultAsyncRequestSleepTimeMilliseconds,
+                ExtendedSession = extendedSession,
+                IncludePastEvents = includePastEvents,
+                ExtendedSessionIdleTimeoutInSeconds = options.ExtendedSessionIdleTimeoutInSeconds,
             };
         }
 
