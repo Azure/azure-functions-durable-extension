@@ -341,7 +341,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 functionType: FunctionType.Entity,
                 isReplay: false);
 
-            var context = new RemoteEntityContext(batchRequest);
+            bool extendedSession = dispatchContext.GetProperty<bool>("extendedSession");
+            bool includeEntityState = dispatchContext.GetProperty<bool>("includeEntityState");
+
+            // The extendedSession property will be ignored if the middleware does not support extended sessions, but it is important to only set includeEntityState to false if extended sessions are enabled.
+            // Otherwise the entity state will not be added to the EntityBatchRequest by the EntityTriggerAttributeBindingProvider, even if the middleware does not support extended sessions and needs the entity's state.
+            var context = new RemoteEntityContext(batchRequest, this.Options, extendedSession, !this.Options.ExtendedSessionsEnabled || includeEntityState);
 
             var input = new TriggeredFunctionData
             {

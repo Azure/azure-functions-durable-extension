@@ -7,14 +7,17 @@ using System.Threading.Tasks;
 using Microsoft.Azure.Functions.Worker.Extensions.DurableTask.Exceptions;
 using Microsoft.Azure.Functions.Worker.Middleware;
 using Microsoft.DurableTask.Worker.Grpc;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
 
 /// <summary>
 /// A middleware to handle orchestration triggers.
 /// </summary>
-internal class DurableTaskFunctionsMiddleware : IFunctionsWorkerMiddleware
+internal class DurableTaskFunctionsMiddleware(IMemoryCache extendedSessions) : IFunctionsWorkerMiddleware
 {
+    private readonly IMemoryCache extendedSessions = extendedSessions;
+
     /// <inheritdoc />
     public Task Invoke(FunctionContext functionContext, FunctionExecutionDelegate next)
     {
@@ -25,7 +28,7 @@ internal class DurableTaskFunctionsMiddleware : IFunctionsWorkerMiddleware
 
         if (IsEntityTrigger(functionContext, out triggerBinding))
         {
-            return RunEntityAsync(functionContext, triggerBinding, next);
+            return this.RunEntityAsync(functionContext, triggerBinding, next);
         }
 
         if (IsActivityTrigger(functionContext, out triggerBinding))
@@ -85,7 +88,7 @@ internal class DurableTaskFunctionsMiddleware : IFunctionsWorkerMiddleware
         return false;
     }
 
-    static async Task RunEntityAsync(
+    async Task RunEntityAsync(
         FunctionContext context, BindingMetadata triggerBinding, FunctionExecutionDelegate next)
     {
         InputBindingData<object> triggerInputData = await context.BindInputAsync<object>(triggerBinding);
@@ -94,7 +97,7 @@ internal class DurableTaskFunctionsMiddleware : IFunctionsWorkerMiddleware
             throw new InvalidOperationException("Entity batch was either missing from the input or not a string value.");
         }
 
-        TaskEntityDispatcher dispatcher = new(encodedEntityBatch, context.InstanceServices);
+        TaskEntityDispatcher dispatcher = new(encodedEntityBatch, context.InstanceServices, this.extendedSessions);
         triggerInputData.Value = dispatcher;
 
         await next(context);

@@ -5,6 +5,7 @@ using System;
 using System.Threading.Tasks;
 using Microsoft.DurableTask.Entities;
 using Microsoft.DurableTask.Worker.Grpc;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Microsoft.Azure.Functions.Worker;
@@ -19,11 +20,13 @@ public sealed class TaskEntityDispatcher
 {
     private readonly string request;
     private readonly IServiceProvider services;
+    private readonly IMemoryCache entityStates;
 
-    internal TaskEntityDispatcher(string request, IServiceProvider services)
+    internal TaskEntityDispatcher(string request, IServiceProvider services, IMemoryCache entityStates)
     {
         this.request = request;
         this.services = services;
+        this.entityStates = entityStates;
     }
 
     internal string Result { get; private set; } = string.Empty;
@@ -40,7 +43,7 @@ public sealed class TaskEntityDispatcher
             throw new ArgumentNullException(nameof(entity));
         }
 
-        this.Result = await GrpcEntityRunner.LoadAndRunAsync(this.request, entity, this.services);
+        this.Result = await GrpcEntityRunner.LoadAndRunAsync(this.request, entity, this.entityStates, this.services);
     }
 
     /// <summary>

@@ -5,19 +5,29 @@ using System;
 using System.Collections.Generic;
 using DurableTask.Core.Entities;
 using DurableTask.Core.Entities.OperationFormat;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     internal class RemoteEntityContext
     {
-        public RemoteEntityContext(EntityBatchRequest batchRequest)
+        public RemoteEntityContext(EntityBatchRequest batchRequest, DurableTaskOptions options, bool extendedSession, bool includeEntityState)
         {
             this.Request = batchRequest;
+            this.Configurations = new RemoteEntityConfiguration
+            {
+                ExtendedSession = extendedSession,
+                IncludeEntityState = includeEntityState,
+                ExtendedSessionIdleTimeoutInSeconds = options.ExtendedSessionIdleTimeoutInSeconds,
+            };
         }
 
         [JsonProperty("request")]
         internal EntityBatchRequest Request { get; private set; }
+
+        [JsonProperty("configurations")]
+        public RemoteEntityConfiguration Configurations { get; private set; }
 
         [JsonIgnore]
         internal EntityBatchResult? Result { get; set; }

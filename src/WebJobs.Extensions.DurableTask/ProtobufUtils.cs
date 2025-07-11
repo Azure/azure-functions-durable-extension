@@ -463,7 +463,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="entityBatchRequest">The operation request to convert.</param>
         /// <returns>The converted operation request.</returns>
         [return: NotNullIfNotNull("entityBatchRequest")]
-        internal static P.EntityBatchRequest? ToEntityBatchRequest(this EntityBatchRequest? entityBatchRequest)
+        internal static P.EntityBatchRequest? ToEntityBatchRequest(this EntityBatchRequest? entityBatchRequest, RemoteEntityConfiguration configurations)
         {
             if (entityBatchRequest == null)
             {
@@ -473,8 +473,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             var batchRequest = new P.EntityBatchRequest()
             {
                 InstanceId = entityBatchRequest.InstanceId,
-                EntityState = entityBatchRequest.EntityState,
+                EntityState = configurations.IncludeEntityState ? entityBatchRequest.EntityState : null,
             };
+
+            batchRequest.Properties.Add(ProtobufUtils.ConvertPocoToProtoMap(configurations));
 
             foreach (var operation in entityBatchRequest.Operations ?? Enumerable.Empty<OperationRequest>())
             {
