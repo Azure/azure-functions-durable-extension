@@ -78,7 +78,7 @@ jobs:
 
       - name: Run E2E tests (Python)
         working-directory: test/e2e/Tests
-        run: dotnet test --filter 'AzureStorage!=Skip&Python!=Skip'
+        run: dotnet test --filter 'AzureStorage!=Skip&Python!=Skip' --logger "console;verbosity=detailed"
 
   e2e-azurestorage-windows:
     runs-on: windows-latest
