@@ -5,12 +5,10 @@
 
 import logging
 from datetime import datetime
-from typing import Any, List, Optional
+from typing import Optional
 
 import azure.functions as func
 import azure.durable_functions as df
-
-from azure.durable_functions.models import PurgeHistoryResult
 
 bp = df.Blueprint()
 
@@ -26,26 +24,6 @@ async def purge_history(req: func.HttpRequest, client: df.DurableOrchestrationCl
             purge_start_time = datetime.fromisoformat(req.params["purgeStartTime"])
         if req.params.get("purgeEndTime"):
             purge_end_time = datetime.fromisoformat(req.params["purgeEndTime"])
-
-        logging.info(f"Purge start time: {purge_start_time}, Purge end time: {purge_end_time}")
-
-        def _parse_purge_instance_history_response(
-                response: List[Any]) -> PurgeHistoryResult:
-            switch_statement = {
-                200: lambda: PurgeHistoryResult.from_json(response[1]),  # instance completed
-                404: lambda: PurgeHistoryResult(instancesDeleted=0),  # instance not found
-            }
-
-            switch_result = switch_statement.get(
-                response[0],
-                lambda: f"The operation failed with an unexpected status code {response[0]} error: {response[1]}")
-            result = switch_result()
-            if isinstance(result, PurgeHistoryResult):
-                return result
-            else:
-                raise Exception(result)
-            
-        client._parse_purge_instance_history_response = _parse_purge_instance_history_response
 
         # Purge orchestration history
         result = await client.purge_instance_history_by(
