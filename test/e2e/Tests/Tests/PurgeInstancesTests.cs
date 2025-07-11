@@ -21,7 +21,9 @@ public class PurgeInstancesTests
     [Trait("PowerShell", "Skip")] // Instance purging not supported in PowerShell
     public async Task PurgeOrchestrationHistory_StartAndEnd_Succeeds()
     {
-        DateTime purgeStartTime = DateTime.MinValue;
+        // Previously this test used DateTime.MinValue - however, in Python on Linux specifically,
+        // there is an issue where 0000-00-01 is not a valid date and the API throws. Should probably fix this (?)
+        DateTime purgeStartTime = DateTime.UtcNow - TimeSpan.FromDays(365);
         DateTime purgeEndTime = DateTime.UtcNow;
         string queryParams = $"?purgeStartTime={purgeStartTime:o}&purgeEndTime={purgeEndTime:o}";
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("PurgeOrchestrationHistory", queryParams);
@@ -34,7 +36,9 @@ public class PurgeInstancesTests
     [Trait("PowerShell", "Skip")] // Instance purging not supported in PowerShell
     public async Task PurgeOrchestrationHistory_Start_Succeeds()
     {
-        DateTime purgeStartTime = DateTime.MinValue;
+        // Previously this test used DateTime.MinValue - however, in Python on Linux specifically,
+        // there is an issue where 0000-00-01 is not a valid date and the API throws. Should probably fix this (?)
+        DateTime purgeStartTime = DateTime.UtcNow - TimeSpan.FromDays(365);
         DateTime purgeEndTime = DateTime.UtcNow;
         string queryParams = $"?purgeStartTime={purgeStartTime:o}";
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("PurgeOrchestrationHistory", queryParams);
@@ -49,7 +53,6 @@ public class PurgeInstancesTests
     [Trait("Python", "Skip")] // Bug: purging without start time in Python: https://github.com/Azure/azure-functions-durable-python/issues/560
     public async Task PurgeOrchestrationHistory_End_Succeeds()
     {
-        DateTime purgeStartTime = DateTime.MinValue;
         DateTime purgeEndTime = DateTime.UtcNow;
         string queryParams = $"?purgeEndTime={purgeEndTime:o}";
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("PurgeOrchestrationHistory", queryParams);
@@ -64,8 +67,6 @@ public class PurgeInstancesTests
     [Trait("Python", "Skip")] // Bug: purging without start time in Python: https://github.com/Azure/azure-functions-durable-python/issues/560
     public async Task PurgeOrchestrationHistory_NoBoundaries_Succeeds()
     {
-        DateTime purgeStartTime = DateTime.MinValue;
-        DateTime purgeEndTime = DateTime.UtcNow;
         string queryParams = $"";
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("PurgeOrchestrationHistory", queryParams);
         string actualMessage = await response.Content.ReadAsStringAsync();
