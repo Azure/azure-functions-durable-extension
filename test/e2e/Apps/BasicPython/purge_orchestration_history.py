@@ -27,6 +27,7 @@ async def purge_history(req: func.HttpRequest, client: df.DurableOrchestrationCl
         if req.params.get("purgeEndTime"):
             purge_end_time = datetime.fromisoformat(req.params["purgeEndTime"])
 
+        logging.info(f"Purge start time: {purge_start_time}, Purge end time: {purge_end_time}")
 
         def _parse_purge_instance_history_response(
                 response: List[Any]) -> PurgeHistoryResult:
