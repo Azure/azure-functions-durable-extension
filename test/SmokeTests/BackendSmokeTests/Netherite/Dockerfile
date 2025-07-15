@@ -10,7 +10,7 @@ RUN cd /root/test/SmokeTests/BackendSmokeTests/Netherite && \
     dotnet publish -c Release --output /home/site/wwwroot
 
 # Deploy the app
-FROM mcr.microsoft.com/azure-functions/dotnet:4
+FROM mcr.microsoft.com/azure-functions/dotnet:4-dotnet8.0
 ENV AzureWebJobsScriptRoot=/home/site/wwwroot \
     AzureFunctionsJobHost__Logging__Console__IsEnabled=true
 COPY --from=build-env ["/home/site/wwwroot", "/home/site/wwwroot"]

@@ -10,23 +10,23 @@ using Xunit.Abstractions;
 
 namespace Microsoft.Azure.Durable.Tests.DotnetIsolatedE2E;
 
-public class FunctionAppProcess
+internal class FunctionAppProcess
 {
     private bool disposed;
     private Process? funcProcess;
     internal string? appName;
-    internal string e2eTestLanguageEnvVarValue;
+    internal LanguageType testLanguage;
 
     private JobObjectRegistry? jobObjectRegistry;
     private ILogger logger;
     private TestLoggerProvider TestLogs;
 
-    public FunctionAppProcess(ILogger logger, TestLoggerProvider TestLogs, string e2eTestLanguageEnvVarValue)
+    public FunctionAppProcess(ILogger logger, TestLoggerProvider TestLogs, LanguageType testLanguage)
     {
         this.logger = logger;
         this.TestLogs = TestLogs;
         this.appName = Environment.GetEnvironmentVariable("TEST_APP_NAME") ?? "BasicDotNetIsolated";
-        this.e2eTestLanguageEnvVarValue = e2eTestLanguageEnvVarValue;
+        this.testLanguage = testLanguage;
     }
 
     public async Task InitializeAsync()
@@ -47,21 +47,23 @@ public class FunctionAppProcess
             string binDir = @$"test/e2e/Apps/{this.appName}/bin";
 
             // Intentional bad logic - this will be updated to a switch case against an enum value in a future PR
-            if (string.Equals(this.e2eTestLanguageEnvVarValue.ToLower(), "powershell", StringComparison.OrdinalIgnoreCase))
+            switch (this.testLanguage)
             {
-                e2eAppPath = Path.Combine(rootDir, @$"test/e2e/Apps/{this.appName}");
-            }
-            else
-            {
-                string e2eAppBinPath = Path.Combine(rootDir, @$"test/e2e/Apps/{this.appName}/bin");
-                string? e2eHostJson = Directory.GetFiles(e2eAppBinPath, "host.json", SearchOption.AllDirectories).FirstOrDefault();
+                case LanguageType.PowerShell:
+                    e2eAppPath = Path.Combine(rootDir, @$"test/e2e/Apps/{this.appName}");
+                    break;
+                case LanguageType.DotnetIsolated:
+                default:
+                    string e2eAppBinPath = Path.Combine(rootDir, @$"test/e2e/Apps/{this.appName}/bin");
+                    string? e2eHostJson = Directory.GetFiles(e2eAppBinPath, "host.json", SearchOption.AllDirectories).FirstOrDefault();
 
-                if (e2eHostJson == null)
-                {
-                    throw new InvalidOperationException($"Could not find a built worker app under '{e2eAppBinPath}'");
-                }
+                    if (e2eHostJson == null)
+                    {
+                        throw new InvalidOperationException($"Could not find a built worker app under '{e2eAppBinPath}'");
+                    }
 
-                e2eAppPath = Path.GetDirectoryName(e2eHostJson);
+                    e2eAppPath = Path.GetDirectoryName(e2eHostJson);
+                    break;
             }
 
             if (e2eAppPath == null)
@@ -120,14 +122,6 @@ public class FunctionAppProcess
                 }
             }, userMessageCallback: () => string.Join(System.Environment.NewLine, TestLogs.CoreToolsLogs));
         }
-
-        //TODO: This line would launch the jit debugger for func - still some issues here, however. 
-        //      ISSUE 1: Windows only implementation
-        //      ISSUE 2: For some reason, the loaded symbols for the WebJobs extension 
-        //          a) don't load automatically
-        //          b) don't match the version from the local repo
-        //      ISSUE 3: See the worker attach comments above
-        //Process.Start("cmd.exe", "/C vsjitdebugger.exe -p " + _funcProcess.Id.ToString());
     }
 
     public Task DisposeAsync()

@@ -52,7 +52,7 @@ public class HttpEndToEndTests
     [Theory]
     [InlineData("HelloCities_HttpStart_Scheduled", 5, HttpStatusCode.Accepted)]
     [InlineData("HelloCities_HttpStart_Scheduled", -5, HttpStatusCode.Accepted)]
-    [Trait("PowerShell", "Skip")] // Test not yet implemented in PowerShell
+    [Trait("PowerShell", "Skip")] // Scheduled orchestrations not implemented in PowerShell
     public async Task ScheduledStartTests(string functionName, int startDelaySeconds, HttpStatusCode expectedStatusCode)
     {
         var testStartTime = DateTime.UtcNow;
