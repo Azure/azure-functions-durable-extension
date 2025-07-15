@@ -40,10 +40,10 @@ jobs:
       - task: DotNetCoreCLI@2
         displayName: 'dotnet restore'
         inputs:
-            command: restore
+            command: custom
+            custom: restore
             projects: '**/**/*.csproj'
-            feedsToUse: config
-            nugetConfigPath: 'nuget.config'
+            arguments: '-v m'
     
       # Build durable-extension
       - task: VSBuild@1
