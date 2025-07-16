@@ -11,8 +11,12 @@ var host = new HostBuilder()
     .ConfigureServices(services => {
         services.AddApplicationInsightsTelemetryWorkerService();
         services.ConfigureFunctionsApplicationInsights();
+
+        // Register a custom service for testing dependency injection in entities
+        services.AddSingleton<MyInjectedService>();
     })
     .Build();
+
 
 // Bool.parse
 if (Environment.GetEnvironmentVariable("DURABLE_ATTACH_DEBUGGER") == "True") {
@@ -20,3 +24,6 @@ if (Environment.GetEnvironmentVariable("DURABLE_ATTACH_DEBUGGER") == "True") {
 }
 
 host.Run();
+
+// This empty class is used to demonstrate dependency injection in entities.
+internal class MyInjectedService { }
