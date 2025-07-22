@@ -11,10 +11,10 @@ internal class NodeTestLanguageLocalizer : ITestLanguageLocalizer
         // Bug: https://github.com/Azure/azure-functions-durable-js/issues/642
         { "CaughtEntityException.ErrorMessage", "Error: [object Object]" },
         { "RethrownEntityException.ErrorMessage", "Orchestrator function 'ThrowEntityOrchestration' failed:" },
-        { "ExternalEvent.CompletedInstance.ErrorName", "Exception" },
-        { "ExternalEvent.CompletedInstance.ErrorMessage", "Instance with ID {0} is gone: either completed or failed" },
-        { "ExternalEvent.InvalidInstance.ErrorName", "Exception" },
-        { "ExternalEvent.InvalidInstance.ErrorMessage", "No instance with ID {0} found" },
+        { "ExternalEvent.CompletedInstance.ErrorName", "N/A" },
+        { "ExternalEvent.CompletedInstance.ErrorMessage", "N/A" },
+        { "ExternalEvent.InvalidInstance.ErrorName", "Error" },
+        { "ExternalEvent.InvalidInstance.ErrorMessage", "No instance with ID '{0}' found" },
         { "SuspendCompletedInstance.FailureMessage", "" }, // No message as Python's unique behavior causes this to succeed
         { "ResumeCompletedInstance.FailureMessage", "" },
         { "SuspendSuspendedInstance.FailureMessage", "Error: The operation failed with an unexpected status code: 500. Details: {{\"Message\":\"Something went wrong while processing your request" },

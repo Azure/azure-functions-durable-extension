@@ -13,7 +13,7 @@ const SendExternalEvent_HttpStart: HttpHandler = async (request: HttpRequest, co
     const client = df.getClient(context);
     try {
         let body = await request.json().catch(() => ({}));
-        let instanceId = await body["instanceId"] || request.query.get("instanceId") || request.params["instanceId"];
+        let instanceId = body.toString() || request.query.get("instanceId") || request.params["instanceId"];
         if (typeof instanceId === "object" && instanceId !== null) {
             instanceId = instanceId;
         }
