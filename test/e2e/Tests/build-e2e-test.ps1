@@ -139,20 +139,16 @@ function InstallExtensionAndBuildTestApp($testAppDir) {
         }
 
         if (!(Test-Path ".\app.csproj")) {
-          if (!(Test-Path ".\extensions.csproj")) {
-            Write-Host "Creating extensions.csproj file"
-
-            .(Join-Path $FUNC_CLI_DIRECTORY "func") extensions install --package Microsoft.Azure.Functions.Worker.Extensions.DurableTask --version $webJobsExtensionVersion
-
-            # Fix for central package management being enabled in the project root
-            $csprojContent = Get-Content -Path ".\extensions.csproj"
-            $csprojContent = $csprojContent -replace '</TargetFramework>', "</TargetFramework>`n    <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>"
-            Set-Content -Path ".\extensions.csproj" -Value $csprojContent
-          }
-
           Write-Host "Updating extensions.csproj to reference WebJobs extension version $webJobsExtensionVersion"
           
           dotnet add 'extensions.csproj' package 'Microsoft.Azure.WebJobs.Extensions.DurableTask' --version $webJobsExtensionVersion --source ".\packages" --no-restore
+
+          Write-Host "Syncing extensions"
+          .(Join-Path $FUNC_CLI_DIRECTORY "func") extensions sync
+        }
+
+        if (Test-Path ".\requirements.txt") {
+          python -m pip install -r requirements.txt
         }
       }
     }
@@ -227,12 +223,12 @@ function StartMSSQLContainer($mssqlPwd) {
 }
 
 function StartDTSContainer() {
-  Write-Host "Pulling down the mcr.microsoft.com/dts/dts-emulator:v0.0.4 image..."
-  docker pull mcr.microsoft.com/dts/dts-emulator:v0.0.4
+  Write-Host "Pulling down the mcr.microsoft.com/dts/dts-emulator:latest image..."
+  docker pull mcr.microsoft.com/dts/dts-emulator:latest
 
   # Start the DTS Server docker container with the specified edition
   Write-Host "Starting DTS docker container on port 8080" -ForegroundColor DarkYellow
-  docker run -i -p 8080:8080 -p 8082:8082 -d mcr.microsoft.com/dts/dts-emulator:v0.0.4
+  docker run -i -p 8080:8080 -p 8082:8082 -d mcr.microsoft.com/dts/dts-emulator:latest
 
   if ($LASTEXITCODE -ne 0) {
       exit $LASTEXITCODE

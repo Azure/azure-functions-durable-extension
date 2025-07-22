@@ -54,7 +54,14 @@ public class TestLoggerProvider : ILoggerProvider, ILogger
         string formattedString = formatter(state, exception);
         this.messageSink.OnMessage(new DiagnosticMessage(formattedString));
         this.logs.Add(formattedString);
-        try { this.currentTestOutput?.WriteLine(formattedString); } catch { }
+        if (this.currentTestOutput is null)
+        {
+            Console.WriteLine(formattedString);
+        }
+        else
+        {
+            try { this.currentTestOutput.WriteLine(formattedString); } catch { Console.WriteLine(formattedString); }
+        }
     }
 
     private class DisposableOutput : IDisposable

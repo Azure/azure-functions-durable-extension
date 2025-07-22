@@ -50,14 +50,16 @@ public class ExternalEventTests
 
         // In dotnet-isolated, this is the deliberate error text from the RpcException
         // In other languages, it is the symptom error
-        Assert.Contains(fixture.functionLanguageLocalizer.GetLocalizedStringValue("ExternalEvent.CompletedInstance.ErrorMessage"), responseContent);
+        Assert.Contains(fixture.functionLanguageLocalizer.GetLocalizedStringValue("ExternalEvent.CompletedInstance.ErrorMessage", instanceId), responseContent);
     }
 
     // Test that sending an event to a not-exist InstanceId will throw an NotFoundRpc Exception.
     [Fact]
     public async Task NotFoundInstanceTest()
     {
-        string jsonContent = JsonSerializer.Serialize("instance-does-not-exist-test");
+        const string testInstanceId = "instance-does-not-exist-test";
+
+        string jsonContent = JsonSerializer.Serialize(testInstanceId);
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTriggerWithBody("SendExternalEvent_HttpStart", jsonContent, "application/json");
         string responseContent = await response.Content.ReadAsStringAsync();
 
@@ -68,6 +70,6 @@ public class ExternalEventTests
 
         // In dotnet-isolated, this is the deliberate error text from the RpcException
         // In other languages, it is the symptom error
-        Assert.Contains(fixture.functionLanguageLocalizer.GetLocalizedStringValue("ExternalEvent.InvalidInstance.ErrorMessage"), responseContent);
+        Assert.Contains(fixture.functionLanguageLocalizer.GetLocalizedStringValue("ExternalEvent.InvalidInstance.ErrorMessage", testInstanceId), responseContent);
     }
 }

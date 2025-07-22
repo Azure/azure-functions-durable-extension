@@ -3,6 +3,8 @@
 # Licensed under the MIT license. See LICENSE file in the project root for full license information.
 #
 
+using namespace System.Net
+
 param($Request, $TriggerMetadata)
 
 $instanceId = $Request.Query.instanceId

@@ -5,15 +5,17 @@
       "samplingSettings": {
         "isEnabled": true,
         "excludedTypes": "Request"
-      }
+      },
+      "enableLiveMetricsFilters": true
     }
   },
   "extensions": {
     "durableTask": {
-      "hubName": "PowerShellE2ETaskHub"
+      "hubName": "PythonE2ETaskHub",
+      "tracing": {
+        "DistributedTracingEnabled": true,
+        "Version": "V2"
+      }
     }
-  },
-  "managedDependency": {
-    "enabled": true
   }
 }

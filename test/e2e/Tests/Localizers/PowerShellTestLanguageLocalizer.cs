@@ -8,6 +8,8 @@ internal class PowerShellTestLanguageLocalizer : ITestLanguageLocalizer
     {
         { "CaughtActivityException.ErrorMessage", "One or more errors occurred. (Task 'RaiseException' (#0) failed with an unhandled exception:" },
         { "RethrownActivityException.ErrorMessage", "Orchestrator function 'RethrowActivityException' failed: " },
+        { "CaughtEntityException.ErrorMessage", "Test not implemented!" },
+        { "RethrownEntityException.ErrorMessage", "Test not implemented!" },
         { "ExternalEvent.CompletedInstance.ErrorName", "HttpResponseException" },
         { "ExternalEvent.CompletedInstance.ErrorMessage", "Response status code does not indicate success: 410 (Gone)." },
         { "ExternalEvent.InvalidInstance.ErrorName", "HttpResponseException" },

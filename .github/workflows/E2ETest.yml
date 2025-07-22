@@ -36,6 +36,11 @@ jobs:
         with:
           node-version: '18.x' # Azurite requires at least Node 18
 
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.11
+
       - name: Setup E2E tests
         shell: pwsh
         run: |
@@ -48,22 +53,32 @@ jobs:
       - name: Setup Environment for dotnet
         shell: pwsh
         run: |
-          echo "E2E_TEST_FUNCTIONS_LANGUAGE=dotnet-isolated" >> $GITHUB_ENV
-          echo "TEST_APP_NAME=BasicDotnetIsolated" >> $GITHUB_ENV
+          Add-Content -Path $env:GITHUB_ENV -Value "E2E_TEST_FUNCTIONS_LANGUAGE=dotnet-isolated"
+          Add-Content -Path $env:GITHUB_ENV -Value "TEST_APP_NAME=BasicDotNetIsolated"
 
       - name: Run E2E tests (dotnet-isolated)
         working-directory: test/e2e/Tests
-        run: dotnet test --filter 'AzureStorage!=Skip&Dotnet!=Skip'
+        run: dotnet test --filter 'AzureStorage!=Skip&Dotnet!=Skip&Dotnet-AzureStorage!=Skip'
 
       - name: Setup Environment for PowerShell
         shell: pwsh
         run: |
-          echo "E2E_TEST_FUNCTIONS_LANGUAGE=powershell" >> $GITHUB_ENV
-          echo "TEST_APP_NAME=BasicPowerShell" >> $GITHUB_ENV
+          Add-Content -Path $env:GITHUB_ENV -Value "E2E_TEST_FUNCTIONS_LANGUAGE=powershell"
+          Add-Content -Path $env:GITHUB_ENV -Value "TEST_APP_NAME=BasicPowerShell"
 
       - name: Run E2E tests (PowerShell)
         working-directory: test/e2e/Tests
-        run: dotnet test --filter 'AzureStorage!=Skip&PowerShell!=Skip'
+        run: dotnet test --filter 'AzureStorage!=Skip&PowerShell!=Skip&PowerShell-AzureStorage!=Skip'
+
+      - name: Setup Environment for Python
+        shell: pwsh
+        run: |
+          Add-Content -Path $env:GITHUB_ENV -Value "E2E_TEST_FUNCTIONS_LANGUAGE=python"
+          Add-Content -Path $env:GITHUB_ENV -Value "TEST_APP_NAME=BasicPython"
+
+      - name: Run E2E tests (Python)
+        working-directory: test/e2e/Tests
+        run: dotnet test --filter 'AzureStorage!=Skip&Python!=Skip&Python-AzureStorage!=Skip'
 
   e2e-azurestorage-windows:
     runs-on: windows-latest
@@ -86,6 +101,11 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '18.x' # Azurite requires at least Node 18
+          
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.11
 
       - name: Setup E2E tests
         shell: pwsh
@@ -99,22 +119,32 @@ jobs:
       - name: Setup Environment for dotnet
         shell: pwsh
         run: |
-          echo "E2E_TEST_FUNCTIONS_LANGUAGE=dotnet-isolated" >> $GITHUB_ENV
-          echo "TEST_APP_NAME=BasicDotnetIsolated" >> $GITHUB_ENV
+          Add-Content -Path $env:GITHUB_ENV -Value "E2E_TEST_FUNCTIONS_LANGUAGE=dotnet-isolated"
+          Add-Content -Path $env:GITHUB_ENV -Value "TEST_APP_NAME=BasicDotNetIsolated"
 
       - name: Run E2E tests (dotnet-isolated)
         working-directory: test/e2e/Tests
-        run: dotnet test --filter 'AzureStorage!=Skip&Dotnet!=Skip'
+        run: dotnet test --filter 'AzureStorage!=Skip&Dotnet!=Skip&Dotnet-AzureStorage!=Skip'
 
       - name: Setup Environment for PowerShell
         shell: pwsh
         run: |
-          echo "E2E_TEST_FUNCTIONS_LANGUAGE=powershell" >> $GITHUB_ENV
-          echo "TEST_APP_NAME=BasicPowerShell" >> $GITHUB_ENV
+          Add-Content -Path $env:GITHUB_ENV -Value "E2E_TEST_FUNCTIONS_LANGUAGE=powershell"
+          Add-Content -Path $env:GITHUB_ENV -Value "TEST_APP_NAME=BasicPowerShell"
 
       - name: Run E2E tests (PowerShell)
         working-directory: test/e2e/Tests
-        run: dotnet test --filter 'AzureStorage!=Skip&PowerShell!=Skip'
+        run: dotnet test --filter 'AzureStorage!=Skip&PowerShell!=Skip&PowerShell-AzureStorage!=Skip'
+
+      - name: Setup Environment for Python
+        shell: pwsh
+        run: |
+          Add-Content -Path $env:GITHUB_ENV -Value "E2E_TEST_FUNCTIONS_LANGUAGE=python"
+          Add-Content -Path $env:GITHUB_ENV -Value "TEST_APP_NAME=BasicPython"
+
+      - name: Run E2E tests (Python)
+        working-directory: test/e2e/Tests
+        run: dotnet test --filter 'AzureStorage!=Skip&Python!=Skip&Python-AzureStorage!=Skip'
 
   e2e-mssql:
     runs-on: ubuntu-latest
@@ -133,6 +163,16 @@ jobs:
         with:
           dotnet-version: 8.0.x
 
+      - name: Set up Node.js (needed for Azurite)
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18.x' # Azurite requires at least Node 18
+          
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.11
+
       - name: Initialize Environment Variables
         run: | 
           echo "MSSQL_SA_PASSWORD=TEST12_$(echo $RANDOM)!" >> $GITHUB_ENV
@@ -149,22 +189,32 @@ jobs:
       - name: Setup Environment for dotnet
         shell: pwsh
         run: |
-          echo "E2E_TEST_FUNCTIONS_LANGUAGE=dotnet-isolated" >> $GITHUB_ENV
-          echo "TEST_APP_NAME=BasicDotnetIsolated" >> $GITHUB_ENV
+          Add-Content -Path $env:GITHUB_ENV -Value "E2E_TEST_FUNCTIONS_LANGUAGE=dotnet-isolated"
+          Add-Content -Path $env:GITHUB_ENV -Value "TEST_APP_NAME=BasicDotNetIsolated"
 
       - name: Run E2E tests (dotnet-isolated)
         working-directory: test/e2e/Tests
-        run: dotnet test --filter 'MSSQL!=Skip&Dotnet!=Skip'
+        run: dotnet test --filter 'MSSQL!=Skip&Dotnet!=Skip&Dotnet-MSSQL!=Skip'
 
       - name: Setup Environment for PowerShell
         shell: pwsh
         run: |
-          echo "E2E_TEST_FUNCTIONS_LANGUAGE=powershell" >> $GITHUB_ENV
-          echo "TEST_APP_NAME=BasicPowerShell" >> $GITHUB_ENV
+          Add-Content -Path $env:GITHUB_ENV -Value "E2E_TEST_FUNCTIONS_LANGUAGE=powershell"
+          Add-Content -Path $env:GITHUB_ENV -Value "TEST_APP_NAME=BasicPowerShell"
 
       - name: Run E2E tests (PowerShell)
         working-directory: test/e2e/Tests
-        run: dotnet test --filter 'MSSQL!=Skip&PowerShell!=Skip'
+        run: dotnet test --filter 'MSSQL!=Skip&PowerShell!=Skip&PowerShell-MSSQL!=Skip'
+
+      - name: Setup Environment for Python
+        shell: pwsh
+        run: |
+          Add-Content -Path $env:GITHUB_ENV -Value "E2E_TEST_FUNCTIONS_LANGUAGE=python"
+          Add-Content -Path $env:GITHUB_ENV -Value "TEST_APP_NAME=BasicPython"
+
+      - name: Run E2E tests (Python)
+        working-directory: test/e2e/Tests
+        run: dotnet test --filter 'MSSQL!=Skip&Python!=Skip&Python-MSSQL!=Skip'
 
   e2e-dts:
     runs-on: ubuntu-latest
@@ -183,6 +233,16 @@ jobs:
         with:
           dotnet-version: 8.0.x
 
+      - name: Set up Node.js (needed for Azurite)
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18.x' # Azurite requires at least Node 18
+          
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.11
+
       - name: Setup E2E tests
         shell: pwsh
         run: |
@@ -195,19 +255,29 @@ jobs:
       - name: Setup Environment for dotnet
         shell: pwsh
         run: |
-          echo "E2E_TEST_FUNCTIONS_LANGUAGE=dotnet-isolated" >> $GITHUB_ENV
-          echo "TEST_APP_NAME=BasicDotnetIsolated" >> $GITHUB_ENV
+          Add-Content -Path $env:GITHUB_ENV -Value "E2E_TEST_FUNCTIONS_LANGUAGE=dotnet-isolated"
+          Add-Content -Path $env:GITHUB_ENV -Value "TEST_APP_NAME=BasicDotNetIsolated"
 
       - name: Run E2E tests (dotnet-isolated)
         working-directory: test/e2e/Tests
-        run: dotnet test --filter 'DTS!=Skip&Dotnet!=Skip'
+        run: dotnet test --filter 'DTS!=Skip&Dotnet!=Skip&Dotnet-DTS!=Skip'
 
       - name: Setup Environment for PowerShell
         shell: pwsh
         run: |
-          echo "E2E_TEST_FUNCTIONS_LANGUAGE=powershell" >> $GITHUB_ENV
-          echo "TEST_APP_NAME=BasicPowerShell" >> $GITHUB_ENV
+          Add-Content -Path $env:GITHUB_ENV -Value "E2E_TEST_FUNCTIONS_LANGUAGE=powershell"
+          Add-Content -Path $env:GITHUB_ENV -Value "TEST_APP_NAME=BasicPowerShell"
 
       - name: Run E2E tests (PowerShell)
         working-directory: test/e2e/Tests
-        run: dotnet test --filter 'DTS!=Skip&PowerShell!=Skip'
+        run: dotnet test --filter 'DTS!=Skip&PowerShell!=Skip&PowerShell-DTS!=Skip'
+
+      - name: Setup Environment for Python
+        shell: pwsh
+        run: |
+          Add-Content -Path $env:GITHUB_ENV -Value "E2E_TEST_FUNCTIONS_LANGUAGE=python"
+          Add-Content -Path $env:GITHUB_ENV -Value "TEST_APP_NAME=BasicPython"
+
+      - name: Run E2E tests (Python)
+        working-directory: test/e2e/Tests
+        run: dotnet test --filter 'DTS!=Skip&Python!=Skip&Python-DTS!=Skip'
