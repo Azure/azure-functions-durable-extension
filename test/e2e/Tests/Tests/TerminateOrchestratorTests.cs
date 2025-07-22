@@ -79,9 +79,9 @@ public class TerminateOrchestratorTests
 
         using HttpResponseMessage terminateAgainResponse = await HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={instanceId}");
         
-        if (languageType == LanguageType.Python)
+        if (languageType == LanguageType.Python || languageType == LanguageType.Node)
         {
-            // In python specifically, terminating a completed, failed, or terminated instance swallows the failure
+            // In python and Node, terminating a completed, failed, or terminated instance swallows the failure
             // and acts as if the instance was terminated successfully. This might be a consistency issue, but is it
             // a bug?
             // see https://github.com/Azure/azure-functions-durable-python/blob/97a0891f80ccb4cb357e9f39b79a4eb4326f6d98/azure/durable_functions/models/DurableOrchestrationClient.py#L444
@@ -101,9 +101,9 @@ public class TerminateOrchestratorTests
         // Give some time for Core Tools to write logs out
         Thread.Sleep(500);
 
-        // PowerShell and Python both use the HTTP terminate API, which returns 410 (Gone) and does not log
+        // PowerShell, Python, Node all use the HTTP terminate API, which returns 410 (Gone) and does not log
         // when the instance is completed
-        if (languageType != LanguageType.PowerShell && languageType != LanguageType.Python)
+        if (languageType != LanguageType.PowerShell && languageType != LanguageType.Python && languageType != LanguageType.Node)
         {
             Assert.Contains("StatusCode=\"FailedPrecondition\"", terminateAgainResponseMessage);
 
@@ -128,9 +128,9 @@ public class TerminateOrchestratorTests
 
         using HttpResponseMessage terminateResponse = await HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={instanceId}");
 
-        if (languageType == LanguageType.Python)
+        if (languageType == LanguageType.Python || languageType == LanguageType.Node)
         {
-            // In python specifically, terminating a completed, failed, or terminated instance swallows the failure
+            // In python and Node, terminating a completed, failed, or terminated instance swallows the failure
             // and acts as if the instance was terminated successfully. This might be a consistency issue, but is it
             // a bug?
             // see https://github.com/Azure/azure-functions-durable-python/blob/97a0891f80ccb4cb357e9f39b79a4eb4326f6d98/azure/durable_functions/models/DurableOrchestrationClient.py#L444
@@ -149,9 +149,9 @@ public class TerminateOrchestratorTests
         // Give some time for Core Tools to write logs out
         Thread.Sleep(500);
 
-        // PowerShell and Python both use the HTTP terminate API, which returns 410 (Gone) and does not log
+        // PowerShell, Python, Node all use the HTTP terminate API, which returns 410 (Gone) and does not log
         // when the instance is completed
-        if (languageType != LanguageType.PowerShell && languageType != LanguageType.Python)
+        if (languageType != LanguageType.PowerShell && languageType != LanguageType.Python && languageType != LanguageType.Node)
         {
             Assert.Contains("StatusCode=\"FailedPrecondition\"", terminateResponseMessage);
 
@@ -172,10 +172,10 @@ public class TerminateOrchestratorTests
         Assert.NotNull(terminateResponseMessage);
 
         // Check the exception returned contains the right statusCode and message. 
-        if (languageType != LanguageType.PowerShell && languageType != LanguageType.Python)
+        if (languageType != LanguageType.PowerShell && languageType != LanguageType.Python && languageType != LanguageType.Node)
         {
-            // This particular part of the error is not emitted in Python or PowerShell
-            // It probably does not exist in the other shim languages either
+            // This particular part of the error is not emitted in Python, PowerShell, Node
+            // It probably does not exist in Java either
             // But we will prove this when implementing these tests for these languages
             Assert.Contains("Status(StatusCode=\"NotFound\"", terminateResponseMessage);
         }

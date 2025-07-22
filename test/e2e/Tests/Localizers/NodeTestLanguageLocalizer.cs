@@ -17,8 +17,8 @@ internal class NodeTestLanguageLocalizer : ITestLanguageLocalizer
         { "ExternalEvent.InvalidInstance.ErrorMessage", "No instance with ID {0} found" },
         { "SuspendCompletedInstance.FailureMessage", "" }, // No message as Python's unique behavior causes this to succeed
         { "ResumeCompletedInstance.FailureMessage", "" },
-        { "SuspendSuspendedInstance.FailureMessage", "The operation failed with an unexpected status code 500" },
-        { "ResumeRunningInstance.FailureMessage", "The operation failed with an unexpected status code 500" },
+        { "SuspendSuspendedInstance.FailureMessage", "Error: The operation failed with an unexpected status code: 500. Details: {{\"Message\":\"Something went wrong while processing your request" },
+        { "ResumeRunningInstance.FailureMessage", "Error: The operation failed with an unexpected status code: 500. Details: {{\"Message\":\"Something went wrong while processing your request" },
         { "TerminateCompletedInstance.FailureMessage", "" }, // No message as Python's unique behavior causes this to succeed
         { "TerminateTerminatedInstance.FailureMessage", "" },
         { "TerminateInvalidInstance.FailureMessage", "No instance with ID '{0}' found." },
