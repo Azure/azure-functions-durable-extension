@@ -11,7 +11,7 @@ internal class NodeTestLanguageLocalizer : ITestLanguageLocalizer
         // Bug: https://github.com/Azure/azure-functions-durable-js/issues/642
         { "CaughtEntityException.ErrorMessage", "Error: [object Object]" },
         { "RethrownEntityException.ErrorMessage", "Orchestrator function 'ThrowEntityOrchestration' failed:" },
-        { "ExternalEvent.CompletedInstance.ErrorName", "N/A" },
+        { "ExternalEvent.CompletedInstance.ErrorName", "N/A" }, // Bug: https://github.com/Azure/azure-functions-durable-js/issues/645
         { "ExternalEvent.CompletedInstance.ErrorMessage", "N/A" },
         { "ExternalEvent.InvalidInstance.ErrorName", "Error" },
         { "ExternalEvent.InvalidInstance.ErrorMessage", "No instance with ID '{0}' found" },

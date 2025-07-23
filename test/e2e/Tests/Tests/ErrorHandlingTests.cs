@@ -67,6 +67,7 @@ public class ErrorHandlingTests
     [Trait("PowerShell-MSSQL", "Skip")] // Bug: https://github.com/Azure/azure-functions-durable-powershell/issues/98
     [Trait("PowerShell-DTS", "Skip")] // Same bug as above
     [Trait("Python-DTS", "Skip")] // Bug: https://github.com/Azure/azure-functions-durable-python/issues/562
+    [Trait("Node-DTS", "Skip")] // Bug: https://msazure.visualstudio.com/Antares/_workitems/edit/33910424
     public async Task OrchestratorWithCaughtActivityException_ShouldSucceed()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=CatchActivityException");
@@ -155,6 +156,7 @@ public class ErrorHandlingTests
     [Trait("MSSQL", "Skip")] // Durable Entities are not supported in MSSQL/Dotnet Isolated, see https://github.com/microsoft/durabletask-mssql/issues/205
     [Trait("DTS", "Skip")] // DTS will fail this test unless this issue is fixed, see https://msazure.visualstudio.com/Antares/_workitems/edit/31778744
     [Trait("PowerShell", "Skip")] // Durable Entities not yet implemented in PowerShell
+    [Trait("Node-DTS", "Skip")] // Bug: https://msazure.visualstudio.com/Antares/_workitems/edit/33910424
     public async Task OrchestratorWithRetriedEntityException_ShouldSucceed()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=RetryEntityOrchestration");
@@ -194,6 +196,7 @@ public class ErrorHandlingTests
 
     [Fact]
     [Trait("Python", "Skip")] // Bug: https://github.com/Azure/azure-functions-durable-python/issues/561
+    [Trait("Node-DTS", "Skip")] // Bug: https://msazure.visualstudio.com/Antares/_workitems/edit/33910424
     public async Task OrchestratorWithCustomRetriedActivityException_ShouldSucceed()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=CustomRetryActivityFunction");

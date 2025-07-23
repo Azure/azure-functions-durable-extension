@@ -20,6 +20,7 @@ public class PurgeInstancesTests
     [Fact]
     [Trait("PowerShell", "Skip")] // Instance purging not supported in PowerShell
     [Trait("Python-DTS", "Skip")] // Bug: https://github.com/Azure/azure-functions-durable-python/issues/563
+    [Trait("Node-DTS", "Skip")] // Bug: https://msazure.visualstudio.com/Antares/_workitems/edit/33910424/
     public async Task PurgeOrchestrationHistory_StartAndEnd_Succeeds()
     {
         // Previously this test used DateTime.MinValue - however, in Python on Linux specifically,
@@ -36,6 +37,7 @@ public class PurgeInstancesTests
     [Fact]
     [Trait("PowerShell", "Skip")] // Instance purging not supported in PowerShell
     [Trait("Python-DTS", "Skip")] // Bug: https://github.com/Azure/azure-functions-durable-python/issues/563
+    [Trait("Node-DTS", "Skip")] // Bug: https://msazure.visualstudio.com/Antares/_workitems/edit/33910424/
     public async Task PurgeOrchestrationHistory_Start_Succeeds()
     {
         // Previously this test used DateTime.MinValue - however, in Python on Linux specifically,
