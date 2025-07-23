@@ -741,13 +741,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             Activity processEntityInvocationActivity = null;
             Activity callEntityActivity = null;
-            ActivityContext? parentTraceContext;
 
             // We only want to create a trace activity for processing the entity invocation in the case that we can successfully parse the trace context of the request that led to this entity invocation.
             // Otherwise, we will create an unlinked trace activity with no parent.
             if (ActivityContext.TryParse(request.ParentTraceContext?.TraceParent, request.ParentTraceContext?.TraceState, out ActivityContext parentTraceContextFromRequest))
             {
-                parentTraceContext = parentTraceContextFromRequest;
+                ActivityContext? parentTraceContext = parentTraceContextFromRequest;
                 if (!request.IsSignal)
                 {
                     callEntityActivity = TraceHelper.StartActivityForCallingOrSignalingEntity(
