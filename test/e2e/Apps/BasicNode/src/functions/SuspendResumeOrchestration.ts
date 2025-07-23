@@ -1,9 +1,13 @@
+// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the MIT License. See License.txt in the project root for license information.
+
 import { app, HttpHandler, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
 import * as df from 'durable-functions';
+import { DurableClient } from 'durable-functions';
 
 // SuspendInstance HTTP trigger
 const SuspendInstance: HttpHandler = async (request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> => {
-    const client: df.DurableClient = df.getClient(context);
+    const client: DurableClient = df.getClient(context);
     const instanceId = request.params.instanceId;
     const suspendReason = "Suspending the instance for test.";
     try {

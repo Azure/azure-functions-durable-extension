@@ -1,3 +1,6 @@
+// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the MIT License. See License.txt in the project root for license information.
+
 import { app, HttpHandler, HttpRequest, HttpResponse, InvocationContext } from '@azure/functions';
 import * as df from 'durable-functions';
 import { ActivityHandler, OrchestrationContext, OrchestrationHandler } from 'durable-functions';

@@ -1,8 +1,12 @@
+// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the MIT License. See License.txt in the project root for license information.
+
 import * as df from "durable-functions";
 import { app, HttpHandler, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
+import { OrchestrationContext, OrchestrationHandler } from "durable-functions";
 
 // Orchestration
-const ExternalEventOrchestrator: df.OrchestrationHandler = function* (context: df.OrchestrationContext): Generator<any, string, any> {
+const ExternalEventOrchestrator: OrchestrationHandler = function* (context: OrchestrationContext): Generator<any, string, any> {
     yield context.df.waitForExternalEvent("Approval");
     return "Orchestrator Finished!";
 };
