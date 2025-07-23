@@ -97,7 +97,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
             Activity? newActivity = ActivityTraceSource.StartActivity(
                 Schema.SpanNames.CallOrSignalEntity(entityName, operationName),
                 kind: signalEntity ? ActivityKind.Consumer : ActivityKind.Server,
-                parentContext: parentTraceContext,
+                parentContext: parentTraceContext.Value,
                 startTime: startTime);
 
             if (newActivity == null)
