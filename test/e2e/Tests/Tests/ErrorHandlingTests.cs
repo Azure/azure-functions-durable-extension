@@ -133,6 +133,7 @@ public class ErrorHandlingTests
     }
 
     [Fact]
+    [Trait("Node-DTS", "Skip")] // Bug: https://msazure.visualstudio.com/Antares/_workitems/edit/33910424
     public async Task OrchestratorWithRetriedActivityException_ShouldSucceed()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=RetryActivityFunction");
