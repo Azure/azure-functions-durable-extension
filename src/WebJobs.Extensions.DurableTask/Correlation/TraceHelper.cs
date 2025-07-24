@@ -85,12 +85,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
             return newActivity;
         }
 
-        internal static Activity? StartActivityForProcessingEntityInvocation(string entityId, string entityName, string operationName, bool signalEntity, ActivityContext parentTraceContext, DateTimeOffset startTime)
+        internal static Activity? StartActivityForProcessingEntityInvocation(string entityId, string entityName, string operationName, bool signalEntity, ActivityContext? parentTraceContext, DateTimeOffset startTime)
         {
+            // We only want to create a trace activity for processing an entity invocation in the case that we can successfully get the parent trace context of the request.
+            // Otherwise, we will create an unlinked trace activity with no parent.
+            if (parentTraceContext == null)
+            {
+                return null;
+            }
+
             Activity? newActivity = ActivityTraceSource.StartActivity(
                 Schema.SpanNames.CallOrSignalEntity(entityName, operationName),
                 kind: signalEntity ? ActivityKind.Consumer : ActivityKind.Server,
-                parentContext: parentTraceContext,
+                parentContext: parentTraceContext.Value,
                 startTime: startTime);
 
             if (newActivity == null)
