@@ -3,12 +3,12 @@ name: Smoke Test - Java 8 on Functions V4
 on:
   workflow_dispatch:
   push:
-    branches: [ main, dev ]
+    branches: [ main, dev, release/v3.2.0 ]
     paths:
       - 'src/**'
       - 'test/SmokeTests/OOProcSmokeTests/durableJava/**'
   pull_request:
-    branches: [ main, dev ]
+    branches: [ main, dev, release/v3.2.0 ]
     paths:
       - 'src/**'
       - 'test/SmokeTests/OOProcSmokeTests/durableJava/**'

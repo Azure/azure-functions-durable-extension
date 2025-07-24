@@ -3,13 +3,13 @@ name: Smoke Test - .NET in-proc w/ MSSQL on Functions V4
 on:
   workflow_dispatch:
   push:
-    branches: [ main, dev ]
+    branches: [ main, dev, release/v3.2.0 ]
     paths:
       - 'src/**'
       - 'test/SmokeTests/BackendSmokeTests/MSSQL/**'
       - '.github/workflows/smoketest-mssql-inproc-v4.yml'
   pull_request:
-    branches: [ main, dev ]
+    branches: [ main, dev, release/v3.2.0 ]
     paths:
       - 'src/**'
       - 'test/SmokeTests/BackendSmokeTests/MSSQL/**'

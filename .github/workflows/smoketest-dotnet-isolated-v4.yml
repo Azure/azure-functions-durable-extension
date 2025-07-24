@@ -3,12 +3,12 @@ name: Smoke Test - .NET Isolated on Functions V4
 on:
   workflow_dispatch:
   push:
-    branches: [ main, dev ]
+    branches: [ main, dev, release/v3.2.0 ]
     paths:
       - 'src/**'
       - 'test/SmokeTests/OOProcSmokeTests/DotNetIsolated/**'
   pull_request:
-    branches: [ main, dev ]
+    branches: [ main, dev, release/v3.2.0 ]
     paths:
       - 'src/**'
       - 'test/SmokeTests/OOProcSmokeTests/DotNetIsolated/**'
