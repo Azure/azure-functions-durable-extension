@@ -59,7 +59,7 @@ function StopOnFailedExecution {
 }
 
 $FUNC_CLI_DIRECTORY = Join-Path $ProjectTemporaryPath 'Azure.Functions.Cli'
-if($SkipCoreTool -or (Test-Path $FUNC_CLI_DIRECTORY))
+if($SkipCoreTools -or (Test-Path $FUNC_CLI_DIRECTORY))
 {
   Write-Host "---Skipping Core Tools download---"  
 }
