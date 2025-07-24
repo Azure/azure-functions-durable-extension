@@ -144,7 +144,7 @@ function InstallExtensionAndBuildTestApp($testAppDir) {
           dotnet add 'extensions.csproj' package 'Microsoft.Azure.WebJobs.Extensions.DurableTask' --version $webJobsExtensionVersion --source ".\packages" --no-restore
 
           Write-Host "Syncing extensions"
-          if (Test-Path (Join-Path $FUNC_CLI_DIRECTORY "func")) {
+          if ((Test-Path (Join-Path $FUNC_CLI_DIRECTORY "func")) -or (Test-Path (Join-Path $FUNC_CLI_DIRECTORY "func.exe"))) {
             .(Join-Path $FUNC_CLI_DIRECTORY "func") extensions sync
           }
           else {
