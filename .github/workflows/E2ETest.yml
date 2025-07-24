@@ -3,12 +3,12 @@ name: End to End Test - .NET Isolated/Func V4
 on:
   workflow_dispatch:
   push:
-    branches: [ main, dev ]
+    branches: [ main, dev, release/v3.2.0 ]
     paths:
       - 'src/**'
       - 'test/e2e/**'
   pull_request:
-    branches: [ main, dev ]
+    branches: [ main, dev, release/v3.2.0 ]
     paths:
       - 'src/**'
       - 'test/e2e/**'
