@@ -4,6 +4,7 @@
 using System;
 using DurableTask.AzureStorage;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage;
+using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -148,6 +149,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             return this.GetAzureStorageStorageProvider(attribute);
+        }
+
+        public virtual DurabilityProvider GetDurabilityProvider(DurableClientAttribute attribute, TriggerMetadata triggerMetadata)
+        {
+            throw new NotImplementedException();
         }
 
         private AzureStorageDurabilityProvider GetAzureStorageStorageProvider(DurableClientAttribute attribute)
