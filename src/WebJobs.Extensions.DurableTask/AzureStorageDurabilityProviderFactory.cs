@@ -151,11 +151,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return this.GetAzureStorageStorageProvider(attribute);
         }
 
-        public virtual DurabilityProvider GetDurabilityProvider(DurableClientAttribute attribute, TriggerMetadata triggerMetadata)
-        {
-            throw new NotImplementedException();
-        }
-
         private AzureStorageDurabilityProvider GetAzureStorageStorageProvider(DurableClientAttribute attribute)
         {
             string connectionName = attribute.ConnectionName ?? this.DefaultConnectionName;

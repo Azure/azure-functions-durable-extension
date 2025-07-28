@@ -29,10 +29,5 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             return this.provider;
         }
-
-        public virtual DurabilityProvider GetDurabilityProvider(DurableClientAttribute attribute, TriggerMetadata triggerMetadata)
-        {
-            return this.provider;
-        }
     }
 }
