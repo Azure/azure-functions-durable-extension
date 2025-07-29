@@ -86,5 +86,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                                 options: new DurableTaskOptions { DefaultVersion = defaultVersion });
             }
         }
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData("4.0", nameof(TestOrchestrations.CallSubOrchestratorWithExplicitVersion), "\"V2.0\"")] // Explicit version overrides default
+        [InlineData("4.0", nameof(TestOrchestrations.CallSubOrchestratorWithoutVersion), "\"4.0\"")] // Default version propagated when no explicit version
+        [InlineData(null, nameof(TestOrchestrations.CallSubOrchestratorWithoutVersion), "null")] // Null version when no default configured
+        public async Task SubOrchestrator_VersionPropagation(string defaultVersion, string orchestratorName, string expectedVersion)
+        {
+            using (ITestHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.SubOrchestrator_VersionPropagation),
+                enableExtendedSessions: false,
+                options: new DurableTaskOptions { DefaultVersion = defaultVersion }))
+            {
+                await host.StartAsync();
+
+                var client = await host.StartOrchestratorAsync(orchestratorName, null, this.output);
+                var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromMinutes(1));
+
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
+                Assert.Equal($"Sub-orchestration version: {expectedVersion}", status.Output.ToString());
+                await host.StopAsync();
+            }
+        }
     }
 }
