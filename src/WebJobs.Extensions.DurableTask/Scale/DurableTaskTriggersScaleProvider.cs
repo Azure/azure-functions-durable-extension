@@ -43,7 +43,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
             DurabilityProvider defaultDurabilityProvider;
             if (durabilityProviderFactory.Name == "azureManaged")
             {
-                defaultDurabilityProvider = durabilityProviderFactory.GetDurabilityProvider(triggerMetadata);
+                defaultDurabilityProvider = durabilityProviderFactory.GetDurabilityProvider(attribute:null, triggerMetadata);
             }
             else
             {
