@@ -7,11 +7,15 @@ on:
     paths:
       - 'src/**'
       - 'test/e2e/**'
+      - 'Directory.Build.targets'
+      - 'Directory.Packages.props'
   pull_request:
     branches: [ main, dev ]
     paths:
       - 'src/**'
       - 'test/e2e/**'
+      - 'Directory.Build.targets'
+      - 'Directory.Packages.props'
 
 jobs:
   e2e-azurestorage-linux:

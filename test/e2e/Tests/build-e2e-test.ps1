@@ -59,7 +59,7 @@ function StopOnFailedExecution {
 }
 
 $FUNC_CLI_DIRECTORY = Join-Path $ProjectTemporaryPath 'Azure.Functions.Cli'
-if($SkipCoreTool -or (Test-Path $FUNC_CLI_DIRECTORY))
+if($SkipCoreTools -or (Test-Path $FUNC_CLI_DIRECTORY))
 {
   Write-Host "---Skipping Core Tools download---"  
 }
@@ -144,7 +144,12 @@ function InstallExtensionAndBuildTestApp($testAppDir) {
           dotnet add 'extensions.csproj' package 'Microsoft.Azure.WebJobs.Extensions.DurableTask' --version $webJobsExtensionVersion --source ".\packages" --no-restore
 
           Write-Host "Syncing extensions"
-          .(Join-Path $FUNC_CLI_DIRECTORY "func") extensions sync
+          if ((Test-Path (Join-Path $FUNC_CLI_DIRECTORY "func")) -or (Test-Path (Join-Path $FUNC_CLI_DIRECTORY "func.exe"))) {
+            .(Join-Path $FUNC_CLI_DIRECTORY "func") extensions sync
+          }
+          else {
+            Write-Warning "func command not found. Skipping extensions sync."
+          }
         }
 
         if (Test-Path ".\requirements.txt") {
