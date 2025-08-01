@@ -7,16 +7,15 @@ using System.Threading.Tasks;
 using Microsoft.Azure.Functions.Worker.Extensions.DurableTask.Exceptions;
 using Microsoft.Azure.Functions.Worker.Middleware;
 using Microsoft.DurableTask.Worker.Grpc;
-using Microsoft.Extensions.Caching.Memory;
 
 namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
 
 /// <summary>
 /// A middleware to handle orchestration triggers.
 /// </summary>
-internal class DurableTaskFunctionsMiddleware(IMemoryCache extendedSessions) : IFunctionsWorkerMiddleware
+internal class DurableTaskFunctionsMiddleware(ExtendedSessionsCache extendedSessionsCache) : IFunctionsWorkerMiddleware
 {
-    private readonly IMemoryCache extendedSessions = extendedSessions;
+    private readonly ExtendedSessionsCache extendedSessionsCache = extendedSessionsCache;
 
     /// <inheritdoc />
     public Task Invoke(FunctionContext functionContext, FunctionExecutionDelegate next)
@@ -66,7 +65,7 @@ internal class DurableTaskFunctionsMiddleware(IMemoryCache extendedSessions) : I
 
         FunctionsOrchestrator orchestrator = new(context, next, triggerInputData);
         string orchestratorOutput = GrpcOrchestrationRunner.LoadAndRun(
-            encodedOrchestratorState, orchestrator, this.extendedSessions, context.InstanceServices);
+            encodedOrchestratorState, orchestrator, this.extendedSessionsCache, context.InstanceServices);
 
         // Send the encoded orchestrator output as the return value seen by the functions host extension
         context.GetInvocationResult().Value = orchestratorOutput;
