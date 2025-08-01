@@ -43,6 +43,7 @@
     <PackageReference Include="Microsoft.DurableTask.Worker.Grpc" />
     <PackageReference Include="Grpc.Net.Client" />
     <PackageReference Include="Microsoft.DurableTask.Analyzers" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" />
   </ItemGroup>
 
   <ItemGroup>
