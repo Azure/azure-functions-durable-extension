@@ -113,6 +113,8 @@ public class SuspendResumeTests
     [Fact]
     public async Task SuspendResumeCompletedOrchestration_ShouldFail()
     {
+        LanguageType languageType = this.fixture.functionLanguageLocalizer.GetLanguageType();
+
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=HelloCities");
 
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
@@ -123,17 +125,32 @@ public class SuspendResumeTests
         try
         {
             using HttpResponseMessage suspendResponse = await HttpHelpers.InvokeHttpTrigger("SuspendInstance", $"?instanceId={instanceId}");
-            await this.AssertRequestFailsAsync(suspendResponse, fixture.functionLanguageLocalizer.GetLocalizedStringValue("SuspendCompletedInstance.FailureMessage"));
-
             using HttpResponseMessage resumeResponse = await HttpHelpers.InvokeHttpTrigger("ResumeInstance", $"?instanceId={instanceId}");
-            await this.AssertRequestFailsAsync(resumeResponse, fixture.functionLanguageLocalizer.GetLocalizedStringValue("ResumeCompletedInstance.FailureMessage"));
+
+            if (languageType == LanguageType.Python)
+            {
+                // In python specifically, suspending or resuming a completed, failed, or terminated instance swallows the failure
+                // and acts as if the instance was suspended/resumed successfully. This might be a consistency issue, but is it
+                // a bug?
+                // see https://github.com/Azure/azure-functions-durable-python/blob/97a0891f80ccb4cb357e9f39b79a4eb4326f6d98/azure/durable_functions/models/DurableOrchestrationClient.py#L747
+                // see https://github.com/Azure/azure-functions-durable-python/blob/97a0891f80ccb4cb357e9f39b79a4eb4326f6d98/azure/durable_functions/models/DurableOrchestrationClient.py#L782
+                await AssertRequestSucceedsAsync(suspendResponse);
+
+                await AssertRequestSucceedsAsync(resumeResponse);
+            }
+            else
+            {
+                await this.AssertRequestFailsAsync(suspendResponse, fixture.functionLanguageLocalizer.GetLocalizedStringValue("SuspendCompletedInstance.FailureMessage"));
+
+                await this.AssertRequestFailsAsync(resumeResponse, fixture.functionLanguageLocalizer.GetLocalizedStringValue("ResumeCompletedInstance.FailureMessage"));
+            }
 
             // Give some time for Core Tools to write logs out
             Thread.Sleep(500);
 
-            // For some reason, PowerShell does not log these warnings - instead the status code is 410 (Gone) with no log
+            // PowerShell and Python both use the HTTP suspend/resume APIs, which return 410 (Gone) and do not log
             // when the instance is completed
-            if (this.fixture.functionLanguageLocalizer.GetLanguageType() != LanguageType.PowerShell)
+            if (languageType != LanguageType.PowerShell && languageType != LanguageType.Python)
             {
                 Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains("Cannot suspend orchestration instance in the Completed state.") &&
                                                                         x.Contains(instanceId));

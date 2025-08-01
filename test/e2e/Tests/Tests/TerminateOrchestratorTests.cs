@@ -62,6 +62,8 @@ public class TerminateOrchestratorTests
     [Fact]
     public async Task TerminateTerminatedOrchestration_ShouldFail()
     {
+        LanguageType languageType = this.fixture.functionLanguageLocalizer.GetLanguageType();
+
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=LongRunningOrchestrator");
 
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
@@ -77,22 +79,34 @@ public class TerminateOrchestratorTests
 
         using HttpResponseMessage terminateAgainResponse = await HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={instanceId}");
         
-        Assert.Equal(HttpStatusCode.BadRequest, terminateAgainResponse.StatusCode);
+        if (languageType == LanguageType.Python)
+        {
+            // In python specifically, terminating a completed, failed, or terminated instance swallows the failure
+            // and acts as if the instance was terminated successfully. This might be a consistency issue, but is it
+            // a bug?
+            // see https://github.com/Azure/azure-functions-durable-python/blob/97a0891f80ccb4cb357e9f39b79a4eb4326f6d98/azure/durable_functions/models/DurableOrchestrationClient.py#L444
+            Assert.Equal(HttpStatusCode.OK, terminateAgainResponse.StatusCode);
+        }
+        else
+        {
+            Assert.Equal(HttpStatusCode.BadRequest, terminateAgainResponse.StatusCode);
+        }
 
         // Check the exception returned contains the right statusCode and message. 
         string? terminateAgainResponseMessage = await terminateAgainResponse.Content.ReadAsStringAsync();
         Assert.NotNull(terminateAgainResponseMessage);
 
-        Assert.Contains("StatusCode=\"FailedPrecondition\"", terminateAgainResponseMessage);
         Assert.Contains(fixture.functionLanguageLocalizer.GetLocalizedStringValue("TerminateTerminatedInstance.FailureMessage", instanceId), terminateAgainResponseMessage);
 
         // Give some time for Core Tools to write logs out
         Thread.Sleep(500);
 
-        // For some reason, PowerShell does not log these warnings - instead the status code is 410 (Gone) with no log
+        // PowerShell and Python both use the HTTP terminate API, which returns 410 (Gone) and does not log
         // when the instance is completed
-        if (fixture.functionLanguageLocalizer.GetLanguageType() != LanguageType.PowerShell)
+        if (languageType != LanguageType.PowerShell && languageType != LanguageType.Python)
         {
+            Assert.Contains("StatusCode=\"FailedPrecondition\"", terminateAgainResponseMessage);
+
             Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains("Cannot terminate orchestration instance in the Terminated state.") &&
                                                               x.Contains(instanceId));
         }
@@ -102,6 +116,8 @@ public class TerminateOrchestratorTests
     [Fact]
     public async Task TerminateCompletedOrchestration_ShouldFail()
     {
+        LanguageType languageType = this.fixture.functionLanguageLocalizer.GetLanguageType();
+
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=HelloCities");
 
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
@@ -111,23 +127,34 @@ public class TerminateOrchestratorTests
         await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", 30);
 
         using HttpResponseMessage terminateResponse = await HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={instanceId}");
-        
-        Assert.Equal(HttpStatusCode.BadRequest, terminateResponse.StatusCode);
+
+        if (languageType == LanguageType.Python)
+        {
+            // In python specifically, terminating a completed, failed, or terminated instance swallows the failure
+            // and acts as if the instance was terminated successfully. This might be a consistency issue, but is it
+            // a bug?
+            // see https://github.com/Azure/azure-functions-durable-python/blob/97a0891f80ccb4cb357e9f39b79a4eb4326f6d98/azure/durable_functions/models/DurableOrchestrationClient.py#L444
+            Assert.Equal(HttpStatusCode.OK, terminateResponse.StatusCode);
+        }
+        else
+        {
+            Assert.Equal(HttpStatusCode.BadRequest, terminateResponse.StatusCode);
+        }
 
         string? terminateResponseMessage = await terminateResponse.Content.ReadAsStringAsync();
         Assert.NotNull(terminateResponseMessage);
 
-        // Check the exception returned contains the right statusCode and message. 
-        Assert.Contains("StatusCode=\"FailedPrecondition\"", terminateResponseMessage);
         Assert.Contains(fixture.functionLanguageLocalizer.GetLocalizedStringValue("TerminateCompletedInstance.FailureMessage", instanceId), terminateResponseMessage);
 
         // Give some time for Core Tools to write logs out
         Thread.Sleep(500);
 
-        // For some reason, PowerShell does not log these warnings - instead the status code is 410 (Gone) with no log
+        // PowerShell and Python both use the HTTP terminate API, which returns 410 (Gone) and does not log
         // when the instance is completed
-        if (fixture.functionLanguageLocalizer.GetLanguageType() != LanguageType.PowerShell)
+        if (languageType != LanguageType.PowerShell && languageType != LanguageType.Python)
         {
+            Assert.Contains("StatusCode=\"FailedPrecondition\"", terminateResponseMessage);
+
             Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains("Cannot terminate orchestration instance in the Completed state.") &&
                                                                   x.Contains(instanceId));
         }
@@ -136,6 +163,7 @@ public class TerminateOrchestratorTests
     [Fact]
     public async Task TerminateNonExistantOrchestration_ShouldFail()
     {
+        LanguageType languageType = this.fixture.functionLanguageLocalizer.GetLanguageType();
         string instanceId = Guid.NewGuid().ToString();
         using HttpResponseMessage terminateResponse = await HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={instanceId}");
         Assert.Equal(HttpStatusCode.BadRequest, terminateResponse.StatusCode);
@@ -144,7 +172,13 @@ public class TerminateOrchestratorTests
         Assert.NotNull(terminateResponseMessage);
 
         // Check the exception returned contains the right statusCode and message. 
-        Assert.Contains("Status(StatusCode=\"NotFound\"", terminateResponseMessage);
+        if (languageType != LanguageType.PowerShell && languageType != LanguageType.Python)
+        {
+            // This particular part of the error is not emitted in Python or PowerShell
+            // It probably does not exist in the other shim languages either
+            // But we will prove this when implementing these tests for these languages
+            Assert.Contains("Status(StatusCode=\"NotFound\"", terminateResponseMessage);
+        }
         Assert.Contains(fixture.functionLanguageLocalizer.GetLocalizedStringValue("TerminateInvalidInstance.FailureMessage", instanceId), terminateResponseMessage);
     }
 

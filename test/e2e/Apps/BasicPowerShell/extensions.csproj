@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+	<WarningsAsErrors></WarningsAsErrors>
+	<DefaultItemExcludes>**</DefaultItemExcludes>
+  </PropertyGroup>
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Move SourceFiles="$(OutDir)/extensions.deps.json" DestinationFiles="$(OutDir)/function.deps.json" />
+  </Target>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask" Version="3.3.0" />
+    <PackageReference Include="Microsoft.Azure.WebJobs.Script.ExtensionsMetadataGenerator" Version="1.1.3" />
+    <PackageReference Include="Microsoft.DurableTask.SqlServer.AzureFunctions" Version="1.5.1" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.2" />
+    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureManaged" Version="0.4.2-alpha" />
+  </ItemGroup>
+</Project>
