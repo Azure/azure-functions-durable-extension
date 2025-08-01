@@ -333,6 +333,7 @@ message OrchestratorResponse {
     // The number of work item events that were processed by the orchestrator.
     // This field is optional. If not set, the service should assume that the orchestrator processed all events.
     google.protobuf.Int32Value numEventsProcessed = 5;
+    bool requiresHistory = 6;
 }
 
 message CreateInstanceRequest {
