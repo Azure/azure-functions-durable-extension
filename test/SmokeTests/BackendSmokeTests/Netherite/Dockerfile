@@ -7,6 +7,7 @@ FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build-env
 COPY . /root
 RUN cd /root/test/SmokeTests/BackendSmokeTests/Netherite && \
     mkdir -p /home/site/wwwroot && \
+    dotnet restore --verbosity normal && \
     dotnet publish -c Release --output /home/site/wwwroot
 
 # Deploy the app
