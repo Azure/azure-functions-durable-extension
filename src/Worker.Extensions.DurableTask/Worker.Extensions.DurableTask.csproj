@@ -29,23 +29,12 @@
     <AssemblyOriginatorKeyFile>..\..\sign.snk</AssemblyOriginatorKeyFile>
 
     <!-- Version information -->
-	<MajorVersion>1</MajorVersion>
-	<MinorVersion>6</MinorVersion>
-	<PatchVersion>2</PatchVersion>
-	<VersionPrefix>$(MajorVersion).$(MinorVersion).$(PatchVersion)</VersionPrefix>
-	<VersionSuffix>private1</VersionSuffix>
-	<FileVersion>$(MajorVersion).$(MinorVersion).$(PatchVersion)</FileVersion>
-	<AssemblyVersion>$(MajorVersion).0.0.0</AssemblyVersion>
+    <VersionPrefix>1.6.2</VersionPrefix>
+    <VersionSuffix>private1</VersionSuffix>
+    <AssemblyVersion>$(VersionPrefix).0</AssemblyVersion>
     <!-- FileVersionRevision is expected to be set by the CI.  -->
     <FileVersion Condition="'$(FileVersionRevision)' != ''">$(VersionPrefix).$(FileVersionRevision)</FileVersion>
   </PropertyGroup>
-
-    <PropertyGroup Condition="$(VersionSuffix) == ''">
-        <Version>$(MajorVersion).$(MinorVersion).$(PatchVersion)</Version>
-    </PropertyGroup>
-    <PropertyGroup Condition="$(VersionSuffix) != ''">
-        <Version>$(MajorVersion).$(MinorVersion).$(PatchVersion)-$(VersionSuffix)</Version>
-    </PropertyGroup>
   
   <ItemGroup>
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Core" />
