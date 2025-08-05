@@ -36,15 +36,6 @@ jobs:
             packageType: 'sdk'
             version: '8.0.x'
       
-      # Start by restoring all the dependencies.
-      - task: DotNetCoreCLI@2
-        displayName: 'dotnet restore'
-        inputs:
-            command: custom
-            custom: restore
-            projects: '**/**/*.csproj'
-            arguments: '-v m'
-            
       - task: UsePythonVersion@0
         inputs:
           versionSpec: '3.11.x'
@@ -57,6 +48,15 @@ jobs:
           filePath: 'test/e2e/tests/build-e2e-test.ps1'
           arguments: '-SkipStorageEmulator -SkipCoreTools'
           pwsh: true
+      
+      # Start by restoring all the dependencies.
+      - task: DotNetCoreCLI@2
+        displayName: 'dotnet restore'
+        inputs:
+            command: custom
+            custom: restore
+            projects: '**/**/*.csproj'
+            arguments: '-v m'
 
       # Build durable-extension
       - task: VSBuild@1
