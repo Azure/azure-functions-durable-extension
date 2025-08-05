@@ -42,7 +42,9 @@ jobs:
         inputs:
             command: custom
             custom: restore
-            projects: '**/**/*.csproj'
+            projects: |
+              **/**/*.csproj
+              !**/BasicPowerShell/extensions.csproj
             arguments: '-v m'
             
       - task: UsePythonVersion@0
