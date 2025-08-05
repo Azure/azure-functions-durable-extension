@@ -162,6 +162,11 @@ function InstallExtensionAndBuildTestApp($testAppDir) {
           npm run clean
           npm run build
         }
+
+        if (Test-Path ".\pom.xml") {
+          Write-Host "Building Java project"
+          mvn clean package
+        }
       }
     }
     
