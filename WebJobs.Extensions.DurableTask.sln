@@ -52,15 +52,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TimeoutTests", "test\Timeou
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "extensions", "test\TimeoutTests\Python\extensions.csproj", "{1B5BA0DF-FE16-493F-B3A2-44A281821F3F}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DurableFunctions.TypedInterfaces", "src\DurableFunctions.TypedInterfaces\SourceGenerator\DurableFunctions.TypedInterfaces.csproj", "{44A9EFDA-CAA2-48B6-80D3-76566B660365}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DurableFunctions.TypedInterfaces.SourceGenerator.Test", "test\CodeGen.SourceGenerator.Test\DurableFunctions.TypedInterfaces.SourceGenerator.Test.csproj", "{A050602C-A85A-4888-9CEC-A654D346927C}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SourceGenerators", "SourceGenerators", "{4DDB6BA9-201F-4BCB-9C28-801A43B7CA7B}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DurableFunctions.TypedInterfaces.Examples.Test", "test\CodeGen.Example.Test\DurableFunctions.TypedInterfaces.Examples.Test.csproj", "{68F8AB7F-BF03-4BCE-8398-2D8EBEE58231}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DurableFunctions.TypedInterfaces.Example", "src\DurableFunctions.TypedInterfaces\Example\DurableFunctions.TypedInterfaces.Example.csproj", "{C88D68A2-7FC8-4AB8-B784-5F32C2C460FE}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebJobs.Extensions.DurableTask.Analyzers", "src\WebJobs.Extensions.DurableTask.Analyzers\WebJobs.Extensions.DurableTask.Analyzers.csproj", "{AC0A99E3-D4B6-42F5-AB82-9BA244DED6A9}"
 EndProject
