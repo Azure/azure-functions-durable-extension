@@ -275,41 +275,6 @@ public static class DurableTaskClientExtensions
             ?? throw new InvalidOperationException("A serializer is not configured for the worker.");
     }
 
-    /// <summary>
-    /// Restarts an existing orchestration instance with the original input.
-    /// </summary>
-    /// <param name="client">The <see cref="DurableTaskClient"/>.</param>
-    /// <param name="instanceId">The ID of the orchestration instance to restart.</param>
-    /// <param name="restartWithNewInstanceId">If true, starts with a new instance ID; otherwise, uses the same instance ID.</param>
-    /// <param name="cancellation">A token that signals if the operation should be canceled.</param>
-    /// <returns>The new instance ID.</returns>
-    public static async Task<string> RestartAsync(
-        this DurableTaskClient client,
-        string instanceId,
-        bool restartWithNewInstanceId = true,
-        CancellationToken cancellation = default)
-    {
-        // Get the status of the existing instance, including input
-        OrchestrationMetadata? status = await client.GetInstancesAsync(instanceId, getInputsAndOutputs: true, cancellation) 
-            ?? throw new ArgumentException($"An orchestration with the instanceId {instanceId} was not found.");
-        
-        // Deserialize the input.
-        string orchestratorName = status.Name;
-        string? input = status.SerializedInput != null
-            ? System.Text.Json.JsonSerializer.Deserialize<string>(status.SerializedInput)
-            : null;
-        
-        if (restartWithNewInstanceId)
-        {
-            return await client.ScheduleNewOrchestrationInstanceAsync(orchestratorName, input, null, cancellation);
-        }
-        else
-        {
-            var options = new StartOrchestrationOptions { InstanceId = instanceId };
-            return await client.ScheduleNewOrchestrationInstanceAsync(orchestratorName, input, options, cancellation);
-        }
-    }
-
     private static string? GetBaseUrlFromRequest(HttpRequestData request)
     {
         // Default to the scheme from the request URL

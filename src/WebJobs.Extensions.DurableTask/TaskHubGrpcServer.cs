@@ -4,6 +4,7 @@
 #nullable enable
 using System;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
@@ -399,6 +400,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             return CreateGetInstanceResponse(state, request);
+        }
+
+        public override async Task<P.RestartInstanceResponse> RestartInstance(P.RestartInstanceRequest request, ServerCallContext context)
+        {
+            try
+            {
+                string newInstanceId = await this.GetClient(context).RestartAsync(request.InstanceId, request.restartWithNewInstanceId);
+                return new P.RestartInstanceResponse(newInstanceId);
+            }
+            catch (ArgumentException ex)
+            {
+                // Thrown when th instanceId is not found.
+                throw new RpcException(new Status(StatusCode.NotFound, $"ArgumentException: {ex.Message}"));
+            }
+            catch (Exception ex)
+            {
+                // Any other unexpected exceptions.
+                throw new RpcException(new Status(StatusCode.Unknown, ex.Message));
+            }
+
         }
 
 #pragma warning disable CS0618 // Type or member is obsolete -- 'internal' usage.
