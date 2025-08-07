@@ -8,7 +8,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Azure.Core.Serialization;
 using Microsoft.Azure.Functions.Worker.Http;
-using Microsoft.DurableTask;
 using Microsoft.DurableTask.Client;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
