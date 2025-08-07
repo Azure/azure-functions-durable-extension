@@ -29,7 +29,7 @@
     <AssemblyOriginatorKeyFile>..\..\sign.snk</AssemblyOriginatorKeyFile>
 
     <!-- Version information -->
-    <VersionPrefix>1.6.0</VersionPrefix>
+    <VersionPrefix>1.6.1</VersionPrefix>
     <VersionSuffix></VersionSuffix>
     <AssemblyVersion>$(VersionPrefix).0</AssemblyVersion>
     <!-- FileVersionRevision is expected to be set by the CI.  -->
@@ -42,6 +42,7 @@
     <PackageReference Include="Microsoft.DurableTask.Client.Grpc" />
     <PackageReference Include="Microsoft.DurableTask.Worker.Grpc" />
     <PackageReference Include="Grpc.Net.Client" />
+    <PackageReference Include="Microsoft.DurableTask.Analyzers" />
   </ItemGroup>
 
   <ItemGroup>

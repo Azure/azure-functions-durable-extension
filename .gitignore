@@ -301,7 +301,5 @@ functions-extensions/
 # E2E Tests build output
 /src/WebJobs.Extensions.DurableTask/out/*
 
-/test/e2e/Apps/*/extensions.csproj
-
 # Runsettings files
 **/*.runsettings
