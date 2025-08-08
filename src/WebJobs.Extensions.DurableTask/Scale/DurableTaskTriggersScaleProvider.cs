@@ -20,6 +20,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
         private readonly INameResolver nameResolver;
         private readonly ILoggerFactory loggerFactory;
         private readonly IEnumerable<IDurabilityProviderFactory> durabilityProviderFactories;
+        private const string AzureManagedProviderName = "azureManaged";
 
         public DurableTaskTriggersScaleProvider(
             IOptions<DurableTaskOptions> durableTaskOptions,
@@ -41,7 +42,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
             IDurabilityProviderFactory durabilityProviderFactory = this.GetDurabilityProviderFactory();
 
             DurabilityProvider defaultDurabilityProvider;
-            if (durabilityProviderFactory.Name == "azureManaged")
+            if (string.Equals(durabilityProviderFactory.Name, AzureManagedProviderName, StringComparison.OrdinalIgnoreCase))
             {
                 defaultDurabilityProvider = durabilityProviderFactory.GetDurabilityProvider(attribute: null, triggerMetadata);
             }
