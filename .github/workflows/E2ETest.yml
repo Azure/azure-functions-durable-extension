@@ -84,6 +84,16 @@ jobs:
         working-directory: test/e2e/Tests
         run: dotnet test --filter 'AzureStorage!=Skip&Python!=Skip&Python-AzureStorage!=Skip'
 
+      - name: Setup Environment for Node
+        shell: pwsh
+        run: |
+          Add-Content -Path $env:GITHUB_ENV -Value "E2E_TEST_FUNCTIONS_LANGUAGE=node"
+          Add-Content -Path $env:GITHUB_ENV -Value "TEST_APP_NAME=BasicNode"
+
+      - name: Run E2E tests (Node)
+        working-directory: test/e2e/Tests
+        run: dotnet test --filter 'AzureStorage!=Skip&Node!=Skip&Node-AzureStorage!=Skip'
+
   e2e-azurestorage-windows:
     runs-on: windows-latest
     env:
@@ -149,6 +159,16 @@ jobs:
       - name: Run E2E tests (Python)
         working-directory: test/e2e/Tests
         run: dotnet test --filter 'AzureStorage!=Skip&Python!=Skip&Python-AzureStorage!=Skip'
+
+      - name: Setup Environment for Node
+        shell: pwsh
+        run: |
+          Add-Content -Path $env:GITHUB_ENV -Value "E2E_TEST_FUNCTIONS_LANGUAGE=node"
+          Add-Content -Path $env:GITHUB_ENV -Value "TEST_APP_NAME=BasicNode"
+
+      - name: Run E2E tests (Node)
+        working-directory: test/e2e/Tests
+        run: dotnet test --filter 'AzureStorage!=Skip&Node!=Skip&Node-AzureStorage!=Skip'
 
   e2e-mssql:
     runs-on: ubuntu-latest
@@ -220,6 +240,16 @@ jobs:
         working-directory: test/e2e/Tests
         run: dotnet test --filter 'MSSQL!=Skip&Python!=Skip&Python-MSSQL!=Skip'
 
+      - name: Setup Environment for Node
+        shell: pwsh
+        run: |
+          Add-Content -Path $env:GITHUB_ENV -Value "E2E_TEST_FUNCTIONS_LANGUAGE=node"
+          Add-Content -Path $env:GITHUB_ENV -Value "TEST_APP_NAME=BasicNode"
+
+      - name: Run E2E tests (Node)
+        working-directory: test/e2e/Tests
+        run: dotnet test --filter 'MSSQL!=Skip&Node!=Skip&Node-MSSQL!=Skip'
+
   e2e-dts:
     runs-on: ubuntu-latest
     env:
@@ -285,3 +315,13 @@ jobs:
       - name: Run E2E tests (Python)
         working-directory: test/e2e/Tests
         run: dotnet test --filter 'DTS!=Skip&Python!=Skip&Python-DTS!=Skip'
+
+      - name: Setup Environment for Node
+        shell: pwsh
+        run: |
+          Add-Content -Path $env:GITHUB_ENV -Value "E2E_TEST_FUNCTIONS_LANGUAGE=node"
+          Add-Content -Path $env:GITHUB_ENV -Value "TEST_APP_NAME=BasicNode"
+
+      - name: Run E2E tests (Node)
+        working-directory: test/e2e/Tests
+        run: dotnet test --filter 'DTS!=Skip&Node!=Skip&Node-DTS!=Skip'
