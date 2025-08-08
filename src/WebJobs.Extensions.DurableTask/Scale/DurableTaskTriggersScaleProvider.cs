@@ -14,13 +14,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
 {
     internal class DurableTaskTriggersScaleProvider : IScaleMonitorProvider, ITargetScalerProvider
     {
+        private const string AzureManagedProviderName = "azureManaged";
+
         private readonly IScaleMonitor monitor;
         private readonly ITargetScaler targetScaler;
         private readonly DurableTaskOptions options;
         private readonly INameResolver nameResolver;
         private readonly ILoggerFactory loggerFactory;
         private readonly IEnumerable<IDurabilityProviderFactory> durabilityProviderFactories;
-        private const string AzureManagedProviderName = "azureManaged";
 
         public DurableTaskTriggersScaleProvider(
             IOptions<DurableTaskOptions> durableTaskOptions,
