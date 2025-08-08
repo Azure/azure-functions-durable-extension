@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>net6.0</TargetFrameworks>
     <Company>Microsoft Corporation</Company>
-    <NoWarn>SA0001;SA1600;SA1615;NU1507;NU1903</NoWarn>
+    <NoWarn>SA0001;SA1600;SA1615</NoWarn>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>..\..\sign.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>

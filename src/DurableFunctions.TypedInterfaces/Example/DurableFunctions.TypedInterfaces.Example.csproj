@@ -4,7 +4,6 @@
     <TargetFramework>net6.0</TargetFramework>
     <AzureFunctionsVersion>v4</AzureFunctionsVersion>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
-    <NoWarn>NU1507</NoWarn>
     <CompilerGeneratedFilesOutputPath>$(BaseIntermediateOutputPath)Generated</CompilerGeneratedFilesOutputPath>
   </PropertyGroup>
 
@@ -12,7 +11,7 @@
     <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" />
     <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" />
     <PackageReference Include="Microsoft.Azure.DurableTask.Core"  />
-    <ProjectReference Include="..\..\WebJobs.Extensions.DurableTask\WebJobs.Extensions.DurableTask.csproj" />
+    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask" />
     <PackageReference Include="Microsoft.NET.Sdk.Functions"  />
   </ItemGroup>
 

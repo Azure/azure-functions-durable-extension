@@ -7,7 +7,6 @@
     <MajorVersion>3</MajorVersion>
     <MinorVersion>4</MinorVersion>
     <PatchVersion>0</PatchVersion>
-	<VersionSuffix>encoding.1</VersionSuffix>
     <VersionPrefix>$(MajorVersion).$(MinorVersion).$(PatchVersion)</VersionPrefix>
     <FileVersion>$(MajorVersion).$(MinorVersion).$(PatchVersion)</FileVersion>
     <AssemblyVersion>$(MajorVersion).0.0.0</AssemblyVersion>
@@ -19,7 +18,7 @@
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <DebugType>embedded</DebugType>
     <!-- See https://github.com/Azure/azure-functions-durable-extension/issues/1433 -->
-    <NoWarn>NU5125;SA0001;NU1507</NoWarn>
+    <NoWarn>NU5125;SA0001</NoWarn>
   </PropertyGroup>
 
   <PropertyGroup Condition="$(VersionSuffix) == ''">

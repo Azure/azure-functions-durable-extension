@@ -4,7 +4,6 @@
     <TargetFramework>net6.0</TargetFramework>
     <AssemblyName>Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test</AssemblyName>
     <RootNamespace>Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test</RootNamespace>
-	  <NoWarn>NU1507</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
