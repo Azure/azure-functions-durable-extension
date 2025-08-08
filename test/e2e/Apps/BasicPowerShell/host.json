@@ -8,6 +8,11 @@
       }
     }
   },
+  "extensions": {
+    "durableTask": {
+      "hubName": "PowerShellE2ETaskHub"
+    }
+  },
   "managedDependency": {
     "enabled": true
   }

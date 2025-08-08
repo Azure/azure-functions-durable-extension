@@ -6,7 +6,9 @@ namespace Microsoft.Azure.Durable.Tests.DotnetIsolatedE2E;
 enum LanguageType
 {
     DotnetIsolated,
-    PowerShell
+    PowerShell,
+    Python,
+    Node
 }
 
 internal interface ITestLanguageLocalizer

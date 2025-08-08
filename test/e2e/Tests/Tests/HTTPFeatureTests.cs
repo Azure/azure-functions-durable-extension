@@ -26,6 +26,8 @@ public class HttpFeatureTests
     [Fact]
     [Trait("DTS", "Skip")] // DTS will timeout this test. Need to fix it later. 
     [Trait("PowerShell", "Skip")] // HTTP automatic polling is not yet implemented in PowerShell
+    [Trait("Python", "Skip")] // HTTP automatic polling is not yet implemented in Python
+    [Trait("Node", "Skip")] // HTTP automatic polling is not yet implemented in Node
     public async Task HttpAutomaticPollingTests()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("HttpStart_HttpPollingOrchestrator");
@@ -54,6 +56,8 @@ public class HttpFeatureTests
     // Therefore, the test verifies results conditionally based on the execution environment.
     [Trait("DTS", "Skip")] // DTS will timeout this test, probably an undiscovered issue. Skip for now.
     [Trait("PowerShell", "Skip")] // Managed identity HTTP calls not supported in PowerShell
+    [Trait("Python", "Skip")] // Managed identity HTTP calls not supported in Python
+    [Trait("Node", "Skip")] // Managed identity HTTP calls not supported in Node
     public async Task HttpCallWithTokenSourceTest()
     {   
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=HttpWithTokenSourceOrchestrator");

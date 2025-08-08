@@ -46,15 +46,21 @@ internal class FunctionAppProcess
             string rootDir = Path.GetFullPath(@"../../../../../../");
             string binDir = @$"test/e2e/Apps/{this.appName}/bin";
 
-            // Intentional bad logic - this will be updated to a switch case against an enum value in a future PR
             switch (this.testLanguage)
             {
                 case LanguageType.PowerShell:
+                case LanguageType.Python:
+                case LanguageType.Node:
                     e2eAppPath = Path.Combine(rootDir, @$"test/e2e/Apps/{this.appName}");
                     break;
                 case LanguageType.DotnetIsolated:
                 default:
                     string e2eAppBinPath = Path.Combine(rootDir, @$"test/e2e/Apps/{this.appName}/bin");
+                    if (!Path.Exists(e2eAppBinPath))
+                    {
+                        throw new InvalidOperationException($"The app bin path {e2eAppBinPath} does not exist!");
+                    }
+
                     string? e2eHostJson = Directory.GetFiles(e2eAppBinPath, "host.json", SearchOption.AllDirectories).FirstOrDefault();
 
                     if (e2eHostJson == null)
