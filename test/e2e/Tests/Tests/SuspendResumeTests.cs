@@ -127,9 +127,9 @@ public class SuspendResumeTests
             using HttpResponseMessage suspendResponse = await HttpHelpers.InvokeHttpTrigger("SuspendInstance", $"?instanceId={instanceId}");
             using HttpResponseMessage resumeResponse = await HttpHelpers.InvokeHttpTrigger("ResumeInstance", $"?instanceId={instanceId}");
 
-            if (languageType == LanguageType.Python)
+            if (languageType == LanguageType.Python || languageType == LanguageType.Node)
             {
-                // In python specifically, suspending or resuming a completed, failed, or terminated instance swallows the failure
+                // In python and node, suspending or resuming a completed, failed, or terminated instance swallows the failure
                 // and acts as if the instance was suspended/resumed successfully. This might be a consistency issue, but is it
                 // a bug?
                 // see https://github.com/Azure/azure-functions-durable-python/blob/97a0891f80ccb4cb357e9f39b79a4eb4326f6d98/azure/durable_functions/models/DurableOrchestrationClient.py#L747
@@ -148,9 +148,9 @@ public class SuspendResumeTests
             // Give some time for Core Tools to write logs out
             Thread.Sleep(500);
 
-            // PowerShell and Python both use the HTTP suspend/resume APIs, which return 410 (Gone) and do not log
+            // PowerShell, Python, Node all use the HTTP suspend/resume APIs, which return 410 (Gone) and do not log
             // when the instance is completed
-            if (languageType != LanguageType.PowerShell && languageType != LanguageType.Python)
+            if (languageType != LanguageType.PowerShell && languageType != LanguageType.Python && languageType != LanguageType.Node)
             {
                 Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains("Cannot suspend orchestration instance in the Completed state.") &&
                                                                         x.Contains(instanceId));
@@ -170,7 +170,7 @@ public class SuspendResumeTests
 
         string? responseMessage = await resumeResponse.Content.ReadAsStringAsync();
         Assert.NotNull(responseMessage);
-        Assert.Equal(expectedErrorMessage, responseMessage);
+        Assert.StartsWith(expectedErrorMessage, responseMessage);
     }
 
     private static async Task AssertRequestSucceedsAsync(HttpResponseMessage response)

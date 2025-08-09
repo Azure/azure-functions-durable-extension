@@ -43,14 +43,18 @@ public class ExternalEventTests
         HttpResponseMessage resendEventResponse = await HttpHelpers.InvokeHttpTriggerWithBody("SendExternalEvent_HttpStart", jsonContent, "application/json");
         string responseContent = await resendEventResponse.Content.ReadAsStringAsync();
 
-        // Verify the returned exception contains the correct information. 
-        // In dotnet-isolated, this is the StatusCode of the RPC exception. 
-        // In other languages, it is the exception type
-        Assert.Contains(fixture.functionLanguageLocalizer.GetLocalizedStringValue("ExternalEvent.CompletedInstance.ErrorName"), responseContent);
+        // Bug: https://github.com/Azure/azure-functions-durable-js/issues/645
+        if (this.fixture.functionLanguageLocalizer.GetLanguageType() != LanguageType.Node)
+        {
+            // Verify the returned exception contains the correct information. 
+            // In dotnet-isolated, this is the StatusCode of the RPC exception. 
+            // In other languages, it is the exception type
+            Assert.Contains(fixture.functionLanguageLocalizer.GetLocalizedStringValue("ExternalEvent.CompletedInstance.ErrorName"), responseContent);
 
-        // In dotnet-isolated, this is the deliberate error text from the RpcException
-        // In other languages, it is the symptom error
-        Assert.Contains(fixture.functionLanguageLocalizer.GetLocalizedStringValue("ExternalEvent.CompletedInstance.ErrorMessage", instanceId), responseContent);
+            // In dotnet-isolated, this is the deliberate error text from the RpcException
+            // In other languages, it is the symptom error
+            Assert.Contains(fixture.functionLanguageLocalizer.GetLocalizedStringValue("ExternalEvent.CompletedInstance.ErrorMessage", instanceId), responseContent);
+        }
     }
 
     // Test that sending an event to a not-exist InstanceId will throw an NotFoundRpc Exception.

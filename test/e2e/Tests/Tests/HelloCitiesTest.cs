@@ -67,7 +67,16 @@ public class HttpEndToEndTests
 
         if (scheduledStartTime > DateTime.UtcNow + TimeSpan.FromSeconds(1))
         {
-            await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Pending", 30);
+            if (this.fixture.functionLanguageLocalizer.GetLanguageType() == LanguageType.DotnetIsolated)
+            {
+                await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Pending", 30);
+            }
+            else
+            {
+                // Scheduled orchestrations are not properly implemented in the other languages - however, 
+                // this test has been implemented using timers in the orchestration instead.
+                await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Running", 30);
+            }
         }
 
         await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", Math.Max(startDelaySeconds, 0) + 30);

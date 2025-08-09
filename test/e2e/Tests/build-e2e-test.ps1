@@ -155,6 +155,13 @@ function InstallExtensionAndBuildTestApp($testAppDir) {
         if (Test-Path ".\requirements.txt") {
           python -m pip install -r requirements.txt
         }
+
+        if (Test-Path ".\package-lock.json") {
+          Write-Host "Installing npm packages"
+          npm install
+          npm run clean
+          npm run build
+        }
       }
     }
     

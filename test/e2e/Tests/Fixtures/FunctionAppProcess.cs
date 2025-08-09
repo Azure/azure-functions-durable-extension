@@ -46,11 +46,11 @@ internal class FunctionAppProcess
             string rootDir = Path.GetFullPath(@"../../../../../../");
             string binDir = @$"test/e2e/Apps/{this.appName}/bin";
 
-            // Intentional bad logic - this will be updated to a switch case against an enum value in a future PR
             switch (this.testLanguage)
             {
                 case LanguageType.PowerShell:
                 case LanguageType.Python:
+                case LanguageType.Node:
                     e2eAppPath = Path.Combine(rootDir, @$"test/e2e/Apps/{this.appName}");
                     break;
                 case LanguageType.DotnetIsolated:
