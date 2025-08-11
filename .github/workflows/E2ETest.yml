@@ -168,7 +168,7 @@ jobs:
 
       - name: Run E2E tests (Node)
         working-directory: test/e2e/Tests
-        run: dotnet test --filter 'AzureStorage!=Skip&Node!=Skip&Node-AzureStorage!=Skip' --logger "console;verbosity=detailed"
+        run: dotnet test --filter 'AzureStorage!=Skip&Node!=Skip&Node-AzureStorage!=Skip'
 
   e2e-mssql:
     runs-on: ubuntu-latest
