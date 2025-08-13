@@ -44,6 +44,12 @@
             <artifactId>durabletask-azure-functions</artifactId>
             <version>${durabletask.azure.functions}</version>
         </dependency>
+
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.11.0</version>
+        </dependency>
     </dependencies>
 
     <build>

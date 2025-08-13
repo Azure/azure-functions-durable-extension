@@ -3,8 +3,6 @@ package com.function;
 import com.microsoft.azure.functions.annotation.*;
 import com.microsoft.azure.functions.*;
 
-import java.text.DateFormat;
-import java.text.ParseException;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import java.util.*;
@@ -53,7 +51,7 @@ public class HelloCities {
             @DurableClientInput(name = "durableContext") DurableClientContext durableContext,
             final ExecutionContext context) {
         DurableTaskClient client = durableContext.getClient();
-        String orchestrationName = "HelloCities";
+        String orchestrationName = request.getQueryParameters().get("orchestrationName");
         String instanceId = client.scheduleNewOrchestrationInstance(orchestrationName);
         context.getLogger().info("Started orchestration with ID = '" + instanceId + "'.");
         return durableContext.createCheckStatusResponse(request, instanceId);

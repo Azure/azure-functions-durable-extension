@@ -36,6 +36,7 @@ public class DistributedTracingTests
     [Trait("PowerShell", "Skip")] // Distributed tracing is currently not implemented in PowerShell
     [Trait("Python", "Skip")] // Distributed tracing is not currently implemented in Python
     [Trait("Node", "Skip")] // Distributed tracing is not currently implemented in Node
+    [Trait("Java", "Skip")] // Distributed tracing is not currently implemented in Java
     public async Task DistributedTracingTest()
     {
         // Start Activity

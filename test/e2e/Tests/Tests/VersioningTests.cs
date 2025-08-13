@@ -31,6 +31,7 @@ public class VersioningTests
                                   // mid-test.
     [Trait("Python", "Skip")] // The above applies to Python as well
     [Trait("Node", "Skip")] // The above applies to Node as well
+    [Trait("Node", "Skip")] // The above applies to Java as well
     public async Task TestVersionedOrchestration_OKWithMatchingVersion(string? version)
     {
         string queryString = version == null ? string.Empty : $"?version={version}";
@@ -61,6 +62,7 @@ public class VersioningTests
     [Trait("PowerShell", "Skip")] // See notes on first test.
     [Trait("Python", "Skip")] // See notes on first test.
     [Trait("Node", "Skip")] // See notes on first test.
+    [Trait("Java", "Skip")] // See notes on first test.
     public async Task TestVersionedSubOrchestration_OKWithMatchingVersion(string? subOrchestrationVersion)
     {
         string queryString = subOrchestrationVersion == null ? string.Empty : $"?subOrchestrationVersion={subOrchestrationVersion}";
@@ -87,6 +89,7 @@ public class VersioningTests
     [Trait("PowerShell", "Skip")] // See notes on first test.
     [Trait("Python", "Skip")] // See notes on first test.
     [Trait("Node", "Skip")] // See notes on first test.
+    [Trait("Java", "Skip")] // See notes on first test.
     public async Task TestVersionedOrchestration_FailsWithNonMatchingVersion()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("OrchestrationVersion_HttpStart", $"?version=3.0");
