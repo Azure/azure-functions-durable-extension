@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using DurableTask.AzureStorage;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage;
 using Microsoft.Extensions.Logging;
 
@@ -231,6 +232,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// This setting is only effective when <see cref="UseTablePartitionManagement"/> is set to true.
         /// </remarks>
         public TimeSpan PartitionTableOperationTimeout { get; set; } = TimeSpan.FromSeconds(2);
+
+        /// <summary>
+        /// Gets or sets the encoding strategy used for Azure Storage Queue messages.
+        /// The default is <see cref="QueueClientMessageEncoding.UTF8"/>.
+        /// </summary>
+        public QueueClientMessageEncoding QueueClientMessageEncoding { get; set; } = QueueClientMessageEncoding.UTF8;
 
         /// <summary>
         /// Throws an exception if the provided hub name violates any naming conventions for the storage provider.

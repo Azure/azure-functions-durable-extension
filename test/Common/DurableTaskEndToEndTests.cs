@@ -5107,6 +5107,46 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
+        /// <summary>
+        /// End-to-end test which validates that QueueClientMessageEncoding.Base64 works correctly with a Hello World orchestration.
+        /// And with base64-queueclient we can support orchestration with escaped characters.
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task HelloWorld_QueueClientMessageEncoding_Base64()
+        {
+            string[] orchestratorFunctionNames =
+            {
+                nameof(TestOrchestrations.SayHelloInline),
+            };
+
+            var options = new DurableTaskOptions();
+
+            // Configure Azure Storage provider with Base64 message encoding
+            options.StorageProvider["ConnectionName"] = "AzureWebJobsStorage";
+            options.StorageProvider["QueueClientMessageEncoding"] = "Base64";
+
+            // Create input with escaped characters including 0xFFFE
+            string inputWithEscapedChars = "World\uFFFE\u0001\u0002\u0003";
+
+            using (var host = TestHelpers.GetJobHostWithOptions(
+                this.loggerProvider,
+                durableTaskOptions: options,
+                storageProviderType: TestHelpers.AzureStorageProviderType))
+            {
+                await host.StartAsync();
+
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], inputWithEscapedChars, this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
+
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal(inputWithEscapedChars, status?.Input);
+                Assert.Equal($"Hello, {inputWithEscapedChars}!", status?.Output);
+
+                await host.StopAsync();
+            }
+        }
+
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
