@@ -23,6 +23,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly string eventGridKeyValue;
         private readonly string eventGridTopicEndpoint;
         private readonly OrchestrationRuntimeStatus[] eventGridPublishEventTypes;
+        private readonly bool useManagedIdentity;
+        private readonly ManagedIdentityTokenSource managedIdentityTokenSource;
         private static HttpClient httpClient = null;
         private static HttpMessageHandler httpMessageHandler = null;
 
@@ -46,7 +48,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             var eventGridNotificationsConfig = options.Notifications.EventGrid ?? throw new ArgumentNullException(nameof(options.Notifications.EventGrid));
 
-            this.eventGridKeyValue = nameResolver.Resolve(eventGridNotificationsConfig.KeySettingName);
+            this.useManagedIdentity = false;
+
+            // Check if the customer is using managed identity for Event Grid
+            if (string.IsNullOrEmpty(eventGridNotificationsConfig.KeySettingName))
+            {
+                this.useManagedIdentity = true;
+                this.managedIdentityTokenSource = new ManagedIdentityTokenSource("https://eventgrid.azure.net/.default");
+            }
+            else
+            {
+                this.eventGridKeyValue = nameResolver.Resolve(eventGridNotificationsConfig.KeySettingName);
+            }
+
             this.eventGridTopicEndpoint = eventGridNotificationsConfig.TopicEndpoint;
 
             if (nameResolver.TryResolveWholeString(eventGridNotificationsConfig.TopicEndpoint, out var endpoint))
@@ -56,10 +70,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             if (!string.IsNullOrEmpty(this.eventGridTopicEndpoint))
             {
-                if (!string.IsNullOrEmpty(eventGridNotificationsConfig.KeySettingName))
-                {
-                    this.useTrace = true;
+                this.useTrace = true;
 
+                if (!string.IsNullOrEmpty(eventGridNotificationsConfig.KeySettingName) || this.useManagedIdentity == true)
+                {
                     var retryStatusCode = eventGridNotificationsConfig.PublishRetryHttpStatus?
                                               .Where(x => Enum.IsDefined(typeof(HttpStatusCode), x))
                                               .Select(x => (HttpStatusCode)x)
@@ -116,12 +130,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         eventGridNotificationsConfig.PublishRetryInterval,
                         retryStatusCode);
 
-                    if (string.IsNullOrEmpty(this.eventGridKeyValue))
+                    if (string.IsNullOrEmpty(this.eventGridKeyValue) && this.useManagedIdentity == false)
                     {
                         throw new ArgumentException($"Failed to start lifecycle notification feature. Please check the configuration values for {eventGridNotificationsConfig.KeySettingName} on AppSettings.");
                     }
                 }
-                else
+                else if (string.IsNullOrEmpty(eventGridNotificationsConfig.KeySettingName) && this.useManagedIdentity == false)
                 {
                     throw new ArgumentException($"Failed to start lifecycle notification feature. Please check the configuration values for {eventGridNotificationsConfig.TopicEndpoint} and {eventGridNotificationsConfig.KeySettingName}.");
                 }
@@ -140,8 +154,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 httpClient?.Dispose();
                 httpMessageHandler = value;
                 httpClient = new HttpClient(httpMessageHandler);
-                httpClient.DefaultRequestHeaders.Add("aeg-sas-key", this.eventGridKeyValue);
+
+                if (this.useManagedIdentity)
+                {
+                    // Use Bearer token for Managed Identity
+                    this.RefreshAccessTokenAsync().GetAwaiter().GetResult();
+                }
+                else
+                {
+                    // Use key-based authentication
+                    httpClient.DefaultRequestHeaders.Add("aeg-sas-key", this.eventGridKeyValue);
+                }
             }
+        }
+
+        private async Task RefreshAccessTokenAsync()
+        {
+            string accessToken = await this.managedIdentityTokenSource.GetTokenAsync();
+            httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
         }
 
         private async Task SendNotificationAsync(
