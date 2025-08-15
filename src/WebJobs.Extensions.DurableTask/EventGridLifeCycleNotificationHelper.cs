@@ -69,10 +69,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             if (!string.IsNullOrEmpty(this.eventGridTopicEndpoint))
             {
-                this.useTrace = true;
-
                 if (!string.IsNullOrEmpty(eventGridNotificationsConfig.KeySettingName) || this.useManagedIdentity == true)
                 {
+                    this.useTrace = true;
+
                     var retryStatusCode = eventGridNotificationsConfig.PublishRetryHttpStatus?
                                               .Where(x => Enum.IsDefined(typeof(HttpStatusCode), x))
                                               .Select(x => (HttpStatusCode)x)
