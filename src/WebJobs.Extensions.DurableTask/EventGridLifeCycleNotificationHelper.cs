@@ -50,7 +50,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             this.useManagedIdentity = false;
 
-            // Check if the customer is using managed identity for Event Grid
             if (string.IsNullOrEmpty(eventGridNotificationsConfig.KeySettingName))
             {
                 this.useManagedIdentity = true;
