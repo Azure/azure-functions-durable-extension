@@ -413,6 +413,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 // Thrown when th instanceId is not found.
                 throw new RpcException(new Status(StatusCode.NotFound, $"ArgumentException: {ex.Message}"));
             }
+            catch (InvalidOperationException ex)
+            {
+                throw new RpcException(new Status(StatusCode.FailedPrecondition, $"InvalidOperationException: {ex.Message}"));
+            }
             catch (Exception ex)
             {
                 // Any other unexpected exceptions.
