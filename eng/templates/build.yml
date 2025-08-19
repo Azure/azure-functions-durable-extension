@@ -131,6 +131,11 @@ jobs:
             Contents: '**'
             TargetFolder: '$(System.DefaultWorkingDirectory)/azure-functions-durable-extension/'
 
+      # We also need to build the Java smoke test, for CodeQL compliance
+      # We don't need to build the other smoke tests, because they can be analyzed without being compiled,
+      # as they're interpreted languages.
+      # This could be a separate pipeline, but the task is so small that it's paired with the .NET code build
+      # for convenience.
       # Setup Java 17 for building the Java smoke test
       - task: JavaToolInstaller@0
         displayName: 'Use Java 17'
@@ -139,53 +144,14 @@ jobs:
           jdkArchitectureOption: 'x64'
           jdkSourceOption: 'PreInstalled'
 
-      # We also need to build the Java smoke test, for CodeQL compliance
-      # We don't need to build the other smoke tests, because they can be analyzed without being compiled,
-      # as they're interpreted languages.
-      # This could be a separate pipeline, but the task is so small that it's paired with the .NET code build
-      # for convenience.
-      - pwsh: |
-          # Verify Java 17 is installed and set environment
-          Write-Host "=== Checking Java Installation ==="
-          java -version
-          Write-Host "JAVA_HOME before: $env:JAVA_HOME"
-          
-          # Find Java 17 installation and set JAVA_HOME explicitly
-          $java17Path = ""
-          $possiblePaths = @(
-              "$env:AGENT_TOOLSDIRECTORY\Java_Temurin-Hotspot\17*\x64",
-              "$env:AGENT_TOOLSDIRECTORY\jdk\17*\x64", 
-              "C:\Program Files\Java\jdk-17*",
-              "C:\hostedtoolcache\windows\Java_Temurin-Hotspot\17*\x64"
-          )
-          
-          foreach ($path in $possiblePaths) {
-              $resolved = Get-ChildItem $path -ErrorAction SilentlyContinue | Select-Object -First 1
-              if ($resolved -and (Test-Path "$($resolved.FullName)\bin\java.exe")) {
-                  $java17Path = $resolved.FullName
-                  break
-              }
-          }
-          
-          if (-not $java17Path) {
-              Write-Host "Falling back to current java location"
-              $javaExe = Get-Command java | Select-Object -ExpandProperty Source
-              $java17Path = Split-Path (Split-Path $javaExe -Parent) -Parent
-          }
-          
-          $env:JAVA_HOME = $java17Path
-          $env:PATH = "$java17Path\bin;$env:PATH"
-          
-          Write-Host "JAVA_HOME set to: $env:JAVA_HOME"
-          Write-Host "Java version check:"
-          & "$env:JAVA_HOME\bin\java.exe" -version
-          
-          # Set Gradle options to use the correct Java
-          $env:GRADLE_OPTS = "-Dorg.gradle.java.home='$env:JAVA_HOME'"
-          Write-Host "GRADLE_OPTS: $env:GRADLE_OPTS"
-          
-          # Build the Java project
-          cd ./test/SmokeTests/OOProcSmokeTests/durableJava/
-          gradle build
-          ls
+      # Build Java smoke test using official Gradle task
+      - task: Gradle@2
         displayName: 'Build Java OOProc test (for CodeQL compliance)'
+        inputs:
+          workingDirectory: 'test/SmokeTests/OOProcSmokeTests/durableJava'
+          gradleOptions: '-Xmx3072m'
+          javaHomeOption: 'JDKVersion'
+          jdkVersionOption: '17'
+          jdkArchitectureOption: 'x64'
+          publishJUnitResults: false
+          tasks: 'build'
