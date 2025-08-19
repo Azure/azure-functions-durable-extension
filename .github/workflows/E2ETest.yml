@@ -3,12 +3,12 @@ name: End to End Test - .NET Isolated/Func V4
 on:
   workflow_dispatch:
   push:
-    branches: [ main, dev, andystaples/add-gh-action-for-e2e-tests ]
+    branches: [ main, dev, andystaples/add-gh-action-for-e2e-tests, nytian/v3.1.0 ]
     paths:
       - 'src/**'
       - 'test/e2e/**'
   pull_request:
-    branches: [ main, dev, andystaples/add-gh-action-for-e2e-tests ]
+    branches: [ main, dev, andystaples/add-gh-action-for-e2e-tests, nytian/v3.1.0 ]
     paths:
       - 'src/**'
       - 'test/e2e/**'
