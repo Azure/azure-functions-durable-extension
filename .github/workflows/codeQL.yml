@@ -6,9 +6,9 @@ name: "CodeQL"
 
 on:
   push:
-    branches: [ "main", "*", "nytian/v3.1.0" ] # TODO: remove development branch after approval
+    branches: [ "main", "*", "nytian/v3.1.0", "nytian/sc-hotfix-v3.1.0" ] # TODO: remove development branch after approval
   pull_request:
-    branches: [ "main", "*", "nytian/v3.1.0"] # TODO: remove development branch after approval
+    branches: [ "main", "*", "nytian/v3.1.0", "nytian/sc-hotfix-v3.1.0"] # TODO: remove development branch after approval
   schedule:
     - cron: '0 0 * * 1' # Weekly Monday run, needed for weekly reports
   workflow_call: # allows to be invoked as part of a larger workflow
