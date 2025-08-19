@@ -3,7 +3,7 @@ COPY . /root
 RUN cd /root/test/SmokeTests/OOProcSmokeTests/durableJava && \
     dotnet build -o bin
 
-FROM mcr.microsoft.com/azure-functions/java:4-java8
+FROM mcr.microsoft.com/azure-functions/java:4-java17
 # Copy the bin folder generated at /root/test/SmokeTests/OOProcSmokeTests/durableJava
 COPY --from=build-env /root/test/SmokeTests/OOProcSmokeTests/durableJava /home/site/wwwroot
 

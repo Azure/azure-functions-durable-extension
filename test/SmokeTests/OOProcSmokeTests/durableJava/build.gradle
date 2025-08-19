@@ -24,8 +24,8 @@ dependencies {
     runtimeOnly "io.grpc:grpc-netty-shaded:1.38.0"
 }
 
-sourceCompatibility = '1.8'
-targetCompatibility = '1.8'
+sourceCompatibility = '17'
+targetCompatibility = '17'
 
 compileJava.options.encoding = 'UTF-8'
 
@@ -36,7 +36,7 @@ azurefunctions {
     region = 'westus'
     runtime {
         os = 'Windows'
-        javaVersion = 'Java 8'
+        javaVersion = 'Java 17'
     }
     auth {
         type = 'azure_cli'
