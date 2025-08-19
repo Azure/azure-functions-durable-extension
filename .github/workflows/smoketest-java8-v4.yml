@@ -26,7 +26,7 @@ jobs:
       - name: Build azure functions sample
         uses: gradle/gradle-build-action@bc3340afc5e3cc44f2321809ac090d731c13c514
         with:
-          gradle-version: 6.5
+          gradle-version: 7.4
           arguments: azureFunctionsPackage -p test/SmokeTests/OOProcSmokeTests/durableJava/
         continue-on-error: true
       - name: Download azure functions java library # TODO: Remove this step once gradle plugin is updated
