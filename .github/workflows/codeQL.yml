@@ -6,7 +6,7 @@ name: "CodeQL"
 
 on:
   push:
-    branches: [ "main", "*" ] # TODO: remove development branch after approval
+    branches: [ "main", "*", "nytian/v3.1.0" ] # TODO: remove development branch after approval
   pull_request:
     branches: [ "main", "*", "nytian/v3.1.0"] # TODO: remove development branch after approval
   schedule:

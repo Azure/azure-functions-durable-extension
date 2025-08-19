@@ -9,7 +9,7 @@ on:
       - 'test/SmokeTests/BackendSmokeTests/MSSQL/**'
       - '.github/workflows/smoketest-mssql-inproc-v4.yml'
   pull_request:
-    branches: [ main, dev, nytian/v3.1.0 ]
+    branches: [ main, dev, nytian/v3.1.0  ]
     paths:
       - 'src/**'
       - 'test/SmokeTests/BackendSmokeTests/MSSQL/**'

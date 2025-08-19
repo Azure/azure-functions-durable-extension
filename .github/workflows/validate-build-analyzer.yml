@@ -5,10 +5,12 @@ on:
     branches:
       - main
       - dev
+      - nytian/v3.1.0 
     paths-ignore: [ '**.md' ]
   pull_request:
     branches:
       - '*'
+      - nytian/v3.1.0
     paths-ignore: [ '**.md' ]
 
 env:
