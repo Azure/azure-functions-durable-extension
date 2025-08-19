@@ -8,7 +8,7 @@ on:
       - 'src/**'
       - 'test/SmokeTests/OOProcSmokeTests/durablePy/**'
   pull_request:
-    branches: [ main, dev, nytian/v3.1.0  ]
+    branches: [ main, dev, nytian/v3.1.0 , nytian/sc-hotfix-v3.1.0]
     paths:
       - 'src/**'
       - 'test/SmokeTests/OOProcSmokeTests/durablePy/**'

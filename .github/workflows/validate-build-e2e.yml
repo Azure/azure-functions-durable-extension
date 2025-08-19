@@ -11,6 +11,7 @@ on:
     branches:
       - '*'
       - nytian/v3.1.0
+      - nytian/sc-hotfix-v3.1.0
     paths-ignore: [ '**.md' ]
 
 env:
