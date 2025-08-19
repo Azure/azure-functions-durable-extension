@@ -1,0 +1,9 @@
+{
+  "bindings": [
+    {
+      "name": "sleepMs",
+      "type": "activityTrigger",
+      "direction": "in"
+    }
+  ]
+}

@@ -87,6 +87,12 @@ jobs:
         cd ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated && func host start --port 7071 &
         ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated/run-smoke-tests.ps1 -HttpStartPath api/StartHelloCitiesUntyped
 
+    - name: Run smoke tests (Hello Cities) with provided Instance Id
+      shell: pwsh
+      run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
+        cd ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated && func host start --port 7071 &
+        ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated/run-smoke-tests.ps1 -HttpStartPath api/StartHelloCitiesUntyped -TestWithCustomInstanceId
+
     - name: Run smoke tests (Process Exit)
       shell: pwsh
       run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &

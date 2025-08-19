@@ -29,7 +29,6 @@
     <Version>$(MajorVersion).$(MinorVersion).$(PatchVersion)-$(VersionSuffix)</Version>
   </PropertyGroup>
 
-
   <!-- NuGet Publishing Metadata -->
   <PropertyGroup>
     <Title>Azure Functions Durable Task Extension</Title>
@@ -51,7 +50,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Protobuf Include="**/*.proto" GrpcServices="Both" Access="Internal"  />
+    <Protobuf Include="Grpc/Protos/**/*.proto" GrpcServices="Both" Access="Internal" />
   </ItemGroup>
 
   <ItemGroup>

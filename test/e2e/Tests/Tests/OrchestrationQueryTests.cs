@@ -11,18 +11,19 @@ namespace Microsoft.Azure.Durable.Tests.DotnetIsolatedE2E;
 [Collection(Constants.FunctionAppCollectionSequentialName)]
 public class OrchestrationQueryTests
 {
-    private readonly FunctionAppFixture _fixture;
-    private readonly ITestOutputHelper _output;
+    private readonly FunctionAppFixture fixture;
+    private readonly ITestOutputHelper output;
 
     public OrchestrationQueryTests(FunctionAppFixture fixture, ITestOutputHelper testOutputHelper)
     {
-        _fixture = fixture;
-        _fixture.TestLogs.UseTestLogger(testOutputHelper);
-        _output = testOutputHelper;
+        this.fixture = fixture;
+        this.fixture.TestLogs.UseTestLogger(testOutputHelper);
+        this.output = testOutputHelper;
     }
 
 
     [Fact]
+    [Trait("PowerShell", "Skip")] // PowerShell does not have a GetAllInstancesAsync equivalent today
     public async Task ListAllOrchestrations_ShouldSucceed()
     {
         using HttpResponseMessage statusResponse = await HttpHelpers.InvokeHttpTrigger("GetAllInstances", "");
@@ -38,9 +39,10 @@ public class OrchestrationQueryTests
 
 
     [Fact]
+    [Trait("PowerShell", "Skip")] // PowerShell does not have a GetRunningInstances equivalent today
     public async Task ListRunningOrchestrations_ShouldContainRunningOrchestration()
     {
-        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("LongOrchestrator_HttpStart", "");
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=LongRunningOrchestrator");
 
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         string instanceId = await DurableHelpers.ParseInstanceIdAsync(response);
@@ -58,7 +60,8 @@ public class OrchestrationQueryTests
             JsonNode? statusResponseJsonNode = JsonNode.Parse(statusResponseMessage);
             Assert.NotNull(statusResponseJsonNode);
 
-            Assert.Contains(statusResponseJsonNode.AsArray(), x => x?["InstanceId"]?.ToString() == instanceId);
+            Assert.Contains(statusResponseJsonNode.AsArray(), x => x?["InstanceId"]?.ToString() == instanceId ||
+                                                                   x?["instanceId"]?.ToString() == instanceId);
         }
         finally
         {

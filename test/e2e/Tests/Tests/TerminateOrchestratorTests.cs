@@ -10,21 +10,21 @@ namespace Microsoft.Azure.Durable.Tests.DotnetIsolatedE2E;
 [Collection(Constants.FunctionAppCollectionName)]
 public class TerminateOrchestratorTests
 {
-    private readonly FunctionAppFixture _fixture;
-    private readonly ITestOutputHelper _output;
+    private readonly FunctionAppFixture fixture;
+    private readonly ITestOutputHelper output;
 
     public TerminateOrchestratorTests(FunctionAppFixture fixture, ITestOutputHelper testOutputHelper)
     {
-        _fixture = fixture;
-        _fixture.TestLogs.UseTestLogger(testOutputHelper);
-        _output = testOutputHelper;
+        this.fixture = fixture;
+        this.fixture.TestLogs.UseTestLogger(testOutputHelper);
+        this.output = testOutputHelper;
     }
 
 
     [Fact]
     public async Task TerminateRunningOrchestration_ShouldSucceed()
     {
-        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("LongOrchestrator_HttpStart", "");
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=LongRunningOrchestrator");
 
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         string instanceId = await DurableHelpers.ParseInstanceIdAsync(response);
@@ -40,6 +40,7 @@ public class TerminateOrchestratorTests
 
 
     [Fact(Skip = "Will enable when https://github.com/Azure/azure-functions-durable-extension/issues/3025 is fixed")]
+    [Trait("PowerShell", "Skip")] // Scheduled orchestrations not implemented in PowerShell
     public async Task TerminateScheduledOrchestration_ShouldSucceed()
     {
         DateTime scheduledStartTime = DateTime.UtcNow + TimeSpan.FromMinutes(1);
@@ -61,7 +62,9 @@ public class TerminateOrchestratorTests
     [Fact]
     public async Task TerminateTerminatedOrchestration_ShouldFail()
     {
-        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("LongOrchestrator_HttpStart", "");
+        LanguageType languageType = this.fixture.functionLanguageLocalizer.GetLanguageType();
+
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=LongRunningOrchestrator");
 
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         string instanceId = await DurableHelpers.ParseInstanceIdAsync(response);
@@ -75,20 +78,47 @@ public class TerminateOrchestratorTests
         await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Terminated", 30);
 
         using HttpResponseMessage terminateAgainResponse = await HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={instanceId}");
-        await AssertTerminateRequestFailsAsync(terminateAgainResponse);
+        
+        if (languageType == LanguageType.Python || languageType == LanguageType.Node)
+        {
+            // In python and Node, terminating a completed, failed, or terminated instance swallows the failure
+            // and acts as if the instance was terminated successfully. This might be a consistency issue, but is it
+            // a bug?
+            // see https://github.com/Azure/azure-functions-durable-python/blob/97a0891f80ccb4cb357e9f39b79a4eb4326f6d98/azure/durable_functions/models/DurableOrchestrationClient.py#L444
+            Assert.Equal(HttpStatusCode.OK, terminateAgainResponse.StatusCode);
+        }
+        else
+        {
+            Assert.Equal(HttpStatusCode.BadRequest, terminateAgainResponse.StatusCode);
+        }
+
+        // Check the exception returned contains the right statusCode and message. 
+        string? terminateAgainResponseMessage = await terminateAgainResponse.Content.ReadAsStringAsync();
+        Assert.NotNull(terminateAgainResponseMessage);
+
+        Assert.Contains(fixture.functionLanguageLocalizer.GetLocalizedStringValue("TerminateTerminatedInstance.FailureMessage", instanceId), terminateAgainResponseMessage);
 
         // Give some time for Core Tools to write logs out
         Thread.Sleep(500);
 
-        Assert.Contains(_fixture.TestLogs.CoreToolsLogs, x => x.Contains("Cannot terminate orchestration instance in the Terminated state.") &&
+        // PowerShell, Python, Node all use the HTTP terminate API, which returns 410 (Gone) and does not log
+        // when the instance is completed
+        if (languageType != LanguageType.PowerShell && languageType != LanguageType.Python && languageType != LanguageType.Node)
+        {
+            Assert.Contains("StatusCode=\"FailedPrecondition\"", terminateAgainResponseMessage);
+
+            Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains("Cannot terminate orchestration instance in the Terminated state.") &&
                                                               x.Contains(instanceId));
+        }
     }
 
 
     [Fact]
     public async Task TerminateCompletedOrchestration_ShouldFail()
     {
-        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("HelloCities_HttpStart", "");
+        LanguageType languageType = this.fixture.functionLanguageLocalizer.GetLanguageType();
+
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=HelloCities");
 
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         string instanceId = await DurableHelpers.ParseInstanceIdAsync(response);
@@ -97,30 +127,59 @@ public class TerminateOrchestratorTests
         await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", 30);
 
         using HttpResponseMessage terminateResponse = await HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={instanceId}");
-        await AssertTerminateRequestFailsAsync(terminateResponse);
+
+        if (languageType == LanguageType.Python || languageType == LanguageType.Node)
+        {
+            // In python and Node, terminating a completed, failed, or terminated instance swallows the failure
+            // and acts as if the instance was terminated successfully. This might be a consistency issue, but is it
+            // a bug?
+            // see https://github.com/Azure/azure-functions-durable-python/blob/97a0891f80ccb4cb357e9f39b79a4eb4326f6d98/azure/durable_functions/models/DurableOrchestrationClient.py#L444
+            Assert.Equal(HttpStatusCode.OK, terminateResponse.StatusCode);
+        }
+        else
+        {
+            Assert.Equal(HttpStatusCode.BadRequest, terminateResponse.StatusCode);
+        }
+
+        string? terminateResponseMessage = await terminateResponse.Content.ReadAsStringAsync();
+        Assert.NotNull(terminateResponseMessage);
+
+        Assert.Contains(fixture.functionLanguageLocalizer.GetLocalizedStringValue("TerminateCompletedInstance.FailureMessage", instanceId), terminateResponseMessage);
 
         // Give some time for Core Tools to write logs out
         Thread.Sleep(500);
 
-        Assert.Contains(_fixture.TestLogs.CoreToolsLogs, x => x.Contains("Cannot terminate orchestration instance in the Completed state.") &&
-                                                              x.Contains(instanceId));
+        // PowerShell, Python, Node all use the HTTP terminate API, which returns 410 (Gone) and does not log
+        // when the instance is completed
+        if (languageType != LanguageType.PowerShell && languageType != LanguageType.Python && languageType != LanguageType.Node)
+        {
+            Assert.Contains("StatusCode=\"FailedPrecondition\"", terminateResponseMessage);
+
+            Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains("Cannot terminate orchestration instance in the Completed state.") &&
+                                                                  x.Contains(instanceId));
+        }
     }
 
     [Fact]
     public async Task TerminateNonExistantOrchestration_ShouldFail()
     {
-        using HttpResponseMessage terminateResponse = await HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={Guid.NewGuid().ToString()}");
-        await AssertTerminateRequestFailsAsync(terminateResponse);
-    }
-
-    private static async Task AssertTerminateRequestFailsAsync(HttpResponseMessage terminateResponse)
-    {
+        LanguageType languageType = this.fixture.functionLanguageLocalizer.GetLanguageType();
+        string instanceId = Guid.NewGuid().ToString();
+        using HttpResponseMessage terminateResponse = await HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={instanceId}");
         Assert.Equal(HttpStatusCode.BadRequest, terminateResponse.StatusCode);
 
         string? terminateResponseMessage = await terminateResponse.Content.ReadAsStringAsync();
         Assert.NotNull(terminateResponseMessage);
-        // Unclear error message - see https://github.com/Azure/azure-functions-durable-extension/issues/3027, will update this code when that bug is fixed
-        Assert.Equal("Status(StatusCode=\"Unknown\", Detail=\"Exception was thrown by handler.\")", terminateResponseMessage);
+
+        // Check the exception returned contains the right statusCode and message. 
+        if (languageType != LanguageType.PowerShell && languageType != LanguageType.Python && languageType != LanguageType.Node)
+        {
+            // This particular part of the error is not emitted in Python, PowerShell, Node
+            // It probably does not exist in Java either
+            // But we will prove this when implementing these tests for these languages
+            Assert.Contains("Status(StatusCode=\"NotFound\"", terminateResponseMessage);
+        }
+        Assert.Contains(fixture.functionLanguageLocalizer.GetLocalizedStringValue("TerminateInvalidInstance.FailureMessage", instanceId), terminateResponseMessage);
     }
 
     private static async Task AssertTerminateRequestSucceedsAsync(HttpResponseMessage terminateResponse)

@@ -31,7 +31,28 @@ internal static class HelloSequenceUntyped
     {
         ILogger logger = executionContext.GetLogger(nameof(StartHelloCitiesUntyped));
 
-        string instanceId = await client.ScheduleNewOrchestrationInstanceAsync(nameof(HelloCitiesUntyped));
+        string? providedInstanceId = System.Web.HttpUtility.ParseQueryString(req.Url.Query)["instanceId"];
+
+        StartOrchestrationOptions options;
+        string instanceId;
+
+        // If the user provided an instance ID, we will use it to start the orchestration.
+        if (!string.IsNullOrEmpty(providedInstanceId))
+        {
+            options = new StartOrchestrationOptions
+            {
+                InstanceId = providedInstanceId
+            };
+
+            instanceId = await client.ScheduleNewOrchestrationInstanceAsync(nameof(HelloCitiesUntyped), options);
+        }
+        // If the user did not provide an instance ID, we will generate a new one.
+        else
+        {
+            instanceId = await client.ScheduleNewOrchestrationInstanceAsync(nameof(HelloCitiesUntyped));
+
+        }
+
         logger.LogInformation("Created new orchestration with instance ID = {instanceId}", instanceId);
 
         return client.CreateCheckStatusResponse(req, instanceId);

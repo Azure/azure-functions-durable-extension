@@ -36,7 +36,6 @@ public static class FixtureHelpers
         funcProcess.StartInfo.FileName = cliPath;
         funcProcess.StartInfo.ArgumentList.Add("host");
         funcProcess.StartInfo.ArgumentList.Add("start");
-        funcProcess.StartInfo.ArgumentList.Add("--csharp");
         funcProcess.StartInfo.ArgumentList.Add("--verbose");
 
         if (enableAuth)
@@ -95,17 +94,19 @@ public static class FixtureHelpers
                 {
                     testLogger.LogWarning("Environment variable MSSQL_SA_PASSWORD not set, connection string to SQL emulator may fail");
                 }
-                funcProcess.StartInfo.EnvironmentVariables["SQLDB_Connection"] = $"Server=localhost,1433;Database=DurableDB;User Id=sa;Password={sqlPassword};";
+                funcProcess.StartInfo.EnvironmentVariables["SQLDB_Connection"] = $"Server=localhost,1433;Database=DurableDB;User Id=sa;Password={sqlPassword};TrustServerCertificate=True;Encrypt=False;";
                 funcProcess.StartInfo.EnvironmentVariables["AzureFunctionsJobHost__extensions__durableTask__storageProvider__type"] = "mssql";
                 funcProcess.StartInfo.EnvironmentVariables["AzureFunctionsJobHost__extensions__durableTask__storageProvider__connectionStringName"] = "SQLDB_Connection";
                 funcProcess.StartInfo.EnvironmentVariables["AzureFunctionsJobHost__extensions__durableTask__storageProvider__createDatabaseIfNotExists"] = "true";
                 funcProcess.StartInfo.EnvironmentVariables["AzureFunctionsJobHost__extensions__durableTask__MaxGrpcMessageSizeInBytes"] = "6291456";
+                funcProcess.StartInfo.EnvironmentVariables["AzureFunctionsJobHost__extensions__durableTask__ThrowStatusExceptionsOnRaiseEvent"] = "true";
                 return;
             case "azuremanaged":
                 funcProcess.StartInfo.EnvironmentVariables["AzureFunctionsJobHost__extensions__durableTask__hubName"] = "default";
                 funcProcess.StartInfo.EnvironmentVariables["AzureFunctionsJobHost__extensions__durableTask__storageProvider__type"] = "azureManaged";
                 funcProcess.StartInfo.EnvironmentVariables["AzureFunctionsJobHost__extensions__durableTask__storageProvider__connectionStringName"] = "DURABLE_TASK_SCHEDULER_CONNECTION_STRING";
                 funcProcess.StartInfo.EnvironmentVariables["DURABLE_TASK_SCHEDULER_CONNECTION_STRING"] = $"Endpoint=http://localhost:8080;Authentication=None";
+                funcProcess.StartInfo.EnvironmentVariables["AzureFunctionsJobHost__extensions__durableTask__ThrowStatusExceptionsOnRaiseEvent"] = "true";
                 return;
             default:
                 testLogger.LogWarning("Environment variable E2E_TEST_DURABLE_BACKEND not set, tests configured for Azure Storage");

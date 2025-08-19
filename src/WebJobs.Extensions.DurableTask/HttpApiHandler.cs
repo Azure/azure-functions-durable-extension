@@ -11,13 +11,15 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Web;
 using DurableTask.Core;
+using DurableTask.Core.History;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Routing.Template;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using DTCore = DurableTask.Core;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
@@ -866,20 +868,64 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 var queryNameValuePairs = request.GetQueryNameValuePairs();
 
+                string json = null;
                 object input = null;
+
                 if (request.Content != null && request.Content.Headers?.ContentLength != 0)
                 {
-                    string json = await request.Content.ReadAsStringAsync();
+                    json = await request.Content.ReadAsStringAsync();
                     input = JsonConvert.DeserializeObject(json, this.messageDataConverter.JsonSettings);
                 }
 
-                string id = await client.StartNewAsync(functionName, instanceId, input);
+                string id = string.IsNullOrEmpty(instanceId) ? Guid.NewGuid().ToString("N") : instanceId;
+
+                if (client is DurableClient durableClient)
+                {
+                    var instance = new OrchestrationInstance
+                    {
+                        InstanceId = id,
+                        ExecutionId = Guid.NewGuid().ToString(),
+                    };
+
+                    // Create the ExecutionStartedEvent
+                    ExecutionStartedEvent executionStartedEvent = new ExecutionStartedEvent(-1, json)
+                    {
+                        Name = functionName,
+                        OrchestrationInstance = instance,
+                        Version = this.config.Options.DefaultVersion,
+                    };
+
+                    string traceParent = GetHeaderValueFromHeaders("traceparent", request.Headers);
+                    string traceState = GetHeaderValueFromHeaders("tracestate", request.Headers);
+
+                    if (traceParent != null)
+                    {
+                        ActivityContext.TryParse(traceParent, traceState, out ActivityContext parentActivityContext);
+                        using Activity scheduleOrchestrationActivity = TraceHelper.StartActivityForNewOrchestration(executionStartedEvent, parentActivityContext);
+                    }
+                    else
+                    {
+                        using Activity scheduleOrchestrationActivity = TraceHelper.StartActivityForNewOrchestration(executionStartedEvent, default);
+                    }
+
+                    await durableClient.DurabilityProvider.CreateTaskOrchestrationAsync(
+                        new TaskMessage
+                        {
+                            Event = executionStartedEvent,
+                            OrchestrationInstance = instance,
+                        },
+                        this.config.Options.OverridableExistingInstanceStates.ToDedupeStatuses());
+                }
+                else
+                {
+                    id = await client.StartNewAsync(functionName, instanceId, input);
+                }
 
                 TryGetTimeSpanQueryParameterValue(queryNameValuePairs, TimeoutParameter, out TimeSpan? timeout);
                 TryGetTimeSpanQueryParameterValue(queryNameValuePairs, PollingInterval, out TimeSpan? pollingInterval);
 
                 // for durability providers that support poll-free waiting, we override the specified polling interval
-                if (client is DurableClient durableClient && durableClient.DurabilityProvider.SupportsPollFreeWait)
+                if (client is DurableClient pollFreeDurableClient && pollFreeDurableClient.DurabilityProvider.SupportsPollFreeWait)
                 {
                     pollingInterval = timeout;
                 }
@@ -897,6 +943,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 return request.CreateErrorResponse(HttpStatusCode.BadRequest, "Invalid JSON content", e);
             }
+        }
+
+        private static string GetHeaderValueFromHeaders(string header, HttpRequestHeaders headers)
+        {
+            if (headers.TryGetValues(header, out IEnumerable<string> values))
+            {
+                return values.FirstOrDefault();
+            }
+
+            return null;
         }
 
         private async Task<HttpResponseMessage> HandleRestartInstanceRequestAsync(
@@ -1059,6 +1115,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             else
             {
                 operationName = request.GetQueryNameValuePairs()["op"] ?? string.Empty;
+            }
+
+            if (client is DurableClient durableClient)
+            {
+                string traceParent = GetHeaderValueFromHeaders("traceparent", request.Headers);
+                string traceState = GetHeaderValueFromHeaders("tracestate", request.Headers);
+
+                // We create a sort of "dummy" Activity that contains only the information passed in the HTTP headers. This is so that Activity.Current.Context holds this information,
+                // and so when DurableClient passes it as the parent trace context to TraceHelper for creation of the signal entity Activity, the traces are correctly correlated.
+                // Note that we break the pattern here of not creating the Activity for signaling the entity if we cannot successfully parse the parent trace context
+                // (since Activity.Current.Context will not be set to contain this information, but will still be used by DurableClient when creating the signal entity Activity. Activity.Current will most likely
+                // be a non-recording internal span such that the signal entity Activity will appear without a parent).
+                if (traceParent != null && ActivityContext.TryParse(traceParent, traceState, out ActivityContext parentTraceContext))
+                {
+                    TraceHelper.StartActivityUsingTraceContext(parentTraceContext);
+                }
             }
 
             if (request.Content == null || request.Content.Headers.ContentLength == 0)

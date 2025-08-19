@@ -36,17 +36,17 @@ public static class HelloCities
         return $"Hello {name}!";
     }
 
-    [Function("HelloCities_HttpStart")]
-    public static async Task<HttpResponseData> HttpStart(
+    [Function(nameof(StartOrchestration))]
+    public static async Task<HttpResponseData> StartOrchestration(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestData req,
         [DurableClient] DurableTaskClient client,
-        FunctionContext executionContext)
+        FunctionContext executionContext,
+        string orchestrationName)
     {
-        ILogger logger = executionContext.GetLogger("HelloCities_HttpStart");
+        ILogger logger = executionContext.GetLogger(nameof(StartOrchestration));
 
         // Function input comes from the request content.
-        string instanceId = await client.ScheduleNewOrchestrationInstanceAsync(
-            nameof(HelloCities));
+        string instanceId = await client.ScheduleNewOrchestrationInstanceAsync(orchestrationName);
 
         logger.LogInformation("Started orchestration with ID = '{instanceId}'.", instanceId);
 

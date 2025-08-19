@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using DurableTask.AzureStorage;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage;
 using Microsoft.Extensions.Logging;
 
@@ -221,12 +222,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </remarks>
         public bool AllowReplayingTerminalInstances { get; set; } = false;
 
+        /// <summary>
         /// Specifies the timeout (in seconds) for read and write operations on the partition table using PartitionManager V3 (TablePartitionManager) in Azure Storage.
         /// This helps detect potential silent hangs caused by internal Azure Storage retries.
         /// If the timeout is exceeded, a PartitionManagerWarning is logged and the operation is retried.
         /// Default is 2 seconds.
+        /// </summary>
+        /// <remarks>
         /// This setting is only effective when <see cref="UseTablePartitionManagement"/> is set to true.
+        /// </remarks>
         public TimeSpan PartitionTableOperationTimeout { get; set; } = TimeSpan.FromSeconds(2);
+
+        /// <summary>
+        /// Gets or sets the encoding strategy used for Azure Storage Queue messages.
+        /// The default is <see cref="QueueClientMessageEncoding.UTF8"/>.
+        /// </summary>
+        public QueueClientMessageEncoding QueueClientMessageEncoding { get; set; } = QueueClientMessageEncoding.UTF8;
 
         /// <summary>
         /// Throws an exception if the provided hub name violates any naming conventions for the storage provider.

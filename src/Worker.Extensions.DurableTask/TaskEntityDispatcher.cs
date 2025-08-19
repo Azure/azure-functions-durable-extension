@@ -60,7 +60,24 @@ public sealed class TaskEntityDispatcher
     {
         if (typeof(ITaskEntity).IsAssignableFrom(typeof(T)))
         {
-            ITaskEntity entity = (ITaskEntity)ActivatorUtilities.GetServiceOrCreateInstance<T>(this.services)!;
+            ITaskEntity entity = (ITaskEntity?)ActivatorUtilities.GetServiceOrCreateInstance<T>(this.services)
+                ?? throw new InvalidOperationException($"Failed to create an instance of {typeof(T).FullName}.");
+            return this.DispatchAsync(entity);
+        }
+
+        return this.DispatchAsync(new StateEntity<T>());
+    }
+
+    /// <inheritdoc cref="DispatchAsync{T}()"/>
+    /// <param name="additionalArgs">
+    /// Entity constructor arguments not resolved from the dependency-injection container.
+    /// </param>
+    public Task DispatchAsync<T>(params object[] additionalArgs)
+    {
+        if (typeof(ITaskEntity).IsAssignableFrom(typeof(T)))
+        {
+            ITaskEntity entity = (ITaskEntity?)ActivatorUtilities.CreateInstance<T>(this.services, additionalArgs)
+                ?? throw new InvalidOperationException($"Failed to create an instance of {typeof(T).FullName}.");
             return this.DispatchAsync(entity);
         }
 

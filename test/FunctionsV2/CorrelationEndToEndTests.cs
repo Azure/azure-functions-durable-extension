@@ -5,17 +5,12 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
-using DurableTask.AzureStorage;
 using DurableTask.Core;
-using DurableTask.Core.Settings;
-using FluentAssertions.Collections;
 using Microsoft.ApplicationInsights.Channel;
 using Microsoft.ApplicationInsights.DataContracts;
 using Microsoft.ApplicationInsights.Extensibility.Implementation;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Moq;
 using Xunit;
@@ -219,11 +214,56 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return new Tuple<List<OperationTelemetry>, List<ExceptionTelemetry>>(result.CorrelationSort(), exceptionTelemetryList);
         }
 
-         /*
-         * End to end test that checks if a warning is logged when distributed tracing is
-         * enabled, but APPINSIGHTS_INSTRUMENTATIONKEY isn't set. The test also checks
-         * that the warning isn't logged when the environment variable is set.
+        /*
+         * End to end test that checks if the DT V2 GA Announcement warning is logged
+         * when distributed tracing is disabled or enabled but not Version V2.
          */
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(false, DurableDistributedTracingVersion.None, true, false)]
+        [InlineData(true, DurableDistributedTracingVersion.None, false, false)]
+        [InlineData(true, DurableDistributedTracingVersion.V1, true, false)]
+        [InlineData(true, DurableDistributedTracingVersion.V2, false, false)]
+        [InlineData(false, DurableDistributedTracingVersion.None, true, true)]
+        [InlineData(true, DurableDistributedTracingVersion.None, false, true)]
+        [InlineData(true, DurableDistributedTracingVersion.V1, true, true)]
+        [InlineData(true, DurableDistributedTracingVersion.V2, false, true)]
+
+        public void TelemetryActivator_DTV2_Announcement(bool enabled, DurableDistributedTracingVersion version, bool warningExpected, bool extendedSessions)
+        {
+            TraceOptions traceOptions = new TraceOptions()
+            {
+                DistributedTracingEnabled = enabled,
+                Version = version,
+            };
+
+            DurableTaskOptions options = new DurableTaskOptions();
+            options.Tracing = traceOptions;
+
+            string connStringEnvVarName = "APPLICATIONINSIGHTS_CONNECTION_STRING";
+            string connStringValue = "InstrumentationKey=xxxx;IngestionEndpoint =https://xxxx.applicationinsights.azure.com/;LiveEndpoint=https://xxxx.livediagnostics.monitor.azure.com/";
+
+            var mockNameResolver = GetNameResolverMock(new[] { (connStringEnvVarName, connStringValue) });
+
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                "SingleOrchestration",
+                extendedSessions,
+                nameResolver: mockNameResolver.Object,
+                options: options))
+            {
+                string tracingWarningMessage = "Durable Functions Distributed Tracing V2 is GA now! Learn how to enable the feature by visiting";
+                var foundTracingWarningLog = this.loggerProvider.GetAllLogMessages().Any(l => l.FormattedMessage.StartsWith(tracingWarningMessage));
+
+                Assert.Equal(warningExpected, foundTracingWarningLog);
+            }
+        }
+
+        /*
+        * End to end test that checks if a warning is logged when distributed tracing is
+        * enabled, but APPINSIGHTS_INSTRUMENTATIONKEY isn't set. The test also checks
+        * that the warning isn't logged when the environment variable is set.
+        */
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(false, false, false)]

@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>netcoreapp2.1</TargetFramework>
-    <AzureFunctionsVersion>v2</AzureFunctionsVersion>
+    <TargetFramework>net8.0</TargetFramework>
+    <AzureFunctionsVersion>v4</AzureFunctionsVersion>
   </PropertyGroup>
 
   <!-- We use central package management. For version details, refer to `samples/Directory.packages.props`. -->
@@ -10,7 +10,7 @@
     <None Include="..\README.md" Link="README.md" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask" VersionOverride = "2.4.0"/>
+    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.Http" />
     <PackageReference Include="Microsoft.NET.Sdk.Functions" />
   </ItemGroup>

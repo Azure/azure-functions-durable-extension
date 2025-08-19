@@ -1,0 +1,25 @@
+{
+  "bindings": [
+    {
+      "authLevel": "ANONYMOUS",
+      "name": "Request",
+      "type": "httpTrigger",
+      "direction": "in",
+      "route": "LargeOutputOrchestrator_Query_Output",
+      "methods": [
+        "post",
+        "get"
+      ]
+    },
+    {
+      "type": "http",
+      "direction": "out",
+      "name": "Response"
+    },
+    {
+      "name": "starter",
+      "type": "durableClient",
+      "direction": "in"
+    }
+  ]
+}

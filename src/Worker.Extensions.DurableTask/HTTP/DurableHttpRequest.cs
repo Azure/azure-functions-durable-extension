@@ -24,6 +24,18 @@ public class DurableHttpRequest
     }
 
     /// <summary>
+    /// Initializes a new instance of the <see cref="DurableHttpRequest"/> class with specified HTTP method, URI, headers, 
+    /// and an option to enable asynchronous pattern handling.
+    /// </summary>
+    public DurableHttpRequest(HttpMethod method, Uri uri, IDictionary<string, StringValues>? headers, bool asynchronousPatternEnabled = false)
+    {
+        this.Method = method;
+        this.Uri = uri;
+        this.Headers = headers;
+        this.AsynchronousPatternEnabled = asynchronousPatternEnabled;
+    }
+
+    /// <summary>
     /// HttpMethod used in the HTTP request made by the Durable Function.
     /// </summary>
     [JsonPropertyName("method")]
@@ -48,6 +60,13 @@ public class DurableHttpRequest
     /// </summary>
     [JsonPropertyName("content")]
     public string? Content { get; set; }
+
+    /// <summary>
+    /// Token source for authentication.
+    /// </summary>
+    [JsonPropertyName("tokenSource")]
+    [JsonConverter(typeof(TokenSourceConverter))]
+    public TokenSource? TokenSource { get; set; }
 
     /// <summary>
     /// Specifies whether the Durable HTTP APIs should automatically

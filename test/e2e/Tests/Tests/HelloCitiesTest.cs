@@ -10,14 +10,14 @@ namespace Microsoft.Azure.Durable.Tests.DotnetIsolatedE2E;
 [Collection(Constants.FunctionAppCollectionName)]
 public class HttpEndToEndTests
 {
-    private readonly FunctionAppFixture _fixture;
-    private readonly ITestOutputHelper _output;
+    private readonly FunctionAppFixture fixture;
+    private readonly ITestOutputHelper output;
 
     public HttpEndToEndTests(FunctionAppFixture fixture, ITestOutputHelper testOutputHelper)
     {
-        _fixture = fixture;
-        _fixture.TestLogs.UseTestLogger(testOutputHelper);
-        _output = testOutputHelper;
+        this.fixture = fixture;
+        this.fixture.TestLogs.UseTestLogger(testOutputHelper);
+        this.output = testOutputHelper;
     }
 
     // Due to some kind of asynchronous race condition in XUnit, when running these tests in pipelines,
@@ -26,7 +26,7 @@ public class HttpEndToEndTests
     {
         try
         {
-            _output.WriteLine(message);
+            this.output.WriteLine(message);
         }
         catch
         {
@@ -35,10 +35,10 @@ public class HttpEndToEndTests
     }
 
     [Theory]
-    [InlineData("HelloCities_HttpStart", HttpStatusCode.Accepted, "Hello Tokyo!")]
-    public async Task HttpTriggerTests(string functionName, HttpStatusCode expectedStatusCode, string partialExpectedOutput)
+    [InlineData("HelloCities", HttpStatusCode.Accepted, "Hello Tokyo!")]
+    public async Task HttpTriggerTests(string orchestrationName, HttpStatusCode expectedStatusCode, string partialExpectedOutput)
     {
-        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger(functionName, "");
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", $"?orchestrationName={orchestrationName}");
 
         Assert.Equal(expectedStatusCode, response.StatusCode);
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
@@ -52,6 +52,7 @@ public class HttpEndToEndTests
     [Theory]
     [InlineData("HelloCities_HttpStart_Scheduled", 5, HttpStatusCode.Accepted)]
     [InlineData("HelloCities_HttpStart_Scheduled", -5, HttpStatusCode.Accepted)]
+    [Trait("PowerShell", "Skip")] // Scheduled orchestrations not implemented in PowerShell
     public async Task ScheduledStartTests(string functionName, int startDelaySeconds, HttpStatusCode expectedStatusCode)
     {
         var testStartTime = DateTime.UtcNow;
@@ -66,7 +67,16 @@ public class HttpEndToEndTests
 
         if (scheduledStartTime > DateTime.UtcNow + TimeSpan.FromSeconds(1))
         {
-            await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Pending", 30);
+            if (this.fixture.functionLanguageLocalizer.GetLanguageType() == LanguageType.DotnetIsolated)
+            {
+                await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Pending", 30);
+            }
+            else
+            {
+                // Scheduled orchestrations are not properly implemented in the other languages - however, 
+                // this test has been implemented using timers in the orchestration instead.
+                await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Running", 30);
+            }
         }
 
         await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", Math.Max(startDelaySeconds, 0) + 30);

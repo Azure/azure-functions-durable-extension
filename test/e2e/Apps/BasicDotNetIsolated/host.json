@@ -11,10 +11,14 @@
   },
   "extensions": {
     "durableTask": {
-      "tracing": {
-        "DistributedTracingEnabled": true,
-        "Version": "V2"
-      }
+      "hubName": "IsolatedE2ETaskHub",
+        "tracing": {
+            "DistributedTracingEnabled": true,
+            "Version": "V2"
+        },
+        "defaultVersion": "2.0",
+        "versionMatchStrategy": "CurrentOrOlder",
+        "versionFailureStrategy": "Fail"
     }
   }
 }

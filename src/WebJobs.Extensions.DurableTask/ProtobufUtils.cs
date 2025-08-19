@@ -7,13 +7,16 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using DurableTask.Core;
 using DurableTask.Core.Command;
 using DurableTask.Core.Entities;
 using DurableTask.Core.Entities.OperationFormat;
 using DurableTask.Core.History;
 using DurableTask.Core.Query;
+using DurableTask.Core.Tracing;
 using Google.Protobuf;
+using Google.Protobuf.Collections;
 using Google.Protobuf.WellKnownTypes;
 using P = Microsoft.DurableTask.Protobuf;
 
@@ -499,6 +502,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 Operation = operationRequest.Operation,
                 Input = operationRequest.Input,
                 RequestId = operationRequest.Id.ToString(),
+                TraceContext = operationRequest.TraceContext != null ? new P.TraceContext
+                {
+                    TraceParent = operationRequest.TraceContext.TraceParent,
+                    TraceState = operationRequest.TraceContext.TraceState,
+                }
+                : null,
             };
         }
 
@@ -547,6 +556,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         Input = operationAction.SendSignal.Input,
                         InstanceId = operationAction.SendSignal.InstanceId,
                         ScheduledTime = operationAction.SendSignal.ScheduledTime?.ToDateTime(),
+                        RequestTime = operationAction.SendSignal.RequestTime?.ToDateTimeOffset(),
+                        ParentTraceContext = operationAction.SendSignal.ParentTraceContext != null ?
+                            new DistributedTraceContext(
+                                operationAction.SendSignal.ParentTraceContext.TraceParent,
+                                operationAction.SendSignal.ParentTraceContext.TraceState)
+                            : null,
                     };
 
                 case P.OperationAction.OperationActionTypeOneofCase.StartNewOrchestration:
@@ -557,6 +572,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         Input = operationAction.StartNewOrchestration.Input,
                         InstanceId = operationAction.StartNewOrchestration.InstanceId,
                         Version = operationAction.StartNewOrchestration.Version,
+                        RequestTime = operationAction.StartNewOrchestration.RequestTime?.ToDateTimeOffset(),
+                        ParentTraceContext = operationAction.StartNewOrchestration.ParentTraceContext != null ?
+                            new DistributedTraceContext(
+                                operationAction.StartNewOrchestration.ParentTraceContext.TraceParent,
+                                operationAction.StartNewOrchestration.ParentTraceContext.TraceState)
+                            : null,
                     };
                 default:
                     throw new NotSupportedException($"Deserialization of {operationAction.OperationActionTypeCase} is not supported.");
@@ -582,17 +603,63 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     return new OperationResult()
                     {
                         Result = operationResult.Success.Result,
+                        StartTimeUtc = operationResult.Success.StartTimeUtc?.ToDateTime(),
+                        EndTimeUtc = operationResult.Success.EndTimeUtc?.ToDateTime(),
                     };
 
                 case P.OperationResult.ResultTypeOneofCase.Failure:
                     return new OperationResult()
                     {
                         FailureDetails = GetFailureDetails(operationResult.Failure.FailureDetails),
+                        StartTimeUtc = operationResult.Failure.StartTimeUtc?.ToDateTime(),
+                        EndTimeUtc = operationResult.Failure.EndTimeUtc?.ToDateTime(),
                     };
 
                 default:
                     throw new NotSupportedException($"Deserialization of {operationResult.ResultTypeCase} is not supported.");
             }
+        }
+
+        internal static MapField<string, Value> ConvertPocoToProtoMap(object? configurations)
+        {
+            var map = new MapField<string, Value>();
+
+            if (configurations == null)
+            {
+                return map;
+            }
+
+            System.Type type = configurations.GetType();
+            PropertyInfo[] properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
+
+            foreach (PropertyInfo property in properties)
+            {
+                string propertyName = property.Name;
+                object? propertyValue = property.GetValue(configurations);
+
+                map[propertyName] = ConvertToProtoValue(propertyValue);
+            }
+
+            return map;
+        }
+
+        private static Value ConvertToProtoValue(object? value)
+        {
+            if (value is null)
+            {
+                return Value.ForNull();
+            }
+
+            return value switch
+            {
+                string s => Value.ForString(s),
+                bool b => Value.ForBool(b),
+                int i => Value.ForNumber(i),
+                long l => Value.ForNumber(l),
+                float f => Value.ForNumber(f),
+                double d => Value.ForNumber(d),
+                _ => throw new InvalidOperationException($"Unsupported type: {value.GetType()} at durable ProtobufUtils.")
+            };
         }
     }
 }

@@ -12,14 +12,14 @@ namespace Microsoft.Azure.Durable.Tests.DotnetIsolatedE2E;
 [Collection(Constants.FunctionAppCollectionName)]
 public class ErrorHandlingTests
 {
-    private readonly FunctionAppFixture _fixture;
-    private readonly ITestOutputHelper _output;
+    private readonly FunctionAppFixture fixture;
+    private readonly ITestOutputHelper output;
 
     public ErrorHandlingTests(FunctionAppFixture fixture, ITestOutputHelper testOutputHelper)
     {
-        _fixture = fixture;
-        _fixture.TestLogs.UseTestLogger(testOutputHelper);
-        _output = testOutputHelper;
+        this.fixture = fixture;
+        this.fixture.TestLogs.UseTestLogger(testOutputHelper);
+        this.output = testOutputHelper;
     }
 
     [Fact]
@@ -27,7 +27,7 @@ public class ErrorHandlingTests
     [Trait("DTS", "Skip")] // DTS will fail this test unless this bug is fixed: https://msazure.visualstudio.com/Antares/_workitems/edit/31779638
     public async Task OrchestratorWithUncaughtActivityException_ShouldFail()
     {
-        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("RethrowActivityException_HttpStart", "");
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=RethrowActivityException");
 
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
@@ -36,16 +36,17 @@ public class ErrorHandlingTests
 
         var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
         
-        Assert.StartsWith("Microsoft.DurableTask.TaskFailedException", orchestrationDetails.Output);
+        Assert.StartsWith(this.fixture.functionLanguageLocalizer?.GetLocalizedStringValue("RethrownActivityException.ErrorMessage"), orchestrationDetails.Output);
         Assert.Contains("This activity failed", orchestrationDetails.Output);
     }
 
     [Fact]
     [Trait("MSSQL", "Skip")] // Durable Entities are not supported in MSSQL/Dotnet Isolated, see https://github.com/microsoft/durabletask-mssql/issues/205
     [Trait("DTS", "Skip")] // DTS will fail this test unless this bug is fixed: https://msazure.visualstudio.com/Antares/_workitems/edit/31779638
+    [Trait("PowerShell", "Skip")] // Durable Entities not yet implemented in PowerShell
     public async Task OrchestratorWithUncaughtEntityException_ShouldFail()
     {
-        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("RethrowEntityException_HttpStart", "");
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=ThrowEntityOrchestration");
 
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
@@ -54,14 +55,22 @@ public class ErrorHandlingTests
 
         var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
         
-        Assert.StartsWith("Microsoft.DurableTask.Entities.EntityOperationFailedException", orchestrationDetails.Output);
-        Assert.Contains("This entity failed", orchestrationDetails.Output);
+        Assert.StartsWith(this.fixture.functionLanguageLocalizer.GetLocalizedStringValue("RethrownEntityException.ErrorMessage"), orchestrationDetails.Output);
+        // Bug: https://github.com/Azure/azure-functions-durable-js/issues/642
+        if (this.fixture.functionLanguageLocalizer.GetLanguageType() != LanguageType.Node)
+        {
+            Assert.Contains("This entity failed", orchestrationDetails.Output);
+        }
     }
 
     [Fact]
+    [Trait("PowerShell-MSSQL", "Skip")] // Bug: https://github.com/Azure/azure-functions-durable-powershell/issues/98
+    [Trait("PowerShell-DTS", "Skip")] // Same bug as above
+    [Trait("Python-DTS", "Skip")] // Bug: https://github.com/Azure/azure-functions-durable-python/issues/562
+    [Trait("Node-DTS", "Skip")] // Bug: https://msazure.visualstudio.com/Antares/_workitems/edit/33910424
     public async Task OrchestratorWithCaughtActivityException_ShouldSucceed()
     {
-        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("CatchActivityException_HttpStart", "");
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=CatchActivityException");
 
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
@@ -69,14 +78,17 @@ public class ErrorHandlingTests
         await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", 30);
 
         var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
-        Assert.StartsWith("Task 'RaiseException' (#0) failed with an unhandled exception:", orchestrationDetails.Output);
+        Assert.StartsWith(this.fixture.functionLanguageLocalizer?.GetLocalizedStringValue("CaughtActivityException.ErrorMessage"), orchestrationDetails.Output);
         Assert.Contains("This activity failed", orchestrationDetails.Output);
     }
 
     [Fact]
-    public async Task OrchestratorWithCaughtActivityExceptionFailuredetails_ContainRightErrorType()
+    [Trait("PowerShell", "Skip")] // FailureDetails is a dotnet-isolated implementation detail
+    [Trait("Python", "Skip")] // FailureDetails is a dotnet-isolated implementation detail
+    [Trait("Node", "Skip")] // FailureDetails is a dotnet-isolated implementation detail
+    public async Task OrchestratorWithCaughtActivityExceptionFailureDetails_ContainRightErrorType()
     {
-        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("CatchActivityExceptionFailureDetails_HttpStart", "");
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=CatchActivityExceptionFailureDetails");
 
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
@@ -96,9 +108,10 @@ public class ErrorHandlingTests
 
     [Fact]
     [Trait("MSSQL", "Skip")] // Durable Entities are not supported in MSSQL/Dotnet Isolated, see https://github.com/microsoft/durabletask-mssql/issues/205
+    [Trait("PowerShell", "Skip")] // Durable Entities not yet implemented in PowerShell
     public async Task OrchestratorWithCaughtEntityException_ShouldSucceed()
     {
-        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("CatchEntityException_HttpStart", "");
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=CatchEntityOrchestration");
 
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
@@ -106,19 +119,24 @@ public class ErrorHandlingTests
         await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", 30);
 
         var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
-        Assert.StartsWith("Operation 'ThrowFirstTimeOnly' of entity '@counter@MyExceptionEntity' failed:", orchestrationDetails.Output);
-        Assert.Contains("This entity failed", orchestrationDetails.Output);
-        Assert.Contains("More information about the failure", orchestrationDetails.Output);
+        Assert.StartsWith(this.fixture.functionLanguageLocalizer.GetLocalizedStringValue("CaughtEntityException.ErrorMessage"), orchestrationDetails.Output);
+        // Bug: https://github.com/Azure/azure-functions-durable-js/issues/642
+        if (this.fixture.functionLanguageLocalizer.GetLanguageType() != LanguageType.Node)
+        {
+            Assert.Contains("This entity failed", orchestrationDetails.Output);
+            Assert.Contains("More information about the failure", orchestrationDetails.Output);
 
-        // For now, we deliberately do not return inner exception details on entity failure. 
-        // If this changes in the future, update this test. 
-        Assert.DoesNotContain("Inner exception message", orchestrationDetails.Output);
+            // For now, we deliberately do not return inner exception details on entity failure. 
+            // If this changes in the future, update this test. 
+            Assert.DoesNotContain("Inner exception message", orchestrationDetails.Output);
+        }
     }
 
     [Fact]
+    [Trait("Node-DTS", "Skip")] // Bug: https://msazure.visualstudio.com/Antares/_workitems/edit/33910424
     public async Task OrchestratorWithRetriedActivityException_ShouldSucceed()
     {
-        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("RetryActivityException_HttpStart", "");
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=RetryActivityFunction");
 
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
@@ -131,16 +149,18 @@ public class ErrorHandlingTests
         // Give some time for Core Tools to write logs out
         Thread.Sleep(500);
 
-        Assert.Contains(_fixture.TestLogs.CoreToolsLogs, x => x.Contains(nameof(InvalidOperationException)) &&
+        Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains(nameof(InvalidOperationException)) &&
                                                               x.Contains("This activity failed"));
     }
 
     [Fact]
     [Trait("MSSQL", "Skip")] // Durable Entities are not supported in MSSQL/Dotnet Isolated, see https://github.com/microsoft/durabletask-mssql/issues/205
     [Trait("DTS", "Skip")] // DTS will fail this test unless this issue is fixed, see https://msazure.visualstudio.com/Antares/_workitems/edit/31778744
+    [Trait("PowerShell", "Skip")] // Durable Entities not yet implemented in PowerShell
+    [Trait("Node-DTS", "Skip")] // Bug: https://msazure.visualstudio.com/Antares/_workitems/edit/33910424
     public async Task OrchestratorWithRetriedEntityException_ShouldSucceed()
     {
-        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("RetryEntityException_HttpStart", "");
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=RetryEntityOrchestration");
 
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
@@ -153,19 +173,34 @@ public class ErrorHandlingTests
         // Give some time for Core Tools to write logs out
         Thread.Sleep(500);
 
-        // For entities, these logs are not emitted as one continuous log, but each line of the exception .ToString() is
-        // logged individually.
-        Assert.Contains(_fixture.TestLogs.CoreToolsLogs, x => x.Contains(nameof(InvalidOperationException)) &&
-                                                              x.Contains("This entity failed"));
-        Assert.Contains(_fixture.TestLogs.CoreToolsLogs, x => x.Contains("More information about the failure"));
-        Assert.Contains(_fixture.TestLogs.CoreToolsLogs, x => x.Contains(nameof(OverflowException)) &&
-                                                              x.Contains("Inner exception message"));
+        if (this.fixture.functionLanguageLocalizer.GetLanguageType() == LanguageType.Python ||
+            this.fixture.functionLanguageLocalizer.GetLanguageType() == LanguageType.Node)
+        {
+            // In the ooproc langagues that use the OOProc shim (old method), we redact exception details for entities.
+            // For some reason, this includes redacting these details in Core Tools logs - likely a bug (?)
+            // Relevant code: EndToEndTraceHelper.cs ~#545
+            Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains("Function 'counter (Entity)' failed 'get' operation") &&
+                                                                      (x.Contains("(Redacted 58 characters)") ||  // Python 
+                                                                       x.Contains("(Redacted 34 characters)")));  // Node
+        }
+        else
+        {
+            // For entities, these logs are not emitted as one continuous log, but each line of the exception .ToString() is
+            // logged individually.
+            Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains(nameof(InvalidOperationException)) &&
+                                                                    x.Contains("This entity failed"));
+            Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains("More information about the failure"));
+            Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains(nameof(OverflowException)) &&
+                                                                  x.Contains("Inner exception message"));
+        }
     }
 
     [Fact]
+    [Trait("Python", "Skip")] // Bug: https://github.com/Azure/azure-functions-durable-python/issues/561
+    [Trait("Node-DTS", "Skip")] // Bug: https://msazure.visualstudio.com/Antares/_workitems/edit/33910424
     public async Task OrchestratorWithCustomRetriedActivityException_ShouldSucceed()
     {
-        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("CustomRetryActivityException_HttpStart", "");
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=CustomRetryActivityFunction");
 
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
@@ -179,9 +214,9 @@ public class ErrorHandlingTests
         Thread.Sleep(500);
 
         // We want to ensure that multiline exception messages and inner exceptions are preserved
-        Assert.Contains(_fixture.TestLogs.CoreToolsLogs, x => x.Contains(nameof(InvalidOperationException)) &&
-                                                              x.Contains(nameof(OverflowException)) &&
-                                                              x.Contains("This activity failed") &&
+        Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains(nameof(InvalidOperationException)) &&
+                                                              x.Contains("This activity failed"));
+        Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains(nameof(OverflowException)) &&
                                                               x.Contains("More information about the failure"));
     }
 }
