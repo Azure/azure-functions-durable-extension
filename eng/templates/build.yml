@@ -131,27 +131,3 @@ jobs:
             Contents: '**'
             TargetFolder: '$(System.DefaultWorkingDirectory)/azure-functions-durable-extension/'
 
-      # We also need to build the Java smoke test, for CodeQL compliance
-      # We don't need to build the other smoke tests, because they can be analyzed without being compiled,
-      # as they're interpreted languages.
-      # This could be a separate pipeline, but the task is so small that it's paired with the .NET code build
-      # for convenience.
-      # Setup Java 17 for building the Java smoke test
-      - task: JavaToolInstaller@0
-        displayName: 'Use Java 17'
-        inputs:
-          versionSpec: '17'
-          jdkArchitectureOption: 'x64'
-          jdkSourceOption: 'PreInstalled'
-
-      # Build Java smoke test using official Gradle task
-      - task: Gradle@2
-        displayName: 'Build Java OOProc test (for CodeQL compliance)'
-        inputs:
-          workingDirectory: 'test/SmokeTests/OOProcSmokeTests/durableJava'
-          gradleOptions: '-Xmx3072m'
-          javaHomeOption: 'JDKVersion'
-          jdkVersionOption: '17'
-          jdkArchitectureOption: 'x64'
-          publishJUnitResults: false
-          tasks: 'build'
