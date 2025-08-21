@@ -99,7 +99,11 @@ else
   Expand-Archive $output -DestinationPath $FUNC_CLI_DIRECTORY
 
   Write-Host "Adding Functions Core Tools to PATH..."
-  $env:PATH += ";$FUNC_CLI_DIRECTORY"
+  if ($IsWindows) {
+      $env:PATH = $env:PATH + ";$FUNC_CLI_DIRECTORY"
+  } else {
+      $env:PATH = $env:PATH + ":$FUNC_CLI_DIRECTORY"
+  }
 
   if ($IsMacOS -or $IsLinux)
   {
@@ -140,7 +144,7 @@ function InstallExtensionAndBuildTestApp($testAppDir) {
             Remove-Item -Recurse -Force $_.FullName -ErrorAction Stop
           }
         }
-
+        
         if (!(Test-Path ".\app.csproj")) {
           Write-Host "Updating extensions.csproj to reference WebJobs extension version $webJobsExtensionVersion"
           
@@ -168,7 +172,7 @@ function InstallExtensionAndBuildTestApp($testAppDir) {
 
         if (Test-Path ".\pom.xml") {
           Write-Host "Building Java project"
-          mvn clean package
+          mvn clean package -q
         }
       }
     }
