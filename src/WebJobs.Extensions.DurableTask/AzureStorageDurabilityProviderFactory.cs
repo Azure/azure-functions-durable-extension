@@ -220,6 +220,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 MaxEntityOperationBatchSize = this.options.MaxEntityOperationBatchSize,
                 AllowReplayingTerminalInstances = this.azureStorageOptions.AllowReplayingTerminalInstances,
                 PartitionTableOperationTimeout = this.azureStorageOptions.PartitionTableOperationTimeout,
+                QueueClientMessageEncoding = this.azureStorageOptions.QueueClientMessageEncoding,
             };
 
             if (this.inConsumption)
