@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
@@ -14,11 +15,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             string functionName,
             string instanceId,
             object input,
-            TestDurableClient[] clientRef)
+            TestDurableClient[] clientRef,
+            IReadOnlyDictionary<string, string> tags)
         {
             DateTime instanceCreationTime = DateTime.UtcNow;
 
-            instanceId = await client.StartNewAsync(functionName, instanceId, input);
+            if (tags == null)
+            {
+                instanceId = await client.StartNewAsync(functionName, instanceId, input);
+            }
+            else
+            {
+                instanceId = await client.StartNewAsync(new DurableOrchestrationOptions(functionName)
+                {
+                    Input = input,
+                    InstanceId = instanceId,
+                    Tags = tags,
+                });
+            }
+
             clientRef[0] = new TestDurableClient(
                 client,
                 functionName,
@@ -33,11 +48,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             string functionName,
             string instanceId,
             object input,
-            TestDurableClient[] clientRef)
+            TestDurableClient[] clientRef,
+            IReadOnlyDictionary<string, string> tags)
         {
             DateTime instanceCreationTime = DateTime.UtcNow;
 
-            instanceId = await client.StartNewAsync(functionName, instanceId, input);
+            if (tags == null)
+            {
+                instanceId = await client.StartNewAsync(functionName, instanceId, input);
+            }
+            else
+            {
+                instanceId = await client.StartNewAsync(new DurableOrchestrationOptions(functionName)
+                {
+                    Input = input,
+                    InstanceId = instanceId,
+                    Tags = tags,
+                });
+            }
+
             clientRef[0] = new TestDurableClient(
                 client,
                 functionName,

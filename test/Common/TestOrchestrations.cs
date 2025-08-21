@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
 using Xunit;
@@ -179,7 +180,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         public static async Task<bool> OrchestrationWithTags([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
-            await ctx.CallActivityAsync<bool>(nameof(TestActivities.ActivityWithTags), "Hello");
+            await ctx.CallActivityAsync<bool>(
+                new DurableActivityOptions(nameof(TestActivities.ActivityWithTags))
+                {
+                    Input = "Hello",
+                    Tags = new Dictionary<string, string> { { "activityKey1", "activityKey2" } },
+                });
 
             return true;
         }

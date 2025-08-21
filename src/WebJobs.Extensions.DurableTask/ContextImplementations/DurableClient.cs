@@ -1112,6 +1112,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 Input = ParseToJToken(orchestrationState.Input),
                 Output = ParseToJToken(orchestrationState.Output),
                 History = historyArray,
+                Tags = new Dictionary<string, string>(orchestrationState.Tags),
             };
         }
 

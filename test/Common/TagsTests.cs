@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Xunit;
@@ -46,12 +47,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 await host.StartAsync();
 
-                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], "World", this.output);
+                var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], "World", this.output, tags: new Dictionary<string, string> { { "key1", "value1" } });
                 var status = await client.WaitForCompletionAsync(this.output);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
                 Assert.Equal("World", status?.Input);
-                Assert.Equal("Hello, World!", status?.Output);
+                Assert.Equal(true, status?.Output);
+
+                var historyStatus = await client.GetStatusAsync(
+                    showHistory: true,
+                    showHistoryOutput: true,
+                    showInput: true);
+
+                Assert.NotNull(historyStatus.Tags);
+                Assert.Contains(historyStatus.Tags, kvp => kvp.Key == "key1" && kvp.Value == "value1");
 
                 await host.StopAsync();
             }

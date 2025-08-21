@@ -2,6 +2,8 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Collections.Generic;
+using System.Collections.Immutable;
 using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
@@ -102,5 +104,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// The output as a <c>JArray</c> object or <c>null</c>.
         /// </value>
         public JArray History { get; set; }
+
+        public IReadOnlyDictionary<string, string> Tags { get; set; } = ImmutableDictionary<string, string>.Empty;
     }
 }

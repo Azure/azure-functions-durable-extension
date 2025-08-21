@@ -15,7 +15,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             object input,
             ITestOutputHelper output,
             string instanceId = null,
-            bool useTaskHubFromAppSettings = false)
+            bool useTaskHubFromAppSettings = false,
+            IReadOnlyDictionary<string, string> tags = null)
         {
             var startFunction = useTaskHubFromAppSettings ?
                 typeof(ClientFunctions).GetMethod(nameof(ClientFunctions.StartFunctionWithTaskHub)) :
@@ -28,6 +29,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 { "instanceId", instanceId },
                 { "input", input },
                 { "clientRef", clientRef },
+                { "tags", tags },
             };
 
             await host.CallAsync(startFunction, args);
