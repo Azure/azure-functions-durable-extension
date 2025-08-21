@@ -66,6 +66,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     ScheduledStartTime = request.ScheduledStartTimestamp?.ToDateTime(),
                 };
 
+                if (request.Tags != null && request.Tags.Count > 0)
+                {
+                    executionStartedEvent.Tags = request.Tags;
+                }
+
                 // Get the parent trace context from CreateInstanceRequest
                 string? traceParent = request.ParentTraceContext?.TraceParent;
                 string? traceState = request.ParentTraceContext?.TraceState;
