@@ -193,7 +193,7 @@ message EntityOperationCalledEvent {
 }
 
 message EntityLockRequestedEvent {
-    string criticalSectionId = 1;  
+    string criticalSectionId = 1;
     repeated string lockSet = 2;
     int32 position = 3;
     google.protobuf.StringValue parentInstanceId = 4; // used only within messages, null in histories 
@@ -218,7 +218,7 @@ message EntityUnlockSentEvent {
 message EntityLockGrantedEvent {
     string criticalSectionId = 1;
 }
- 
+
 message HistoryEvent {
     int32 eventId = 1;
     google.protobuf.Timestamp timestamp = 2;
@@ -245,8 +245,8 @@ message HistoryEvent {
         ExecutionResumedEvent executionResumed = 22;
         EntityOperationSignaledEvent entityOperationSignaled = 23;
         EntityOperationCalledEvent entityOperationCalled = 24;
-        EntityOperationCompletedEvent entityOperationCompleted = 25; 
-        EntityOperationFailedEvent entityOperationFailed = 26; 
+        EntityOperationCompletedEvent entityOperationCompleted = 25;
+        EntityOperationFailedEvent entityOperationFailed = 26;
         EntityLockRequestedEvent entityLockRequested = 27;
         EntityLockGrantedEvent entityLockGranted = 28;
         EntityUnlockSentEvent entityUnlockSent = 29;
@@ -258,6 +258,7 @@ message ScheduleTaskAction {
     google.protobuf.StringValue version = 2;
     google.protobuf.StringValue input = 3;
     map<string, string> tags = 4;
+    TraceContext parentTraceContext = 5;
 }
 
 message CreateSubOrchestrationAction {
@@ -265,6 +266,7 @@ message CreateSubOrchestrationAction {
     string name = 2;
     google.protobuf.StringValue version = 3;
     google.protobuf.StringValue input = 4;
+    TraceContext parentTraceContext = 5;
 }
 
 message CreateTimerAction {
@@ -314,6 +316,11 @@ message OrchestratorAction {
     }
 }
 
+message OrchestrationTraceContext {
+    google.protobuf.StringValue spanID = 1;
+    google.protobuf.Timestamp spanStartTime = 2;   
+}
+
 message OrchestratorRequest {
     string instanceId = 1;
     google.protobuf.StringValue executionId = 2;
@@ -322,6 +329,8 @@ message OrchestratorRequest {
     OrchestratorEntityParameters entityParameters = 5;
     bool requiresHistoryStreaming = 6;
     map<string, google.protobuf.Value> properties = 7;
+
+    OrchestrationTraceContext orchestrationTraceContext = 8;
 }
 
 message OrchestratorResponse {
@@ -333,8 +342,10 @@ message OrchestratorResponse {
     // The number of work item events that were processed by the orchestrator.
     // This field is optional. If not set, the service should assume that the orchestrator processed all events.
     google.protobuf.Int32Value numEventsProcessed = 5;
+    OrchestrationTraceContext orchestrationTraceContext = 6;
+
     // Whether or not a history is required to complete the original OrchestratorRequest and none was provided.
-    bool requiresHistory = 6;
+    bool requiresHistory = 7;
 }
 
 message CreateInstanceRequest {
@@ -500,7 +511,7 @@ message SignalEntityRequest {
 }
 
 message SignalEntityResponse {
-     // no payload
+    // no payload
 }
 
 message GetEntityRequest {
@@ -675,16 +686,16 @@ service TaskHubSidecarService {
 
     // Waits for an orchestration instance to reach a running or completion state.
     rpc WaitForInstanceStart(GetInstanceRequest) returns (GetInstanceResponse);
-    
+
     // Waits for an orchestration instance to reach a completion state (completed, failed, terminated, etc.).
     rpc WaitForInstanceCompletion(GetInstanceRequest) returns (GetInstanceResponse);
 
     // Raises an event to a running orchestration instance.
     rpc RaiseEvent(RaiseEventRequest) returns (RaiseEventResponse);
-    
+
     // Terminates a running orchestration instance.
     rpc TerminateInstance(TerminateRequest) returns (TerminateResponse);
-    
+
     // Suspends a running orchestration instance.
     rpc SuspendInstance(SuspendRequest) returns (SuspendResponse);
 
@@ -766,7 +777,7 @@ message CompleteTaskResponse {
 }
 
 message HealthPing {
-	// No payload
+    // No payload
 }
 
 message StreamInstanceHistoryRequest {

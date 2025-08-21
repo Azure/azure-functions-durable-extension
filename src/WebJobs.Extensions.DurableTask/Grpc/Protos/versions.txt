@@ -1,2 +1,2 @@
-# The following files were downloaded from branch stevosyan/extended-sessions-for-orchestrations-isolated at 2025-08-01 23:50:25 UTC
-https://raw.githubusercontent.com/microsoft/durabletask-protobuf/930a06ef7df4f3156fdaa619e8e4d6439d43fcb5/protos/orchestrator_service.proto
+# The following files were downloaded from branch stevosyan/extended-sessions-for-orchestrations-isolated at 2025-08-21 02:14:58 UTC
+https://raw.githubusercontent.com/microsoft/durabletask-protobuf/42cc3e416e9b227ed0a68c7dfd504ab5aed84e26/protos/orchestrator_service.proto
