@@ -175,12 +175,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc />
-        async Task<string> IDurableOrchestrationClient.StartNewAsync<T>(string orchestratorFunctionName, string instanceId, T input)
+        async Task<string> IDurableOrchestrationClient.StartNewAsync(DurableOrchestrationOptions options)
         {
+            if (options == null)
+            {
+                throw new ArgumentNullException(nameof(options), "Orchestration options cannot be null.");
+            }
+
             if (this.ClientReferencesCurrentApp(this))
             {
-                this.config?.ThrowIfFunctionDoesNotExist(orchestratorFunctionName, FunctionType.Orchestrator);
+                this.config?.ThrowIfFunctionDoesNotExist(options.OrchestratorFunctionName, FunctionType.Orchestrator);
             }
+
+            string instanceId = options.InstanceId;
 
             if (string.IsNullOrEmpty(instanceId))
             {
@@ -202,11 +209,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             OrchestrationStatus[] dedupeStatuses = this.GetStatusesNotToOverride();
             Task<OrchestrationInstance> createTask = this.client.CreateOrchestrationInstanceAsync(
-                orchestratorFunctionName, this.durableTaskOptions.DefaultVersion, instanceId, input, null, dedupeStatuses);
+                options.OrchestratorFunctionName, this.durableTaskOptions.DefaultVersion, instanceId, options?.Input, options.Tags?.ToDictionary(kvp => kvp.Key, kvp => kvp.Value), dedupeStatuses);
 
             this.traceHelper.FunctionScheduled(
                 this.TaskHubName,
-                orchestratorFunctionName,
+                options.OrchestratorFunctionName,
                 instanceId,
                 reason: "NewInstance",
                 functionType: FunctionType.Orchestrator,
@@ -214,6 +221,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             OrchestrationInstance instance = await createTask;
             return instance.InstanceId;
+        }
+
+        /// <inheritdoc />
+        Task<string> IDurableOrchestrationClient.StartNewAsync<T>(string orchestratorFunctionName, string instanceId, T input)
+        {
+            return ((IDurableOrchestrationClient)this).StartNewAsync(new DurableOrchestrationOptions(orchestratorFunctionName) { Input = input, InstanceId = instanceId });
         }
 
         private OrchestrationStatus[] GetStatusesNotToOverride()
@@ -1140,13 +1153,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <inheritdoc/>
         Task<string> IDurableOrchestrationClient.StartNewAsync(string orchestratorFunctionName, string instanceId)
         {
-            return ((IDurableOrchestrationClient)this).StartNewAsync<object>(orchestratorFunctionName, instanceId, null);
+            return ((IDurableOrchestrationClient)this).StartNewAsync(new DurableOrchestrationOptions(orchestratorFunctionName) { InstanceId = instanceId });
         }
 
         /// <inheritdoc/>
         Task<string> IDurableOrchestrationClient.StartNewAsync<T>(string orchestratorFunctionName, T input)
         {
-            return ((IDurableOrchestrationClient)this).StartNewAsync<T>(orchestratorFunctionName, string.Empty, input);
+            return ((IDurableOrchestrationClient)this).StartNewAsync(new DurableOrchestrationOptions(orchestratorFunctionName) { Input = input });
         }
 
         async Task<string> IDurableOrchestrationClient.RestartAsync(string instanceId, bool restartWithNewInstanceId)

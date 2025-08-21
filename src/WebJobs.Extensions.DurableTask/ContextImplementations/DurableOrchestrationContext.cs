@@ -246,7 +246,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <inheritdoc />
         Task<TResult> IDurableOrchestrationContext.CallSubOrchestratorAsync<TResult>(string functionName, string instanceId, object input)
         {
-            return this.CallDurableTaskFunctionAsync<TResult>(functionName, FunctionType.Orchestrator, false, instanceId, null, null, input, null);
+            return this.CallDurableTaskFunctionAsync<TResult>(functionName, FunctionType.Orchestrator, false, instanceId, null, null, input, null, new Dictionary<string, string>());
         }
 
         /// <inheritdoc />
@@ -257,7 +257,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new ArgumentNullException(nameof(retryOptions));
             }
 
-            return this.CallDurableTaskFunctionAsync<TResult>(functionName, FunctionType.Orchestrator, false, instanceId, null, retryOptions, input, null);
+            return this.CallDurableTaskFunctionAsync<TResult>(functionName, FunctionType.Orchestrator, false, instanceId, null, retryOptions, input, null, new Dictionary<string, string>());
         }
 
         Task<DurableHttpResponse> IDurableOrchestrationContext.CallHttpAsync(HttpMethod method, Uri uri, string content, HttpRetryOptions retryOptions)
@@ -317,7 +317,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 operation: null,
                 retryOptions: req.HttpRetryOptions?.GetRetryOptions(),
                 input: req,
-                scheduledTimeUtc: null);
+                scheduledTimeUtc: null,
+                tags: new Dictionary<string, string>());
 
             return durableHttpResponse;
         }
@@ -450,9 +451,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc />
+        Task<TResult> IDurableOrchestrationContext.CallActivityAsync<TResult>(DurableActivityOptions options)
+        {
+            return this.CallDurableTaskFunctionAsync<TResult>(options.FunctionName, FunctionType.Activity, false, null, null, options.RetryOptions, options.Input, null, options.Tags);
+        }
+
+        /// <inheritdoc />
         Task<TResult> IDurableOrchestrationContext.CallActivityAsync<TResult>(string functionName, object input)
         {
-            return this.CallDurableTaskFunctionAsync<TResult>(functionName, FunctionType.Activity, false, null, null, null, input, null);
+            return this.CallDurableTaskFunctionAsync<TResult>(functionName, FunctionType.Activity, false, null, null, null, input, null, new Dictionary<string, string>());
         }
 
         /// <inheritdoc />
@@ -463,7 +470,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new ArgumentNullException(nameof(retryOptions));
             }
 
-            return this.CallDurableTaskFunctionAsync<TResult>(functionName, FunctionType.Activity, false, null, null, retryOptions, input, null);
+            return this.CallDurableTaskFunctionAsync<TResult>(functionName, FunctionType.Activity, false, null, null, retryOptions, input, null, new Dictionary<string, string>());
         }
 
         /// <inheritdoc/>
@@ -488,7 +495,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new ArgumentNullException(nameof(operationName));
             }
 
-            var alreadyCompletedTask = this.CallDurableTaskFunctionAsync<object>(entity.EntityName, FunctionType.Entity, true, EntityId.GetSchedulerIdFromEntityId(entity), operationName, null, operationInput, null);
+            var alreadyCompletedTask = this.CallDurableTaskFunctionAsync<object>(entity.EntityName, FunctionType.Entity, true, EntityId.GetSchedulerIdFromEntityId(entity), operationName, null, operationInput, null, new Dictionary<string, string>());
             System.Diagnostics.Debug.Assert(alreadyCompletedTask.IsCompleted, "signaling entities is synchronous");
 
             try
@@ -510,7 +517,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new ArgumentNullException(nameof(operationName));
             }
 
-            var alreadyCompletedTask = this.CallDurableTaskFunctionAsync<object>(entity.EntityName, FunctionType.Entity, true, EntityId.GetSchedulerIdFromEntityId(entity), operationName, null, operationInput, startTime);
+            var alreadyCompletedTask = this.CallDurableTaskFunctionAsync<object>(entity.EntityName, FunctionType.Entity, true, EntityId.GetSchedulerIdFromEntityId(entity), operationName, null, operationInput, startTime, new Dictionary<string, string>());
             System.Diagnostics.Debug.Assert(alreadyCompletedTask.IsCompleted, "scheduling operations on entities is synchronous");
 
             try
@@ -532,7 +539,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #endif
             this.ThrowIfInvalidAccess();
             var actualInstanceId = string.IsNullOrEmpty(instanceId) ? this.NewGuid().ToString() : instanceId;
-            var alreadyCompletedTask = this.CallDurableTaskFunctionAsync<string>(functionName, FunctionType.Orchestrator, true, actualInstanceId, null, null, input, null);
+            var alreadyCompletedTask = this.CallDurableTaskFunctionAsync<string>(functionName, FunctionType.Orchestrator, true, actualInstanceId, null, null, input, null, new Dictionary<string, string>());
             System.Diagnostics.Debug.Assert(alreadyCompletedTask.IsCompleted, "starting orchestrations is synchronous");
             return actualInstanceId;
         }
@@ -545,7 +552,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string operation,
             RetryOptions retryOptions,
             object input,
-            DateTime? scheduledTimeUtc)
+            DateTime? scheduledTimeUtc,
+            IReadOnlyDictionary<string, string> tags)
         {
             this.ThrowIfInvalidAccess();
 
@@ -581,19 +589,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     System.Diagnostics.Debug.Assert(instanceId == null, "The instanceId parameter should not be used for activity functions.");
                     System.Diagnostics.Debug.Assert(operation == null, "The operation parameter should not be used for activity functions.");
                     System.Diagnostics.Debug.Assert(!oneWay, "The oneWay parameter should not be used for activity functions.");
+                    this.IncrementActionsOrThrowException();
+                    Task<TResult> RetryCall() =>
+                        this.InnerContext
+                            .ScheduleTask<TResult>(
+                                functionName,
+                                version,
+                                ScheduleTaskOptions.CreateBuilder().WithTags(new Dictionary<string, string>(tags)).Build(),
+                                input);
                     if (retryOptions == null)
                     {
-                        this.IncrementActionsOrThrowException();
-                        callTask = this.InnerContext.ScheduleTask<TResult>(functionName, version, input);
+                        callTask = RetryCall();
                     }
                     else
                     {
-                        this.IncrementActionsOrThrowException();
-                        callTask = this.InnerContext.ScheduleWithRetry<TResult>(
-                            functionName,
-                            version,
-                            retryOptions.GetRetryOptions(),
-                            input);
+                        var retryInterceptor = new RetryInterceptor<TResult>(this.InnerContext, retryOptions.GetRetryOptions(), RetryCall);
+                        callTask = retryInterceptor.Invoke();
                     }
 
                     break;
@@ -1071,14 +1082,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         Task<TResult> IDurableOrchestrationContext.CallEntityAsync<TResult>(EntityId entityId, string operationName, object operationInput)
         {
             this.ThrowIfInvalidAccess();
-            return this.CallDurableTaskFunctionAsync<TResult>(entityId.EntityName, FunctionType.Entity, false, EntityId.GetSchedulerIdFromEntityId(entityId), operationName, null, operationInput, null);
+            return this.CallDurableTaskFunctionAsync<TResult>(entityId.EntityName, FunctionType.Entity, false, EntityId.GetSchedulerIdFromEntityId(entityId), operationName, null, operationInput, null, new Dictionary<string, string>());
         }
 
         /// <inheritdoc/>
         Task IDurableOrchestrationContext.CallEntityAsync(EntityId entityId, string operationName, object operationInput)
         {
             this.ThrowIfInvalidAccess();
-            return this.CallDurableTaskFunctionAsync<object>(entityId.EntityName, FunctionType.Entity, false, EntityId.GetSchedulerIdFromEntityId(entityId), operationName, null, operationInput, null);
+            return this.CallDurableTaskFunctionAsync<object>(entityId.EntityName, FunctionType.Entity, false, EntityId.GetSchedulerIdFromEntityId(entityId), operationName, null, operationInput, null, new Dictionary<string, string>());
         }
 
         /// <inheritdoc/>
@@ -1410,6 +1421,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             /// </summary>
             /// <param name="result">The result.</param>
             void TrySetResult(object result);
+        }
+
+        private Task<T> ScheduleWithRetry<T>(string name, string version, ScheduleTaskOptions options, params object[] parameters)
+        {
+            Task<T> RetryCall() => this.InnerContext.ScheduleTask<T>(name, version, options, parameters);
+            var retryInterceptor = new RetryInterceptor<T>(this.InnerContext, options.RetryOptions, RetryCall);
+            return retryInterceptor.Invoke();
         }
     }
 }

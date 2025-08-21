@@ -117,6 +117,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <summary>
         /// Starts a new execution of the specified orchestrator function.
         /// </summary>
+        /// <param name="options">The options with which to start the orchestration.</param>
+        /// <returns>A task that completes when the orchestration is started. The task contains the instance id of the started
+        /// orchestratation instance.</returns>
+        /// <exception cref="ArgumentException">
+        /// The specified function does not exist, is disabled, or is not an orchestrator function.
+        /// </exception>
+        /// <exception cref="ArgumentNullException">
+        /// The <paramref name="options"/> parameter is null.
+        /// </exception>
+        Task<string> StartNewAsync(
+            DurableOrchestrationOptions options);
+
+        /// <summary>
+        /// Starts a new execution of the specified orchestrator function.
+        /// </summary>
         /// <param name="orchestratorFunctionName">The name of the orchestrator function to start.</param>
         /// <param name="instanceId">The ID to use for the new orchestration instance.</param>
         /// <returns>A task that completes when the orchestration is started. The task contains the instance id of the started
@@ -160,7 +175,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <exception cref="ArgumentException">
         /// The specified function does not exist, is disabled, or is not an orchestrator function.
         /// </exception>
-        Task<string> StartNewAsync<T>(string orchestratorFunctionName, string instanceId, T input);
+        Task<string> StartNewAsync<T>(
+            string orchestratorFunctionName,
+            string instanceId,
+            T input);
 
         /// <summary>
         /// Sends an event notification message to a waiting orchestration instance.

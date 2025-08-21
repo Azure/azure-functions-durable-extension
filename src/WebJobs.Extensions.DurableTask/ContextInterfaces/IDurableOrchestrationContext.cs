@@ -462,6 +462,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <returns>The new <see cref="Guid"/> value.</returns>
         Guid NewGuid();
 
+        Task<TResult> CallActivityAsync<TResult>(DurableActivityOptions options);
+
         /// <summary>
         /// Schedules an activity function named <paramref name="functionName"/> for execution.
         /// </summary>
