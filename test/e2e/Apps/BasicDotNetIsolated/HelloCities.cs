@@ -41,12 +41,19 @@ public static class HelloCities
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestData req,
         [DurableClient] DurableTaskClient client,
         FunctionContext executionContext,
-        string orchestrationName)
+        string orchestrationName,
+        string? tagKey,
+        string? tagValue)
     {
         ILogger logger = executionContext.GetLogger(nameof(StartOrchestration));
 
+        StartOrchestrationOptions options =
+            !String.IsNullOrEmpty(tagKey) && !String.IsNullOrEmpty(tagValue)
+                ? new() { Tags = new Dictionary<string, string> { { tagKey, tagValue } } }
+                : new();
+
         // Function input comes from the request content.
-        string instanceId = await client.ScheduleNewOrchestrationInstanceAsync(orchestrationName);
+        string instanceId = await client.ScheduleNewOrchestrationInstanceAsync(orchestrationName, options);
 
         logger.LogInformation("Started orchestration with ID = '{instanceId}'.", instanceId);
 

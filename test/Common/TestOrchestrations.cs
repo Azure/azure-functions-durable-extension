@@ -177,6 +177,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return result;
         }
 
+        public static async Task<bool> OrchestrationWithTags([OrchestrationTrigger] IDurableOrchestrationContext ctx)
+        {
+            await ctx.CallActivityAsync<bool>(nameof(TestActivities.ActivityWithTags), "Hello");
+
+            return true;
+        }
+
         public static async Task<long> DiskUsage([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
             string directory = ctx.GetInput<string>();
