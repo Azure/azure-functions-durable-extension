@@ -109,7 +109,7 @@ jobs:
 
       - name: Run E2E tests (Java)
         working-directory: test/e2e/Tests
-        run: dotnet test --filter 'AzureStorage!=Skip&Java!=Skip&Java-AzureStorage!=Skip' --logger "console;verbosity=detailed"
+        run: dotnet test --filter 'AzureStorage!=Skip&Java!=Skip&Java-AzureStorage!=Skip'
 
   e2e-azurestorage-windows:
     runs-on: windows-latest

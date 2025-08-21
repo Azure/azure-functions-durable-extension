@@ -98,6 +98,9 @@ else
   Write-Host 'Extracting Functions Core Tools...'
   Expand-Archive $output -DestinationPath $FUNC_CLI_DIRECTORY
 
+  Write-Host "Adding Functions Core Tools to PATH..."
+  $env:PATH += ";$FUNC_CLI_DIRECTORY"
+
   if ($IsMacOS -or $IsLinux)
   {
     & "chmod" "a+x" "$FUNC_CLI_DIRECTORY/func"
