@@ -7,9 +7,9 @@ internal class JavaTestLanguageLocalizer : ITestLanguageLocalizer
     private readonly Dictionary<string, string> isolatedLocalizedStrings = new Dictionary<string, string>
     {
         { "CaughtActivityException.ErrorMessage", "Task 'RaiseException' (#0) failed with an unhandled exception:" },
-        { "RethrownActivityException.ErrorMessage", "Microsoft.DurableTask.TaskFailedException" },
-        { "CaughtEntityException.ErrorMessage", "Operation 'ThrowFirstTimeOnly' of entity '@counter@MyExceptionEntity' failed:" },
-        { "RethrownEntityException.ErrorMessage", "Microsoft.DurableTask.Entities.EntityOperationFailedException" },
+        { "RethrownActivityException.ErrorMessage", "com.microsoft.durabletask.TaskFailedException: Task " },
+        { "CaughtEntityException.ErrorMessage", "N/A (Test not implemented)" },
+        { "RethrownEntityException.ErrorMessage", "N/A (Test not implemented)" },
         { "ExternalEvent.CompletedInstance.ErrorName", "gRPC error: StatusRuntimeException - FAIL" },
         { "ExternalEvent.CompletedInstance.ErrorMessage", "The orchestration instance with the provided instance id is not running." },
         { "ExternalEvent.InvalidInstance.ErrorName", "gRPC error: StatusRuntimeException - NOT_FOUND" },

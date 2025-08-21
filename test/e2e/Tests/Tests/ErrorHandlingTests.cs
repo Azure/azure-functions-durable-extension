@@ -219,7 +219,8 @@ public class ErrorHandlingTests
         // We want to ensure that multiline exception messages and inner exceptions are preserved
         Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains(nameof(InvalidOperationException)) &&
                                                               x.Contains("This activity failed"));
+        Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains("More information about the failure"));
         Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains(nameof(OverflowException)) &&
-                                                              x.Contains("More information about the failure"));
+                                                              x.Contains("Inner exception message"));
     }
 }

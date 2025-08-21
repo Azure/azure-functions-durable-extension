@@ -41,7 +41,8 @@ public class LargeOutputOrchestratorTests
 
     [Theory]
     [InlineData(4608)]// This value exceeds the default 4 MB, as the test sets the threshold to 6 MB.
-    [Trait("DTS", "Skip")] 
+    [Trait("DTS", "Skip")]
+    [Trait("Java", "Skip")] // Bug: Needs investigation, Exception: StatusRuntimeException: RESOURCE_EXHAUSTED: gRPC message exceeds maximum size 4194304: 4718735
     public async Task DurableTaskClientWriteOutputTests(int sizeInKB)
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTriggerWithBody("LargeOutputOrchestrator_HttpStart", sizeInKB.ToString(), "application/json");

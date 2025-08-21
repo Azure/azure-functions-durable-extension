@@ -31,7 +31,7 @@ public class VersioningTests
                                   // mid-test.
     [Trait("Python", "Skip")] // The above applies to Python as well
     [Trait("Node", "Skip")] // The above applies to Node as well
-    [Trait("Node", "Skip")] // The above applies to Java as well
+    [Trait("Java", "Skip")] // The above applies to Java as well
     public async Task TestVersionedOrchestration_OKWithMatchingVersion(string? version)
     {
         string queryString = version == null ? string.Empty : $"?version={version}";

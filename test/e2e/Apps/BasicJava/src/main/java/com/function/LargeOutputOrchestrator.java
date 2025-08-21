@@ -1,6 +1,7 @@
 package com.function;
 
 import com.microsoft.azure.functions.annotation.*;
+import com.function.JsonHelpers.DurableMetadataGsonProvider;
 import com.google.gson.Gson;
 import com.microsoft.azure.functions.*;
 
@@ -48,7 +49,7 @@ public class LargeOutputOrchestrator {
             @DurableClientInput(name = "durableContext") DurableClientContext durableContext,
             final ExecutionContext context) {
         int sizeInKB = 0;
-        Gson gson = new Gson();
+        Gson gson = DurableMetadataGsonProvider.createGson();
         try {
             String body = request.getBody().orElse("0");
             sizeInKB = gson.fromJson(body, int.class);
@@ -80,10 +81,12 @@ public class LargeOutputOrchestrator {
             return response;
         }
 
-        Object output = metadata.readOutputAs(Object.class);
+        Gson gson = DurableMetadataGsonProvider.createGson();
+        String outputJson = gson.toJson(metadata);
+
         HttpResponseMessage response = request.createResponseBuilder(HttpStatus.OK)
             .header("Content-Type", "application/json")
-            .body(output != null ? output.toString() : "[]")
+            .body(outputJson)
             .build();
         return response;
     }

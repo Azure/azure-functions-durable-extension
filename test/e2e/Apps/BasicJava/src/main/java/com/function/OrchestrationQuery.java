@@ -1,12 +1,9 @@
 package com.function;
 
 import com.microsoft.azure.functions.annotation.*;
-import com.function.JsonHelpers.InstantAdapter;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import com.function.JsonHelpers.DurableMetadataGsonProvider;
 import com.microsoft.azure.functions.*;
 
-import java.time.Instant;
 import java.util.*;
 
 import com.microsoft.durabletask.*;
@@ -15,12 +12,6 @@ import com.microsoft.durabletask.azurefunctions.DurableClientInput;
 
 
 public class OrchestrationQuery {
-    public Gson newInstancesConverter() {
-        GsonBuilder gsonBuilder = new GsonBuilder();
-        gsonBuilder.registerTypeAdapter(Instant.class, new InstantAdapter());
-        return gsonBuilder.create();
-    }
-
     /**
      * This HTTP-triggered function returns all orchestration instances.
      */
@@ -33,7 +24,7 @@ public class OrchestrationQuery {
         try {
             // Java SDK: getAllInstancesAsync returns a CompletableFuture<List<OrchestrationInstanceStatus>>
             OrchestrationStatusQueryResult instances = client.queryInstances(new OrchestrationStatusQuery());
-            String instanceString = newInstancesConverter().toJson(instances);
+            String instanceString = DurableMetadataGsonProvider.createGson().toJson(instances.getOrchestrationState());
             return request.createResponseBuilder(HttpStatus.OK)
                     .header("Content-Type", "application/json")
                     .body(instanceString)
@@ -65,7 +56,7 @@ public class OrchestrationQuery {
             OrchestrationStatusQuery query = new OrchestrationStatusQuery();
             query.setRuntimeStatusList(statuses);
             OrchestrationStatusQueryResult instances = client.queryInstances(query);
-            String instanceString = newInstancesConverter().toJson(instances);
+            String instanceString = DurableMetadataGsonProvider.createGson().toJson(instances.getOrchestrationState());
             return request.createResponseBuilder(HttpStatus.OK)
                     .header("Content-Type", "application/json")
                     .body(instanceString)
