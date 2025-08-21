@@ -81,11 +81,11 @@ public class ActivityErrorHandling {
                     // BUG: Only the innermost failure is available in the Java SDK
                     // BUG: isCausedBy() relies on Class.forName() but we do not provide the fully qualified class name
                     //      in the FailureDetails 
-                    && lastFailure.getErrorType().equals("ArithmeticException")
-                    // && lastFailure.isCausedBy(IllegalStateException.class)
+                    && lastFailure.getErrorType().equals("OverflowException")
+                    // && lastFailure.isCausedBy(InvalidOperationException.class)
                     // BUG: We do not implement inner failures in the Java SDK yet
                     // && lastFailure.getInnerFailure() != null
-                    // && lastFailure.getInnerFailure().isCausedBy("java.lang.ArithmeticException")
+                    // && lastFailure.getInnerFailure().isCausedBy("java.lang.OverflowException")
                     && retryContext.getLastAttemptNumber() < 3) {
                 return true;
             }

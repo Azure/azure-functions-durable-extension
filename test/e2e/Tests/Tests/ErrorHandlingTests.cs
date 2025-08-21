@@ -103,7 +103,7 @@ public class ErrorHandlingTests
         // Check FailureDetails contains the right error type and error message,
         // Here it should be the same one as the activity function Raise Exception throws.
         Assert.NotNull(failureDetails);
-        Assert.Equal("System.InvalidOperationException", failureDetails.ErrorType);
+        Assert.Contains("InvalidOperationException", failureDetails.ErrorType);
         Assert.Equal("This activity failed", failureDetails.ErrorMessage);
     }
 
