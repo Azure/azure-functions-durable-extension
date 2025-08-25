@@ -260,9 +260,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /*
-        * End to end test that checks if a warning is logged when distributed tracing is
+        * End to end test that checks if an information message is logged when distributed tracing is
         * enabled, but APPINSIGHTS_INSTRUMENTATIONKEY isn't set. The test also checks
-        * that the warning isn't logged when the environment variable is set.
+        * that the information message isn't logged when the environment variable is set.
         */
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
@@ -274,7 +274,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [InlineData(false, true, true)]
         [InlineData(true, true, false)]
         [InlineData(true, true, true)]
-        public void TelemetryClientSetup_AppInsights_Warnings(bool instrumentationKeyIsSet, bool connStringIsSet, bool extendedSessions)
+        public void TelemetryClientSetup_AppInsights_Messages(bool instrumentationKeyIsSet, bool connStringIsSet, bool extendedSessions)
         {
             TraceOptions traceOptions = new TraceOptions()
             {
@@ -315,8 +315,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 string bothSettingsSetWarningMessage = "Both 'APPINSIGHTS_INSTRUMENTATIONKEY' and 'APPLICATIONINSIGHTS_CONNECTION_STRING' are defined in the current environment variables. Please specify one. We recommend specifying 'APPLICATIONINSIGHTS_CONNECTION_STRING'.";
                 var bothSettingsSetWarningLogMessage = this.loggerProvider.GetAllLogMessages().Where(l => l.FormattedMessage.StartsWith(bothSettingsSetWarningMessage));
 
-                string neitherSettingsSetWarningMessage = "'APPINSIGHTS_INSTRUMENTATIONKEY' or 'APPLICATIONINSIGHTS_CONNECTION_STRING' were not defined in the current environment variables, but distributed tracing is enabled. Please specify one. We recommend specifying 'APPLICATIONINSIGHTS_CONNECTION_STRING'.";
-                var neitherSettingsSetWarningLogMessage = this.loggerProvider.GetAllLogMessages().Where(l => l.FormattedMessage.StartsWith(neitherSettingsSetWarningMessage));
+                string neitherSettingsSetMessage = "'APPINSIGHTS_INSTRUMENTATIONKEY' or 'APPLICATIONINSIGHTS_CONNECTION_STRING' were not defined in the current environment variables, but distributed tracing is enabled. Please specify one. We recommend specifying 'APPLICATIONINSIGHTS_CONNECTION_STRING'.";
+                var neitherSettingsSetLogMessage = this.loggerProvider.GetAllLogMessages().Where(l => l.FormattedMessage.StartsWith(neitherSettingsSetMessage));
 
                 string settingUpTelemetryClientMessage = "Setting up the telemetry client...";
                 var settingUpTelemetryClientLogMessage = this.loggerProvider.GetAllLogMessages().Where(l => l.FormattedMessage.StartsWith(settingUpTelemetryClientMessage));
@@ -330,7 +330,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 if (instrumentationKeyIsSet && connStringIsSet)
                 {
                     Assert.Single(bothSettingsSetWarningLogMessage);
-                    Assert.Empty(neitherSettingsSetWarningLogMessage);
+                    Assert.Empty(neitherSettingsSetLogMessage);
                     Assert.Single(settingUpTelemetryClientLogMessage);
                     Assert.Single(readingInstrumentationKeyLogMessage);
                     Assert.Single(readingConnStringLogMessage);
@@ -338,7 +338,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 else if (instrumentationKeyIsSet && !connStringIsSet)
                 {
                     Assert.Empty(bothSettingsSetWarningLogMessage);
-                    Assert.Empty(neitherSettingsSetWarningLogMessage);
+                    Assert.Empty(neitherSettingsSetLogMessage);
                     Assert.Single(settingUpTelemetryClientLogMessage);
                     Assert.Single(readingInstrumentationKeyLogMessage);
                     Assert.Empty(readingConnStringLogMessage);
@@ -346,7 +346,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 else if (!instrumentationKeyIsSet && connStringIsSet)
                 {
                     Assert.Empty(bothSettingsSetWarningLogMessage);
-                    Assert.Empty(neitherSettingsSetWarningLogMessage);
+                    Assert.Empty(neitherSettingsSetLogMessage);
                     Assert.Single(settingUpTelemetryClientLogMessage);
                     Assert.Empty(readingInstrumentationKeyLogMessage);
                     Assert.Single(readingConnStringLogMessage);
@@ -354,7 +354,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 else
                 {
                     Assert.Empty(bothSettingsSetWarningLogMessage);
-                    Assert.Single(neitherSettingsSetWarningLogMessage);
+                    Assert.Single(neitherSettingsSetLogMessage);
                     Assert.Single(settingUpTelemetryClientLogMessage);
                     Assert.Empty(readingInstrumentationKeyLogMessage);
                     Assert.Empty(readingConnStringLogMessage);

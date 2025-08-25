@@ -203,11 +203,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
 
             if (!instrumentationKeyProvided && !connectionStringProvided)
             {
-                this.endToEndTraceHelper.ExtensionWarningEvent(
+                this.endToEndTraceHelper.ExtensionInformationalEvent(
                     hubName: this.options.HubName,
                     functionName: string.Empty,
                     instanceId: string.Empty,
-                    message: "'APPINSIGHTS_INSTRUMENTATIONKEY' or 'APPLICATIONINSIGHTS_CONNECTION_STRING' were not defined in the current environment variables, but distributed tracing is enabled. Please specify one. We recommend specifying 'APPLICATIONINSIGHTS_CONNECTION_STRING'.");
+                    message: "'APPINSIGHTS_INSTRUMENTATIONKEY' or 'APPLICATIONINSIGHTS_CONNECTION_STRING' were not defined in the current environment variables, but distributed tracing is enabled. Please specify one. We recommend specifying 'APPLICATIONINSIGHTS_CONNECTION_STRING'.",
+                    writeToUserLogs: true);
             }
 
             if (instrumentationKeyProvided)
