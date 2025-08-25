@@ -462,6 +462,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <returns>The new <see cref="Guid"/> value.</returns>
         Guid NewGuid();
 
+        /// <summary>
+        /// Schedules an activity function for execution with the specified options.
+        /// </summary>
+        /// <typeparam name="TResult">The return type of the scheduled activity function.</typeparam>
+        /// <param name="options">The options with which to execute the activity function.</param>
+        /// <returns>A durable task that completes when the called activity function completes or fails.</returns>
+        /// <exception cref="ArgumentException">
+        /// The specified function does not exist, is disabled, or is not an orchestrator function.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        /// The current thread is different than the thread which started the orchestrator execution.
+        /// </exception>
+        /// <exception cref="FunctionFailedException">
+        /// The activity function failed with an unhandled exception.
+        /// </exception>
         Task<TResult> CallActivityAsync<TResult>(DurableActivityOptions options);
 
         /// <summary>
