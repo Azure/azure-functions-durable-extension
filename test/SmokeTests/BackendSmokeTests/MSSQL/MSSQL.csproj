@@ -9,7 +9,6 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Sdk.Functions" />
     <PackageReference Include="Microsoft.DurableTask.SqlServer.AzureFunctions" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
   </ItemGroup>
   <ItemGroup>
     <None Update="host.json">
