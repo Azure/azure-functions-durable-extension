@@ -78,12 +78,10 @@ public class ActivityErrorHandling {
         TaskOptions options = new TaskOptions(retryContext -> {
             FailureDetails lastFailure = retryContext.getLastFailure();
             if (lastFailure != null
-                    // BUG: Only the innermost failure is available in the Java SDK
-                    // BUG: isCausedBy() relies on Class.forName() but we do not provide the fully qualified class name
-                    //      in the FailureDetails 
+                    // BUG: https://github.com/microsoft/durabletask-java/issues/238
+                    // BUG: https://github.com/microsoft/durabletask-java/issues/239
                     && lastFailure.getErrorType().equals("OverflowException")
                     // && lastFailure.isCausedBy(InvalidOperationException.class)
-                    // BUG: We do not implement inner failures in the Java SDK yet
                     // && lastFailure.getInnerFailure() != null
                     // && lastFailure.getInnerFailure().isCausedBy("java.lang.OverflowException")
                     && retryContext.getLastAttemptNumber() < 3) {

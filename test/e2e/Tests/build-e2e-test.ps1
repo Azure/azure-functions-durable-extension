@@ -144,7 +144,7 @@ function InstallExtensionAndBuildTestApp($testAppDir) {
             Remove-Item -Recurse -Force $_.FullName -ErrorAction Stop
           }
         }
-        
+
         if (!(Test-Path ".\app.csproj")) {
           Write-Host "Updating extensions.csproj to reference WebJobs extension version $webJobsExtensionVersion"
           
