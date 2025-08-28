@@ -68,7 +68,7 @@ public static class DurableTaskClientExtensions
                             SerializedInput = status.SerializedInput,
                             SerializedOutput = status.SerializedOutput,
                             SerializedCustomStatus = status.SerializedCustomStatus
-                        }, statusCode: response.StatusCode);
+                        }, cancellation);
 
                         return response;
                     }
