@@ -184,7 +184,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 new DurableActivityOptions(nameof(TestActivities.ActivityWithTags))
                 {
                     Input = "Hello",
-                    Tags = new Dictionary<string, string> { { "activityKey1", "activityKey2" } },
+                    Tags = new Dictionary<string, string> { { "activityKey1", "activityValue1" } },
                 });
 
             return true;

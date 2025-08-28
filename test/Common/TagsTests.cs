@@ -3,8 +3,10 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
+using Newtonsoft.Json.Linq;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -61,6 +63,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 Assert.NotNull(historyStatus.Tags);
                 Assert.Contains(historyStatus.Tags, kvp => kvp.Key == "key1" && kvp.Value == "value1");
+
+                var taskCompletedEvent =
+                    historyStatus
+                        .History
+                        .OfType<JObject>()
+                        .FirstOrDefault(j => (string)j["EventType"] == "TaskCompleted" && (string)j["FunctionName"] == nameof(TestActivities.ActivityWithTags));
+
+                Assert.NotNull(taskCompletedEvent);
+
+                var tags = taskCompletedEvent["Tags"] as JObject;
+
+                Assert.NotNull(tags);
+
+                Assert.Equal("activityValue1", tags["activityKey1"].ToString());
 
                 await host.StopAsync();
             }
