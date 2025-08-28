@@ -105,6 +105,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </value>
         public JArray History { get; set; }
 
+        /// <summary>
+        /// Gets or sets the tags associated with the orchestration instance.
+        /// </summary>
+        /// <value>
+        /// The tags as a read-only dictionary.
+        /// </value>
         public IReadOnlyDictionary<string, string> Tags { get; set; } = ImmutableDictionary<string, string>.Empty;
     }
 }
