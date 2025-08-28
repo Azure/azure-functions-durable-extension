@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -1119,7 +1120,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 Input = ParseToJToken(orchestrationState.Input),
                 Output = ParseToJToken(orchestrationState.Output),
                 History = historyArray,
-                Tags = new Dictionary<string, string>(orchestrationState.Tags),
+                Tags = orchestrationState.Tags is not null
+                    ? new Dictionary<string, string>(orchestrationState.Tags)
+                    : ImmutableDictionary<string, string>.Empty,
             };
         }
 
