@@ -35,9 +35,9 @@ public class TaskTagsTests
     }
 
     [Fact]
-    [Trait("PowerShell", "Skip")] // Distributed tracing is currently not implemented in PowerShell
-    [Trait("Python", "Skip")] // Distributed tracing is not currently implemented in Python
-    [Trait("Node", "Skip")] // Distributed tracing is not currently implemented in Node
+    [Trait("PowerShell", "Skip")] // Tags are not currently implemented in PowerShell
+    [Trait("Python", "Skip")] // Tags are not currently implemented in Python
+    [Trait("Node", "Skip")] // Tags are not currently implemented in Node
     public async Task RunOrchestrationWithTags()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=TaskTags&tagKey=key1&tagValue=value1");
@@ -45,7 +45,11 @@ public class TaskTagsTests
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
         await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", 30);
         var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
-        
+
+        Assert.NotNull(orchestrationDetails?.Tags);
+        Assert.Contains("key1", orchestrationDetails.Tags.Keys);
+        Assert.Equal("value1", orchestrationDetails.Tags["key1"]);
+
         // TODO: Verify activity has tags.
     }
 }

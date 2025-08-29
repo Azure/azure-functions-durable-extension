@@ -1,6 +1,7 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
+using System.Collections.Immutable;
 using System.Text.Json.Nodes;
 
 namespace Microsoft.Azure.Durable.Tests.DotnetIsolatedE2E;
@@ -23,6 +24,7 @@ internal class DurableHelpers
         public string Output { get; set; } = string.Empty;
         public DateTime CreatedTime { get; set; }
         public DateTime LastUpdatedTime { get; set; }
+        public IReadOnlyDictionary<string, string> Tags { get; set; } = ImmutableDictionary<string, string>.Empty;
         public OrchestrationStatusDetails(string statusQueryResponse)
         {
             JsonNode? statusQueryJsonNode = JsonNode.Parse(statusQueryResponse);
@@ -35,6 +37,13 @@ internal class DurableHelpers
             this.Output = statusQueryJsonNode["output"]?.ToString() ?? string.Empty;
             this.CreatedTime = DateTime.Parse(statusQueryJsonNode["createdTime"]?.GetValue<string>() ?? string.Empty).ToUniversalTime();
             this.LastUpdatedTime = DateTime.Parse(statusQueryJsonNode["lastUpdatedTime"]?.GetValue<string>() ?? string.Empty).ToUniversalTime();
+
+            var tags = statusQueryJsonNode["tags"] as JsonObject;
+
+            if (tags is not null)
+            {
+                this.Tags = tags.ToDictionary(kvp => kvp.Key, kvp => kvp.Value?.ToString() ?? string.Empty);
+            }
         }
     }
 
