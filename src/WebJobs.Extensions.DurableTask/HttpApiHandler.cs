@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Linq;
@@ -716,6 +717,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 CreatedTime = status.CreatedTime.ToString("s") + "Z",
                 LastUpdatedTime = status.LastUpdatedTime.ToString("s") + "Z",
                 HistoryEvents = status.History,
+                Tags = status.Tags ?? ImmutableDictionary<string, string>.Empty,
             };
         }
 

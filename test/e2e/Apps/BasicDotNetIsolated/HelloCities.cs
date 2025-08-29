@@ -55,7 +55,7 @@ public static class HelloCities
         // Function input comes from the request content.
         string instanceId = await client.ScheduleNewOrchestrationInstanceAsync(orchestrationName, options);
 
-        logger.LogInformation("Started orchestration with ID = '{instanceId}'.", instanceId);
+        logger.LogInformation("Started orchestration with ID = '{instanceId}' and options '{options}'.", instanceId, options);
 
         // Returns an HTTP 202 response with an instance management payload.
         // See https://learn.microsoft.com/azure/azure-functions/durable/durable-functions-http-api#start-orchestration
