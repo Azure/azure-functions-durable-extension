@@ -14,7 +14,7 @@ import java.util.*;
 /**
  * ExternalEventOrchestration Java translation from C#
  */
-public class ExternalEventOrchestion {
+public class ExternalEventOrchestration {
 
     /**
      * Orchestrator function that waits for an external event named "Approval".
