@@ -46,14 +46,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new ArgumentNullException(nameof(options.Notifications));
             }
 
-            var eventGridNotificationsConfig = options.Notifications.EventGrid ?? throw new ArgumentNullException(nameof(options.Notifications.EventGrid));
+            EventGridNotificationOptions eventGridNotificationsConfig = options.Notifications.EventGrid ?? throw new ArgumentNullException(nameof(options.Notifications.EventGrid));
 
             this.useManagedIdentity = false;
 
             if (string.IsNullOrEmpty(eventGridNotificationsConfig.KeySettingName))
             {
                 this.useManagedIdentity = true;
-                this.managedIdentityTokenSource = new ManagedIdentityTokenSource("https://eventgrid.azure.net/.default");
+
+                if (!string.IsNullOrEmpty(eventGridNotificationsConfig.ClientId))
+                {
+                    this.managedIdentityTokenSource = new ManagedIdentityTokenSource("https://eventgrid.azure.net/.default", new ManagedIdentityOptions { TenantId = eventGridNotificationsConfig.ClientId });
+                }
+                else
+                {
+                    this.managedIdentityTokenSource = new ManagedIdentityTokenSource("https://eventgrid.azure.net/.default");
+                }
             }
             else
             {

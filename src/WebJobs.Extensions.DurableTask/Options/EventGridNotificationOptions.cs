@@ -35,6 +35,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public string KeySettingName { get; set; }
 
         /// <summary>
+        /// Gets or sets the client ID for user assigned managed identity."/>.
+        /// </summary>
+        /// <value>
+        /// The client ID for user assigned managed identity.
+        /// </value>
+        public string ClientId { get; set; }
+
+        /// <summary>
         /// Gets or sets the Event Grid publish request retry count.
         /// </summary>
         /// <value>The number of retry attempts.</value>
