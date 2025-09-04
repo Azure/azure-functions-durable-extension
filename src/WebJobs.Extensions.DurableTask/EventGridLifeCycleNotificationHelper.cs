@@ -24,7 +24,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly string eventGridTopicEndpoint;
         private readonly OrchestrationRuntimeStatus[] eventGridPublishEventTypes;
         private readonly bool useManagedIdentity;
-        private readonly bool topicKeySettingsConfigured;
         private readonly ManagedIdentityTokenSource managedIdentityTokenSource;
         private static HttpClient httpClient = null;
         private static HttpMessageHandler httpMessageHandler = null;
@@ -50,7 +49,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             EventGridNotificationOptions eventGridNotificationsConfig = null;
 
             this.useManagedIdentity = false;
-            this.topicKeySettingsConfigured = false;
 
             // Check to see if we have a topic name defined. If so, we will use managed identity to authenticate.
             if (!string.IsNullOrEmpty(nameResolver.Resolve("EventGrid:topicEndpoint")))
