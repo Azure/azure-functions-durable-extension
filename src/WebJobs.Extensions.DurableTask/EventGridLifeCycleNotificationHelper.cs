@@ -83,7 +83,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
             }
 
-            bool isTopicEndpointKeyConfigured = !string.IsNullOrEmpty(this.eventGridTopicEndpoint) && eventGridNotificationsConfig != null && !string.IsNullOrEmpty(eventGridNotificationsConfig.KeySettingName);
+            bool isTopicEndpointKeyConfigured = !string.IsNullOrEmpty(this.eventGridTopicEndpoint) && eventGridNotificationsConfig != null;
 
             if (this.useManagedIdentity || isTopicEndpointKeyConfigured)
             {
@@ -146,12 +146,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     eventGridNotificationsConfig != null ? eventGridNotificationsConfig.PublishRetryInterval : TimeSpan.FromMinutes(5),
                     retryStatusCode);
 
-                if (string.IsNullOrEmpty(this.eventGridKeyValue) && !this.useManagedIdentity)
+                if (eventGridNotificationsConfig != null && !string.IsNullOrEmpty(eventGridNotificationsConfig.KeySettingName) && string.IsNullOrEmpty(this.eventGridKeyValue) && !this.useManagedIdentity)
                 {
                     throw new ArgumentException($"Failed to start lifecycle notification feature. Please check the configuration values for {eventGridNotificationsConfig.KeySettingName} on AppSettings.");
                 }
 
-                if (eventGridNotificationsConfig != null && string.IsNullOrEmpty(eventGridNotificationsConfig.KeySettingName) && !this.useManagedIdentity)
+                if (eventGridNotificationsConfig != null && (string.IsNullOrEmpty(eventGridNotificationsConfig.KeySettingName) || string.IsNullOrEmpty(eventGridNotificationsConfig.TopicEndpoint)) && !this.useManagedIdentity)
                 {
                     throw new ArgumentException($"Failed to start lifecycle notification feature. Please check the configuration values for {eventGridNotificationsConfig.TopicEndpoint} and {eventGridNotificationsConfig.KeySettingName}.");
                 }

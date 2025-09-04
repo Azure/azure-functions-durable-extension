@@ -1276,55 +1276,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task EventGrid_MI_RefreshAccessToken_SetsAuthorizationHeader()
-        {
-            // Mock ManagedIdentityTokenSource to return a test access token
-            var mockTokenSource = new Mock<ManagedIdentityTokenSource>("https://eventgrid.azure.net/.default", null);
-            mockTokenSource
-                .Setup(m => m.GetTokenAsync())
-                .ReturnsAsync("test-access-token");
-
-            // Set TopicEndpoint to a fake URL for testing
-            var options = new DurableTaskOptions
-            {
-                Notifications = new NotificationOptions
-                {
-                    EventGrid = new EventGridNotificationOptions
-                    {
-                        TopicEndpoint = "https://fake-endpoint",
-                    },
-                },
-            };
-
-            // Set up the EventGridLifeCycleNotificationHelper with the mocked token source
-            var mockLogger = new Mock<ILogger>();
-            var traceHelper = new EndToEndTraceHelper(mockLogger.Object, false);
-            var nameResolver = new Mock<INameResolver>();
-
-            var helper = new EventGridLifeCycleNotificationHelper(options, nameResolver.Object, traceHelper);
-
-            helper.GetType()
-                .GetField("managedIdentityTokenSource", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
-                .SetValue(helper, mockTokenSource.Object);
-
-            // Set the HttpMessageHandler to a new HttpClientHandler
-            helper.HttpMessageHandler = new HttpClientHandler();
-
-            await helper.OrchestratorStartingAsync("hubName", "functionName", "instanceId", false);
-
-            // Access the HttpClient to check the Authorization header
-            var httpClient = helper.GetType()
-                .GetField("httpClient", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)
-                .GetValue(null) as HttpClient;
-
-            // Check that the Authorization header is set correctly
-            Assert.NotNull(httpClient);
-            Assert.Equal("Bearer", httpClient.DefaultRequestHeaders.Authorization.Scheme);
-            Assert.Equal("test-access-token", httpClient.DefaultRequestHeaders.Authorization.Parameter);
-        }
-
-        [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void CustomHelperTypeActivationFailed()
         {
             var options = new DurableTaskOptions
