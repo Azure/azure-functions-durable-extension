@@ -20,6 +20,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             this.AuthorityHost = authorityHost;
             this.TenantId = tenantId;
+            this.ClientId = clientId;
         }
 
         /// <summary>

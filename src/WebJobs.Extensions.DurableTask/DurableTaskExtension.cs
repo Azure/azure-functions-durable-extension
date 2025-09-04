@@ -510,7 +510,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // First: EventGrid
 
             bool topicKeySettingsConfigured = this.Options.Notifications.EventGrid != null && (!string.IsNullOrEmpty(this.Options.Notifications.EventGrid.TopicEndpoint) && !string.IsNullOrEmpty(this.Options.Notifications.EventGrid.KeySettingName));
-            bool usingManagedIdentity = !string.IsNullOrEmpty(this.nameResolver.Resolve("EventGrid:topicName"));
+            bool usingManagedIdentity = !string.IsNullOrEmpty(this.nameResolver.Resolve("EventGrid:topicEndpoint"));
 
             if (topicKeySettingsConfigured || usingManagedIdentity)
             {
