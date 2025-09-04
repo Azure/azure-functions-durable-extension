@@ -109,7 +109,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     ""testToken"": ""dummy token"",
     ""options"": {
       ""authorityhost"": ""https://dummy.login.microsoftonline.com/"",
-      ""tenantid"": ""tenant_id""
+      ""tenantid"": ""tenant_id"",
+      ""clientid"": null
     }
   },
   ""AsynchronousPatternEnabled"": true
@@ -147,7 +148,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     ""resource"": ""dummy url"",
     ""options"": {
       ""authorityhost"": ""https://dummy.login.microsoftonline.com/"",
-      ""tenantid"": ""tenant_id""
+      ""tenantid"": ""tenant_id"",
+      ""clientid"": null
     }
    },
   ""asynchronousPatternEnabled"": true,
