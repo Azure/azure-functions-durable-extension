@@ -53,19 +53,26 @@ internal class FunctionAppProcess
                 case LanguageType.Node:
                     e2eAppPath = Path.Combine(rootDir, @$"test/e2e/Apps/{this.appName}");
                     break;
+                case LanguageType.Java:
                 case LanguageType.DotnetIsolated:
                 default:
-                    string e2eAppBinPath = Path.Combine(rootDir, @$"test/e2e/Apps/{this.appName}/bin");
-                    if (!Path.Exists(e2eAppBinPath))
+                    string e2eAppBuiltLocationPath = "";
+
+                    if (this.testLanguage == LanguageType.Java)
+                        e2eAppBuiltLocationPath = Path.Combine(rootDir, @$"test/e2e/Apps/{this.appName}/target");
+                    else
+                        e2eAppBuiltLocationPath = Path.Combine(rootDir, @$"test/e2e/Apps/{this.appName}/bin");
+
+                    if (!Path.Exists(e2eAppBuiltLocationPath))
                     {
-                        throw new InvalidOperationException($"The app bin path {e2eAppBinPath} does not exist!");
+                        throw new InvalidOperationException($"The app bin path {e2eAppBuiltLocationPath} does not exist!");
                     }
 
-                    string? e2eHostJson = Directory.GetFiles(e2eAppBinPath, "host.json", SearchOption.AllDirectories).FirstOrDefault();
+                    string? e2eHostJson = Directory.GetFiles(e2eAppBuiltLocationPath, "host.json", SearchOption.AllDirectories).FirstOrDefault();
 
                     if (e2eHostJson == null)
                     {
-                        throw new InvalidOperationException($"Could not find a built worker app under '{e2eAppBinPath}'");
+                        throw new InvalidOperationException($"Could not find a built worker app under '{e2eAppBuiltLocationPath}'");
                     }
 
                     e2eAppPath = Path.GetDirectoryName(e2eHostJson);

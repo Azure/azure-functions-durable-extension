@@ -45,6 +45,13 @@ jobs:
         with:
           python-version: 3.11
 
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
       - name: Setup E2E tests
         shell: pwsh
         run: |
@@ -93,6 +100,16 @@ jobs:
       - name: Run E2E tests (Node)
         working-directory: test/e2e/Tests
         run: dotnet test --filter 'AzureStorage!=Skip&Node!=Skip&Node-AzureStorage!=Skip'
+
+      - name: Setup Environment for Java
+        shell: pwsh
+        run: |
+          Add-Content -Path $env:GITHUB_ENV -Value "E2E_TEST_FUNCTIONS_LANGUAGE=java"
+          Add-Content -Path $env:GITHUB_ENV -Value "TEST_APP_NAME=BasicJava"
+
+      - name: Run E2E tests (Java)
+        working-directory: test/e2e/Tests
+        run: dotnet test --filter 'AzureStorage!=Skip&Java!=Skip&Java-AzureStorage!=Skip'
 
   e2e-azurestorage-windows:
     runs-on: windows-latest
@@ -121,6 +138,13 @@ jobs:
         with:
           python-version: 3.11
 
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
       - name: Setup E2E tests
         shell: pwsh
         run: |
@@ -170,6 +194,16 @@ jobs:
         working-directory: test/e2e/Tests
         run: dotnet test --filter 'AzureStorage!=Skip&Node!=Skip&Node-AzureStorage!=Skip'
 
+      - name: Setup Environment for Java
+        shell: pwsh
+        run: |
+          Add-Content -Path $env:GITHUB_ENV -Value "E2E_TEST_FUNCTIONS_LANGUAGE=java"
+          Add-Content -Path $env:GITHUB_ENV -Value "TEST_APP_NAME=BasicJava"
+
+      - name: Run E2E tests (Java)
+        working-directory: test/e2e/Tests
+        run: dotnet test --filter 'AzureStorage!=Skip&Java!=Skip&Java-AzureStorage!=Skip'
+
   e2e-mssql:
     runs-on: ubuntu-latest
     env:
@@ -196,6 +230,13 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: 3.11
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
 
       - name: Initialize Environment Variables
         run: | 
@@ -250,6 +291,16 @@ jobs:
         working-directory: test/e2e/Tests
         run: dotnet test --filter 'MSSQL!=Skip&Node!=Skip&Node-MSSQL!=Skip'
 
+      - name: Setup Environment for Java
+        shell: pwsh
+        run: |
+          Add-Content -Path $env:GITHUB_ENV -Value "E2E_TEST_FUNCTIONS_LANGUAGE=java"
+          Add-Content -Path $env:GITHUB_ENV -Value "TEST_APP_NAME=BasicJava"
+
+      - name: Run E2E tests (Java)
+        working-directory: test/e2e/Tests
+        run: dotnet test --filter 'MSSQL!=Skip&Java!=Skip&Java-MSSQL!=Skip'
+
   e2e-dts:
     runs-on: ubuntu-latest
     env:
@@ -276,6 +327,13 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: 3.11
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
 
       - name: Setup E2E tests
         shell: pwsh
@@ -325,3 +383,13 @@ jobs:
       - name: Run E2E tests (Node)
         working-directory: test/e2e/Tests
         run: dotnet test --filter 'DTS!=Skip&Node!=Skip&Node-DTS!=Skip'
+
+      - name: Setup Environment for Java
+        shell: pwsh
+        run: |
+          Add-Content -Path $env:GITHUB_ENV -Value "E2E_TEST_FUNCTIONS_LANGUAGE=java"
+          Add-Content -Path $env:GITHUB_ENV -Value "TEST_APP_NAME=BasicJava"
+
+      - name: Run E2E tests (Java)
+        working-directory: test/e2e/Tests
+        run: dotnet test --filter 'DTS!=Skip&Java!=Skip&Java-DTS!=Skip'

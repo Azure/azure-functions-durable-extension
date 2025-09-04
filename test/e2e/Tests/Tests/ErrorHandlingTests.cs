@@ -44,6 +44,7 @@ public class ErrorHandlingTests
     [Trait("MSSQL", "Skip")] // Durable Entities are not supported in MSSQL/Dotnet Isolated, see https://github.com/microsoft/durabletask-mssql/issues/205
     [Trait("DTS", "Skip")] // DTS will fail this test unless this bug is fixed: https://msazure.visualstudio.com/Antares/_workitems/edit/31779638
     [Trait("PowerShell", "Skip")] // Durable Entities not yet implemented in PowerShell
+    [Trait("Java", "Skip")] // Durable Entities not yet implemented in Java
     public async Task OrchestratorWithUncaughtEntityException_ShouldFail()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=ThrowEntityOrchestration");
@@ -102,13 +103,14 @@ public class ErrorHandlingTests
         // Check FailureDetails contains the right error type and error message,
         // Here it should be the same one as the activity function Raise Exception throws.
         Assert.NotNull(failureDetails);
-        Assert.Equal("System.InvalidOperationException", failureDetails.ErrorType);
+        Assert.Contains("InvalidOperationException", failureDetails.ErrorType);
         Assert.Equal("This activity failed", failureDetails.ErrorMessage);
     }
 
     [Fact]
     [Trait("MSSQL", "Skip")] // Durable Entities are not supported in MSSQL/Dotnet Isolated, see https://github.com/microsoft/durabletask-mssql/issues/205
     [Trait("PowerShell", "Skip")] // Durable Entities not yet implemented in PowerShell
+    [Trait("Java", "Skip")] // Durable Entities not yet implemented in Java
     public async Task OrchestratorWithCaughtEntityException_ShouldSucceed()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=CatchEntityOrchestration");
@@ -157,6 +159,7 @@ public class ErrorHandlingTests
     [Trait("MSSQL", "Skip")] // Durable Entities are not supported in MSSQL/Dotnet Isolated, see https://github.com/microsoft/durabletask-mssql/issues/205
     [Trait("DTS", "Skip")] // DTS will fail this test unless this issue is fixed, see https://msazure.visualstudio.com/Antares/_workitems/edit/31778744
     [Trait("PowerShell", "Skip")] // Durable Entities not yet implemented in PowerShell
+    [Trait("Java", "Skip")] // Durable Entities not yet implemented in Java
     [Trait("Node-DTS", "Skip")] // Bug: https://msazure.visualstudio.com/Antares/_workitems/edit/33910424
     public async Task OrchestratorWithRetriedEntityException_ShouldSucceed()
     {
@@ -216,7 +219,8 @@ public class ErrorHandlingTests
         // We want to ensure that multiline exception messages and inner exceptions are preserved
         Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains(nameof(InvalidOperationException)) &&
                                                               x.Contains("This activity failed"));
+        Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains("More information about the failure"));
         Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains(nameof(OverflowException)) &&
-                                                              x.Contains("More information about the failure"));
+                                                              x.Contains("Inner exception message"));
     }
 }

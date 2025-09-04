@@ -22,6 +22,7 @@ public class TerminateOrchestratorTests
 
 
     [Fact]
+    [Trait("Java-MSSQL", "Skip")] // Bug: https://github.com/microsoft/durabletask-java/issues/237
     public async Task TerminateRunningOrchestration_ShouldSucceed()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=LongRunningOrchestrator");
@@ -60,6 +61,7 @@ public class TerminateOrchestratorTests
 
 
     [Fact]
+    [Trait("Java-MSSQL", "Skip")] // Bug: https://github.com/microsoft/durabletask-java/issues/237
     public async Task TerminateTerminatedOrchestration_ShouldFail()
     {
         LanguageType languageType = this.fixture.functionLanguageLocalizer.GetLanguageType();
@@ -78,7 +80,7 @@ public class TerminateOrchestratorTests
         await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Terminated", 30);
 
         using HttpResponseMessage terminateAgainResponse = await HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={instanceId}");
-        
+
         if (languageType == LanguageType.Python || languageType == LanguageType.Node)
         {
             // In python and Node, terminating a completed, failed, or terminated instance swallows the failure
@@ -103,10 +105,15 @@ public class TerminateOrchestratorTests
 
         // PowerShell, Python, Node all use the HTTP terminate API, which returns 410 (Gone) and does not log
         // when the instance is completed
-        if (languageType != LanguageType.PowerShell && languageType != LanguageType.Python && languageType != LanguageType.Node)
+        if (languageType == LanguageType.DotnetIsolated)
         {
             Assert.Contains("StatusCode=\"FailedPrecondition\"", terminateAgainResponseMessage);
-
+            Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains("Cannot terminate orchestration instance in the Terminated state.") &&
+                                                              x.Contains(instanceId));
+        }
+        else if (languageType == LanguageType.Java)
+        {
+            Assert.Contains("FAILED_PRECONDITION: InvalidOperationException", terminateAgainResponseMessage);
             Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains("Cannot terminate orchestration instance in the Terminated state.") &&
                                                               x.Contains(instanceId));
         }
@@ -151,10 +158,15 @@ public class TerminateOrchestratorTests
 
         // PowerShell, Python, Node all use the HTTP terminate API, which returns 410 (Gone) and does not log
         // when the instance is completed
-        if (languageType != LanguageType.PowerShell && languageType != LanguageType.Python && languageType != LanguageType.Node)
+        if (languageType == LanguageType.DotnetIsolated)
         {
             Assert.Contains("StatusCode=\"FailedPrecondition\"", terminateResponseMessage);
-
+            Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains("Cannot terminate orchestration instance in the Completed state.") &&
+                                                                  x.Contains(instanceId));
+        }
+        else if (languageType == LanguageType.Java)
+        {
+            Assert.Contains("FAILED_PRECONDITION: InvalidOperationException", terminateResponseMessage);
             Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains("Cannot terminate orchestration instance in the Completed state.") &&
                                                                   x.Contains(instanceId));
         }
@@ -172,12 +184,14 @@ public class TerminateOrchestratorTests
         Assert.NotNull(terminateResponseMessage);
 
         // Check the exception returned contains the right statusCode and message. 
-        if (languageType != LanguageType.PowerShell && languageType != LanguageType.Python && languageType != LanguageType.Node)
+        // This particular part of the error is not emitted in Python, PowerShell, Node
+        if (languageType == LanguageType.DotnetIsolated)
         {
-            // This particular part of the error is not emitted in Python, PowerShell, Node
-            // It probably does not exist in Java either
-            // But we will prove this when implementing these tests for these languages
             Assert.Contains("Status(StatusCode=\"NotFound\"", terminateResponseMessage);
+        }
+        else if (languageType == LanguageType.Java)
+        {
+            Assert.Contains("NOT_FOUND: ArgumentException: No instance", terminateResponseMessage);
         }
         Assert.Contains(fixture.functionLanguageLocalizer.GetLocalizedStringValue("TerminateInvalidInstance.FailureMessage", instanceId), terminateResponseMessage);
     }
