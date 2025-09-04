@@ -16,7 +16,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </summary>
         /// <param name="authorityHost">The host of the Azure Active Directory authority.</param>
         /// <param name="tenantId">The tenant id of the user to authenticate.</param>
-        public ManagedIdentityOptions(Uri authorityHost = null, string tenantId = null)
+        public ManagedIdentityOptions(Uri authorityHost = null, string tenantId = null, string clientId = null)
         {
             this.AuthorityHost = authorityHost;
             this.TenantId = tenantId;
@@ -33,5 +33,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </summary>
         [JsonProperty("tenantid")]
         public string TenantId { get; set; }
+
+        /// <summary>
+        /// The client id of the user assigned managed identity.
+        /// </summary>
+        [JsonProperty("clientid")]
+        public string ClientId { get; set; }
     }
 }

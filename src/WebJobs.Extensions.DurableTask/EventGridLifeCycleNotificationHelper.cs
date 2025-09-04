@@ -24,6 +24,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly string eventGridTopicEndpoint;
         private readonly OrchestrationRuntimeStatus[] eventGridPublishEventTypes;
         private readonly bool useManagedIdentity;
+        private readonly bool topicKeySettingsConfigured;
         private readonly ManagedIdentityTokenSource managedIdentityTokenSource;
         private static HttpClient httpClient = null;
         private static HttpMessageHandler httpMessageHandler = null;
@@ -46,46 +47,56 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new ArgumentNullException(nameof(options.Notifications));
             }
 
-            EventGridNotificationOptions eventGridNotificationsConfig = options.Notifications.EventGrid ?? throw new ArgumentNullException(nameof(options.Notifications.EventGrid));
+            EventGridNotificationOptions eventGridNotificationsConfig = null;
 
             this.useManagedIdentity = false;
+            this.topicKeySettingsConfigured = false;
 
-            if (string.IsNullOrEmpty(eventGridNotificationsConfig.KeySettingName))
+            // Check to see if we have a topic name defined. If so, we will use managed identity to authenticate.
+            if (!string.IsNullOrEmpty(nameResolver.Resolve("EventGrid:topicName")))
             {
                 this.useManagedIdentity = true;
 
-                if (!string.IsNullOrEmpty(eventGridNotificationsConfig.ClientId))
+                if (string.Equals(nameResolver.Resolve("EventGrid:credential"), "managedidentity") &&
+                    !string.IsNullOrEmpty(nameResolver.Resolve("EventGrid:clientId")))
                 {
-                    this.managedIdentityTokenSource = new ManagedIdentityTokenSource("https://eventgrid.azure.net/.default", new ManagedIdentityOptions { TenantId = eventGridNotificationsConfig.ClientId });
+                    // Use user assigned managed identity
+                    string clientId = nameResolver.Resolve("EventGrid:clientId");
+                    this.managedIdentityTokenSource = new ManagedIdentityTokenSource("https://eventgrid.azure.net/.default", new ManagedIdentityOptions { ClientId = clientId });
                 }
                 else
                 {
+                    // Use system assigned managed identity
                     this.managedIdentityTokenSource = new ManagedIdentityTokenSource("https://eventgrid.azure.net/.default");
                 }
             }
             else
             {
+                eventGridNotificationsConfig = options.Notifications.EventGrid ?? throw new ArgumentNullException(nameof(options.Notifications.EventGrid));
+
                 this.eventGridKeyValue = nameResolver.Resolve(eventGridNotificationsConfig.KeySettingName);
-            }
 
-            this.eventGridTopicEndpoint = eventGridNotificationsConfig.TopicEndpoint;
+                this.eventGridTopicEndpoint = eventGridNotificationsConfig.TopicEndpoint;
 
-            if (nameResolver.TryResolveWholeString(eventGridNotificationsConfig.TopicEndpoint, out var endpoint))
-            {
-                this.eventGridTopicEndpoint = endpoint;
-            }
-
-            if (!string.IsNullOrEmpty(this.eventGridTopicEndpoint))
-            {
-                if (!string.IsNullOrEmpty(eventGridNotificationsConfig.KeySettingName) || this.useManagedIdentity == true)
+                if (nameResolver.TryResolveWholeString(eventGridNotificationsConfig.TopicEndpoint, out var endpoint))
                 {
-                    this.useTrace = true;
+                    this.eventGridTopicEndpoint = endpoint;
+                }
+            }
 
+            bool isTopicEndpointKeyConfigured = !string.IsNullOrEmpty(this.eventGridTopicEndpoint) && !string.IsNullOrEmpty(eventGridNotificationsConfig.KeySettingName);
+
+            if (this.useManagedIdentity || isTopicEndpointKeyConfigured)
+            {
+                this.useTrace = true;
+
+                if (isTopicEndpointKeyConfigured)
+                {
                     var retryStatusCode = eventGridNotificationsConfig.PublishRetryHttpStatus?
-                                              .Where(x => Enum.IsDefined(typeof(HttpStatusCode), x))
-                                              .Select(x => (HttpStatusCode)x)
-                                              .ToArray()
-                                          ?? Array.Empty<HttpStatusCode>();
+                                                .Where(x => Enum.IsDefined(typeof(HttpStatusCode), x))
+                                                .Select(x => (HttpStatusCode)x)
+                                                .ToArray()
+                                            ?? Array.Empty<HttpStatusCode>();
 
                     if (eventGridNotificationsConfig.PublishEventTypes == null || eventGridNotificationsConfig.PublishEventTypes.Length == 0)
                     {
@@ -137,14 +148,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         eventGridNotificationsConfig.PublishRetryInterval,
                         retryStatusCode);
 
-                    if (string.IsNullOrEmpty(this.eventGridKeyValue) && this.useManagedIdentity == false)
+                    if (string.IsNullOrEmpty(this.eventGridKeyValue))
                     {
                         throw new ArgumentException($"Failed to start lifecycle notification feature. Please check the configuration values for {eventGridNotificationsConfig.KeySettingName} on AppSettings.");
                     }
-                }
-                else if (string.IsNullOrEmpty(eventGridNotificationsConfig.KeySettingName) && this.useManagedIdentity == false)
-                {
-                    throw new ArgumentException($"Failed to start lifecycle notification feature. Please check the configuration values for {eventGridNotificationsConfig.TopicEndpoint} and {eventGridNotificationsConfig.KeySettingName}.");
+
+                    if (string.IsNullOrEmpty(eventGridNotificationsConfig.KeySettingName))
+                    {
+                        throw new ArgumentException($"Failed to start lifecycle notification feature. Please check the configuration values for {eventGridNotificationsConfig.TopicEndpoint} and {eventGridNotificationsConfig.KeySettingName}.");
+                    }
                 }
             }
         }

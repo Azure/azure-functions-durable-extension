@@ -508,8 +508,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private ILifeCycleNotificationHelper CreateLifeCycleNotificationHelper()
         {
             // First: EventGrid
-            if (this.Options.Notifications.EventGrid != null
-                && (!string.IsNullOrEmpty(this.Options.Notifications.EventGrid.TopicEndpoint) || !string.IsNullOrEmpty(this.Options.Notifications.EventGrid.KeySettingName)))
+
+            bool topicKeySettingsConfigured = this.Options.Notifications.EventGrid != null && (!string.IsNullOrEmpty(this.Options.Notifications.EventGrid.TopicEndpoint) && !string.IsNullOrEmpty(this.Options.Notifications.EventGrid.KeySettingName));
+            bool usingManagedIdentity = !string.IsNullOrEmpty(this.nameResolver.Resolve("EventGrid:topicName"));
+
+            if (topicKeySettingsConfigured || usingManagedIdentity)
             {
                 return new EventGridLifeCycleNotificationHelper(this.Options, this.nameResolver, this.TraceHelper);
             }
