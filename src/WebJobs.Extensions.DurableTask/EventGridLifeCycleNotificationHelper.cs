@@ -23,8 +23,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly string eventGridKeyValue;
         private readonly string eventGridTopicEndpoint;
         private readonly OrchestrationRuntimeStatus[] eventGridPublishEventTypes;
-        private readonly bool useManagedIdentity;
-        private readonly ManagedIdentityTokenSource managedIdentityTokenSource;
+        internal readonly bool useManagedIdentity;
+        internal readonly ManagedIdentityTokenSource managedIdentityTokenSource;
         private static HttpClient httpClient = null;
         private static HttpMessageHandler httpMessageHandler = null;
 
