@@ -156,9 +156,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        public bool UseManagedIdentity { get; private set; }
+        internal bool UseManagedIdentity { get; private set; }
 
-        public ManagedIdentityTokenSource ManagedIdentityTokenSource { get; private set; }
+        internal ManagedIdentityTokenSource ManagedIdentityTokenSource { get; private set; }
 
 
         public string EventGridKeyValue => this.eventGridKeyValue;
