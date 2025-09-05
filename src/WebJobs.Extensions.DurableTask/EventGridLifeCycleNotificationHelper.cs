@@ -160,7 +160,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal ManagedIdentityTokenSource ManagedIdentityTokenSource { get; private set; }
 
-
         public string EventGridKeyValue => this.eventGridKeyValue;
 
         public string EventGridTopicEndpoint => this.eventGridTopicEndpoint;
