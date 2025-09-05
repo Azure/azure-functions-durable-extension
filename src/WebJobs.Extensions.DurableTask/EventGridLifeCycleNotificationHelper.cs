@@ -23,8 +23,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly string eventGridKeyValue;
         private readonly string eventGridTopicEndpoint;
         private readonly OrchestrationRuntimeStatus[] eventGridPublishEventTypes;
-        internal readonly bool useManagedIdentity;
-        internal readonly ManagedIdentityTokenSource managedIdentityTokenSource;
         private static HttpClient httpClient = null;
         private static HttpMessageHandler httpMessageHandler = null;
 
@@ -48,12 +46,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             EventGridNotificationOptions eventGridNotificationsConfig = null;
 
-            this.useManagedIdentity = false;
+            this.UseManagedIdentity = false;
 
             // Check to see if we have a topic name defined. If so, we will use managed identity to authenticate.
             if (!string.IsNullOrEmpty(nameResolver.Resolve("EventGrid:topicEndpoint")))
             {
-                this.useManagedIdentity = true;
+                this.UseManagedIdentity = true;
                 this.eventGridTopicEndpoint = nameResolver.Resolve("EventGrid:topicEndpoint");
 
                 if (string.Equals(nameResolver.Resolve("EventGrid:credential"), "managedidentity") &&
@@ -61,12 +59,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     // Use user assigned managed identity
                     string clientId = nameResolver.Resolve("EventGrid:clientId");
-                    this.managedIdentityTokenSource = new ManagedIdentityTokenSource("https://eventgrid.azure.net/.default", new ManagedIdentityOptions { ClientId = clientId });
+                    this.ManagedIdentityTokenSource = new ManagedIdentityTokenSource("https://eventgrid.azure.net/.default", new ManagedIdentityOptions { ClientId = clientId });
                 }
                 else
                 {
                     // Use system assigned managed identity
-                    this.managedIdentityTokenSource = new ManagedIdentityTokenSource("https://eventgrid.azure.net/.default");
+                    this.ManagedIdentityTokenSource = new ManagedIdentityTokenSource("https://eventgrid.azure.net/.default");
                 }
             }
             else
@@ -85,7 +83,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             bool isTopicEndpointKeyConfigured = !string.IsNullOrEmpty(this.eventGridTopicEndpoint) && eventGridNotificationsConfig != null;
 
-            if (this.useManagedIdentity || isTopicEndpointKeyConfigured)
+            if (this.UseManagedIdentity || isTopicEndpointKeyConfigured)
             {
                 this.useTrace = true;
 
@@ -146,17 +144,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     eventGridNotificationsConfig != null ? eventGridNotificationsConfig.PublishRetryInterval : TimeSpan.FromMinutes(5),
                     retryStatusCode);
 
-                if (eventGridNotificationsConfig != null && !string.IsNullOrEmpty(eventGridNotificationsConfig.KeySettingName) && string.IsNullOrEmpty(this.eventGridKeyValue) && !this.useManagedIdentity)
+                if (eventGridNotificationsConfig != null && !string.IsNullOrEmpty(eventGridNotificationsConfig.KeySettingName) && string.IsNullOrEmpty(this.eventGridKeyValue) && !this.UseManagedIdentity)
                 {
                     throw new ArgumentException($"Failed to start lifecycle notification feature. Please check the configuration values for {eventGridNotificationsConfig.KeySettingName} on AppSettings.");
                 }
 
-                if (eventGridNotificationsConfig != null && (string.IsNullOrEmpty(eventGridNotificationsConfig.KeySettingName) || string.IsNullOrEmpty(eventGridNotificationsConfig.TopicEndpoint)) && !this.useManagedIdentity)
+                if (eventGridNotificationsConfig != null && (string.IsNullOrEmpty(eventGridNotificationsConfig.KeySettingName) || string.IsNullOrEmpty(eventGridNotificationsConfig.TopicEndpoint)) && !this.UseManagedIdentity)
                 {
                     throw new ArgumentException($"Failed to start lifecycle notification feature. Please check the configuration values for {eventGridNotificationsConfig.TopicEndpoint} and {eventGridNotificationsConfig.KeySettingName}.");
                 }
             }
         }
+
+        public bool UseManagedIdentity { get; private set; }
+
+        public ManagedIdentityTokenSource ManagedIdentityTokenSource { get; private set; }
+
 
         public string EventGridKeyValue => this.eventGridKeyValue;
 
@@ -171,7 +174,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 httpMessageHandler = value;
                 httpClient = new HttpClient(httpMessageHandler);
 
-                if (this.useManagedIdentity)
+                if (this.UseManagedIdentity)
                 {
                     // Use Bearer token for Managed Identity
                     this.RefreshAccessTokenAsync().GetAwaiter().GetResult();
@@ -186,7 +189,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private async Task RefreshAccessTokenAsync()
         {
-            string accessToken = await this.managedIdentityTokenSource.GetTokenAsync();
+            string accessToken = await this.ManagedIdentityTokenSource.GetTokenAsync();
             httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
         }
 

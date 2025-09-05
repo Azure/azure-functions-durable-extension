@@ -52,7 +52,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public ManagedIdentityOptions Options { get; }
 
         /// <inheritdoc/>
-        public virtual async Task<string> GetTokenAsync()
+        public async Task<string> GetTokenAsync()
         {
             var scopes = new string[] { this.Resource };
             TokenRequestContext context = new TokenRequestContext(scopes);

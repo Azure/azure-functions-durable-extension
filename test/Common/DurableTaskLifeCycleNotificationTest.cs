@@ -785,11 +785,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             var helper = new EventGridLifeCycleNotificationHelper(options, mockNameResolver.Object, traceHelper);
 
-            Assert.False(helper.useManagedIdentity);
+            Assert.False(helper.UseManagedIdentity);
             Assert.Equal("https://example.eventgrid.azure.net", helper.EventGridTopicEndpoint);
             Assert.Equal("test-event-grid-key", helper.EventGridKeyValue);
             Assert.NotNull(helper.HttpMessageHandler);
-            Assert.Null(helper.managedIdentityTokenSource);
+            Assert.Null(helper.ManagedIdentityTokenSource);
         }
 
         [Fact]
@@ -811,12 +811,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             var helper = new EventGridLifeCycleNotificationHelper(options, mockNameResolver.Object, traceHelper);
 
-            Assert.True(helper.useManagedIdentity);
+            Assert.True(helper.UseManagedIdentity);
             Assert.Equal("https://example.eventgrid.azure.net", helper.EventGridTopicEndpoint);
             Assert.NotNull(helper.HttpMessageHandler);
-            Assert.NotNull(helper.managedIdentityTokenSource);
-            Assert.Equal("https://eventgrid.azure.net/.default", helper.managedIdentityTokenSource.Resource);
-            Assert.Null(helper.managedIdentityTokenSource.Options?.ClientId); // No client ID for system-assigned identity
+            Assert.NotNull(helper.ManagedIdentityTokenSource);
+            Assert.Equal("https://eventgrid.azure.net/.default", helper.ManagedIdentityTokenSource.Resource);
+            Assert.Null(helper.ManagedIdentityTokenSource.Options?.ClientId); // No client ID for system-assigned identity
         }
 
         [Fact]
@@ -839,12 +839,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             var helper = new EventGridLifeCycleNotificationHelper(options, mockNameResolver.Object, traceHelper);
 
-            Assert.True(helper.useManagedIdentity);
+            Assert.True(helper.UseManagedIdentity);
             Assert.Equal("https://example.eventgrid.azure.net", helper.EventGridTopicEndpoint);
             Assert.NotNull(helper.HttpMessageHandler);
-            Assert.NotNull(helper.managedIdentityTokenSource);
-            Assert.Equal("https://eventgrid.azure.net/.default", helper.managedIdentityTokenSource.Resource);
-            Assert.Equal("test-client-id", helper.managedIdentityTokenSource.Options.ClientId);
+            Assert.NotNull(helper.ManagedIdentityTokenSource);
+            Assert.Equal("https://eventgrid.azure.net/.default", helper.ManagedIdentityTokenSource.Resource);
+            Assert.Equal("test-client-id", helper.ManagedIdentityTokenSource.Options.ClientId);
         }
 
         private HttpMessageHandler ConfigureEventGridMockHandler(
