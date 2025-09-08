@@ -761,6 +761,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void Constructor_UsesEventGridKey_ForAuthentication()
         {
             var mockNameResolver = GetNameResolverMock(new[]
@@ -793,6 +794,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void Constructor_UsesManagedIdentity_WithSystemAssignedIdentity()
         {
             var mockNameResolver = GetNameResolverMock(new[]
@@ -820,6 +822,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void Constructor_UsesManagedIdentity_WithUserAssignedIdentity()
         {
             var mockNameResolver = GetNameResolverMock(new[]
