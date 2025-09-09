@@ -172,15 +172,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 httpClient?.Dispose();
                 httpMessageHandler = value;
                 httpClient = new HttpClient(httpMessageHandler);
+            }
+        }
 
-                if (this.UseManagedIdentity)
+        internal void SetUpAuthentication()
+        {
+            if (this.UseManagedIdentity)
+            {
+                // Use Bearer token for Managed Identity
+                this.RefreshAccessTokenAsync().GetAwaiter().GetResult();
+            }
+            else
+            {
+                // Use key-based authentication
+                if (httpClient != null)
                 {
-                    // Use Bearer token for Managed Identity
-                    this.RefreshAccessTokenAsync().GetAwaiter().GetResult();
-                }
-                else
-                {
-                    // Use key-based authentication
                     httpClient.DefaultRequestHeaders.Add("aeg-sas-key", this.eventGridKeyValue);
                 }
             }

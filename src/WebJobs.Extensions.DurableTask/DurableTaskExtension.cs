@@ -514,7 +514,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             if (topicKeySettingsConfigured || usingManagedIdentity)
             {
-                return new EventGridLifeCycleNotificationHelper(this.Options, this.nameResolver, this.TraceHelper);
+                var notificationHelper = new EventGridLifeCycleNotificationHelper(this.Options, this.nameResolver, this.TraceHelper);
+                notificationHelper.SetUpAuthentication();
+                return notificationHelper;
+
             }
 
             // Fallback: Disable Notification
