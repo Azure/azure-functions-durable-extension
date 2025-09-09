@@ -509,10 +509,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             // First: EventGrid
 
-            bool topicKeySettingsConfigured = this.Options.Notifications.EventGrid != null && !string.IsNullOrEmpty(this.Options.Notifications.EventGrid.TopicEndpoint);
+            bool topicKeySettingOrKeySettingNameConfigured = this.Options.Notifications.EventGrid != null && (!string.IsNullOrEmpty(this.Options.Notifications.EventGrid.TopicEndpoint) || !string.IsNullOrEmpty(this.Options.Notifications.EventGrid.KeySettingName));
             bool usingManagedIdentity = !string.IsNullOrEmpty(this.nameResolver.Resolve("EventGrid:topicEndpoint"));
 
-            if (topicKeySettingsConfigured || usingManagedIdentity)
+            if (topicKeySettingOrKeySettingNameConfigured || usingManagedIdentity)
             {
                 var notificationHelper = new EventGridLifeCycleNotificationHelper(this.Options, this.nameResolver, this.TraceHelper);
                 notificationHelper.SetUpAuthentication();

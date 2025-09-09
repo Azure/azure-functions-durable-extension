@@ -48,7 +48,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             this.UseManagedIdentity = false;
 
-            // Check to see if we have a topic name defined. If so, we will use managed identity to authenticate.
+            // Check to see if we have a topic name app setting defined. If so, we will use managed identity to authenticate.
             if (!string.IsNullOrEmpty(nameResolver.Resolve("EventGrid:topicEndpoint")))
             {
                 this.UseManagedIdentity = true;
@@ -81,9 +81,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
             }
 
-            bool isTopicEndpointKeyConfigured = !string.IsNullOrEmpty(this.eventGridTopicEndpoint) && eventGridNotificationsConfig != null;
+            // Check if we have the minimum required settings to enable Event Grid notifications with key based authentication.
+            bool eventGridNotificationSettingsConfigured = false;
 
-            if (this.UseManagedIdentity || isTopicEndpointKeyConfigured)
+            if (eventGridNotificationsConfig != null)
+            {
+                if (!string.IsNullOrEmpty(eventGridNotificationsConfig.KeySettingName) && string.IsNullOrEmpty(this.eventGridKeyValue))
+                {
+                    throw new ArgumentException($"Failed to start lifecycle notification feature. Please check the configuration values for {eventGridNotificationsConfig.KeySettingName} on AppSettings.");
+                }
+
+                if (string.IsNullOrEmpty(eventGridNotificationsConfig.KeySettingName) || string.IsNullOrEmpty(eventGridNotificationsConfig.TopicEndpoint))
+                {
+                    throw new ArgumentException($"Failed to start lifecycle notification feature. Please check the configuration values for {eventGridNotificationsConfig.TopicEndpoint} and {eventGridNotificationsConfig.KeySettingName}.");
+                }
+
+                eventGridNotificationSettingsConfigured = true;
+            }
+
+            if (this.UseManagedIdentity || eventGridNotificationSettingsConfigured)
             {
                 this.useTrace = true;
 
@@ -143,16 +159,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     eventGridNotificationsConfig != null ? eventGridNotificationsConfig.PublishRetryCount : 0,
                     eventGridNotificationsConfig != null ? eventGridNotificationsConfig.PublishRetryInterval : TimeSpan.FromMinutes(5),
                     retryStatusCode);
-
-                if (eventGridNotificationsConfig != null && !string.IsNullOrEmpty(eventGridNotificationsConfig.KeySettingName) && string.IsNullOrEmpty(this.eventGridKeyValue) && !this.UseManagedIdentity)
-                {
-                    throw new ArgumentException($"Failed to start lifecycle notification feature. Please check the configuration values for {eventGridNotificationsConfig.KeySettingName} on AppSettings.");
-                }
-
-                if (eventGridNotificationsConfig != null && (string.IsNullOrEmpty(eventGridNotificationsConfig.KeySettingName) || string.IsNullOrEmpty(eventGridNotificationsConfig.TopicEndpoint)) && !this.UseManagedIdentity)
-                {
-                    throw new ArgumentException($"Failed to start lifecycle notification feature. Please check the configuration values for {eventGridNotificationsConfig.TopicEndpoint} and {eventGridNotificationsConfig.KeySettingName}.");
-                }
             }
         }
 
