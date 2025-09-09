@@ -517,7 +517,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 var notificationHelper = new EventGridLifeCycleNotificationHelper(this.Options, this.nameResolver, this.TraceHelper);
                 notificationHelper.SetUpAuthentication();
                 return notificationHelper;
-
             }
 
             // Fallback: Disable Notification
