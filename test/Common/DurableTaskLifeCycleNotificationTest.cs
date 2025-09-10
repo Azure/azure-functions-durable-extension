@@ -803,10 +803,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 ("EventGrid:credential", "managedidentity"),
             });
 
-            var options = new DurableTaskOptions
-            {
-                Notifications = new NotificationOptions(),
-            };
+            var options = new DurableTaskOptions();
 
             var mockLogger = new Mock<ILogger>();
             var traceHelper = new Mock<EndToEndTraceHelper>(mockLogger.Object, false, false).Object;
@@ -832,10 +829,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 ("EventGrid:clientId", "test-client-id"),
             });
 
-            var options = new DurableTaskOptions
-            {
-                Notifications = new NotificationOptions(),
-            };
+            var options = new DurableTaskOptions();
 
             var mockLogger = new Mock<ILogger>();
             var traceHelper = new Mock<EndToEndTraceHelper>(mockLogger.Object, false, false).Object;
@@ -848,6 +842,46 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.NotNull(helper.ManagedIdentityTokenSource);
             Assert.Equal("https://eventgrid.azure.net/.default", helper.ManagedIdentityTokenSource.Resource);
             Assert.Equal("test-client-id", helper.ManagedIdentityTokenSource.Options.ClientId);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void Configuring_KeyBased_And_ManagedIdentity_EmitsWarning()
+        {
+            var mockNameResolver = GetNameResolverMock(new[]
+            {
+                ("EventGrid:topicEndpoint", "https://example.eventgrid.azure.net"),
+                ("EventGrid:credential", "managedidentity"),
+                ("EventGrid:clientId", "test-client-id"),
+            });
+
+            var options = new DurableTaskOptions
+            {
+                Notifications = new NotificationOptions
+                {
+                    EventGrid = new EventGridNotificationOptions
+                    {
+                        KeySettingName = "EventGridKey",
+                        TopicEndpoint = "https://example.eventgrid.azure.net",
+                    },
+                },
+            };
+
+            var mockLogger = new Mock<ILogger>();
+            var traceHelper = new EndToEndTraceHelper(mockLogger.Object, false, false);
+
+            // Act
+            var helper = new EventGridLifeCycleNotificationHelper(options, mockNameResolver.Object, traceHelper);
+
+            // Assert
+            mockLogger.Verify(
+                x => x.Log(
+                    LogLevel.Warning,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Both managed identity and key based authentication are configured")),
+                    null,
+                    It.IsAny<Func<It.IsAnyType, Exception, string>>()),
+                Times.Once);
         }
 
         private HttpMessageHandler ConfigureEventGridMockHandler(

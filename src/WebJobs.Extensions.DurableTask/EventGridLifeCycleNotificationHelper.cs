@@ -17,6 +17,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     internal class EventGridLifeCycleNotificationHelper : ILifeCycleNotificationHelper
     {
+        private const string TopicEndpointKey = "EventGrid:topicEndpoint";
+        private const string CredentialKey = "EventGrid:credential";
+        private const string ClientIdKey = "EventGrid:clientId";
+        private const string ManagedIdentityValue = "managedidentity";
+
         private readonly DurableTaskOptions options;
         private readonly EndToEndTraceHelper traceHelper;
         private readonly bool useTrace;
@@ -39,26 +44,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new ArgumentNullException(nameof(nameResolver));
             }
 
-            if (options.Notifications == null)
-            {
-                throw new ArgumentNullException(nameof(options.Notifications));
-            }
-
             EventGridNotificationOptions eventGridNotificationsConfig = null;
 
             this.UseManagedIdentity = false;
 
             // Check to see if we have a topic name app setting defined. If so, we will use managed identity to authenticate.
-            if (!string.IsNullOrEmpty(nameResolver.Resolve("EventGrid:topicEndpoint")))
+            if (!string.IsNullOrEmpty(nameResolver.Resolve(TopicEndpointKey)))
             {
                 this.UseManagedIdentity = true;
-                this.eventGridTopicEndpoint = nameResolver.Resolve("EventGrid:topicEndpoint");
+                this.eventGridTopicEndpoint = nameResolver.Resolve(TopicEndpointKey);
 
-                if (string.Equals(nameResolver.Resolve("EventGrid:credential"), "managedidentity") &&
-                    !string.IsNullOrEmpty(nameResolver.Resolve("EventGrid:clientId")))
+                if (string.Equals(nameResolver.Resolve(CredentialKey), ManagedIdentityValue) &&
+                    !string.IsNullOrEmpty(nameResolver.Resolve(ClientIdKey)))
                 {
                     // Use user assigned managed identity
-                    string clientId = nameResolver.Resolve("EventGrid:clientId");
+                    string clientId = nameResolver.Resolve(ClientIdKey);
                     this.ManagedIdentityTokenSource = new ManagedIdentityTokenSource("https://eventgrid.azure.net/.default", new ManagedIdentityOptions { ClientId = clientId });
                 }
                 else
@@ -69,6 +69,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             else
             {
+                // Set up configuration for key based authentication
                 eventGridNotificationsConfig = options.Notifications.EventGrid ?? throw new ArgumentNullException(nameof(options.Notifications.EventGrid));
 
                 this.eventGridKeyValue = nameResolver.Resolve(eventGridNotificationsConfig.KeySettingName);
@@ -79,6 +80,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     this.eventGridTopicEndpoint = endpoint;
                 }
+            }
+
+            // Log warning if both managed identity and key based authentication are configured.
+            if (this.UseManagedIdentity && options.Notifications != null && options.Notifications.EventGrid != null && (!string.IsNullOrEmpty(options.Notifications.EventGrid.TopicEndpoint) || !string.IsNullOrEmpty(options.Notifications.EventGrid.KeySettingName)))
+            {
+                this.traceHelper.ExtensionWarningEvent(
+                        hubName: this.options.HubName,
+                        functionName: "",
+                        instanceId: "",
+                        "Both managed identity and key based authentication are configured for Event Grid notifications. This may cause conflicts. Please configure either managed identity or key based authentication.");
             }
 
             // Check if we have the minimum required settings to enable Event Grid notifications with key based authentication.
@@ -103,7 +114,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 this.useTrace = true;
 
-                var retryStatusCode = eventGridNotificationsConfig != null ?
+                var retryStatusCode = (eventGridNotificationsConfig != null && eventGridNotificationsConfig.PublishRetryHttpStatus != null) ?
                                         eventGridNotificationsConfig.PublishRetryHttpStatus?
                                             .Where(x => Enum.IsDefined(typeof(HttpStatusCode), x))
                                             .Select(x => (HttpStatusCode)x)
