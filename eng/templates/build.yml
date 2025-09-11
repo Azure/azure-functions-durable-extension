@@ -36,6 +36,15 @@ jobs:
             packageType: 'sdk'
             version: '8.0.x'
       
+      # Start by restoring all the dependencies.
+      - task: DotNetCoreCLI@2
+        displayName: 'dotnet restore'
+        inputs:
+            command: restore
+            projects: '**/**/*.csproj'
+            feedsToUse: config
+            nugetConfigPath: 'nuget.config'
+            
       - task: UsePythonVersion@0
         inputs:
           versionSpec: '3.11.x'
@@ -48,15 +57,6 @@ jobs:
           filePath: 'test/e2e/tests/build-e2e-test.ps1'
           arguments: '-SkipStorageEmulator -SkipCoreTools'
           pwsh: true
-      
-      # Start by restoring all the dependencies.
-      - task: DotNetCoreCLI@2
-        displayName: 'dotnet restore'
-        inputs:
-            command: custom
-            custom: restore
-            projects: '**/**/*.csproj'
-            arguments: '-v m'
 
       # Build durable-extension
       - task: VSBuild@1
@@ -143,3 +143,14 @@ jobs:
             SourceFolder: '$(System.DefaultWorkingDirectory)/test/PerfTests/DFPerfTests/Output/'
             Contents: '**'
             TargetFolder: '$(System.DefaultWorkingDirectory)/azure-functions-durable-extension/'
+
+      # We also need to build the Java smoke test, for CodeQL compliance
+      # We don't need to build the other smoke tests, because they can be analyzed without being compiled,
+      # as they're interpreted languages.
+      # This could be a separate pipeline, but the task is so small that it's paired with the .NET code build
+      # for convenience.
+      - pwsh: |
+          cd ./test/SmokeTests/OOProcSmokeTests/durableJava/
+          gradle build
+          ls
+        displayName: 'Build Java OOProc test (for CodeQL compliance)'
