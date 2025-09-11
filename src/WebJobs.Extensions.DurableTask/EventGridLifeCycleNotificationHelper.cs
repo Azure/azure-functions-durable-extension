@@ -59,7 +59,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     // Use user assigned managed identity
                     string clientId = nameResolver.Resolve(ClientIdKey);
-                    this.ManagedIdentityTokenSource = new ManagedIdentityTokenSource("https://eventgrid.azure.net/.default", new ManagedIdentityOptions { ClientId = clientId });
+                    this.ManagedIdentityTokenSource = new ManagedIdentityTokenSource("https://eventgrid.azure.net/.default", new ManagedIdentityOptions(null, null, clientId));
                 }
                 else
                 {

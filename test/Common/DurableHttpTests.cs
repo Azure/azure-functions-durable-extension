@@ -119,9 +119,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Dictionary<string, string> headers = new Dictionary<string, string>();
             headers.Add("Accept", "application/json");
 
-            ManagedIdentityOptions options = new ManagedIdentityOptions();
-            options.AuthorityHost = new Uri("https://dummy.login.microsoftonline.com/");
-            options.TenantId = "tenant_id";
+            ManagedIdentityOptions options = new ManagedIdentityOptions(authorityHost: new Uri("https://dummy.login.microsoftonline.com/"), tenantId: "tenant_id");
 
             MockTokenSource mockTokenSource = new MockTokenSource("dummy token", options);
 
@@ -212,7 +210,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Dictionary<string, string> headers = new Dictionary<string, string>();
             headers.Add("Accept", "application/json");
 
-            ManagedIdentityOptions options = new ManagedIdentityOptions();
+            ManagedIdentityOptions options = new ManagedIdentityOptions(authorityHost: null, tenantId: null);
             options.AuthorityHost = new Uri("https://dummy.login.microsoftonline.com/");
             options.TenantId = "tenant_id";
 
@@ -303,7 +301,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(HttpMethod.Get, durableHttpRequest.Method);
             Assert.Equal(new Uri("https://httpbin.org/get"), durableHttpRequest.Uri);
             Assert.NotNull(durableHttpRequest.Headers); // Headers should be an empty list
-            Assert.Empty(durableHttpRequest.Headers); 
+            Assert.Empty(durableHttpRequest.Headers);
             Assert.Null(durableHttpRequest.Content);
             Assert.False(durableHttpRequest.AsynchronousPatternEnabled);
             Assert.Null(durableHttpRequest.HttpRetryOptions);
@@ -1413,9 +1411,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 await host.StartAsync();
 
-                ManagedIdentityOptions credentialOptions = new ManagedIdentityOptions();
-                credentialOptions.AuthorityHost = new Uri("https://dummy.login.microsoftonline.com/");
-                credentialOptions.TenantId = "tenant_id";
+                ManagedIdentityOptions credentialOptions = new ManagedIdentityOptions(authorityHost: new Uri("https://dummy.login.microsoftonline.com/"), tenantId: "tenant_id");
 
                 Dictionary<string, string> headers = new Dictionary<string, string>();
                 headers.Add("Accept", "application/json");
@@ -1459,9 +1455,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 await host.StartAsync();
 
-                ManagedIdentityOptions credentialOptions = new ManagedIdentityOptions();
-                credentialOptions.AuthorityHost = new Uri("https://dummy.login.microsoftonline.com/");
-                credentialOptions.TenantId = "tenant_id";
+                ManagedIdentityOptions credentialOptions = new ManagedIdentityOptions(authorityHost: new Uri("https://dummy.login.microsoftonline.com/"), tenantId: "tenant_id");
 
                 Dictionary<string, string> headers = new Dictionary<string, string>();
                 headers.Add("Accept", "application/json");

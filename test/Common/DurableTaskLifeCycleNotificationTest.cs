@@ -870,10 +870,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var mockLogger = new Mock<ILogger>();
             var traceHelper = new EndToEndTraceHelper(mockLogger.Object, false, false);
 
-            // Act
             var helper = new EventGridLifeCycleNotificationHelper(options, mockNameResolver.Object, traceHelper);
 
-            // Assert
             mockLogger.Verify(
                 x => x.Log(
                     LogLevel.Warning,
