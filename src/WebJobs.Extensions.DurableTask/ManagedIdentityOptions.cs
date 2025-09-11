@@ -12,6 +12,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     public class ManagedIdentityOptions
     {
         /// <summary>
+        /// Default constructor.
+        /// </summary>
+        public ManagedIdentityOptions() { }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="ManagedIdentityOptions"/> class.
         /// </summary>
         /// <param name="authorityHost">The host of the Azure Active Directory authority.</param>
@@ -25,13 +30,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <summary>
         /// Initializes a new instance of the <see cref="ManagedIdentityOptions"/> class.
         /// </summary>
-        /// <param name="authorityHost">The host of the Azure Active Directory authority.</param>
-        /// <param name="tenantId">The tenant id of the user to authenticate.</param>
         /// <param name="clientId">The client id of the user assigned managed identity.</param>
-        public ManagedIdentityOptions(Uri authorityHost = null, string tenantId = null, string clientId = null)
+        public ManagedIdentityOptions(string clientId)
         {
-            this.AuthorityHost = authorityHost;
-            this.TenantId = tenantId;
             this.ClientId = clientId;
         }
 

@@ -119,7 +119,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Dictionary<string, string> headers = new Dictionary<string, string>();
             headers.Add("Accept", "application/json");
 
-            ManagedIdentityOptions options = new ManagedIdentityOptions(authorityHost: new Uri("https://dummy.login.microsoftonline.com/"), tenantId: "tenant_id");
+            ManagedIdentityOptions options = new ManagedIdentityOptions();
+            options.AuthorityHost = new Uri("https://dummy.login.microsoftonline.com/");
+            options.TenantId = "tenant_id";
 
             MockTokenSource mockTokenSource = new MockTokenSource("dummy token", options);
 
@@ -210,7 +212,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Dictionary<string, string> headers = new Dictionary<string, string>();
             headers.Add("Accept", "application/json");
 
-            ManagedIdentityOptions options = new ManagedIdentityOptions(authorityHost: null, tenantId: null);
+            ManagedIdentityOptions options = new ManagedIdentityOptions();
             options.AuthorityHost = new Uri("https://dummy.login.microsoftonline.com/");
             options.TenantId = "tenant_id";
 
@@ -1411,7 +1413,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 await host.StartAsync();
 
-                ManagedIdentityOptions credentialOptions = new ManagedIdentityOptions(authorityHost: new Uri("https://dummy.login.microsoftonline.com/"), tenantId: "tenant_id");
+                ManagedIdentityOptions credentialOptions = new ManagedIdentityOptions();
+                credentialOptions.AuthorityHost = new Uri("https://dummy.login.microsoftonline.com/");
+                credentialOptions.TenantId = "tenant_id";
 
                 Dictionary<string, string> headers = new Dictionary<string, string>();
                 headers.Add("Accept", "application/json");
@@ -1455,7 +1459,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 await host.StartAsync();
 
-                ManagedIdentityOptions credentialOptions = new ManagedIdentityOptions(authorityHost: new Uri("https://dummy.login.microsoftonline.com/"), tenantId: "tenant_id");
+                ManagedIdentityOptions credentialOptions = new ManagedIdentityOptions();
+                credentialOptions.AuthorityHost = new Uri("https://dummy.login.microsoftonline.com/");
+                credentialOptions.TenantId = "tenant_id";
 
                 Dictionary<string, string> headers = new Dictionary<string, string>();
                 headers.Add("Accept", "application/json");
