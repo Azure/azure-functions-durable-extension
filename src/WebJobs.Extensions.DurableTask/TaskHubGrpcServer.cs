@@ -405,8 +405,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             try
             {
-                string newInstanceId = await this.GetClient(context).RestartAsync(request.InstanceId, request.restartWithNewInstanceId);
-                return new P.RestartInstanceResponse(newInstanceId);
+                string newInstanceId = await this.GetClient(context).RestartAsync(request.InstanceId, request.RestartWithNewInstanceId);
+                return new P.RestartInstanceResponse { InstanceId = newInstanceId };
             }
             catch (ArgumentException ex)
             {
@@ -422,7 +422,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 // Any other unexpected exceptions.
                 throw new RpcException(new Status(StatusCode.Unknown, ex.Message));
             }
-
         }
 
 #pragma warning disable CS0618 // Type or member is obsolete -- 'internal' usage.

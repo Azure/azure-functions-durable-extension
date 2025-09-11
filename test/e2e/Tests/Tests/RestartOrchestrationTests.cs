@@ -25,14 +25,12 @@ public class RestartOrchestrationTests
     [InlineData(false)]
     [InlineData(true)]
     // Test behavior of restartasync of durabletaskclient.
-    // when restart with a instanceid and startwithnewinstanceid is false, the orchestration should be restarted with the same instance id.
-    // and the output should be the same as the original orchestration.
-    // when restart with a instanceid and startwithnewinstanceid is true, the orchestration should be restarted with a new instance id.
-    // and the output should be same as the original orchestration.
+    // When restart with a instanceid and startwithnewinstanceid is false, the orchestration should be restarted with the same instance id.
+    // When restart with a instanceid and startwithnewinstanceid is true, the orchestration should be restarted with a new instance id.
     public async Task RestartOrchestration_CreatedTimeAndOutputChange(bool restartWithNewInstanceId)
     {
         // Start the orchestration
-        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("RestartOrchestration_HttpStart", "");
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=SimpleOrchestrator");
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
         string instanceId = await DurableHelpers.ParseInstanceIdAsync(response);
@@ -64,8 +62,9 @@ public class RestartOrchestrationTests
         string output2 = restartOrchestrationDetails.Output;
         DateTime createdTime2 = restartOrchestrationDetails.CreatedTime;
 
-        // The outputs and created times should be different
+        // The outputs should be the same as input is same.
         Assert.Equal(output1, output2);
+        // Created time should be different.
         Assert.NotEqual(createdTime1, createdTime2);
 
         if (restartWithNewInstanceId)
@@ -77,5 +76,121 @@ public class RestartOrchestrationTests
         {
             Assert.Equal(instanceId, restartInstanceId);
         }
+    }
+
+    [Fact]
+    // Test that if we restart a instanceId that doesn't exist. We will throw NotFound exception.
+    public async Task RestartOrchestration_NonExistentInstanceId_ShouldReturnNotFound()
+    {
+        const string testInstanceId = "nonexistid";
+        
+        // Test restarting with a non-existent instance ID
+        var restartPayload = new
+        {
+            InstanceId = testInstanceId,
+            RestartWithNewInstanceId = false
+        };
+
+        string jsonBody = JsonSerializer.Serialize(restartPayload);
+
+        using HttpResponseMessage restartResponse = await HttpHelpers.InvokeHttpTriggerWithBody(
+            "RestartOrchestration_HttpRestartWithErrorHandling", jsonBody, "application/json");
+
+        Assert.Equal(HttpStatusCode.BadRequest, restartResponse.StatusCode);
+        
+        string responseContent = await restartResponse.Content.ReadAsStringAsync();
+        
+        // Verify the returned exception contains the correct information. 
+        // In dotnet-isolated, this is the StatusCode of the RPC exception. 
+        Assert.Contains(fixture.functionLanguageLocalizer.GetLocalizedStringValue("RestartInvalidInstance.ErrorName"), responseContent);
+
+        // In dotnet-isolated, this is the deliberate error text from the RpcException
+        Assert.Contains(fixture.functionLanguageLocalizer.GetLocalizedStringValue("RestartInvalidInstance.ErrorMessage", testInstanceId), responseContent);
+    }
+
+    [Fact]
+    // Test that if we restart a instance that doesn't reach to completed state,
+    // If RestartWithNewInstanceId is set to false, a PreconditionFailed error will be thrown.
+    public async Task RestartOrchestration_RunningOrchestrationWithRestartFalse_ShouldReturnFailedPrecondition()
+    {
+        // Start a long-running orchestration
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=WaitForLongOrchestrator");
+        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
+        string instanceId = await DurableHelpers.ParseInstanceIdAsync(response);
+        string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
+
+        // Wait for the orchestration to be running
+        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Running", 30);
+
+        // Try to restart the running orchestration with restartWithNewInstanceId = false
+        var restartPayload = new
+        {
+            InstanceId = instanceId,
+            RestartWithNewInstanceId = false
+        };
+
+        string jsonBody = JsonSerializer.Serialize(restartPayload);
+
+        using HttpResponseMessage restartResponse = await HttpHelpers.InvokeHttpTriggerWithBody(
+            "RestartOrchestration_HttpRestartWithErrorHandling", jsonBody, "application/json");
+
+        Assert.Equal(HttpStatusCode.BadRequest, restartResponse.StatusCode);
+        
+        string responseContent = await restartResponse.Content.ReadAsStringAsync();
+        
+        // Verify the returned exception contains the correct information. 
+        Assert.Contains(fixture.functionLanguageLocalizer.GetLocalizedStringValue("RestartRunningInstance.ErrorName"), responseContent);
+        Assert.Contains(fixture.functionLanguageLocalizer.GetLocalizedStringValue("RestartRunningInstance.ErrorMessage", instanceId), responseContent);
+
+        // Clean up: terminate the long-running orchestration
+        using HttpResponseMessage terminateResponse = await HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={instanceId}");
+        Assert.Equal(HttpStatusCode.OK, terminateResponse.StatusCode);
+    }
+
+    [Fact]
+    // Test that if we restart a instance that doesn't reach to completed state,
+    // If RestartWithNewInstanceId is set to true, a new instanceId will be returned for this orchestrator.
+    public async Task RestartOrchestration_RunningOrchestrationWithRestartTrue_ShouldReturnNewInstanceId()
+    {
+        // Start a long-running orchestration
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=WaitForLongOrchestrator");
+        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
+        string originalInstanceId = await DurableHelpers.ParseInstanceIdAsync(response);
+        string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
+
+        // Wait for the orchestration to be running
+        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Running", 30);
+
+        // Try to restart the running orchestration with restartWithNewInstanceId = true
+        var restartPayload = new
+        {
+            InstanceId = originalInstanceId,
+            RestartWithNewInstanceId = true
+        };
+
+        string jsonBody = JsonSerializer.Serialize(restartPayload);
+
+        using HttpResponseMessage restartResponse = await HttpHelpers.InvokeHttpTriggerWithBody(
+            "RestartOrchestration_HttpRestartWithErrorHandling", jsonBody, "application/json");
+
+        Assert.Equal(HttpStatusCode.OK, restartResponse.StatusCode);
+        
+        string responseContent = await restartResponse.Content.ReadAsStringAsync();
+        string newInstanceId = responseContent.Trim('"');
+        
+        // The new instance ID should be different from the original
+        Assert.NotEqual(originalInstanceId, newInstanceId);
+        Assert.NotEmpty(newInstanceId);
+
+        // Verify the new orchestration is running
+        string newStatusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(restartResponse);
+        await DurableHelpers.WaitForOrchestrationStateAsync(newStatusQueryGetUri, "Running", 30);
+
+        // Clean up: terminate both orchestrations
+        using HttpResponseMessage terminateOriginalResponse = await HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={originalInstanceId}");
+        Assert.Equal(HttpStatusCode.OK, terminateOriginalResponse.StatusCode);
+        
+        using HttpResponseMessage terminateNewResponse = await HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={newInstanceId}");
+        Assert.Equal(HttpStatusCode.OK, terminateNewResponse.StatusCode);
     }
 }
