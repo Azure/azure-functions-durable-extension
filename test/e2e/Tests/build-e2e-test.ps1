@@ -98,6 +98,13 @@ else
   Write-Host 'Extracting Functions Core Tools...'
   Expand-Archive $output -DestinationPath $FUNC_CLI_DIRECTORY
 
+  Write-Host "Adding Functions Core Tools to PATH..."
+  if ($IsWindows) {
+      $env:PATH = $env:PATH + ";$FUNC_CLI_DIRECTORY"
+  } else {
+      $env:PATH = $env:PATH + ":$FUNC_CLI_DIRECTORY"
+  }
+
   if ($IsMacOS -or $IsLinux)
   {
     & "chmod" "a+x" "$FUNC_CLI_DIRECTORY/func"
@@ -161,6 +168,11 @@ function InstallExtensionAndBuildTestApp($testAppDir) {
           npm install
           npm run clean
           npm run build
+        }
+
+        if (Test-Path ".\pom.xml") {
+          Write-Host "Building Java project"
+          mvn clean package -q
         }
       }
     }

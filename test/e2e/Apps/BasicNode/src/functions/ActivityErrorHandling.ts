@@ -52,8 +52,8 @@ df.app.activity("raise_exception", { handler: RaiseExceptionActivity });
 const RaiseComplexExceptionActivity: ActivityHandler = (instance2: string) => {
     if (!(instance2 in attemptCount)) {
         attemptCount[instance2] = 1;
-        const overflow = new OverflowException("More information about the failure");
-        const error = new InvalidOperationException("This activity failed");
+        const overflow = new OverflowException("Inner exception message");
+        const error = new InvalidOperationException("This activity failed\nMore information about the failure");
         error.cause = overflow;
         throw error;
     }
