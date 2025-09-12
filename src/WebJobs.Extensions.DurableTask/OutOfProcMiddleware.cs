@@ -110,12 +110,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     isReplay: false);
             }
 
-            bool extendedSession = dispatchContext.GetProperty<bool>(TaskOrchestrationDispatcher.IsExtendedSession);
-            bool includePastEvents = dispatchContext.GetProperty<bool>(TaskOrchestrationDispatcher.IncludePastEvents);
+            WorkItemMetadata workItemMetadata = dispatchContext.GetProperty<WorkItemMetadata>();
+            bool isExtendedSession = workItemMetadata.IsExtendedSession;
+            bool includePastEvents = workItemMetadata.IncludePastEvents;
 
             // The extendedSession property will be ignored if the middleware does not support extended sessions, but it is important to only set includePastEvents to false if extended sessions are enabled.
             // Otherwise the past history events will not be added to the OrchestratorRequest by the OrchestrationTriggerAttributeBindingProvider, even if the middleware does not support extended sessions and needs this history for replays.
-            var context = new RemoteOrchestratorContext(runtimeState, entityParameters, this.extension.Options, extendedSession, !this.extension.Options.ExtendedSessionsEnabled || includePastEvents);
+            var context = new RemoteOrchestratorContext(runtimeState, entityParameters, this.extension.Options, isExtendedSession, !this.extension.Options.ExtendedSessionsEnabled || includePastEvents);
             bool workerRequiresHistory = false;
 
             var input = new TriggeredFunctionData

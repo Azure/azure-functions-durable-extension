@@ -6,6 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 using Microsoft.Azure.Functions.Worker.Extensions.DurableTask.Exceptions;
 using Microsoft.Azure.Functions.Worker.Middleware;
+using Microsoft.DurableTask.Worker;
 using Microsoft.DurableTask.Worker.Grpc;
 
 namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask;

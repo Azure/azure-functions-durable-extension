@@ -21,7 +21,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <summary>
         /// Gets or sets whether or not the orchestration request is within an extended session.
         /// </summary>
-        public bool ExtendedSession { get; set; } = false;
+        public bool IsExtendedSession { get; set; } = false;
 
         /// <summary>
         /// Gets or sets the amount of time in seconds before an idle extended session times out.
