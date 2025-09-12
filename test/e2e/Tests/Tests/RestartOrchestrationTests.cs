@@ -24,6 +24,9 @@ public class RestartOrchestrationTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    [Trait("PowerShell", "Skip")] // RestartAsync not yet implemented in PowerShell
+    [Trait("Java", "Skip")] // RestartAsync not yet implemented in Java
+    [Trait("Python", "Skip")] // RestartAsync not supported in Python
     // Test behavior of restartasync of durabletaskclient.
     // When restart with a instanceid and startwithnewinstanceid is false, the orchestration should be restarted with the same instance id.
     // When restart with a instanceid and startwithnewinstanceid is true, the orchestration should be restarted with a new instance id.
@@ -79,6 +82,9 @@ public class RestartOrchestrationTests
     }
 
     [Fact]
+    [Trait("PowerShell", "Skip")] // RestartAsync not yet implemented in PowerShell
+    [Trait("Java", "Skip")] // RestartAsync not yet implemented in Java
+    [Trait("Python", "Skip")] // RestartAsync not supported in Python
     // Test that if we restart a instanceId that doesn't exist. We will throw ArgumentException exception.
     public async Task RestartOrchestration_NonExistentInstanceId_ShouldReturnNotFound()
     {
@@ -103,6 +109,9 @@ public class RestartOrchestrationTests
     }
 
     [Fact]
+    [Trait("PowerShell", "Skip")] // RestartAsync not yet implemented in PowerShell
+    [Trait("Java", "Skip")] // RestartAsync not yet implemented in Java
+    [Trait("Python", "Skip")] // RestartAsync not supported in Python
     // Test that if we restart a instance that doesn't reach to completed state,
     // If RestartWithNewInstanceId is set to false, a InvalidOperationException error will be thrown.
     public async Task RestartOrchestration_NotCompletedOrchestrationWithRestartFalse_ShouldReturnFailedPrecondition()
