@@ -21,8 +21,8 @@ public static class RestartOrchestration
         return "Hello " + input;
     }
 
-    [Function(nameof(WaitForLongOrchestrator))]
-    public static async Task<List<string>> WaitForLongOrchestrator(
+    [Function(nameof(LongOrchestrator))]
+    public static async Task<List<string>> LongOrchestrator(
         [OrchestrationTrigger] TaskOrchestrationContext context)
     {
         var outputs = new List<string>();
@@ -36,6 +36,26 @@ public static class RestartOrchestration
     {
         public string InstanceId { get; set; } = string.Empty;
         public bool RestartWithNewInstanceId { get; set; }
+    }
+
+    [Function("RestartOrchestration_HttpStart")]
+    public static async Task<HttpResponseData> HttpStart(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "RestarttOrchestration_HttpStart/{orchestratorName}")] HttpRequestData req,
+        string orchestratorName,
+        [DurableClient] DurableTaskClient client,
+        FunctionContext executionContext)
+    {
+        ILogger logger = executionContext.GetLogger("Function1_HttpStart");
+
+        // Function input comes from the request content.
+        string instanceId = await client.ScheduleNewOrchestrationInstanceAsync(
+            orchestratorName);
+
+        logger.LogInformation("Started orchestration with ID = '{instanceId}'.", instanceId);
+
+        // Returns an HTTP 202 response with an instance management payload.
+        // See https://learn.microsoft.com/azure/azure-functions/durable/durable-functions-http-api#start-orchestration
+        return await client.CreateCheckStatusResponseAsync(req, instanceId);
     }
 
     [Function("RestartOrchestration_HttpRestart")]

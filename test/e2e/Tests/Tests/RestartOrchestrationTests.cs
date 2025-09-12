@@ -27,13 +27,14 @@ public class RestartOrchestrationTests
     [Trait("PowerShell", "Skip")] // RestartAsync not yet implemented in PowerShell
     [Trait("Java", "Skip")] // RestartAsync not yet implemented in Java
     [Trait("Python", "Skip")] // RestartAsync not supported in Python
+    [Trait("Node", "Skip")] // RestartAsync not supported in Node
     // Test behavior of restartasync of durabletaskclient.
     // When restart with a instanceid and startwithnewinstanceid is false, the orchestration should be restarted with the same instance id.
     // When restart with a instanceid and startwithnewinstanceid is true, the orchestration should be restarted with a new instance id.
     public async Task RestartOrchestration_CreatedTimeAndOutputChange(bool restartWithNewInstanceId)
     {
         // Start the orchestration
-        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=SimpleOrchestrator");
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("RestarttOrchestration_HttpStart/SimpleOrchestrator");
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
         string instanceId = await DurableHelpers.ParseInstanceIdAsync(response);
@@ -85,6 +86,7 @@ public class RestartOrchestrationTests
     [Trait("PowerShell", "Skip")] // RestartAsync not yet implemented in PowerShell
     [Trait("Java", "Skip")] // RestartAsync not yet implemented in Java
     [Trait("Python", "Skip")] // RestartAsync not supported in Python
+    [Trait("Node", "Skip")] // RestartAsync not supported in Node
     // Test that if we restart a instanceId that doesn't exist. We will throw ArgumentException exception.
     public async Task RestartOrchestration_NonExistentInstanceId_ShouldReturnNotFound()
     {
@@ -112,12 +114,13 @@ public class RestartOrchestrationTests
     [Trait("PowerShell", "Skip")] // RestartAsync not yet implemented in PowerShell
     [Trait("Java", "Skip")] // RestartAsync not yet implemented in Java
     [Trait("Python", "Skip")] // RestartAsync not supported in Python
+    [Trait("Node", "Skip")] // RestartAsync not supported in Node
     // Test that if we restart a instance that doesn't reach to completed state,
     // If RestartWithNewInstanceId is set to false, a InvalidOperationException error will be thrown.
     public async Task RestartOrchestration_NotCompletedOrchestrationWithRestartFalse_ShouldReturnFailedPrecondition()
     {
         // Start a long-running orchestration
-        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=WaitForLongOrchestrator");
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("RestarttOrchestration_HttpStart/LongOrchestrator");
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         string instanceId = await DurableHelpers.ParseInstanceIdAsync(response);
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
