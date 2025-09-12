@@ -11,7 +11,7 @@
   <ItemGroup>
     <!-- This reference will be dynamically updated by build-e2e-tests.ps1 as part of test setup. -->
     <!-- Do not commit changes to this line unless necessary -->
-    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask" Version="3.3.0" />
+    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask" Version="3.5.0" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Script.ExtensionsMetadataGenerator" Version="1.1.3" />
     <PackageReference Include="Microsoft.DurableTask.SqlServer.AzureFunctions" Version="1.5.1" />
     <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.2" />

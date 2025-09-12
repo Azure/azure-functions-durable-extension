@@ -73,18 +73,14 @@ public static class RestartOrchestration
             await response.WriteStringAsync(newInstanceId);
             return response;
         }
-        catch (RpcException ex)
+        catch (Exception ex)
         {
             var response = req.CreateResponse(HttpStatusCode.BadRequest);
             response.Headers.Add("Content-Type", "application/json");
+
+            string message = ex.Message;
             
-            var errorResponse = new
-            {
-                StatusCode = ex.StatusCode.ToString(),
-                Message = ex.Message
-            };
-            
-            await response.WriteStringAsync(System.Text.Json.JsonSerializer.Serialize(errorResponse));
+            await response.WriteStringAsync(message);
             return response;
         }
     }
