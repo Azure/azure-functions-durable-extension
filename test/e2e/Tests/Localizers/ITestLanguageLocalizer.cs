@@ -8,7 +8,8 @@ enum LanguageType
     DotnetIsolated,
     PowerShell,
     Python,
-    Node
+    Node,
+    Java
 }
 
 internal interface ITestLanguageLocalizer

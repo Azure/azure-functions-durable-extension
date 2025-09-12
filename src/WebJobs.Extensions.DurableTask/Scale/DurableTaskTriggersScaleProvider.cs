@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using Microsoft.Azure.WebJobs.Host.Scale;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -15,6 +14,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
 {
     internal class DurableTaskTriggersScaleProvider : IScaleMonitorProvider, ITargetScalerProvider
     {
+        private const string AzureManagedProviderName = "azureManaged";
+
         private readonly IScaleMonitor monitor;
         private readonly ITargetScaler targetScaler;
         private readonly DurableTaskOptions options;
@@ -40,7 +41,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
             this.GetOptions(triggerMetadata);
 
             IDurabilityProviderFactory durabilityProviderFactory = this.GetDurabilityProviderFactory();
-            DurabilityProvider defaultDurabilityProvider = durabilityProviderFactory.GetDurabilityProvider();
+
+            DurabilityProvider defaultDurabilityProvider;
+            if (string.Equals(durabilityProviderFactory.Name, AzureManagedProviderName, StringComparison.OrdinalIgnoreCase))
+            {
+                defaultDurabilityProvider = durabilityProviderFactory.GetDurabilityProvider(attribute: null, triggerMetadata);
+            }
+            else
+            {
+                defaultDurabilityProvider = durabilityProviderFactory.GetDurabilityProvider();
+            }
 
             // Note: `this.options` is populated from the trigger metadata above
             string? connectionName = GetConnectionName(durabilityProviderFactory, this.options);

@@ -67,7 +67,8 @@ public class HttpEndToEndTests
 
         if (scheduledStartTime > DateTime.UtcNow + TimeSpan.FromSeconds(1))
         {
-            if (this.fixture.functionLanguageLocalizer.GetLanguageType() == LanguageType.DotnetIsolated)
+            if (this.fixture.functionLanguageLocalizer.GetLanguageType() == LanguageType.DotnetIsolated || 
+                this.fixture.functionLanguageLocalizer.GetLanguageType() == LanguageType.Java)
             {
                 await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Pending", 30);
             }

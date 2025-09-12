@@ -303,3 +303,6 @@ functions-extensions/
 
 # Runsettings files
 **/*.runsettings
+
+# Java build artifacts
+**/.gradle/**
