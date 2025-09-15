@@ -21,6 +21,8 @@ public static class RestartOrchestration
         return "Hello " + input;
     }
 
+    // Orchestration that waits on a long-running timer.
+    // Used for testing restart of an orchestration that has not yet completed.
     [Function(nameof(LongOrchestrator))]
     public static async Task<List<string>> LongOrchestrator(
         [OrchestrationTrigger] TaskOrchestrationContext context)
@@ -38,6 +40,7 @@ public static class RestartOrchestration
         public bool RestartWithNewInstanceId { get; set; }
     }
 
+    // HTTP-triggered function that starts a new durable orchestration instance.
     [Function("RestartOrchestration_HttpStart")]
     public static async Task<HttpResponseData> HttpStart(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "RestarttOrchestration_HttpStart/{orchestratorName}")] HttpRequestData req,
@@ -47,17 +50,14 @@ public static class RestartOrchestration
     {
         ILogger logger = executionContext.GetLogger("Function1_HttpStart");
 
-        // Function input comes from the request content.
         string instanceId = await client.ScheduleNewOrchestrationInstanceAsync(
             orchestratorName);
 
         logger.LogInformation("Started orchestration with ID = '{instanceId}'.", instanceId);
-
-        // Returns an HTTP 202 response with an instance management payload.
-        // See https://learn.microsoft.com/azure/azure-functions/durable/durable-functions-http-api#start-orchestration
         return await client.CreateCheckStatusResponseAsync(req, instanceId);
     }
 
+    // HTTP-triggered function that restarts a durable orchestration instance using the provided instance ID and restart options. 
     [Function("RestartOrchestration_HttpRestart")]
     public static async Task<HttpResponseData> HttpRestartOrchestration(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestData req,
@@ -74,6 +74,8 @@ public static class RestartOrchestration
         return await client.CreateCheckStatusResponseAsync(req, newInstanceId);
     }
 
+    // HTTP-triggered function that restarts a durable orchestration instance with comprehensive error handling.
+    // Returns the new instance ID on success, or returns the error message with appropriate HTTP status codes on failure. 
     [Function("RestartOrchestration_HttpRestartWithErrorHandling")]
     public static async Task<HttpResponseData> HttpRestartOrchestrationWithErrorHandling(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestData req,
