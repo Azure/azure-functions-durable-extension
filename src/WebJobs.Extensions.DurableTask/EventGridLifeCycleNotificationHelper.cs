@@ -17,7 +17,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     internal class EventGridLifeCycleNotificationHelper : ILifeCycleNotificationHelper
     {
-        private const string TopicEndpointKey = "EventGrid:topicEndpoint";
+        internal const string TopicEndpointKey = "EventGrid:topicEndpoint";
         private const string CredentialKey = "EventGrid:credential";
         private const string ClientIdKey = "EventGrid:clientId";
         private const string ManagedIdentityValue = "managedidentity";
@@ -49,16 +49,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.UseManagedIdentity = false;
 
             // Check to see if we have a topic name app setting defined. If so, we will use managed identity to authenticate.
-            if (!string.IsNullOrEmpty(nameResolver.Resolve(TopicEndpointKey)))
+            string topicEndpoint = nameResolver.Resolve(TopicEndpointKey);
+            if (!string.IsNullOrEmpty(topicEndpoint))
             {
                 this.UseManagedIdentity = true;
-                this.eventGridTopicEndpoint = nameResolver.Resolve(TopicEndpointKey);
+                this.eventGridTopicEndpoint = topicEndpoint;
 
+                string clientId = nameResolver.Resolve(ClientIdKey);
                 if (string.Equals(nameResolver.Resolve(CredentialKey), ManagedIdentityValue) &&
-                    !string.IsNullOrEmpty(nameResolver.Resolve(ClientIdKey)))
+                    !string.IsNullOrEmpty(clientId))
                 {
                     // Use user assigned managed identity
-                    string clientId = nameResolver.Resolve(ClientIdKey);
                     this.ManagedIdentityTokenSource = new ManagedIdentityTokenSource("https://eventgrid.azure.net/.default", new ManagedIdentityOptions(clientId));
                 }
                 else
@@ -89,7 +90,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         hubName: this.options.HubName,
                         functionName: "",
                         instanceId: "",
-                        "Both managed identity and key based authentication are configured for Event Grid notifications. This may cause conflicts. Please configure either managed identity or key based authentication.");
+                        "Both managed identity and key based authentication are configured for Event Grid notifications. Managed Identity will be used for authentication. Please configure either managed identity or key based authentication for best results.");
             }
 
             // Check if we have the minimum required settings to enable Event Grid notifications with key based authentication.
