@@ -1159,7 +1159,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new ArgumentException($"An orchestrastion with the instanceId {instanceId} was not found.");
             }
 
-            bool isInstaceNotCompleted = status.RuntimeStatus == OrchestrationRuntimeStatus.Running || status.RuntimeStatus == OrchestrationRuntimeStatus.Pending || status.RuntimeStatus == OrchestrationRuntimeStatus.Suspended;
+            bool isInstaceNotCompleted = status.RuntimeStatus == OrchestrationRuntimeStatus.Running ||
+                                        status.RuntimeStatus == OrchestrationRuntimeStatus.Pending ||
+                                        status.RuntimeStatus == OrchestrationRuntimeStatus.Suspended;
 
             if (isInstaceNotCompleted && !restartWithNewInstanceId)
             {
