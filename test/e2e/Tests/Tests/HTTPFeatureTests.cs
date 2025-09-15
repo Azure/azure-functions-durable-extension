@@ -28,6 +28,7 @@ public class HttpFeatureTests
     [Trait("PowerShell", "Skip")] // HTTP automatic polling is not yet implemented in PowerShell
     [Trait("Python", "Skip")] // HTTP automatic polling is not yet implemented in Python
     [Trait("Node", "Skip")] // HTTP automatic polling is not yet implemented in Node
+    [Trait("Java", "Skip")] // HTTP automatic polling is not yet implemented in Java
     public async Task HttpAutomaticPollingTests()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("HttpStart_HttpPollingOrchestrator");
@@ -58,6 +59,7 @@ public class HttpFeatureTests
     [Trait("PowerShell", "Skip")] // Managed identity HTTP calls not supported in PowerShell
     [Trait("Python", "Skip")] // Managed identity HTTP calls not supported in Python
     [Trait("Node", "Skip")] // Managed identity HTTP calls not supported in Node
+    [Trait("Java", "Skip")] // Managed identity HTTP calls not supported in Java
     public async Task HttpCallWithTokenSourceTest()
     {   
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=HttpWithTokenSourceOrchestrator");
