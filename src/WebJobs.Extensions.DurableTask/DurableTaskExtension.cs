@@ -71,6 +71,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly ILocalGrpcListener localGrpcListener;
         private readonly bool isOptionsConfigured;
         private readonly Guid extensionGuid;
+        private readonly Lazy<Task<ILifeCycleNotificationHelper>> lifeCycleNotificationHelper;
 
 #pragma warning disable CS0612 // Type or member is obsolete
 #pragma warning disable SA1401 // Fields should be private
@@ -131,7 +132,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             ILogger logger = loggerFactory.CreateLogger(LoggerCategoryName);
 
             this.TraceHelper = new EndToEndTraceHelper(logger, this.Options.Tracing.TraceReplayEvents, this.Options.Tracing.TraceInputsAndOutputs);
-            this.LifeCycleNotificationHelper = lifeCycleNotificationHelper ?? this.CreateLifeCycleNotificationHelper();
+            this.lifeCycleNotificationHelper = new Lazy<Task<ILifeCycleNotificationHelper>>(
+                    () => lifeCycleNotificationHelper != null
+                        ? Task.FromResult(lifeCycleNotificationHelper)
+                        : this.CreateLifeCycleNotificationHelperAsync());
             this.durabilityProviderFactory = GetDurabilityProviderFactory(this.Options, logger, orchestrationServiceFactories);
             this.defaultDurabilityProvider = this.durabilityProviderFactory.GetDurabilityProvider();
             this.isOptionsConfigured = true;
@@ -191,8 +195,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal HttpApiHandler HttpApiHandler { get; private set; }
 
-        internal ILifeCycleNotificationHelper LifeCycleNotificationHelper { get; private set; }
-
         internal EndToEndTraceHelper TraceHelper { get; private set; }
 
         internal MessagePayloadDataConverter MessageDataConverter { get; private set; }
@@ -209,6 +211,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         internal IApplicationLifetimeWrapper HostLifetimeService { get; } = HostLifecycleService.NoOp;
 
         internal OutOfProcOrchestrationProtocol OutOfProcProtocol { get; }
+
+        internal Task<ILifeCycleNotificationHelper> GetLifeCycleNotificationHelperAsync()
+        {
+            return this.lifeCycleNotificationHelper.Value;
+        }
 
         internal static MessagePayloadDataConverter CreateMessageDataConverter(IMessageSerializerSettingsFactory messageSerializerSettingsFactory)
         {
@@ -505,10 +512,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.defaultDurabilityProvider.ConfigurationJson);
         }
 
-        private ILifeCycleNotificationHelper CreateLifeCycleNotificationHelper()
+        private async Task<ILifeCycleNotificationHelper> CreateLifeCycleNotificationHelperAsync()
         {
             // First: EventGrid
-
             EventGridNotificationOptions eventGridOptions = this.Options.Notifications.EventGrid;
             bool topicKeySettingOrKeySettingNameConfigured = eventGridOptions != null
                 && (!string.IsNullOrEmpty(eventGridOptions.TopicEndpoint)
@@ -518,7 +524,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (topicKeySettingOrKeySettingNameConfigured || usingManagedIdentity)
             {
                 var notificationHelper = new EventGridLifeCycleNotificationHelper(this.Options, this.nameResolver, this.TraceHelper);
-                notificationHelper.SetUpAuthentication();
+                await notificationHelper.SetUpAuthenticationAsync();
                 return notificationHelper;
             }
 
@@ -769,7 +775,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     switch (e.EventType)
                     {
                         case EventType.ExecutionStarted:
-                            entityShim.Rehydrate(runtimeState.Input);
+                            await entityShim.RehydrateAsync(runtimeState.Input);
                             break;
 
                         case EventType.EventRaised:

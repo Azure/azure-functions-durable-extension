@@ -1333,7 +1333,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public void EventGridApiConfigureCheck()
+        public async Task EventGridApiConfigureCheck()
         {
             var eventGridKeyValue = "testEventGridKey";
             var eventGridKeySettingName = "eventGridKeySettingName";
@@ -1382,7 +1382,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 new TestHostShutdownNotificationService(),
                 platformInformationService: platformInformationService);
 
-            var eventGridLifeCycleNotification = (EventGridLifeCycleNotificationHelper)extension.LifeCycleNotificationHelper;
+            var lifeCycleNotificationHelper = await extension.GetLifeCycleNotificationHelperAsync();
+            var eventGridLifeCycleNotification = (EventGridLifeCycleNotificationHelper)lifeCycleNotificationHelper;
 
             Assert.Equal("http://dummy.com/", eventGridLifeCycleNotification.EventGridTopicEndpoint);
             Assert.Equal(eventGridKeyValue, eventGridLifeCycleNotification.EventGridKeyValue);
@@ -1398,7 +1399,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public void CustomHelperTypeActivationFailed()
+        public async Task CustomHelperTypeActivationFailed()
         {
             var options = new DurableTaskOptions
             {
@@ -1434,7 +1435,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 new TestHostShutdownNotificationService(),
                 platformInformationService: platformInformationService);
 
-            var lifeCycleNotificationHelper = extension.LifeCycleNotificationHelper;
+            var lifeCycleNotificationHelper = await extension.GetLifeCycleNotificationHelperAsync();
 
             Assert.NotNull(lifeCycleNotificationHelper);
             Assert.IsType<NullLifeCycleNotificationHelper>(lifeCycleNotificationHelper);

@@ -193,12 +193,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        internal void SetUpAuthentication()
+        internal async Task SetUpAuthenticationAsync()
         {
             if (this.UseManagedIdentity)
             {
                 // Use Bearer token for Managed Identity
-                this.RefreshAccessTokenAsync().GetAwaiter().GetResult();
+                await this.RefreshAccessTokenAsync();
             }
             else
             {

@@ -154,7 +154,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.entityTraceInfo.AddFlag(flag);
         }
 
-        internal void Rehydrate(string serializedInput)
+        internal async Task RehydrateAsync(string serializedInput)
         {
             if (serializedInput == null)
             {
@@ -176,7 +176,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             if (serializedInput == null)
             {
-                this.context.AddDeferredTask(() => this.Config.LifeCycleNotificationHelper.OrchestratorStartingAsync(
+                var lifeCycleNotificationHelper = await this.Config.GetLifeCycleNotificationHelperAsync();
+
+                this.context.AddDeferredTask(() => lifeCycleNotificationHelper.OrchestratorStartingAsync(
                     this.context.HubName,
                     this.context.Name,
                     this.context.InstanceId,
