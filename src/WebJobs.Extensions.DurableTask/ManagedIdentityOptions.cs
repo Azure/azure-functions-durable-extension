@@ -12,11 +12,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     public class ManagedIdentityOptions
     {
         /// <summary>
-        /// Default constructor.
-        /// </summary>
-        public ManagedIdentityOptions() { }
-
-        /// <summary>
         /// Initializes a new instance of the <see cref="ManagedIdentityOptions"/> class.
         /// </summary>
         /// <param name="authorityHost">The host of the Azure Active Directory authority.</param>
