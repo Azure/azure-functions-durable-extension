@@ -60,7 +60,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     !string.IsNullOrEmpty(clientId))
                 {
                     // Use user assigned managed identity
-                    this.ManagedIdentityTokenSource = new ManagedIdentityTokenSource("https://eventgrid.azure.net/.default", new ManagedIdentityOptions(clientId));
+                    this.ManagedIdentityTokenSource = new ManagedIdentityTokenSource("https://eventgrid.azure.net/.default", new ManagedIdentityOptions(null, null, clientId));
                 }
                 else
                 {
