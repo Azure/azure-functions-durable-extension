@@ -518,7 +518,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (topicKeySettingOrKeySettingNameConfigured || usingManagedIdentity)
             {
                 var notificationHelper = new EventGridLifeCycleNotificationHelper(this.Options, this.nameResolver, this.TraceHelper);
-                notificationHelper.SetUpAuthentication();
                 return notificationHelper;
             }
 
@@ -1296,6 +1295,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     if (!this.isTaskHubWorkerStarted)
                     {
+                        if (this.LifeCycleNotificationHelper is EventGridLifeCycleNotificationHelper lifeCycleNotificationHelper)
+                        {
+                            await lifeCycleNotificationHelper.SetUpAuthenticationAsync();
+                        }
+
                         this.TraceHelper.ExtensionInformationalEvent(
                             this.Options.HubName,
                             instanceId: string.Empty,
