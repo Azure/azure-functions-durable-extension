@@ -401,6 +401,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return CreateGetInstanceResponse(state, request);
         }
 
+        public override async Task<P.RestartInstanceResponse> RestartInstance(P.RestartInstanceRequest request, ServerCallContext context)
+        {
+            try
+            {
+                string newInstanceId = await this.GetClient(context).RestartAsync(request.InstanceId, request.RestartWithNewInstanceId);
+                return new P.RestartInstanceResponse { InstanceId = newInstanceId };
+            }
+            catch (ArgumentException ex)
+            {
+                // Thrown when th instanceId is not found.
+                throw new RpcException(new Status(StatusCode.NotFound, $"ArgumentException: {ex.Message}"));
+            }
+            catch (InvalidOperationException ex)
+            {
+                throw new RpcException(new Status(StatusCode.FailedPrecondition, $"InvalidOperationException: {ex.Message}"));
+            }
+            catch (Exception ex)
+            {
+                // Any other unexpected exceptions.
+                throw new RpcException(new Status(StatusCode.Unknown, ex.Message));
+            }
+        }
+
 #pragma warning disable CS0618 // Type or member is obsolete -- 'internal' usage.
         private static RawInput Raw(string input)
         {

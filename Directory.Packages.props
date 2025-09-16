@@ -29,8 +29,8 @@
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="3.9.0" />
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="3.9.0"  />
     <PackageVersion Include="Microsoft.CodeAnalysis.Workspaces.Common" Version="3.9.0" />
-    <PackageVersion Include="Microsoft.DurableTask.Client.Grpc" Version="1.12.0" />
-    <PackageVersion Include="Microsoft.DurableTask.Worker.Grpc" Version="1.12.0" />
+    <PackageVersion Include="Microsoft.DurableTask.Client.Grpc" Version="1.14.0" />
+    <PackageVersion Include="Microsoft.DurableTask.Worker.Grpc" Version="1.14.0" />
     <PackageVersion Include="Microsoft.DurableTask.Analyzers" Version="0.1.0" />
     <PackageVersion Include="Microsoft.Extensions.Azure" Version="1.7.0" />
     <PackageVersion Include="Microsoft.Extensions.Http" Version="6.0.0" />
@@ -67,7 +67,7 @@
     <PackageVersion Include="Microsoft.CodeAnalysis" Version="3.9.0" />
     <PackageVersion Include="Microsoft.CodeAnalysis.Workspaces.MSBuild" Version="3.9.0" />
     <PackageVersion Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="2.0.65" />
-    <PackageVersion Include="Microsoft.DurableTask.Abstractions" Version="1.12.0" />
+    <PackageVersion Include="Microsoft.DurableTask.Abstractions" Version="1.14.0" />
     <PackageVersion Include="Microsoft.DurableTask.Generators" Version="1.0.0-preview.1" />
     <PackageVersion Include="Microsoft.DurableTask.SqlServer.AzureFunctions" Version="1.5.0" />
     <PackageVersion Include="Microsoft.Extensions.Configuration" Version="9.0.0" />
