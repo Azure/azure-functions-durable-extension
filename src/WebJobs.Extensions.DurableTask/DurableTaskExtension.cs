@@ -1295,11 +1295,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     if (!this.isTaskHubWorkerStarted)
                     {
-                        if (this.LifeCycleNotificationHelper is EventGridLifeCycleNotificationHelper lifeCycleNotificationHelper)
-                        {
-                            await lifeCycleNotificationHelper.SetUpAuthenticationAsync();
-                        }
-
                         this.TraceHelper.ExtensionInformationalEvent(
                             this.Options.HubName,
                             instanceId: string.Empty,
@@ -1335,6 +1330,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         if (this.taskHubWorker.TaskOrchestrationDispatcher != null)
                         {
                             this.taskHubWorker.TaskOrchestrationDispatcher.IncludeDetails = true;
+                        }
+
+                        if (this.LifeCycleNotificationHelper is EventGridLifeCycleNotificationHelper lifeCycleNotificationHelper)
+                        {
+                            await lifeCycleNotificationHelper.SetUpAuthenticationAsync();
                         }
 
                         this.isTaskHubWorkerStarted = true;
