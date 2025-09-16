@@ -650,31 +650,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public void ConfigurationWithoutEventGridKeySettingName()
+        public async Task ConfigurationWithoutEventGridKeySettingName()
         {
             var eventGridKeySettingName = "";
             var eventGridEndpoint = "http://dymmy.com/";
             var mockNameResolver = GetNameResolverMock(Array.Empty<(string, string)>());
 
-            var options = new DurableTaskOptions
-            {
-                Notifications = new NotificationOptions
+            var ex = await Assert.ThrowsAsync<ArgumentException>(
+                async () =>
                 {
-                    EventGrid = new EventGridNotificationOptions
+                    using (ITestHost host = TestHelpers.GetJobHost(
+                        this.loggerProvider,
+                        nameof(this.OrchestrationTerminate),
+                        false /* extendedSessionsEnabled */,
+                        eventGridKeySettingName,
+                        mockNameResolver.Object,
+                        eventGridEndpoint))
                     {
-                        KeySettingName = eventGridKeySettingName,
-                        TopicEndpoint = eventGridEndpoint,
-                    },
-                },
-            };
-
-            var mockLogger = new Mock<ILogger>();
-            var traceHelper = new Mock<EndToEndTraceHelper>(mockLogger.Object, false, false).Object;
-
-            var ex = Assert.Throws<ArgumentException>(
-                () =>
-                {
-                    var helper = new EventGridLifeCycleNotificationHelper(options, mockNameResolver.Object, traceHelper);
+                        await host.StartAsync();
+                        await host.StopAsync();
+                    }
                 });
 
             Assert.Equal($"Failed to start lifecycle notification feature. Please check the configuration values for {eventGridEndpoint} and {eventGridKeySettingName}.", ex.Message);
@@ -682,31 +677,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public void ConfigurationWithoutEventGridKeyValue()
+        public async Task ConfigurationWithoutEventGridKeyValue()
         {
             var eventGridKeySettingName = "eventGridKeySettingName";
             var eventGridEndpoint = "http://dymmy.com/";
-
-            var options = new DurableTaskOptions
-            {
-                Notifications = new NotificationOptions
-                {
-                    EventGrid = new EventGridNotificationOptions
-                    {
-                        KeySettingName = eventGridKeySettingName,
-                        TopicEndpoint = eventGridEndpoint,
-                    },
-                },
-            };
-
-            var mockLogger = new Mock<ILogger>();
             var mockNameResolver = GetNameResolverMock(Array.Empty<(string, string)>());
-            var traceHelper = new Mock<EndToEndTraceHelper>(mockLogger.Object, false, false).Object;
 
-            var ex = Assert.Throws<ArgumentException>(
-                () =>
+            var ex = await Assert.ThrowsAsync<ArgumentException>(
+                async () =>
                 {
-                    var helper = new EventGridLifeCycleNotificationHelper(options, mockNameResolver.Object, traceHelper);
+                    using (ITestHost host = TestHelpers.GetJobHost(
+                        this.loggerProvider,
+                        nameof(this.OrchestrationTerminate),
+                        false /* extendedSessionsEnabled */,
+                        eventGridKeySettingName,
+                        mockNameResolver.Object,
+                        eventGridEndpoint))
+                    {
+                        await host.StartAsync();
+                        await host.StopAsync();
+                    }
                 });
 
             Assert.Equal($"Failed to start lifecycle notification feature. Please check the configuration values for {eventGridKeySettingName} on AppSettings.", ex.Message);
@@ -714,33 +704,28 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public void ConfigurationWithMalformedEventGridTypes()
+        public async Task ConfigurationWithMalformedEventGridTypes()
         {
             var eventGridKeyValue = "testEventGridKey";
             var eventGridKeySettingName = "eventGridKeySettingName";
             var eventGridEndpoint = "http://dymmy.com/";
             var mockNameResolver = GetNameResolverMock(new[] { (eventGridKeySettingName, eventGridKeyValue) });
 
-            var options = new DurableTaskOptions
-            {
-                Notifications = new NotificationOptions
+            var ex = await Assert.ThrowsAsync<ArgumentException>(
+                async () =>
                 {
-                    EventGrid = new EventGridNotificationOptions
+                    using (ITestHost host = TestHelpers.GetJobHost(
+                        this.loggerProvider,
+                        nameof(this.OrchestrationTerminate),
+                        false /* extendedSessionsEnabled */,
+                        eventGridKeySettingName,
+                        mockNameResolver.Object,
+                        eventGridEndpoint,
+                        eventGridPublishEventTypes: new[] { "sstarted" }))
                     {
-                        KeySettingName = eventGridKeySettingName,
-                        TopicEndpoint = eventGridEndpoint,
-                        PublishEventTypes = new[] { "sstarted" },
-                    },
-                },
-            };
-
-            var mockLogger = new Mock<ILogger>();
-            var traceHelper = new Mock<EndToEndTraceHelper>(mockLogger.Object, false, false).Object;
-
-            var ex = Assert.Throws<ArgumentException>(
-                () =>
-                {
-                    var helper = new EventGridLifeCycleNotificationHelper(options, mockNameResolver.Object, traceHelper);
+                        await host.StartAsync();
+                        await host.StopAsync();
+                    }
                 });
 
             Assert.Equal($"Failed to start lifecycle notification feature. Unsupported event types detected in 'EventGridPublishEventTypes'. You may only specify one or more of the following 'Started', 'Completed', 'Failed', 'Terminated'.", ex.Message);
@@ -748,33 +733,28 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public void ConfigurationWithUnsupportedEventGridTypes()
+        public async Task ConfigurationWithUnsupportedEventGridTypes()
         {
             var eventGridKeyValue = "testEventGridKey";
             var eventGridKeySettingName = "eventGridKeySettingName";
             var eventGridEndpoint = "http://dymmy.com/";
             var mockNameResolver = GetNameResolverMock(new[] { (eventGridKeySettingName, eventGridKeyValue) });
 
-            var options = new DurableTaskOptions
-            {
-                Notifications = new NotificationOptions
+            var ex = await Assert.ThrowsAsync<ArgumentException>(
+                async () =>
                 {
-                    EventGrid = new EventGridNotificationOptions
+                    using (ITestHost host = TestHelpers.GetJobHost(
+                        this.loggerProvider,
+                        nameof(this.OrchestrationTerminate),
+                        false /* extendedSessionsEnabled */,
+                        eventGridKeySettingName,
+                        mockNameResolver.Object,
+                        eventGridEndpoint,
+                        eventGridPublishEventTypes: new[] { "Pending" }))
                     {
-                        KeySettingName = eventGridKeySettingName,
-                        TopicEndpoint = eventGridEndpoint,
-                        PublishEventTypes = new[] { "Pending" },
-                    },
-                },
-            };
-
-            var mockLogger = new Mock<ILogger>();
-            var traceHelper = new Mock<EndToEndTraceHelper>(mockLogger.Object, false, false).Object;
-
-            var ex = Assert.Throws<ArgumentException>(
-                () =>
-                {
-                    var helper = new EventGridLifeCycleNotificationHelper(options, mockNameResolver.Object, traceHelper);
+                        await host.StartAsync();
+                        await host.StopAsync();
+                    }
                 });
 
             Assert.Equal($"Failed to start lifecycle notification feature. Unsupported event types detected in 'EventGridPublishEventTypes'. You may only specify one or more of the following 'Started', 'Completed', 'Failed', 'Terminated'.", ex.Message);
@@ -1353,7 +1333,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task EventGridApiConfigureCheck()
+        public void EventGridApiConfigureCheck()
         {
             var eventGridKeyValue = "testEventGridKey";
             var eventGridKeySettingName = "eventGridKeySettingName";
@@ -1402,8 +1382,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 new TestHostShutdownNotificationService(),
                 platformInformationService: platformInformationService);
 
-            var lifeCycleNotificationHelper = await extension.GetLifeCycleNotificationHelperAsync();
-            var eventGridLifeCycleNotification = (EventGridLifeCycleNotificationHelper)lifeCycleNotificationHelper;
+            var eventGridLifeCycleNotification = (EventGridLifeCycleNotificationHelper)extension.LifeCycleNotificationHelper;
 
             Assert.Equal("http://dummy.com/", eventGridLifeCycleNotification.EventGridTopicEndpoint);
             Assert.Equal(eventGridKeyValue, eventGridLifeCycleNotification.EventGridKeyValue);
@@ -1419,7 +1398,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task CustomHelperTypeActivationFailed()
+        public void CustomHelperTypeActivationFailed()
         {
             var options = new DurableTaskOptions
             {
@@ -1455,7 +1434,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 new TestHostShutdownNotificationService(),
                 platformInformationService: platformInformationService);
 
-            var lifeCycleNotificationHelper = await extension.GetLifeCycleNotificationHelperAsync();
+            var lifeCycleNotificationHelper = extension.LifeCycleNotificationHelper;
 
             Assert.NotNull(lifeCycleNotificationHelper);
             Assert.IsType<NullLifeCycleNotificationHelper>(lifeCycleNotificationHelper);

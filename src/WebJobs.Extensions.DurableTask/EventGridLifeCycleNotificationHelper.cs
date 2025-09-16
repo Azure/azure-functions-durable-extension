@@ -60,7 +60,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     !string.IsNullOrEmpty(clientId))
                 {
                     // Use user assigned managed identity
-                    this.ManagedIdentityTokenSource = new ManagedIdentityTokenSource("https://eventgrid.azure.net/.default", new ManagedIdentityOptions(null, null, clientId));
+                    this.ManagedIdentityTokenSource = new ManagedIdentityTokenSource("https://eventgrid.azure.net/.default", new ManagedIdentityOptions(clientId));
                 }
                 else
                 {
@@ -193,12 +193,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        internal async Task SetUpAuthenticationAsync()
+        internal void SetUpAuthentication()
         {
             if (this.UseManagedIdentity)
             {
                 // Use Bearer token for Managed Identity
-                await this.RefreshAccessTokenAsync();
+                this.RefreshAccessTokenAsync().GetAwaiter().GetResult();
             }
             else
             {

@@ -12,26 +12,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     public class ManagedIdentityOptions
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="ManagedIdentityOptions"/> class.
+        /// Default constructor.
         /// </summary>
-        /// <param name="authorityHost">The host of the Azure Active Directory authority.</param>
-        /// <param name="tenantId">The tenant id of the user to authenticate.</param>
-        public ManagedIdentityOptions(Uri authorityHost = null, string tenantId = null)
-            : this(authorityHost, tenantId, null)
-        {
-        }
+        public ManagedIdentityOptions() { }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ManagedIdentityOptions"/> class.
         /// </summary>
         /// <param name="authorityHost">The host of the Azure Active Directory authority.</param>
         /// <param name="tenantId">The tenant id of the user to authenticate.</param>
-        /// <param name="clientId">The client id of the user assigned managed identity.</param>
-        [JsonConstructor]
-        public ManagedIdentityOptions(Uri authorityHost, string tenantId, string clientId)
+        public ManagedIdentityOptions(Uri authorityHost = null, string tenantId = null)
         {
             this.AuthorityHost = authorityHost;
             this.TenantId = tenantId;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ManagedIdentityOptions"/> class.
+        /// </summary>
+        /// <param name="clientId">The client id of the user assigned managed identity.</param>
+        public ManagedIdentityOptions(string clientId)
+        {
             this.ClientId = clientId;
         }
 

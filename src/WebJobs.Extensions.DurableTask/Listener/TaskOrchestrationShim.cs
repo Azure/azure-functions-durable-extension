@@ -93,8 +93,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             if (!this.context.IsReplaying)
             {
-                var lifeCycleNotificationHelper = await this.Config.GetLifeCycleNotificationHelperAsync();
-                this.context.AddDeferredTask(() => lifeCycleNotificationHelper.OrchestratorStartingAsync(
+                this.context.AddDeferredTask(() => this.Config.LifeCycleNotificationHelper.OrchestratorStartingAsync(
                     this.context.HubName,
                     this.context.Name,
                     this.context.InstanceId,
@@ -121,8 +120,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             if (!this.context.IsReplaying)
             {
-                var lifeCycleNotificationHelper = await this.Config.GetLifeCycleNotificationHelperAsync();
-                this.context.AddDeferredTask(() => lifeCycleNotificationHelper.OrchestratorCompletedAsync(
+                this.context.AddDeferredTask(() => this.Config.LifeCycleNotificationHelper.OrchestratorCompletedAsync(
                     this.context.HubName,
                     this.context.Name,
                     this.context.InstanceId,
@@ -184,14 +182,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     }
                     catch (OrchestrationFailureException ex)
                     {
-                        await this.TraceAndSendExceptionNotificationAsync(ex);
+                        this.TraceAndSendExceptionNotification(ex);
                         this.context.OrchestrationException = ExceptionDispatchInfo.Capture(ex);
                         throw;
                     }
                 }
                 else
                 {
-                    await this.TraceAndSendExceptionNotificationAsync(e);
+                    this.TraceAndSendExceptionNotification(e);
                     var orchestrationException = new OrchestrationFailureException(
                         $"Orchestrator function '{this.context.Name}' failed: {e.Message}",
                         Utils.SerializeCause(e, innerContext.ErrorDataConverter));
@@ -210,7 +208,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        private async Task TraceAndSendExceptionNotificationAsync(Exception exception)
+        private void TraceAndSendExceptionNotification(Exception exception)
         {
             string exceptionDetails = exception.Message;
             if (exception is OrchestrationFailureException orchestrationFailureException)
@@ -228,9 +226,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             if (!this.context.IsReplaying)
             {
-                var lifeCycleNotificationHelper = await this.Config.GetLifeCycleNotificationHelperAsync();
                 this.context.AddDeferredTask(
-                    () => lifeCycleNotificationHelper.OrchestratorFailedAsync(
+                    () => this.config.LifeCycleNotificationHelper.OrchestratorFailedAsync(
                         this.context.HubName,
                         this.context.Name,
                         this.context.InstanceId,

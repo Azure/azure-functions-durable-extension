@@ -34,7 +34,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private EndToEndTraceHelper TraceHelper => this.extension.TraceHelper;
 
-        private Task<ILifeCycleNotificationHelper> LifeCycleNotificationHelperAsync => this.extension.GetLifeCycleNotificationHelperAsync();
+        private ILifeCycleNotificationHelper LifeCycleNotificationHelper => this.extension.LifeCycleNotificationHelper;
 
         private IApplicationLifetimeWrapper HostLifetimeService => this.extension.HostLifetimeService;
 
@@ -103,9 +103,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (!isReplaying)
             {
                 DurableTaskExtension.TagActivityWithOrchestrationStatus(OrchestrationRuntimeStatus.Running, instance.InstanceId);
-
-                var lifeCycleNotificationHelper = await this.extension.GetLifeCycleNotificationHelperAsync();
-                await lifeCycleNotificationHelper.OrchestratorStartingAsync(
+                await this.LifeCycleNotificationHelper.OrchestratorStartingAsync(
                     this.Options.HubName,
                     functionName.Name,
                     instance.InstanceId,
@@ -217,8 +215,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         OrchestrationRuntimeStatus.Completed,
                         instance.InstanceId);
 
-                    var lifeCycleNotificationHelper = await this.extension.GetLifeCycleNotificationHelperAsync();
-                    await lifeCycleNotificationHelper.OrchestratorCompletedAsync(
+                    await this.LifeCycleNotificationHelper.OrchestratorCompletedAsync(
                         this.Options.HubName,
                         functionName.Name,
                         instance.InstanceId,
@@ -249,8 +246,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                      FunctionType.Orchestrator,
                      isReplay: false);
 
-                var lifeCycleNotificationHelper = await this.extension.GetLifeCycleNotificationHelperAsync();
-                await lifeCycleNotificationHelper.OrchestratorFailedAsync(
+                await this.LifeCycleNotificationHelper.OrchestratorFailedAsync(
                     this.Options.HubName,
                     functionName.Name,
                     instance.InstanceId,
@@ -270,8 +266,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     FunctionType.Orchestrator,
                     isReplay: false);
 
-                var lifeCycleNotificationHelper = await this.extension.GetLifeCycleNotificationHelperAsync();
-                await lifeCycleNotificationHelper.OrchestratorFailedAsync(
+                await this.LifeCycleNotificationHelper.OrchestratorFailedAsync(
                     this.Options.HubName,
                     functionName.Name,
                     instance.InstanceId,
