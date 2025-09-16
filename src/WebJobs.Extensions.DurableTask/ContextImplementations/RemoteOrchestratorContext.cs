@@ -29,10 +29,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.Configurations = new RemoteOrchestratorConfiguration
             {
                 HttpDefaultAsyncRequestSleepTimeMilliseconds = options.HttpSettings.DefaultAsyncRequestSleepTimeMilliseconds,
-                IsExtendedSession = isExtendedSession,
-                IncludePastEvents = includePastEvents,
-                ExtendedSessionIdleTimeoutInSeconds = options.ExtendedSessionIdleTimeoutInSeconds,
             };
+            if (options.ExtendedSessionsEnabled)
+            {
+                this.Configurations.IsExtendedSession = isExtendedSession;
+                this.Configurations.IncludePastEvents = includePastEvents;
+                this.Configurations.ExtendedSessionIdleTimeoutInSeconds = options.ExtendedSessionIdleTimeoutInSeconds;
+            }
         }
 
         [JsonProperty("instanceId")]

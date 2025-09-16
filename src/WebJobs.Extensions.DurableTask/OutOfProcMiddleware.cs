@@ -116,7 +116,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             // The extendedSession property will be ignored if the middleware does not support extended sessions, but it is important to only set includePastEvents to false if extended sessions are enabled.
             // Otherwise the past history events will not be added to the OrchestratorRequest by the OrchestrationTriggerAttributeBindingProvider, even if the middleware does not support extended sessions and needs this history for replays.
-            var context = new RemoteOrchestratorContext(runtimeState, entityParameters, this.extension.Options, isExtendedSession, !this.extension.Options.ExtendedSessionsEnabled || includePastEvents);
+            var context = new RemoteOrchestratorContext(runtimeState, entityParameters, this.extension.Options, isExtendedSession, includePastEvents);
             bool workerRequiresHistory = false;
 
             var input = new TriggeredFunctionData

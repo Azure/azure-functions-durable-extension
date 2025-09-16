@@ -15,11 +15,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         /// <summary>
         /// Gets or sets whether or not to include the past history events in the orchestration request.
+        /// True by default.
         /// </summary>
         public bool IncludePastEvents { get; set; } = true;
 
         /// <summary>
         /// Gets or sets whether or not the orchestration request is within an extended session.
+        /// False by default.
         /// </summary>
         public bool IsExtendedSession { get; set; } = false;
 
