@@ -342,8 +342,10 @@ message OrchestratorResponse {
     // The number of work item events that were processed by the orchestrator.
     // This field is optional. If not set, the service should assume that the orchestrator processed all events.
     google.protobuf.Int32Value numEventsProcessed = 5;
-
     OrchestrationTraceContext orchestrationTraceContext = 6;
+
+    // Whether or not a history is required to complete the original OrchestratorRequest and none was provided.
+    bool requiresHistory = 7;
 }
 
 message CreateInstanceRequest {
@@ -678,6 +680,18 @@ message AbandonEntityTaskResponse {
     // Empty.
 }
 
+message SkipGracefulOrchestrationTerminationsRequest {
+    // A maximum of 500 instance IDs can be provided in this list.
+    repeated string instanceIds = 1;
+    google.protobuf.StringValue reason = 2;
+}
+
+message SkipGracefulOrchestrationTerminationsResponse {
+    // Those instances which could not be terminated because they had locked entities at the time of this termination call,
+    // are already in a terminal state (completed, failed, terminated, etc.), are not orchestrations, or do not exist (i.e. have been purged)
+    repeated string unterminatedInstanceIds = 1;
+}
+
 service TaskHubSidecarService {
     // Sends a hello request to the sidecar service.
     rpc Hello(google.protobuf.Empty) returns (google.protobuf.Empty);
@@ -751,6 +765,10 @@ service TaskHubSidecarService {
 
     // Abandon an entity work item
     rpc AbandonTaskEntityWorkItem(AbandonEntityTaskRequest) returns (AbandonEntityTaskResponse);
+
+    // "Skip" graceful termination of orchestrations by immediately changing their status in storage to "terminated".
+    // Note that a maximum of 500 orchestrations can be terminated at a time using this method.
+    rpc SkipGracefulOrchestrationTerminations(SkipGracefulOrchestrationTerminationsRequest) returns (SkipGracefulOrchestrationTerminationsResponse);
 }
 
 message GetWorkItemsRequest {

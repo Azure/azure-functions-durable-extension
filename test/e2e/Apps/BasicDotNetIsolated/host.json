@@ -2,14 +2,16 @@
   "version": "2.0",
   "extensions": {
     "durableTask": {
-      "hubName": "IsolatedE2ETaskHub",
+        "hubName": "IsolatedE2ETaskHub",
         "tracing": {
             "DistributedTracingEnabled": true,
             "Version": "V2"
         },
         "defaultVersion": "2.0",
         "versionMatchStrategy": "CurrentOrOlder",
-        "versionFailureStrategy": "Fail"
+        "versionFailureStrategy": "Fail",
+        "extendedSessionsEnabled": true,
+        "extendedSessionIdleTimeoutInSeconds": 30
     }
   }
 }
