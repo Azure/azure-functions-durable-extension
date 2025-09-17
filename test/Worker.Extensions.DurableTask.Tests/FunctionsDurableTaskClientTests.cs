@@ -252,6 +252,7 @@ namespace Microsoft.Azure.Functions.Worker.Tests
         {
             Assert.Equal(instanceId, payload.Id);
             Assert.Equal($"{BaseUrl}/instances/{instanceId}", payload.PurgeHistoryDeleteUri);
+            Assert.Equal($"{BaseUrl}/instances/{instanceId}/restart", payload.RestartPostUri);
             Assert.Equal($"{BaseUrl}/instances/{instanceId}/raiseEvent/{{eventName}}", payload.SendEventPostUri);
             Assert.Equal($"{BaseUrl}/instances/{instanceId}", payload.StatusQueryGetUri);
             Assert.Equal($"{BaseUrl}/instances/{instanceId}/terminate?reason={{{{text}}}}", payload.TerminatePostUri);

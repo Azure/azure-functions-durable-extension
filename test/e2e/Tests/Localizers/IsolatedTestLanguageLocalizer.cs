@@ -22,6 +22,8 @@ internal class IsolatedTestLanguageLocalizer : ITestLanguageLocalizer
         { "TerminateCompletedInstance.FailureMessage", "InvalidOperationException: Cannot terminate the orchestration instance {0} because instance is in the Completed state." },
         { "TerminateTerminatedInstance.FailureMessage", "InvalidOperationException: Cannot terminate the orchestration instance {0} because instance is in the Terminated state." },
         { "TerminateInvalidInstance.FailureMessage", "ArgumentException: No instance with ID '{0}' was found." },
+        { "RestartInvalidInstance.ErrorMessage", "An orchestration with the instanceId {0} was not found." },
+        { "RestartRunningInstance.ErrorMessage", "An orchestration with the instanceId {0} cannot be restarted." },
     };
 
     public LanguageType GetLanguageType()
