@@ -233,6 +233,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             HttpResponseMessage result = null;
             try
             {
+                if (this.UseManagedIdentity)
+                {
+                    await this.RefreshAccessTokenAsync();
+                }
+
                 result = await httpClient.PostAsync(this.eventGridTopicEndpoint, content);
             }
             catch (Exception e)
