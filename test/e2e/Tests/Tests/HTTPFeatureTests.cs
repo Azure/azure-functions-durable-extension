@@ -76,6 +76,7 @@ public class HttpFeatureTests
         
         if (isGitHubCI)
         {
+            this.output.WriteLine("this is a test!");
             foreach (var log in this.fixture.TestLogs.CoreToolsLogs)
             {
                 this.output.WriteLine(log);
