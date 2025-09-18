@@ -76,13 +76,6 @@ public class HttpFeatureTests
 
         if (isGitHubCI)
         {
-            this.output.WriteLine("this is a test!");
-            foreach (var log in this.fixture.TestLogs.CoreToolsLogs)
-            {
-                this.output.WriteLine(log);
-            }
-            this.output.WriteLine("end of log output");
-
             // In GitHub CI, verify that the error message indicates failure due to absence of valid token credentials.
             // Check output to verify CallHttpAsync fails.
             Assert.Contains("Token source HTTP call failed", orchestrationDetails.Output);
