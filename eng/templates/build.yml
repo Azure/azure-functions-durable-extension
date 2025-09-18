@@ -35,6 +35,12 @@ jobs:
         inputs:
             packageType: 'sdk'
             version: '8.0.x'
+            
+      - task: UsePythonVersion@0
+        inputs:
+          versionSpec: '3.11.x'
+          addToPath: true
+          architecture: 'x64'
 
       # Required to run this first to set up the local NuGet cache for dotnet restore
       - task: PowerShell@2
@@ -52,12 +58,6 @@ jobs:
             projects: '**/**/*.csproj'
             feedsToUse: config
             nugetConfigPath: 'nuget.config'
-            
-      - task: UsePythonVersion@0
-        inputs:
-          versionSpec: '3.11.x'
-          addToPath: true
-          architecture: 'x64'
 
       # Build durable-extension
       - task: VSBuild@1
