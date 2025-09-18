@@ -109,7 +109,7 @@ public static class HttpFeature
         catch (Exception ex)
         {
             logger.LogError(ex, "HTTP call with token source failed");
-            return $"Token source HTTP call failed: {ex.Message}";
+            return $"Token source HTTP call failed: {ex}";
         }
     }
 }
