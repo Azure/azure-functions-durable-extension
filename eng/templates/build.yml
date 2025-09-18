@@ -35,7 +35,13 @@ jobs:
         inputs:
             packageType: 'sdk'
             version: '8.0.x'
-      
+
+      - task: JavaToolInstaller@0
+        inputs:
+          versionSpec: '17'
+          jdkArchitectureOption: 'x64'
+          jdkSourceOption: 'PreInstalled'
+
       # Start by restoring all the dependencies.
       - task: DotNetCoreCLI@2
         displayName: 'dotnet restore'
