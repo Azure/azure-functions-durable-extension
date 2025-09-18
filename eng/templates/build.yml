@@ -35,20 +35,6 @@ jobs:
         inputs:
             packageType: 'sdk'
             version: '8.0.x'
-            
-      - task: UsePythonVersion@0
-        inputs:
-          versionSpec: '3.11.x'
-          addToPath: true
-          architecture: 'x64'
-
-      # Required to run this first to set up the local NuGet cache for dotnet restore
-      - task: PowerShell@2
-        displayName: 'Build E2E test apps'
-        inputs:
-          filePath: 'test/e2e/tests/build-e2e-test.ps1'
-          arguments: '-SkipStorageEmulator -SkipCoreTools'
-          pwsh: true
       
       # Start by restoring all the dependencies.
       - task: DotNetCoreCLI@2
@@ -58,6 +44,19 @@ jobs:
             projects: '**/**/*.csproj'
             feedsToUse: config
             nugetConfigPath: 'nuget.config'
+            
+      - task: UsePythonVersion@0
+        inputs:
+          versionSpec: '3.11.x'
+          addToPath: true
+          architecture: 'x64'
+
+      - task: PowerShell@2
+        displayName: 'Build E2E test apps'
+        inputs:
+          filePath: 'test/e2e/tests/build-e2e-test.ps1'
+          arguments: '-SkipStorageEmulator -SkipCoreTools'
+          pwsh: true
 
       # Build durable-extension
       - task: VSBuild@1
