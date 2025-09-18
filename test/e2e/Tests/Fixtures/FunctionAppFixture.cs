@@ -38,6 +38,9 @@ public class FunctionAppFixture : IAsyncLifetime
             case "node":
                 this.functionLanguageLocalizer = new NodeTestLanguageLocalizer();
                 break;
+            case "java":
+                this.functionLanguageLocalizer = new JavaTestLanguageLocalizer();
+                break;
             default:
                 this.logger.LogWarning("Environment variable E2E_TEST_FUNCTIONS_LANGUAGE not set, tests configured for dotnet-isolated");
                 this.functionLanguageLocalizer = new IsolatedTestLanguageLocalizer();

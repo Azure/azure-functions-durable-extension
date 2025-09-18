@@ -259,6 +259,7 @@ public static class DurableTaskClientExtensions
         {
             Id = instanceId,
             PurgeHistoryDeleteUri = BuildUrl(instanceUrl, commonQueryParameters),
+            RestartPostUri = BuildUrl($"{instanceUrl}/restart", commonQueryParameters),
             SendEventPostUri = BuildUrl($"{instanceUrl}/raiseEvent/{{eventName}}", commonQueryParameters),
             StatusQueryGetUri = BuildUrl(instanceUrl, commonQueryParameters),
             TerminatePostUri = BuildUrl($"{instanceUrl}/terminate", "reason={{text}}", commonQueryParameters),
@@ -318,7 +319,6 @@ public static class DurableTaskClientExtensions
         // Construct and return the base URL from default fallback values
         return $"{proto}://{host}";
     }
-
 
     private static string? GetQueryParams(DurableTaskClient client)
     {

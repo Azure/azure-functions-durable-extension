@@ -110,7 +110,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     isReplay: false);
             }
 
-            var context = new RemoteOrchestratorContext(runtimeState, entityParameters, this.extension.Options);
+            WorkItemMetadata workItemMetadata = dispatchContext.GetProperty<WorkItemMetadata>();
+            bool isExtendedSession = workItemMetadata.IsExtendedSession;
+            bool includePastEvents = workItemMetadata.IncludePastEvents;
+
+            var context = new RemoteOrchestratorContext(runtimeState, entityParameters, this.extension.Options, isExtendedSession, includePastEvents);
+            bool workerRequiresHistory = false;
 
             var input = new TriggeredFunctionData
             {
@@ -138,6 +143,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                     byte[] triggerReturnValueBytes = Convert.FromBase64String(triggerReturnValue);
                     P.OrchestratorResponse response = P.OrchestratorResponse.Parser.ParseFrom(triggerReturnValueBytes);
+
+                    workerRequiresHistory = response.RequiresHistory;
 
                     // TrySetResult may throw if a platform-level error is encountered (like an out of memory exception).
                     context.SetResult(
@@ -198,6 +205,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             OrchestratorExecutionResult orchestratorResult;
             if (functionResult.Succeeded)
             {
+                if (workerRequiresHistory)
+                {
+                    throw new SessionAbortedException("The worker has since ended the extended session and needs an orchestration history to execute the orchestration request.");
+                }
+
                 orchestratorResult = context.GetResult();
 
                 if (context.OrchestratorCompleted)

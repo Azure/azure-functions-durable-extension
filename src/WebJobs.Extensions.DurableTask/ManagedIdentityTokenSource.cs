@@ -70,6 +70,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 defaultAzureCredentialOptions.InteractiveBrowserTenantId = this.Options.TenantId;
             }
 
+            if (!string.IsNullOrEmpty(this.Options?.ClientId))
+            {
+                defaultAzureCredentialOptions.ManagedIdentityClientId = this.Options.ClientId;
+            }
+
             defaultCredential = this.Options == null ? new DefaultAzureCredential() : new DefaultAzureCredential(defaultAzureCredentialOptions); // CodeQL [SM05137] Use DefaultAzureCredential explicitly for local development and is decided by the user
 
             AccessToken defaultToken = await defaultCredential.GetTokenAsync(context);

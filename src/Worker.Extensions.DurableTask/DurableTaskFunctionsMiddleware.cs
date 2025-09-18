@@ -6,6 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 using Microsoft.Azure.Functions.Worker.Extensions.DurableTask.Exceptions;
 using Microsoft.Azure.Functions.Worker.Middleware;
+using Microsoft.DurableTask.Worker;
 using Microsoft.DurableTask.Worker.Grpc;
 
 namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
@@ -13,14 +14,16 @@ namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
 /// <summary>
 /// A middleware to handle orchestration triggers.
 /// </summary>
-internal class DurableTaskFunctionsMiddleware : IFunctionsWorkerMiddleware
+internal class DurableTaskFunctionsMiddleware(ExtendedSessionsCache extendedSessionsCache) : IFunctionsWorkerMiddleware
 {
+    private readonly ExtendedSessionsCache extendedSessionsCache = extendedSessionsCache;
+
     /// <inheritdoc />
     public Task Invoke(FunctionContext functionContext, FunctionExecutionDelegate next)
     {
         if (IsOrchestrationTrigger(functionContext, out BindingMetadata? triggerBinding))
         {
-            return RunOrchestrationAsync(functionContext, triggerBinding, next);
+            return this.RunOrchestrationAsync(functionContext, triggerBinding, next);
         }
 
         if (IsEntityTrigger(functionContext, out triggerBinding))
@@ -52,7 +55,7 @@ internal class DurableTaskFunctionsMiddleware : IFunctionsWorkerMiddleware
         return false;
     }
 
-    static async Task RunOrchestrationAsync(
+    async Task RunOrchestrationAsync(
         FunctionContext context, BindingMetadata triggerBinding, FunctionExecutionDelegate next)
     {
         InputBindingData<object> triggerInputData = await context.BindInputAsync<object>(triggerBinding);
@@ -63,7 +66,7 @@ internal class DurableTaskFunctionsMiddleware : IFunctionsWorkerMiddleware
 
         FunctionsOrchestrator orchestrator = new(context, next, triggerInputData);
         string orchestratorOutput = GrpcOrchestrationRunner.LoadAndRun(
-            encodedOrchestratorState, orchestrator, context.InstanceServices);
+            encodedOrchestratorState, orchestrator, this.extendedSessionsCache, context.InstanceServices);
 
         // Send the encoded orchestrator output as the return value seen by the functions host extension
         context.GetInvocationResult().Value = orchestratorOutput;

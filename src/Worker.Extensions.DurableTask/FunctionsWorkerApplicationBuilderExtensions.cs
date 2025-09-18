@@ -10,6 +10,7 @@ using Microsoft.DurableTask;
 using Microsoft.DurableTask.Client;
 using Microsoft.DurableTask.Converters;
 using Microsoft.DurableTask.Worker;
+using Microsoft.DurableTask.Worker.Grpc;
 using Microsoft.DurableTask.Worker.Shims;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -59,6 +60,7 @@ public static class FunctionsWorkerApplicationBuilderExtensions
         {
             builder.UseMiddleware<DurableTaskFunctionsMiddleware>();
         }
+        builder.Services.TryAddSingleton(new ExtendedSessionsCache());
 
         return builder;
     }
