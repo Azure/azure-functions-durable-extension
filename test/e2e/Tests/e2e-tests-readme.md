@@ -72,11 +72,13 @@ NOTE: ENSURE AZURITE IS RUNNING. If Azure is not available, the function app loa
 
 ### Step 5: Attach a Debugger
 
-To debug the extension code while running test functions, you need to attach a debugger to the `func` process before the test code runs. Follow these steps:
+To debug the extension code while running test functions, you can attach a debugger directly to Core Tools from whichever repository you are interested in:
 
-1. Open your preferred IDE (e.g., Visual Studio or Visual Studio Code).
-2. Set a breakpoint in the test.
-3. Manually search for and attach the test process. For Out-Of-Process workers, attach func.exe to debug the host extension, and attach the child process representing the worker (dotnet.exe for dotnet OOProc) to debug the worker extension.
+- For debugging the WebJobs extension in this repo, attach to `func.exe`
+- For debugging Durabletask.Core or DurableTask.AzureStorage, attach to `func.exe`
+- For debugging the Worker extension from this repo for dotnet-isolated, or the functionapp code, attach to `dotnet.exe` that is a child process of `func.exe`
+
+Set a breakpoint on the first line of the test so that the test will start the Core Tools process before ataching.
 
 ## Understanding the test code
 
@@ -107,3 +109,20 @@ Every test file will have a `FunctionAppFixture` available. This fixture allows 
 If the behavior is a difference in output formatting, and we don't expect to ever try to get parity between the languages, use GetLocalizedStringValue(). You will need to define a key-value pair in each language's ITestLanguageLocalizer implementation for your string, and then you can call GetLocalizedStringValue(key) in your test. This keeps test code clean and readable.
 
 If the behavior is with logic or is something that we need to eventually address in the language worker to improve parity, use GetLanguageType() and if/case statements in the test code instead. This will improve visibility of these kinds of inconsistencies and (hopefully) motivate eventual changes towards parity.
+
+### Common issues
+
+#### GRPC max size exceeded
+
+If you see the following exception while running the tests (specifically, DurableTaskClientWriteOutputTests and ListAllOrchestrations_ShouldSucceed):
+
+```text
+Exception: Grpc.Core.RpcException: Status(StatusCode="ResourceExhausted", Detail="Received message exceeds the maximum configured message size."
+```
+
+This is due to your TaskHub history being too large to be processed by the app. This can happen in (at least) dotnet-isolated and Java.
+To resolve this, there are several steps, in order of increasing severity:
+
+1. Run the test app manually and call PurgeOrchestrationHistory to delete all past instances.
+2. Use the Azure Storage explorer to connect to your azurite instance and delete the Task Hub manually by deleting the storage queues and tables.
+3. Completely remove the Azurite state and start fresh. This can be done by stopping the azurite process, navigating to the directory where it is running (for the azurite instance started by build-e2e-test.ps1 on Windows this is %LOCALAPPDATA%/Temp/DurableTaskExtensionE2ETests/azurite) and deleting all Azurite files.
