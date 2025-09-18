@@ -1,5 +1,13 @@
 {
   "version": "2.0",
+  "logging": {
+    "logLevel": {
+      "Function": "Information",
+      "Host.Results": "None",
+      "Host.Aggregator": "None",
+      "Microsoft.Azure.WebJobs.Script.WebHost": "Warning"
+    }
+  },
   "extensions": {
     "durableTask": {
         "hubName": "IsolatedE2ETaskHub",
