@@ -73,7 +73,7 @@ public class HttpFeatureTests
 
         // Check if we're running in GitHub CI
         bool isGitHubCI = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"));
-
+        
         if (isGitHubCI)
         {
             // In GitHub CI, verify that the error message indicates failure due to absence of valid token credentials.
