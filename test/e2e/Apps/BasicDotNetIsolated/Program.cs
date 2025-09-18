@@ -5,15 +5,21 @@ using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using System.Diagnostics;
+using Microsoft.Extensions.Logging;
 
 var host = new HostBuilder()
     .ConfigureFunctionsWebApplication()
-    .ConfigureServices(services => {
+    .ConfigureServices(services =>
+    {
         services.AddApplicationInsightsTelemetryWorkerService();
         services.ConfigureFunctionsApplicationInsights();
 
         // Register a custom service for testing dependency injection in entities
         services.AddSingleton<MyInjectedService>();
+    })
+    .ConfigureLogging(logging =>
+    {
+        logging.AddFilter("System.Net.Http.HttpClient", LogLevel.Error);
     })
     .Build();
 

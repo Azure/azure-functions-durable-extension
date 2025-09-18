@@ -5,6 +5,7 @@
       "Function": "Information",
       "Host.Results": "None",
       "Host.Aggregator": "None",
+      "Host.Executor": "None",
       "Microsoft.Azure.WebJobs.Script.WebHost": "Warning"
     }
   },
