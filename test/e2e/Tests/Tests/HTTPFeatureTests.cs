@@ -73,7 +73,7 @@ public class HttpFeatureTests
 
         // Check if we're running in GitHub CI
         bool isGitHubCI = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"));
-        
+
         if (isGitHubCI)
         {
             this.output.WriteLine("this is a test!");
@@ -81,6 +81,7 @@ public class HttpFeatureTests
             {
                 this.output.WriteLine(log);
             }
+            this.output.WriteLine("end of log output");
 
             // In GitHub CI, verify that the error message indicates failure due to absence of valid token credentials.
             // Check output to verify CallHttpAsync fails.
