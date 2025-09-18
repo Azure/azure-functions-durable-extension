@@ -44,13 +44,13 @@ To build the E2E test project, run the following PowerShell script:
 
 This script prepares your system for running the E2E tests by performing the following steps:
 
-1. Installing a copy of Core Tools into your system's temp directory to ensure an unmodified Core Tools. This is necessary, as the tests will not attempt to use the "func" referenced in PATH 
-2. Ensure the test app(s) are running the correct extension code by: 
-    *Building the host and worker extensions from their projects within this repo
-    *Packing the extensions into local NuGet packages
-    *Copying the built packages into the test app's local nuget source folder as configured in nuget.config
-    *Updating the test app's .csproj files to reference the local package version
-    *Building the test app projects
+1. Installing a copy of Core Tools into your system's temp directory to ensure an unmodified Core Tools. This is necessary, as the tests will not attempt to use the "func" referenced in PATH
+2. Ensure the test app(s) are running the correct extension code by:
+    - Building the host and worker extensions from their projects within this repo
+    - Packing the extensions into local NuGet packages
+    - Copying the built packages into the test app's local nuget source folder as configured in nuget.config
+    - Updating the test app's .csproj files to reference the local package version
+    - Building the test app projects
 3. Install and start azurite emulator using npm
 
 NOTE: It should not be necessary to run start-emulators.ps1 manually, as it should be called by the build script. If you have a instance of Azurite already running, it will automatically skip this step.
