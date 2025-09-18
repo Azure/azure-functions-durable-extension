@@ -76,13 +76,6 @@ jobs:
       - template: ci/sign-files.yml@eng
         parameters:
             displayName: Sign assemblies
-            folderPath: 'src/WebJobs.Extensions.DurableTask/bin/Release'
-            pattern: '*DurableTask.dll'
-            signType: dll
-    
-      - template: ci/sign-files.yml@eng
-        parameters:
-            displayName: Sign assemblies
             folderPath: 'src/Worker.Extensions.DurableTask/bin/Release'
             pattern: '*DurableTask.dll'
             signType: dll
