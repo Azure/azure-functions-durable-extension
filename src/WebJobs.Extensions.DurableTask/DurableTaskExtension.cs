@@ -508,10 +508,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private ILifeCycleNotificationHelper CreateLifeCycleNotificationHelper()
         {
             // First: EventGrid
-            if (this.Options.Notifications.EventGrid != null
-                && (!string.IsNullOrEmpty(this.Options.Notifications.EventGrid.TopicEndpoint) || !string.IsNullOrEmpty(this.Options.Notifications.EventGrid.KeySettingName)))
+
+            EventGridNotificationOptions eventGridOptions = this.Options.Notifications.EventGrid;
+            bool topicKeySettingOrKeySettingNameConfigured = eventGridOptions != null
+                && (!string.IsNullOrEmpty(eventGridOptions.TopicEndpoint)
+                || !string.IsNullOrEmpty(eventGridOptions.KeySettingName));
+            bool usingManagedIdentity = !string.IsNullOrEmpty(this.nameResolver.Resolve(EventGridLifeCycleNotificationHelper.TopicEndpointKey));
+
+            if (topicKeySettingOrKeySettingNameConfigured || usingManagedIdentity)
             {
-                return new EventGridLifeCycleNotificationHelper(this.Options, this.nameResolver, this.TraceHelper);
+                var notificationHelper = new EventGridLifeCycleNotificationHelper(this.Options, this.nameResolver, this.TraceHelper);
+                return notificationHelper;
             }
 
             // Fallback: Disable Notification
@@ -1323,6 +1330,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         if (this.taskHubWorker.TaskOrchestrationDispatcher != null)
                         {
                             this.taskHubWorker.TaskOrchestrationDispatcher.IncludeDetails = true;
+                        }
+
+                        if (this.LifeCycleNotificationHelper is EventGridLifeCycleNotificationHelper lifeCycleNotificationHelper)
+                        {
+                            await lifeCycleNotificationHelper.SetUpAuthenticationAsync();
                         }
 
                         this.isTaskHubWorkerStarted = true;

@@ -17,6 +17,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     internal class EventGridLifeCycleNotificationHelper : ILifeCycleNotificationHelper
     {
+        internal const string TopicEndpointKey = "EventGrid:topicEndpoint";
+        private const string CredentialKey = "EventGrid:credential";
+        private const string ClientIdKey = "EventGrid:clientId";
+        private const string ManagedIdentityValue = "managedidentity";
+
         private readonly DurableTaskOptions options;
         private readonly EndToEndTraceHelper traceHelper;
         private readonly bool useTrace;
@@ -39,94 +44,139 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new ArgumentNullException(nameof(nameResolver));
             }
 
-            if (options.Notifications == null)
+            EventGridNotificationOptions eventGridNotificationsConfig = null;
+
+            this.UseManagedIdentity = false;
+
+            // Check to see if we have a topic name app setting defined. If so, we will use managed identity to authenticate.
+            string topicEndpoint = nameResolver.Resolve(TopicEndpointKey);
+            if (!string.IsNullOrEmpty(topicEndpoint))
             {
-                throw new ArgumentNullException(nameof(options.Notifications));
-            }
+                this.UseManagedIdentity = true;
+                this.eventGridTopicEndpoint = topicEndpoint;
 
-            var eventGridNotificationsConfig = options.Notifications.EventGrid ?? throw new ArgumentNullException(nameof(options.Notifications.EventGrid));
-
-            this.eventGridKeyValue = nameResolver.Resolve(eventGridNotificationsConfig.KeySettingName);
-            this.eventGridTopicEndpoint = eventGridNotificationsConfig.TopicEndpoint;
-
-            if (nameResolver.TryResolveWholeString(eventGridNotificationsConfig.TopicEndpoint, out var endpoint))
-            {
-                this.eventGridTopicEndpoint = endpoint;
-            }
-
-            if (!string.IsNullOrEmpty(this.eventGridTopicEndpoint))
-            {
-                if (!string.IsNullOrEmpty(eventGridNotificationsConfig.KeySettingName))
+                string clientId = nameResolver.Resolve(ClientIdKey);
+                if (string.Equals(nameResolver.Resolve(CredentialKey), ManagedIdentityValue) &&
+                    !string.IsNullOrEmpty(clientId))
                 {
-                    this.useTrace = true;
-
-                    var retryStatusCode = eventGridNotificationsConfig.PublishRetryHttpStatus?
-                                              .Where(x => Enum.IsDefined(typeof(HttpStatusCode), x))
-                                              .Select(x => (HttpStatusCode)x)
-                                              .ToArray()
-                                          ?? Array.Empty<HttpStatusCode>();
-
-                    if (eventGridNotificationsConfig.PublishEventTypes == null || eventGridNotificationsConfig.PublishEventTypes.Length == 0)
-                    {
-                        this.eventGridPublishEventTypes = (OrchestrationRuntimeStatus[])Enum.GetValues(typeof(OrchestrationRuntimeStatus));
-                    }
-                    else
-                    {
-                        var startedIndex = Array.FindIndex(eventGridNotificationsConfig.PublishEventTypes, x => x == "Started");
-                        if (startedIndex > -1)
-                        {
-                            eventGridNotificationsConfig.PublishEventTypes[startedIndex] = OrchestrationRuntimeStatus.Running.ToString();
-                        }
-
-                        OrchestrationRuntimeStatus ParseAndvalidateEvents(string @event)
-                        {
-                            var success = Enum.TryParse(@event, out OrchestrationRuntimeStatus @enum);
-                            if (success)
-                            {
-                                switch (@enum)
-                                {
-                                    case OrchestrationRuntimeStatus.Canceled:
-                                    case OrchestrationRuntimeStatus.ContinuedAsNew:
-                                    case OrchestrationRuntimeStatus.Pending:
-                                        success = false;
-                                        break;
-                                    default:
-                                        break;
-                                }
-                            }
-
-                            if (!success)
-                            {
-                                throw new ArgumentException("Failed to start lifecycle notification feature. Unsupported event types detected in 'EventGridPublishEventTypes'. You may only specify one or more of the following 'Started', 'Completed', 'Failed', 'Terminated'.");
-                            }
-
-                            return @enum;
-                        }
-
-                        this.eventGridPublishEventTypes = eventGridNotificationsConfig.PublishEventTypes.Select(x => ParseAndvalidateEvents(x)).ToArray();
-                    }
-
-                    // Currently, we support Event Grid Custom Topic for notify the lifecycle event of an orchestrator.
-                    // For more detail about the Event Grid, please refer this document.
-                    // Post to custom topic for Azure Event Grid
-                    // https://docs.microsoft.com/en-us/azure/event-grid/post-to-custom-topic
-                    this.HttpMessageHandler = options.NotificationHandler ?? new HttpRetryMessageHandler(
-                        new HttpClientHandler(),
-                        eventGridNotificationsConfig.PublishRetryCount,
-                        eventGridNotificationsConfig.PublishRetryInterval,
-                        retryStatusCode);
-
-                    if (string.IsNullOrEmpty(this.eventGridKeyValue))
-                    {
-                        throw new ArgumentException($"Failed to start lifecycle notification feature. Please check the configuration values for {eventGridNotificationsConfig.KeySettingName} on AppSettings.");
-                    }
+                    // Use user assigned managed identity
+                    this.ManagedIdentityTokenSource = new ManagedIdentityTokenSource("https://eventgrid.azure.net/.default", new ManagedIdentityOptions(null, null, clientId));
                 }
                 else
                 {
-                    throw new ArgumentException($"Failed to start lifecycle notification feature. Please check the configuration values for {eventGridNotificationsConfig.TopicEndpoint} and {eventGridNotificationsConfig.KeySettingName}.");
+                    // Use system assigned managed identity
+                    this.ManagedIdentityTokenSource = new ManagedIdentityTokenSource("https://eventgrid.azure.net/.default");
                 }
             }
+            else
+            {
+                // Set up configuration for key based authentication
+                eventGridNotificationsConfig = options.Notifications.EventGrid ?? throw new ArgumentNullException(nameof(options.Notifications.EventGrid));
+
+                this.eventGridKeyValue = nameResolver.Resolve(eventGridNotificationsConfig.KeySettingName);
+
+                this.eventGridTopicEndpoint = eventGridNotificationsConfig.TopicEndpoint;
+
+                if (nameResolver.TryResolveWholeString(eventGridNotificationsConfig.TopicEndpoint, out var endpoint))
+                {
+                    this.eventGridTopicEndpoint = endpoint;
+                }
+            }
+
+            // Log warning if both managed identity and key based authentication are configured.
+            if (this.UseManagedIdentity && options.Notifications != null && options.Notifications.EventGrid != null && (!string.IsNullOrEmpty(options.Notifications.EventGrid.TopicEndpoint) || !string.IsNullOrEmpty(options.Notifications.EventGrid.KeySettingName)))
+            {
+                this.traceHelper.ExtensionWarningEvent(
+                        hubName: this.options.HubName,
+                        functionName: "",
+                        instanceId: "",
+                        "Both managed identity and key based authentication are configured for Event Grid notifications. Managed Identity will be used for authentication. Please configure either managed identity or key based authentication for best results.");
+            }
+
+            // Check if we have the minimum required settings to enable Event Grid notifications with key based authentication.
+            bool eventGridNotificationSettingsConfigured = false;
+
+            if (eventGridNotificationsConfig != null)
+            {
+                if (!string.IsNullOrEmpty(eventGridNotificationsConfig.KeySettingName) && string.IsNullOrEmpty(this.eventGridKeyValue))
+                {
+                    throw new ArgumentException($"Failed to start lifecycle notification feature. Please check the configuration values for {eventGridNotificationsConfig.KeySettingName} on AppSettings.");
+                }
+
+                if (string.IsNullOrEmpty(eventGridNotificationsConfig.KeySettingName) || string.IsNullOrEmpty(eventGridNotificationsConfig.TopicEndpoint))
+                {
+                    throw new ArgumentException($"Failed to start lifecycle notification feature. Please check the configuration values for {eventGridNotificationsConfig.TopicEndpoint} and {eventGridNotificationsConfig.KeySettingName}.");
+                }
+
+                eventGridNotificationSettingsConfigured = true;
+            }
+
+            if (this.UseManagedIdentity || eventGridNotificationSettingsConfigured)
+            {
+                this.useTrace = true;
+
+                var retryStatusCode = (eventGridNotificationsConfig != null && eventGridNotificationsConfig.PublishRetryHttpStatus != null) ?
+                                        eventGridNotificationsConfig.PublishRetryHttpStatus?
+                                            .Where(x => Enum.IsDefined(typeof(HttpStatusCode), x))
+                                            .Select(x => (HttpStatusCode)x)
+                                            .ToArray()
+                                        : Array.Empty<HttpStatusCode>();
+
+                if (eventGridNotificationsConfig == null || eventGridNotificationsConfig.PublishEventTypes == null || eventGridNotificationsConfig.PublishEventTypes.Length == 0)
+                {
+                    this.eventGridPublishEventTypes = (OrchestrationRuntimeStatus[])Enum.GetValues(typeof(OrchestrationRuntimeStatus));
+                }
+                else
+                {
+                    var startedIndex = Array.FindIndex(eventGridNotificationsConfig.PublishEventTypes, x => x == "Started");
+                    if (startedIndex > -1)
+                    {
+                        eventGridNotificationsConfig.PublishEventTypes[startedIndex] = OrchestrationRuntimeStatus.Running.ToString();
+                    }
+
+                    OrchestrationRuntimeStatus ParseAndvalidateEvents(string @event)
+                    {
+                        var success = Enum.TryParse(@event, out OrchestrationRuntimeStatus @enum);
+                        if (success)
+                        {
+                            switch (@enum)
+                            {
+                                case OrchestrationRuntimeStatus.Canceled:
+                                case OrchestrationRuntimeStatus.ContinuedAsNew:
+                                case OrchestrationRuntimeStatus.Pending:
+                                    success = false;
+                                    break;
+                                default:
+                                    break;
+                            }
+                        }
+
+                        if (!success)
+                        {
+                            throw new ArgumentException("Failed to start lifecycle notification feature. Unsupported event types detected in 'EventGridPublishEventTypes'. You may only specify one or more of the following 'Started', 'Completed', 'Failed', 'Terminated'.");
+                        }
+
+                        return @enum;
+                    }
+
+                    this.eventGridPublishEventTypes = eventGridNotificationsConfig.PublishEventTypes.Select(x => ParseAndvalidateEvents(x)).ToArray();
+                }
+
+                // Currently, we support Event Grid Custom Topic for notify the lifecycle event of an orchestrator.
+                // For more detail about the Event Grid, please refer this document.
+                // Post to custom topic for Azure Event Grid
+                // https://docs.microsoft.com/en-us/azure/event-grid/post-to-custom-topic
+                this.HttpMessageHandler = options.NotificationHandler ?? new HttpRetryMessageHandler(
+                    new HttpClientHandler(),
+                    eventGridNotificationsConfig != null ? eventGridNotificationsConfig.PublishRetryCount : 0,
+                    eventGridNotificationsConfig != null ? eventGridNotificationsConfig.PublishRetryInterval : TimeSpan.FromMinutes(5),
+                    retryStatusCode);
+            }
         }
+
+        internal bool UseManagedIdentity { get; private set; }
+
+        internal ManagedIdentityTokenSource ManagedIdentityTokenSource { get; private set; }
 
         public string EventGridKeyValue => this.eventGridKeyValue;
 
@@ -140,8 +190,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 httpClient?.Dispose();
                 httpMessageHandler = value;
                 httpClient = new HttpClient(httpMessageHandler);
-                httpClient.DefaultRequestHeaders.Add("aeg-sas-key", this.eventGridKeyValue);
             }
+        }
+
+        internal async Task SetUpAuthenticationAsync()
+        {
+            if (this.UseManagedIdentity)
+            {
+                // Use Bearer token for Managed Identity
+                await this.RefreshAccessTokenAsync();
+            }
+            else
+            {
+                // Use key-based authentication
+                if (httpClient != null)
+                {
+                    httpClient.DefaultRequestHeaders.Add("aeg-sas-key", this.eventGridKeyValue);
+                }
+            }
+        }
+
+        private async Task RefreshAccessTokenAsync()
+        {
+            string accessToken = await this.ManagedIdentityTokenSource.GetTokenAsync();
+            httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
         }
 
         private async Task SendNotificationAsync(
@@ -161,6 +233,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             HttpResponseMessage result = null;
             try
             {
+                if (this.UseManagedIdentity)
+                {
+                    await this.RefreshAccessTokenAsync();
+                }
+
                 result = await httpClient.PostAsync(this.eventGridTopicEndpoint, content);
             }
             catch (Exception e)

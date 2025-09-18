@@ -130,7 +130,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         private async Task ActivityTriggerAsJObject(string storageProviderType)
         {
-            using (ITestHost host = TestHelpers.GetJobHost(this.loggerProvider, nameof(this.ActivityTriggerAsJObject), false, storageProviderType))
+            using (ITestHost host = TestHelpers.GetJobHost(this.loggerProvider, nameof(this.ActivityTriggerAsJObject), false, storageProviderType: storageProviderType))
             {
                 await host.StartAsync();
 
@@ -156,7 +156,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task ActivityTriggerAsPOCO(string storageProviderType)
         {
-            using (ITestHost host = TestHelpers.GetJobHost(this.loggerProvider, nameof(this.ActivityTriggerAsPOCO), false, storageProviderType))
+            using (ITestHost host = TestHelpers.GetJobHost(this.loggerProvider, nameof(this.ActivityTriggerAsPOCO), false, storageProviderType: storageProviderType))
             {
                 await host.StartAsync();
 
@@ -183,7 +183,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task ActivityTriggerAsNumber(string storageProviderType)
         {
-            using (ITestHost host = TestHelpers.GetJobHost(this.loggerProvider, nameof(this.ActivityTriggerAsNumber), false, storageProviderType))
+            using (ITestHost host = TestHelpers.GetJobHost(this.loggerProvider, nameof(this.ActivityTriggerAsNumber), false, storageProviderType: storageProviderType))
             {
                 await host.StartAsync();
 
@@ -208,7 +208,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task BindToBlobViaParameterName(string storageProviderType)
         {
-            using (ITestHost host = TestHelpers.GetJobHost(this.loggerProvider, nameof(this.BindToBlobViaParameterName), false, storageProviderType))
+            using (ITestHost host = TestHelpers.GetJobHost(this.loggerProvider, nameof(this.BindToBlobViaParameterName), false, storageProviderType: storageProviderType))
             {
                 await host.StartAsync();
 
@@ -262,7 +262,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task BindToBlobViaPOCO(string storageProviderType)
         {
-            using (ITestHost host = TestHelpers.GetJobHost(this.loggerProvider, nameof(this.BindToBlobViaPOCO), false, storageProviderType))
+            using (ITestHost host = TestHelpers.GetJobHost(this.loggerProvider, nameof(this.BindToBlobViaPOCO), false, storageProviderType: storageProviderType))
             {
                 await host.StartAsync();
 
