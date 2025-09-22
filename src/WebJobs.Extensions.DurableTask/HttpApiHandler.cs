@@ -455,7 +455,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private async Task<HttpResponseMessage> HandleGetStatusRequestAsync(
             HttpRequestMessage request)
         {
-            IDurableOrchestrationClient client = this.GetClient(request);
+            string correlationId = Guid.NewGuid().ToString();
+            this.logger.LogInformation($"[{correlationId}] HandleGetStatusRequest: Starting list instances request");
+
+            IDurableOrchestrationClient client;
+            try
+            {
+                this.logger.LogInformation($"[{correlationId}] HandleGetStatusRequest: Getting durable client");
+                client = this.GetClient(request);
+            }
+            catch (Exception ex)
+            {
+                this.logger.LogError(ex, $"[{correlationId}] HandleGetStatusRequest: Failed to get durable client");
+                throw;
+            }
+
+            this.logger.LogInformation($"[{correlationId}] HandleGetStatusRequest: Parsing query parameters");
             var queryNameValuePairs = request.GetQueryNameValuePairs();
 
             var condition = new OrchestrationStatusQueryCondition();
@@ -496,20 +511,43 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             IList<DurableOrchestrationStatus> statusForAllInstances;
+            this.logger.LogInformation($"[{correlationId}] HandleGetStatusRequest: Calling ListInstancesAsync");
 
-            var context = await client.ListInstancesAsync(condition, CancellationToken.None);
+            OrchestrationStatusQueryResult context;
+            try
+            {
+                context = await client.ListInstancesAsync(condition, CancellationToken.None);
+                this.logger.LogInformation($"[{correlationId}] HandleGetStatusRequest: ListInstancesAsync completed");
+            }
+            catch (Exception ex)
+            {
+                this.logger.LogError(ex, $"[{correlationId}] HandleGetStatusRequest: ListInstancesAsync failed" + ex.Message);
+                throw;
+            }
+
             statusForAllInstances = context.DurableOrchestrationState.ToList();
             var nextContinuationToken = context.ContinuationToken;
+            this.logger.LogInformation($"[{correlationId}] HandleGetStatusRequest: Retrieved {statusForAllInstances.Count} instances");
 
             var results = new List<StatusResponsePayload>(statusForAllInstances.Count);
-            foreach (var state in statusForAllInstances)
+
+            try
             {
-                results.Add(ConvertFrom(state));
+                foreach (var state in statusForAllInstances)
+                {
+                    results.Add(ConvertFrom(state));
+                }
+            }
+            catch (Exception ex)
+            {
+                this.logger.LogError(ex, $"[{correlationId}] HandleGetStatusRequest: Failed to convert orchestration states to response payloads");
+                throw;
             }
 
             var response = request.CreateResponse(HttpStatusCode.OK, results);
 
             response.Headers.Add("x-ms-continuation-token", nextContinuationToken);
+            this.logger.LogInformation($"[{correlationId}] HandleGetStatusRequest: Request completed successfully, returning {results.Count} results");
             return response;
         }
 
@@ -604,7 +642,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             bool? returnInternalServerErrorOnFailure = null,
             IDurableOrchestrationClient existingClient = null)
         {
-            IDurableOrchestrationClient client = existingClient ?? this.GetClient(request);
+            string correlationId = Guid.NewGuid().ToString();
+            this.logger.LogInformation($"[{correlationId}] HandleGetStatusRequest: Starting request for instanceId: {instanceId}");
+
+            IDurableOrchestrationClient client;
+            try
+            {
+                client = existingClient ?? this.GetClient(request);
+            }
+            catch (Exception ex)
+            {
+                this.logger.LogError(ex, $"[{correlationId}] HandleGetStatusRequest: Failed to get durable client");
+                throw;
+            }
+
             var queryNameValuePairs = request.GetQueryNameValuePairs();
 
             if (!TryGetBooleanQueryParameterValue(queryNameValuePairs, ShowHistoryParameter, out bool showHistory))
@@ -635,11 +686,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
             }
 
-            var status = await client.GetStatusAsync(instanceId, showHistory, showHistoryOutput, showInput);
+            this.logger.LogInformation($"[{correlationId}] HandleGetStatusRequest: Calling GetStatusAsync for instanceId: {instanceId}");
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+            DurableOrchestrationStatus status;
+            try
+            {
+                status = await client.GetStatusAsync(instanceId, showHistory, showHistoryOutput, showInput);
+                stopwatch.Stop();
+                this.logger.LogInformation($"[{correlationId}] HandleGetStatusRequest: GetStatusAsync completed in {stopwatch.ElapsedMilliseconds}ms");
+            }
+            catch (Exception ex)
+            {
+                stopwatch.Stop();
+                this.logger.LogError(ex, $"[{correlationId}] HandleGetStatusRequest: GetStatusAsync failed after {stopwatch.ElapsedMilliseconds}ms for instanceId: {instanceId}");
+                throw;
+            }
+
             if (status == null)
             {
+                this.logger.LogInformation($"[{correlationId}] HandleGetStatusRequest: No status found for instanceId: {instanceId}, returning NotFound");
                 return request.CreateResponse(HttpStatusCode.NotFound);
             }
+
+            this.logger.LogInformation($"[{correlationId}] HandleGetStatusRequest: Status retrieved, RuntimeStatus: {status.RuntimeStatus}");
 
             HttpStatusCode statusCode;
             Uri location;
@@ -669,7 +738,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     location = null;
                     break;
                 default:
-                    this.logger.LogError($"Unknown runtime state '{status.RuntimeStatus}'.");
+                    this.logger.LogError($"[{correlationId}] HandleGetStatusRequest: Unknown runtime state '{status.RuntimeStatus}' for instanceId: {instanceId}");
                     statusCode = HttpStatusCode.InternalServerError;
                     location = null;
                     break;
@@ -691,6 +760,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 response.Headers.RetryAfter = new RetryConditionHeaderValue(TimeSpan.FromSeconds(5));
             }
 
+            this.logger.LogInformation($"[{correlationId}] HandleGetStatusRequest: Request completed for instanceId: {instanceId}, status: {statusCode}");
             return response;
         }
 

@@ -82,6 +82,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <inheritdoc/>
         public async override Task<IList<OrchestrationState>> GetOrchestrationStateWithInputsAsync(string instanceId, bool showInput = true)
         {
+            this.logger.LogInformation($"AzureStorageDurabilityProvider.GetOrchestrationStateWithInputsAsync: Starting query : {instanceId}");
             return await this.serviceClient.GetOrchestrationStateAsync(instanceId, allExecutions: false, fetchInput: showInput);
         }
 
@@ -173,8 +174,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <inheritdoc/>
         public async override Task<OrchestrationStatusQueryResult> GetOrchestrationStateWithPagination(OrchestrationStatusQueryCondition condition, CancellationToken cancellationToken)
         {
-            var statusContext = await this.serviceClient.GetOrchestrationStateAsync(ConvertWebjobsDurableConditionToAzureStorageCondition(condition), condition.PageSize, condition.ContinuationToken, cancellationToken);
-            return this.ConvertFrom(statusContext);
+            this.logger.LogInformation($"AzureStorageDurabilityProvider.GetOrchestrationStateWithPagination: Starting query with PageSize: {condition.PageSize}");
+
+            DurableStatusQueryResult statusContext;
+            try
+            {
+                var azureStorageCondition = ConvertWebjobsDurableConditionToAzureStorageCondition(condition);
+                this.logger.LogInformation($"AzureStorageDurabilityProvider.GetOrchestrationStateWithPagination: Calling serviceClient.GetOrchestrationStateAsync");
+                statusContext = await this.serviceClient.GetOrchestrationStateAsync(azureStorageCondition, condition.PageSize, condition.ContinuationToken, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                this.logger.LogError(ex, $"AzureStorageDurabilityProvider.GetOrchestrationStateWithPagination: serviceClient.GetOrchestrationStateAsync failed: {ex.Message}");
+                throw;
+            }
+
+            this.logger.LogInformation($"AzureStorageDurabilityProvider.GetOrchestrationStateWithPagination: Converting {statusContext.OrchestrationState?.Count() ?? 0} states to result");
+            var result = this.ConvertFrom(statusContext);
+
+            return result;
         }
 
         public override bool ValidateDelayTime(TimeSpan timespan, out string errorMessage)

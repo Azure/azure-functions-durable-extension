@@ -29,8 +29,8 @@
     <AssemblyOriginatorKeyFile>..\..\sign.snk</AssemblyOriginatorKeyFile>
 
     <!-- Version information -->
-    <VersionPrefix>1.8.0</VersionPrefix>
-    <VersionSuffix></VersionSuffix>
+    <VersionPrefix>1.8.1</VersionPrefix>
+	  <VersionSuffix>adobe.1</VersionSuffix>
     <AssemblyVersion>$(VersionPrefix).0</AssemblyVersion>
     <!-- FileVersionRevision is expected to be set by the CI.  -->
     <FileVersion Condition="'$(FileVersionRevision)' != ''">$(VersionPrefix).$(FileVersionRevision)</FileVersion>
@@ -43,7 +43,6 @@
     <PackageReference Include="Microsoft.DurableTask.Worker.Grpc" />
     <PackageReference Include="Grpc.Net.Client" />
     <PackageReference Include="Microsoft.DurableTask.Analyzers" />
-    <PackageReference Include="Microsoft.Extensions.Caching.Memory" />
   </ItemGroup>
 
   <ItemGroup>
