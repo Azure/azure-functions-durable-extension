@@ -3,7 +3,7 @@
 
 using System;
 using System.Threading.Tasks;
-using Microsoft.Azure.Functions.Worker.Middleware;
+using Microsoft.Azure.Functions.Worker.Invocation;
 using Microsoft.DurableTask;
 using Microsoft.Extensions.Logging;
 
@@ -12,20 +12,20 @@ namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
 /// <summary>
 /// A custom orchestrator for running functions-triggered orchestrations.
 /// </summary>
-internal class FunctionsOrchestrator : ITaskOrchestrator
+internal class FunctionsOrchestrator : IDisposableOrchestrator
 {
     private readonly FunctionContext functionContext;
-    private readonly FunctionExecutionDelegate next;
+    private readonly IFunctionExecutor executor;
     private readonly InputBindingData<object> contextBinding;
     private readonly OrchestrationInputConverter.InputContext inputContext;
 
     public FunctionsOrchestrator(
         FunctionContext functionContext,
-        FunctionExecutionDelegate next,
+        IFunctionExecutor executor,
         InputBindingData<object> contextBinding)
     {
         this.functionContext = functionContext;
-        this.next = next;
+        this.executor = executor;
         this.contextBinding = contextBinding;
         this.inputContext = OrchestrationInputConverter.GetInputContext(functionContext);
     }
@@ -48,7 +48,7 @@ internal class FunctionsOrchestrator : ITaskOrchestrator
         try
         {
             // This method will advance to the next middleware and throw if it detects an asynchronous execution.
-            await EnsureSynchronousExecution(this.functionContext, this.next, wrapperContext);
+            await this.EnsureSynchronousExecution(wrapperContext);
         }
         catch (Exception ex)
         {
@@ -64,12 +64,15 @@ internal class FunctionsOrchestrator : ITaskOrchestrator
         return functionOutput;
     }
 
-    private static async Task EnsureSynchronousExecution(
-        FunctionContext functionContext,
-        FunctionExecutionDelegate next,
-        FunctionsOrchestrationContext orchestrationContext)
+    public ValueTask DisposeAsync()
     {
-        Task orchestratorTask = next(functionContext);
+        // no op
+        return default;
+    }
+
+    private async Task EnsureSynchronousExecution(FunctionsOrchestrationContext orchestrationContext)
+    {
+        ValueTask orchestratorTask = this.executor.ExecuteAsync(this.functionContext);
         if (!orchestratorTask.IsCompleted && !orchestrationContext.IsAccessed)
         {
             // If the middleware returns before the orchestrator function's context object was accessed and before

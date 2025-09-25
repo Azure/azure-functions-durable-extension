@@ -51,14 +51,16 @@
   <!-- Dependencies used by both tests and samples -->
   <ItemGroup>
     <PackageVersion Include="Microsoft.ApplicationInsights.WorkerService" Version="2.22.0" />
-    <PackageVersion Include="Microsoft.Azure.Functions.Worker" Version="2.0.0" />
-    <!-- TODO: Update this to Worker SDK 2.x -->
-    <PackageVersion Include="Microsoft.Azure.Functions.Worker.Sdk" Version="1.18.1" />
+    <PackageVersion Include="Microsoft.Azure.DurableTask.Emulator" Version="2.5.4" />
+    <PackageVersion Include="Microsoft.Azure.DurableTask.Netherite.AzureFunctions" Version="3.1.0" />
+    <PackageVersion Include="Microsoft.Azure.DurableTask.Redis" Version="0.1.9-alpha" />
+    <PackageVersion Include="Microsoft.Azure.Functions.Worker" Version="2.1.0" />
     <PackageVersion Include="Microsoft.Azure.Functions.Worker.ApplicationInsights" Version="2.0.0" />
     <PackageVersion Include="Microsoft.Azure.Functions.Worker.Extensions.DurableTask.AzureManaged" Version="0.4.2-alpha" />
     <PackageVersion Include="Microsoft.Azure.Functions.Worker.Extensions.DurableTask.SqlServer" Version="1.5.2" />
     <PackageVersion Include="Microsoft.Azure.Functions.Worker.Extensions.Http" Version="3.3.0" />
     <PackageVersion Include="Microsoft.Azure.Functions.Worker.Extensions.Http.AspNetCore" Version="2.0.2" />
+    <PackageVersion Include="Microsoft.Azure.Functions.Worker.Sdk" Version="2.0.5"/>
     <PackageVersion Include="Microsoft.Azure.WebJobs.Extensions.DurableTask" Version="2.13.7" />
     <PackageVersion Include="Microsoft.Azure.WebJobs.Extensions.Http" Version="3.2.0" />
     <PackageVersion Include="Microsoft.Azure.WebJobs.Extensions.Storage" Version="5.1.3" />
