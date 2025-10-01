@@ -38,6 +38,11 @@ jobs:
       with:
         dotnet-version: '2.1.x'
 
+    - name: Set up .NET 6.0
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '6.0.x'
+
     - name: Restore dependencies
       run: dotnet restore $solution
 
