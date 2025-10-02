@@ -176,12 +176,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 // - a timeout
                 // - an out of memory exception
                 // - a worker process exit
-                if (functionResult.Exception is Host.FunctionTimeoutException
-                    || functionResult.Exception?.InnerException is SessionAbortedException // see RemoteOrchestrationContext.TrySetResultInternal for details on OOM-handling
-                    || (functionResult.Exception?.InnerException?.GetType().ToString().Contains("WorkerProcessExitException") ?? false))
-                {
-                    // TODO: the `WorkerProcessExitException` type is not exposed in our dependencies, it's part of WebJobs.Host.Script.
-                    // Should we add that dependency or should it be exposed in WebJobs.Host?
+                if (this.IsPlatformLevelError(functionResult))
+                { 
                     throw functionResult.Exception;
                 }
             }
@@ -295,6 +291,40 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             dispatchContext.SetProperty(orchestratorResult);
         }
 
+        private bool IsPlatformLevelError(FunctionResult functionResult)
+        {
+            if (this.ExceptionIsInstanceOrIsCausedBy(functionResult.Exception, checkType: typeof(Host.FunctionTimeoutException))
+                || this.ExceptionIsInstanceOrIsCausedBy(functionResult.Exception, checkType: typeof(SessionAbortedException)) // see RemoteOrchestrationContext.TrySetResultInternal for details on OOM-handling
+                || this.ExceptionIsInstanceOrIsCausedBy(functionResult.Exception, checkTypeString: "WorkerProcessExitException"))
+            {
+                // TODO: the `WorkerProcessExitException` type is not exposed in our dependencies, it's part of WebJobs.Host.Script.
+                // Should we add that dependency or should it be exposed in WebJobs.Host?
+                return true;
+            }
+
+            return false;
+        }
+
+        private bool ExceptionIsInstanceOrIsCausedBy(Exception? sourceException, Type? checkType = null, string? checkTypeString = null)
+        {
+            if (sourceException is null)
+            {
+                return false;
+            }
+
+            if (checkType != null && sourceException.GetType().IsAssignableFrom(checkType))
+            {
+                return true;
+            }
+
+            if (checkTypeString != null && sourceException.GetType().ToString().Contains(checkTypeString))
+            {
+                return true;
+            }
+
+            return this.ExceptionIsInstanceOrIsCausedBy(sourceException.InnerException, checkType, checkTypeString);
+        }
+
         /// <summary>
         /// Durable Task Framework entity middleware that invokes an out-of-process orchestrator function.
         /// </summary>
@@ -400,6 +430,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     // Shutdown can surface as a completed invocation in a failed state.
                     // Re-throw so we can abort this invocation.
                     this.HostLifetimeService.OnStopping.ThrowIfCancellationRequested();
+                }
+
+                if (this.IsPlatformLevelError(functionResult))
+                {
+                    throw functionResult.Exception;
                 }
             }
             catch (Exception hostRuntimeException)
@@ -544,6 +579,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     // Shutdown can surface as a completed invocation in a failed state.
                     // Re-throw so we can abort this invocation.
                     this.HostLifetimeService.OnStopping.ThrowIfCancellationRequested();
+                }
+
+                if (this.IsPlatformLevelError(result))
+                {
+                    throw result.Exception;
                 }
             }
             catch (Exception hostRuntimeException)
