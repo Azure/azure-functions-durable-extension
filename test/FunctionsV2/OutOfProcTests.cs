@@ -455,8 +455,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             else
             {
                 contextMock
-                    .Setup(ctx => ctx.CallSubOrchestratorAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<object>()))
-                    .Callback<string, string, object>((name, instanceId, input) => capturedFunctionName = name)
+                    .Setup(ctx => ctx.CallSubOrchestratorAsync(
+                        It.IsAny<string>(),
+                        It.IsAny<string>(),
+                        It.IsAny<object>()))
+                    .Callback<string, string, object>((name, instanceId, input) =>
+                        capturedFunctionName = name)
                     .Returns(Task.CompletedTask);
             }
 
