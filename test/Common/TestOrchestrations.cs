@@ -1603,7 +1603,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public static async Task<string> CallSubOrchestratorWithExplicitVersion([OrchestrationTrigger] IDurableOrchestrationContext ctx, ILogger log)
         {
             // Call sub-orchestrator with explicit version using FunctionNameWithVersion.Combine
-            string functionNameWithVersion = FunctionNameWithVersion.Combine(nameof(SimpleSubOrchestrator), "V2.0");
+            string functionNameWithVersion = FunctionNameWithVersion.Combine(nameof(SimpleSubOrchestrator), "2.0");
             string result = await ctx.CallSubOrchestratorAsync<string>(functionNameWithVersion, null);
             return result;
         }
