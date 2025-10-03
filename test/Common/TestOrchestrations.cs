@@ -1599,27 +1599,5 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             // Return both the orchestration version and entity info
             return await Task.FromResult($"{JsonSerializer.Serialize(ctx.Version)}; Sub-orchestration from entity: {entityResult}");
         }
-
-        public static async Task<string> CallSubOrchestratorWithExplicitVersion([OrchestrationTrigger] IDurableOrchestrationContext ctx, ILogger log)
-        {
-            // Call sub-orchestrator with explicit version using FunctionNameWithVersion.Combine
-            string functionNameWithVersion = FunctionNameWithVersion.Combine(nameof(SimpleSubOrchestrator), "2.0");
-            string result = await ctx.CallSubOrchestratorAsync<string>(functionNameWithVersion, null);
-            return result;
-        }
-
-        public static async Task<string> CallSubOrchestratorWithoutVersion([OrchestrationTrigger] IDurableOrchestrationContext ctx, ILogger log)
-        {
-            // Call sub-orchestrator without version - version resolution depends on DefaultVersion config
-            string result = await ctx.CallSubOrchestratorAsync<string>(nameof(SimpleSubOrchestrator), null);
-            return result;
-        }
-
-        public static Task<string> SimpleSubOrchestrator([OrchestrationTrigger] IDurableOrchestrationContext ctx, ILogger log)
-        {
-            // Simple sub-orchestrator that returns its version
-            string version = JsonSerializer.Serialize(ctx.Version);
-            return Task.FromResult($"Sub-orchestration version: {version}");
-        }
     }
 }
