@@ -47,6 +47,9 @@ public static class FunctionsWorkerApplicationBuilderExtensions
         builder.Services.TryAddEnumerable(
             ServiceDescriptor.Singleton<IPostConfigureOptions<DurableTaskWorkerOptions>, PostConfigureWorkerOptions>());
 
+        // If no custom implementation is registered, use the default one.
+        builder.Services.TryAddSingleton<IExceptionPropertiesProvider, DefaultExceptionPropertiesProvider>();
+
         builder.Services.TryAddSingleton(sp =>
         {
             DurableTaskWorkerOptions options = sp.GetRequiredService<IOptions<DurableTaskWorkerOptions>>().Value;

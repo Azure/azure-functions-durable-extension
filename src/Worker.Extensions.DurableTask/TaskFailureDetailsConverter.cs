@@ -3,7 +3,8 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text;
+using System.Linq;
+using Google.Protobuf.WellKnownTypes;
 using P = Microsoft.DurableTask.Protobuf;
 
 namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
@@ -11,17 +12,62 @@ internal class TaskFailureDetailsConverter
 {
     internal static P.TaskFailureDetails? TaskFailureFromException(Exception? fromException)
     {
+        return TaskFailureFromException(fromException, null);
+    }
+
+    internal static P.TaskFailureDetails? TaskFailureFromException(Exception? fromException, IExceptionPropertiesProvider? exceptionPropertiesProvider)
+    {
         if (fromException is null)
         {
             return null;
         }
-        return new P.TaskFailureDetails()
+
+        var failureDetails = new P.TaskFailureDetails()
         {
             ErrorType = fromException.GetType().FullName,
             ErrorMessage = fromException.Message,
             StackTrace = fromException.StackTrace,
-            InnerFailure = TaskFailureFromException(fromException.InnerException),
+            InnerFailure = TaskFailureFromException(fromException.InnerException, exceptionPropertiesProvider),
             IsNonRetriable = false
+        };
+
+        // Add custom properties if provider is available
+        if (exceptionPropertiesProvider != null)
+        {
+            var customProperties = exceptionPropertiesProvider.GetExceptionProperties(fromException);
+            if (customProperties != null && customProperties.Count > 0)
+            {
+                foreach (var property in customProperties)
+                {
+                    failureDetails.Properties[property.Key] = ConvertObjectToValue(property.Value);
+                }
+            }
+        }
+
+        return failureDetails;
+    }
+
+    private static Value ConvertObjectToValue(object? value)
+    {
+        return value switch
+        {
+            null => Value.ForNull(),
+            string str => Value.ForString(str),
+            bool b => Value.ForBool(b),
+            int i => Value.ForNumber(i),
+            long l => Value.ForNumber(l),
+            float f => Value.ForNumber(f),
+            double d => Value.ForNumber(d),
+            decimal dec => Value.ForNumber((double)dec),
+            DateTime dt => Value.ForString(dt.ToString("O")),
+            DateTimeOffset dto => Value.ForString(dto.ToString("O")),
+            Guid guid => Value.ForString(guid.ToString()),
+            IDictionary<string, object> dict => Value.ForStruct(new Struct
+            {
+                Fields = { dict.ToDictionary(kvp => kvp.Key, kvp => ConvertObjectToValue(kvp.Value)) },
+            }),
+            IEnumerable<object> list => Value.ForList(list.Select(ConvertObjectToValue).ToArray()),
+            _ => Value.ForString(value.ToString() ?? string.Empty), // Fallback to string representation
         };
     }
 }

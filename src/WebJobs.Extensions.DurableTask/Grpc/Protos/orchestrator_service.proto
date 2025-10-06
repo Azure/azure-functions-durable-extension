@@ -41,6 +41,7 @@ message TaskFailureDetails {
     google.protobuf.StringValue stackTrace = 3;
     TaskFailureDetails innerFailure = 4;
     bool isNonRetriable = 5;
+    map<string, google.protobuf.Value> properties = 6;
 }
 
 enum OrchestrationStatus {
@@ -469,6 +470,7 @@ message PurgeInstancesRequest {
     oneof request {
         string instanceId = 1;
         PurgeInstanceFilter purgeInstanceFilter = 2;
+        InstanceBatch instanceBatch = 4;
     }
     bool recursive = 3;
 }
@@ -681,8 +683,7 @@ message AbandonEntityTaskResponse {
 }
 
 message SkipGracefulOrchestrationTerminationsRequest {
-    // A maximum of 500 instance IDs can be provided in this list.
-    repeated string instanceIds = 1;
+    InstanceBatch instanceBatch = 1;
     google.protobuf.StringValue reason = 2;
 }
 
@@ -690,6 +691,7 @@ message SkipGracefulOrchestrationTerminationsResponse {
     // Those instances which could not be terminated because they had locked entities at the time of this termination call,
     // are already in a terminal state (completed, failed, terminated, etc.), are not orchestrations, or do not exist (i.e. have been purged)
     repeated string unterminatedInstanceIds = 1;
+
 }
 
 service TaskHubSidecarService {
@@ -818,4 +820,9 @@ message StreamInstanceHistoryRequest {
 
 message HistoryChunk {
     repeated HistoryEvent events = 1;
+}
+
+message InstanceBatch {
+    // A maximum of 500 instance IDs can be provided in this list.
+    repeated string instanceIds = 1;
 }

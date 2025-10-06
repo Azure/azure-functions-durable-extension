@@ -11,7 +11,13 @@ internal class DurableSerializationException : Exception
     // We set the base class properties of this exception to the same as the parent, 
     // so that methods in the worker after this can still (typically) access the same information vs w/o
     // this exception type. 
-    internal DurableSerializationException(Exception fromException) : base(CreateExceptionMessage(fromException), fromException.InnerException)
+    internal DurableSerializationException(Exception fromException) : 
+        this(fromException, null)
+    {
+    }
+
+    internal DurableSerializationException(Exception fromException, IExceptionPropertiesProvider? exceptionPropertiesProvider) 
+        : base(CreateExceptionMessage(fromException, exceptionPropertiesProvider), fromException.InnerException)
     {
         this.fromException = fromException;
     }
@@ -21,10 +27,9 @@ internal class DurableSerializationException : Exception
         return this.Message;
     }
 
-    // Serilize FailureDetails to JSON
-    private static string CreateExceptionMessage(Exception ex)
+    private static string CreateExceptionMessage(Exception ex, IExceptionPropertiesProvider? exceptionPropertiesProvider)
     {
-        TaskFailureDetails? failureDetails = TaskFailureDetailsConverter.TaskFailureFromException(ex);
+        TaskFailureDetails? failureDetails = TaskFailureDetailsConverter.TaskFailureFromException(ex, exceptionPropertiesProvider);
         return JsonConvert.SerializeObject(failureDetails);
     }
 
