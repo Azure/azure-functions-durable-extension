@@ -223,4 +223,41 @@ public class ErrorHandlingTests
         Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains(nameof(OverflowException)) &&
                                                               x.Contains("Inner exception message"));
     }
+
+    [Fact]
+    [Trait("PowerShell", "Skip")] // FailureDetails is a dotnet-isolated implementation detail
+    [Trait("Python", "Skip")] // FailureDetails is a dotnet-isolated implementation detail
+    [Trait("Node", "Skip")] // FailureDetails is a dotnet-isolated implementation detail
+    [Trait("Java", "Skip")] // FailureDetails is a dotnet-isolated implementation detail
+    public async Task CustomExceptionPropertiesInFailureDetails()
+    {
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=OrchestrationWithCustomException");
+
+        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
+        string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
+
+        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Failed", 30);
+
+        var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
+        
+        // Deserialize the output to FailureDetails
+        var failureDetails = JsonConvert.DeserializeObject<TaskFailureDetails>(orchestrationDetails.Output);
+
+        // Check FailureDetails contains the right error type and error message
+        Assert.NotNull(failureDetails);
+        Assert.Equal(typeof(TaskFailedException).FullName, failureDetails.ErrorType);
+
+        // Check that the activity failure is in the inner failure
+        Assert.NotNull(failureDetails.InnerFailure);
+        TaskFailureDetails innerFailure = failureDetails.InnerFailure!;
+        Assert.Equal(typeof(ArgumentOutOfRangeException).FullName, innerFailure.ErrorType);
+
+        // Check that custom properties are included
+        Assert.NotNull(innerFailure.Properties);
+        Assert.True(innerFailure.Properties.ContainsKey("Name"));
+        Assert.True(innerFailure.Properties.ContainsKey("Value"));
+
+        Assert.Equal("age", innerFailure.Properties["Name"]);
+        Assert.Equal((double)150, innerFailure.Properties["Value"]);
+    }
 }

@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using DurableTask.Core.Entities;
@@ -12,6 +13,7 @@ using DurableTask.Core.Entities.OperationFormat;
 using DurableTask.Core.Exceptions;
 using DurableTask.Core.History;
 using DurableTask.Core.Middleware;
+using Google.Protobuf.WellKnownTypes;
 using Microsoft.Azure.WebJobs.Host.Executors;
 using Newtonsoft.Json;
 using P = Microsoft.DurableTask.Protobuf;
@@ -637,12 +639,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         return details;
                     }
 
+                    // Try to extract properties from the serialized exception JSON
+                    IDictionary<string, object?>? properties = TryExtractPropertiesFromExceptionJson(exception);
+
                     if (TrySplitExceptionTypeFromMessage(exception, out string? exceptionType, out string? exceptionMessage))
                     {
-                        return new FailureDetails(exceptionType, exceptionMessage, stackTrace, innerFailure: null, isNonRetriable: false);
+                        return new FailureDetails(exceptionType, exceptionMessage, stackTrace, innerFailure: null, isNonRetriable: false, properties: properties);
                     }
 
-                    return new FailureDetails("(unknown)", exception, stackTrace, innerFailure: null, isNonRetriable: false);
+                    return new FailureDetails("(unknown)", exception, stackTrace, innerFailure: null, isNonRetriable: false, properties: properties);
                 }
                 else
                 {
@@ -662,12 +667,44 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return null;
             }
 
+            IDictionary<string, object?>? properties = null;
+            if (taskFailureDetails.Properties != null && taskFailureDetails.Properties.Count > 0)
+            {
+                properties = new Dictionary<string, object?>();
+                foreach (var kvp in taskFailureDetails.Properties)
+                {
+                    properties[kvp.Key] = ConvertValueToObject(kvp.Value);
+                }
+            }
+
             return new FailureDetails(
                 taskFailureDetails.ErrorType ?? string.Empty,
                 taskFailureDetails.ErrorMessage ?? string.Empty,
                 taskFailureDetails.StackTrace,
                 GetFailureDetails(taskFailureDetails.InnerFailure),
-                taskFailureDetails.IsNonRetriable);
+                taskFailureDetails.IsNonRetriable,
+                properties);
+        }
+
+        private static object ConvertValueToObject(Value value)
+        {
+            switch (value.KindCase)
+            {
+                case Value.KindOneofCase.StringValue:
+                    return value.StringValue;
+                case Value.KindOneofCase.NumberValue:
+                    return value.NumberValue;
+                case Value.KindOneofCase.BoolValue:
+                    return value.BoolValue;
+                case Value.KindOneofCase.StructValue:
+                    return value.StructValue.Fields.ToDictionary(f => f.Key, f => ConvertValueToObject(f.Value));
+                case Value.KindOneofCase.ListValue:
+                    return value.ListValue.Values.Select(ConvertValueToObject).ToList();
+                case Value.KindOneofCase.NullValue:
+                    return null!;
+                default:
+                    return value; // fallback
+            }
         }
 
         private static bool TryGetRpcExceptionFields(
@@ -738,6 +775,69 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             details = null;
             return false;
+        }
+
+        public static IDictionary<string, object?> TryExtractPropertiesFromExceptionJson(string json)
+        {
+            var result = new Dictionary<string, object?>();
+            var root = JsonNode.Parse(json)?["Properties"]?.AsObject();
+            if (root == null)
+            {
+                return result;
+            }
+
+            foreach (var kvp in root)
+            {
+                var valueNode = kvp.Value?.AsObject();
+                if (valueNode == null)
+                {
+                    continue;
+                }
+
+                result[kvp.Key] = ExtractValue(valueNode);
+            }
+
+            return result;
+        }
+
+        private static object? ExtractValue(JsonObject valueNode)
+        {
+            // Look at KindCase to determine which field is active
+            if (valueNode.TryGetPropertyValue("HasStringValue", out var hasStr)
+                && hasStr?.GetValue<bool>() == true)
+            {
+                return valueNode["StringValue"]?.GetValue<string>();
+            }
+
+            if (valueNode.TryGetPropertyValue("HasNumberValue", out var hasNum)
+                && hasNum?.GetValue<bool>() == true)
+            {
+                return valueNode["NumberValue"]?.GetValue<double>();
+            }
+
+            if (valueNode.TryGetPropertyValue("HasBoolValue", out var hasBool)
+                && hasBool?.GetValue<bool>() == true)
+            {
+                return valueNode["BoolValue"]?.GetValue<bool>();
+            }
+
+            if (valueNode.TryGetPropertyValue("HasNullValue", out var hasNull)
+                && hasNull?.GetValue<bool>() == true)
+            {
+                return null;
+            }
+
+            if (valueNode["StructValue"] is JsonObject structObj)
+            {
+                return structObj;
+            }
+
+            if (valueNode["ListValue"] is JsonArray listArr)
+            {
+                return listArr.Select(x => x?.ToJsonString()).ToList();
+            }
+
+            return null;
         }
 
         private static bool TrySplitExceptionTypeFromMessage(

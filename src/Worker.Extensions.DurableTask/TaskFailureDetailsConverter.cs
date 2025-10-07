@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Google.Protobuf.WellKnownTypes;
+using Microsoft.DurableTask.Worker;
 using P = Microsoft.DurableTask.Protobuf;
 
 namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask;

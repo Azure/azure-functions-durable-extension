@@ -1,5 +1,6 @@
 ﻿using System;
 using Microsoft.DurableTask.Protobuf;
+using Microsoft.DurableTask.Worker;
 using Newtonsoft.Json;
 
 namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask.Exceptions;

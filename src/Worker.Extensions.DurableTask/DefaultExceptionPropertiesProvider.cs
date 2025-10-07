@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using Microsoft.DurableTask.Worker;
 
 namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
 
@@ -16,5 +17,10 @@ internal class DefaultExceptionPropertiesProvider : IExceptionPropertiesProvider
     {
         // Default implementation returns null, indicating no custom properties should be added
         return null;
+    }
+
+    IDictionary<string, object>? IExceptionPropertiesProvider.GetExceptionProperties(Exception exception)
+    {
+        throw new NotImplementedException();
     }
 }
