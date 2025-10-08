@@ -35,7 +35,7 @@ public class ScheduledOrchestrationTests
     }
 
     [Theory]
-    [InlineData("HelloCities_HttpStart_Scheduled", 10, HttpStatusCode.Accepted)]
+    [InlineData("HelloCities_HttpStart_Scheduled", 5, HttpStatusCode.Accepted)]
     [InlineData("HelloCities_HttpStart_Scheduled", -5, HttpStatusCode.Accepted)]
     [Trait("PowerShell", "Skip")] // Scheduled orchestrations not implemented in PowerShell
     public async Task ScheduledStartTests(string functionName, int startDelaySeconds, HttpStatusCode expectedStatusCode)
@@ -55,6 +55,8 @@ public class ScheduledOrchestrationTests
             if (this.fixture.functionLanguageLocalizer.GetLanguageType() == LanguageType.DotnetIsolated ||
                 this.fixture.functionLanguageLocalizer.GetLanguageType() == LanguageType.Java)
             {
+                // This line will throw if the orchestration goes to a terminal state before reaching "Pending",
+                // ensuring that any scheduled orchestrations that run immediately fail the test.
                 await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Pending", 30);
             }
             else
@@ -78,7 +80,7 @@ public class ScheduledOrchestrationTests
     }
 
     [Theory]
-    [InlineData("EntityCreatesScheduledOrchestrationOrchestrator_HttpStart", 10, HttpStatusCode.Accepted)]
+    [InlineData("EntityCreatesScheduledOrchestrationOrchestrator_HttpStart", 5, HttpStatusCode.Accepted)]
     [InlineData("EntityCreatesScheduledOrchestrationOrchestrator_HttpStart", -5, HttpStatusCode.Accepted)]
     [Trait("PowerShell", "Skip")] // Durable Entities not yet implemented in PowerShell
     [Trait("Java", "Skip")] // Durable Entities not yet implemented in Java
@@ -104,6 +106,8 @@ public class ScheduledOrchestrationTests
 
         if (scheduledStartTime > DateTime.UtcNow + TimeSpan.FromSeconds(1))
         {
+            // This line will throw if the orchestration goes to a terminal state before reaching "Pending",
+            // ensuring that any scheduled orchestrations that run immediately fail the test.
             await DurableHelpers.WaitForOrchestrationStateAsync(subOrchestratorStatusQueryGetUri, "Pending", 30);
         }
 
