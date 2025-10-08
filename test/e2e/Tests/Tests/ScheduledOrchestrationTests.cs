@@ -35,7 +35,7 @@ public class ScheduledOrchestrationTests
     }
 
     [Theory]
-    [InlineData("HelloCities_HttpStart_Scheduled", 5, HttpStatusCode.Accepted)]
+    [InlineData("HelloCities_HttpStart_Scheduled", 10, HttpStatusCode.Accepted)]
     [InlineData("HelloCities_HttpStart_Scheduled", -5, HttpStatusCode.Accepted)]
     [Trait("PowerShell", "Skip")] // Scheduled orchestrations not implemented in PowerShell
     public async Task ScheduledStartTests(string functionName, int startDelaySeconds, HttpStatusCode expectedStatusCode)
@@ -78,7 +78,7 @@ public class ScheduledOrchestrationTests
     }
 
     [Theory]
-    [InlineData("EntityCreatesScheduledOrchestrationOrchestrator_HttpStart", 5, HttpStatusCode.Accepted)]
+    [InlineData("EntityCreatesScheduledOrchestrationOrchestrator_HttpStart", 10, HttpStatusCode.Accepted)]
     [InlineData("EntityCreatesScheduledOrchestrationOrchestrator_HttpStart", -5, HttpStatusCode.Accepted)]
     [Trait("PowerShell", "Skip")] // Durable Entities not yet implemented in PowerShell
     [Trait("Java", "Skip")] // Durable Entities not yet implemented in Java
