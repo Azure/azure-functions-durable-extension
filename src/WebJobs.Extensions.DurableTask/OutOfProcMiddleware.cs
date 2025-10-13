@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Linq;
 using System.Text.Json.Nodes;
 using System.Threading.Tasks;
@@ -13,7 +14,6 @@ using DurableTask.Core.Entities.OperationFormat;
 using DurableTask.Core.Exceptions;
 using DurableTask.Core.History;
 using DurableTask.Core.Middleware;
-using Google.Protobuf.WellKnownTypes;
 using Microsoft.Azure.WebJobs.Host.Executors;
 using Newtonsoft.Json;
 using P = Microsoft.DurableTask.Protobuf;
@@ -686,24 +686,48 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 properties);
         }
 
-        private static object ConvertValueToObject(Value value)
+        static object? ConvertValueToObject(Google.Protobuf.WellKnownTypes.Value value)
         {
             switch (value.KindCase)
             {
-                case Value.KindOneofCase.StringValue:
-                    return value.StringValue;
-                case Value.KindOneofCase.NumberValue:
+                case Google.Protobuf.WellKnownTypes.Value.KindOneofCase.NullValue:
+                    return null;
+                case Google.Protobuf.WellKnownTypes.Value.KindOneofCase.NumberValue:
                     return value.NumberValue;
-                case Value.KindOneofCase.BoolValue:
+                case Google.Protobuf.WellKnownTypes.Value.KindOneofCase.StringValue:
+                    string stringValue = value.StringValue;
+
+                    // If the value starts with the 'dt:' prefix, it may represent a DateTime value — attempt to parse it.
+                    if (stringValue.StartsWith("dt:", StringComparison.Ordinal))
+                    {
+                        if (DateTime.TryParse(stringValue[3..], CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out DateTime date))
+                        {
+                            return date;
+                        }
+                    }
+
+                    // If the value starts with the 'dto:' prefix, it may represent a DateTime value — attempt to parse it.
+                    if (stringValue.StartsWith("dto:", StringComparison.Ordinal))
+                    {
+                        if (DateTimeOffset.TryParse(stringValue[4..], CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out DateTimeOffset date))
+                        {
+                            return date;
+                        }
+                    }
+
+                    // Otherwise just return as string
+                    return stringValue;
+                case Google.Protobuf.WellKnownTypes.Value.KindOneofCase.BoolValue:
                     return value.BoolValue;
-                case Value.KindOneofCase.StructValue:
-                    return value.StructValue.Fields.ToDictionary(f => f.Key, f => ConvertValueToObject(f.Value));
-                case Value.KindOneofCase.ListValue:
+                case Google.Protobuf.WellKnownTypes.Value.KindOneofCase.StructValue:
+                    return value.StructValue.Fields.ToDictionary(
+                        pair => pair.Key,
+                        pair => ConvertValueToObject(pair.Value));
+                case Google.Protobuf.WellKnownTypes.Value.KindOneofCase.ListValue:
                     return value.ListValue.Values.Select(ConvertValueToObject).ToList();
-                case Value.KindOneofCase.NullValue:
-                    return null!;
                 default:
-                    return value; // fallback
+                    // Fallback: serialize the whole value to JSON string
+                    return JsonConvert.SerializeObject(value);
             }
         }
 
