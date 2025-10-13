@@ -1,2 +1,2 @@
-# The following files were downloaded from branch nytian/failure-details at 2025-10-06 02:42:27 UTC
-https://raw.githubusercontent.com/microsoft/durabletask-protobuf/362f886f1ef7c4dd90cbdfdb2f661f48eeeec4fa/protos/orchestrator_service.proto
+# The following files were downloaded from branch main at 2025-10-13 23:40:09 UTC
+https://raw.githubusercontent.com/microsoft/durabletask-protobuf/97cf9cf6ac44107b883b0f4ab1dd62ee2332cfd9/protos/orchestrator_service.proto
