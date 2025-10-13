@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Google.Protobuf.WellKnownTypes;
@@ -48,9 +49,9 @@ internal class TaskFailureDetailsConverter
         return failureDetails;
     }
 
-    private static Value ConvertObjectToValue(object? value)
+    private static Value ConvertObjectToValue(object? obj)
     {
-        return value switch
+        return obj switch
         {
             null => Value.ForNull(),
             string str => Value.ForString(str),
@@ -60,15 +61,18 @@ internal class TaskFailureDetailsConverter
             float f => Value.ForNumber(f),
             double d => Value.ForNumber(d),
             decimal dec => Value.ForNumber((double)dec),
-            DateTime dt => Value.ForString(dt.ToString("O")),
-            DateTimeOffset dto => Value.ForString(dto.ToString("O")),
-            Guid guid => Value.ForString(guid.ToString()),
-            IDictionary<string, object> dict => Value.ForStruct(new Struct
+
+            // For DateTime and DateTimeOffset, add prefix to distinguish from normal string.
+            DateTime dt => Value.ForString($"dt:{dt.ToString("O")}"),
+            DateTimeOffset dto => Value.ForString($"dto:{dto.ToString("O")}"),
+            IDictionary<string, object?> dict => Value.ForStruct(new Struct
             {
                 Fields = { dict.ToDictionary(kvp => kvp.Key, kvp => ConvertObjectToValue(kvp.Value)) },
             }),
-            IEnumerable<object> list => Value.ForList(list.Select(ConvertObjectToValue).ToArray()),
-            _ => Value.ForString(value.ToString() ?? string.Empty), // Fallback to string representation
+            IEnumerable e => Value.ForList(e.Cast<object?>().Select(ConvertObjectToValue).ToArray()),
+
+            // Fallback: convert unlisted type to string.
+            _ => Value.ForString(obj.ToString() ?? string.Empty),
         };
     }
 }

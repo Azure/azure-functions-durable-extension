@@ -21,6 +21,7 @@ using Google.Protobuf;
 using Google.Protobuf.Collections;
 using Google.Protobuf.WellKnownTypes;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using P = Microsoft.DurableTask.Protobuf;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
@@ -677,6 +678,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 double d => Value.ForNumber(d),
                 decimal dec => Value.ForNumber((double)dec),
 
+                // Handle Newtonsoft.Json types (JValue, JArray, JObject) from deserialized protobuf
+                JValue jv => ConvertJValueToValue(jv),
+                JArray ja => Value.ForList(ja.Select(ConvertObjectToValue).ToArray()),
+                JObject jo => Value.ForStruct(new Struct
+                {
+                    Fields = { jo.Properties().ToDictionary(p => p.Name, p => ConvertObjectToValue(p.Value)) },
+                }),
+
                 // For DateTime and DateTimeOffset, add prefix to distinguish from normal string.
                 DateTime dt => Value.ForString($"dt:{dt.ToString("O")}"),
                 DateTimeOffset dto => Value.ForString($"dto:{dto.ToString("O")}"),
@@ -688,6 +697,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 // Fallback: convert unlisted type to string.
                 _ => Value.ForString(obj.ToString() ?? string.Empty),
+            };
+        }
+
+        static Value ConvertJValueToValue(JValue jv)
+        {
+            return jv.Type switch
+            {
+                JTokenType.Null => Value.ForNull(),
+                JTokenType.String => Value.ForString(jv.Value<string>() ?? string.Empty),
+                JTokenType.Boolean => Value.ForBool(jv.Value<bool>()),
+                JTokenType.Integer => Value.ForNumber(jv.Value<long>()),
+                JTokenType.Float => Value.ForNumber(jv.Value<double>()),
+                JTokenType.Date => Value.ForString($"dt:{jv.Value<DateTime>().ToString("O")}"),
+                _ => Value.ForString(jv.ToString()),
             };
         }
 
