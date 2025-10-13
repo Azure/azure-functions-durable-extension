@@ -35,7 +35,7 @@ public class ScheduledOrchestrationTests
     }
 
     [Theory]
-    [InlineData("HelloCities_HttpStart_Scheduled", 5, HttpStatusCode.Accepted)]
+    [InlineData("HelloCities_HttpStart_Scheduled", 10, HttpStatusCode.Accepted)]
     [InlineData("HelloCities_HttpStart_Scheduled", -5, HttpStatusCode.Accepted)]
     [Trait("PowerShell", "Skip")] // Scheduled orchestrations not implemented in PowerShell
     public async Task ScheduledStartTests(string functionName, int startDelaySeconds, HttpStatusCode expectedStatusCode)
@@ -80,7 +80,7 @@ public class ScheduledOrchestrationTests
     }
 
     [Theory]
-    [InlineData("EntityCreatesScheduledOrchestrationOrchestrator_HttpStart", 5, HttpStatusCode.Accepted)]
+    [InlineData("EntityCreatesScheduledOrchestrationOrchestrator_HttpStart", 10, HttpStatusCode.Accepted)]
     [InlineData("EntityCreatesScheduledOrchestrationOrchestrator_HttpStart", -5, HttpStatusCode.Accepted)]
     [Trait("PowerShell", "Skip")] // Durable Entities not yet implemented in PowerShell
     [Trait("Java", "Skip")] // Durable Entities not yet implemented in Java
@@ -104,7 +104,12 @@ public class ScheduledOrchestrationTests
 
         string subOrchestratorStatusQueryGetUri = statusQueryGetUri.ToLower().Replace(schedulerOrchestrationDetails.InstanceId.ToLower(), subOrchestratorInstanceId);
 
-        if (scheduledStartTime > DateTime.UtcNow + TimeSpan.FromSeconds(1))
+        // Azure Storage backend has a quirk where creating an orchestration from an entity creates the OrchestrationStarted event in the History table
+        // but doesn't initialize the orchestration state in the Instances table until the orchestration starts running. Since the implementation for
+        // GetOrchestrationStateAsync in AzureStorage only queries the Instances table, this will 404 until the orchestration state becomes "running",
+        // so we can't check for "Pending".
+        // The checks below should still suffice to prove that the orchestration did not run until the scheduled time.
+        if (scheduledStartTime > DateTime.UtcNow + TimeSpan.FromSeconds(1) && this.fixture.GetDurabilityProvider() != FunctionAppFixture.ConfiguredDurabilityProviderType.AzureStorage)
         {
             // This line will throw if the orchestration goes to a terminal state before reaching "Pending",
             // ensuring that any scheduled orchestrations that run immediately fail the test.

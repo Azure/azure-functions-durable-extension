@@ -15,6 +15,13 @@ public class FunctionAppFixture : IAsyncLifetime
     internal FunctionAppProcess functionAppProcess;
     internal ITestLanguageLocalizer functionLanguageLocalizer;
 
+    internal enum ConfiguredDurabilityProviderType
+    {
+        AzureStorage,
+        MSSQL,
+        AzureManaged
+    }
+
     public FunctionAppFixture(IMessageSink messageSink)
     {
         ILoggerFactory loggerFactory = new LoggerFactory();
@@ -48,6 +55,23 @@ public class FunctionAppFixture : IAsyncLifetime
         }
 
         this.functionAppProcess = new FunctionAppProcess(this.logger, this.TestLogs, this.functionLanguageLocalizer.GetLanguageType());
+    }
+
+    internal ConfiguredDurabilityProviderType GetDurabilityProvider()
+    {
+        string? e2eTestDurableBackendEnvVarValue = Environment.GetEnvironmentVariable("E2E_TEST_DURABLE_BACKEND");
+        switch (e2eTestDurableBackendEnvVarValue)
+        {
+            case "mssql":
+                return ConfiguredDurabilityProviderType.MSSQL;
+            case "azuremanaged":
+                return ConfiguredDurabilityProviderType.AzureManaged;
+            case "azurestorage":
+                return ConfiguredDurabilityProviderType.AzureStorage;
+            default:
+                this.logger.LogWarning("Environment variable E2E_TEST_DURABLE_BACKEND not set, test code will assume Azure Storage backend");
+                return ConfiguredDurabilityProviderType.AzureStorage;
+        }
     }
 
     public Task InitializeAsync()
