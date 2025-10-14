@@ -852,21 +852,32 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public static IDictionary<string, object?> ExtractPropertiesFromExceptionJson(string json)
         {
             var result = new Dictionary<string, object?>();
-            var root = JsonNode.Parse(json)?["Properties"]?.AsObject();
-            if (root == null)
-            {
-                return result;
-            }
 
-            foreach (var kvp in root)
+            try
             {
-                var value = kvp.Value?.AsObject();
-                if (value == null)
+                var root = JsonNode.Parse(json)?["Properties"]?.AsObject();
+                if (root == null)
                 {
-                    continue;
+                    return result;
                 }
 
-                result[kvp.Key] = ExtractValue(value);
+                foreach (var kvp in root)
+                {
+                    var value = kvp.Value?.AsObject();
+                    if (value == null)
+                    {
+                        continue;
+                    }
+
+                    result[kvp.Key] = ExtractValue(value);
+                }
+            }
+            catch (JsonException)
+            {
+                // If the exception string is not valid JSON (e.g., Java's toString() output),
+                // just return an empty properties dictionary
+                // We will go back here later for support including exception properties at Java.
+                return result;
             }
 
             return result;
