@@ -588,6 +588,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         InstanceId = operationAction.StartNewOrchestration.InstanceId,
                         Version = operationAction.StartNewOrchestration.Version,
                         RequestTime = operationAction.StartNewOrchestration.RequestTime?.ToDateTimeOffset(),
+                        ScheduledStartTime = operationAction.StartNewOrchestration.ScheduledTime?.ToDateTime(),
                         ParentTraceContext = operationAction.StartNewOrchestration.ParentTraceContext != null ?
                             new DistributedTraceContext(
                                 operationAction.StartNewOrchestration.ParentTraceContext.TraceParent,
