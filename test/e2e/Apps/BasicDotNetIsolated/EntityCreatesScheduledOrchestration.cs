@@ -2,11 +2,10 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using Microsoft.Azure.Functions.Worker;
-using Microsoft.DurableTask;
-using Microsoft.DurableTask.Entities;
-
 using Microsoft.Azure.Functions.Worker.Http;
+using Microsoft.DurableTask;
 using Microsoft.DurableTask.Client;
+using Microsoft.DurableTask.Entities;
 using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.Durable.Tests.E2E;
@@ -50,7 +49,7 @@ public class EntityCreatesScheduledOrchestration
 }
 
 
-public class SubOrchestratorTriggerEntity: TaskEntity<string>
+public class SubOrchestratorTriggerEntity : TaskEntity<string>
 {
     public string Call(int delaySeconds)
     {
@@ -63,7 +62,7 @@ public class SubOrchestratorTriggerEntity: TaskEntity<string>
     {
         return string.Empty;
     }
-    
+
     [Function(nameof(SubOrchestratorTriggerEntity))]
     public Task RunEntityAsync([EntityTrigger] TaskEntityDispatcher dispatcher)
     {
