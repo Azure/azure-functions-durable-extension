@@ -312,7 +312,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return false;
             }
 
-            if (checkType != null && sourceException.GetType().IsAssignableFrom(checkType))
+            if (checkType != null && checkType.IsAssignableFrom(sourceException.GetType()))
             {
                 return true;
             }
