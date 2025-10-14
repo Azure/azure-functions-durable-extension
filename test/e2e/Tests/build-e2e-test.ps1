@@ -12,6 +12,9 @@ param(
     [Switch]
     $StartMSSqlContainer,
 
+    [string]
+    $MSSQLpwd,
+
     [Switch]
     $StartDTSContainer,
 
@@ -270,12 +273,14 @@ Set-Location $PSScriptRoot
 
 if ($StartMSSqlContainer)
 {
-  $mssqlPwd = $env:MSSQL_SA_PASSWORD
-  if (!$mssqlPwd) {
-    Write-Warning "No MSSQL_SA_PASSWORD environment variable found! Skipping SQL Server container startup."
-  }
-  else {
-    StartMSSQLContainer $mssqlPwd
+  if (!$MSSQLpwd) {
+    $MSSQLpwd = $env:MSSQL_SA_PASSWORD
+    if (!$MSSQLpwd) {
+      Write-Warning "No MSSQL_SA_PASSWORD environment variable found! Skipping SQL Server container startup."
+    }
+    else {
+      StartMSSQLContainer $MSSQLpwd
+    }
   }
 }
 

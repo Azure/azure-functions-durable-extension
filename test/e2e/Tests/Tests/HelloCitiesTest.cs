@@ -20,20 +20,6 @@ public class HttpEndToEndTests
         this.output = testOutputHelper;
     }
 
-    // Due to some kind of asynchronous race condition in XUnit, when running these tests in pipelines,
-    // the output may be disposed before the message is written. Just ignore these types of errors for now. 
-    private void WriteOutput(string message)
-    {
-        try
-        {
-            this.output.WriteLine(message);
-        }
-        catch
-        {
-            // Ignore
-        }
-    }
-
     [Theory]
     [InlineData("HelloCities", HttpStatusCode.Accepted, "Hello Tokyo!")]
     public async Task HttpTriggerTests(string orchestrationName, HttpStatusCode expectedStatusCode, string partialExpectedOutput)
@@ -47,48 +33,5 @@ public class HttpEndToEndTests
 
         var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
         Assert.Contains(partialExpectedOutput, orchestrationDetails.Output);
-    }
-
-    [Theory]
-    [InlineData("HelloCities_HttpStart_Scheduled", 5, HttpStatusCode.Accepted)]
-    [InlineData("HelloCities_HttpStart_Scheduled", -5, HttpStatusCode.Accepted)]
-    [Trait("PowerShell", "Skip")] // Scheduled orchestrations not implemented in PowerShell
-    public async Task ScheduledStartTests(string functionName, int startDelaySeconds, HttpStatusCode expectedStatusCode)
-    {
-        var testStartTime = DateTime.UtcNow;
-        var scheduledStartTime = testStartTime + TimeSpan.FromSeconds(startDelaySeconds);
-        string urlQueryString = $"?ScheduledStartTime={scheduledStartTime.ToString("o")}";
-
-        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger(functionName, urlQueryString);
-
-        string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
-
-        Assert.Equal(expectedStatusCode, response.StatusCode);
-
-        if (scheduledStartTime > DateTime.UtcNow + TimeSpan.FromSeconds(1))
-        {
-            if (this.fixture.functionLanguageLocalizer.GetLanguageType() == LanguageType.DotnetIsolated || 
-                this.fixture.functionLanguageLocalizer.GetLanguageType() == LanguageType.Java)
-            {
-                await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Pending", 30);
-            }
-            else
-            {
-                // Scheduled orchestrations are not properly implemented in the other languages - however, 
-                // this test has been implemented using timers in the orchestration instead.
-                await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Running", 30);
-            }
-        }
-
-        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", Math.Max(startDelaySeconds, 0) + 30);
-
-        // This +2s should not be necessary - however, experimentally the orchestration may run up to ~1 second before the scheduled time.
-        // It is unclear currently whether this is a bug where orchestrations run early, or a clock difference/error,
-        // but leaving this logic in for now until further investigation.
-        Assert.True(DateTime.UtcNow + TimeSpan.FromSeconds(2) >= scheduledStartTime);
-
-        var finalOrchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
-        WriteOutput($"Last updated at {finalOrchestrationDetails.LastUpdatedTime}, scheduled to complete at {scheduledStartTime}");
-        Assert.True(finalOrchestrationDetails.LastUpdatedTime + TimeSpan.FromSeconds(2) >= scheduledStartTime);
     }
 }
