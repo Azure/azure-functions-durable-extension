@@ -38,7 +38,7 @@ public static class TimeoutOrchestration
 
         using (var cts = new CancellationTokenSource())
         {
-            Task<string> activityTask = context.CallActivityAsync<string>(nameof(LongActivity));
+            Task<string> activityTask = context.CallActivityAsync<string>(nameof(LongActivity), input: context.InstanceId);
             Task timeoutTask = context.CreateTimer(deadline, cts.Token);
 
             Task winner = await Task.WhenAny(activityTask, timeoutTask);
