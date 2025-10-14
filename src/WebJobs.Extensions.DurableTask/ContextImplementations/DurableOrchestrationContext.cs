@@ -860,7 +860,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // TODO: Decide whether we want to propagate the version to activities and entities as well.
             if (functionType != FunctionType.Orchestrator)
             {
-                return (functionNameWithVersion, null);
+                return (functionNameWithVersion, string.Empty);
             }
 
             (string functionName, string version) = FunctionNameWithVersion.Parse(functionNameWithVersion);
