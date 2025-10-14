@@ -3,7 +3,6 @@
 #nullable enable
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask

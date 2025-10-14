@@ -1,13 +1,13 @@
 // Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
+using System.Net;
+using System.Text.Json.Nodes;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.DurableTask;
 using Microsoft.DurableTask.Client;
 using Microsoft.Extensions.Logging;
-using System.Net;
-using System.Text.Json.Nodes;
 
 namespace Microsoft.Azure.Durable.Tests.E2E;
 
@@ -46,7 +46,7 @@ public static class LargeOutputOrchestrator
     {
         ILogger logger = executionContext.GetLogger("LargeOutputOrchestrator_HttpStart");
         int sizeInKB = await req.ReadFromJsonAsync<int>();
-        
+
         // Function input comes from the request content.
         string instanceId = await client.ScheduleNewOrchestrationInstanceAsync(
             nameof(LargeOutputOrchestrator), input: sizeInKB);
@@ -64,8 +64,8 @@ public static class LargeOutputOrchestrator
         [DurableClient] DurableTaskClient client,
         string id)
     {
-        OrchestrationMetadata? metadata = await client.GetInstancesAsync(instanceId: id, getInputsAndOutputs:true);
-   
+        OrchestrationMetadata? metadata = await client.GetInstancesAsync(instanceId: id, getInputsAndOutputs: true);
+
         HttpResponseData response;
         if (metadata == null)
         {

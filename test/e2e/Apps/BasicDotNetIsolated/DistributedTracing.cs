@@ -19,7 +19,7 @@ public static class DistributedTracing
     }
 
     [Function(nameof(GetDistributedTraceId))]
-    public static string? GetDistributedTraceId([ActivityTrigger] FunctionContext executionContext)
+    public static string? GetDistributedTraceId([ActivityTrigger] object? input, FunctionContext executionContext)
     {
         return Activity.Current?.Id;
     }

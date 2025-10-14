@@ -46,14 +46,15 @@ public class RestartOrchestrationTests
 
         // best practice to wait for 1 seconds before restarting orchestration to avoid race condition.
         await Task.Delay(1000);
-        
-        var restartPayload = new {
+
+        var restartPayload = new
+        {
             InstanceId = instanceId,
             RestartWithNewInstanceId = restartWithNewInstanceId
         };
 
         string jsonBody = JsonSerializer.Serialize(restartPayload);
-       
+
         // Restart the orchestrator with the same instance id)
         using HttpResponseMessage restartResponse = await HttpHelpers.InvokeHttpTriggerWithBody(
             "RestartOrchestration_HttpRestart", jsonBody, "application/json");
@@ -91,7 +92,7 @@ public class RestartOrchestrationTests
     public async Task RestartOrchestration_NonExistentInstanceId_ShouldReturnNotFound()
     {
         const string testInstanceId = "nonexistid";
-        
+
         // Test restarting with a non-existent instance ID
         var restartPayload = new
         {
@@ -103,7 +104,7 @@ public class RestartOrchestrationTests
 
         using HttpResponseMessage restartResponse = await HttpHelpers.InvokeHttpTriggerWithBody(
             "RestartOrchestration_HttpRestartWithErrorHandling", jsonBody, "application/json");
-        
+
         string responseContent = await restartResponse.Content.ReadAsStringAsync();
 
         // Verfity we weill return the right exception message.
@@ -141,9 +142,9 @@ public class RestartOrchestrationTests
             "RestartOrchestration_HttpRestartWithErrorHandling", jsonBody, "application/json");
 
         Assert.Equal(HttpStatusCode.BadRequest, restartResponse.StatusCode);
-        
+
         string responseContent = await restartResponse.Content.ReadAsStringAsync();
-        
+
         // Verify the returned exception contains the correct information. 
         Assert.Contains(fixture.functionLanguageLocalizer.GetLocalizedStringValue("RestartRunningInstance.ErrorMessage", instanceId), responseContent);
 

@@ -8,7 +8,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
-using DurableTask.Core.Exceptions;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -630,7 +629,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         isReplay: false);
             }
 
-            Dictionary<string, ActivityContext> parentTraceContexts = new ();
+            Dictionary<string, ActivityContext> parentTraceContexts = new();
 
             // for each operation, emit trace and send response message (if not a signal)
             for (int i = 0; i < this.OperationBatch.Count; i++)

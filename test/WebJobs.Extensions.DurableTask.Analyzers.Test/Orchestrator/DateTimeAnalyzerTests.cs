@@ -66,7 +66,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
 
             VerifyCSharpDiagnostic(test);
         }
-        
+
         [TestMethod]
         public void DateTime_Now_WithNamespace()
         {

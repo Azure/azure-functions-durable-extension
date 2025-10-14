@@ -1,16 +1,16 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
-using System.Collections.Immutable;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 {
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
-    public class EntityContextAnalyzer: DiagnosticAnalyzer
+    public class EntityContextAnalyzer : DiagnosticAnalyzer
     {
         public const string DiagnosticId = "DF0202";
 

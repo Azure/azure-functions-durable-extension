@@ -1,10 +1,10 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
-using System.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 {
@@ -18,9 +18,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         private const string Category = SupportedCategories.EntityInterface;
         public const DiagnosticSeverity Severity = DiagnosticSeverity.Warning;
 
-        public static readonly DiagnosticDescriptor NotAMethodRule = new DiagnosticDescriptor(DiagnosticId, Title, NotAMethodMessageFormat, Category, Severity, isEnabledByDefault: true, description: Description, 
+        public static readonly DiagnosticDescriptor NotAMethodRule = new DiagnosticDescriptor(DiagnosticId, Title, NotAMethodMessageFormat, Category, Severity, isEnabledByDefault: true, description: Description,
             customTags: WellKnownDiagnosticTags.CompilationEnd);
-        public static readonly DiagnosticDescriptor NoMethodsRule = new DiagnosticDescriptor(DiagnosticId, Title, NoMethodsMessageFormat, Category, Severity, isEnabledByDefault: true, description: Description, 
+        public static readonly DiagnosticDescriptor NoMethodsRule = new DiagnosticDescriptor(DiagnosticId, Title, NoMethodsMessageFormat, Category, Severity, isEnabledByDefault: true, description: Description,
             customTags: WellKnownDiagnosticTags.CompilationEnd);
 
         public static void ReportProblems(CompilationAnalysisContext context, EntityInterface entityInterface)

@@ -119,7 +119,7 @@ namespace Microsoft.Azure.Functions.Worker.Tests
                 SerializedOutput = "TestOutput"
             };
 
-            var client = this.GetTestFunctionsDurableTaskClient( orchestrationMetadata: expectedResult);
+            var client = this.GetTestFunctionsDurableTaskClient(orchestrationMetadata: expectedResult);
 
             HttpRequestData request = this.MockHttpRequestAndResponseData();
 
@@ -159,7 +159,8 @@ namespace Microsoft.Azure.Functions.Worker.Tests
             using (CancellationTokenSource cts = new CancellationTokenSource(TimeSpan.FromSeconds(10)))
             {
                 response = await client.WaitForCompletionOrCreateCheckStatusResponseAsync(request, instanceId, cancellation: cts.Token);
-            };
+            }
+            ;
 
             Assert.NotNull(response);
             Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
@@ -223,7 +224,7 @@ namespace Microsoft.Azure.Functions.Worker.Tests
         /// - no headers
         /// </summary>
         [Theory]
-        [InlineData("Forwarded", "proto=https;host=forwarded.example.com","","", "https://forwarded.example.com/runtime/webhooks/durabletask")]
+        [InlineData("Forwarded", "proto=https;host=forwarded.example.com", "", "", "https://forwarded.example.com/runtime/webhooks/durabletask")]
         [InlineData("X-Forwarded-Proto", "https", "X-Forwarded-Host", "xforwarded.example.com", "https://xforwarded.example.com/runtime/webhooks/durabletask")]
         [InlineData("", "", "X-Forwarded-Host", "test.net", "https://test.net/runtime/webhooks/durabletask")]
         [InlineData("", "", "", "", "https://localhost:7075/runtime/webhooks/durabletask")] // Default base URL for empty headers
@@ -278,7 +279,7 @@ namespace Microsoft.Azure.Functions.Worker.Tests
         private HttpRequestData MockHttpRequestAndResponseData(HttpHeadersCollection? headers = null)
         {
             var mockObjectSerializer = new Mock<ObjectSerializer>();
-            
+
             // Setup the SerializeAsync method
             mockObjectSerializer.Setup(s => s.SerializeAsync(It.IsAny<Stream>(), It.IsAny<object?>(), It.IsAny<Type>(), It.IsAny<CancellationToken>()))
                 .Returns<Stream, object?, Type, CancellationToken>(async (stream, value, type, token) =>
@@ -308,7 +309,7 @@ namespace Microsoft.Azure.Functions.Worker.Tests
             var mockFunctionContext = new Mock<FunctionContext>();
             mockFunctionContext.SetupGet(c => c.InstanceServices).Returns(mockServiceProvider.Object);
             var mockHttpRequestData = new Mock<HttpRequestData>(mockFunctionContext.Object);
-            
+
             // Set up the URL property.
             mockHttpRequestData.SetupGet(r => r.Url).Returns(new Uri("https://localhost:7075/orchestrators/E1_HelloSequence"));
 
@@ -317,7 +318,7 @@ namespace Microsoft.Azure.Functions.Worker.Tests
 
             // Setup the Headers property to return the empty headers
             mockHttpRequestData.SetupGet(r => r.Headers).Returns(headers);
-            
+
             var mockHttpResponseData = new Mock<HttpResponseData>(mockFunctionContext.Object)
             {
                 DefaultValue = DefaultValue.Mock

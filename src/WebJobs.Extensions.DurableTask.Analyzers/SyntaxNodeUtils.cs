@@ -1,13 +1,13 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 {
@@ -50,7 +50,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     : model.Compilation.GetSemanticModel(node.SyntaxTree);
                 }
             }
-            catch( ArgumentException e) when (e.Message.Contains("Inconsistent language versions"))
+            catch (ArgumentException e) when (e.Message.Contains("Inconsistent language versions"))
             {
                 // model.Compilation.AddSyntaxTrees(node.SyntaxTree) can sometimes throw an ArgumentException with this message if the SyntaxTree
                 // that is being added has an inconsistent language version with the compilation.
@@ -322,10 +322,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             }
 
             if (TryGetFunctionNameInConstant(semanticModel, node, out functionName))
-            { 
+            {
                 return true;
             }
-            
+
             functionName = null;
             return false;
         }

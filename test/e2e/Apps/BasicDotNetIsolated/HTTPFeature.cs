@@ -1,8 +1,6 @@
 // Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
-using System.Net;
-using System.Text.Json.Nodes;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
 using Microsoft.Azure.Functions.Worker.Extensions.DurableTask.Http;
@@ -10,7 +8,6 @@ using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.DurableTask;
 using Microsoft.DurableTask.Client;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.Azure.Durable.Tests.E2E;
 
@@ -23,7 +20,7 @@ public static class HttpFeature
     {
         ILogger logger = context.CreateReplaySafeLogger(nameof(HttpLongRunningOrchestrator));
 
-        await context.CreateTimer(TimeSpan.FromMinutes(1),CancellationToken.None);
+        await context.CreateTimer(TimeSpan.FromMinutes(1), CancellationToken.None);
 
         return "Long-running orchestration completed.";
     }
@@ -32,7 +29,7 @@ public static class HttpFeature
     [Function("HttpStart_HttpLongRunningOrchestrator")]
     public static async Task<HttpResponseData> StartHttpLongRunningOrchestrator(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestData req,
-        [DurableClient] DurableTaskClient client,   
+        [DurableClient] DurableTaskClient client,
         FunctionContext executionContext)
     {
         ILogger logger = executionContext.GetLogger("HttpStart_HttpLongRunningOrchestrator");
@@ -59,7 +56,7 @@ public static class HttpFeature
             url!,
             content: null,
             retryOptions: null,
-            asynchronousPatternEnabled: true);   
+            asynchronousPatternEnabled: true);
         return response;
     }
 
@@ -71,7 +68,7 @@ public static class HttpFeature
         FunctionContext executionContext)
     {
         ILogger logger = executionContext.GetLogger("HttpStart_HttpPollingOrchestrator");
-        
+
         var builder = new UriBuilder(req.Url)
         {
             Path = "/api/HttpStart_HttpLongRunningOrchestrator"
@@ -80,7 +77,7 @@ public static class HttpFeature
         Uri targetUri = builder.Uri;
 
         string instanceId = await client.ScheduleNewOrchestrationInstanceAsync(
-            nameof(HttpPollingOrchestrator),targetUri);
+            nameof(HttpPollingOrchestrator), targetUri);
 
         logger.LogInformation("Started orchestration with ID = '{instanceId}'.", instanceId);
 
@@ -94,16 +91,16 @@ public static class HttpFeature
         [OrchestrationTrigger] TaskOrchestrationContext context)
     {
         ILogger logger = context.CreateReplaySafeLogger(nameof(HttpWithTokenSourceOrchestrator));
-        
+
         var tokenSource = new ManagedIdentityTokenSource("https://management.core.windows.net/.default");
-        
+
         try
         {
             var response = await context.CallHttpAsync(
                 HttpMethod.Get,
                 new Uri("https://httpbin.org/get"),
                 tokenSource: tokenSource);
-            
+
             return "Token source HTTP call completed successfully";
         }
         catch (Exception ex)

@@ -4,11 +4,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection.Metadata;
 using System.Threading.Tasks;
 using Azure.Storage.Blobs;
 using DurableTask.AzureStorage;
-using FluentAssertions.Common;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Xunit;

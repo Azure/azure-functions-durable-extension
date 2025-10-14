@@ -30,6 +30,6 @@ internal class PowerShellTestLanguageLocalizer : ITestLanguageLocalizer
 
     public string GetLocalizedStringValue(string key, params object[] args)
     {
-        return String.Format(this.powerShellLocalizedStrings.GetValueOrDefault(key, ""), args:args);
+        return String.Format(this.powerShellLocalizedStrings.GetValueOrDefault(key, ""), args: args);
     }
 }

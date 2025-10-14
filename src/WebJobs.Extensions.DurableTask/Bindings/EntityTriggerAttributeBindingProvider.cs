@@ -9,7 +9,6 @@ using Microsoft.Azure.WebJobs.Host.Bindings;
 using Microsoft.Azure.WebJobs.Host.Listeners;
 using Microsoft.Azure.WebJobs.Host.Protocols;
 using Microsoft.Azure.WebJobs.Host.Triggers;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
@@ -110,11 +109,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     {
                         convertedValue = entityContext;
                         ((IDurableEntityContext)value).FunctionBindingContext = context.FunctionContext;
-                }
-                else if (destinationType == typeof(string))
-                {
-                    convertedValue = EntityContextToString(entityContext);
-                }
+                    }
+                    else if (destinationType == typeof(string))
+                    {
+                        convertedValue = EntityContextToString(entityContext);
+                    }
 
                     var inputValueProvider = new ObjectValueProvider(
                         convertedValue ?? value,

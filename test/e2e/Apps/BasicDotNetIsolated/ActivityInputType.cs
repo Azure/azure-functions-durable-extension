@@ -101,7 +101,7 @@ public static class ActivityInputType
             }
         }
 
-        var items = input.Select(item => 
+        var items = input.Select(item =>
             $"{{Name: {item.Name}, Age: {item.Age}, Duration: {item.Duration}, Data: [{string.Join(", ", item.Data!)}]}}");
         return $"Received CustomClass[]: [{string.Join(", ", items)}]";
     }

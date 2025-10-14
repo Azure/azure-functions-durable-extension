@@ -17,7 +17,6 @@ using Microsoft.Extensions.Primitives;
 using Moq;
 using Newtonsoft.Json;
 using Xunit;
-using Xunit.Abstractions;
 using static Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests.HttpApiHandlerTests;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests

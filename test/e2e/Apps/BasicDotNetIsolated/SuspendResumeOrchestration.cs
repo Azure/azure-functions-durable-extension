@@ -18,12 +18,12 @@ public static class SuspendResumeOrchestration
         string instanceId)
     {
         string suspendReason = "Suspending the instance for test.";
-        try 
+        try
         {
             await client.SuspendInstanceAsync(instanceId, suspendReason);
             return req.CreateResponse(HttpStatusCode.OK);
         }
-        catch (RpcException ex) 
+        catch (RpcException ex)
         {
             var response = req.CreateResponse(HttpStatusCode.BadRequest);
             response.Headers.Add("Content-Type", "text/plain");
@@ -39,12 +39,12 @@ public static class SuspendResumeOrchestration
         string instanceId)
     {
         string resumeReason = "Resuming the instance for test.";
-        try 
+        try
         {
             await client.ResumeInstanceAsync(instanceId, resumeReason);
             return req.CreateResponse(HttpStatusCode.OK);
         }
-        catch (RpcException ex) 
+        catch (RpcException ex)
         {
             var response = req.CreateResponse(HttpStatusCode.BadRequest);
             response.Headers.Add("Content-Type", "text/plain");

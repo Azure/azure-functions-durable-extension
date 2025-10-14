@@ -1,10 +1,10 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
-using Xunit.Abstractions;
-using Xunit;
 using System.Diagnostics;
 using System.Net;
+using Xunit;
+using Xunit.Abstractions;
 
 namespace Microsoft.Azure.Durable.Tests.DotnetIsolatedE2E;
 

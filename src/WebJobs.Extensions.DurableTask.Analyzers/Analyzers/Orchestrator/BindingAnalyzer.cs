@@ -18,7 +18,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         private const string Category = SupportedCategories.Orchestrator;
         public const DiagnosticSeverity Severity = DiagnosticSeverity.Warning;
 
-        public static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, Severity, isEnabledByDefault: true, 
+        public static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, Severity, isEnabledByDefault: true,
             customTags: WellKnownDiagnosticTags.CompilationEnd);
 
         public static bool RegisterDiagnostic(CompilationAnalysisContext context, SemanticModel semanticModel, SyntaxNode method)
@@ -50,7 +50,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     }
                 }
             }
-            
+
             return diagnosedIssue;
         }
     }

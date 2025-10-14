@@ -23,13 +23,13 @@ public static class ActivityErrorHandling
     public static async Task<string> CatchActivityException(
         [OrchestrationTrigger] TaskOrchestrationContext context)
     {
-        try 
+        try
         {
             var output = await context.CallActivityAsync<string>(nameof(RaiseException), context.InstanceId);
             return output;
         }
         catch (TaskFailedException ex)
-        {  
+        {
             return ex.Message;
         }
     }
@@ -38,13 +38,13 @@ public static class ActivityErrorHandling
     public static async Task<TaskFailureDetails?> CatchActivityExceptionFailureDetails(
         [OrchestrationTrigger] TaskOrchestrationContext context)
     {
-        try 
+        try
         {
             await context.CallActivityAsync<string>(nameof(RaiseException), context.InstanceId);
             return null;
         }
         catch (TaskFailedException ex)
-        {      
+        {
             return ex.FailureDetails;
         }
     }
@@ -65,11 +65,13 @@ public static class ActivityErrorHandling
     public static async Task<string> CustomRetryActivityFunction(
         [OrchestrationTrigger] TaskOrchestrationContext context)
     {
-        var options = TaskOptions.FromRetryHandler(retryContext => {
-            if (retryContext.LastFailure.IsCausedBy<InvalidOperationException>() && 
-                    retryContext.LastFailure.InnerFailure is not null && 
-                    retryContext.LastFailure.InnerFailure.IsCausedBy<OverflowException>() && 
-                    retryContext.LastAttemptNumber < 3) {
+        var options = TaskOptions.FromRetryHandler(retryContext =>
+        {
+            if (retryContext.LastFailure.IsCausedBy<InvalidOperationException>() &&
+                    retryContext.LastFailure.InnerFailure is not null &&
+                    retryContext.LastFailure.InnerFailure.IsCausedBy<OverflowException>() &&
+                    retryContext.LastAttemptNumber < 3)
+            {
                 return true;
             }
             return false;

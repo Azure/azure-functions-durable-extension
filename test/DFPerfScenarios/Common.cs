@@ -9,19 +9,19 @@ using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 namespace DFPerfScenarios
 {
     public static class Common
-	{
+    {
         [FunctionName(nameof(HelloSequence))]
-		public static async Task<List<string>> HelloSequence(
-			[OrchestrationTrigger] IDurableOrchestrationContext context)
-		{
-			List<string> outputs = new List<string>();
+        public static async Task<List<string>> HelloSequence(
+            [OrchestrationTrigger] IDurableOrchestrationContext context)
+        {
+            List<string> outputs = new List<string>();
             outputs.Add(await context.CallActivityAsync<string>("SayHello", "Tokyo"));
             outputs.Add(await context.CallActivityAsync<string>("SayHello", "Seattle"));
             outputs.Add(await context.CallActivityAsync<string>("SayHello", "London"));
-			return outputs;
-		}
+            return outputs;
+        }
 
-		[FunctionName(nameof(SayHello))]
-		public static string SayHello([ActivityTrigger] string name) => $"Hello {name}!";
-	}
+        [FunctionName(nameof(SayHello))]
+        public static string SayHello([ActivityTrigger] string name) => $"Hello {name}!";
+    }
 }

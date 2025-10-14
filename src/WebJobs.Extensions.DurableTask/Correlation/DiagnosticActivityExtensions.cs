@@ -15,20 +15,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
     internal static class DiagnosticActivityExtensions
     {
         // These fields are named in such an "unconventional" way to mimic the internal field names of the Activity class.
-        #pragma warning disable SA1311
-        #pragma warning disable SA1308
+#pragma warning disable SA1311
+#pragma warning disable SA1308
         private static readonly Action<Activity, string> s_setSpanId;
         private static readonly Action<Activity, string> s_setTraceId;
         private static readonly Action<Activity, string?> s_setTraceState;
-        #pragma warning restore SA1308
-        #pragma warning restore SA1311
+#pragma warning restore SA1308
+#pragma warning restore SA1311
 
         static DiagnosticActivityExtensions()
         {
             BindingFlags flags = BindingFlags.NonPublic | BindingFlags.Instance;
-            s_setSpanId = typeof(Activity).GetField("_spanId", flags) !.CreateSetter<Activity, string>();
-            s_setTraceId = typeof(Activity).GetField("_traceId", flags) !.CreateSetter<Activity, string>();
-            s_setTraceState = typeof(Activity).GetField("_traceState", flags) !.CreateSetter<Activity, string?>();
+            s_setSpanId = typeof(Activity).GetField("_spanId", flags)!.CreateSetter<Activity, string>();
+            s_setTraceId = typeof(Activity).GetField("_traceId", flags)!.CreateSetter<Activity, string>();
+            s_setTraceState = typeof(Activity).GetField("_traceState", flags)!.CreateSetter<Activity, string?>();
         }
 
         public static void SetTraceId(this Activity activity, string traceId)

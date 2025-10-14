@@ -2,12 +2,9 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
-using System.Collections.Generic;
-using System.Text;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests;
 using Xunit;
-using Xunit.Extensions;
 
 namespace WebJobs.Extensions.DurableTask.Tests.V2
 {

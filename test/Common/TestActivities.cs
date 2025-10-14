@@ -80,7 +80,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         public static Task WriteStringToTextBlob(
-           [ActivityTrigger](string blobName, string content) input)
+           [ActivityTrigger] (string blobName, string content) input)
         {
             return TestHelpers.WriteStringToTextBlob(input.blobName, input.content);
         }

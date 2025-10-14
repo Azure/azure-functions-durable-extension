@@ -245,4 +245,4 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return settings;
         }
     }
- }
+}

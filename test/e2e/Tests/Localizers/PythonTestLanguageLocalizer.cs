@@ -30,6 +30,6 @@ internal class PythonTestLanguageLocalizer : ITestLanguageLocalizer
 
     public string GetLocalizedStringValue(string key, params object[] args)
     {
-        return String.Format(this.pythonLocalizedStrings.GetValueOrDefault(key, ""), args:args);
+        return String.Format(this.pythonLocalizedStrings.GetValueOrDefault(key, ""), args: args);
     }
 }

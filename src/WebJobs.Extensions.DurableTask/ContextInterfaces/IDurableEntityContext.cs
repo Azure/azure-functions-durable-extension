@@ -100,7 +100,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </remarks>
         object GetInput(Type inputType);
 
-         /// <summary>
+        /// <summary>
         /// Returns the given result to the caller of this operation.
         /// </summary>
         /// <param name="result">the result to return.</param>

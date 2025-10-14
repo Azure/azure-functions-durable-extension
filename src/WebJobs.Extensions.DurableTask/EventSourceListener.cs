@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.Tracing;
 using System.Linq;
-using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {

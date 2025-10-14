@@ -81,7 +81,7 @@ public static class DurableTaskClientExtensions
         {
             return await CreateCheckStatusResponseAsync(client, request, instanceId);
         }
-     }
+    }
 
     /// <summary>
     /// Creates an HTTP response that is useful for checking the status of the specified instance.
@@ -248,7 +248,7 @@ public static class DurableTaskClientExtensions
             ? $"{baseUrl}/runtime/webhooks/durabletask/instances/{formattedInstanceId}"
             : $"{baseUrl}/instances/{formattedInstanceId}";
         string? commonQueryParameters = GetQueryParams(client);
-        
+
         if (response != null)
         {
             response.Headers.Add("Location", BuildUrl(instanceUrl, commonQueryParameters));
@@ -263,8 +263,8 @@ public static class DurableTaskClientExtensions
             SendEventPostUri = BuildUrl($"{instanceUrl}/raiseEvent/{{eventName}}", commonQueryParameters),
             StatusQueryGetUri = BuildUrl(instanceUrl, commonQueryParameters),
             TerminatePostUri = BuildUrl($"{instanceUrl}/terminate", "reason={{text}}", commonQueryParameters),
-            SuspendPostUri =  BuildUrl($"{instanceUrl}/suspend", "reason={{text}}", commonQueryParameters),
-            ResumePostUri =  BuildUrl($"{instanceUrl}/resume", "reason={{text}}", commonQueryParameters)
+            SuspendPostUri = BuildUrl($"{instanceUrl}/suspend", "reason={{text}}", commonQueryParameters),
+            ResumePostUri = BuildUrl($"{instanceUrl}/resume", "reason={{text}}", commonQueryParameters)
         };
     }
 
@@ -308,7 +308,7 @@ public static class DurableTaskClientExtensions
         {
             proto = protos.FirstOrDefault() ?? proto;
         }
-        
+
         if (request.Headers.TryGetValues("X-Forwarded-Host", out var hosts))
         {
             // Return base URL if either "X-Forwarded-Proto" or "X-Forwarded-Host" (or both) are found

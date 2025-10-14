@@ -140,7 +140,7 @@ namespace VSSample
 }";
             VerifyCSharpDiagnostic(test);
         }
-        
+
         [TestMethod]
         public void Name_InvalidName_CloseRule()
         {

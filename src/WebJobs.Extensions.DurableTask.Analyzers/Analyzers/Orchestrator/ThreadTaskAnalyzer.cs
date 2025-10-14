@@ -1,11 +1,11 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
-using System.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 {
@@ -163,7 +163,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         private static bool HasExecuteSynchronously(SyntaxNode node)
         {
-            if(!SyntaxNodeUtils.TryGetInvocationExpression(node, out InvocationExpressionSyntax invocationExpression))
+            if (!SyntaxNodeUtils.TryGetInvocationExpression(node, out InvocationExpressionSyntax invocationExpression))
             {
                 return false;
             }

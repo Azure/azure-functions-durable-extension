@@ -15,7 +15,7 @@ public static class TimeoutOrchestration
     public static async Task<HttpResponseData> TimerHttpStart(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestData req,
         [DurableClient] DurableTaskClient client,
-        FunctionContext executionContext, 
+        FunctionContext executionContext,
         int timeoutSeconds)
     {
         ILogger logger = executionContext.GetLogger("TimeoutOrchestrator_HttpStart");
@@ -30,7 +30,7 @@ public static class TimeoutOrchestration
 
     [Function(nameof(TimeoutOrchestrator))]
     public static async Task<string> TimeoutOrchestrator(
-        [OrchestrationTrigger] TaskOrchestrationContext context, 
+        [OrchestrationTrigger] TaskOrchestrationContext context,
         int timeoutSeconds)
     {
         TimeSpan timeout = TimeSpan.FromSeconds(timeoutSeconds);
@@ -38,7 +38,7 @@ public static class TimeoutOrchestration
 
         using (var cts = new CancellationTokenSource())
         {
-            Task<string> activityTask = context.CallActivityAsync<string>(nameof(LongActivity));
+            Task<string> activityTask = context.CallActivityAsync<string>(nameof(LongActivity), input: context.InstanceId);
             Task timeoutTask = context.CreateTimer(deadline, cts.Token);
 
             Task winner = await Task.WhenAny(activityTask, timeoutTask);

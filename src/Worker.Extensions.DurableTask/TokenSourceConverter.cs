@@ -38,7 +38,7 @@ public class TokenSourceConverter : JsonConverter<TokenSource>
 
         // Use the same serialization pattern as WebJobs.Extensions.DurableTask
         writer.WriteStartObject();
-        
+
         // Currently the kind must be AzureManagedIdentity. This is a limitation of the WebJobs.Extensions.DurableTask package.
         writer.WriteString("kind", "AzureManagedIdentity");
         writer.WriteString("resource", value.Resource);
@@ -53,7 +53,7 @@ public class TokenSourceConverter : JsonConverter<TokenSource>
                     JsonSerializer.Serialize(writer, managedIdentityTokenSource.Options, options);
                 }
                 break;
-            
+
             default:
                 throw new NotSupportedException($"Token source type '{value.GetType().Name}' is not supported for serialization. Only ManagedIdentityTokenSource is currently supported.");
         }

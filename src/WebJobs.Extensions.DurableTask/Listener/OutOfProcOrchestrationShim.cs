@@ -10,7 +10,6 @@ using System.Threading.Tasks;
 using DurableTask.Core.Exceptions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
-using Newtonsoft.Json.Linq;
 using static Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskOrchestrationShim;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask

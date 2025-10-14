@@ -187,7 +187,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             DurableTaskOptions options = new DurableTaskOptions();
             options.Tracing = traceOptions;
             var sendAction = new Action<ITelemetry>(
-                delegate(ITelemetry telemetry) { sendItems.Enqueue(telemetry); });
+                delegate (ITelemetry telemetry) { sendItems.Enqueue(telemetry); });
 
             string siteNameEnvironmentVarName = "WEBSITE_SITE_NAME";
             string siteNameEnvironmentVarValue = TestSiteName;

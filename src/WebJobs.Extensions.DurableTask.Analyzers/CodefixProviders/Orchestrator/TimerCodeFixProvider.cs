@@ -1,16 +1,16 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CodeActions;
-using Microsoft.CodeAnalysis.CodeFixes;
-using Microsoft.CodeAnalysis.CSharp;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Composition;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CodeActions;
+using Microsoft.CodeAnalysis.CodeFixes;
+using Microsoft.CodeAnalysis.CSharp;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 {
@@ -172,7 +172,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         private static bool TryGetObjectCreationExpressionChildNodes(SyntaxNode argument, out IEnumerable<SyntaxNode> nodes) =>
             TryGetChildNodes(argument, SyntaxKind.ObjectCreationExpression, out nodes);
 
-        private static bool TryGetSimpleMemberAccessExpressionChildNodes(SyntaxNode argument, out IEnumerable<SyntaxNode> nodes) => 
+        private static bool TryGetSimpleMemberAccessExpressionChildNodes(SyntaxNode argument, out IEnumerable<SyntaxNode> nodes) =>
             TryGetChildNodes(argument, SyntaxKind.SimpleMemberAccessExpression, out nodes);
 
         private static bool TryGetIdentifierNameChildNodes(SyntaxNode argument, out IEnumerable<SyntaxNode> nodes) =>
@@ -191,7 +191,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                 nodes = new List<SyntaxNode>() { argument };
                 return true;
             }
-            
+
             nodes = argument.ChildNodes().Where(x => x.IsKind(kind));
             if (nodes.Any())
             {
@@ -200,7 +200,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
             return false;
         }
-        
+
         private static string GetTypeWithoutNamespace(string type)
         {
             var index = type.LastIndexOf('.') + 1;

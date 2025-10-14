@@ -22,7 +22,7 @@ public static class LongRunningOrchestration
         var outputs = new List<string>();
 
         // Call our fake activity 100,000 times to simulate an orchestration that might run for >= 10,000s (2.7 hours)
-        for (int i = 0; i < 100000; i++) 
+        for (int i = 0; i < 100000; i++)
         {
             outputs.Add(await context.CallActivityAsync<string>(nameof(SimulatedWorkActivity), 100));
         }
@@ -31,7 +31,7 @@ public static class LongRunningOrchestration
     }
 
     [Function(nameof(SimulatedWorkActivity))]
-    public static string SimulatedWorkActivity([ActivityTrigger]int sleepMs, FunctionContext executionContext)
+    public static string SimulatedWorkActivity([ActivityTrigger] int sleepMs, FunctionContext executionContext)
     {
         // Sleep the provided number of ms to simulate a long-running activity operation
         ILogger logger = executionContext.GetLogger("SimulatedWorkActivity");
@@ -47,12 +47,12 @@ public static class LongRunningOrchestration
         string instanceId)
     {
         string reason = "Long-running orchestration was terminated early.";
-        try 
+        try
         {
             await client.TerminateInstanceAsync(instanceId, reason);
             return req.CreateResponse(HttpStatusCode.OK);
         }
-        catch (RpcException ex) 
+        catch (RpcException ex)
         {
             var response = req.CreateResponse(HttpStatusCode.BadRequest);
             response.Headers.Add("Content-Type", "text/plain");

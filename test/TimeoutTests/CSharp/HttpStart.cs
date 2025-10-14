@@ -27,7 +27,7 @@ namespace TimeoutTests
                 log.LogInformation($"Started {testname} with ID = '{instanceId}'.");
                 return starter.CreateCheckStatusResponse(req, instanceId);
             }
-            catch(Exception exception)
+            catch (Exception exception)
             {
                 return new OkObjectResult(new { message = "could not start test", testname, exception = exception.ToString() });
             }
@@ -56,7 +56,7 @@ namespace TimeoutTests
                     Start("EntityBatch2")
                     );
 
-                return new OkObjectResult(new {message = "started all tests"});
+                return new OkObjectResult(new { message = "started all tests" });
             }
             catch (Exception exception)
             {

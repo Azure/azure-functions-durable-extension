@@ -9,7 +9,6 @@ using System.Reflection;
 using System.Runtime.ExceptionServices;
 using System.Threading.Tasks;
 using DurableTask.Core;
-using DurableTask.Core.Common;
 using DurableTask.Core.Exceptions;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
 using Microsoft.Azure.WebJobs.Host.Bindings;

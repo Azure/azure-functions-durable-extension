@@ -4,7 +4,6 @@
 using System;
 using System.Diagnostics;
 using Microsoft.Azure.Functions.Worker.Extensions.Abstractions;
-using Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
 
 namespace Microsoft.Azure.Functions.Worker;
 

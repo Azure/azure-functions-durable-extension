@@ -1,6 +1,4 @@
 using System;
-using System.Net;
-using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -13,13 +11,13 @@ using Newtonsoft.Json;
 namespace DFPerfScenarios
 {
     public static class CounterTest
-	{
-		[FunctionName("StartCounter")]
-		public static IActionResult Start(
+    {
+        [FunctionName("StartCounter")]
+        public static IActionResult Start(
             [HttpTrigger(AuthorizationLevel.Function, methods: "post", Route = "StartCounter")] HttpRequest req,
             [DurableClient] IDurableClient starter,
             ILogger log)
-		{
+        {
             if (!int.TryParse(req.Query["count"], out int count) || count < 1)
             {
                 return new BadRequestObjectResult("A 'count' query string parameter is required and it must contain a positive number.");
@@ -33,13 +31,12 @@ namespace DFPerfScenarios
                 MaxDegreeOfParallelism = 200
             };
 
-            Parallel.For(0, count, parallelOptions, delegate (int i)
-            {
+            Parallel.For(0, count, parallelOptions, delegate (int i) {
                 starter.SignalEntityAsync(entityId, "add", 1).GetAwaiter().GetResult();
             });
 
             return new AcceptedResult();
-		}
+        }
 
         private class Input
         {

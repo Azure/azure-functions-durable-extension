@@ -56,8 +56,8 @@ public sealed class OrchestrationInputConverterTests
     [MemberData(nameof(GenerateConcreteTestCollectionTypesFor), typeof(TestCollectionItem))]
     public async Task ConvertAsync_WhenDeserializedValueIsListOfT_AndTargetTypeIsCollectionInterfaceOfT_ReturnsConversionResultSuccess(Type collectionType)
     {
-        var inputData = new List<TestCollectionItem> {new(), new(), new()};
-        var functionContextItems = new Dictionary<object, object> {{"__orchestrationInput__", inputData}};
+        var inputData = new List<TestCollectionItem> { new(), new(), new() };
+        var functionContextItems = new Dictionary<object, object> { { "__orchestrationInput__", inputData } };
         functionContextMock.SetupGet(funcCtx => funcCtx.Items).Returns(functionContextItems);
         converterContextMock.SetupGet(convCtx => convCtx.TargetType).Returns(collectionType);
 

@@ -1,10 +1,7 @@
 // Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
-using System;
 using System.Diagnostics;
-using System.IO;
-using System.Linq;
 using System.Runtime.InteropServices;
 using Microsoft.Extensions.Logging;
 
@@ -48,13 +45,15 @@ public static class FixtureHelpers
 
     public static void StartProcessWithLogging(Process funcProcess, ILogger logger)
     {
-        funcProcess.ErrorDataReceived += (sender, e) => { 
-            try { logger.LogError(e?.Data); } 
-            catch (InvalidOperationException) { } 
+        funcProcess.ErrorDataReceived += (sender, e) =>
+        {
+            try { logger.LogError(e?.Data); }
+            catch (InvalidOperationException) { }
         };
-        funcProcess.OutputDataReceived += (sender, e) => { 
-            try { logger.LogInformation(e?.Data); } 
-            catch (InvalidOperationException) { } 
+        funcProcess.OutputDataReceived += (sender, e) =>
+        {
+            try { logger.LogInformation(e?.Data); }
+            catch (InvalidOperationException) { }
         };
 
         funcProcess.Start();

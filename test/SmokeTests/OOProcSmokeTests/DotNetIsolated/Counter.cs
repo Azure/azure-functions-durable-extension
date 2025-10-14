@@ -2,11 +2,8 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System.Text;
-using Azure.Core;
 using Microsoft.Azure.Functions.Worker;
-using Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
 using Microsoft.Azure.Functions.Worker.Http;
-using Microsoft.DurableTask;
 using Microsoft.DurableTask.Client;
 using Microsoft.DurableTask.Entities;
 using Microsoft.Extensions.Logging;
@@ -68,23 +65,24 @@ public static class CounterTest
 
         using StreamReader reader = new StreamReader(request.Body, Encoding.UTF8);
         string body = await reader.ReadToEndAsync();
-        if (! int.TryParse(body, out var count))
+        if (!int.TryParse(body, out var count))
         {
             var httpResponse = request.CreateResponse(System.Net.HttpStatusCode.BadRequest);
             httpResponse.Headers.Add("Content-Type", "text/plain; charset=utf-8");
             httpResponse.WriteString($"Request body must contain an integer that indicates the number of signals to send.\n");
             return httpResponse;
-        };
+        }
+        ;
 
         var entityId = new EntityInstanceId("Counter", id);
         logger.LogInformation($"Sending {count} increment messages to {entityId}...");
 
         await Parallel.ForEachAsync(
-            Enumerable.Range(0, count), 
-            cancellation, 
+            Enumerable.Range(0, count),
+            cancellation,
             (int i, CancellationToken cancellation) =>
             {
-                return new ValueTask(client.Entities.SignalEntityAsync(entityId, "add", 1, cancellation:cancellation));
+                return new ValueTask(client.Entities.SignalEntityAsync(entityId, "add", 1, cancellation: cancellation));
             });
 
         logger.LogInformation($"Sent {count} increment messages to {entityId}.");

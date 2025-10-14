@@ -3,14 +3,9 @@
 
 using System;
 using System.Linq;
-using Azure.Core.Serialization;
-using Microsoft.Azure.Functions.Worker.Core;
 using Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
-using Microsoft.DurableTask;
 using Microsoft.DurableTask.Client;
-using Microsoft.DurableTask.Converters;
 using Microsoft.DurableTask.Worker;
-using Microsoft.DurableTask.Worker.Grpc;
 using Microsoft.DurableTask.Worker.Shims;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -90,7 +85,7 @@ public static class FunctionsWorkerApplicationBuilderExtensions
             this.workerOptions = workerOptions;
         }
 
-        public void PostConfigure(string name, DurableTaskClientOptions options)
+        public void PostConfigure(string? name, DurableTaskClientOptions options)
         {
             if (this.workerOptions.Get(name).Serializer is { } serializer)
             {
@@ -116,7 +111,7 @@ public static class FunctionsWorkerApplicationBuilderExtensions
             this.workerOptions = workerOptions;
         }
 
-        public void PostConfigure(string name, DurableTaskWorkerOptions options)
+        public void PostConfigure(string? name, DurableTaskWorkerOptions options)
         {
             if (this.workerOptions.Get(name).Serializer is { } serializer)
             {

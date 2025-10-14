@@ -1,10 +1,10 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
-using System.Collections.Immutable;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 {
@@ -53,7 +53,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         {
             var methodInvocationAnalyzer = new MethodInvocationAnalyzer();
             var orchestratorMethods = orchestratorMethodCollector.GetOrchestratorMethods();
-            foreach(var methodInformation in orchestratorMethods)
+            foreach (var methodInformation in orchestratorMethods)
             {
                 var semanticModel = methodInformation.SemanticModel;
                 var methodDeclaration = methodInformation.Declaration;

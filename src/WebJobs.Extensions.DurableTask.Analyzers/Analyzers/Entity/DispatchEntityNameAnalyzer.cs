@@ -1,17 +1,17 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using System.Collections.Generic;
+using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
-using System.Collections.Generic;
-using System.Collections.Immutable;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 {
     [DiagnosticAnalyzer(Microsoft.CodeAnalysis.LanguageNames.CSharp)]
-    public class DispatchEntityNameAnalyzer: DiagnosticAnalyzer
+    public class DispatchEntityNameAnalyzer : DiagnosticAnalyzer
     {
         public const string DiagnosticId = "DF0307";
 
@@ -25,7 +25,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         private static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, Severity, isEnabledByDefault: true, description: Description);
 
-        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics {
+        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics
+        {
             get
             {
                 return ImmutableArray.Create(
@@ -48,7 +49,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         private void RegisterStaticAnalyzer(CompilationAnalysisContext context)
         {
-            foreach(SyntaxNode methodDeclaration in methodDeclarations)
+            foreach (SyntaxNode methodDeclaration in methodDeclarations)
             {
                 StaticFunctionAnalyzer.ReportProblems(context, methodDeclaration);
             }
@@ -62,7 +63,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                 var name = expression.Name;
                 if (name.ToString().StartsWith("DispatchAsync"))
                 {
-                    if(SyntaxNodeUtils.TryGetMethodDeclaration(expression, out MethodDeclarationSyntax methodDeclaration))
+                    if (SyntaxNodeUtils.TryGetMethodDeclaration(expression, out MethodDeclarationSyntax methodDeclaration))
                     {
                         methodDeclarations.Add(methodDeclaration);
                     }

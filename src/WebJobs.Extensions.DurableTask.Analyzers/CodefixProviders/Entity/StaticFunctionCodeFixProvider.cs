@@ -1,21 +1,21 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CodeActions;
-using Microsoft.CodeAnalysis.CodeFixes;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Collections.Immutable;
 using System.Composition;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CodeActions;
+using Microsoft.CodeAnalysis.CodeFixes;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 {
     [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(StaticFunctionCodeFixProvider)), Shared]
-    public class StaticFunctionCodeFixProvider: CodeFixProvider
+    public class StaticFunctionCodeFixProvider : CodeFixProvider
     {
         private static readonly LocalizableString FixEntityFunctionStaticModifier = new LocalizableResourceString(nameof(Resources.FixEntityFunctionStaticModifier), Resources.ResourceManager, typeof(Resources));
 
@@ -37,7 +37,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             var diagnosticSpan = diagnostic.Location.SourceSpan;
 
             var identifierNode = root.FindNode(diagnosticSpan);
-            
+
             context.RegisterCodeFix(
             CodeAction.Create(FixEntityFunctionStaticModifier.ToString(), cancellationToken => AddStaticModifierAsync(context.Document, identifierNode, cancellationToken), nameof(StaticFunctionCodeFixProvider)),
             diagnostic);

@@ -3,7 +3,6 @@ using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.DurableTask;
 using Microsoft.DurableTask.Client;
 using Microsoft.Extensions.Logging;
-using System;
 
 namespace FaultOrchestrators
 {
@@ -15,7 +14,7 @@ namespace FaultOrchestrators
         {
             // this orchestrator is not deterministic, on purpose.
             // we use the non-determinism to force an OOM exception on only the first replay
-            
+
             // check if a file named "replayEvidence" exists in source code directory, create it if it does not.
             // From experience, this code runs in `<sourceCodePath>/bin/output/`, so we store the file two directories above.
             // We do this because the /bin/output/ directory gets overridden during the build process, which happens automatically
@@ -38,20 +37,21 @@ namespace FaultOrchestrators
                 // we throw just in case the code does not time out. This should fail the test
                 throw new Exception("this should never be reached");
             }
-            else {
+            else
+            {
                 // if it's not the first replay, delete the evidence file and return
                 System.IO.File.Delete(evidenceFile);
                 return Task.CompletedTask;
             }
         }
-        
+
         [Function(nameof(ProcessExitOrchestrator))]
         public static Task ProcessExitOrchestrator(
             [OrchestrationTrigger] TaskOrchestrationContext context)
         {
             // this orchestrator is not deterministic, on purpose.
             // we use the non-determinism to force a sudden process exit on only the first replay
-            
+
             // check if a file named "replayEvidence" exists in source code directory, create it if it does not.
             // From experience, this code runs in `<sourceCodePath>/bin/output/`, so we store the file two directories above.
             // We do this because the /bin/output/ directory gets overridden during the build process, which happens automatically
@@ -66,7 +66,8 @@ namespace FaultOrchestrators
                 Environment.FailFast("Simulating crash!");
                 throw new Exception("this should never be reached");
             }
-            else {
+            else
+            {
                 // if it's not the first replay, delete the evidence file and return
                 System.IO.File.Delete(evidenceFile);
                 return Task.CompletedTask;
@@ -79,28 +80,31 @@ namespace FaultOrchestrators
         {
             // this orchestrator is not deterministic, on purpose.
             // we use the non-determinism to force a timeout on only the first replay
-            
+
             // check if a file named "replayEvidence" exists in source code directory, create it if it does not.
             // From experience, this code runs in `<sourceCodePath>/bin/output/`, so we store the file two directories above.
             // We do this because the /bin/output/ directory gets overridden during the build process, which happens automatically
             // when `func host start` is re-invoked.
-            string evidenceFile = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "..", "..", "replayEvidence");
-            bool isTheFirstReplay = !System.IO.File.Exists(evidenceFile);
+            string evidenceFile = Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "replayEvidence");
+            bool isTheFirstReplay = !File.Exists(evidenceFile);
 
             if (isTheFirstReplay)
             {
-                System.IO.File.Create(evidenceFile).Close();
-                
+                File.Create(evidenceFile).Close();
+
                 // force the process to timeout after a 1 minute wait
-                System.Threading.Thread.Sleep(TimeSpan.FromMinutes(1));
-                
+#pragma warning disable DURABLE0003 // Disable warning about Thread.Sleep in orchestrator code, this is intentional here.
+                Thread.Sleep(TimeSpan.FromMinutes(1));
+#pragma warning restore DURABLE0003
+
                 // we expect the code to never reach this statement, it should time out.
                 // we throw just in case the code does not time out. This should fail the test
                 throw new Exception("this should never be reached");
             }
-            else {
+            else
+            {
                 // if it's not the first replay, delete the evidence file and return
-                System.IO.File.Delete(evidenceFile);
+                File.Delete(evidenceFile);
                 return Task.CompletedTask;
             }
         }

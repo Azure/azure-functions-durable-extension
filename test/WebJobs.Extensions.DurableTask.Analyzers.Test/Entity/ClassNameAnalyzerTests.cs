@@ -112,7 +112,7 @@ namespace VSSample
                             new DiagnosticResultLocation("Test0.cs", 11, 23)
                      }
             };
-            
+
             VerifyCSharpDiagnostic(test, expectedResults);
         }
 

@@ -70,7 +70,7 @@ namespace VSSample
                             new DiagnosticResultLocation("Test0.cs", 13, 29)
                      }
             };
-            
+
             VerifyCSharpDiagnostic(test, expectedDiagnostics);
 
             VerifyCSharpFix(test, ExpectedFix);
@@ -107,7 +107,7 @@ namespace VSSample
                             new DiagnosticResultLocation("Test0.cs", 13, 29)
                      }
             };
-            
+
             VerifyCSharpDiagnostic(test, expectedDiagnostics);
 
             VerifyCSharpFix(test, ExpectedFix);

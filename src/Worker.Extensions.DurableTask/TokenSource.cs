@@ -26,4 +26,4 @@ public abstract class TokenSource
     /// </summary>
     [JsonPropertyName("resource")]
     public string Resource { get; }
-} 
+}

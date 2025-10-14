@@ -1,13 +1,13 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
-using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 {
@@ -77,7 +77,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
                     this.semanticModel = methodInformation.SemanticModel;
 
-                    foreach(var invocation in invocationExpressions)
+                    foreach (var invocation in invocationExpressions)
                     {
                         if (IsActivityInvocation(invocation))
                         {

@@ -5,7 +5,6 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
-using Xunit.Abstractions;
 
 
 namespace Microsoft.Azure.Durable.Tests.DotnetIsolatedE2E;

@@ -61,7 +61,7 @@ public class HttpFeatureTests
     [Trait("Node", "Skip")] // Managed identity HTTP calls not supported in Node
     [Trait("Java", "Skip")] // Managed identity HTTP calls not supported in Java
     public async Task HttpCallWithTokenSourceTest()
-    {   
+    {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=HttpWithTokenSourceOrchestrator");
 
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);

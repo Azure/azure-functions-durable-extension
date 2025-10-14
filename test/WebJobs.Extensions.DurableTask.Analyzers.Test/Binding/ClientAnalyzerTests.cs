@@ -170,7 +170,7 @@ namespace VSSample
             SyntaxNodeUtils.version = DurableVersion.V1;
 
             VerifyCSharpDiagnostic(test, expectedDiagnostics);
-            
+
             VerifyCSharpFix(test, V1ExpectedFix, allowNewCompilerDiagnostics: true);
         }
 

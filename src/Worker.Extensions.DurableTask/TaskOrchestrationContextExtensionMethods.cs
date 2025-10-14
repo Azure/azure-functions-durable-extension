@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
@@ -38,8 +37,8 @@ public static class TaskOrchestrationContextExtensionMethods
         ILogger logger = context.CreateReplaySafeLogger("Microsoft.Azure.Functions.Worker.Extensions.DurableTask.CallHttp");
 
         DurableHttpResponse response = await context.CallActivityAsync<DurableHttpResponse>(Constants.HttpTaskActivityReservedName, request);
-        
-        while (response.StatusCode == HttpStatusCode.Accepted && request.AsynchronousPatternEnabled )
+
+        while (response.StatusCode == HttpStatusCode.Accepted && request.AsynchronousPatternEnabled)
         {
             // If Headers is null or missing, we can't poll the Location URL, so return the response.
             if (response.Headers is null)
@@ -54,22 +53,28 @@ public static class TaskOrchestrationContextExtensionMethods
 
             DateTime fireAt = default(DateTime);
 
-            if (headersDictionary.TryGetValue("Retry-After", out StringValues retryAfter))
+            if (headersDictionary.TryGetValue("Retry-After", out StringValues retryAfterStr) && int.TryParse(retryAfterStr, out int retryAfter))
             {
-                fireAt = context.CurrentUtcDateTime.AddSeconds(int.Parse(retryAfter));
+                fireAt = context.CurrentUtcDateTime.AddSeconds(retryAfter);
             }
             else
             {
                 // Gets configuration DefaultAsyncRequestSleepTimeMilliseconds from DurableTaskExtension.
                 // If no value is provided, then use the default 30000 milliseconds.
                 int asyncRequestSleepTimeMilliseconds = context.Properties.TryGetValue(PollingInterval, out var value) && value is double d
-                                                                ? (int)d: DefaultPollingIntervalMilliseconds;
+                                                                ? (int)d : DefaultPollingIntervalMilliseconds;
                 fireAt = context.CurrentUtcDateTime.AddMilliseconds(asyncRequestSleepTimeMilliseconds);
             }
 
             await context.CreateTimer(fireAt, CancellationToken.None);
 
-            string locationUrl = response.Headers!["Location"];
+            string? locationUrl = response.Headers["Location"];
+
+            if (locationUrl is null)
+            {
+                logger.LogWarning("HTTP response is missing 'Location' header; unable to poll for status.");
+                break;
+            }
 
             DurableHttpRequest newHttpRequest = CreateLocationPollRequest(request, locationUrl);
 
@@ -111,7 +116,7 @@ public static class TaskOrchestrationContextExtensionMethods
     /// <param name="asynchronousPatternEnabled">Boolean controls Whether Durable HTTP should automatically handle async HTTP patterns like 202 with polling. Default to false. </param>
     /// <returns>A <see cref="Task{DurableHttpResponse}"/>Result of the HTTP call.</returns>
     public static Task<DurableHttpResponse> CallHttpAsync(
-        this TaskOrchestrationContext context, 
+        this TaskOrchestrationContext context,
         HttpMethod method,
         Uri uri,
         string? content = null,
@@ -151,7 +156,7 @@ public static class TaskOrchestrationContextExtensionMethods
         TimeSpan? timeout = null)
     {
         DurableHttpRequest request = new DurableHttpRequest(method, uri)
-        { 
+        {
             Content = content,
             HttpRetryOptions = retryOptions,
             AsynchronousPatternEnabled = asynchronousPatternEnabled,

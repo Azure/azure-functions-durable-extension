@@ -29,7 +29,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
             if (!SyntaxNodeUtils.IsInStaticClass(method))
             {
-                if(TryGetInjectedVariables(method, out List<SyntaxNode> injectedVariables))
+                if (TryGetInjectedVariables(method, out List<SyntaxNode> injectedVariables))
                 {
                     var methodVariablesUsed = method.DescendantNodes().Where(x => x.IsKind(SyntaxKind.IdentifierName));
 

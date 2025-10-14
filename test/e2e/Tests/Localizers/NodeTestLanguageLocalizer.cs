@@ -31,6 +31,6 @@ internal class NodeTestLanguageLocalizer : ITestLanguageLocalizer
 
     public string GetLocalizedStringValue(string key, params object[] args)
     {
-        return String.Format(this.nodeLocalizedStrings.GetValueOrDefault(key, ""), args:args);
+        return String.Format(this.nodeLocalizedStrings.GetValueOrDefault(key, ""), args: args);
     }
 }

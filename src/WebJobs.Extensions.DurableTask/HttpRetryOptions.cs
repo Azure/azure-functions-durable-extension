@@ -104,11 +104,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         internal RetryOptions GetRetryOptions()
         {
             return new RetryOptions(this.FirstRetryInterval, this.MaxNumberOfAttempts)
-                {
-                    BackoffCoefficient = this.BackoffCoefficient,
-                    MaxRetryInterval = this.MaxRetryInterval,
-                    RetryTimeout = this.RetryTimeout,
-                };
+            {
+                BackoffCoefficient = this.BackoffCoefficient,
+                MaxRetryInterval = this.MaxRetryInterval,
+                RetryTimeout = this.RetryTimeout,
+            };
         }
     }
 }

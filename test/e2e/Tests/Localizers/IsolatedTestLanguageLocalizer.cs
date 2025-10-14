@@ -33,6 +33,6 @@ internal class IsolatedTestLanguageLocalizer : ITestLanguageLocalizer
 
     public string GetLocalizedStringValue(string key, params object[] args)
     {
-        return String.Format(this.isolatedLocalizedStrings.GetValueOrDefault(key, ""), args:args);
+        return String.Format(this.isolatedLocalizedStrings.GetValueOrDefault(key, ""), args: args);
     }
 }

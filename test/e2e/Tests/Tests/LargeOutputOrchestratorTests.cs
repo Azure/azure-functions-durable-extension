@@ -34,7 +34,7 @@ public class LargeOutputOrchestratorTests
         string largeOutput = GenerateLargeString(sizeInKB);
 
         var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
-        
+
         // Verify that large orchestrator outputs stored in blob storage are correctly returned via statusQueryGetUri
         Assert.Contains(largeOutput, orchestrationDetails.Output);
     }

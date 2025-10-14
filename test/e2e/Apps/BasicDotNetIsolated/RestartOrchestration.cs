@@ -1,13 +1,12 @@
 // Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
-using Grpc.Core;
+using System.Net;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.DurableTask;
 using Microsoft.DurableTask.Client;
 using Microsoft.Extensions.Logging;
-using System.Net;
 
 namespace Microsoft.Azure.Durable.Tests.E2E;
 
@@ -70,7 +69,7 @@ public static class RestartOrchestration
             return req.CreateResponse(HttpStatusCode.BadRequest);
         }
         string newInstanceId = await client.RestartAsync(data.InstanceId, data.RestartWithNewInstanceId);
-        
+
         return await client.CreateCheckStatusResponseAsync(req, newInstanceId);
     }
 
@@ -101,7 +100,7 @@ public static class RestartOrchestration
             response.Headers.Add("Content-Type", "application/json");
 
             string message = ex.Message;
-            
+
             await response.WriteStringAsync(message);
             return response;
         }

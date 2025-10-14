@@ -2,7 +2,6 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs;
@@ -119,7 +118,7 @@ namespace TimeoutTests
             context.SignalEntity(entityId, "Go", 70);
             context.SignalEntity(entityId, "Go", 0);
 
-            int result = await context.CallEntityAsync<int>(entityId, "Go", 0); 
+            int result = await context.CallEntityAsync<int>(entityId, "Go", 0);
 
             if (result == 3)
             {
@@ -154,7 +153,7 @@ namespace TimeoutTests
             {
                 System.Threading.Thread.Sleep(seconds * 1000);
             }
-           
+
             return this.Count;
         }
 

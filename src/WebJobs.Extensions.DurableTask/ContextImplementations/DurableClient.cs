@@ -746,7 +746,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     EntityStatus status = this.messageDataConverter.Deserialize<EntityStatus>(state.CustomStatus.ToString());
                     if (releaseOrphanedLocks && status.LockedBy != null)
                     {
-                         tasks.Add(CheckForOrphanedLockAndFixIt(state, status.LockedBy));
+                        tasks.Add(CheckForOrphanedLockAndFixIt(state, status.LockedBy));
                     }
 
                     if (removeEmptyEntities)

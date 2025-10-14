@@ -16,7 +16,7 @@ public static class OrchestrationQueryFunctions
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestData req,
         [DurableClient] DurableTaskClient client)
     {
-        try 
+        try
         {
             var instances = client.GetAllInstancesAsync();
 
@@ -24,7 +24,7 @@ public static class OrchestrationQueryFunctions
             await response.WriteAsJsonAsync(instances);
             return response;
         }
-        catch (RpcException ex) 
+        catch (RpcException ex)
         {
             var response = req.CreateResponse(HttpStatusCode.BadRequest);
             response.Headers.Add("Content-Type", "text/plain");
@@ -38,12 +38,12 @@ public static class OrchestrationQueryFunctions
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestData req,
         [DurableClient] DurableTaskClient client)
     {
-        try 
+        try
         {
-            OrchestrationQuery filter = new OrchestrationQuery(Statuses: new List<OrchestrationRuntimeStatus> { 
-                OrchestrationRuntimeStatus.Running, 
-                OrchestrationRuntimeStatus.Pending, 
-                OrchestrationRuntimeStatus.Suspended 
+            OrchestrationQuery filter = new OrchestrationQuery(Statuses: new List<OrchestrationRuntimeStatus> {
+                OrchestrationRuntimeStatus.Running,
+                OrchestrationRuntimeStatus.Pending,
+                OrchestrationRuntimeStatus.Suspended
             });
             var instances = client.GetAllInstancesAsync(filter);
 
@@ -51,7 +51,7 @@ public static class OrchestrationQueryFunctions
             await response.WriteAsJsonAsync(instances);
             return response;
         }
-        catch (RpcException ex) 
+        catch (RpcException ex)
         {
             var response = req.CreateResponse(HttpStatusCode.BadRequest);
             response.Headers.Add("Content-Type", "text/plain");
