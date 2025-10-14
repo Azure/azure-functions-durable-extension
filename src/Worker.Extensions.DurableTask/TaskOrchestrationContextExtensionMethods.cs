@@ -69,7 +69,7 @@ public static class TaskOrchestrationContextExtensionMethods
 
             await context.CreateTimer(fireAt, CancellationToken.None);
 
-            string? locationUrl = response.Headers!["Location"];
+            string? locationUrl = response.Headers["Location"];
 
             if (locationUrl is null)
             {
