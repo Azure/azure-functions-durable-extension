@@ -35,16 +35,26 @@ internal class MyInjectedService { }
 // Custom exception properties provider for testing
 public class TestExceptionPropertiesProvider : IExceptionPropertiesProvider
 {
-    public IDictionary<string, object>? GetExceptionProperties(Exception exception)
+    public IDictionary<string, object?>? GetExceptionProperties(Exception exception)
     {
         return exception switch
         {
-            ArgumentOutOfRangeException e => new Dictionary<string, object>
+            ArgumentOutOfRangeException e => new Dictionary<string, object?>
             {
                 ["Name"] = e.ParamName ?? string.Empty,
                 ["Value"] = e.ActualValue ?? string.Empty,
             },
+            Microsoft.Azure.Durable.Tests.E2E.BusinessValidationException e => new Dictionary<string, object?>
+            {
+                ["StringProperty"] = e.StringProperty,
+                ["IntProperty"] = e.IntProperty,
+                ["LongProperty"] = e.LongProperty,
+                ["DateTimeProperty"] = e.DateTimeProperty,
+                ["DictionaryProperty"] = e.DictionaryProperty,
+                ["ListProperty"] = e.ListProperty,
+                ["NullProperty"] = e.NullProperty,
+            },
             _ => null // No custom properties for other exceptions
         };
-    }
+     }
 }

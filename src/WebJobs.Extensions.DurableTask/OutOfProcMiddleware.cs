@@ -640,7 +640,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     }
 
                     // Try to extract properties from the serialized exception JSON
-                    IDictionary<string, object?>? properties = TryExtractPropertiesFromExceptionJson(exception);
+                    IDictionary<string, object?>? properties = ExtractPropertiesFromExceptionJson(exception);
 
                     if (TrySplitExceptionTypeFromMessage(exception, out string? exceptionType, out string? exceptionMessage))
                     {
@@ -686,7 +686,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 properties);
         }
 
-        static object? ConvertValueToObject(Google.Protobuf.WellKnownTypes.Value value)
+        private static object? ConvertValueToObject(Google.Protobuf.WellKnownTypes.Value value)
         {
             switch (value.KindCase)
             {
@@ -773,8 +773,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return true;
         }
 
-		// Parse a serialized TaskFailureDetails JSON payload embedded in an exception message.
-		private static bool TryExtractSerializedFailureDetailsFromException(string exception, out FailureDetails? details)
+        // Parse a serialized TaskFailureDetails JSON payload embedded in an exception message.
+        private static bool TryExtractSerializedFailureDetailsFromException(string exception, out FailureDetails? details)
         {
             try
             {
@@ -787,7 +787,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 int newlineIndex = exception.IndexOf('\n');
                 string serializedMessage = newlineIndex < 0 ? exception : exception.Substring(0, newlineIndex).Trim();
 
-				// Manually parse JSON so Properties become native .NET types,
+                // Manually parse JSON so Properties become native .NET types,
                 // This can avoid properties not to be deserialized as protobuf structs.
                 JsonNode? rootNode = JsonNode.Parse(serializedMessage);
                 if (rootNode is JsonObject rootObj)
@@ -799,7 +799,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     }
                 }
 
-                // Fallback : simple deserialization. 
+                // Fallback : simple deserialization.
                 P.TaskFailureDetails? taskFailureDetails = JsonConvert.DeserializeObject<P.TaskFailureDetails>(serializedMessage);
                 if (taskFailureDetails != null)
                 {
@@ -816,9 +816,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return false;
         }
 
-		// Reconstruct a FailureDetails instance from the worker's JSON payload,
-		// recursively converting Properties to native .NET types.
-		private static FailureDetails? BuildFailureDetailsFromJson(JsonObject obj)
+        // Reconstruct a FailureDetails instance from the worker's JSON payload,
+        // recursively converting Properties to native .NET types.
+        private static FailureDetails? BuildFailureDetailsFromJson(JsonObject obj)
         {
             string errorType = obj["ErrorType"]?.GetValue<string>() ?? string.Empty;
             string errorMessage = obj["ErrorMessage"]?.GetValue<string>() ?? string.Empty;
@@ -832,9 +832,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 properties = new Dictionary<string, object?>();
                 foreach (var kvp in props)
                 {
-                    if (kvp.Value is JsonObject valueNode)
+                    if (kvp.Value is JsonObject value)
                     {
-                        properties[kvp.Key] = ExtractValue(valueNode);
+                        properties[kvp.Key] = ExtractValue(value);
                     }
                 }
             }
@@ -849,7 +849,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return new FailureDetails(errorType, errorMessage, stackTrace, inner, isNonRetriable, properties);
         }
 
-        public static IDictionary<string, object?> TryExtractPropertiesFromExceptionJson(string json)
+        public static IDictionary<string, object?> ExtractPropertiesFromExceptionJson(string json)
         {
             var result = new Dictionary<string, object?>();
             var root = JsonNode.Parse(json)?["Properties"]?.AsObject();
@@ -860,115 +860,111 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             foreach (var kvp in root)
             {
-                var valueNode = kvp.Value?.AsObject();
-                if (valueNode == null)
+                var value = kvp.Value?.AsObject();
+                if (value == null)
                 {
                     continue;
                 }
 
-                result[kvp.Key] = ExtractValue(valueNode);
+                result[kvp.Key] = ExtractValue(value);
             }
 
             return result;
         }
 
-		// Convert a JSON representation of Google.Protobuf.WellKnownTypes.Value into a native .NET value.
-		// Handles: null, bool, number (returned as double), string (with dt:/dto: or ISO-8601 DateTime parsing),
-		// StructValue -> Dictionary<string, object?>, ListValue -> List<object?>.
-		private static object? ExtractValue(JsonObject valueNode)
+        // Convert a JSON representation of Google.Protobuf.WellKnownTypes.Value into a native .NET value.
+        // Handles: null, bool, number (returned as double), string (with dt:/dto: or ISO-8601 DateTime parsing),
+        // StructValue -> Dictionary<string, object?>, ListValue -> List<object?>.
+        private static object? ExtractValue(JsonObject value)
         {
             // Look at KindCase to determine which field is active
-			if (valueNode.TryGetPropertyValue("HasStringValue", out var hasStr)
-				&& hasStr?.GetValue<bool>() == true)
-			{
-				string? s = valueNode["StringValue"]?.GetValue<string>();
-				if (s is null)
-				{
-					return null;
-				}
-
-				// Try dt:/dto: prefixes first
-				if (s.StartsWith("dt:", StringComparison.Ordinal))
-				{
-					if (DateTime.TryParse(s[3..], CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out DateTime dtPref))
-					{
-						return dtPref;
-					}
-				}
-				if (s.StartsWith("dto:", StringComparison.Ordinal))
-				{
-					if (DateTimeOffset.TryParse(s[4..], CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out DateTimeOffset dtoPref))
-					{
-						return dtoPref;
-					}
-				}
-
-				return s;
-			}
-
-			if (valueNode.TryGetPropertyValue("HasNumberValue", out var hasNum)
-				&& hasNum?.GetValue<bool>() == true)
-			{
-				return valueNode["NumberValue"]?.GetValue<double>();
-			}
-
-            if (valueNode.TryGetPropertyValue("HasBoolValue", out var hasBool)
-                && hasBool?.GetValue<bool>() == true)
+            if (value.TryGetPropertyValue("HasStringValue", out var hasStringValue) && hasStringValue?.GetValue<bool>() == true)
             {
-                return valueNode["BoolValue"]?.GetValue<bool>();
+                string? s = value["StringValue"]?.GetValue<string>();
+                if (s is null)
+                {
+                    return null;
+                }
+
+                if (s.StartsWith("dt:", StringComparison.Ordinal))
+                {
+                    if (DateTime.TryParse(s[3..], CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out DateTime dtPref))
+                    {
+                        return dtPref;
+                    }
+                }
+
+                if (s.StartsWith("dto:", StringComparison.Ordinal))
+                {
+                    if (DateTimeOffset.TryParse(s[4..], CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out DateTimeOffset dtoPref))
+                    {
+                        return dtoPref;
+                    }
+                }
+
+                return s;
             }
 
-            if (valueNode.TryGetPropertyValue("HasNullValue", out var hasNull)
-                && hasNull?.GetValue<bool>() == true)
+            if (value.TryGetPropertyValue("HasNumberValue", out var hasNumValue) && hasNumValue?.GetValue<bool>() == true)
+            {
+                return value["NumberValue"]?.GetValue<double>();
+            }
+
+            if (value.TryGetPropertyValue("HasBoolValue", out var hasBoolValue) && hasBoolValue?.GetValue<bool>() == true)
+            {
+                return value["BoolValue"]?.GetValue<bool>();
+            }
+
+            if (value.TryGetPropertyValue("HasNullValue", out var hasNullValue) && hasNullValue?.GetValue<bool>() == true)
             {
                 return null;
             }
 
-			// StructValue: { "Fields": { key: {Value}, ... } }
-			if (valueNode["StructValue"] is JsonObject structObj)
-			{
-				var fieldsObj = structObj["Fields"] as JsonObject;
-				if (fieldsObj == null)
-				{
-					return new Dictionary<string, object?>();
-				}
+            // StructValue: { "Fields": { key: {Value}, ... } }
+            if (value["StructValue"] is JsonObject structObj)
+            {
+                var fields = structObj["Fields"] as JsonObject;
+                if (fields == null)
+                {
+                    return new Dictionary<string, object?>();
+                }
 
-				var dict = new Dictionary<string, object?>();
-				foreach (var field in fieldsObj)
-				{
-					if (field.Value is JsonObject fieldValueObj)
-					{
-						dict[field.Key] = ExtractValue(fieldValueObj);
-					}
-				}
+                var dict = new Dictionary<string, object?>();
+                foreach (var field in fields)
+                {
+                    if (field.Value is JsonObject fieldValueObj)
+                    {
+                        dict[field.Key] = ExtractValue(fieldValueObj);
+                    }
+                }
 
-				return dict;
-			}
+                return dict;
+            }
 
-			// ListValue: { "Values": [ {Value}, {Value}, ... ] }
-			if (valueNode["ListValue"] is JsonObject listObj)
-			{
-				var valuesArr = listObj["Values"] as JsonArray;
-				if (valuesArr == null)
-				{
-					return new List<object?>();
-				}
+            // ListValue: { "Values": [ {Value}, {Value}, ... ] }
+            if (value["ListValue"] is JsonObject listObj)
+            {
+                var values = listObj["Values"] as JsonArray;
+                if (values == null)
+                {
+                    return new List<object?>();
+                }
 
-				var list = new List<object?>();
-				foreach (var element in valuesArr)
-				{
-					if (element is JsonObject elementObj)
-					{
-						list.Add(ExtractValue(elementObj));
-					}
-					else
-					{
-						list.Add(null);
-					}
-				}
+                var list = new List<object?>();
+                foreach (var element in values)
+                {
+                    if (element is JsonObject jsonObject)
+                    {
+                        list.Add(ExtractValue(jsonObject));
+                    }
+                    else
+                    {
+                        list.Add(null);
+                    }
+                }
 
-				return list;
-			}
+                return list;
+            }
 
             return null;
         }

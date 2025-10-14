@@ -665,7 +665,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return map;
         }
 
-        static Value ConvertObjectToValue(object? obj)
+        private static Value ConvertObjectToValue(object? obj)
         {
             return obj switch
             {
@@ -700,7 +700,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             };
         }
 
-        static Value ConvertJValueToValue(JValue jv)
+        private static Value ConvertJValueToValue(JValue jv)
         {
             return jv.Type switch
             {
@@ -714,7 +714,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             };
         }
 
-        static object? ConvertValueToObject(Google.Protobuf.WellKnownTypes.Value value)
+        private static object? ConvertValueToObject(Google.Protobuf.WellKnownTypes.Value value)
         {
             switch (value.KindCase)
             {
