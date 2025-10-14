@@ -2,18 +2,26 @@
 <RunSettings>
     <RunConfiguration>
         <EnvironmentVariables>
+            <!-- DO NOT COMMIT CHANGES TO THIS FILE -->
+
             <!-- Uncomment these environment variables if you want to run tests against MSSQL -->
             <!-- Ensure the password in MSSQL_SA_PASSWORD is the same one you configured your MSSQL Docker container with -->
-            <!-- Do not commit changes to this file. -->
             <!--
             <MSSQL_SA_PASSWORD>{{YourPasswordHere}}</MSSQL_SA_PASSWORD>
             <E2E_TEST_DURABLE_BACKEND>MSSQL</E2E_TEST_DURABLE_BACKEND>
             -->
+
             <!-- Uncomment the following environment variables if you want to run test against azureManaged(DTS)
             <E2E_TEST_DURABLE_BACKEND>azureManaged</E2E_TEST_DURABLE_BACKEND>-->
+
+            <!-- Comment this line if running against a non-AzureStorage backend-->
             <E2E_TEST_DURABLE_BACKEND>AzureStorage</E2E_TEST_DURABLE_BACKEND>
+
+            <!-- Valid E2E_TEST_FUNCTIONS_LANGUAGE settings: dotnet-isolated, powershell, python, node, java-->
             <E2E_TEST_FUNCTIONS_LANGUAGE>dotnet-isolated</E2E_TEST_FUNCTIONS_LANGUAGE>
+            <!-- Use the folder name in /test/e2e/apps that corresponds to the language selected above -->
             <TEST_APP_NAME>BasicDotNetIsolated</TEST_APP_NAME>
+
         </EnvironmentVariables>
     </RunConfiguration>
 </RunSettings>
