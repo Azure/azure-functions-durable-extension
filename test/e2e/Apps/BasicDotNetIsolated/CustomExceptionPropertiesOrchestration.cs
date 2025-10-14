@@ -16,7 +16,7 @@ public class CustomExceptionPropertiesOrchestration
         // Call the activity that will throw an exception
         try
         {
-            await context.CallActivityAsync(nameof(BusinessActivity));
+            await context.CallActivityAsync(nameof(BusinessActivity), input:null, options: null);
         }
         catch (TaskFailedException ex)
         {
