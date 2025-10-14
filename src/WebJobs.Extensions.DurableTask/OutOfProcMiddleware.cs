@@ -176,8 +176,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 // - a timeout
                 // - an out of memory exception
                 // - a worker process exit
-                if (this.IsPlatformLevelError(functionResult))
-                { 
+                if (functionResult.Exception != null && this.IsPlatformLevelError(functionResult))
+                {
                     throw functionResult.Exception;
                 }
             }
@@ -432,7 +432,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.HostLifetimeService.OnStopping.ThrowIfCancellationRequested();
                 }
 
-                if (this.IsPlatformLevelError(functionResult))
+                if (functionResult.Exception != null && this.IsPlatformLevelError(functionResult))
                 {
                     throw functionResult.Exception;
                 }
@@ -479,7 +479,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         errorType: "FunctionInvocationFailed",
                         errorMessage: $"Invocation of function '{functionName}' failed with an exception.",
                         stackTrace: null,
-                        innerFailure: new FailureDetails(functionResult.Exception),
+                        innerFailure: functionResult.Exception != null ? new FailureDetails(functionResult.Exception) : null,
                         isNonRetriable: true));
                 }
 
@@ -581,7 +581,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.HostLifetimeService.OnStopping.ThrowIfCancellationRequested();
                 }
 
-                if (this.IsPlatformLevelError(result))
+                if (result.Exception != null && this.IsPlatformLevelError(result))
                 {
                     throw result.Exception;
                 }
@@ -636,7 +636,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     isReplay: false,
                     scheduledEvent.EventId);
 
-                bool detailsParsedFromSerializedException;
+                bool detailsParsedFromSerializedException = false;
 
                 activityResult = new ActivityExecutionResult
                 {
@@ -645,7 +645,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         taskScheduledId: scheduledEvent.EventId,
                         reason: $"Function '{functionName}' failed with an unhandled exception.",
                         details: null,
-                        GetFailureDetails(result.Exception, out detailsParsedFromSerializedException)),
+                        result.Exception != null ? GetFailureDetails(result.Exception, out detailsParsedFromSerializedException) : null),
                 };
 
                 if (!detailsParsedFromSerializedException && this.extension.PlatformInformationService.GetWorkerRuntimeType() == WorkerRuntimeType.DotNetIsolated)
