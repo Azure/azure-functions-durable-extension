@@ -72,7 +72,6 @@ public static class CounterTest
             httpResponse.WriteString($"Request body must contain an integer that indicates the number of signals to send.\n");
             return httpResponse;
         }
-        ;
 
         var entityId = new EntityInstanceId("Counter", id);
         logger.LogInformation($"Sending {count} increment messages to {entityId}...");

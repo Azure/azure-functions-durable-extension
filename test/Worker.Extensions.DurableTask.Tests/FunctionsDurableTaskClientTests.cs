@@ -160,7 +160,6 @@ namespace Microsoft.Azure.Functions.Worker.Tests
             {
                 response = await client.WaitForCompletionOrCreateCheckStatusResponseAsync(request, instanceId, cancellation: cts.Token);
             }
-            ;
 
             Assert.NotNull(response);
             Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
