@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
-using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using DurableTask.Core.Entities;
@@ -16,6 +15,7 @@ using DurableTask.Core.History;
 using DurableTask.Core.Middleware;
 using Microsoft.Azure.WebJobs.Host.Executors;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using P = Microsoft.DurableTask.Protobuf;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
@@ -789,22 +789,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 // Manually parse JSON so Properties become native .NET types,
                 // This can avoid properties not to be deserialized as protobuf structs.
-                JsonNode? rootNode = JsonNode.Parse(serializedMessage);
-                if (rootNode is JsonObject rootObj)
+                try
                 {
-                    details = BuildFailureDetailsFromJson(rootObj);
-                    if (details != null)
+                    JObject? jsonObj = JObject.Parse(serializedMessage);
+                    if (jsonObj != null)
                     {
-                        return true;
+                        details = BuildFailureDetailsFromJson(jsonObj);
+                        if (details != null)
+                        {
+                            return true;
+                        }
                     }
                 }
-
-                // Fallback : simple deserialization.
-                P.TaskFailureDetails? taskFailureDetails = JsonConvert.DeserializeObject<P.TaskFailureDetails>(serializedMessage);
-                if (taskFailureDetails != null)
+                catch (JsonReaderException)
                 {
-                    details = GetFailureDetails(taskFailureDetails);
-                    return true;
+                    // Fallback : simple deserialization.
+                    P.TaskFailureDetails? taskFailureDetails = JsonConvert.DeserializeObject<P.TaskFailureDetails>(serializedMessage);
+                    if (taskFailureDetails != null)
+                    {
+                        details = GetFailureDetails(taskFailureDetails);
+                        return true;
+                    }
                 }
             }
             catch (Exception)
@@ -818,21 +823,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         // Reconstruct a FailureDetails instance from the worker's JSON payload,
         // recursively converting Properties to native .NET types.
-        private static FailureDetails? BuildFailureDetailsFromJson(JsonObject obj)
+        private static FailureDetails? BuildFailureDetailsFromJson(JObject obj)
         {
-            string errorType = obj["ErrorType"]?.GetValue<string>() ?? string.Empty;
-            string errorMessage = obj["ErrorMessage"]?.GetValue<string>() ?? string.Empty;
-            string? stackTrace = obj["StackTrace"]?.GetValue<string>();
-            bool isNonRetriable = obj["IsNonRetriable"]?.GetValue<bool>() ?? false;
+            string errorType = obj["ErrorType"]?.Value<string>() ?? string.Empty;
+            string errorMessage = obj["ErrorMessage"]?.Value<string>() ?? string.Empty;
+            string? stackTrace = obj["StackTrace"]?.Value<string>();
+            bool isNonRetriable = obj["IsNonRetriable"]?.Value<bool>() ?? false;
 
             // Build Properties.
             IDictionary<string, object?>? properties = null;
-            if (obj["Properties"] is JsonObject props)
+            if (obj["Properties"] is JObject props)
             {
                 properties = new Dictionary<string, object?>();
                 foreach (var kvp in props)
                 {
-                    if (kvp.Value is JsonObject value)
+                    if (kvp.Value is JObject value)
                     {
                         properties[kvp.Key] = ExtractValue(value);
                     }
@@ -841,7 +846,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             // Parse innder failure details recurtively.
             FailureDetails? inner = null;
-            if (obj["InnerFailure"] is JsonObject innerObj)
+            if (obj["InnerFailure"] is JObject innerObj)
             {
                 inner = BuildFailureDetailsFromJson(innerObj);
             }
@@ -849,21 +854,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return new FailureDetails(errorType, errorMessage, stackTrace, inner, isNonRetriable, properties);
         }
 
-        public static IDictionary<string, object?> ExtractPropertiesFromExceptionJson(string json)
+        public static IDictionary<string, object?>? ExtractPropertiesFromExceptionJson(string json)
         {
             var result = new Dictionary<string, object?>();
 
             try
             {
-                var root = JsonNode.Parse(json)?["Properties"]?.AsObject();
-                if (root == null)
+                JObject? rootNode = JObject.Parse(json);
+                if (rootNode is not JObject rootObj)
                 {
-                    return result;
+                    return null; // Root is not a JSON object
                 }
 
-                foreach (var kvp in root)
+                JObject? propertiesNode = rootObj["Properties"] as JObject;
+                if (propertiesNode == null)
                 {
-                    var value = kvp.Value?.AsObject();
+                    return null; // "Properties" section missing or not an object
+                }
+
+                foreach (var kvp in propertiesNode)
+                {
+                    var value = kvp.Value as JObject;
                     if (value == null)
                     {
                         continue;
@@ -872,12 +883,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     result[kvp.Key] = ExtractValue(value);
                 }
             }
-            catch (JsonException)
+            catch (JsonReaderException)
             {
-                // If the exception string is not valid JSON (e.g., Java's toString() output),
-                // just return an empty properties dictionary
-                // We will go back here later for support including exception properties at Java.
-                return result;
+                // Invalid JSON format
+                return null;
+            }
+            catch (Exception)
+            {
+                return null;
             }
 
             return result;
@@ -886,12 +899,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         // Convert a JSON representation of Google.Protobuf.WellKnownTypes.Value into a native .NET value.
         // Handles: null, bool, number (returned as double), string (with dt:/dto: or ISO-8601 DateTime parsing),
         // StructValue -> Dictionary<string, object?>, ListValue -> List<object?>.
-        private static object? ExtractValue(JsonObject value)
+        private static object? ExtractValue(JObject value)
         {
             // Look at KindCase to determine which field is active
-            if (value.TryGetPropertyValue("HasStringValue", out var hasStringValue) && hasStringValue?.GetValue<bool>() == true)
+            if (value.TryGetValue("HasStringValue", out JToken? hasStringValue) && hasStringValue?.Value<bool>() == true)
             {
-                string? s = value["StringValue"]?.GetValue<string>();
+                string? s = value["StringValue"]?.Value<string>();
                 if (s is null)
                 {
                     return null;
@@ -916,25 +929,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return s;
             }
 
-            if (value.TryGetPropertyValue("HasNumberValue", out var hasNumValue) && hasNumValue?.GetValue<bool>() == true)
+            if (value.TryGetValue("HasNumberValue", out var hasNumValue) && hasNumValue?.Value<bool>() == true)
             {
-                return value["NumberValue"]?.GetValue<double>();
+                return value["NumberValue"]?.Value<double>();
             }
 
-            if (value.TryGetPropertyValue("HasBoolValue", out var hasBoolValue) && hasBoolValue?.GetValue<bool>() == true)
+            if (value.TryGetValue("HasBoolValue", out var hasBoolValue) && hasBoolValue?.Value<bool>() == true)
             {
-                return value["BoolValue"]?.GetValue<bool>();
+                return value["BoolValue"]?.Value<bool>();
             }
 
-            if (value.TryGetPropertyValue("HasNullValue", out var hasNullValue) && hasNullValue?.GetValue<bool>() == true)
+            if (value.TryGetValue("HasNullValue", out var hasNullValue) && hasNullValue?.Value<bool>() == true)
             {
                 return null;
             }
 
             // StructValue: { "Fields": { key: {Value}, ... } }
-            if (value["StructValue"] is JsonObject structObj)
+            if (value["StructValue"] is JObject structObj)
             {
-                var fields = structObj["Fields"] as JsonObject;
+                var fields = structObj["Fields"] as JObject;
                 if (fields == null)
                 {
                     return new Dictionary<string, object?>();
@@ -943,7 +956,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 var dict = new Dictionary<string, object?>();
                 foreach (var field in fields)
                 {
-                    if (field.Value is JsonObject fieldValueObj)
+                    if (field.Value is JObject fieldValueObj)
                     {
                         dict[field.Key] = ExtractValue(fieldValueObj);
                     }
@@ -953,9 +966,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             // ListValue: { "Values": [ {Value}, {Value}, ... ] }
-            if (value["ListValue"] is JsonObject listObj)
+            if (value["ListValue"] is JObject listObj)
             {
-                var values = listObj["Values"] as JsonArray;
+                var values = listObj["Values"] as JArray;
                 if (values == null)
                 {
                     return new List<object?>();
@@ -964,9 +977,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 var list = new List<object?>();
                 foreach (var element in values)
                 {
-                    if (element is JsonObject jsonObject)
+                    if (element is JObject jObject)
                     {
-                        list.Add(ExtractValue(jsonObject));
+                        list.Add(ExtractValue(jObject));
                     }
                     else
                     {
