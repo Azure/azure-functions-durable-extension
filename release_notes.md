@@ -14,7 +14,7 @@
 
 ### New Features
 
-- Initialize linux logging in Managed Environment (Azure Container Apps) scenarios. Emit MS_DURABLE_FUNCTION_EVENTS_LOGS in these environments.
+- Allow overriding orchestration version when starting orchestrations via APIs in PowerShell, Python, and Node.js (https://github.com/Azure/azure-functions-durable-extension/pull/3213)
 
 ### Bug Fixes
 
