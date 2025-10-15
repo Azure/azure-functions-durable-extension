@@ -16,7 +16,9 @@ public class CustomExceptionPropertiesOrchestration
         // Call the activity that will throw an exception
         try
         {
-            await context.CallActivityAsync(nameof(BusinessActivity), input:null, options: null);
+#pragma warning disable DURABLE2001 // Incorrect input type
+            await context.CallActivityAsync(nameof(BusinessActivity));
+#pragma warning restore DURABLE2001
         }
         catch (TaskFailedException ex)
         {

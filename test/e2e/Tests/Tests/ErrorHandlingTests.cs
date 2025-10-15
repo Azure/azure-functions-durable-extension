@@ -229,7 +229,7 @@ public class ErrorHandlingTests
     [Trait("Python", "Skip")] // FailureDetails is a dotnet-isolated implementation detail
     [Trait("Node", "Skip")] // FailureDetails is a dotnet-isolated implementation detail
     [Trait("Java", "Skip")] // Include exception properties at Failure Details for Java is not supported yet.
-    [Trait("DTS", "Skip")] // DTS hasn't suppor this feature yet.
+    [Trait("DTS", "Skip")] // DTS doesn't support this feature yet.
     public async Task CustomExceptionPropertiesInFailureDetails()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("CustomExceptionProperties_HttpStart");
