@@ -227,6 +227,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         Input = resumedEvent.Reason,
                     };
                     break;
+                case EventType.ExecutionRewound:
+                    payload.ExecutionRewound = new P.ExecutionRewoundEvent();
+                    break;
                 default:
                     throw new NotSupportedException($"Found unsupported history event '{e.EventType}'.");
             }
