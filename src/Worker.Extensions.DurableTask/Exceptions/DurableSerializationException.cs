@@ -1,7 +1,7 @@
 ﻿using System;
+using Google.Protobuf;
 using Microsoft.DurableTask.Protobuf;
 using Microsoft.DurableTask.Worker;
-using Newtonsoft.Json;
 
 namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask.Exceptions;
 
@@ -31,7 +31,7 @@ internal class DurableSerializationException : Exception
     private static string CreateExceptionMessage(Exception ex, IExceptionPropertiesProvider? exceptionPropertiesProvider)
     {
         TaskFailureDetails? failureDetails = TaskFailureDetailsConverter.TaskFailureFromException(ex, exceptionPropertiesProvider);
-        return JsonConvert.SerializeObject(failureDetails);
+        return JsonFormatter.Default.Format(failureDetails);
     }
 
     public override string? StackTrace => this.fromException.StackTrace;

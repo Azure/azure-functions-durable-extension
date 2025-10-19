@@ -13,9 +13,9 @@ using DurableTask.Core.Entities.OperationFormat;
 using DurableTask.Core.Exceptions;
 using DurableTask.Core.History;
 using DurableTask.Core.Middleware;
+using Google.Protobuf;
 using Microsoft.Azure.WebJobs.Host.Executors;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using P = Microsoft.DurableTask.Protobuf;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
@@ -639,15 +639,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         return details;
                     }
 
-                    // Try to extract properties from the serialized exception JSON
-                    IDictionary<string, object?>? properties = ExtractPropertiesFromExceptionJson(exception);
-
+                    // For non-.NET language, properties at FailureDetails is not supported yet.
                     if (TrySplitExceptionTypeFromMessage(exception, out string? exceptionType, out string? exceptionMessage))
                     {
-                        return new FailureDetails(exceptionType, exceptionMessage, stackTrace, innerFailure: null, isNonRetriable: false, properties: properties);
+                        return new FailureDetails(exceptionType, exceptionMessage, stackTrace, innerFailure: null, isNonRetriable: false, properties: null);
                     }
 
-                    return new FailureDetails("(unknown)", exception, stackTrace, innerFailure: null, isNonRetriable: false, properties: properties);
+                    return new FailureDetails("(unknown)", exception, stackTrace, innerFailure: null, isNonRetriable: false, properties: null);
                 }
                 else
                 {
@@ -787,29 +785,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 int newlineIndex = exception.IndexOf('\n');
                 string serializedMessage = newlineIndex < 0 ? exception : exception.Substring(0, newlineIndex).Trim();
 
-                // Manually parse JSON so Properties become native .NET types,
-                // This can avoid properties not to be deserialized as protobuf structs.
-                try
+                P.TaskFailureDetails? taskFailureDetails = JsonParser.Default.Parse<P.TaskFailureDetails>(serializedMessage);
+                if (taskFailureDetails != null)
                 {
-                    JObject? jsonObj = JObject.Parse(serializedMessage);
-                    if (jsonObj != null)
-                    {
-                        details = BuildFailureDetailsFromJson(jsonObj);
-                        if (details != null)
-                        {
-                            return true;
-                        }
-                    }
-                }
-                catch (JsonReaderException)
-                {
-                    // Fallback : simple deserialization.
-                    P.TaskFailureDetails? taskFailureDetails = JsonConvert.DeserializeObject<P.TaskFailureDetails>(serializedMessage);
-                    if (taskFailureDetails != null)
-                    {
-                        details = GetFailureDetails(taskFailureDetails);
-                        return true;
-                    }
+                    details = GetFailureDetails(taskFailureDetails);
+                    return true;
                 }
             }
             catch (Exception)
@@ -819,178 +799,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             details = null;
             return false;
-        }
-
-        // Reconstruct a FailureDetails instance from the worker's JSON payload,
-        // recursively converting Properties to native .NET types.
-        private static FailureDetails? BuildFailureDetailsFromJson(JObject obj)
-        {
-            string errorType = obj["ErrorType"]?.Value<string>() ?? string.Empty;
-            string errorMessage = obj["ErrorMessage"]?.Value<string>() ?? string.Empty;
-            string? stackTrace = obj["StackTrace"]?.Value<string>();
-            bool isNonRetriable = obj["IsNonRetriable"]?.Value<bool>() ?? false;
-
-            // Build Properties.
-            IDictionary<string, object?>? properties = null;
-            if (obj["Properties"] is JObject props)
-            {
-                properties = new Dictionary<string, object?>();
-                foreach (var kvp in props)
-                {
-                    if (kvp.Value is JObject value)
-                    {
-                        properties[kvp.Key] = ExtractValue(value);
-                    }
-                }
-            }
-
-            // Parse innder failure details recurtively.
-            FailureDetails? inner = null;
-            if (obj["InnerFailure"] is JObject innerObj)
-            {
-                inner = BuildFailureDetailsFromJson(innerObj);
-            }
-
-            return new FailureDetails(errorType, errorMessage, stackTrace, inner, isNonRetriable, properties);
-        }
-
-        public static IDictionary<string, object?>? ExtractPropertiesFromExceptionJson(string json)
-        {
-            var result = new Dictionary<string, object?>();
-
-            try
-            {
-                JObject? rootNode = JObject.Parse(json);
-                if (rootNode is not JObject rootObj)
-                {
-                    return null; // Root is not a JSON object
-                }
-
-                JObject? propertiesNode = rootObj["Properties"] as JObject;
-                if (propertiesNode == null)
-                {
-                    return null; // "Properties" section missing or not an object
-                }
-
-                foreach (var kvp in propertiesNode)
-                {
-                    var value = kvp.Value as JObject;
-                    if (value == null)
-                    {
-                        continue;
-                    }
-
-                    result[kvp.Key] = ExtractValue(value);
-                }
-            }
-            catch (JsonReaderException)
-            {
-                // Invalid JSON format
-                return null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-
-            return result;
-        }
-
-        // Convert a JSON representation of Google.Protobuf.WellKnownTypes.Value into a native .NET value.
-        // Handles: null, bool, number (returned as double), string (with dt:/dto: or ISO-8601 DateTime parsing),
-        // StructValue -> Dictionary<string, object?>, ListValue -> List<object?>.
-        private static object? ExtractValue(JObject value)
-        {
-            // Look at KindCase to determine which field is active
-            if (value.TryGetValue("HasStringValue", out JToken? hasStringValue) && hasStringValue?.Value<bool>() == true)
-            {
-                string? s = value["StringValue"]?.Value<string>();
-                if (s is null)
-                {
-                    return null;
-                }
-
-                if (s.StartsWith("dt:", StringComparison.Ordinal))
-                {
-                    if (DateTime.TryParse(s[3..], CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out DateTime dtPref))
-                    {
-                        return dtPref;
-                    }
-                }
-
-                if (s.StartsWith("dto:", StringComparison.Ordinal))
-                {
-                    if (DateTimeOffset.TryParse(s[4..], CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out DateTimeOffset dtoPref))
-                    {
-                        return dtoPref;
-                    }
-                }
-
-                return s;
-            }
-
-            if (value.TryGetValue("HasNumberValue", out var hasNumValue) && hasNumValue?.Value<bool>() == true)
-            {
-                return value["NumberValue"]?.Value<double>();
-            }
-
-            if (value.TryGetValue("HasBoolValue", out var hasBoolValue) && hasBoolValue?.Value<bool>() == true)
-            {
-                return value["BoolValue"]?.Value<bool>();
-            }
-
-            if (value.TryGetValue("HasNullValue", out var hasNullValue) && hasNullValue?.Value<bool>() == true)
-            {
-                return null;
-            }
-
-            // StructValue: { "Fields": { key: {Value}, ... } }
-            if (value["StructValue"] is JObject structObj)
-            {
-                var fields = structObj["Fields"] as JObject;
-                if (fields == null)
-                {
-                    return new Dictionary<string, object?>();
-                }
-
-                var dict = new Dictionary<string, object?>();
-                foreach (var field in fields)
-                {
-                    if (field.Value is JObject fieldValueObj)
-                    {
-                        dict[field.Key] = ExtractValue(fieldValueObj);
-                    }
-                }
-
-                return dict;
-            }
-
-            // ListValue: { "Values": [ {Value}, {Value}, ... ] }
-            if (value["ListValue"] is JObject listObj)
-            {
-                var values = listObj["Values"] as JArray;
-                if (values == null)
-                {
-                    return new List<object?>();
-                }
-
-                var list = new List<object?>();
-                foreach (var element in values)
-                {
-                    if (element is JObject jObject)
-                    {
-                        list.Add(ExtractValue(jObject));
-                    }
-                    else
-                    {
-                        list.Add(null);
-                    }
-                }
-
-                return list;
-            }
-
-            return null;
         }
 
         private static bool TrySplitExceptionTypeFromMessage(
