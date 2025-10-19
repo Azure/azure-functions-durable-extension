@@ -3,7 +3,6 @@ using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.DurableTask;
 using Microsoft.DurableTask.Client;
 using Microsoft.Extensions.Logging;
-using System;
 
 namespace FaultOrchestrators
 {
@@ -20,11 +19,11 @@ namespace FaultOrchestrators
             // From experience, this code runs in `<sourceCodePath>/bin/output/`, so we store the file two directories above.
             // We do this because the /bin/output/ directory gets overridden during the build process, which happens automatically
             // when `func host start` is re-invoked.
-            string evidenceFile = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "..", "..", "replayEvidence");
-            bool isTheFirstReplay = !System.IO.File.Exists(evidenceFile);
+            string evidenceFile = Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "replayEvidence");
+            bool isTheFirstReplay = !File.Exists(evidenceFile);
             if (isTheFirstReplay)
             {
-                System.IO.File.Create(evidenceFile).Close();
+                File.Create(evidenceFile).Close();
 
                 // force the process to run out of memory
                 List<byte[]> data = new List<byte[]>();
@@ -40,7 +39,7 @@ namespace FaultOrchestrators
             }
             else {
                 // if it's not the first replay, delete the evidence file and return
-                System.IO.File.Delete(evidenceFile);
+                File.Delete(evidenceFile);
                 return Task.CompletedTask;
             }
         }
@@ -56,11 +55,11 @@ namespace FaultOrchestrators
             // From experience, this code runs in `<sourceCodePath>/bin/output/`, so we store the file two directories above.
             // We do this because the /bin/output/ directory gets overridden during the build process, which happens automatically
             // when `func host start` is re-invoked.
-            string evidenceFile = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "..", "..", "replayEvidence");
-            bool isTheFirstReplay = !System.IO.File.Exists(evidenceFile);
+            string evidenceFile = Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "replayEvidence");
+            bool isTheFirstReplay = !File.Exists(evidenceFile);
             if (isTheFirstReplay)
             {
-                System.IO.File.Create(evidenceFile).Close();
+                File.Create(evidenceFile).Close();
 
                 // force sudden crash
                 Environment.FailFast("Simulating crash!");
@@ -68,7 +67,7 @@ namespace FaultOrchestrators
             }
             else {
                 // if it's not the first replay, delete the evidence file and return
-                System.IO.File.Delete(evidenceFile);
+                File.Delete(evidenceFile);
                 return Task.CompletedTask;
             }
         }
@@ -84,23 +83,25 @@ namespace FaultOrchestrators
             // From experience, this code runs in `<sourceCodePath>/bin/output/`, so we store the file two directories above.
             // We do this because the /bin/output/ directory gets overridden during the build process, which happens automatically
             // when `func host start` is re-invoked.
-            string evidenceFile = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "..", "..", "replayEvidence");
-            bool isTheFirstReplay = !System.IO.File.Exists(evidenceFile);
+            string evidenceFile = Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "replayEvidence");
+            bool isTheFirstReplay = !File.Exists(evidenceFile);
 
             if (isTheFirstReplay)
             {
-                System.IO.File.Create(evidenceFile).Close();
-                
+                File.Create(evidenceFile).Close();
+
                 // force the process to timeout after a 1 minute wait
-                System.Threading.Thread.Sleep(TimeSpan.FromMinutes(1));
-                
+#pragma warning disable DURABLE0003 // Thread.Sleep in orchestrator code - intentional here
+                Thread.Sleep(TimeSpan.FromMinutes(1));
+#pragma warning restore DURABLE0003
+
                 // we expect the code to never reach this statement, it should time out.
                 // we throw just in case the code does not time out. This should fail the test
                 throw new Exception("this should never be reached");
             }
             else {
                 // if it's not the first replay, delete the evidence file and return
-                System.IO.File.Delete(evidenceFile);
+                File.Delete(evidenceFile);
                 return Task.CompletedTask;
             }
         }

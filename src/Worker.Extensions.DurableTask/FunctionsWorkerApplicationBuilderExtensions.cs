@@ -90,7 +90,7 @@ public static class FunctionsWorkerApplicationBuilderExtensions
             this.workerOptions = workerOptions;
         }
 
-        public void PostConfigure(string name, DurableTaskClientOptions options)
+        public void PostConfigure(string? name, DurableTaskClientOptions options)
         {
             if (this.workerOptions.Get(name).Serializer is { } serializer)
             {
@@ -116,7 +116,7 @@ public static class FunctionsWorkerApplicationBuilderExtensions
             this.workerOptions = workerOptions;
         }
 
-        public void PostConfigure(string name, DurableTaskWorkerOptions options)
+        public void PostConfigure(string? name, DurableTaskWorkerOptions options)
         {
             if (this.workerOptions.Get(name).Serializer is { } serializer)
             {
