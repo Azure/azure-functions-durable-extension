@@ -5,6 +5,8 @@ VisualStudioVersion = 17.2.32210.308
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DistributedTracingSample", "DistributedTracingSample\DistributedTracingSample.csproj", "{363FCA38-CE94-4EBF-8627-B4519E8D7926}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebJobs.Extensions.DurableTask", "..\..\..\..\src\WebJobs.Extensions.DurableTask\WebJobs.Extensions.DurableTask.csproj", "{82E8B252-8293-4DDC-A797-C3384A93E2D5}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{363FCA38-CE94-4EBF-8627-B4519E8D7926}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{363FCA38-CE94-4EBF-8627-B4519E8D7926}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{363FCA38-CE94-4EBF-8627-B4519E8D7926}.Release|Any CPU.Build.0 = Release|Any CPU
+		{82E8B252-8293-4DDC-A797-C3384A93E2D5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{82E8B252-8293-4DDC-A797-C3384A93E2D5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{82E8B252-8293-4DDC-A797-C3384A93E2D5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{82E8B252-8293-4DDC-A797-C3384A93E2D5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

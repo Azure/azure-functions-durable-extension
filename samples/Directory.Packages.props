@@ -1,30 +1,48 @@
 <Project>
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
   </PropertyGroup>
   
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Packages.props, $(MSBuildThisFileDirectory)..))" />
 
+  <!-- Dependencies only required for samples -->
   <ItemGroup>
     <PackageVersion Include="EntityFramework" Version="6.5.1" />
     <PackageVersion Include="Microsoft.AspNet.WebApi.Client" Version="5.2.7" />
     <PackageVersion Include="Microsoft.Azure.Functions.Extensions" Version="1.1.0" />
-    <PackageVersion Include="Microsoft.Azure.WebJobs.Extensions.Http" Version="3.2.0" />
-    <PackageVersion Include="Microsoft.Azure.WebJobs.Extensions.DurableTask" Version="2.13.4" />
-    <PackageVersion Include="Microsoft.Azure.WebJobs.Extensions.Storage" Version="3.0.10" />
     <PackageVersion Include="Microsoft.Azure.WebJobs.Extensions.Twilio" Version="3.0.2" />
-    <PackageVersion Include="Microsoft.Azure.WebJobs.Script.ExtensionsMetadataGenerator" Version="1.1.0" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.InMemory" Version="3.1.3" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Tools" Version="3.1.3" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Debug" Version="3.1.3" />
-    <PackageVersion Include="Microsoft.NET.Sdk.Functions" Version="4.2.0" />
-    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="15.9.0" />
     <PackageVersion Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="3.1.2" />
-    <PackageVersion Include="StyleCop.Analyzers" Version="1.1.118" />
     <PackageVersion Include="Swashbuckle.AspNetCore" Version="5.4.0" />
     <PackageVersion Include="TaskBuilder.fs" Version="1.0.0" />
-    <PackageVersion Include="Moq" Version="4.16.1" />
-    <PackageVersion Include="xunit" Version="2.9.2" />
-    <PackageVersion Include="xunit.runner.visualstudio" Version="2.8.2" />
   </ItemGroup>
+
+  <!-- Dependencies pinned for samples -->
+   <ItemGroup>
+    <PackageVersion Update="Microsoft.Azure.WebJobs.Extensions.Http" Version="3.2.0" />
+    <PackageVersion Update="Microsoft.Azure.WebJobs.Extensions.DurableTask" Version="2.13.4" />
+    <PackageVersion Update="Microsoft.Azure.WebJobs.Extensions.Storage" Version="3.0.10" />
+    <PackageVersion Update="Microsoft.Azure.WebJobs.Script.ExtensionsMetadataGenerator" Version="1.1.0" />
+    <PackageVersion Update="Microsoft.NET.Sdk.Functions" Version="4.2.0" />
+    <PackageVersion Update="Microsoft.NET.Test.Sdk" Version="15.9.0" />
+    <PackageVersion Update="Moq" Version="4.16.1" />
+    <PackageVersion Update="StyleCop.Analyzers" Version="1.1.118" />
+    <PackageVersion Update="xunit" Version="2.9.2" />
+    <PackageVersion Update="xunit.runner.visualstudio" Version="2.8.2" />
+   </ItemGroup>
+
+  <!-- Transitive dependencies with specific versions -->
+   <ItemGroup>
+    <PackageVersion Update="Microsoft.AspNet.WebApi.Client" Version="5.2.8" />
+    <PackageVersion Update="Microsoft.AspNetCore.Http.Abstractions" Version="2.3.0" />
+    <PackageVersion Update="Microsoft.Azure.WebJobs.Script.ExtensionsMetadataGenerator" Version="4.0.1" />
+    <PackageVersion Update="Microsoft.Bcl.AsyncInterfaces" Version="9.0.0"/>
+    <PackageVersion Update="Microsoft.Extensions.Logging.Debug" Version="8.0.1"/>
+    <PackageVersion Update="System.Drawing.Common" Version="6.0.0" />
+    <PackageVersion Update="System.Text.Json" Version="9.0.0" />
+   </ItemGroup>
+
 </Project>
