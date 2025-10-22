@@ -310,12 +310,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             catch (ArgumentException ex)
             {
                 // Instance ID does not exist.
-                throw new RpcException(new Status(StatusCode.NotFound, $"ArgumentException: {ex.Message}"));
+                throw new RpcException(new Status(StatusCode.NotFound, ex.Message));
             }
             catch (InvalidOperationException ex)
             {
                 // Orchestration is not in a failed state.
-                throw new RpcException(new Status(StatusCode.FailedPrecondition, $"InvalidOperationException: {ex.Message}"));
+                throw new RpcException(new Status(StatusCode.FailedPrecondition, ex.Message));
             }
             catch (Exception ex)
             {
