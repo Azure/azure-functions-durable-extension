@@ -6,12 +6,11 @@
     -->
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
-  
   <!-- Product dependencies -->
   <ItemGroup>
     <PackageVersion Include="Azure.Identity" Version="1.12.1" />
-    <PackageVersion Include="Grpc.Core" Version="2.46.6" /> 
-    <PackageVersion Include="Grpc.Tools" Version="2.49.0"  />
+    <PackageVersion Include="Grpc.Core" Version="2.46.6" />
+    <PackageVersion Include="Grpc.Tools" Version="2.49.0" />
     <PackageVersion Include="Grpc.Net.Client" Version="2.70.0" />
     <PackageVersion Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.2.0" />
     <PackageVersion Include="Microsoft.AspNetCore.Mvc.WebApiCompatShim" Version="2.2.0" />
@@ -24,10 +23,10 @@
     <PackageVersion Include="Microsoft.Azure.WebJobs" Version="3.0.39" />
     <PackageVersion Include="Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers" Version="0.5.0" />
     <PackageVersion Include="Microsoft.Azure.WebJobs.Extensions.Rpc" Version="3.0.39" />
-    <PackageVersion Include="Microsoft.Bcl.AsyncInterfaces" Version = "6.0.0" />
-    <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="3.3.4"/>
+    <PackageVersion Include="Microsoft.Bcl.AsyncInterfaces" Version="6.0.0" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="3.3.4" />
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="3.9.0" />
-    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="3.9.0"  />
+    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="3.9.0" />
     <PackageVersion Include="Microsoft.CodeAnalysis.Workspaces.Common" Version="3.9.0" />
     <PackageVersion Include="Microsoft.DurableTask.Client.Grpc" Version="1.15.0" />
     <PackageVersion Include="Microsoft.DurableTask.Worker.Grpc" Version="1.15.0" />
@@ -36,11 +35,18 @@
     <PackageVersion Include="Microsoft.Extensions.Caching.Memory" Version="6.0.3" />
     <PackageVersion Include="Microsoft.Extensions.Http" Version="6.0.0" />
     <PackageVersion Include="Microsoft.NET.Sdk.Functions" Version="4.2.0" />
-    <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="1.0.0"  />
-    <PackageVersion Include="StyleCop.Analyzers" Version="1.1.118"  />
+    <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="1.0.0" />
+    <PackageVersion Include="StyleCop.Analyzers" Version="1.1.118" />
+    <PackageVersion Include="System.Drawing.Common" Version="4.7.3" />
+    <PackageVersion Include="System.Net.Http" Version="4.3.4" />
     <PackageVersion Include="System.Text.Json" Version="8.0.5" />
+    <PackageVersion Include="System.Text.RegularExpressions" Version="4.3.1" />
   </ItemGroup>
-
+  <!-- Non-Production product dependencies -->
+  <ItemGroup>
+    <!-- Used by TypedInterfaces -->
+    <PackageVersion Include="Microsoft.AspNetCore.Server.Kestrel.Core" Version="2.3.6" />
+  </ItemGroup>
   <!-- Test dependencies -->
   <ItemGroup>
     <PackageVersion Include="coverlet.collector" Version="6.0.0" />
@@ -55,7 +61,7 @@
     <PackageVersion Include="Microsoft.Azure.Functions.Worker.Extensions.DurableTask.SqlServer" Version="1.5.0" />
     <PackageVersion Include="Microsoft.Azure.Functions.Worker.Extensions.Http" Version="3.3.0" />
     <PackageVersion Include="Microsoft.Azure.Functions.Worker.Extensions.Http.AspNetCore" Version="2.0.2" />
-    <PackageVersion Include="Microsoft.Azure.Functions.Worker.Sdk" Version="1.18.1"/>
+    <PackageVersion Include="Microsoft.Azure.Functions.Worker.Sdk" Version="1.18.1" />
     <PackageVersion Include="Microsoft.Azure.WebJobs.Extensions.DurableTask" Version="2.13.7" />
     <PackageVersion Include="Microsoft.Azure.WebJobs.Extensions.Http" Version="3.2.0" />
     <PackageVersion Include="Microsoft.Azure.WebJobs.Extensions.Storage" Version="5.1.3" />
