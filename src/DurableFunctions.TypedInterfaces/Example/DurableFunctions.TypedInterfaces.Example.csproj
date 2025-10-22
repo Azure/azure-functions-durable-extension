@@ -13,6 +13,7 @@
     <PackageReference Include="Microsoft.Azure.DurableTask.Core"  />
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask" />
     <PackageReference Include="Microsoft.NET.Sdk.Functions"  />
+    <PackageReference Include="Microsoft.AspNetCore.Server.Kestrel.Core" />
   </ItemGroup>
 
   <ItemGroup>
