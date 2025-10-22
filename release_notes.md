@@ -21,3 +21,5 @@
 ### Breaking Changes
 
 ### Dependency Updates
+
+- Remove LegacyLocalGrpcListener and the dependency on Grpc.Core (https://github.com/Azure/azure-functions-durable-extension/pull/3236)

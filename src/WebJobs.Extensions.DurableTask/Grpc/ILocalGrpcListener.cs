@@ -9,7 +9,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Grpc
     internal enum LocalGrpcListenerMode
     {
         Default = 0,
-        Legacy = 1,
+        Legacy = 1, // Deprecated, AspNetCore will be used instead
         AspNetCore = 2,
     }
 
@@ -28,11 +28,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Grpc
     {
         public static ILocalGrpcListener Create(DurableTaskExtension extension, LocalGrpcListenerMode mode)
         {
-            return mode switch
+            if (mode == LocalGrpcListenerMode.Legacy)
             {
-                LocalGrpcListenerMode.Default or LocalGrpcListenerMode.AspNetCore => new AspNetCoreLocalGrpcListener(extension),
-                _ => new LegacyLocalGrpcListener(extension),
-            };
+                extension.TraceHelper.ExtensionWarningEvent(
+                    hubName: "",
+                    functionName: "",
+                    instanceId: "",
+                    "The 'Legacy' GrpcListenerMode is removed, 'AspNetCore' mode will be used instead.");
+            }
+
+            return new AspNetCoreLocalGrpcListener(extension);
         }
     }
 }
