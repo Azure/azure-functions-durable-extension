@@ -26,7 +26,7 @@ RUN cd /root/test/SmokeTests/OOProcSmokeTests/DotNetIsolated && \
     cat /home/site/wwwroot/extensions.json # debugging
 
 # Step 3: Generate the final app image to run
-FROM mcr.microsoft.com/azure-functions/dotnet-isolated:4-dotnet-isolated6.0
+FROM mcr.microsoft.com/azure-functions/dotnet-isolated:4-dotnet-isolated8.0
 
 # This is the standard setup for Azure Functions running in Docker containers
 ENV AzureWebJobsScriptRoot=/home/site/wwwroot \
