@@ -63,8 +63,6 @@
     <PackageReference Include="Microsoft.Extensions.Http" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.WebApiCompatShim" />
     <PackageReference Include="Microsoft.Azure.DurableTask.ApplicationInsights" />
-    <!-- The gRPC dependencies in this package are not compatible with older frameworks, like .NET Core 2.x -->
-    <PackageReference Include="Grpc.Core" /> <!-- Bring this in until we move to hosted RPC -->
     <!-- Build-time dependencies -->
     <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="All" />
     <PackageReference Include="StyleCop.Analyzers" PrivateAssets="All" />

@@ -80,14 +80,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             ILocalGrpcListener listener = LocalGrpcListener.Create(extension, mode);
 
             // Verify correct listener type is created
-            if (mode == LocalGrpcListenerMode.Legacy)
-            {
-                Assert.IsType<LegacyLocalGrpcListener>(listener);
-            }
-            else if (mode == LocalGrpcListenerMode.AspNetCore)
-            {
-                Assert.IsType<AspNetCoreLocalGrpcListener>(listener);
-            }
+            // (should be AspNetCoreLocalGrpcListener regardless of the mode)
+            Assert.IsType<AspNetCoreLocalGrpcListener>(listener);
 
             try
             {
@@ -99,12 +93,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Assert.True(uri.IsLoopback);
                 Assert.Equal("http", uri.Scheme);
                 Assert.True(IsPortInUse(uri.Port));
-
-                // Verify to use default port if it's LegacylocalGrpcListenerMode
-                if (mode == LocalGrpcListenerMode.Legacy)
-                {
-                    Assert.Equal(4001, uri.Port);
-                }
 
                 await listener.StopAsync(default);
 
@@ -167,50 +155,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 catch (Exception ex)
                 {
                     this.output.WriteLine($"Failed to stop listener2: {ex.Message}");
-                }
-            }
-        }
-
-        [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task LegacyGrpcListener_ShouldHandlePort4001Conflict()
-        {
-            // Test LegacyLocalGrpcListener when the default port(4001) is in use, it will use another port.
-            using DurableTaskExtension extension = this.CreateExtension("LegacyGrpcListenerDefaultPortInUse");
-            ILocalGrpcListener listener = LocalGrpcListener.Create(extension, LocalGrpcListenerMode.Legacy);
-
-            // Start port 4001 to simulate default port is in use.
-            var portBlocker = new TcpListener(IPAddress.Loopback, 4001);
-            bool portWasBlocked = false;
-            try
-            {
-                portBlocker.Start();
-                portWasBlocked = true;
-            }
-            catch (SocketException)
-            {
-                // Port 4001 is already in use. Continue the test.
-            }
-
-            try
-            {
-                // Start the local grpc listener.
-                await listener.StartAsync(default);
-
-                // Assert
-                Assert.NotNull(listener.ListenAddress);
-                var uri = new Uri(listener.ListenAddress);
-                Assert.NotEqual(4001, uri.Port); // Should not be using the blocked port
-                Assert.True(IsPortInUse(uri.Port));
-            }
-            finally
-            {
-                await listener.StopAsync(default);
-
-                // Only stop our port blocker if we successfully started it
-                if (portWasBlocked)
-                {
-                    portBlocker.Stop();
                 }
             }
         }
