@@ -16,6 +16,10 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
+    env:
+      FUNCTIONS_INPROC_NET8_ENABLED: "1"
+
     steps:
     - uses: actions/checkout@v2
     - name: Run V4 .NET in-proc w/ Netherite Smoke Test

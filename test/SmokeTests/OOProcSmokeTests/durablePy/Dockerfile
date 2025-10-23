@@ -3,7 +3,7 @@
 
 # Step 1: Add the durable extension by building it locally.
 #         This is an alternative to "func extensions install"
-FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build-env
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build-env
 COPY . /root
 RUN cd /root/test/SmokeTests/OOProcSmokeTests/durablePy && \
     dotnet build -o bin
