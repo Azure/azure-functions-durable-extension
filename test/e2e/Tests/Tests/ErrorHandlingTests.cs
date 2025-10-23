@@ -232,7 +232,7 @@ public class ErrorHandlingTests
     [Trait("DTS", "Skip")] // DTS doesn't support this feature yet.
     public async Task CustomExceptionPropertiesInFailureDetails()
     {
-        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("CustomExceptionProperties_HttpStart");
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=OrchestrationWithCustomException");
 
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
 
