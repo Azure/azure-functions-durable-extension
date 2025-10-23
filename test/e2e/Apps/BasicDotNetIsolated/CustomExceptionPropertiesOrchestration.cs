@@ -49,18 +49,6 @@ public class CustomExceptionPropertiesOrchestration
                 listProperty: new List<object?> { "error1", "error2", 500, null },
                 nullProperty: null);
     }
-
-    [Function("CustomExceptionProperties_HttpStart")]
-    public static async Task<HttpResponseData> CustomExceptionProperties_HttpStart(
-    [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestData req,
-    [DurableClient] DurableTaskClient client,
-    FunctionContext executionContext)
-    {
-        string instanceId = await client.ScheduleNewOrchestrationInstanceAsync(
-            nameof(OrchestrationWithCustomException));
-
-        return await client.CreateCheckStatusResponseAsync(req, instanceId);
-    }
 }
 
 [Serializable]
