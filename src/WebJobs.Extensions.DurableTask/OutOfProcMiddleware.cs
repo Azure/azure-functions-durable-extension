@@ -671,7 +671,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 properties = new Dictionary<string, object?>();
                 foreach (var kvp in taskFailureDetails.Properties)
                 {
-                    properties[kvp.Key] = ConvertValueToObject(kvp.Value);
+                    properties[kvp.Key] = ProtobufUtils.ConvertValueToObject(kvp.Value);
                 }
             }
 
@@ -682,51 +682,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 GetFailureDetails(taskFailureDetails.InnerFailure),
                 taskFailureDetails.IsNonRetriable,
                 properties);
-        }
-
-        private static object? ConvertValueToObject(Google.Protobuf.WellKnownTypes.Value value)
-        {
-            switch (value.KindCase)
-            {
-                case Google.Protobuf.WellKnownTypes.Value.KindOneofCase.NullValue:
-                    return null;
-                case Google.Protobuf.WellKnownTypes.Value.KindOneofCase.NumberValue:
-                    return value.NumberValue;
-                case Google.Protobuf.WellKnownTypes.Value.KindOneofCase.StringValue:
-                    string stringValue = value.StringValue;
-
-                    // If the value starts with the 'dt:' prefix, it may represent a DateTime value — attempt to parse it.
-                    if (stringValue.StartsWith("dt:", StringComparison.Ordinal))
-                    {
-                        if (DateTime.TryParse(stringValue[3..], CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out DateTime date))
-                        {
-                            return date;
-                        }
-                    }
-
-                    // If the value starts with the 'dto:' prefix, it may represent a DateTime value — attempt to parse it.
-                    if (stringValue.StartsWith("dto:", StringComparison.Ordinal))
-                    {
-                        if (DateTimeOffset.TryParse(stringValue[4..], CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out DateTimeOffset date))
-                        {
-                            return date;
-                        }
-                    }
-
-                    // Otherwise just return as string
-                    return stringValue;
-                case Google.Protobuf.WellKnownTypes.Value.KindOneofCase.BoolValue:
-                    return value.BoolValue;
-                case Google.Protobuf.WellKnownTypes.Value.KindOneofCase.StructValue:
-                    return value.StructValue.Fields.ToDictionary(
-                        pair => pair.Key,
-                        pair => ConvertValueToObject(pair.Value));
-                case Google.Protobuf.WellKnownTypes.Value.KindOneofCase.ListValue:
-                    return value.ListValue.Values.Select(ConvertValueToObject).ToList();
-                default:
-                    // Fallback: serialize the whole value to JSON string
-                    return JsonConvert.SerializeObject(value);
-            }
         }
 
         private static bool TryGetRpcExceptionFields(

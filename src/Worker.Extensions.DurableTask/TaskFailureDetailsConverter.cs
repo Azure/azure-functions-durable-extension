@@ -63,8 +63,8 @@ internal class TaskFailureDetailsConverter
             decimal dec => Value.ForNumber((double)dec),
 
             // For DateTime and DateTimeOffset, add prefix to distinguish from normal string.
-            DateTime dt => Value.ForString($"dt:{dt.ToString("O")}"),
-            DateTimeOffset dto => Value.ForString($"dto:{dto.ToString("O")}"),
+            DateTime dt => Value.ForString(dt.ToString("O")),
+            DateTimeOffset dto => Value.ForString(dto.ToString("O")),
             IDictionary<string, object?> dict => Value.ForStruct(new Struct
             {
                 Fields = { dict.ToDictionary(kvp => kvp.Key, kvp => ConvertObjectToValue(kvp.Value)) },

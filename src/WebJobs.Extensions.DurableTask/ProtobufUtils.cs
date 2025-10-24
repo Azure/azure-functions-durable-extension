@@ -666,7 +666,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return map;
         }
 
-        private static Value ConvertObjectToValue(object? obj)
+        internal static Value ConvertObjectToValue(object? obj)
         {
             return obj switch
             {
@@ -687,9 +687,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     Fields = { jo.Properties().ToDictionary(p => p.Name, p => ConvertObjectToValue(p.Value)) },
                 }),
 
-                // For DateTime and DateTimeOffset, add prefix to distinguish from normal string.
-                DateTime dt => Value.ForString($"dt:{dt.ToString("O")}"),
-                DateTimeOffset dto => Value.ForString($"dto:{dto.ToString("O")}"),
+                // For DateTime and DateTimeOffset, serialize to string directly.
+                DateTime dt => Value.ForString(dt.ToString("O")),
+                DateTimeOffset dto => Value.ForString(dto.ToString("O")),
                 IDictionary<string, object?> dict => Value.ForStruct(new Struct
                 {
                     Fields = { dict.ToDictionary(kvp => kvp.Key, kvp => ConvertObjectToValue(kvp.Value)) },
@@ -701,7 +701,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             };
         }
 
-        private static Value ConvertJValueToValue(JValue jv)
+        internal static Value ConvertJValueToValue(JValue jv)
         {
             return jv.Type switch
             {
@@ -715,7 +715,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             };
         }
 
-        private static object? ConvertValueToObject(Google.Protobuf.WellKnownTypes.Value value)
+        internal static object? ConvertValueToObject(Google.Protobuf.WellKnownTypes.Value value)
         {
             switch (value.KindCase)
             {
@@ -724,28 +724,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 case Google.Protobuf.WellKnownTypes.Value.KindOneofCase.NumberValue:
                     return value.NumberValue;
                 case Google.Protobuf.WellKnownTypes.Value.KindOneofCase.StringValue:
-                    string stringValue = value.StringValue;
-
-                    // If the value starts with the 'dt:' prefix, it may represent a DateTime value — attempt to parse it.
-                    if (stringValue.StartsWith("dt:", StringComparison.Ordinal))
-                    {
-                        if (DateTime.TryParse(stringValue[3..], CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out DateTime date))
-                        {
-                            return date;
-                        }
-                    }
-
-                    // If the value starts with the 'dto:' prefix, it may represent a DateTime value — attempt to parse it.
-                    if (stringValue.StartsWith("dto:", StringComparison.Ordinal))
-                    {
-                        if (DateTimeOffset.TryParse(stringValue[4..], CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out DateTimeOffset date))
-                        {
-                            return date;
-                        }
-                    }
-
-                    // Otherwise just return as string
-                    return stringValue;
+                    return value.StringValue;
                 case Google.Protobuf.WellKnownTypes.Value.KindOneofCase.BoolValue:
                     return value.BoolValue;
                 case Google.Protobuf.WellKnownTypes.Value.KindOneofCase.StructValue:
