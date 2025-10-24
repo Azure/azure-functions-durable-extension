@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using DurableTask.Core;
@@ -15,7 +14,6 @@ using DurableTask.Core.History;
 using DurableTask.Core.Middleware;
 using Google.Protobuf;
 using Microsoft.Azure.WebJobs.Host.Executors;
-using Newtonsoft.Json;
 using P = Microsoft.DurableTask.Protobuf;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
