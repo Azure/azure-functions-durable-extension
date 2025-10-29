@@ -1,0 +1,63 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <AssemblyName>Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale</AssemblyName>
+    <RootNamespace>Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale</RootNamespace>
+    <MajorVersion>3</MajorVersion>
+    <MinorVersion>6</MinorVersion>
+    <PatchVersion>0</PatchVersion>
+    <VersionPrefix>$(MajorVersion).$(MinorVersion).$(PatchVersion)</VersionPrefix>
+    <FileVersion>$(MajorVersion).$(MinorVersion).$(PatchVersion)</FileVersion>
+    <AssemblyVersion>$(MajorVersion).0.0.0</AssemblyVersion>
+    <Company>Microsoft Corporation</Company>
+    <LangVersion>9.0</LangVersion>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\..\sign.snk</AssemblyOriginatorKeyFile>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <DebugType>embedded</DebugType>
+    <NoWarn>NU5125;SA0001</NoWarn>
+    <!-- This is an internal assembly, included via InternalsVisibleTo in the main package -->
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="$(VersionSuffix) == ''">
+    <Version>$(MajorVersion).$(MinorVersion).$(PatchVersion)</Version>
+  </PropertyGroup>
+  <PropertyGroup Condition="$(VersionSuffix) != ''">
+    <Version>$(MajorVersion).$(MinorVersion).$(PatchVersion)-$(VersionSuffix)</Version>
+  </PropertyGroup>
+
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Azure.WebJobs" />
+    <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" />
+  <!-- Removed Newtonsoft.Json, using System.Text.Json instead -->
+    <PackageReference Include="Azure.Identity" />
+    <!-- Build-time dependencies -->
+    <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="All" />
+    <PackageReference Include="StyleCop.Analyzers" PrivateAssets="All" />
+  </ItemGroup>
+
+  <!-- Note: Scale package is independent and doesn't reference main package -->
+
+  <ItemGroup>
+    <!-- StyleCop artifacts -->
+    <AdditionalFiles Include="..\..\.stylecop\stylecop.json" />
+    <Compile Include="..\..\.stylecop\GlobalSuppressions.cs" Link="GlobalSuppressions.cs" />
+  </ItemGroup>
+
+  <!-- Release build settings -->
+  <PropertyGroup Condition="'$(Configuration)'=='Release'">
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <WarningsAsErrors />
+    <StyleCopTreatErrorsAsWarnings>true</StyleCopTreatErrorsAsWarnings>
+  </PropertyGroup>
+
+</Project>
+
