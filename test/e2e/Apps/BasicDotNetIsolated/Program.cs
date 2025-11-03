@@ -8,7 +8,12 @@ using Microsoft.DurableTask.Worker;
 using System.Diagnostics;
 
 var host = new HostBuilder()
-    .ConfigureFunctionsWebApplication()
+    .ConfigureFunctionsWebApplication(workerApplication =>
+    {
+        // Register async middleware to test the fix for https://github.com/microsoft/durabletask-dotnet/issues/158
+        // This middleware performs async operations that previously caused non-determinism exceptions
+        workerApplication.UseMiddleware<Microsoft.Azure.Durable.Tests.E2E.TestAsyncMiddleware>();
+    })
     .ConfigureServices(services => {
         services.AddApplicationInsightsTelemetryWorkerService();
         services.ConfigureFunctionsApplicationInsights();

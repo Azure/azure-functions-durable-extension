@@ -3,14 +3,10 @@
 
 using System;
 using System.Linq;
-using Azure.Core.Serialization;
-using Microsoft.Azure.Functions.Worker.Core;
 using Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
-using Microsoft.DurableTask;
+using Microsoft.Azure.Functions.Worker.Extensions.DurableTask.Execution;
 using Microsoft.DurableTask.Client;
-using Microsoft.DurableTask.Converters;
 using Microsoft.DurableTask.Worker;
-using Microsoft.DurableTask.Worker.Grpc;
 using Microsoft.DurableTask.Worker.Shims;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -30,7 +26,8 @@ public static class FunctionsWorkerApplicationBuilderExtensions
     /// </summary>
     /// <param name="builder">The builder to configure.</param>
     /// <returns>The <paramref name="builder"/> for call chaining.</returns>
-    public static IFunctionsWorkerApplicationBuilder ConfigureDurableExtension(this IFunctionsWorkerApplicationBuilder builder)
+    public static IFunctionsWorkerApplicationBuilder ConfigureDurableExtension(
+        this IFunctionsWorkerApplicationBuilder builder)
     {
         if (builder is null)
         {
@@ -60,7 +57,9 @@ public static class FunctionsWorkerApplicationBuilderExtensions
         {
             builder.UseMiddleware<DurableTaskFunctionsMiddleware>();
         }
-        builder.Services.TryAddSingleton(new ExtendedSessionsCache());
+
+        builder.Services.TryAddSingleton<DurableFunctionExecutor>();
+        builder.Services.TryAddSingleton<ExtendedSessionsCache>();
 
         return builder;
     }
@@ -81,18 +80,12 @@ public static class FunctionsWorkerApplicationBuilderExtensions
         }
     }
 
-    private class PostConfigureClientOptions : IPostConfigureOptions<DurableTaskClientOptions>
+    private class PostConfigureClientOptions(IOptionsMonitor<WorkerOptions> workerOptions)
+        : IPostConfigureOptions<DurableTaskClientOptions>
     {
-        readonly IOptionsMonitor<WorkerOptions> workerOptions;
-
-        public PostConfigureClientOptions(IOptionsMonitor<WorkerOptions> workerOptions)
-        {
-            this.workerOptions = workerOptions;
-        }
-
         public void PostConfigure(string? name, DurableTaskClientOptions options)
         {
-            if (this.workerOptions.Get(name).Serializer is { } serializer)
+            if (workerOptions.Get(name).Serializer is { } serializer)
             {
                 options.DataConverter = new ObjectConverterShim(serializer);
             }
@@ -107,18 +100,12 @@ public static class FunctionsWorkerApplicationBuilderExtensions
         }
     }
 
-    private class PostConfigureWorkerOptions : IPostConfigureOptions<DurableTaskWorkerOptions>
+    private class PostConfigureWorkerOptions(IOptionsMonitor<WorkerOptions> workerOptions)
+        : IPostConfigureOptions<DurableTaskWorkerOptions>
     {
-        readonly IOptionsMonitor<WorkerOptions> workerOptions;
-
-        public PostConfigureWorkerOptions(IOptionsMonitor<WorkerOptions> workerOptions)
-        {
-            this.workerOptions = workerOptions;
-        }
-
         public void PostConfigure(string? name, DurableTaskWorkerOptions options)
         {
-            if (this.workerOptions.Get(name).Serializer is { } serializer)
+            if (workerOptions.Get(name).Serializer is { } serializer)
             {
                 options.DataConverter = new ObjectConverterShim(serializer);
             }
