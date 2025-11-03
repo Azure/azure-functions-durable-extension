@@ -30,7 +30,7 @@ public static class HelloCitiesTypedStarter
         // orchestrators that are defined in the current project. The name of the generated extension methods
         // are based on the names of the orchestrator classes. Note that the source generator will *not*
         // generate type-safe extension methods for non-class-based orchestrator functions.
-        string instanceId = await client.ScheduleNewHelloCitiesTypedInstanceAsync();
+        string instanceId = await client.ScheduleNewOrchestrationInstanceAsync(nameof(HelloCitiesTyped));
         logger.LogInformation("Created new orchestration with instance ID = {instanceId}", instanceId);
 
         return client.CreateCheckStatusResponse(req, instanceId);
@@ -52,9 +52,9 @@ public class HelloCitiesTyped : TaskOrchestrator<string?, string>
         // methods are derived from the names of the activity classes. Note that both
         // activity classes and activity functions are supported by the source generator.
         string result = "";
-        result += await context.CallSayHelloTypedAsync("Tokyo") + " ";
-        result += await context.CallSayHelloTypedAsync("London") + " ";
-        result += await context.CallSayHelloTypedAsync("Seattle");
+        result += await context.CallActivityAsync<string>("SayHelloTyped", "Tokyo") + " ";
+        result += await context.CallActivityAsync<string>("SayHelloTyped", "London") + " ";
+        result += await context.CallActivityAsync<string>("SayHelloTyped", "Seattle");
         return result;
     }
 }

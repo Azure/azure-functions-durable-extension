@@ -11,13 +11,8 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Azure.Functions.Worker" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Http" />
-
-    <!--
-      This preview package is to enable better NuGet restore behavior with custom feeds.
-      TODO: upgrade to 1.16.0 when it's released.
-    -->
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Sdk" OutputItemType="Analyzer" />
-    <PackageReference Include="Microsoft.DurableTask.Generators" OutputItemType="Analyzer" />
+    <!-- <PackageReference Include="Microsoft.DurableTask.Generators" OutputItemType="Analyzer" /> -->
   </ItemGroup>
 
   <ItemGroup>

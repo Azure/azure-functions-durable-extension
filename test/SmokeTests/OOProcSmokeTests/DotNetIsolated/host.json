@@ -15,6 +15,5 @@
         "controlQueueVisibilityTimeout": "00:01:00"
       }
     }
-  },
-  "functionTimeout": "00:00:30"
+  }
 }
