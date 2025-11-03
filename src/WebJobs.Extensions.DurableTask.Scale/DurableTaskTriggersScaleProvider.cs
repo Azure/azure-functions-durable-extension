@@ -20,94 +20,85 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
 
         private readonly IScaleMonitor monitor;
         private readonly ITargetScaler targetScaler;
-        private readonly DurableTaskOptions options;
+        private readonly DurableTaskScaleOptions options;
         private readonly INameResolver nameResolver;
         private readonly ILoggerFactory loggerFactory;
-        private readonly IEnumerable<IDurabilityProviderFactory> durabilityProviderFactories;
+        private readonly IEnumerable<IScalabilityProviderFactory> scalabilityProviderFactories;
 
         public DurableTaskTriggersScaleProvider(
-            IOptions<DurableTaskOptions> durableTaskOptions,
+            IOptions<DurableTaskScaleOptions> durableTaskScaleOptions,
             INameResolver nameResolver,
             ILoggerFactory loggerFactory,
-            IEnumerable<IDurabilityProviderFactory> durabilityProviderFactories,
+            IEnumerable<IScalabilityProviderFactory> scalabilityProviderFactories,
             TriggerMetadata triggerMetadata)
         {
-            this.options = durableTaskOptions.Value;
+            this.options = durableTaskScaleOptions.Value;
             this.nameResolver = nameResolver;
             this.loggerFactory = loggerFactory;
-            this.durabilityProviderFactories = durabilityProviderFactories;
+            this.scalabilityProviderFactories = scalabilityProviderFactories;
 
             string functionId = triggerMetadata.FunctionName;
             var functionName = new FunctionName(functionId);
 
             this.GetOptions(triggerMetadata);
 
-            IDurabilityProviderFactory durabilityProviderFactory = this.GetDurabilityProviderFactory();
+            IScalabilityProviderFactory scalabilityProviderFactory = this.GetScalabilityProviderFactory();
 
-            DurabilityProvider defaultDurabilityProvider;
-            if (string.Equals(durabilityProviderFactory.Name, AzureManagedProviderName, StringComparison.OrdinalIgnoreCase))
-            {
-                defaultDurabilityProvider = durabilityProviderFactory.GetDurabilityProvider(attribute: null, triggerMetadata);
-            }
-            else
-            {
-                defaultDurabilityProvider = durabilityProviderFactory.GetDurabilityProvider();
-            }
+            // Always use the triggerMetadata overload for scale scenarios
+            // The factory will extract TokenCredential if present
+            ScalabilityProvider defaultscalabilityProvider = scalabilityProviderFactory.GetDurabilityProvider(triggerMetadata);
 
             // Note: `this.options` is populated from the trigger metadata above
-            string? connectionName = GetConnectionName(durabilityProviderFactory, this.options);
+            string? connectionName = GetConnectionName(scalabilityProviderFactory, this.options);
+
+            // Check if using managed identity (for logging)
+            bool usesManagedIdentity = triggerMetadata.Properties != null && 
+                                       triggerMetadata.Properties.ContainsKey("AzureComponentFactory");
 
             var logger = loggerFactory.CreateLogger<DurableTaskTriggersScaleProvider>();
             logger.LogInformation(
-                "Creating DurableTaskTriggersScaleProvider for function {FunctionName}: connectionName = '{ConnectionName}'",
+                "Creating DurableTaskTriggersScaleProvider for function {FunctionName}: connectionName = '{ConnectionName}', usesManagedIdentity = '{UsesMI}'",
                 triggerMetadata.FunctionName,
-                connectionName);
+                connectionName,
+                usesManagedIdentity);
 
             this.targetScaler = ScaleUtils.GetTargetScaler(
-                defaultDurabilityProvider,
+                defaultscalabilityProvider,
                 functionId,
                 functionName,
                 connectionName,
                 this.options.HubName);
 
             this.monitor = ScaleUtils.GetScaleMonitor(
-                defaultDurabilityProvider,
+                defaultscalabilityProvider,
                 functionId,
                 functionName,
                 connectionName,
                 this.options.HubName);
         }
 
-        private static string? GetConnectionName(IDurabilityProviderFactory durabilityProviderFactory, DurableTaskOptions options)
+        private static string? GetConnectionName(IScalabilityProviderFactory scalabilityProviderFactory, DurableTaskScaleOptions options)
         {
-            if (durabilityProviderFactory is AzureStorageDurabilityProviderFactory azureStorageDurabilityProviderFactory)
+            if (scalabilityProviderFactory is AzureStorageScalabilityProviderFactory azureStorageScalabilityProviderFactory)
             {
-                // First, look for the connection name in the options
-                var azureStorageOptions = new AzureStorageOptions();
                 if (options != null && options.StorageProvider != null)
                 {
-                    var json = JsonSerializer.Serialize(options.StorageProvider);
-                    var newOptions = JsonSerializer.Deserialize<AzureStorageOptions>(json);
-                    if (newOptions != null)
+                    if (options.StorageProvider.TryGetValue("connectionName", out object value1) && value1 is string s1 && !string.IsNullOrWhiteSpace(s1))
                     {
-                        foreach (var prop in typeof(AzureStorageOptions).GetProperties())
-                        {
-                            var value = prop.GetValue(newOptions);
-                            if (value != null)
-                            {
-                                prop.SetValue(azureStorageOptions, value);
-                            }
-                        }
+                        return s1;
+                    }
+
+                    // legacy alias often used in payloads
+                    if (options.StorageProvider.TryGetValue("connectionStringName", out object value2) && value2 is string s2 && !string.IsNullOrWhiteSpace(s2))
+                    {
+                        return s2;
                     }
                 }
 
-                // If the connection name is not found in the options, use the default connection name from the factory
-                return azureStorageOptions.ConnectionName ?? azureStorageDurabilityProviderFactory.DefaultConnectionName;
+                return azureStorageScalabilityProviderFactory.DefaultConnectionName;
             }
-            else
-            {
-                return null;
-            }
+
+            return null;
         }
 
         private void GetOptions(TriggerMetadata triggerMetadata)
@@ -132,47 +123,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
                 this.options.StorageProvider = metadata?.StorageProvider;
             }
 
-            DurableTaskOptions.ResolveAppSettingOptions(this.options, this.nameResolver);
+            DurableTaskScaleOptions.ResolveAppSettingOptions(this.options, this.nameResolver);
         }
 
-        private IDurabilityProviderFactory GetDurabilityProviderFactory()
+        private IScalabilityProviderFactory GetScalabilityProviderFactory()
         {
             var logger = this.loggerFactory.CreateLogger<DurableTaskTriggersScaleProvider>();
-            return GetDurabilityProviderFactory(this.options, logger, this.durabilityProviderFactories);
+            return DurableTaskScaleExtension.GetScalabilityProviderFactory(this.options, logger, this.scalabilityProviderFactories);
         }
 
-        private static IDurabilityProviderFactory GetDurabilityProviderFactory(DurableTaskOptions options, ILogger logger, IEnumerable<IDurabilityProviderFactory> orchestrationServiceFactories)
-        {
-            const string DefaultProvider = "AzureStorage";
-
-            bool storageTypeIsConfigured = options.StorageProvider.TryGetValue("type", out object storageType);
-
-            if (!storageTypeIsConfigured)
-            {
-                try
-                {
-                    IDurabilityProviderFactory defaultFactory = orchestrationServiceFactories.First(f => f.Name.Equals(DefaultProvider));
-                    logger.LogInformation($"Using the default storage provider: {DefaultProvider}.");
-                    return defaultFactory;
-                }
-                catch (InvalidOperationException e)
-                {
-                    throw new InvalidOperationException($"Couldn't find the default storage provider: {DefaultProvider}.", e);
-                }
-            }
-
-            try
-            {
-                IDurabilityProviderFactory selectedFactory = orchestrationServiceFactories.First(f => string.Equals(f.Name, storageType.ToString(), StringComparison.OrdinalIgnoreCase));
-                logger.LogInformation($"Using the {storageType} storage provider.");
-                return selectedFactory;
-            }
-            catch (InvalidOperationException e)
-            {
-                IList<string> factoryNames = orchestrationServiceFactories.Select(f => f.Name).ToList();
-                throw new InvalidOperationException($"Storage provider type ({storageType}) was not found. Available storage providers: {string.Join(", ", factoryNames)}.", e);
-            }
-        }
 
         public IScaleMonitor GetMonitor()
         {

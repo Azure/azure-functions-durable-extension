@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage;
 using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -32,17 +33,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
 
             builder
                 .AddExtension<DurableTaskScaleExtension>()
-                .BindOptions<DurableTaskOptions>();
+                .BindOptions<DurableTaskScaleOptions>();
 
             IServiceCollection serviceCollection = builder.Services;
-            serviceCollection.AddAzureClientsCore();
-            serviceCollection.TryAddSingleton<IConnectionInfoResolver, WebJobsConnectionInfoProvider>();
             serviceCollection.TryAddSingleton<IStorageServiceClientProviderFactory, StorageServiceClientProviderFactory>();
-            serviceCollection.TryAddSingleton<IDurableHttpMessageHandlerFactory, DurableHttpMessageHandlerFactory>();
-            serviceCollection.AddSingleton<IDurabilityProviderFactory, AzureStorageDurabilityProviderFactory>();
-            serviceCollection.TryAddSingleton<IMessageSerializerSettingsFactory, MessageSerializerSettingsFactory>();
-            serviceCollection.TryAddSingleton<IErrorSerializerSettingsFactory, ErrorSerializerSettingsFactory>();
-            serviceCollection.TryAddSingleton<IApplicationLifetimeWrapper, HostLifecycleService>();
+            serviceCollection.AddSingleton<IScalabilityProviderFactory, AzureStorageScalabilityProviderFactory>();
+            // Note: SqlServerScalabilityProviderFactory is registered by Scale Controller, not here
             return builder;
         }
 
@@ -57,7 +53,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
             DurableTaskTriggersScaleProvider provider = null;
             builder.Services.AddSingleton(serviceProvider =>
             {
-                provider = new DurableTaskTriggersScaleProvider(serviceProvider.GetService<IOptions<DurableTaskOptions>>(), serviceProvider.GetService<INameResolver>(), serviceProvider.GetService<ILoggerFactory>(), serviceProvider.GetService<IEnumerable<IDurabilityProviderFactory>>(), triggerMetadata);
+                provider = new DurableTaskTriggersScaleProvider(serviceProvider.GetService<IOptions<DurableTaskScaleOptions>>(), serviceProvider.GetService<INameResolver>(), serviceProvider.GetService<ILoggerFactory>(), serviceProvider.GetService<IEnumerable<IScalabilityProviderFactory>>(), triggerMetadata);
                 return provider;
             });
 

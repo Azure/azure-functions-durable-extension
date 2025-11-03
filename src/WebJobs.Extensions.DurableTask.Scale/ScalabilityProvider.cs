@@ -16,39 +16,28 @@ using Newtonsoft.Json.Linq;
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
 {
     /// <summary>
-    /// The backend storage provider that provides the actual durability of Durable Functions.
-    /// This is functionally a superset of <see cref="IOrchestrationService"/> and <see cref="IOrchestrationServiceClient"/>.
-    /// If the storage provider does not any of the Durable Functions specific operations, they can use this class
-    /// directly with the expectation that only those interfaces will be implemented. All of the Durable Functions specific
-    /// methods/operations are virtual and can be overwritten by creating a subclass.
+    /// The backend storage scalability provider for Durable Functions.
     /// </summary>
-    public class DurabilityProvider
+    public class ScalabilityProvider
     {
         internal const string NoConnectionDetails = "default";
 
-        private static readonly JObject EmptyConfig = new JObject();
-
         private readonly string name;
-        private readonly IOrchestrationService innerService;
-        private readonly IOrchestrationServiceClient innerServiceClient;
-        private readonly IEntityOrchestrationService entityOrchestrationService;
         private readonly string connectionName;
+        private int maxConcurrentTaskOrchestrationWorkItems;
+        private int maxConcurrentTaskActivityWorkItems;
 
         /// <summary>
-        /// Creates the default <see cref="DurabilityProvider"/>.
+        /// Creates the default <see cref="ScalabilityProvider"/>.
         /// </summary>
         /// <param name="storageProviderName">The name of the storage backend providing the durability.</param>
-        /// <param name="service">The internal <see cref="IOrchestrationService"/> that provides functionality
-        /// for this classes implementions of <see cref="IOrchestrationService"/>.</param>
-        /// <param name="serviceClient">The internal <see cref="IOrchestrationServiceClient"/> that provides functionality
-        /// for this classes implementions of <see cref="IOrchestrationServiceClient"/>.</param>
         /// <param name="connectionName">The name of the app setting that stores connection details for the storage provider.</param>
-        public DurabilityProvider(string storageProviderName, IOrchestrationService service, IOrchestrationServiceClient serviceClient, string connectionName)
+        public ScalabilityProvider(string storageProviderName, string connectionName)
         {
             this.name = storageProviderName ?? throw new ArgumentNullException(nameof(storageProviderName));
-            this.innerService = service ?? throw new ArgumentNullException(nameof(service));
-            this.entityOrchestrationService = service as IEntityOrchestrationService;
-            this.connectionName = connectionName ?? throw new ArgumentNullException(connectionName);
+            this.connectionName = connectionName ?? throw new ArgumentNullException(nameof(connectionName));
+            this.maxConcurrentTaskOrchestrationWorkItems = 10; // Default value
+            this.maxConcurrentTaskActivityWorkItems = 10; // Default value
         }
 
         /// <summary>
@@ -58,32 +47,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
         public virtual string ConnectionName => this.connectionName;
 
         /// <summary>
-        /// Specifies whether the durability provider supports Durable Entities.
+        /// Gets or sets the maximum number of concurrent orchestration work items.
         /// </summary>
-        public virtual bool SupportsEntities => this.entityOrchestrationService?.EntityBackendProperties != null;
+        public virtual int MaxConcurrentTaskOrchestrationWorkItems
+        {
+            get => this.maxConcurrentTaskOrchestrationWorkItems;
+            set => this.maxConcurrentTaskOrchestrationWorkItems = value;
+        }
 
         /// <summary>
-        /// JSON representation of configuration to emit in telemetry.
+        /// Gets or sets the maximum number of concurrent activity work items.
         /// </summary>
-        public virtual JObject ConfigurationJson => EmptyConfig;
+        public virtual int MaxConcurrentTaskActivityWorkItems
+        {
+            get => this.maxConcurrentTaskActivityWorkItems;
+            set => this.maxConcurrentTaskActivityWorkItems = value;
+        }
 
         /// <summary>
-        /// Event source name (e.g. DurableTask-AzureStorage).
+        ///  Returns true if the stored connection string, ConnectionName, matches the input ScalabilityProvider ConnectionName.
         /// </summary>
-        public virtual string EventSourceName { get; set; }
-
-        /// <inheritdoc/>
-        public int MaxConcurrentTaskOrchestrationWorkItems => this.innerService.MaxConcurrentTaskOrchestrationWorkItems;
-
-        /// <inheritdoc/>
-        public int MaxConcurrentTaskActivityWorkItems => this.innerService.MaxConcurrentTaskActivityWorkItems;
-
-        /// <summary>
-        ///  Returns true if the stored connection string, ConnectionName, matches the input DurabilityProvider ConnectionName.
-        /// </summary>
-        /// <param name="durabilityProvider">The DurabilityProvider used to check for matching connection string names.</param>
+        /// <param name="durabilityProvider">The ScalabilityProvider used to check for matching connection string names.</param>
         /// <returns>A boolean indicating whether the connection names match.</returns>
-        internal virtual bool ConnectionNameMatches(DurabilityProvider durabilityProvider)
+        internal virtual bool ConnectionNameMatches(ScalabilityProvider durabilityProvider)
         {
             return this.ConnectionName.Equals(durabilityProvider.ConnectionName);
         }

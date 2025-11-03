@@ -8,7 +8,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
     /// <summary>
     /// Minimal options class for Scale package - only contains what's needed for scaling decisions.
     /// </summary>
-    public class DurableTaskOptions
+    public class DurableTaskScaleOptions
     {
         public string HubName { get; set; }
 
@@ -18,11 +18,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
 
         public int? MaxConcurrentActivityFunctions { get; set; }
 
-        public int? MaxConcurrentEntityFunctions { get; set; } = null;
-
-        public int? MaxEntityOperationBatchSize { get; set; } = null;
-
-        public static void ResolveAppSettingOptions(DurableTaskOptions options, INameResolver nameResolver)
+        public static void ResolveAppSettingOptions(DurableTaskScaleOptions options, INameResolver nameResolver)
         {
             if (options.StorageProvider.TryGetValue("connectionName", out object connectionNameObj) && connectionNameObj is string connectionName)
             {

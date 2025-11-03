@@ -16,29 +16,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage
     {
         private readonly DurableTaskMetricsProvider metricsProvider;
         private readonly TargetScalerResult scaleResult;
-        private readonly DurabilityProvider durabilityProvider;
+        private readonly ScalabilityProvider scalabilityProvider;
         private readonly ILogger logger;
         private readonly string scaler;
 
         public DurableTaskTargetScaler(
             string scalerId,
             DurableTaskMetricsProvider metricsProvider,
-            DurabilityProvider durabilityProvider,
+            ScalabilityProvider scalabilityProvider,
             ILogger logger)
         {
             this.scaler = scalerId;
             this.metricsProvider = metricsProvider;
             this.scaleResult = new TargetScalerResult();
             this.TargetScalerDescriptor = new TargetScalerDescriptor(this.scaler);
-            this.durabilityProvider = durabilityProvider;
+            this.scalabilityProvider = scalabilityProvider;
             this.logger = logger;
         }
 
         public TargetScalerDescriptor TargetScalerDescriptor { get; }
 
-        private int MaxConcurrentActivities => this.durabilityProvider.MaxConcurrentTaskActivityWorkItems;
+        private int MaxConcurrentActivities => this.scalabilityProvider.MaxConcurrentTaskActivityWorkItems;
 
-        private int MaxConcurrentOrchestrators => this.durabilityProvider.MaxConcurrentTaskOrchestrationWorkItems;
+        private int MaxConcurrentOrchestrators => this.scalabilityProvider.MaxConcurrentTaskOrchestrationWorkItems;
 
         public async Task<TargetScalerResult> GetScaleResultAsync(TargetScalerContext context)
         {

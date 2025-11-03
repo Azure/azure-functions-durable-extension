@@ -1,6 +1,7 @@
 // Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using System;
 using DurableTask.AzureStorage;
 using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Extensions.Logging;
@@ -14,36 +15,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage
     /// <summary>
     /// The Azure Storage implementation of additional methods not required by IOrchestrationService.
     /// </summary>
-    public class AzureStorageDurabilityProvider : DurabilityProvider
+    public class AzureStorageScalabilityProvider : ScalabilityProvider
     {
-        private readonly AzureStorageOrchestrationService serviceClient;
-        private readonly IStorageServiceClientProviderFactory clientProviderFactory;
+        private readonly StorageAccountClientProvider storageAccountClientProvider;
         private readonly string connectionName;
-        private readonly JObject storageOptionsJson;
         private readonly ILogger logger;
 
         private readonly object initLock = new object();
 
         private DurableTaskMetricsProvider singletonDurableTaskMetricsProvider;
 
-        public AzureStorageDurabilityProvider(
-            AzureStorageOrchestrationService service,
-            IStorageServiceClientProviderFactory clientProviderFactory,
+        public AzureStorageScalabilityProvider(
+            StorageAccountClientProvider storageAccountClientProvider,
             string connectionName,
-            AzureStorageOptions options,
             ILogger logger)
-            : base("Azure Storage", service, service, connectionName)
+            : base("AzureStorage", connectionName)
         {
-            this.serviceClient = service;
-            this.clientProviderFactory = clientProviderFactory;
+            this.storageAccountClientProvider = storageAccountClientProvider ?? throw new ArgumentNullException(nameof(storageAccountClientProvider));
             this.connectionName = connectionName;
-            this.storageOptionsJson = JObject.FromObject(
-                options,
-                new JsonSerializer
-                {
-                    Converters = { new StringEnumConverter() },
-                    ContractResolver = new CamelCasePropertyNamesContractResolver(),
-                });
             this.logger = logger;
         }
 
@@ -51,10 +40,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage
         /// The app setting containing the Azure Storage connection string.
         /// </summary>
         public override string ConnectionName => this.connectionName;
-
-        public override JObject ConfigurationJson => this.storageOptionsJson;
-
-        public override string EventSourceName { get; set; } = "DurableTask-AzureStorage";
 
         internal DurableTaskMetricsProvider GetMetricsProvider(
             string hubName,
@@ -77,9 +62,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage
                 if (this.singletonDurableTaskMetricsProvider == null)
                 {
                     // This is only called by the ScaleController, it doesn't run in the Functions Host process.
+                    // Use the StorageAccountClientProvider that was created with the credential in the factory
                     this.singletonDurableTaskMetricsProvider = this.GetMetricsProvider(
                         hubName,
-                        this.clientProviderFactory.GetClientProvider(connectionName),
+                        this.storageAccountClientProvider,
                         this.logger);
                 }
 
@@ -100,9 +86,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage
                 if (this.singletonDurableTaskMetricsProvider == null)
                 {
                     // This is only called by the ScaleController, it doesn't run in the Functions Host process.
+                    // Use the StorageAccountClientProvider that was created with the credential in the factory
                     this.singletonDurableTaskMetricsProvider = this.GetMetricsProvider(
                         hubName,
-                        this.clientProviderFactory.GetClientProvider(connectionName),
+                        this.storageAccountClientProvider,
                         this.logger);
                 }
 
