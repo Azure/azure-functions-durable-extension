@@ -1015,19 +1015,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return request.CreateResponse(HttpStatusCode.NotFound);
             }
 
-            switch (status.RuntimeStatus)
+            if (status.RuntimeStatus != OrchestrationRuntimeStatus.Failed)
             {
-                case OrchestrationRuntimeStatus.Canceled:
-                case OrchestrationRuntimeStatus.Terminated:
-                case OrchestrationRuntimeStatus.Completed:
-                    return request.CreateResponse(HttpStatusCode.Gone);
+                return request.CreateResponse(HttpStatusCode.PreconditionFailed, "Only orchestrations in the \"Failed\" state can be rewound.");
             }
 
             string reason = request.GetQueryNameValuePairs()["reason"];
 
+            try
+            {
 #pragma warning disable 0618
-            await client.RewindAsync(instanceId, reason);
+                await client.RewindAsync(instanceId, reason);
 #pragma warning restore 0618
+            }
+            catch (NotSupportedException e)
+            {
+                return request.CreateErrorResponse(HttpStatusCode.NotImplemented, "Rewind is not supported by the underlying storage provider.", e);
+            }
 
             return request.CreateResponse(HttpStatusCode.Accepted);
         }

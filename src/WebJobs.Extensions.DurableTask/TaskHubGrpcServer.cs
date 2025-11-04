@@ -317,6 +317,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 // Orchestration is not in a failed state.
                 throw new RpcException(new Status(StatusCode.FailedPrecondition, ex.Message));
             }
+            catch (NotSupportedException ex)
+            {
+                // Rewind is not supported by the underlying storage provider.
+                throw new RpcException(new Status(StatusCode.Unimplemented, ex.Message));
+            }
             catch (Exception ex)
             {
                 // Any other unexpected exceptions.
