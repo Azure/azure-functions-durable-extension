@@ -1028,7 +1028,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 await client.RewindAsync(instanceId, reason);
 #pragma warning restore 0618
             }
-            catch (NotSupportedException e)
+            catch (NotImplementedException e)
             {
                 return request.CreateErrorResponse(HttpStatusCode.NotImplemented, "Rewind is not supported by the underlying storage provider.", e);
             }
