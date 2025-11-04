@@ -305,6 +305,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         }
                     }
 
+                    foreach (KeyValuePair<string, string> kvp in completedAction.Tags)
+                    {
+                        action.Tags[kvp.Key] = kvp.Value;
+                    }
+
                     return action;
                 default:
                     throw new NotSupportedException($"Received unsupported action type '{a.OrchestratorActionTypeCase}'.");
