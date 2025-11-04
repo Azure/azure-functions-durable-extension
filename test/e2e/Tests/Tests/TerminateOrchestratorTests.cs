@@ -40,7 +40,7 @@ public class TerminateOrchestratorTests
     }
 
 
-    [Fact(Skip = "Will enable when https://github.com/Azure/azure-functions-durable-extension/issues/3025 is fixed")]
+    [Fact]
     [Trait("PowerShell", "Skip")] // Scheduled orchestrations not implemented in PowerShell
     public async Task TerminateScheduledOrchestration_ShouldSucceed()
     {
