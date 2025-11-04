@@ -42,6 +42,8 @@ public class TerminateOrchestratorTests
 
     [Fact]
     [Trait("PowerShell", "Skip")] // Scheduled orchestrations not implemented in PowerShell
+    [Trait("Python", "Skip")] // Scheduled orchestrations not implemented in Node
+    [Trait("Node", "Skip")] // Scheduled orchestrations not implemented in Python
     public async Task TerminateScheduledOrchestration_ShouldSucceed()
     {
         DateTime scheduledStartTime = DateTime.UtcNow + TimeSpan.FromMinutes(1);
