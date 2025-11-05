@@ -47,7 +47,7 @@ public class TerminateOrchestratorTests
     public async Task TerminateScheduledOrchestration_ShouldSucceed()
     {
         DateTime scheduledStartTime = DateTime.UtcNow + TimeSpan.FromMinutes(1);
-        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("HelloCities_HttpStart_Scheduled", $"?scheduledStartTime={scheduledStartTime.ToString("o")}");
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("HelloCities_HttpStart_Scheduled", $"?ScheduledStartTime={scheduledStartTime.ToString("o")}");
 
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         string instanceId = await DurableHelpers.ParseInstanceIdAsync(response);
