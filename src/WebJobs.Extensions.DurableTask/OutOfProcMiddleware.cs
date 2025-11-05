@@ -12,8 +12,8 @@ using DurableTask.Core.Entities.OperationFormat;
 using DurableTask.Core.Exceptions;
 using DurableTask.Core.History;
 using DurableTask.Core.Middleware;
+using Google.Protobuf;
 using Microsoft.Azure.WebJobs.Host.Executors;
-using Newtonsoft.Json;
 using P = Microsoft.DurableTask.Protobuf;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
@@ -637,12 +637,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         return details;
                     }
 
+                    // For non-.NET language, properties at FailureDetails is not supported yet.
                     if (TrySplitExceptionTypeFromMessage(exception, out string? exceptionType, out string? exceptionMessage))
                     {
-                        return new FailureDetails(exceptionType, exceptionMessage, stackTrace, innerFailure: null, isNonRetriable: false);
+                        return new FailureDetails(exceptionType, exceptionMessage, stackTrace, innerFailure: null, isNonRetriable: false, properties: null);
                     }
 
-                    return new FailureDetails("(unknown)", exception, stackTrace, innerFailure: null, isNonRetriable: false);
+                    return new FailureDetails("(unknown)", exception, stackTrace, innerFailure: null, isNonRetriable: false, properties: null);
                 }
                 else
                 {
@@ -662,12 +663,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return null;
             }
 
+            IDictionary<string, object?>? properties = null;
+            if (taskFailureDetails.Properties != null && taskFailureDetails.Properties.Count > 0)
+            {
+                properties = new Dictionary<string, object?>();
+                foreach (var kvp in taskFailureDetails.Properties)
+                {
+                    properties[kvp.Key] = ProtobufUtils.ConvertValueToObject(kvp.Value);
+                }
+            }
+
             return new FailureDetails(
                 taskFailureDetails.ErrorType ?? string.Empty,
                 taskFailureDetails.ErrorMessage ?? string.Empty,
                 taskFailureDetails.StackTrace,
                 GetFailureDetails(taskFailureDetails.InnerFailure),
-                taskFailureDetails.IsNonRetriable);
+                taskFailureDetails.IsNonRetriable,
+                properties);
         }
 
         private static bool TryGetRpcExceptionFields(
@@ -712,6 +724,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return true;
         }
 
+        // Parse a serialized TaskFailureDetails JSON payload embedded in an exception message.
         private static bool TryExtractSerializedFailureDetailsFromException(string exception, out FailureDetails? details)
         {
             try
@@ -724,7 +737,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 int newlineIndex = exception.IndexOf('\n');
                 string serializedMessage = newlineIndex < 0 ? exception : exception.Substring(0, newlineIndex).Trim();
-                P.TaskFailureDetails? taskFailureDetails = JsonConvert.DeserializeObject<P.TaskFailureDetails>(serializedMessage);
+
+                P.TaskFailureDetails? taskFailureDetails = JsonParser.Default.Parse<P.TaskFailureDetails>(serializedMessage);
                 if (taskFailureDetails != null)
                 {
                     details = GetFailureDetails(taskFailureDetails);

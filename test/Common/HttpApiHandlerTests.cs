@@ -1673,14 +1673,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.StartsWith("http://localhost:7071", (string)status["terminatePostUri"]);
         }
 
-        [Fact]
+        [Theory]
+        [InlineData(null, null, null)] // No default, no query parameter
+        [InlineData("4.0", null, "4.0")] // Default version used when no query parameter
+        [InlineData("4.0", "5.2", "5.2")] // Query parameter overrides default
+        [InlineData("4.0", "", "")] // Empty query parameter overrides default
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task StartNewInstance_Uses_DefaultVersion_And_Calls_CreateTaskOrchestrationAsync()
+        public async Task StartNewInstance_Calls_CreateTaskOrchestrationAsync_With_Correct_Version(
+            string defaultVersion, string queryParameterVersion, string expectedVersion)
         {
             var functionName = "TestOrchestrator";
             var instanceId = Guid.NewGuid().ToString("N");
-            var defaultVersion = "4.0";
-            var requestUri = new Uri($"http://localhost/runtime/webhooks/durabletask/orchestrators/{functionName}/{instanceId}");
+            var baseUri = $"http://localhost/runtime/webhooks/durabletask/orchestrators/{functionName}/{instanceId}";
+            var requestUri = queryParameterVersion != null
+                ? new Uri($"{baseUri}?version={queryParameterVersion}")
+                : new Uri(baseUri);
 
             ExecutionStartedEvent capturedEvent = null;
 
@@ -1725,7 +1732,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
             Assert.NotNull(capturedEvent);
-            Assert.Equal(defaultVersion, capturedEvent.Version);
+            Assert.Equal(expectedVersion, capturedEvent.Version);
         }
 
         private static DurableTaskExtension GetTestExtension()

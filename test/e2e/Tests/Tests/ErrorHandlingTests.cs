@@ -223,4 +223,72 @@ public class ErrorHandlingTests
         Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains(nameof(OverflowException)) &&
                                                               x.Contains("Inner exception message"));
     }
+
+    [Fact]
+    [Trait("PowerShell", "Skip")] // FailureDetails is a dotnet-isolated implementation detail
+    [Trait("Python", "Skip")] // FailureDetails is a dotnet-isolated implementation detail
+    [Trait("Node", "Skip")] // FailureDetails is a dotnet-isolated implementation detail
+    [Trait("Java", "Skip")] // Include exception properties at Failure Details for Java is not supported yet.
+    [Trait("DTS", "Skip")] // DTS doesn't support this feature yet.
+    public async Task CustomExceptionPropertiesInFailureDetails()
+    {
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=OrchestrationWithCustomException");
+
+        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
+
+        string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
+
+        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", 30);
+        
+        var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
+        // Deserialize the output to FailureDetails
+        var failureDetails = JsonConvert.DeserializeObject<TaskFailureDetails>(orchestrationDetails.Output);
+
+        // Check FailureDetails contains the right error type and error message
+        Assert.NotNull(failureDetails);
+        Assert.Contains("BusinessValidationException", failureDetails.ErrorType);
+        Assert.Equal("Business logic validation failed", failureDetails.ErrorMessage);
+
+        // Check that custom properties are included
+        Assert.NotNull(failureDetails.Properties);
+        
+        // Verify string property
+        Assert.True(failureDetails.Properties.ContainsKey("StringProperty"));
+        Assert.Equal("validation-error-123", failureDetails.Properties["StringProperty"]);
+        
+        // Verify int property
+        Assert.True(failureDetails.Properties.ContainsKey("IntProperty"));
+        Assert.Equal((long)100, failureDetails.Properties["IntProperty"]);
+        
+        // Verify long property
+        Assert.True(failureDetails.Properties.ContainsKey("LongProperty"));
+        Assert.Equal(999999999L, failureDetails.Properties["LongProperty"]);
+        
+        // Verify DateTime property
+
+        Assert.True(failureDetails.Properties.ContainsKey("DateTimeProperty"));
+        Assert.Equal(new DateTime(2025, 10, 15, 14, 30, 0, DateTimeKind.Utc), failureDetails.Properties["DateTimeProperty"]);
+
+        // Verify dictionary property
+        Assert.True(failureDetails.Properties.ContainsKey("DictionaryProperty"));
+        var dictProperty = JsonConvert.DeserializeObject<Dictionary<string, object>>(failureDetails.Properties["DictionaryProperty"]!.ToString()!);
+        Assert.NotNull(dictProperty);
+        Assert.Equal("VALIDATION_FAILED", dictProperty["error_code"]);
+        Assert.Equal((long)3, dictProperty["retry_count"]);
+        Assert.Equal(true, dictProperty["is_critical"]);
+        
+        // Verify list property
+        Assert.True(failureDetails.Properties.ContainsKey("ListProperty"));
+        var listProperty = JsonConvert.DeserializeObject<List<object>>(failureDetails.Properties["ListProperty"]!.ToString()!);
+        Assert.NotNull(listProperty);
+        Assert.Equal(4, listProperty.Count);
+        Assert.Equal("error1", listProperty[0]);
+        Assert.Equal("error2", listProperty[1]);
+        Assert.Equal((long)500, listProperty[2]);
+        Assert.Null(listProperty[3]);
+        
+        // Verify null property
+        Assert.True(failureDetails.Properties.ContainsKey("NullProperty"));
+        Assert.Null(failureDetails.Properties["NullProperty"]);
+    }
 }

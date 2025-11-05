@@ -415,5 +415,94 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 runtimeType.ToString().Equals(workerRuntime, StringComparison.OrdinalIgnoreCase);
             }
         }
+
+        [Theory]
+        [InlineData(false, "2.0", null, "MySubOrchestrator\n2.0")] // Explicit version
+        [InlineData(false, null, null, "MySubOrchestrator")] // Null version - no delimiter
+        [InlineData(false, "", null, "MySubOrchestrator\n")] // Empty version - delimiter included
+        [InlineData(false, "1.0.0", null, "MySubOrchestrator\n1.0.0")] // Semantic version
+        [InlineData(false, "4.5.6-preview", null, "MySubOrchestrator\n4.5.6-preview")] // Pre-release version
+        [InlineData(false, "2.0-beta.1", null, "MySubOrchestrator\n2.0-beta.1")] // Beta version
+        [InlineData(false, "v1.2.3", null, "MySubOrchestrator\nv1.2.3")] // Version with prefix
+        [InlineData(true, "3.5.1", null, "MySubOrchestrator\n3.5.1")] // Explicit version with retry
+        [InlineData(true, null, null, "MySubOrchestrator")] // Null version with retry
+        [InlineData(false, "5.0", "V2", "MySubOrchestrator\n5.0")] // Schema V2
+        [InlineData(false, "5.0", "V3", "MySubOrchestrator\n5.0")] // Schema V3
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task CallSubOrchestrator_VersionHandling_OutOfProc(bool withRetry, string version, string schemaVersion, string expectedFunctionName)
+        {
+            string capturedFunctionName = null;
+            RetryOptions capturedRetryOptions = null;
+
+            // Mock the CallSubOrchestratorAsync or CallSubOrchestratorWithRetryAsync API
+            var contextMock = new Mock<IDurableOrchestrationContext>();
+
+            if (withRetry)
+            {
+                contextMock
+                    .Setup(ctx => ctx.CallSubOrchestratorWithRetryAsync(
+                        It.IsAny<string>(),
+                        It.IsAny<RetryOptions>(),
+                        It.IsAny<string>(),
+                        It.IsAny<object>()))
+                    .Callback<string, RetryOptions, string, object>((name, retry, instanceId, input) =>
+                    {
+                        capturedFunctionName = name;
+                        capturedRetryOptions = retry;
+                    })
+                    .Returns(Task.CompletedTask);
+            }
+            else
+            {
+                contextMock
+                    .Setup(ctx => ctx.CallSubOrchestratorAsync(
+                        It.IsAny<string>(),
+                        It.IsAny<string>(),
+                        It.IsAny<object>()))
+                    .Callback<string, string, object>((name, instanceId, input) =>
+                        capturedFunctionName = name)
+                    .Returns(Task.CompletedTask);
+            }
+
+            var shim = new OutOfProcOrchestrationShim(contextMock.Object);
+
+            var actionType = withRetry ? "CallSubOrchestratorWithRetry" : "CallSubOrchestrator";
+            var versionField = version == null ? string.Empty : $@"""version"": ""{version}"",";
+            var schemaVersionField = schemaVersion == null ? string.Empty : $@"""schemaVersion"": ""{schemaVersion}"",";
+            var retryField = withRetry ? @"""retryOptions"": {
+                ""firstRetryIntervalInMilliseconds"": 1000,
+                ""maxNumberOfAttempts"": 3
+            }," : string.Empty;
+
+            var executionJson = $@"
+{{
+    ""isDone"": false,
+    {schemaVersionField}
+    ""actions"": [
+        [{{
+            ""actionType"": ""{actionType}"",
+            ""functionName"": ""MySubOrchestrator"",
+            {versionField}
+            ""instanceId"": ""test-instance"",
+            {retryField}
+            ""input"": null
+        }}]
+    ]
+}}";
+
+            var jsonObject = JObject.Parse(executionJson);
+            OrchestrationInvocationResult result = new OrchestrationInvocationResult(jsonObject);
+            bool moreWork = await shim.ScheduleDurableTaskEvents(result);
+
+            Assert.True(moreWork);
+            Assert.NotNull(capturedFunctionName);
+            Assert.Equal(expectedFunctionName, capturedFunctionName);
+
+            if (withRetry)
+            {
+                Assert.NotNull(capturedRetryOptions);
+                Assert.Equal(3, capturedRetryOptions.MaxNumberOfAttempts);
+            }
+        }
     }
 }

@@ -54,9 +54,9 @@ public static class TaskOrchestrationContextExtensionMethods
 
             DateTime fireAt = default(DateTime);
 
-            if (headersDictionary.TryGetValue("Retry-After", out StringValues retryAfter))
+            if (headersDictionary.TryGetValue("Retry-After", out StringValues retryAfterStr) && int.TryParse(retryAfterStr, out int retryAfter))
             {
-                fireAt = context.CurrentUtcDateTime.AddSeconds(int.Parse(retryAfter));
+                fireAt = context.CurrentUtcDateTime.AddSeconds(retryAfter);
             }
             else
             {
@@ -69,7 +69,13 @@ public static class TaskOrchestrationContextExtensionMethods
 
             await context.CreateTimer(fireAt, CancellationToken.None);
 
-            string locationUrl = response.Headers!["Location"];
+            string? locationUrl = response.Headers["Location"];
+
+            if (locationUrl is null)
+            {
+                logger.LogWarning("HTTP response received but 'Location' header is missing; unable to poll for status.");
+                break;
+            }
 
             DurableHttpRequest newHttpRequest = CreateLocationPollRequest(request, locationUrl);
 

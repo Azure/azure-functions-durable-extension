@@ -40,12 +40,14 @@ public class TerminateOrchestratorTests
     }
 
 
-    [Fact(Skip = "Will enable when https://github.com/Azure/azure-functions-durable-extension/issues/3025 is fixed")]
+    [Fact]
     [Trait("PowerShell", "Skip")] // Scheduled orchestrations not implemented in PowerShell
+    [Trait("Python", "Skip")] // Scheduled orchestrations not implemented in Node
+    [Trait("Node", "Skip")] // Scheduled orchestrations not implemented in Python
     public async Task TerminateScheduledOrchestration_ShouldSucceed()
     {
         DateTime scheduledStartTime = DateTime.UtcNow + TimeSpan.FromMinutes(1);
-        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("HelloCities_HttpStart_Scheduled", $"?scheduledStartTime={scheduledStartTime.ToString("o")}");
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("HelloCities_HttpStart_Scheduled", $"?ScheduledStartTime={scheduledStartTime.ToString("o")}");
 
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         string instanceId = await DurableHelpers.ParseInstanceIdAsync(response);

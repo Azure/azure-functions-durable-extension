@@ -129,7 +129,9 @@ internal class DurableTaskFunctionsMiddleware(ExtendedSessionsCache extendedSess
         }
         catch (Exception ex)
         {
-            throw new DurableSerializationException(ex);
+            // Get the exception properties provider from the service provider if available
+            IExceptionPropertiesProvider? exceptionPropertiesProvider = functionContext.InstanceServices.GetService(typeof(IExceptionPropertiesProvider)) as IExceptionPropertiesProvider;
+            throw new DurableSerializationException(ex, exceptionPropertiesProvider);
         }
     }
 }

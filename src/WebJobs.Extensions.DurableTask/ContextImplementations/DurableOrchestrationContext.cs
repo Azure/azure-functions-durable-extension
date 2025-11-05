@@ -310,7 +310,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private async Task<DurableHttpResponse> ScheduleDurableHttpActivityAsync(DurableHttpRequest req)
         {
             DurableHttpResponse durableHttpResponse = await this.CallDurableTaskFunctionAsync<DurableHttpResponse>(
-                functionName: HttpOptions.HttpTaskActivityReservedName,
+                functionNameWithVersion: HttpOptions.HttpTaskActivityReservedName,
                 functionType: FunctionType.Activity,
                 oneWay: false,
                 instanceId: null,
@@ -538,7 +538,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         internal async Task<TResult> CallDurableTaskFunctionAsync<TResult>(
-            string functionName,
+            string functionNameWithVersion,
             FunctionType functionType,
             bool oneWay,
             string instanceId,
@@ -562,11 +562,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
             }
 
-            // Propagate the default version to orchestrators.
-            // TODO: Decide whether we want to propagate the default version to actitities and entities as well.
-            string version = (functionType == FunctionType.Orchestrator)
-                             ? this.Config.Options.DefaultVersion
-                             : string.Empty;
+            (string functionName, string version) = this.ResolveVersionForFunctionCall(functionNameWithVersion, functionType);
 
             this.Config.ThrowIfFunctionDoesNotExist(functionName, functionType);
 
@@ -848,6 +844,33 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             return output;
+        }
+
+        /// <summary>
+        /// Resolves the function name and version for a function call based on the function type.
+        /// </summary>
+        /// <param name="functionNameWithVersion">The function name, optionally with version suffix.</param>
+        /// <param name="functionType">The type of function being called.</param>
+        /// <returns>A tuple containing the function name and resolved version.</returns>
+        private (string functionName, string version) ResolveVersionForFunctionCall(
+            string functionNameWithVersion,
+            FunctionType functionType)
+        {
+            // Only orchestrators support versioning.
+            // TODO: Decide whether we want to propagate the version to activities and entities as well.
+            if (functionType != FunctionType.Orchestrator)
+            {
+                return (functionNameWithVersion, string.Empty);
+            }
+
+            (string functionName, string version) = FunctionNameWithVersion.Parse(functionNameWithVersion);
+            if (version is null)
+            {
+                // Propagate the default version if no explicit version is provided.
+                version = this.Config.Options.DefaultVersion;
+            }
+
+            return (functionName, version);
         }
 
         internal async Task<TResult> WaitForEntityResponse<TResult>(Guid guid, EntityId? lockToUse)

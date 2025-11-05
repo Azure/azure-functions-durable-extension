@@ -18,6 +18,7 @@ internal class DurableHelpers
 
     internal class OrchestrationStatusDetails
     {
+        public string InstanceId { get; set; } = string.Empty;
         public string RuntimeStatus { get; set; } = string.Empty;
         public string Input { get; set; } = string.Empty;
         public string Output { get; set; } = string.Empty;
@@ -25,11 +26,16 @@ internal class DurableHelpers
         public DateTime LastUpdatedTime { get; set; }
         public OrchestrationStatusDetails(string statusQueryResponse)
         {
+            if (string.IsNullOrEmpty(statusQueryResponse))
+            {
+                return;
+            }
             JsonNode? statusQueryJsonNode = JsonNode.Parse(statusQueryResponse);
             if (statusQueryJsonNode == null)
             {
                 return;
             }
+            this.InstanceId = statusQueryJsonNode["instanceId"]?.GetValue<string>() ?? string.Empty;
             this.RuntimeStatus = statusQueryJsonNode["runtimeStatus"]?.GetValue<string>() ?? string.Empty;
             this.Input = statusQueryJsonNode["input"]?.ToString() ?? string.Empty;
             this.Output = statusQueryJsonNode["output"]?.ToString() ?? string.Empty;
