@@ -3,9 +3,6 @@
 
 using System;
 using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text.Json;
-using DurableTask.AzureStorage;
 using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
