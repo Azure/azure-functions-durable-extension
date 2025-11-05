@@ -278,10 +278,8 @@ if ($StartMSSqlContainer)
     if (!$MSSQLpwd) {
       Write-Warning "No MSSQL_SA_PASSWORD environment variable found! Skipping SQL Server container startup."
     }
-    else {
-      StartMSSQLContainer $MSSQLpwd
-    }
   }
+  StartMSSQLContainer $MSSQLpwd
 }
 
 if ($StartDTSContainer)
