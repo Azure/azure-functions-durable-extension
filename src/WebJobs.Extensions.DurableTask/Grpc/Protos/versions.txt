@@ -1,2 +1,2 @@
-# The following files were downloaded from branch main at 2025-09-17 01:59:32 UTC
-https://raw.githubusercontent.com/microsoft/durabletask-protobuf/f5745e0d83f608d77871c1894d9260ceaae08967/protos/orchestrator_service.proto
+# The following files were downloaded from branch stevosyan/add-orchestration-rewind at 2025-10-31 17:21:17 UTC
+https://raw.githubusercontent.com/microsoft/durabletask-protobuf/b829a2f0bd58de2373a88655ff654babe1c4aec6/protos/orchestrator_service.proto
