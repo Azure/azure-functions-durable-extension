@@ -4,11 +4,14 @@ This document provides instructions on how to use the end-to-end (E2E) test proj
 
 ## Prerequisites
 
-- PowerShell
-- npm/Node
-- .NET SDK
-- Maven
-- Docker (if running against a non-AzureStorage backend)
+- [PowerShell](https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell?view=powershell-7.5)
+- [npm/Node](https://nodejs.org/en/download)
+- [.NET SDK](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)
+- [Java 17](https://www.oracle.com/java/technologies/javase/jdk17-archive-downloads.html)
+- [Maven](https://maven.apache.org/download.cgi?.)
+- [Docker](https://www.docker.com/products/docker-desktop/)
+
+Note: Docker is only required if running against a non-AzureStorage backend
 
 ## About the tests
 
@@ -110,9 +113,9 @@ If the behavior is a difference in output formatting, and we don't expect to eve
 
 If the behavior is with logic or is something that we need to eventually address in the language worker to improve parity, use GetLanguageType() and if/case statements in the test code instead. This will improve visibility of these kinds of inconsistencies and (hopefully) motivate eventual changes towards parity.
 
-### Common issues
+### FAQ
 
-#### GRPC max size exceeded
+#### Exception: GRPC max size exceeded
 
 If you see the following exception while running the tests (specifically, DurableTaskClientWriteOutputTests and ListAllOrchestrations_ShouldSucceed):
 
@@ -126,3 +129,26 @@ To resolve this, there are several steps, in order of increasing severity:
 1. Run the test app manually and call PurgeOrchestrationHistory to delete all past instances.
 2. Use the Azure Storage explorer to connect to your azurite instance and delete the Task Hub manually by deleting the storage queues and tables.
 3. Completely remove the Azurite state and start fresh. This can be done by stopping the azurite process, navigating to the directory where it is running (for the azurite instance started by build-e2e-test.ps1 on Windows this is %LOCALAPPDATA%/Temp/DurableTaskExtensionE2ETests/azurite) and deleting all Azurite files.
+
+#### Non-dotnet languages
+
+See step #2 in `Running the E2E Tests` for instructions on running the tests against non-dotnet languages. When editing test.runsettings, the following values are accepted:
+**`E2E_TEST_FUNCTIONS_LANGUAGE`** — Supported values: `dotnet-isolated`, `powershell`, `python`, `node`, `java`
+**`TEST_APP_NAME`** — Supported values: `BasicDotNetIsolated`, `BasicPowerShell`, `BasicPython`, `BasicNode`, `BasicJava`
+
+It is important that the language and app name are compatible.
+
+#### Non-`Azure Storage` backends
+
+See step #3 in `Running the E2E Tests` for instructions on running the tests against non-`Azure Storage` backends. When editing test.runsettings, the following values are accepted for `E2E_TEST_DURABLE_BACKEND`: `AzureStorage`, `AzureManaged`, `MSSQL`.
+
+Note: When using MSSQL, it is also necessary to provide the `MSSQL_SA_PASSWORD` environment variable. This can be set in test.runsettings but must also be available to ./build-e2e-test.ps1 when using the -$StartMSSqlContainer flag, either using the environment variable with the same name or passing the password using -MSSQLpwd to the script arguments.
+
+#### build-e2e-test.ps1 helper flags
+
+The build-e2e-test.ps1 script has several flags and parameters that may be helpful for speeding up local development.
+
+- `-StartMSSqlContainer` and `-StartDTSContainer` will automatically pull the docker images for MSSQL or the Durable Task Scheduler, respectively, and start them up using arguments compatible with the E2E tests. You should also use `-MSSQLpwd` to provide the SA password that will be used for the MSSQL instance.
+- `-SkipBuild` will skip building the extension and tests apps entirely, useful when you want to download Core Tools or start an emulator without waiting for these components to build.
+- `-E2EAppName` may be used to build only one of the test apps in the project, for example passing `-E2EAppName BasicJava` will only build BasicJava, saving time during build.
+- `-SkipCoreTools` and `-SkipStorageEmulator` work as described, but build-e2e-test.ps1 will automatically skip these steps if Core Tools or the Storage emulator are already present/running, so these flags are useful only in niche situations.
