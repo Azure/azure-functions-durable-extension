@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <AssemblyName>Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale</AssemblyName>
     <RootNamespace>Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale</RootNamespace>
     <MajorVersion>3</MajorVersion>
@@ -41,6 +41,7 @@
     <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" />
     <PackageReference Include="Microsoft.DurableTask.SqlServer" />
     <PackageReference Include="Microsoft.Data.SqlClient" />
+    <PackageReference Include="Microsoft.DurableTask.AzureManagedBackend" />
   <!-- Removed Newtonsoft.Json, using System.Text.Json instead -->
     <PackageReference Include="Azure.Identity" />
     <!-- Build-time dependencies -->

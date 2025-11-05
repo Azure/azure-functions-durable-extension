@@ -14,16 +14,19 @@ using Microsoft.Extensions.Options;
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
 {
     /// <summary>
-    /// Extension for registering a Durable Functions configuration with <c>JobHostConfiguration</c>.
+    /// Provides extension methods for registering the <see cref="DurableTaskScaleExtension"/> with an <see cref="IWebJobsBuilder"/> or <c>JobHostConfiguration</c>.
     /// </summary>
     public static class DurableTaskJobHostConfigurationExtensions
     {
-
         /// <summary>
-        /// Adds the Durable Task extension to the provided <see cref="IWebJobsBuilder"/>.
+        /// Adds the <see cref="DurableTaskScaleExtension"/> to the specified <see cref="IWebJobsBuilder"/>.
+        /// This enables Durable Task–based scaling capabilities for WebJobs and Azure Functions hosts.
         /// </summary>
         /// <param name="builder">The <see cref="IWebJobsBuilder"/> to configure.</param>
-        /// <returns>Returns the provided <see cref="IWebJobsBuilder"/>.</returns>
+        /// <returns>The same <see cref="IWebJobsBuilder"/> instance, to allow for fluent chaining.</returns>
+        /// <exception cref="ArgumentNullException">
+        /// Thrown if the provided <paramref name="builder"/> is <see langword="null"/>.
+        /// </exception>
         public static IWebJobsBuilder AddDurableTask(this IWebJobsBuilder builder)
         {
             if (builder == null)
@@ -38,15 +41,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
             IServiceCollection serviceCollection = builder.Services;
             serviceCollection.TryAddSingleton<IStorageServiceClientProviderFactory, StorageServiceClientProviderFactory>();
             serviceCollection.AddSingleton<IScalabilityProviderFactory, AzureStorageScalabilityProviderFactory>();
-            // Note: SqlServerScalabilityProviderFactory is registered by Scale Controller, not here
             return builder;
         }
 
         /// <summary>
-        /// Adds the <see cref="IScaleMonitor"/> and <see cref="ITargetScaler"/> providers for the Durable Triggers.
+        /// Adds scale-monitoring components (<see cref="IScaleMonitor"/> and <see cref="ITargetScaler"/> providers) for Durable triggers.
+        /// This enables the scale controller to montor load of durable backends and make scaling decisions.
         /// </summary>
         /// <param name="builder">The <see cref="IWebJobsBuilder"/> to configure.</param>
-        /// <returns>Returns the provided <see cref="IWebJobsBuilder"/>.</returns>
+        /// <param name="triggerMetadata">Metadata describing the trigger to be monitored for scaling.</param>
+        /// <returns>The same <see cref="IWebJobsBuilder"/> instance, to allow for fluent chaining.</returns>
         internal static IWebJobsBuilder AddDurableScaleForTrigger(this IWebJobsBuilder builder, TriggerMetadata triggerMetadata)
         {
             // this segment adheres to the followings pattern: https://github.com/Azure/azure-sdk-for-net/pull/38756
@@ -57,7 +61,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
                 return provider;
             });
 
-            // Commenting out incremental scale model for hotfix release 3.0.0-rc.4, SC uses TBS by default
             // builder.Services.AddSingleton<IScaleMonitorProvider>(serviceProvider => serviceProvider.GetServices<DurableTaskTriggersScaleProvider>().Single(x => x == provider));
             builder.Services.AddSingleton<ITargetScalerProvider>(serviceProvider => serviceProvider.GetServices<DurableTaskTriggersScaleProvider>().Single(x => x == provider));
             return builder;

@@ -114,6 +114,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage
             // Validate Azure Storage specific options
             this.ValidateAzureStorageOptions(logger);
 
+            // Get the pre-parsed metadata from triggerMetadata.Properties (parsed by DurableTaskTriggersScaleProvider)
+            DurableTaskMetadata parsedMetadata = ExtractParsedMetadata(triggerMetadata);
+
             // Extract TokenCredential from triggerMetadata if present (for Managed Identity)
             var tokenCredential = ExtractTokenCredential(triggerMetadata);
 
@@ -128,9 +131,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage
                 this.DefaultConnectionName,
                 logger);
 
-            // Set the max concurrent values from options
-            provider.MaxConcurrentTaskOrchestrationWorkItems = this.options.MaxConcurrentOrchestratorFunctions ?? 10;
-            provider.MaxConcurrentTaskActivityWorkItems = this.options.MaxConcurrentActivityFunctions ?? 10;
+            // Extract max concurrent values from parsed metadata first, fallback to DI options
+            provider.MaxConcurrentTaskOrchestrationWorkItems = parsedMetadata?.MaxConcurrentOrchestratorFunctions 
+                ?? this.options.MaxConcurrentOrchestratorFunctions 
+                ?? 10;
+            provider.MaxConcurrentTaskActivityWorkItems = parsedMetadata?.MaxConcurrentActivityFunctions 
+                ?? this.options.MaxConcurrentActivityFunctions 
+                ?? 10;
 
             return provider;
         }
@@ -234,6 +241,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage
             {
                 throw new System.InvalidOperationException($"{nameof(this.options.MaxConcurrentActivityFunctions)} must be a positive integer.");
             }
+        }
+
+        private static DurableTaskMetadata ExtractParsedMetadata(TriggerMetadata triggerMetadata)
+        {
+            if (triggerMetadata?.Properties == null)
+            {
+                return null;
+            }
+
+            // The DurableTaskTriggersScaleProvider pre-parses the metadata and stores it in Properties
+            if (triggerMetadata.Properties.TryGetValue("DurableTaskMetadata", out object metadataObj) 
+                && metadataObj is DurableTaskMetadata metadata)
+            {
+                return metadata;
+            }
+
+            return null;
         }
     }
 }

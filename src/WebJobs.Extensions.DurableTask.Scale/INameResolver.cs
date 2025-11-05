@@ -9,11 +9,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
     public interface INameResolver
     {
         /// <summary>
-        /// Resolves an application setting name to its value.
+        /// Resolves an application setting name to its value. Set from Functions Scale Controller.
         /// </summary>
         /// <param name="name">The name of the application setting.</param>
         /// <returns>The resolved value, or the original name if no resolution is found.</returns>
         string Resolve(string name);
     }
 }
-

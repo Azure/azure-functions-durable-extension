@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureManaged;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Sql;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests;
@@ -60,6 +61,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
             var scalabilityProviderFactories = services.GetServices<IScalabilityProviderFactory>().ToList();
             Assert.NotEmpty(scalabilityProviderFactories);
             Assert.Contains(scalabilityProviderFactories, f => f is AzureStorageScalabilityProviderFactory);
+            Assert.Contains(scalabilityProviderFactories, f => f is AzureManagedScalabilityProviderFactory);
         }
 
         /// <summary>

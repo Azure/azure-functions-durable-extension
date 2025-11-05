@@ -3,16 +3,14 @@
 
 using System;
 using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
+using Azure.Core;
 using DurableTask.SqlServer;
 using Microsoft.Azure.WebJobs.Host.Scale;
+using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Microsoft.Data.SqlClient;
 using Newtonsoft.Json.Linq;
-using Azure.Core;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Sql
 {
@@ -44,44 +42,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Sql
             INameResolver nameResolver,
             ILoggerFactory loggerFactory)
         {
-            // Validate arguments first
-            if (options == null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
+            this.options = options?.Value ?? throw new ArgumentNullException(nameof(options));
+            this.configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+            this.nameResolver = nameResolver ?? throw new ArgumentNullException(nameof(nameResolver));
+            this.loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
 
-            if (configuration == null)
-            {
-                throw new ArgumentNullException(nameof(configuration));
-            }
-
-            if (nameResolver == null)
-            {
-                throw new ArgumentNullException(nameof(nameResolver));
-            }
-
-            if (loggerFactory == null)
-            {
-                throw new ArgumentNullException(nameof(loggerFactory));
-            }
-
-            // this constructor may be called by dependency injection even if the SQL Server provider is not selected
-            // in that case, return immediately, since this provider is not actually used, but can still throw validation errors
-            if (options.Value.StorageProvider != null
-                && options.Value.StorageProvider.TryGetValue("type", out object value)
-                && value is string s
-                && !string.Equals(s, this.Name, StringComparison.OrdinalIgnoreCase))
-            {
-                return;
-            }
-
-            this.options = options.Value;
-            this.configuration = configuration;
-            this.nameResolver = nameResolver;
-            this.loggerFactory = loggerFactory;
-
-            // Resolve default connection name directly from payload keys or fall back
-            this.DefaultConnectionName = ResolveConnectionName(options.Value.StorageProvider) ?? "SQLDB_Connection";
+            this.DefaultConnectionName = ResolveConnectionName(this.options.StorageProvider) ?? "SQLDB_Connection";
         }
 
         public virtual string Name => ProviderName;
@@ -126,36 +92,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Sql
             this.ValidateSqlServerOptions(logger);
 
             // Extract TokenCredential from triggerMetadata if present (for Managed Identity)
-            // This follows the same pattern as Azure Storage
             var tokenCredential = ExtractTokenCredential(triggerMetadata);
 
-            // Extract connection name from triggerMetadata (similar to how Azure Storage does it)
-            // The triggerMetadata contains storageProvider with connectionName or connectionStringName
-            string connectionName = this.DefaultConnectionName;
-            if (triggerMetadata?.Metadata != null)
-            {
-                var storageProvider = triggerMetadata.Metadata["storageProvider"];
-                if (storageProvider != null)
-                {
-                    var storageProviderObj = storageProvider.ToObject<System.Collections.Generic.Dictionary<string, object>>();
-                    if (storageProviderObj != null)
-                    {
-                        // Try connectionName first, then connectionStringName (legacy alias)
-                        if (storageProviderObj.TryGetValue("connectionName", out object connName) && connName is string connNameStr && !string.IsNullOrWhiteSpace(connNameStr))
-                        {
-                            connectionName = connNameStr;
-                        }
-                        else if (storageProviderObj.TryGetValue("connectionStringName", out object connStrName) && connStrName is string connStrNameStr && !string.IsNullOrWhiteSpace(connStrNameStr))
-                        {
-                            connectionName = connStrNameStr;
-                        }
-                    }
-                }
-            }
+            // Get the pre-parsed metadata from triggerMetadata.Properties (parsed by DurableTaskTriggersScaleProvider)
+            DurableTaskMetadata parsedMetadata = ExtractParsedMetadata(triggerMetadata);
+
+            // Check if trigger metadata specifies a different connection name, otherwise use default from constructor
+            string connectionName = ExtractConnectionName(triggerMetadata) ?? this.DefaultConnectionName;
+
+            // Extract task hub name from parsed metadata first, fallback to DI options
+            string taskHubName = parsedMetadata?.TaskHubName 
+                ?? this.options.HubName 
+                ?? "default";
 
             var sqlOrchestrationService = this.CreateSqlOrchestrationService(
                 connectionName,
-                this.options.HubName ?? "default",
+                taskHubName,
                 tokenCredential,
                 logger);
 
@@ -173,89 +125,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Sql
             global::Azure.Core.TokenCredential tokenCredential,
             ILogger logger)
         {
-            string connectionString = null;
-
-            // If TokenCredential is provided (Managed Identity), we need to build connection string from config
-            // SQL Server authentication with Managed Identity requires:
-            // - Server name (can be in connection string or config: {connectionName}__serverName)
-            // - Database name (can be in connection string or config: {connectionName}__databaseName)
-            // - Authentication="Active Directory Default" in connection string
-            if (tokenCredential != null)
+            // Resolve connection name first (handles %% wrapping)
+            string resolvedConnectionName = this.nameResolver.Resolve(connectionName);
+            
+            // Try to get connection string from configuration (app settings)
+            string connectionString = this.configuration.GetConnectionString(resolvedConnectionName)
+                                   ?? this.configuration[resolvedConnectionName];
+            
+            // Fallback to environment variable (matching old implementation behavior)
+            if (string.IsNullOrEmpty(connectionString))
             {
-                // For Managed Identity, read server name and database from configuration
-                // Pattern: {connectionName}__serverName, {connectionName}__databaseName
-                // Or fall back to parsing from connection string if available
-                // Note: Server name can also come from the connection string itself
-                var serverName = this.configuration[$"{connectionName}__serverName"]
-                              ?? this.configuration[$"{connectionName}__server"];
-                var databaseName = this.configuration[$"{connectionName}__databaseName"]
-                                ?? this.configuration[$"{connectionName}__database"];
-
-                // Try to get base connection string to extract server/database if not explicitly set
-                var baseConnectionString = this.configuration.GetConnectionString(connectionName)
-                                        ?? this.configuration[connectionName];
-
-                if (!string.IsNullOrEmpty(baseConnectionString))
-                {
-                    try
-                    {
-                        var builder = new SqlConnectionStringBuilder(baseConnectionString);
-                        // Use explicit config values if provided, otherwise use values from connection string
-                        if (string.IsNullOrEmpty(serverName))
-                        {
-                            serverName = builder.DataSource;
-                        }
-                        if (string.IsNullOrEmpty(databaseName))
-                        {
-                            databaseName = builder.InitialCatalog;
-                        }
-
-                        // Build connection string with Managed Identity authentication
-                        builder.DataSource = serverName;
-                        builder.InitialCatalog = databaseName ?? builder.InitialCatalog;
-                        builder.Authentication = SqlAuthenticationMethod.ActiveDirectoryDefault;
-                        // Remove password/user ID if present (not needed for Managed Identity)
-                        builder.Password = null;
-                        builder.UserID = null;
-                        
-                        connectionString = builder.ConnectionString;
-                    }
-                    catch (ArgumentException)
-                    {
-                        // If connection string parsing fails, try to construct from config values
-                    }
-                }
-
-                // If we still don't have connection string, construct from config values
-                if (string.IsNullOrEmpty(connectionString))
-                {
-                    if (string.IsNullOrEmpty(serverName))
-                    {
-                        throw new InvalidOperationException(
-                            $"No SQL server name configuration was found for Managed Identity. Please provide '{connectionName}__serverName' or '{connectionName}__server' app setting, or ensure '{connectionName}' connection string contains server name.");
-                    }
-
-                    var connectionStringBuilder = new SqlConnectionStringBuilder
-                    {
-                        DataSource = serverName,
-                        InitialCatalog = databaseName ?? "master",
-                        Authentication = SqlAuthenticationMethod.ActiveDirectoryDefault,
-                        Encrypt = true,
-                    };
-                    connectionString = connectionStringBuilder.ConnectionString;
-                }
+                connectionString = Environment.GetEnvironmentVariable(resolvedConnectionName);
             }
-            else
-            {
-                // No TokenCredential - use connection string from configuration (traditional auth)
-                connectionString = this.configuration.GetConnectionString(connectionName)
-                                ?? this.configuration[connectionName];
 
-                if (string.IsNullOrEmpty(connectionString))
-                {
-                    throw new InvalidOperationException(
-                        $"No SQL connection string configuration was found for the app setting or environment variable named '{connectionName}'.");
-                }
+            if (string.IsNullOrEmpty(connectionString))
+            {
+                throw new InvalidOperationException(
+                    $"No SQL connection string configuration was found for the app setting or environment variable named '{resolvedConnectionName}'.");
             }
 
             // Validate the connection string
@@ -268,7 +154,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Sql
                 throw new ArgumentException("The provided connection string is invalid.", e);
             }
 
-            // Create SQL Server orchestration service settings
+            // Create SQL Server orchestration service settings - following durabletask-mssql pattern
+            // Connection string should include authentication method (e.g., Authentication=Active Directory Default)
             var settings = new SqlOrchestrationServiceSettings(
                 connectionString,
                 taskHubName,
@@ -279,24 +166,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Sql
                 MaxConcurrentActivities = this.options.MaxConcurrentActivityFunctions ?? 10,
             };
 
-            // If TokenCredential is provided (from triggerMetadata in Azure), we need to use it instead of DefaultAzureCredential
-            // Register a custom SqlAuthenticationProvider that uses our specific TokenCredential
-            if (tokenCredential != null)
-            {
-                // Register custom authentication provider that uses the provided TokenCredential
-                // This ensures we use the TokenCredential from Scale Controller, not DefaultAzureCredential
-                var customProvider = new CustomTokenCredentialAuthenticationProvider(tokenCredential, logger);
-                SqlAuthenticationProvider.SetProvider(
-                    SqlAuthenticationMethod.ActiveDirectoryDefault,
-                    customProvider);
-            }
-            // Note: When tokenCredential is null (local development), we use Authentication="Active Directory Default"
-            // which will use DefaultAzureCredential. This works for local testing.
+            // Note: When connection string includes "Authentication=Active Directory Default" or 
+            // "Authentication=Active Directory Managed Identity", SQL Server will automatically use
+            // the appropriate Azure identity (managed identity in Azure, or DefaultAzureCredential locally).
+            // The tokenCredential from Scale Controller is primarily for Azure Storage; SQL Server 
+            // manages its own token acquisition through the connection string's Authentication setting.
 
             // Create and return the orchestration service
             return new SqlOrchestrationService(settings);
         }
 
+        // Note: ExtractTokenCredential is kept for potential future use, but SQL Server handles 
+        // its own authentication through the connection string (Authentication=Active Directory Default)
         private static global::Azure.Core.TokenCredential ExtractTokenCredential(TriggerMetadata triggerMetadata)
         {
             if (triggerMetadata?.Properties == null)
@@ -306,7 +187,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Sql
 
             // Check if metadata contains an AzureComponentFactory wrapper
             // ScaleController passes it as: metadata.Properties[nameof(AzureComponentFactory)] = new AzureComponentFactoryWrapper(...)
-            // This follows the same pattern as Azure Storage
             if (triggerMetadata.Properties.TryGetValue("AzureComponentFactory", out object componentFactoryObj) && componentFactoryObj != null)
             {
                 // The AzureComponentFactoryWrapper has CreateTokenCredential method
@@ -335,44 +215,33 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Sql
             return null;
         }
 
-        /// <summary>
-        /// Custom SqlAuthenticationProvider that uses a specific TokenCredential instead of DefaultAzureCredential.
-        /// This allows us to use the TokenCredential passed from triggerMetadata in Azure environments.
-        /// </summary>
-        private class CustomTokenCredentialAuthenticationProvider : SqlAuthenticationProvider
+        private static string ExtractConnectionName(TriggerMetadata triggerMetadata)
         {
-            private readonly TokenCredential tokenCredential;
-            private readonly ILogger logger;
-            private const string SqlResource = "https://database.windows.net/.default";
-
-            public CustomTokenCredentialAuthenticationProvider(TokenCredential tokenCredential, ILogger logger)
+            if (triggerMetadata?.Metadata == null)
             {
-                this.tokenCredential = tokenCredential ?? throw new ArgumentNullException(nameof(tokenCredential));
-                this.logger = logger;
+                return null;
             }
 
-            public override async Task<SqlAuthenticationToken> AcquireTokenAsync(SqlAuthenticationParameters parameters)
+            var storageProvider = triggerMetadata.Metadata["storageProvider"];
+            if (storageProvider != null)
             {
-                try
+                var storageProviderObj = storageProvider.ToObject<Dictionary<string, object>>();
+                if (storageProviderObj != null)
                 {
-                    // Get token from the provided TokenCredential
-                    var tokenRequestContext = new TokenRequestContext(new[] { SqlResource });
-                    var accessToken = await this.tokenCredential.GetTokenAsync(tokenRequestContext, CancellationToken.None);
-                    
-                    return new SqlAuthenticationToken(accessToken.Token, accessToken.ExpiresOn);
-                }
-                catch (Exception ex)
-                {
-                    this.logger?.LogError(ex, "Failed to acquire token from TokenCredential for SQL authentication");
-                    throw;
+                    // Try connectionName first, then connectionStringName (legacy alias)
+                    if (storageProviderObj.TryGetValue("connectionName", out object connName) && connName is string connNameStr && !string.IsNullOrWhiteSpace(connNameStr))
+                    {
+                        return connNameStr;
+                    }
+
+                    if (storageProviderObj.TryGetValue("connectionStringName", out object connStrName) && connStrName is string connStrNameStr && !string.IsNullOrWhiteSpace(connStrNameStr))
+                    {
+                        return connStrNameStr;
+                    }
                 }
             }
 
-            public override bool IsSupported(SqlAuthenticationMethod authenticationMethod)
-            {
-                // Only support Active Directory Default authentication
-                return authenticationMethod == SqlAuthenticationMethod.ActiveDirectoryDefault;
-            }
+            return null;
         }
 
         private static string ResolveConnectionName(IDictionary<string, object> storageProvider)
@@ -417,6 +286,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Sql
             {
                 throw new InvalidOperationException($"{nameof(this.options.MaxConcurrentActivityFunctions)} must be a positive integer.");
             }
+        }
+
+        private static DurableTaskMetadata ExtractParsedMetadata(TriggerMetadata triggerMetadata)
+        {
+            if (triggerMetadata?.Properties == null)
+            {
+                return null;
+            }
+
+            // The DurableTaskTriggersScaleProvider pre-parses the metadata and stores it in Properties
+            if (triggerMetadata.Properties.TryGetValue("DurableTaskMetadata", out object metadataObj) 
+                && metadataObj is DurableTaskMetadata metadata)
+            {
+                return metadata;
+            }
+
+            return null;
         }
     }
 }

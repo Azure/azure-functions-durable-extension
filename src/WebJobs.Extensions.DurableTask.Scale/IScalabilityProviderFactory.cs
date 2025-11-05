@@ -26,11 +26,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
         /// </summary>
         /// <param name="triggerMetadata">Trigger metadata used to create IOrchestrationService for functions scale scenarios.</param>
         /// <returns>A durability provider to be used by a client function.</returns>
-        ScalabilityProvider GetDurabilityProvider(TriggerMetadata triggerMetadata)
-        {
-            // This method is not supported by this provider.
-            // Only providers that require TriggerMetadata for scale should implement it.
-            throw new NotImplementedException("This provider does not support GetDurabilityProvider with TriggerMetadata.");
-        }
+        ScalabilityProvider GetDurabilityProvider(TriggerMetadata triggerMetadata);
     }
 }
