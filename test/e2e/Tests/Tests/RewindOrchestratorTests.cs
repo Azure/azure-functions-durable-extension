@@ -24,14 +24,16 @@ public class RewindOrchestratorTests
 
     [Theory]
     [Trait("DTS", "Skip")] // Need to wait for the emulator to be released with the new rewind implementation
-    [Trait("MSSQL", "Skip")] // Rewind is not implemented in the MSSQL backend
+    [Trait("Java", "Skip")] // Rewind is not implemented in Java
+    [Trait("Python", "Skip")] // Rewind is not implemented in Python
+    [Trait("PowerShell", "Skip")] // Rewind is not implemented in PowerShell
     [InlineData(1)]
     [InlineData(2)]
     public async Task RewindFailedOrchestration_ShouldSucceed(int numFailures)
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger(
             "HttpStart_RewindOrchestration",
-            $"?orchestrationName=RewindParentOrchestration&input=fail&numFailures={numFailures}");
+            $"?input=fail&numFailures={numFailures}");
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         string instanceId = await DurableHelpers.ParseInstanceIdAsync(response);
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
@@ -65,12 +67,15 @@ public class RewindOrchestratorTests
     }
 
     [Fact]
+    [Trait("Java", "Skip")] // Rewind is not implemented in Java
+    [Trait("Python", "Skip")] // Rewind is not implemented in Python
+    [Trait("PowerShell", "Skip")] // Rewind is not implemented in PowerShell
     public async Task RewindOnlyRewindsFailedOrchestrations()
     {
         // Try to rewind a completed, running, terminated, and pending orchestration - all should fail
         HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger(
             "HttpStart_RewindOrchestration",
-            $"?orchestrationName=RewindParentOrchestration&input=complete&numFailures=0");
+            $"?input=complete&numFailures=0");
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         string instanceId = await DurableHelpers.ParseInstanceIdAsync(response);
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
@@ -78,21 +83,37 @@ public class RewindOrchestratorTests
 
         // Rewind a completed orchestration
         HttpResponseMessage rewindResponse = await HttpHelpers.InvokeHttpTrigger("RewindInstance", $"?instanceId={instanceId}");
-        Assert.Equal(HttpStatusCode.PreconditionFailed, rewindResponse.StatusCode);
+        // For all of the following tests, since Node throws a generic error in the case of a failure to rewind there is no great way 
+        // to return specific status codes, whereas .NET isolated returns specific error types which can be used to return specific status codes.
+        // So, in the Node case, we simply check for the BadRequest status code.
+        if (this.fixture.functionLanguageLocalizer.GetLanguageType() == LanguageType.DotnetIsolated)
+        {
+            Assert.Equal(HttpStatusCode.PreconditionFailed, rewindResponse.StatusCode);
+        }
+        else
+        {
+            Assert.Equal(HttpStatusCode.BadRequest, rewindResponse.StatusCode);
+        }
         response.Dispose();
         rewindResponse.Dispose();
 
+        // Rewind a running orchestration
         response = await HttpHelpers.InvokeHttpTrigger(
             "HttpStart_RewindOrchestration",
-            $"?orchestrationName=RewindParentOrchestration&input=run&numFailures=0");
+            $"?input=run&numFailures=0");
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         instanceId = await DurableHelpers.ParseInstanceIdAsync(response);
         statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
         await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Running", 30);
-
-        // Rewind a running orchestration
         rewindResponse = await HttpHelpers.InvokeHttpTrigger("RewindInstance", $"?instanceId={instanceId}");
-        Assert.Equal(HttpStatusCode.PreconditionFailed, rewindResponse.StatusCode);
+        if (this.fixture.functionLanguageLocalizer.GetLanguageType() == LanguageType.DotnetIsolated)
+        {
+            Assert.Equal(HttpStatusCode.PreconditionFailed, rewindResponse.StatusCode);
+        }
+        else
+        {
+            Assert.Equal(HttpStatusCode.BadRequest, rewindResponse.StatusCode);
+        }
         response.Dispose();
         rewindResponse.Dispose();
 
@@ -101,26 +122,45 @@ public class RewindOrchestratorTests
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Terminated", 30);
         rewindResponse = await HttpHelpers.InvokeHttpTrigger("RewindInstance", $"?instanceId={instanceId}");
-        Assert.Equal(HttpStatusCode.PreconditionFailed, rewindResponse.StatusCode);
+        if (this.fixture.functionLanguageLocalizer.GetLanguageType() == LanguageType.DotnetIsolated)
+        {
+            Assert.Equal(HttpStatusCode.PreconditionFailed, rewindResponse.StatusCode);
+        }
+        else
+        {
+            Assert.Equal(HttpStatusCode.BadRequest, rewindResponse.StatusCode);
+        }
         response.Dispose();
         rewindResponse.Dispose();
 
         // Rewind a pending orchestration
-        response = await HttpHelpers.InvokeHttpTrigger(
-           "HttpStart_RewindOrchestration",
-           $"?orchestrationName=RewindParentOrchestration&input=complete&numFailures=0&delay=true");
-        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
-        instanceId = await DurableHelpers.ParseInstanceIdAsync(response);
-        statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
-        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Pending", 10);
-        rewindResponse = await HttpHelpers.InvokeHttpTrigger("RewindInstance", $"?instanceId={instanceId}");
-        Assert.Equal(HttpStatusCode.PreconditionFailed, rewindResponse.StatusCode);
-        response.Dispose();
-        rewindResponse.Dispose();
+        // Scheduled orchestrations are not implemented properly in Node, which is the only other language that has
+        // rewind for now, so we just check for if the language is .NET isolated
+        if (this.fixture.functionLanguageLocalizer.GetLanguageType() == LanguageType.DotnetIsolated)
+        {
+            response = await HttpHelpers.InvokeHttpTrigger(
+               "HttpStart_RewindOrchestration",
+               $"?input=complete&numFailures=0&delay=true");
+            Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
+            instanceId = await DurableHelpers.ParseInstanceIdAsync(response);
+            statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
+            await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Pending", 10);
+            rewindResponse = await HttpHelpers.InvokeHttpTrigger("RewindInstance", $"?instanceId={instanceId}");
+            Assert.Equal(HttpStatusCode.PreconditionFailed, rewindResponse.StatusCode);
+            response.Dispose();
+            rewindResponse.Dispose();
+        }
 
         // Now try to rewind a non-existent instance
         rewindResponse = await HttpHelpers.InvokeHttpTrigger("RewindInstance", $"?instanceId={Guid.NewGuid()}");
-        Assert.Equal(HttpStatusCode.NotFound, rewindResponse.StatusCode);
+        if (this.fixture.functionLanguageLocalizer.GetLanguageType() == LanguageType.DotnetIsolated)
+        {
+            Assert.Equal(HttpStatusCode.NotFound, rewindResponse.StatusCode);
+        }
+        else
+        {
+            Assert.Equal(HttpStatusCode.BadRequest, rewindResponse.StatusCode);
+        }
         response.Dispose();
         rewindResponse.Dispose();
     }

@@ -14,7 +14,8 @@ namespace Microsoft.Azure.Durable.Tests.E2E;
 
 public static class RewindOrchestration
 {
-    public static readonly ConcurrentDictionary<string, int> invocationCounts = [];
+    private static readonly ConcurrentDictionary<string, int> invocationCounts = [];
+    private static readonly EntityInstanceId entityId = new(nameof(InvocationCounterEntity), "entity");
 
     [Function(nameof(RewindParentOrchestration))]
     public static async Task<ConcurrentDictionary<string, int>> RewindParentOrchestration(
@@ -62,8 +63,8 @@ public static class RewindOrchestration
             context.CallActivityAsync<string>(nameof(SucceedActivity), input.Name + "_succeed_activity"),
             context.CallActivityAsync<string>(nameof(FailActivity), new OrchestrationInput(input.Name + "_fail_activity_1", input.NumFailures)),
             context.CallActivityAsync<string>(nameof(FailActivity), new OrchestrationInput(input.Name + "_fail_activity_2", input.NumFailures)),
-            context.Entities.SignalEntityAsync(new EntityInstanceId(nameof(InvocationCounterEntity), "entity"), input.Name + "_signal_entity"),
-            context.Entities.CallEntityAsync(new EntityInstanceId(nameof(InvocationCounterEntity), "entity"), input.Name + "_call_entity")
+            context.Entities.SignalEntityAsync(entityId, input.Name + "_signal_entity"),
+            context.Entities.CallEntityAsync(entityId, input.Name + "_call_entity")
         };
         await Task.WhenAll(tasks);
         return "Ok, sub done!";
@@ -75,7 +76,7 @@ public static class RewindOrchestration
     {
         OrchestrationInput input = context.GetInput<OrchestrationInput>()!;
         await context.CallActivityAsync<string>(nameof(SucceedActivity), input.Name + "_succeed_activity");
-        await context.Entities.CallEntityAsync(new EntityInstanceId(nameof(InvocationCounterEntity), "entity"), input.Name + "_call_entity");
+        await context.Entities.CallEntityAsync(entityId, input.Name + "_call_entity");
         await context.CallSubOrchestratorAsync<string>(nameof(FailChildSubOrchestration), new OrchestrationInput(input.Name + "_child", input.NumFailures));
         return "Ok, sub done!";
     }
@@ -137,7 +138,6 @@ public static class RewindOrchestration
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestData req,
             [DurableClient] DurableTaskClient client,
             FunctionContext executionContext,
-            string orchestrationName,
             string input,
             int numFailures,
             bool? delay)
@@ -146,7 +146,7 @@ public static class RewindOrchestration
         ILogger logger = executionContext.GetLogger(nameof(HttpStart_RewindOrchestration));
 
         string instanceId = await client.ScheduleNewOrchestrationInstanceAsync(
-            orchestrationName,
+            nameof(RewindParentOrchestration),
             new OrchestrationInput(input, numFailures),
             delay == true ? new StartOrchestrationOptions { StartAt = DateTimeOffset.UtcNow.AddMinutes(1) } : null); 
 
