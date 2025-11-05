@@ -295,6 +295,7 @@ message CompleteOrchestrationAction {
     google.protobuf.StringValue newVersion = 4;
     repeated HistoryEvent carryoverEvents = 5;
     TaskFailureDetails failureDetails = 6;
+    map<string, string> tags = 7;
 }
 
 message TerminateOrchestrationAction {
