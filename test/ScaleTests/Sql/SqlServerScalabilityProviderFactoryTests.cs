@@ -76,7 +76,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
             // Assert
             Assert.NotNull(factory);
             Assert.Equal("mssql", factory.Name);
-            Assert.Equal("TestConnection", factory.DefaultConnectionName);
+            // DefaultConnectionName is now hardcoded, not from options
+            Assert.Equal("SQLDB_Connection", factory.DefaultConnectionName);
         }
 
         /// <summary>
@@ -129,7 +130,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
         /// This is the primary path used by Azure Functions Scale Controller for SQL Server.
         /// </summary>
         [Fact]
-        public void GetDurabilityProvider_WithTriggerMetadataAndMssqlType_ReturnsValidProvider()
+        public void GetScalabilityProvider_WithTriggerMetadataAndMssqlType_ReturnsValidProvider()
         {
             // Arrange
             var options = CreateOptions("testHub", 10, 20, "TestConnection", "mssql");
@@ -142,7 +143,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
             var triggerMetadata = CreateTriggerMetadata("testHub", 15, 25, "TestConnection", "mssql");
 
             // Act
-            var provider = factory.GetDurabilityProvider(triggerMetadata);
+            var provider = factory.GetScalabilityProvider(triggerMetadata);
 
             // Assert
             Assert.NotNull(provider);
@@ -157,7 +158,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
         /// Verifies provider has correct type and connection name.
         /// </summary>
         [Fact]
-        public void GetDurabilityProvider_WithMssqlType_ReturnsValidProvider()
+        public void GetScalabilityProvider_WithMssqlType_ReturnsValidProvider()
         {
             // Arrange
             var options = CreateOptions("testHub", 10, 20, "TestConnection", "mssql");
@@ -167,13 +168,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
                 this.nameResolver,
                 this.loggerFactory);
 
-            // Act
-            var provider = factory.GetDurabilityProvider();
+            // Act - Without trigger metadata, uses hardcoded default
+            var provider = factory.GetScalabilityProvider();
 
             // Assert
             Assert.NotNull(provider);
             Assert.IsType<SqlServerScalabilityProvider>(provider);
-            Assert.Equal("TestConnection", provider.ConnectionName);
+            // Connection name is now from hardcoded default, not from options
+            Assert.Equal("SQLDB_Connection", provider.ConnectionName);
         }
 
         /// <summary>
@@ -183,9 +185,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
         /// Ensures proper configuration reading for SQL Server connections.
         /// </summary>
         [Fact]
-        public void GetDurabilityProvider_WithConnectionStringName_UsesCorrectConnection()
+        public void GetScalabilityProvider_WithConnectionStringName_UsesCorrectConnection()
         {
-            // Arrange - Use connectionStringName instead of connectionName
+            // Arrange - Pass connection name via trigger metadata (Scale Controller payload)
+            var triggerMetadata = CreateTriggerMetadata("testHub", 10, 20, "TestConnection", "mssql");
+            
             var options = new DurableTaskScaleOptions
             {
                 HubName = "testHub",
@@ -194,10 +198,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
                 StorageProvider = new Dictionary<string, object>
                 {
                     { "type", "mssql" },
-                    { "connectionStringName", "TestConnection" },
                 },
             };
-            DurableTaskScaleOptions.ResolveAppSettingOptions(options, this.nameResolver);
 
             var factory = new SqlServerScalabilityProviderFactory(
                 Options.Create(options),
@@ -205,8 +207,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
                 this.nameResolver,
                 this.loggerFactory);
 
-            // Act
-            var provider = factory.GetDurabilityProvider();
+            // Act - Connection name comes from triggerMetadata, not from options
+            var provider = factory.GetScalabilityProvider(triggerMetadata);
 
             // Assert
             Assert.NotNull(provider);
@@ -231,7 +233,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
                 this.loggerFactory);
 
             // Act & Assert
-            Assert.Throws<InvalidOperationException>(() => factory.GetDurabilityProvider());
+            Assert.Throws<InvalidOperationException>(() => factory.GetScalabilityProvider());
         }
 
         /// <summary>
@@ -241,7 +243,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
         /// Ensures clear error messages guide users to configure connection strings.
         /// </summary>
         [Fact]
-        public void GetDurabilityProvider_MissingConnectionString_ThrowsInvalidOperationException()
+        public void GetScalabilityProvider_MissingConnectionString_ThrowsInvalidOperationException()
         {
             // Arrange - Configuration without SQL connection string
             var configBuilder = new ConfigurationBuilder();
@@ -256,7 +258,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
                 this.loggerFactory);
 
             // Act & Assert
-            Assert.Throws<InvalidOperationException>(() => factory.GetDurabilityProvider());
+            Assert.Throws<InvalidOperationException>(() => factory.GetScalabilityProvider());
         }
 
         private static IOptions<DurableTaskScaleOptions> CreateOptions(
@@ -338,7 +340,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
                 this.loggerFactory);
 
             // Act - Create provider from triggerMetadata
-            var provider = factory.GetDurabilityProvider(triggerMetadata);
+            var provider = factory.GetScalabilityProvider(triggerMetadata);
 
             // Assert - Verify SQL provider was created
             Assert.NotNull(provider);
@@ -423,7 +425,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
                 this.loggerFactory);
 
             // Act - Create provider from triggerMetadata
-            var provider = factory.GetDurabilityProvider(triggerMetadata);
+            var provider = factory.GetScalabilityProvider(triggerMetadata);
 
             // Assert - Verify provider was created
             Assert.NotNull(provider);
@@ -444,7 +446,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
         /// This test simulates the Managed Identity flow used by Scale Controller.
         /// </summary>
         [Fact]
-        public void GetDurabilityProvider_WithTokenCredential_ExtractsAndUsesCredential()
+        public void GetScalabilityProvider_WithTokenCredential_ExtractsAndUsesCredential()
         {
             // Arrange - Create triggerMetadata with AzureComponentFactory in Properties (Managed Identity)
             var hubName = "testHub";
@@ -477,7 +479,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
             // Act - Create provider from triggerMetadata with TokenCredential
             // Note: In real scenarios, the TokenCredential would be extracted and used to build
             // a connection string with Authentication="Active Directory Default"
-            var provider = factory.GetDurabilityProvider(triggerMetadata);
+            var provider = factory.GetScalabilityProvider(triggerMetadata);
 
             // Assert - Verify provider was created
             Assert.NotNull(provider);

@@ -37,3 +37,4 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Sql
 
 
 
+

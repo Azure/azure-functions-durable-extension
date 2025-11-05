@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Extensions.Logging;
@@ -43,20 +44,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage
 
             var optionsValue = options?.Value ?? throw new ArgumentNullException(nameof(options));
 
-            // Early return if a different backend is explicitly configured (e.g., "azureManaged" or "mssql")
-            // If StorageProvider is null or doesn't specify "type", we continue (Azure Storage is the default)
-            if (optionsValue.StorageProvider != null
-                && optionsValue.StorageProvider.TryGetValue("type", out object value)
-                && value is string s
-                && !string.Equals(s, this.Name, StringComparison.OrdinalIgnoreCase))
-            {
-                return;
-            }
-
+            // In Scale Controller context, optionsValue will be a default/empty object (can't read host.json)
+            // The real configuration comes from triggerMetadata in GetScalabilityProvider()
             this.options = optionsValue;
 
             // Resolve default connection name directly from payload keys or fall back
-            this.DefaultConnectionName = ResolveConnectionName(optionsValue.StorageProvider) ?? ConnectionStringNames.Storage;
+            this.DefaultConnectionName = "AzureWebJobsStorage";
         }
 
         /// <summary>
@@ -111,6 +104,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage
         /// </returns>
         public ScalabilityProvider GetScalabilityProvider(TriggerMetadata triggerMetadata)
         {
+            // Extract options from triggerMetadata (sent by Functions Host in SyncTriggers payload)
+            // This is critical for Scale Controller which doesn't have access to host.json
+            DurableTaskScaleOptions? triggerOptions = triggerMetadata.ExtractDurableTaskScaleOptions();
+
             ILogger logger = this.loggerFactory.CreateLogger(LoggerName);
 
             // Validate Azure Storage specific options
@@ -119,20 +116,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage
             // Extract TokenCredential from triggerMetadata if present (for Managed Identity)
             var tokenCredential = ExtractTokenCredential(triggerMetadata, logger);
 
-            // Use the connection name that was already resolved in the constructor
-            // this.DefaultConnectionName was set via ResolveConnectionName(options.Value.StorageProvider)
+            // Resolve connection name: prioritize triggerOptions, fallback to default
+            string? rawConnectionName = TriggerMetadataExtensions.ResolveConnectionName(triggerOptions?.StorageProvider);
+            string connectionName = rawConnectionName != null
+                ? this.nameResolver.Resolve(rawConnectionName)
+                : this.DefaultConnectionName;
+
             var storageAccountClientProvider = this.clientProviderFactory.GetClientProvider(
-                this.DefaultConnectionName,
+                connectionName,
                 tokenCredential);
 
             var provider = new AzureStorageScalabilityProvider(
                 storageAccountClientProvider,
-                this.DefaultConnectionName,
+                connectionName,
                 logger);
 
-            // Extract max concurrent values from trigger options (already built from metadata)
-            provider.MaxConcurrentTaskOrchestrationWorkItems = this.options.MaxConcurrentOrchestratorFunctions ?? 10;
-            provider.MaxConcurrentTaskActivityWorkItems = this.options.MaxConcurrentActivityFunctions ?? 10;
+            // Extract max concurrent values from trigger metadata (from Scale Controller payload)
+            provider.MaxConcurrentTaskOrchestrationWorkItems = triggerOptions?.MaxConcurrentOrchestratorFunctions ?? this.options.MaxConcurrentOrchestratorFunctions ?? 10;
+            provider.MaxConcurrentTaskActivityWorkItems = triggerOptions?.MaxConcurrentActivityFunctions ?? this.options.MaxConcurrentActivityFunctions ?? 10;
 
             return provider;
         }
@@ -170,26 +171,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage
                         return null;
                     }
                 }
-            }
-
-            return null;
-        }
-
-        private static string ResolveConnectionName(System.Collections.Generic.IDictionary<string, object> storageProvider)
-        {
-            if (storageProvider == null)
-            {
-                return null;
-            }
-
-            if (storageProvider.TryGetValue("connectionName", out object v1) && v1 is string s1 && !string.IsNullOrWhiteSpace(s1))
-            {
-                return s1;
-            }
-
-            if (storageProvider.TryGetValue("connectionStringName", out object v2) && v2 is string s2 && !string.IsNullOrWhiteSpace(s2))
-            {
-                return s2;
             }
 
             return null;

@@ -70,7 +70,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
             // Assert
             Assert.NotNull(factory);
             Assert.Equal("AzureManaged", factory.Name);
-            Assert.Equal("v3-dtsConnectionMI", factory.DefaultConnectionName);
+            // DefaultConnectionName is now hardcoded, not from options
+            Assert.Equal("DURABLE_TASK_SCHEDULER_CONNECTION_STRING", factory.DefaultConnectionName);
         }
 
         /// <summary>
@@ -118,7 +119,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
         /// This is the primary path used by Azure Functions Scale Controller for Azure Managed backend.
         /// </summary>
         [Fact]
-        public void GetDurabilityProvider_WithAzureManagedType_CreatesAzureManagedProvider()
+        public void GetScalabilityProvider_WithAzureManagedType_CreatesAzureManagedProvider()
         {
             // Arrange - Explicitly set storageProvider type to "azureManaged"
             var options = CreateOptions("testHub", 10, 20, "v3-dtsConnectionMI");
@@ -130,7 +131,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
                 this.loggerFactory);
 
             // Act
-            var provider = factory.GetDurabilityProvider();
+            var provider = factory.GetScalabilityProvider();
 
             // Assert
             Assert.NotNull(provider);
@@ -147,7 +148,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
         /// Verifies provider has correct type, connection name, and concurrency settings.
         /// </summary>
         [Fact]
-        public void GetDurabilityProvider_ReturnsValidProvider()
+        public void GetScalabilityProvider_ReturnsValidProvider()
         {
             // Arrange
             var options = CreateOptions("testHub", 10, 20, "v3-dtsConnectionMI");
@@ -158,8 +159,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
                 this.nameResolver,
                 this.loggerFactory);
 
-            // Act
-            var provider = factory.GetDurabilityProvider();
+            // Act - Without trigger metadata, uses hardcoded default
+            var provider = factory.GetScalabilityProvider();
 
             // Assert
             Assert.NotNull(provider);
@@ -167,7 +168,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
             var azureProvider = (AzureManagedScalabilityProvider)provider;
             Assert.Equal(10, azureProvider.MaxConcurrentTaskOrchestrationWorkItems);
             Assert.Equal(20, azureProvider.MaxConcurrentTaskActivityWorkItems);
-            Assert.Equal("v3-dtsConnectionMI", azureProvider.ConnectionName);
+            // Connection name is now from hardcoded default, not from options
+            Assert.Equal("DURABLE_TASK_SCHEDULER_CONNECTION_STRING", azureProvider.ConnectionName);
         }
 
         /// <summary>
@@ -179,7 +181,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
         /// This is the primary path used by Azure Functions Scale Controller.
         /// </summary>
         [Fact]
-        public void GetDurabilityProvider_WithTriggerMetadata_ReturnsValidProvider()
+        public void GetScalabilityProvider_WithTriggerMetadata_ReturnsValidProvider()
         {
             // Arrange
             var options = CreateOptions("testHub", 10, 20, "v3-dtsConnectionMI");
@@ -192,16 +194,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
             var triggerMetadata = CreateTriggerMetadata("testHub", 15, 25, "v3-dtsConnectionMI");
 
             // Act
-            var provider = factory.GetDurabilityProvider(triggerMetadata);
+            var provider = factory.GetScalabilityProvider(triggerMetadata);
 
             // Assert
             Assert.NotNull(provider);
             Assert.IsType<AzureManagedScalabilityProvider>(provider);
             var azureProvider = (AzureManagedScalabilityProvider)provider;
             Assert.Equal("v3-dtsConnectionMI", azureProvider.ConnectionName);
-            // Note: Uses options values (10, 20), not trigger metadata values (15, 25)
-            Assert.Equal(10, azureProvider.MaxConcurrentTaskOrchestrationWorkItems);
-            Assert.Equal(20, azureProvider.MaxConcurrentTaskActivityWorkItems);
+            // TriggerMetadata values (15, 25) now take priority over options (10, 20)
+            Assert.Equal(15, azureProvider.MaxConcurrentTaskOrchestrationWorkItems);
+            Assert.Equal(25, azureProvider.MaxConcurrentTaskActivityWorkItems);
         }
 
         /// <summary>
@@ -212,7 +214,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
         /// Azure Managed uses (connectionName, taskHubName, clientId) as cache key.
         /// </summary>
         [Fact]
-        public void GetDurabilityProvider_CachesProviderWithSameConnectionAndClientId()
+        public void GetScalabilityProvider_CachesProviderWithSameConnectionAndClientId()
         {
             // Arrange
             var options = CreateOptions("testHub", 10, 20, "v3-dtsConnectionMI");
@@ -223,8 +225,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
                 this.loggerFactory);
 
             // Act - Call twice with no trigger metadata (same cache key)
-            var provider1 = factory.GetDurabilityProvider();
-            var provider2 = factory.GetDurabilityProvider();
+            var provider1 = factory.GetScalabilityProvider();
+            var provider2 = factory.GetScalabilityProvider();
 
             // Assert - Should be the same cached instance
             Assert.Same(provider1, provider2);
@@ -236,7 +238,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
         /// Tests the default connection name pattern for Azure Managed backend.
         /// </summary>
         [Fact]
-        public void GetDurabilityProvider_WithDefaultConnectionName_CreatesProvider()
+        public void GetScalabilityProvider_WithDefaultConnectionName_CreatesProvider()
         {
             // Arrange - Don't specify connectionName in storageProvider
             var options = new DurableTaskScaleOptions
@@ -257,7 +259,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
                 this.loggerFactory);
 
             // Act
-            var provider = factory.GetDurabilityProvider();
+            var provider = factory.GetScalabilityProvider();
 
             // Assert
             Assert.NotNull(provider);
@@ -271,7 +273,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
         /// Ensures proper error messaging for configuration issues.
         /// </summary>
         [Fact]
-        public void GetDurabilityProvider_MissingConnectionString_ThrowsException()
+        public void GetScalabilityProvider_MissingConnectionString_CreatesProviderWithDefaultCredential()
         {
             // Arrange - Use connection name that doesn't exist in configuration
             var options = CreateOptions("testHub", 10, 20, "NonExistentConnection");
@@ -282,10 +284,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
                 this.nameResolver,
                 this.loggerFactory);
 
-            // Act & Assert
-            var exception = Assert.Throws<InvalidOperationException>(() => factory.GetDurabilityProvider());
-            Assert.Contains("No connection string configuration was found", exception.Message);
-            Assert.Contains("NonExistentConnection", exception.Message);
+            // Act - Without trigger metadata and without connection string in config, 
+            // provider is created using DefaultAzureCredential
+            var provider = factory.GetScalabilityProvider();
+
+            // Assert - Provider is created successfully with hardcoded default connection name
+            Assert.NotNull(provider);
+            Assert.Equal("DURABLE_TASK_SCHEDULER_CONNECTION_STRING", provider.ConnectionName);
         }
 
         /// <summary>
@@ -295,14 +300,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
         /// Verifies end-to-end flow from configuration to Azure Managed connection.
         /// </summary>
         [Fact]
-        public void GetDurabilityProvider_RetrievesConnectionStringFromConfiguration()
+        public void GetScalabilityProvider_RetrievesConnectionStringFromConfiguration()
         {
             // Arrange - Verify we can retrieve connection string from configuration
             var testConnectionString = "Endpoint=https://custom.westus.durabletask.io;Authentication=DefaultAzure";
             var configBuilder = new ConfigurationBuilder();
             configBuilder.AddInMemoryCollection(new Dictionary<string, string>
             {
-                { "MyCustomConnection", testConnectionString }
+                // Use the hardcoded default connection name
+                { "DURABLE_TASK_SCHEDULER_CONNECTION_STRING", testConnectionString }
             });
             var config = configBuilder.Build();
 
@@ -313,15 +319,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
                 this.nameResolver,
                 this.loggerFactory);
 
-            // Act
-            var provider = factory.GetDurabilityProvider();
+            // Act - Without trigger metadata, uses hardcoded default
+            var provider = factory.GetScalabilityProvider();
 
             // Assert
             Assert.NotNull(provider);
-            Assert.Equal("MyCustomConnection", provider.ConnectionName);
+            Assert.Equal("DURABLE_TASK_SCHEDULER_CONNECTION_STRING", provider.ConnectionName);
             
             // Verify the connection string was retrieved from configuration
-            var retrievedConnectionString = config["MyCustomConnection"];
+            var retrievedConnectionString = config["DURABLE_TASK_SCHEDULER_CONNECTION_STRING"];
             Assert.Equal(testConnectionString, retrievedConnectionString);
         }
 
@@ -331,13 +337,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
         /// Tests connection string parsing logic.
         /// </summary>
         [Fact]
-        public void GetDurabilityProvider_UsesTaskHubNameFromConnectionString()
+        public void GetScalabilityProvider_UsesTaskHubNameFromConnectionString()
         {
             // Arrange - Connection string with TaskHub specified
             var configBuilder = new ConfigurationBuilder();
             configBuilder.AddInMemoryCollection(new Dictionary<string, string>
             {
-                { "ConnectionWithHub", "Endpoint=https://test.westus.durabletask.io;Authentication=DefaultAzure;TaskHub=MyTaskHub" }
+                // Use the hardcoded default connection name with TaskHub in connection string
+                { "DURABLE_TASK_SCHEDULER_CONNECTION_STRING", "Endpoint=https://test.westus.durabletask.io;Authentication=DefaultAzure;TaskHub=MyTaskHub" }
             });
             var config = configBuilder.Build();
 
@@ -349,7 +356,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
                 StorageProvider = new Dictionary<string, object>
                 {
                     { "type", "azureManaged" },
-                    { "connectionName", "ConnectionWithHub" },
                 },
             };
 
@@ -359,8 +365,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
                 this.nameResolver,
                 this.loggerFactory);
 
-            // Act
-            var provider = factory.GetDurabilityProvider();
+            // Act - Without trigger metadata, uses hardcoded default
+            var provider = factory.GetScalabilityProvider();
 
             // Assert
             Assert.NotNull(provider);

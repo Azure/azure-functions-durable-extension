@@ -74,7 +74,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
             // Assert
             Assert.NotNull(factory);
             Assert.Equal("AzureStorage", factory.Name);
-            Assert.Equal("TestConnection", factory.DefaultConnectionName);
+            // DefaultConnectionName is now hardcoded, not from options
+            Assert.Equal("AzureWebJobsStorage", factory.DefaultConnectionName);
         }
 
         /// <summary>
@@ -121,7 +122,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
         /// Verifies provider has correct type, connection name, and concurrency settings.
         /// </summary>
         [Fact]
-        public void GetDurabilityProvider_ReturnsValidProvider()
+        public void GetScalabilityProvider_ReturnsValidProvider()
         {
             // Arrange
             var options = CreateOptions("testHub", 10, 20, "TestConnection");
@@ -133,7 +134,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
                 this.loggerFactory);
 
             // Act
-            var provider = factory.GetDurabilityProvider();
+            var provider = factory.GetScalabilityProvider();
 
             // Assert
             Assert.NotNull(provider);
@@ -151,7 +152,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
         /// This is the primary path used by Azure Functions Scale Controller.
         /// </summary>
         [Fact]
-        public void GetDurabilityProvider_WithTriggerMetadata_ReturnsValidProvider()
+        public void GetScalabilityProvider_WithTriggerMetadata_ReturnsValidProvider()
         {
             // Arrange
             var options = CreateOptions("testHub", 10, 20, "TestConnection");
@@ -164,15 +165,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
             var triggerMetadata = CreateTriggerMetadata("testHub", 15, 25, "TestConnection");
 
             // Act
-            var provider = factory.GetDurabilityProvider(triggerMetadata);
+            var provider = factory.GetScalabilityProvider(triggerMetadata);
 
             // Assert
             Assert.NotNull(provider);
             Assert.IsType<AzureStorageScalabilityProvider>(provider);
             var azureProvider = (AzureStorageScalabilityProvider)provider;
-            // Note: Uses options values (10, 20), not trigger metadata values (15, 25)
-            Assert.Equal(10, azureProvider.MaxConcurrentTaskOrchestrationWorkItems);
-            Assert.Equal(20, azureProvider.MaxConcurrentTaskActivityWorkItems);
+            // TriggerMetadata values (15, 25) now take priority over options (10, 20)
+            Assert.Equal(15, azureProvider.MaxConcurrentTaskOrchestrationWorkItems);
+            Assert.Equal(25, azureProvider.MaxConcurrentTaskActivityWorkItems);
         }
 
         /// <summary>
@@ -193,7 +194,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
                 this.loggerFactory);
 
             // Act & Assert
-            Assert.Throws<ArgumentException>(() => factory.GetDurabilityProvider());
+            Assert.Throws<ArgumentException>(() => factory.GetScalabilityProvider());
         }
 
         /// <summary>
@@ -214,7 +215,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
                 this.loggerFactory);
 
             // Act & Assert
-            Assert.Throws<InvalidOperationException>(() => factory.GetDurabilityProvider());
+            Assert.Throws<InvalidOperationException>(() => factory.GetScalabilityProvider());
         }
 
         /// <summary>
@@ -224,7 +225,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
         /// Ensures consistent metrics collection across scale decisions.
         /// </summary>
         [Fact]
-        public void GetDurabilityProvider_CachesDefaultProvider()
+        public void GetScalabilityProvider_CachesDefaultProvider()
         {
             // Arrange
             var options = CreateOptions("testHub", 10, 20, "TestConnection");
@@ -235,8 +236,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
                 this.loggerFactory);
 
             // Act
-            var provider1 = factory.GetDurabilityProvider();
-            var provider2 = factory.GetDurabilityProvider();
+            var provider1 = factory.GetScalabilityProvider();
+            var provider2 = factory.GetScalabilityProvider();
 
             // Assert
             Assert.Same(provider1, provider2);
@@ -297,7 +298,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
         /// Confirms provider is created with correct concurrency limits.
         /// </summary>
         [Fact]
-        public void GetDurabilityProvider_WithDefaultAzureWebJobsStorage_CreatesProvider()
+        public void GetScalabilityProvider_WithDefaultAzureWebJobsStorage_CreatesProvider()
         {
             // Arrange - Using default AzureWebJobsStorage connection
             var options = CreateOptions("testHub", 10, 20, "AzureWebJobsStorage");
@@ -309,7 +310,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
                 this.loggerFactory);
 
             // Act
-            var provider = factory.GetDurabilityProvider();
+            var provider = factory.GetScalabilityProvider();
 
             // Assert
             Assert.NotNull(provider);
@@ -327,9 +328,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
         /// Ensures isolation between different storage backends in the same application.
         /// </summary>
         [Fact]
-        public void GetDurabilityProvider_WithMultipleConnections_CreatesProvidersSuccessfully()
+        public void GetScalabilityProvider_WithMultipleConnections_CreatesProvidersSuccessfully()
         {
-            // Arrange - Test with multiple different connection names
+            // Arrange - Test with multiple different connection names via trigger metadata
             var connectionNames = new[] { "AzureWebJobsStorage", "TestConnection", "CustomConnection" };
             
             // Add custom connection to configuration
@@ -352,8 +353,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
                     this.nameResolver,
                     this.loggerFactory);
 
+                // Pass connection name via trigger metadata (Scale Controller behavior)
+                var triggerMetadata = CreateTriggerMetadata("testHub", 5, 10, connectionName);
+
                 // Act
-                var provider = factory.GetDurabilityProvider();
+                var provider = factory.GetScalabilityProvider(triggerMetadata);
 
                 // Assert
                 Assert.NotNull(provider);
@@ -391,7 +395,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
         /// Ensures extensibility for future storage backend support (MSSQL, Netherite, etc.).
         /// </summary>
         [Fact]
-        public void GetDurabilityProvider_WithAzureStorageType_UsesCorrectProvider()
+        public void GetScalabilityProvider_WithAzureStorageType_UsesCorrectProvider()
         {
             // Arrange - Explicitly set storageProvider type to "AzureStorage"
             var options = new DurableTaskScaleOptions
@@ -413,7 +417,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
                 this.loggerFactory);
 
             // Act
-            var provider = factory.GetDurabilityProvider();
+            var provider = factory.GetScalabilityProvider();
 
             // Assert
             Assert.NotNull(provider);
@@ -429,14 +433,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
         /// Ensures custom connection names work with Azure Storage emulator.
         /// </summary>
         [Fact]
-        public void GetDurabilityProvider_RetrievesConnectionStringFromConfiguration()
+        public void GetScalabilityProvider_RetrievesConnectionStringFromConfiguration()
         {
             // Arrange - Verify we can retrieve connection string from configuration
             var testConnectionString = TestHelpers.GetStorageConnectionString();
             var configBuilder = new ConfigurationBuilder();
             configBuilder.AddInMemoryCollection(new Dictionary<string, string>
             {
-                { "MyCustomConnection", testConnectionString }
+                // Use the hardcoded default connection name
+                { "AzureWebJobsStorage", testConnectionString }
             });
             var config = configBuilder.Build();
             var clientFactory = new StorageServiceClientProviderFactory(config, this.loggerFactory);
@@ -448,15 +453,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
                 this.nameResolver,
                 this.loggerFactory);
 
-            // Act
-            var provider = factory.GetDurabilityProvider();
+            // Act - Without trigger metadata, uses hardcoded default "AzureWebJobsStorage"
+            var provider = factory.GetScalabilityProvider();
 
             // Assert
             Assert.NotNull(provider);
-            Assert.Equal("MyCustomConnection", provider.ConnectionName);
+            Assert.Equal("AzureWebJobsStorage", provider.ConnectionName);
             
             // Verify the connection string was retrieved from configuration
-            var retrievedConnectionString = config["MyCustomConnection"];
+            var retrievedConnectionString = config["AzureWebJobsStorage"];
             Assert.Equal(testConnectionString, retrievedConnectionString);
         }
     }

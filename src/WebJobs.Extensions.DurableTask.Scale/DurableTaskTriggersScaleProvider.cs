@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text.Json.Serialization;
 using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -26,16 +25,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
             string functionId = triggerMetadata.FunctionName;
             var functionName = new FunctionName(functionId);
 
-            // Deserialize the configuration from triggerMetadata (sent by Scale Controller)
-            // This is the source of truth for scale scenarios
+            // Deserialize the configuration from triggerMetadata 
             var metadata = triggerMetadata.Metadata.ToObject<DurableTaskMetadata>()
                 ?? throw new InvalidOperationException($"Failed to deserialize trigger metadata. Payload: {triggerMetadata.Metadata}");
 
-            // Build options from triggerMetadata, with fallback to DI options (from host.json)
+            // Build options from triggerMetadata with optional fallback to DI options
+            // NOTE: durableTaskScaleOptions.Value will be null/empty in Scale Controller context
+            // because Scale Controller doesn't have access to host.json
             var options = new DurableTaskScaleOptions
             {
                 HubName = metadata.TaskHubName ?? durableTaskScaleOptions.Value?.HubName
-                    ?? throw new InvalidOperationException($"Expected `taskHubName` property in SyncTriggers payload or host configuration but found none."),
+                    ?? throw new InvalidOperationException($"Expected `taskHubName` property in SyncTriggers payload but found none. "),
                 MaxConcurrentActivityFunctions = metadata.MaxConcurrentActivityFunctions ?? durableTaskScaleOptions.Value?.MaxConcurrentActivityFunctions,
                 MaxConcurrentOrchestratorFunctions = metadata.MaxConcurrentOrchestratorFunctions ?? durableTaskScaleOptions.Value?.MaxConcurrentOrchestratorFunctions,
                 StorageProvider = metadata.StorageProvider ?? durableTaskScaleOptions.Value?.StorageProvider ?? new Dictionary<string, object>(),

@@ -44,7 +44,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Sql
             this.nameResolver = nameResolver ?? throw new ArgumentNullException(nameof(nameResolver));
             this.loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
 
-            this.DefaultConnectionName = ResolveConnectionName(this.options.StorageProvider) ?? "SQLDB_Connection";
+            this.DefaultConnectionName = "SQLDB_Connection";
         }
 
         public virtual string Name => ProviderName;
@@ -78,22 +78,33 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Sql
 
         public ScalabilityProvider GetScalabilityProvider(TriggerMetadata triggerMetadata)
         {
+            // Extract options from triggerMetadata (sent by Functions Host in SyncTriggers payload)
+            // This is critical for Scale Controller which doesn't have access to host.json
+            DurableTaskScaleOptions? triggerOptions = triggerMetadata.ExtractDurableTaskScaleOptions();
+
             ILogger logger = this.loggerFactory.CreateLogger(LoggerName);
 
             // Validate SQL Server specific options
             this.ValidateSqlServerOptions(logger);
 
-            // Extract task hub name from trigger options (already built from metadata)
-            string taskHubName = this.options.HubName ?? "default";
+            // Resolve connection name: prioritize triggerOptions, fallback to default
+            string? rawConnectionName = TriggerMetadataExtensions.ResolveConnectionName(triggerOptions?.StorageProvider);
+            string connectionName = rawConnectionName != null
+                ? this.nameResolver.Resolve(rawConnectionName)
+                : this.DefaultConnectionName;
+
+            // Extract task hub name from trigger metadata (from Scale Controller payload), fallback to constructor options
+            string taskHubName = triggerOptions?.HubName ?? this.options.HubName ?? "default";
 
             var sqlOrchestrationService = this.CreateSqlOrchestrationService(
-                this.DefaultConnectionName,
+                connectionName,
                 taskHubName,
-                logger);
+                logger,
+                triggerOptions);
 
             var provider = new SqlServerScalabilityProvider(
                 sqlOrchestrationService,
-                this.DefaultConnectionName,
+                connectionName,
                 logger);
 
             return provider;
@@ -102,7 +113,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Sql
         private SqlOrchestrationService CreateSqlOrchestrationService(
             string connectionName,
             string taskHubName,
-            ILogger logger)
+            ILogger logger,
+            DurableTaskScaleOptions triggerOptions = null)
         {
             // Resolve connection name first (handles %% wrapping)
             string resolvedConnectionName = this.nameResolver.Resolve(connectionName);
@@ -129,9 +141,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Sql
                 connectionString,
                 taskHubName)
             {
-                // Set concurrency limits if provided
-                MaxActiveOrchestrations = this.options.MaxConcurrentOrchestratorFunctions ?? 10,
-                MaxConcurrentActivities = this.options.MaxConcurrentActivityFunctions ?? 10,
+                // Set concurrency limits from trigger metadata (from Scale Controller payload), fallback to constructor options
+                MaxActiveOrchestrations = triggerOptions?.MaxConcurrentOrchestratorFunctions ?? this.options.MaxConcurrentOrchestratorFunctions ?? 10,
+                MaxConcurrentActivities = triggerOptions?.MaxConcurrentActivityFunctions ?? this.options.MaxConcurrentActivityFunctions ?? 10,
             };
 
             // Note: When connection string includes "Authentication=Active Directory Default" or
@@ -140,26 +152,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Sql
             // So we don't need to exctract token crednetial here from sitemetada.
 
             return new SqlOrchestrationService(settings);
-        }
-
-        private static string ResolveConnectionName(IDictionary<string, object> storageProvider)
-        {
-            if (storageProvider == null)
-            {
-                return null;
-            }
-
-            if (storageProvider.TryGetValue("connectionName", out object v1) && v1 is string s1 && !string.IsNullOrWhiteSpace(s1))
-            {
-                return s1;
-            }
-
-            if (storageProvider.TryGetValue("connectionStringName", out object v2) && v2 is string s2 && !string.IsNullOrWhiteSpace(s2))
-            {
-                return s2;
-            }
-
-            return null;
         }
 
         /// <summary>

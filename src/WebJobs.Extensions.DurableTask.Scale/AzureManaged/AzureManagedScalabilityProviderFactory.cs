@@ -21,7 +21,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureManaged
     {
         private const string LoggerName = "Host.Triggers.DurableTask.AzureManaged";
         internal const string ProviderName = "AzureManaged";
-        private const string DefaultConnectionStringName = "DURABLE_TASK_SCHEDULER_CONNECTION_STRING";
 
         private readonly Dictionary<(string, string?, string?), AzureManagedScalabilityProvider> cachedProviders = new Dictionary<(string, string?, string?), AzureManagedScalabilityProvider>();
         private readonly DurableTaskScaleOptions options;
@@ -60,22 +59,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureManaged
             this.loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
             this.logger = this.loggerFactory.CreateLogger(LoggerName);
 
-            // Early return if a different backend is explicitly configured
-            if (optionsValue.StorageProvider != null
-                && optionsValue.StorageProvider.TryGetValue("type", out object value)
-                && value is string s
-                && !string.Equals(s, this.Name, StringComparison.OrdinalIgnoreCase))
-            {
-                return;
-            }
-
+            // In Scale Controller context, optionsValue will be a default/empty object (can't read host.json)
+            // The real configuration comes from triggerMetadata in GetScalabilityProvider()
             this.options = optionsValue;
 
-            // Resolve connection name from options, falling back to default
-            // The nameResolver handles %EnvironmentVariable% patterns
-            string? rawConnectionName = ResolveConnectionName(optionsValue.StorageProvider);
-            this.DefaultConnectionName = rawConnectionName != null ? this.nameResolver.Resolve(rawConnectionName)
-                : DefaultConnectionStringName;
+            this.DefaultConnectionName = "DURABLE_TASK_SCHEDULER_CONNECTION_STRING";
         }
 
         /// <summary>
@@ -112,8 +100,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureManaged
         /// </exception>
         public ScalabilityProvider GetScalabilityProvider(TriggerMetadata? triggerMetadata)
         {
-            // Use the default connection name that was already resolved in constructor
-            string resolvedName = this.DefaultConnectionName;
+            // Extract options from triggerMetadata (sent by Functions Host in SyncTriggers payload)
+            // This is critical for Scale Controller which doesn't have access to host.json
+            DurableTaskScaleOptions? triggerOptions = triggerMetadata.ExtractDurableTaskScaleOptions();
+
+            // Resolve connection name: prioritize triggerOptions, fallback to default
+            string? rawConnectionName = TriggerMetadataExtensions.ResolveConnectionName(triggerOptions?.StorageProvider);
+            string resolvedName = rawConnectionName != null
+                ? this.nameResolver.Resolve(rawConnectionName)
+                : this.DefaultConnectionName;
 
             // Try standard configuration sources
             string? connectionString =
@@ -130,8 +125,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureManaged
 
             AzureManagedConnectionString azureManagedConnectionString = new AzureManagedConnectionString(connectionString);
 
-            // Extract task hub name from trigger options (already built from metadata), fallback to connection string
-            string taskHubName = this.options.HubName ?? azureManagedConnectionString.TaskHubName;
+            // Extract task hub name from trigger options (from Scale Controller payload)
+            string taskHubName = triggerOptions?.HubName ?? azureManagedConnectionString.TaskHubName;
 
             // Include client ID in cache key to handle managed identity changes
             (string, string?, string?) cacheKey = (resolvedName, taskHubName, azureManagedConnectionString.ClientId);
@@ -230,44 +225,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureManaged
                 AzureManagedOrchestrationService service = new AzureManagedOrchestrationService(options, this.loggerFactory);
                 AzureManagedScalabilityProvider provider = new AzureManagedScalabilityProvider(service, resolvedName, this.logger);
 
-                // Extract max concurrent values from trigger options (already built from metadata)
-                provider.MaxConcurrentTaskOrchestrationWorkItems = this.options.MaxConcurrentOrchestratorFunctions ?? 10;
-                provider.MaxConcurrentTaskActivityWorkItems = this.options.MaxConcurrentActivityFunctions ?? 10;
+                // Extract max concurrent values from trigger metadata (from Scale Controller payload), fallback to constructor options
+                provider.MaxConcurrentTaskOrchestrationWorkItems = triggerOptions?.MaxConcurrentOrchestratorFunctions ?? this.options.MaxConcurrentOrchestratorFunctions ?? 10;
+                provider.MaxConcurrentTaskActivityWorkItems = triggerOptions?.MaxConcurrentActivityFunctions ?? this.options.MaxConcurrentActivityFunctions ?? 10;
 
                 this.cachedProviders.Add(cacheKey, provider);
                 return provider;
               }
           }
-
-        /// <summary>
-        /// Attempts to extract a connection name from the storage provider dictionary.
-        /// </summary>
-        /// <param name="storageProvider">The storage provider configuration dictionary.</param>
-        /// <returns>The connection name if found; otherwise, <see langword="null"/>.</returns>
-        private static string? ResolveConnectionName(IDictionary<string, object>? storageProvider)
-        {
-            if (storageProvider == null)
-            {
-                return null;
-            }
-
-            // Try "connectionName" first
-            if (storageProvider.TryGetValue("connectionName", out object? v1) 
-                && v1 is string s1 
-                && !string.IsNullOrWhiteSpace(s1))
-            {
-                return s1;
-            }
-
-            // Try "connectionStringName" (legacy alias)
-            if (storageProvider.TryGetValue("connectionStringName", out object? v2) 
-                && v2 is string s2 
-                && !string.IsNullOrWhiteSpace(s2))
-            {
-                return s2;
-            }
-
-            return null;
-        }
       }
   }
