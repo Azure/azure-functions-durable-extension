@@ -271,7 +271,7 @@ function StartDTSContainer() {
 
 Set-Location $PSScriptRoot
 
-if (!$StartMSSqlContainer)
+if ($StartMSSqlContainer)
 {
   if (!$MSSQLpwd) {
     $MSSQLpwd = $env:MSSQL_SA_PASSWORD
