@@ -14,11 +14,14 @@ using Newtonsoft.Json.Linq;
 #nullable enable
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureManaged
 {
+    /// <summary>
+    /// Factory class responsible for creating and managing instances of <see cref="AzureManagedScalabilityProvider"/>.
+    /// </summary>
     public class AzureManagedScalabilityProviderFactory : IScalabilityProviderFactory
     {
         private const string LoggerName = "Host.Triggers.DurableTask.AzureManaged";
         internal const string ProviderName = "AzureManaged";
-        private const string DefaultConnectionNameConstant = "DURABLE_TASK_SCHEDULER_CONNECTION_STRING";
+        private const string DefaultConnectionStringName = "DURABLE_TASK_SCHEDULER_CONNECTION_STRING";
 
         private readonly Dictionary<(string, string?, string?), AzureManagedScalabilityProvider> cachedProviders = new Dictionary<(string, string?, string?), AzureManagedScalabilityProvider>();
         private readonly DurableTaskScaleOptions options;
@@ -27,70 +30,117 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureManaged
         private readonly ILoggerFactory loggerFactory;
         private readonly ILogger logger;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AzureManagedScalabilityProviderFactory"/> class.
+        /// </summary>
+        /// <param name="options">
+        /// The <see cref="DurableTaskScaleOptions"/> instance that specifies scaling configuration.
+        /// </param>
+        /// <param name="configuration">
+        /// The <see cref="IConfiguration"/> interface used to resolve connection strings and application settings.
+        /// </param>
+        /// <param name="nameResolver">
+        /// The <see cref="INameResolver"/> used to resolve environment-variable references.
+        /// </param>
+        /// <param name="loggerFactory">
+        /// The <see cref="ILoggerFactory"/> used to create loggers for diagnostics.
+        /// </param>
+        /// <exception cref="ArgumentNullException">
+        /// Thrown if any required argument is <see langword="null"/>.
+        /// </exception>
         public AzureManagedScalabilityProviderFactory(
             IOptions<DurableTaskScaleOptions> options,
             IConfiguration configuration,
             INameResolver nameResolver,
             ILoggerFactory loggerFactory)
         {
-            this.options = options?.Value ?? throw new ArgumentNullException(nameof(options));
+            var optionsValue = options?.Value ?? throw new ArgumentNullException(nameof(options));
             this.configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             this.nameResolver = nameResolver ?? throw new ArgumentNullException(nameof(nameResolver));
             this.loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
             this.logger = this.loggerFactory.CreateLogger(LoggerName);
 
-            this.DefaultConnectionName = ResolveConnectionName(this.options.StorageProvider) ?? DefaultConnectionNameConstant;
+            // Early return if a different backend is explicitly configured
+            if (optionsValue.StorageProvider != null
+                && optionsValue.StorageProvider.TryGetValue("type", out object value)
+                && value is string s
+                && !string.Equals(s, this.Name, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            this.options = optionsValue;
+
+            // Resolve connection name from options, falling back to default
+            // The nameResolver handles %EnvironmentVariable% patterns
+            string? rawConnectionName = ResolveConnectionName(optionsValue.StorageProvider);
+            this.DefaultConnectionName = rawConnectionName != null ? this.nameResolver.Resolve(rawConnectionName)
+                : DefaultConnectionStringName;
         }
 
+        /// <summary>
+        /// Gets the logical name of this scalability provider type.
+        /// </summary>
         public virtual string Name => ProviderName;
 
+        /// <summary>
+        /// Gets the default connection name configured for this factory.
+        /// </summary>
         public string DefaultConnectionName { get; }
 
-        public virtual ScalabilityProvider GetDurabilityProvider()
+        /// <summary>
+        /// Returns a default <see cref="ScalabilityProvider"/> instance configured with the default connection and global scaling options.
+        /// </summary>
+        /// <returns> A default <see cref="AzureManagedScalabilityProvider"/> instance.</returns>
+        public virtual ScalabilityProvider GetScalabilityProvider()
         {
-            return this.GetDurabilityProvider(null);
+            return this.GetScalabilityProvider(null);
         }
 
-        public ScalabilityProvider GetDurabilityProvider(TriggerMetadata triggerMetadata)
+        /// <summary>
+        /// Creates or retrieves an <see cref="AzureManagedScalabilityProvider"/> instance based on the provided trigger metadata.
+        /// </summary>
+        /// <param name="triggerMetadata">
+        /// The trigger metadata contains configuration or identity credentials specific to that trigger.
+        /// </param>
+        /// <returns>
+        /// An <see cref="AzureManagedScalabilityProvider"/> instance configured using
+        /// the specified metadata and resolved connection information.
+        /// </returns>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if no valid connection string could be resolved for the given connection name.
+        /// </exception>
+        public ScalabilityProvider GetScalabilityProvider(TriggerMetadata? triggerMetadata)
         {
-            // Check if trigger metadata specifies a different connection name, otherwise use default from constructor
-            string connectionName = ExtractConnectionName(triggerMetadata) ?? this.DefaultConnectionName;
+            // Use the default connection name that was already resolved in constructor
+            string resolvedName = this.DefaultConnectionName;
 
-            // Resolve connection name first (handles %% wrapping)
-            string resolvedConnectionName = this.nameResolver.Resolve(connectionName);
-            
-            // Try to get connection string from configuration (app settings)
-            string connectionString = this.configuration.GetConnectionString(resolvedConnectionName)
-                                   ?? this.configuration[resolvedConnectionName];
-            
-            // Fallback to environment variable (matching old implementation behavior)
-            if (string.IsNullOrEmpty(connectionString))
-            {
-                connectionString = Environment.GetEnvironmentVariable(resolvedConnectionName);
-            }
+            // Try standard configuration sources
+            string? connectionString =
+                this.configuration.GetConnectionString(resolvedName) ??
+                this.configuration[resolvedName] ??
+                Environment.GetEnvironmentVariable(resolvedName);
 
             if (string.IsNullOrEmpty(connectionString))
             {
                 throw new InvalidOperationException(
-                    $"No connection string configuration was found for the app setting or environment variable named '{resolvedConnectionName}'.");
+                    $"No valid connection string found for '{resolvedName}'. " +
+                    $"Please ensure it is defined in app settings, connection strings, or environment variables.");
             }
 
             AzureManagedConnectionString azureManagedConnectionString = new AzureManagedConnectionString(connectionString);
-            
-            // Get the pre-parsed metadata from triggerMetadata.Properties (parsed by DurableTaskTriggersScaleProvider)
-            DurableTaskMetadata parsedMetadata = ExtractParsedMetadata(triggerMetadata);
-            
-            // Extract task hub name from parsed metadata first, fallback to DI options, then connection string
-            string taskHubName = parsedMetadata?.TaskHubName
-                ?? this.options.HubName
-                ?? azureManagedConnectionString.TaskHubName;
+
+            // Extract task hub name from trigger options (already built from metadata), fallback to connection string
+            string taskHubName = this.options.HubName ?? azureManagedConnectionString.TaskHubName;
 
             // Include client ID in cache key to handle managed identity changes
-            (string, string?, string?) cacheKey = (connectionName, taskHubName, azureManagedConnectionString.ClientId);
+            (string, string?, string?) cacheKey = (resolvedName, taskHubName, azureManagedConnectionString.ClientId);
 
             this.logger.LogDebug(
                 "Getting durability provider for connection '{Connection}', task hub '{TaskHub}', and client ID '{ClientId}'...",
-                cacheKey.Item1, cacheKey.Item2, cacheKey.Item3 ?? "null");
+                cacheKey.Item1,
+                cacheKey.Item2 ?? "null",
+                cacheKey.Item3 ?? "null");
 
             lock (this.cachedProviders)
             {
@@ -99,7 +149,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureManaged
                 {
                     this.logger.LogDebug(
                         "Returning cached durability provider for connection '{Connection}', task hub '{TaskHub}', and client ID '{ClientId}'",
-                        cacheKey.Item1, cacheKey.Item2, cacheKey.Item3 ?? "null");
+                        cacheKey.Item1,
+                        cacheKey.Item2,
+                        cacheKey.Item3 ?? "null");
                     return cachedProvider;
                 }
 
@@ -115,19 +167,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureManaged
                     {
                         try
                         {
-                            TokenCredential tokenCredential = getTokenCredential(connectionName);
-                            
+                            TokenCredential tokenCredential = getTokenCredential(resolvedName);
+
                             if (tokenCredential == null)
                             {
                                 this.logger.LogWarning(
                                     "Token credential retrieved from trigger metadata is null for connection '{Connection}'.",
-                                    connectionName);
+                                    resolvedName);
                             }
                             else
                             {
                                 // Override the credential from connection string
                                 options.TokenCredential = tokenCredential;
-                                this.logger.LogInformation("Retrieved token credential from trigger metadata for connection '{Connection}'", connectionName);
+                                this.logger.LogInformation("Retrieved token credential from trigger metadata for connection '{Connection}'", resolvedName);
                             }
                         }
                         catch (Exception ex)
@@ -135,21 +187,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureManaged
                             this.logger.LogWarning(
                                 ex,
                                 "Failed to get token credential from trigger metadata for connection '{Connection}'",
-                                connectionName);
+                                resolvedName);
                         }
                     }
                     else
                     {
                         this.logger.LogWarning(
                             "Token credential function pointer in trigger metadata is not of expected type for connection '{Connection}'",
-                            connectionName);
+                            resolvedName);
                     }
                 }
                 else
                 {
                     this.logger.LogInformation(
                         "No trigger metadata provided or trigger metadata does not contain 'GetAzureManagedTokenCredential', " +
-                        "using the token credential built from connection string for connection '{Connection}'.", connectionName);
+                        "using the token credential built from connection string for connection '{Connection}'.", resolvedName);
                 }
 
                 // Set task hub name if configured
@@ -171,89 +223,51 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureManaged
 
                 this.logger.LogInformation(
                     "Creating durability provider for connection '{Connection}', task hub '{TaskHub}', and client ID '{ClientId}'...",
-                    cacheKey.Item1, cacheKey.Item2, cacheKey.Item3 ?? "null");
+                    cacheKey.Item1,
+                    cacheKey.Item2,
+                    cacheKey.Item3 ?? "null");
 
                 AzureManagedOrchestrationService service = new AzureManagedOrchestrationService(options, this.loggerFactory);
-                AzureManagedScalabilityProvider provider = new AzureManagedScalabilityProvider(service, connectionName, this.logger);
+                AzureManagedScalabilityProvider provider = new AzureManagedScalabilityProvider(service, resolvedName, this.logger);
 
-                // Extract max concurrent values from parsed metadata first, fallback to DI options
-                provider.MaxConcurrentTaskOrchestrationWorkItems = parsedMetadata?.MaxConcurrentOrchestratorFunctions 
-                    ?? this.options.MaxConcurrentOrchestratorFunctions 
-                    ?? 10;
-                provider.MaxConcurrentTaskActivityWorkItems = parsedMetadata?.MaxConcurrentActivityFunctions 
-                    ?? this.options.MaxConcurrentActivityFunctions 
-                    ?? 10;
+                // Extract max concurrent values from trigger options (already built from metadata)
+                provider.MaxConcurrentTaskOrchestrationWorkItems = this.options.MaxConcurrentOrchestratorFunctions ?? 10;
+                provider.MaxConcurrentTaskActivityWorkItems = this.options.MaxConcurrentActivityFunctions ?? 10;
 
                 this.cachedProviders.Add(cacheKey, provider);
                 return provider;
-            }
-        }
+              }
+          }
 
-        private static string ExtractConnectionName(TriggerMetadata triggerMetadata)
-        {
-            if (triggerMetadata?.Metadata == null)
-            {
-                return null;
-            }
-
-            var storageProvider = triggerMetadata.Metadata["storageProvider"];
-            if (storageProvider != null)
-            {
-                var storageProviderObj = storageProvider.ToObject<Dictionary<string, object>>();
-                if (storageProviderObj != null)
-                {
-                    // Try connectionName first, then connectionStringName (legacy alias)
-                    if (storageProviderObj.TryGetValue("connectionName", out object connName) && connName is string connNameStr && !string.IsNullOrWhiteSpace(connNameStr))
-                    {
-                        return connNameStr;
-                    }
-
-                    if (storageProviderObj.TryGetValue("connectionStringName", out object connStrName) && connStrName is string connStrNameStr && !string.IsNullOrWhiteSpace(connStrNameStr))
-                    {
-                        return connStrNameStr;
-                    }
-                }
-            }
-
-            return null;
-        }
-
-        private static string ResolveConnectionName(IDictionary<string, object> storageProvider)
+        /// <summary>
+        /// Attempts to extract a connection name from the storage provider dictionary.
+        /// </summary>
+        /// <param name="storageProvider">The storage provider configuration dictionary.</param>
+        /// <returns>The connection name if found; otherwise, <see langword="null"/>.</returns>
+        private static string? ResolveConnectionName(IDictionary<string, object>? storageProvider)
         {
             if (storageProvider == null)
             {
                 return null;
             }
 
-            if (storageProvider.TryGetValue("connectionName", out object v1) && v1 is string s1 && !string.IsNullOrWhiteSpace(s1))
+            // Try "connectionName" first
+            if (storageProvider.TryGetValue("connectionName", out object? v1) 
+                && v1 is string s1 
+                && !string.IsNullOrWhiteSpace(s1))
             {
                 return s1;
             }
 
-            if (storageProvider.TryGetValue("connectionStringName", out object v2) && v2 is string s2 && !string.IsNullOrWhiteSpace(s2))
+            // Try "connectionStringName" (legacy alias)
+            if (storageProvider.TryGetValue("connectionStringName", out object? v2) 
+                && v2 is string s2 
+                && !string.IsNullOrWhiteSpace(s2))
             {
                 return s2;
             }
 
             return null;
         }
-
-        private static DurableTaskMetadata ExtractParsedMetadata(TriggerMetadata triggerMetadata)
-        {
-            if (triggerMetadata?.Properties == null)
-            {
-                return null;
-            }
-
-            // The DurableTaskTriggersScaleProvider pre-parses the metadata and stores it in Properties
-            if (triggerMetadata.Properties.TryGetValue("DurableTaskMetadata", out object metadataObj) 
-                && metadataObj is DurableTaskMetadata metadata)
-            {
-                return metadata;
-            }
-
-            return null;
-        }
-    }
-}
-
+      }
+  }

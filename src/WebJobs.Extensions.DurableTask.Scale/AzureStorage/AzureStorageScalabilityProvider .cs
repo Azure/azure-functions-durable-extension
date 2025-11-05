@@ -13,7 +13,7 @@ using Newtonsoft.Json.Serialization;
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage
 {
     /// <summary>
-    /// The Azure Storage implementation of additional methods not required by IOrchestrationService.
+    /// Azure Storage backend implementation of the scalability provider for Durable Functions scaling decisions.
     /// </summary>
     public class AzureStorageScalabilityProvider : ScalabilityProvider
     {
@@ -61,8 +61,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage
             {
                 if (this.singletonDurableTaskMetricsProvider == null)
                 {
-                    // This is only called by the ScaleController, it doesn't run in the Functions Host process.
-                    // Use the StorageAccountClientProvider that was created with the credential in the factory
                     this.singletonDurableTaskMetricsProvider = this.GetMetricsProvider(
                         hubName,
                         this.storageAccountClientProvider,
@@ -86,7 +84,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage
                 if (this.singletonDurableTaskMetricsProvider == null)
                 {
                     // This is only called by the ScaleController, it doesn't run in the Functions Host process.
-                    // Use the StorageAccountClientProvider that was created with the credential in the factory
+                    // Use the StorageAccountClientProvider that was created with the credential in the actory
                     this.singletonDurableTaskMetricsProvider = this.GetMetricsProvider(
                         hubName,
                         this.storageAccountClientProvider,

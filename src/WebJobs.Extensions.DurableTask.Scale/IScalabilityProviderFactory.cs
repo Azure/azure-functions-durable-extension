@@ -16,16 +16,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
         string Name { get; }
 
         /// <summary>
-        /// Creates or retrieves a durability provider to be used throughout the extension.
+        /// Gets the default connection name for this backend provider.
         /// </summary>
-        /// <returns>An durability provider to be used by the Durable Task Extension.</returns>
-        ScalabilityProvider GetDurabilityProvider();
+        string DefaultConnectionName { get; }
 
         /// <summary>
-        /// Creates or retrieves a cached durability provider to be used in a given function execution.
+        /// Creates or retrieves a scalability provider to be used throughout the extension.
+        /// </summary>
+        /// <returns>A scalability provider to be used by the Durable Task Extension.</returns>
+        ScalabilityProvider GetScalabilityProvider();
+
+        /// <summary>
+        /// Creates or retrieves a cached scalability provider to be used in a given function execution.
         /// </summary>
         /// <param name="triggerMetadata">Trigger metadata used to create IOrchestrationService for functions scale scenarios.</param>
-        /// <returns>A durability provider to be used by a client function.</returns>
-        ScalabilityProvider GetDurabilityProvider(TriggerMetadata triggerMetadata);
+        /// <returns>A scalability provider to be used by a client function.</returns>
+        ScalabilityProvider GetScalabilityProvider(TriggerMetadata triggerMetadata);
     }
 }

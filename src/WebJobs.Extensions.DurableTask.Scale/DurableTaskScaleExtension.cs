@@ -1,4 +1,3 @@
-
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -44,7 +43,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
 
             // Create a default scalability provider instance from the selected factory.
             // ? what is default do, if there is no sitemetada or conenction name how to we create? 
-            this.defaultscalabilityProvider = this.scalabilityProviderFactory.GetDurabilityProvider();
+            this.defaultscalabilityProvider = this.scalabilityProviderFactory.GetScalabilityProvider();
         }
 
         /// <summary>

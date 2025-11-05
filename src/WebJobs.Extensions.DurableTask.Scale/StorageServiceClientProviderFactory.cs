@@ -2,7 +2,6 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
-using Azure;
 using Azure.Core;
 using DurableTask.AzureStorage;
 using Microsoft.Extensions.Configuration;
@@ -38,8 +37,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
             // No TokenCredential - use connection string
             if (tokenCredential == null)
             {
-                var connectionString = this.configuration.GetConnectionString(connectionName) 
-                                    ?? this.configuration[connectionName];
+                var connectionString = this.configuration.GetConnectionString(connectionName) ?? this.configuration[connectionName];
 
                 if (!string.IsNullOrEmpty(connectionString))
                 {

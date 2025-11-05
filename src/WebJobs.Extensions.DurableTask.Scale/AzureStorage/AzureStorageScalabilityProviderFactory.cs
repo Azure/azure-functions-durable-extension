@@ -3,6 +3,7 @@
 
 using System;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 using DurableTask.AzureStorage;
 using Microsoft.Azure.WebJobs.Host.Scale;
@@ -11,6 +12,9 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage
 {
+    /// <summary>
+    /// Factory class responsible for creating <see cref="AzureStorageScalabilityProvider"/> instances.
+    /// </summary>
     public class AzureStorageScalabilityProviderFactory : IScalabilityProviderFactory
     {
         private const string LoggerName = "Host.Triggers.DurableTask.AzureStorage";
@@ -36,58 +40,52 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage
             INameResolver nameResolver,
             ILoggerFactory loggerFactory)
         {
-            // Validate arguments first
-            if (options == null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
+            this.clientProviderFactory = clientProviderFactory ?? throw new ArgumentNullException(nameof(clientProviderFactory));
+            this.nameResolver = nameResolver ?? throw new ArgumentNullException(nameof(nameResolver));
+            this.loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
 
-            if (clientProviderFactory == null)
-            {
-                throw new ArgumentNullException(nameof(clientProviderFactory));
-            }
+            var optionsValue = options?.Value ?? throw new ArgumentNullException(nameof(options));
 
-            if (nameResolver == null)
-            {
-                throw new ArgumentNullException(nameof(nameResolver));
-            }
-
-            if (loggerFactory == null)
-            {
-                throw new ArgumentNullException(nameof(loggerFactory));
-            }
-
-            // this constructor may be called by dependency injection even if the AzureStorage provider is not selected
-            // in that case, return immediately, since this provider is not actually used, but can still throw validation errors
-            if (options.Value.StorageProvider != null 
-                && options.Value.StorageProvider.TryGetValue("type", out object value)
+            // Early return if a different backend is explicitly configured (e.g., "azureManaged" or "mssql")
+            // If StorageProvider is null or doesn't specify "type", we continue (Azure Storage is the default)
+            if (optionsValue.StorageProvider != null
+                && optionsValue.StorageProvider.TryGetValue("type", out object value)
                 && value is string s
                 && !string.Equals(s, this.Name, StringComparison.OrdinalIgnoreCase))
             {
                 return;
             }
 
-            this.options = options.Value;
-            this.clientProviderFactory = clientProviderFactory;
-            this.nameResolver = nameResolver;
-            this.loggerFactory = loggerFactory;
+            this.options = optionsValue;
 
             // Resolve default connection name directly from payload keys or fall back
-            this.DefaultConnectionName = ResolveConnectionName(options.Value.StorageProvider) ?? ConnectionStringNames.Storage;
+            this.DefaultConnectionName = ResolveConnectionName(optionsValue.StorageProvider) ?? ConnectionStringNames.Storage;
         }
 
+        /// <summary>
+        /// Name of this provider service.
+        /// </summary>
         public virtual string Name => ProviderName;
 
+        /// <summary>
+        /// Default connection name of this provider service.
+        /// </summary>
         public string DefaultConnectionName { get; }
 
-        public virtual ScalabilityProvider GetDurabilityProvider()
+        /// <summary>
+        /// Creates and caches a default <see cref="ScalabilityProvider"/> instanceusing Azure Storage as the backend.
+        /// </summary>
+        /// <returns>
+        /// A singleton instance of <see cref="AzureStorageScalabilityProvider"/>.
+        /// </returns>
+        public virtual ScalabilityProvider GetScalabilityProvider()
         {
             if (this.defaultStorageProvider == null)
             {
                 ILogger logger = this.loggerFactory.CreateLogger(LoggerName);
 
                 // Validate Azure Storage specific options
-                this.ValidateAzureStorageOptions(logger);
+                this.ValidateAzureStorageOptions();
 
                 // Create StorageAccountClientProvider without credential (connection string)
                 var storageAccountClientProvider = this.clientProviderFactory.GetClientProvider(
@@ -107,18 +105,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage
             return this.defaultStorageProvider;
         }
 
-        public ScalabilityProvider GetDurabilityProvider(TriggerMetadata triggerMetadata)
+        /// <summary>
+        /// Creates and caches a default <see cref="ScalabilityProvider"/> instanceusing Azure Storage as the backend using
+        /// connection and credential information extracted from the given <paramref name="triggerMetadata"/>.
+        /// </summary>
+        /// <returns>
+        /// A singleton instance of <see cref="AzureStorageScalabilityProvider"/>.
+        /// </returns>
+        public ScalabilityProvider GetScalabilityProvider(TriggerMetadata triggerMetadata)
         {
             ILogger logger = this.loggerFactory.CreateLogger(LoggerName);
 
             // Validate Azure Storage specific options
-            this.ValidateAzureStorageOptions(logger);
-
-            // Get the pre-parsed metadata from triggerMetadata.Properties (parsed by DurableTaskTriggersScaleProvider)
-            DurableTaskMetadata parsedMetadata = ExtractParsedMetadata(triggerMetadata);
+            this.ValidateAzureStorageOptions();
 
             // Extract TokenCredential from triggerMetadata if present (for Managed Identity)
-            var tokenCredential = ExtractTokenCredential(triggerMetadata);
+            var tokenCredential = ExtractTokenCredential(triggerMetadata, logger);
 
             // Use the connection name that was already resolved in the constructor
             // this.DefaultConnectionName was set via ResolveConnectionName(options.Value.StorageProvider)
@@ -131,18 +133,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage
                 this.DefaultConnectionName,
                 logger);
 
-            // Extract max concurrent values from parsed metadata first, fallback to DI options
-            provider.MaxConcurrentTaskOrchestrationWorkItems = parsedMetadata?.MaxConcurrentOrchestratorFunctions 
-                ?? this.options.MaxConcurrentOrchestratorFunctions 
-                ?? 10;
-            provider.MaxConcurrentTaskActivityWorkItems = parsedMetadata?.MaxConcurrentActivityFunctions 
-                ?? this.options.MaxConcurrentActivityFunctions 
-                ?? 10;
+            // Extract max concurrent values from trigger options (already built from metadata)
+            provider.MaxConcurrentTaskOrchestrationWorkItems = this.options.MaxConcurrentOrchestratorFunctions ?? 10;
+            provider.MaxConcurrentTaskActivityWorkItems = this.options.MaxConcurrentActivityFunctions ?? 10;
 
             return provider;
         }
 
-        private static global::Azure.Core.TokenCredential ExtractTokenCredential(TriggerMetadata triggerMetadata)
+        // Scale Controller will return a AzureComponentWrapper which might contain a token crednetial to use.
+        private static global::Azure.Core.TokenCredential ExtractTokenCredential(TriggerMetadata triggerMetadata, ILogger logger)
         {
             if (triggerMetadata?.Properties == null)
             {
@@ -168,9 +167,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage
                             return tokenCredential;
                         }
                     }
-                    catch (Exception)
+                    catch (Exception ex)
                     {
-                        // Failed to extract credential, return null
+                        logger?.LogWarning(ex, "Failed to extract TokenCredential from AzureComponentFactory. Using null credential instead.");
                         return null;
                     }
                 }
@@ -178,7 +177,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage
 
             return null;
         }
-
 
         private static string ResolveConnectionName(System.Collections.Generic.IDictionary<string, object> storageProvider)
         {
@@ -191,6 +189,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage
             {
                 return s1;
             }
+
             if (storageProvider.TryGetValue("connectionStringName", out object v2) && v2 is string s2 && !string.IsNullOrWhiteSpace(s2))
             {
                 return s2;
@@ -202,7 +201,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage
         /// <summary>
         /// Validates Azure Storage specific options.
         /// </summary>
-        private void ValidateAzureStorageOptions(ILogger logger)
+        private void ValidateAzureStorageOptions()
         {
             const int MinTaskHubNameSize = 3;
             const int MaxTaskHubNameSize = 50;
@@ -241,23 +240,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage
             {
                 throw new System.InvalidOperationException($"{nameof(this.options.MaxConcurrentActivityFunctions)} must be a positive integer.");
             }
-        }
-
-        private static DurableTaskMetadata ExtractParsedMetadata(TriggerMetadata triggerMetadata)
-        {
-            if (triggerMetadata?.Properties == null)
-            {
-                return null;
-            }
-
-            // The DurableTaskTriggersScaleProvider pre-parses the metadata and stores it in Properties
-            if (triggerMetadata.Properties.TryGetValue("DurableTaskMetadata", out object metadataObj) 
-                && metadataObj is DurableTaskMetadata metadata)
-            {
-                return metadata;
-            }
-
-            return null;
         }
     }
 }

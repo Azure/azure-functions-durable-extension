@@ -4,11 +4,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text.Json;
 using System.Text.Json.Serialization;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureManaged;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage;
 using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -17,8 +13,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
 {
     internal class DurableTaskTriggersScaleProvider : IScaleMonitorProvider, ITargetScalerProvider
     {
-        private const string AzureManagedProviderName = "azureManaged";
-
         private readonly IScaleMonitor monitor;
         private readonly ITargetScaler targetScaler;
 
@@ -37,28 +31,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
             var metadata = triggerMetadata.Metadata.ToObject<DurableTaskMetadata>()
                 ?? throw new InvalidOperationException($"Failed to deserialize trigger metadata. Payload: {triggerMetadata.Metadata}");
 
-            // Validate required fields
-            string hubName = metadata.TaskHubName
-                ?? throw new InvalidOperationException($"Expected `taskHubName` property in SyncTriggers payload but found none. Payload: {metadata.TaskHubName}");
-
-            // Store the parsed metadata in Properties so factories can use it (avoid re-parsing)
-            // TriggerMetadata.Properties is read-only but the dictionary itself is mutable
-            if (triggerMetadata.Properties != null)
-            {
-                triggerMetadata.Properties["DurableTaskMetadata"] = metadata;
-            }
-
-            // Build options from triggerMetadata for factory selection
+            // Build options from triggerMetadata, with fallback to DI options (from host.json)
             var options = new DurableTaskScaleOptions
             {
-                HubName = hubName,
-                MaxConcurrentActivityFunctions = metadata.MaxConcurrentActivityFunctions,
-                MaxConcurrentOrchestratorFunctions = metadata.MaxConcurrentOrchestratorFunctions,
-                StorageProvider = metadata.StorageProvider ?? new Dictionary<string, object>()
+                HubName = metadata.TaskHubName ?? durableTaskScaleOptions.Value?.HubName
+                    ?? throw new InvalidOperationException($"Expected `taskHubName` property in SyncTriggers payload or host configuration but found none."),
+                MaxConcurrentActivityFunctions = metadata.MaxConcurrentActivityFunctions ?? durableTaskScaleOptions.Value?.MaxConcurrentActivityFunctions,
+                MaxConcurrentOrchestratorFunctions = metadata.MaxConcurrentOrchestratorFunctions ?? durableTaskScaleOptions.Value?.MaxConcurrentOrchestratorFunctions,
+                StorageProvider = metadata.StorageProvider ?? durableTaskScaleOptions.Value?.StorageProvider ?? new Dictionary<string, object>(),
             };
 
             // Resolve app settings (e.g., %MyConnectionString% -> actual value)
             DurableTaskScaleOptions.ResolveAppSettingOptions(options, nameResolver);
+
+            // Store the parsed options in Properties so factories can use them (avoid re-parsing)
+            // TriggerMetadata.Properties is read-only but the dictionary itself is mutable
+            if (triggerMetadata.Properties != null)
+            {
+                triggerMetadata.Properties["DurableTaskScaleOptions"] = options;
+            }
 
             var logger = loggerFactory.CreateLogger<DurableTaskTriggersScaleProvider>();
             IScalabilityProviderFactory scalabilityProviderFactory = DurableTaskScaleExtension.GetScalabilityProviderFactory(
@@ -66,74 +57,48 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
 
             // Always use the triggerMetadata overload for scale scenarios
             // The factory will extract the parsed DurableTaskMetadata and TokenCredential if present
-            ScalabilityProvider defaultscalabilityProvider = scalabilityProviderFactory.GetDurabilityProvider(triggerMetadata);
+            ScalabilityProvider defaultscalabilityProvider = scalabilityProviderFactory.GetScalabilityProvider(triggerMetadata);
 
-            // Get connection name from options (already extracted from metadata)
-            string? connectionName = GetConnectionName(scalabilityProviderFactory, options);
-
-            // Check if using managed identity (for logging)
-            bool usesManagedIdentity = triggerMetadata.Properties != null &&
-                                       triggerMetadata.Properties.ContainsKey("AzureComponentFactory");
+            // Get connection name (options.StorageProvider already has fallback to DI options built in)
+            string? connectionName = GetConnectionNameFromOptions(options.StorageProvider) ?? scalabilityProviderFactory.DefaultConnectionName;
 
             logger.LogInformation(
-                "Creating DurableTaskTriggersScaleProvider for function {FunctionName}: connectionName = '{ConnectionName}', usesManagedIdentity = '{UsesMI}'",
+                "Creating DurableTaskTriggersScaleProvider for function {FunctionName}: connectionName = '{ConnectionName}'",
                 triggerMetadata.FunctionName,
-                connectionName,
-                usesManagedIdentity);
+                connectionName);
 
             this.targetScaler = ScaleUtils.GetTargetScaler(
                 defaultscalabilityProvider,
                 functionId,
                 functionName,
                 connectionName,
-                hubName);
+                options.HubName);
 
             this.monitor = ScaleUtils.GetScaleMonitor(
                 defaultscalabilityProvider,
                 functionId,
                 functionName,
                 connectionName,
-                hubName);
+                options.HubName);
         }
 
-        private static string? GetConnectionName(IScalabilityProviderFactory scalabilityProviderFactory, DurableTaskScaleOptions options)
+        private static string? GetConnectionNameFromOptions(IDictionary<string, object>? storageProvider)
         {
-            if (scalabilityProviderFactory is AzureStorageScalabilityProviderFactory azureStorageScalabilityProviderFactory)
+            if (storageProvider == null)
             {
-                if (options != null && options.StorageProvider != null)
-                {
-                    if (options.StorageProvider.TryGetValue("connectionName", out object value1) && value1 is string s1 && !string.IsNullOrWhiteSpace(s1))
-                    {
-                        return s1;
-                    }
-
-                    // legacy alias often used in payloads
-                    if (options.StorageProvider.TryGetValue("connectionStringName", out object value2) && value2 is string s2 && !string.IsNullOrWhiteSpace(s2))
-                    {
-                        return s2;
-                    }
-                }
-
-                return azureStorageScalabilityProviderFactory.DefaultConnectionName;
+                return null;
             }
 
-            if (scalabilityProviderFactory is AzureManagedScalabilityProviderFactory azureManagedScalabilityProviderFactory)
+            // Try connectionName first
+            if (storageProvider.TryGetValue("connectionName", out object value1) && value1 is string s1 && !string.IsNullOrWhiteSpace(s1))
             {
-                if (options != null && options.StorageProvider != null)
-                {
-                    if (options.StorageProvider.TryGetValue("connectionName", out object value1) && value1 is string s1 && !string.IsNullOrWhiteSpace(s1))
-                    {
-                        return s1;
-                    }
+                return s1;
+            }
 
-                    // legacy alias often used in payloads
-                    if (options.StorageProvider.TryGetValue("connectionStringName", out object value2) && value2 is string s2 && !string.IsNullOrWhiteSpace(s2))
-                    {
-                        return s2;
-                    }
-                }
-
-                return azureManagedScalabilityProviderFactory.DefaultConnectionName;
+            // Try connectionStringName
+            if (storageProvider.TryGetValue("connectionStringName", out object value2) && value2 is string s2 && !string.IsNullOrWhiteSpace(s2))
+            {
+                return s2;
             }
 
             return null;
@@ -148,24 +113,5 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
         {
             return this.targetScaler;
         }
-    }
-
-    /// <summary>
-    /// Represents the Durable Task configuration sent by the Scale Controller in the SyncTriggers payload.
-    /// This is deserialized from triggerMetadata.Metadata and passed to factories via triggerMetadata.Properties.
-    /// </summary>
-    public class DurableTaskMetadata
-    {
-        [JsonPropertyName("taskHubName")]
-        public string? TaskHubName { get; set; }
-
-        [JsonPropertyName("maxConcurrentOrchestratorFunctions")]
-        public int? MaxConcurrentOrchestratorFunctions { get; set; }
-
-        [JsonPropertyName("maxConcurrentActivityFunctions")]
-        public int? MaxConcurrentActivityFunctions { get; set; }
-
-        [JsonPropertyName("storageProvider")]
-        public IDictionary<string, object>? StorageProvider { get; set; }
     }
 }

@@ -3,14 +3,11 @@
 
 using System;
 using System.Collections.Generic;
-using Azure.Core;
 using DurableTask.SqlServer;
 using Microsoft.Azure.WebJobs.Host.Scale;
-using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Sql
 {
@@ -54,7 +51,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Sql
 
         public string DefaultConnectionName { get; }
 
-        public virtual ScalabilityProvider GetDurabilityProvider()
+        public virtual ScalabilityProvider GetScalabilityProvider()
         {
             if (this.defaultSqlProvider == null)
             {
@@ -68,52 +65,35 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Sql
                 var sqlOrchestrationService = this.CreateSqlOrchestrationService(
                     this.DefaultConnectionName,
                     this.options.HubName ?? "default",
-                    tokenCredential: null,
                     logger);
 
                 this.defaultSqlProvider = new SqlServerScalabilityProvider(
                     sqlOrchestrationService,
                     this.DefaultConnectionName,
                     logger);
-
-                // Set the max concurrent values from options (if needed by SQL Server)
-                // Note: SQL Server uses MaxActiveOrchestrations and MaxConcurrentActivities in settings
-                // These are set when creating SqlOrchestrationServiceSettings
             }
 
             return this.defaultSqlProvider;
         }
 
-        public ScalabilityProvider GetDurabilityProvider(TriggerMetadata triggerMetadata)
+        public ScalabilityProvider GetScalabilityProvider(TriggerMetadata triggerMetadata)
         {
             ILogger logger = this.loggerFactory.CreateLogger(LoggerName);
 
             // Validate SQL Server specific options
             this.ValidateSqlServerOptions(logger);
 
-            // Extract TokenCredential from triggerMetadata if present (for Managed Identity)
-            var tokenCredential = ExtractTokenCredential(triggerMetadata);
-
-            // Get the pre-parsed metadata from triggerMetadata.Properties (parsed by DurableTaskTriggersScaleProvider)
-            DurableTaskMetadata parsedMetadata = ExtractParsedMetadata(triggerMetadata);
-
-            // Check if trigger metadata specifies a different connection name, otherwise use default from constructor
-            string connectionName = ExtractConnectionName(triggerMetadata) ?? this.DefaultConnectionName;
-
-            // Extract task hub name from parsed metadata first, fallback to DI options
-            string taskHubName = parsedMetadata?.TaskHubName 
-                ?? this.options.HubName 
-                ?? "default";
+            // Extract task hub name from trigger options (already built from metadata)
+            string taskHubName = this.options.HubName ?? "default";
 
             var sqlOrchestrationService = this.CreateSqlOrchestrationService(
-                connectionName,
+                this.DefaultConnectionName,
                 taskHubName,
-                tokenCredential,
                 logger);
 
             var provider = new SqlServerScalabilityProvider(
                 sqlOrchestrationService,
-                connectionName,
+                this.DefaultConnectionName,
                 logger);
 
             return provider;
@@ -122,16 +102,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Sql
         private SqlOrchestrationService CreateSqlOrchestrationService(
             string connectionName,
             string taskHubName,
-            global::Azure.Core.TokenCredential tokenCredential,
             ILogger logger)
         {
             // Resolve connection name first (handles %% wrapping)
             string resolvedConnectionName = this.nameResolver.Resolve(connectionName);
-            
+
             // Try to get connection string from configuration (app settings)
             string connectionString = this.configuration.GetConnectionString(resolvedConnectionName)
                                    ?? this.configuration[resolvedConnectionName];
-            
+
             // Fallback to environment variable (matching old implementation behavior)
             if (string.IsNullOrEmpty(connectionString))
             {
@@ -144,104 +123,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Sql
                     $"No SQL connection string configuration was found for the app setting or environment variable named '{resolvedConnectionName}'.");
             }
 
-            // Validate the connection string
-            try
-            {
-                new SqlConnectionStringBuilder(connectionString);
-            }
-            catch (ArgumentException e)
-            {
-                throw new ArgumentException("The provided connection string is invalid.", e);
-            }
-
             // Create SQL Server orchestration service settings - following durabletask-mssql pattern
             // Connection string should include authentication method (e.g., Authentication=Active Directory Default)
             var settings = new SqlOrchestrationServiceSettings(
                 connectionString,
-                taskHubName,
-                schemaName: null) // Schema name can be configured from storageProvider if needed
+                taskHubName)
             {
                 // Set concurrency limits if provided
                 MaxActiveOrchestrations = this.options.MaxConcurrentOrchestratorFunctions ?? 10,
                 MaxConcurrentActivities = this.options.MaxConcurrentActivityFunctions ?? 10,
             };
 
-            // Note: When connection string includes "Authentication=Active Directory Default" or 
+            // Note: When connection string includes "Authentication=Active Directory Default" or
             // "Authentication=Active Directory Managed Identity", SQL Server will automatically use
             // the appropriate Azure identity (managed identity in Azure, or DefaultAzureCredential locally).
-            // The tokenCredential from Scale Controller is primarily for Azure Storage; SQL Server 
-            // manages its own token acquisition through the connection string's Authentication setting.
+            // So we don't need to exctract token crednetial here from sitemetada.
 
-            // Create and return the orchestration service
             return new SqlOrchestrationService(settings);
-        }
-
-        // Note: ExtractTokenCredential is kept for potential future use, but SQL Server handles 
-        // its own authentication through the connection string (Authentication=Active Directory Default)
-        private static global::Azure.Core.TokenCredential ExtractTokenCredential(TriggerMetadata triggerMetadata)
-        {
-            if (triggerMetadata?.Properties == null)
-            {
-                return null;
-            }
-
-            // Check if metadata contains an AzureComponentFactory wrapper
-            // ScaleController passes it as: metadata.Properties[nameof(AzureComponentFactory)] = new AzureComponentFactoryWrapper(...)
-            if (triggerMetadata.Properties.TryGetValue("AzureComponentFactory", out object componentFactoryObj) && componentFactoryObj != null)
-            {
-                // The AzureComponentFactoryWrapper has CreateTokenCredential method
-                // Call it using reflection to get the TokenCredential
-                var factoryType = componentFactoryObj.GetType();
-                var method = factoryType.GetMethod("CreateTokenCredential");
-                if (method != null)
-                {
-                    try
-                    {
-                        // Call CreateTokenCredential(null) to get the TokenCredential from the wrapper
-                        var credential = method.Invoke(componentFactoryObj, new object[] { null });
-                        if (credential is global::Azure.Core.TokenCredential tokenCredential)
-                        {
-                            return tokenCredential;
-                        }
-                    }
-                    catch (Exception)
-                    {
-                        // Failed to extract credential, return null
-                        return null;
-                    }
-                }
-            }
-
-            return null;
-        }
-
-        private static string ExtractConnectionName(TriggerMetadata triggerMetadata)
-        {
-            if (triggerMetadata?.Metadata == null)
-            {
-                return null;
-            }
-
-            var storageProvider = triggerMetadata.Metadata["storageProvider"];
-            if (storageProvider != null)
-            {
-                var storageProviderObj = storageProvider.ToObject<Dictionary<string, object>>();
-                if (storageProviderObj != null)
-                {
-                    // Try connectionName first, then connectionStringName (legacy alias)
-                    if (storageProviderObj.TryGetValue("connectionName", out object connName) && connName is string connNameStr && !string.IsNullOrWhiteSpace(connNameStr))
-                    {
-                        return connNameStr;
-                    }
-
-                    if (storageProviderObj.TryGetValue("connectionStringName", out object connStrName) && connStrName is string connStrNameStr && !string.IsNullOrWhiteSpace(connStrNameStr))
-                    {
-                        return connStrNameStr;
-                    }
-                }
-            }
-
-            return null;
         }
 
         private static string ResolveConnectionName(IDictionary<string, object> storageProvider)
@@ -255,6 +153,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Sql
             {
                 return s1;
             }
+
             if (storageProvider.TryGetValue("connectionStringName", out object v2) && v2 is string s2 && !string.IsNullOrWhiteSpace(s2))
             {
                 return s2;
@@ -286,23 +185,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Sql
             {
                 throw new InvalidOperationException($"{nameof(this.options.MaxConcurrentActivityFunctions)} must be a positive integer.");
             }
-        }
-
-        private static DurableTaskMetadata ExtractParsedMetadata(TriggerMetadata triggerMetadata)
-        {
-            if (triggerMetadata?.Properties == null)
-            {
-                return null;
-            }
-
-            // The DurableTaskTriggersScaleProvider pre-parses the metadata and stores it in Properties
-            if (triggerMetadata.Properties.TryGetValue("DurableTaskMetadata", out object metadataObj) 
-                && metadataObj is DurableTaskMetadata metadata)
-            {
-                return metadata;
-            }
-
-            return null;
         }
     }
 }

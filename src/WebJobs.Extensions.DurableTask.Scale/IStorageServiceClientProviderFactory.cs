@@ -10,7 +10,7 @@ using DurableTask.AzureStorage;
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
 {
     /// <summary>
-    /// Defines methods for retrieving service client providers based on the connection name.
+    /// Defines methods for retrieving Azure Storage backend service client providers based on the connection name.
     /// </summary>
     public interface IStorageServiceClientProviderFactory
     {

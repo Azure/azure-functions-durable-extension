@@ -17,6 +17,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureManaged
         private readonly string connectionName;
         private readonly ILogger logger;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AzureManagedScalabilityProvider"/> class.
+        /// </summary>
+        /// <param name="orchestrationService">
+        /// The <see cref="AzureManagedOrchestrationService"/> instance that provides access to backend service for scaling operations.
+        /// </param>
+        /// <param name="connectionName">
+        /// The logical name of the storage or service connection associated with this provider.
+        /// </param>
+        /// <param name="logger">
+        /// The <see cref="ILogger"/> instance used for logging provider activities and diagnostics.
+        /// </param>
+        /// <exception cref="ArgumentNullException">
+        /// Thrown if <paramref name="orchestrationService"/> is <see langword="null"/>.
+        /// </exception>
         public AzureManagedScalabilityProvider(
             AzureManagedOrchestrationService orchestrationService,
             string connectionName,
@@ -82,4 +97,3 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureManaged
         }
     }
 }
-

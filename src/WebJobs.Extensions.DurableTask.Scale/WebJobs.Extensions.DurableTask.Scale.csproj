@@ -4,8 +4,8 @@
     <TargetFramework>net8.0</TargetFramework>
     <AssemblyName>Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale</AssemblyName>
     <RootNamespace>Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale</RootNamespace>
-    <MajorVersion>3</MajorVersion>
-    <MinorVersion>6</MinorVersion>
+    <MajorVersion>1</MajorVersion>
+    <MinorVersion>0</MinorVersion>
     <PatchVersion>0</PatchVersion>
     <VersionPrefix>$(MajorVersion).$(MinorVersion).$(PatchVersion)</VersionPrefix>
     <FileVersion>$(MajorVersion).$(MinorVersion).$(PatchVersion)</FileVersion>
@@ -40,16 +40,12 @@
     <PackageReference Include="Microsoft.Azure.WebJobs" />
     <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" />
     <PackageReference Include="Microsoft.DurableTask.SqlServer" />
-    <PackageReference Include="Microsoft.Data.SqlClient" />
     <PackageReference Include="Microsoft.DurableTask.AzureManagedBackend" />
-  <!-- Removed Newtonsoft.Json, using System.Text.Json instead -->
     <PackageReference Include="Azure.Identity" />
-    <!-- Build-time dependencies -->
     <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="All" />
     <PackageReference Include="StyleCop.Analyzers" PrivateAssets="All" />
   </ItemGroup>
 
-  <!-- Note: Scale package is independent and doesn't reference main package -->
 
   <ItemGroup>
     <!-- StyleCop artifacts -->
