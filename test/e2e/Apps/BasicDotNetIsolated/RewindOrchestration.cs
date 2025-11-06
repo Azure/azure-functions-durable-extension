@@ -58,14 +58,17 @@ public static class RewindOrchestration
         [OrchestrationTrigger] TaskOrchestrationContext context)
     {
         OrchestrationInput input = context.GetInput<OrchestrationInput>()!;
-        Task[] tasks =
-        {
+        List<Task> tasks =
+        [
             context.CallActivityAsync<string>(nameof(SucceedActivity), input.Name + "_succeed_activity"),
             context.CallActivityAsync<string>(nameof(FailActivity), new OrchestrationInput(input.Name + "_fail_activity_1", input.NumFailures)),
-            context.CallActivityAsync<string>(nameof(FailActivity), new OrchestrationInput(input.Name + "_fail_activity_2", input.NumFailures)),
-            context.Entities.SignalEntityAsync(entityId, input.Name + "_signal_entity"),
-            context.Entities.CallEntityAsync(entityId, input.Name + "_call_entity")
-        };
+            context.CallActivityAsync<string>(nameof(FailActivity), new OrchestrationInput(input.Name + "_fail_activity_2", input.NumFailures))
+        ];
+        if (input.CallEntities)
+        {
+            tasks.Add(context.Entities.SignalEntityAsync(entityId, input.Name + "_signal_entity"));
+            tasks.Add(context.Entities.CallEntityAsync(entityId, input.Name + "_call_entity"));
+        }
         await Task.WhenAll(tasks);
         return "Ok, sub done!";
     }
@@ -76,8 +79,11 @@ public static class RewindOrchestration
     {
         OrchestrationInput input = context.GetInput<OrchestrationInput>()!;
         await context.CallActivityAsync<string>(nameof(SucceedActivity), input.Name + "_succeed_activity");
-        await context.Entities.CallEntityAsync(entityId, input.Name + "_call_entity");
-        await context.CallSubOrchestratorAsync<string>(nameof(FailChildSubOrchestration), new OrchestrationInput(input.Name + "_child", input.NumFailures));
+        if (input.CallEntities)
+        {
+            await context.Entities.CallEntityAsync(entityId, input.Name + "_call_entity");
+        }
+        await context.CallSubOrchestratorAsync<string>(nameof(FailChildSubOrchestration), new OrchestrationInput(input.Name + "_child", input.NumFailures, input.CallEntities));
         return "Ok, sub done!";
     }
 
@@ -140,6 +146,7 @@ public static class RewindOrchestration
             FunctionContext executionContext,
             string input,
             int numFailures,
+            bool callEntities,
             bool? delay)
     {
         invocationCounts.Clear();
@@ -147,7 +154,7 @@ public static class RewindOrchestration
 
         string instanceId = await client.ScheduleNewOrchestrationInstanceAsync(
             nameof(RewindParentOrchestration),
-            new OrchestrationInput(input, numFailures),
+            new OrchestrationInput(input, numFailures, callEntities),
             delay == true ? new StartOrchestrationOptions { StartAt = DateTimeOffset.UtcNow.AddMinutes(1) } : null); 
 
         logger.LogInformation("Started orchestration with ID = '{instanceId}'.", instanceId);
@@ -185,8 +192,18 @@ public static class RewindOrchestration
             Name = name;
             NumFailures = numFailures;
         }
+
+        public OrchestrationInput(string name, int numFailures, bool callEntities)
+        {
+            Name = name;
+            NumFailures = numFailures;
+            CallEntities = callEntities;
+        }
+
         public string? Name { get; set; }
 
         public int NumFailures { get; set; }
+
+        public bool CallEntities { get; set; }
     }
 }

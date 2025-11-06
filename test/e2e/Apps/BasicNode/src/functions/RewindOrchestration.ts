@@ -27,10 +27,10 @@ const RewindParentOrchestration: OrchestrationHandler = function* (context: Orch
             context.df.callSubOrchestrator('SucceedSubOrchestration', 'succeed_sub_1'),
             context.df.callSubOrchestrator(
                 'FailParentSubOrchestration',
-                new OrchestrationInput('fail_parent_sub_1', input.numFailures)),
+                new OrchestrationInput('fail_parent_sub_1', input.numFailures, input.callEntities)),
             context.df.callSubOrchestrator(
                 'FailParentSubOrchestration',
-                new OrchestrationInput('fail_parent_sub_2', input.numFailures)),
+                new OrchestrationInput('fail_parent_sub_2', input.numFailures, input.callEntities)),
             context.df.callSubOrchestrator('SucceedSubOrchestration', 'succeed_sub_2')
         ];
 
@@ -48,23 +48,34 @@ df.app.orchestration('RewindParentOrchestration', RewindParentOrchestration);
 const FailParentSubOrchestration: OrchestrationHandler = function* (context: OrchestrationContext) {
     const input = context.df.getInput<OrchestrationInput>();
     yield context.df.callActivity('SucceedActivity', input.name + '_succeed_activity');
-    yield context.df.callEntity(entityId, input.name + '_call_entity');
+    if (input.callEntities)
+    {
+        yield context.df.callEntity(entityId, input.name + '_call_entity');
+    }
     yield context.df.callSubOrchestrator(
         'FailChildSubOrchestration',
-        new OrchestrationInput(input.name + '_child', input.numFailures));
+        new OrchestrationInput(input.name + '_child', input.numFailures, input.callEntities));
 }
 df.app.orchestration('FailParentSubOrchestration', FailParentSubOrchestration);
 
 const FailChildSubOrchestration: OrchestrationHandler = function* (context: OrchestrationContext) {
     const input = context.df.getInput<OrchestrationInput>();
-    context.df.signalEntity(entityId, input.name + '_signal_entity');
+
+    if (input.callEntities)
+    {
+        context.df.signalEntity(entityId, input.name + '_signal_entity');
+    }
 
     const activityAndEntityTasks  = [
         context.df.callActivity('SucceedActivity', input.name + '_succeed_activity'),
-        context.df.callActivity('FailActivity', new OrchestrationInput(input.name + '_fail_activity_1', input.numFailures)),
-        context.df.callActivity('FailActivity', new OrchestrationInput(input.name + '_fail_activity_2', input.numFailures)),
-        context.df.callEntity(entityId, input.name + '_call_entity')
+        context.df.callActivity('FailActivity', new OrchestrationInput(input.name + '_fail_activity_1', input.numFailures, input.callEntities)),
+        context.df.callActivity('FailActivity', new OrchestrationInput(input.name + '_fail_activity_2', input.numFailures, input.callEntities)),
     ];
+
+    if (input.callEntities)
+    {
+        activityAndEntityTasks.push(context.df.callEntity(entityId, input.name + '_call_entity'));
+    }
 
     yield context.df.Task.all(activityAndEntityTasks);
 }
@@ -118,7 +129,11 @@ const HttpStart_RewindOrchestration: HttpHandler = async (request: HttpRequest, 
 
     const instanceId: string = await client.startNew(
         'RewindParentOrchestration',
-        { input: new OrchestrationInput(request.params.input, Number.parseInt(request.params.numFailures)) });
+        { input: new OrchestrationInput(
+            request.params.input,
+            Number.parseInt(request.params.numFailures),
+            request.params.callEntities == 'true'
+        )});
 
     context.log(`Started orchestration with ID = '${instanceId}'.`);
 
@@ -147,10 +162,12 @@ class OrchestrationInput
 {
     name: string;
     numFailures: number;
+    callEntities: boolean;
 
-    constructor(name: string, numFailures: number)
+    constructor(name: string, numFailures: number, callEntities: boolean)
     {
         this.name = name;
         this.numFailures = numFailures;
+        this.callEntities = callEntities;
     }
 }

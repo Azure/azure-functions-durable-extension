@@ -33,7 +33,7 @@ public class RewindOrchestratorTests
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger(
             "HttpStart_RewindOrchestration",
-            $"?input=fail&numFailures={numFailures}");
+            $"?input=fail&numFailures={numFailures}&callEntities={this.fixture.GetDurabilityProvider() != FunctionAppFixture.ConfiguredDurabilityProviderType.MSSQL}");
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         string instanceId = await DurableHelpers.ParseInstanceIdAsync(response);
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
@@ -75,7 +75,7 @@ public class RewindOrchestratorTests
         // Try to rewind a completed, running, terminated, and pending orchestration - all should fail
         HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger(
             "HttpStart_RewindOrchestration",
-            $"?input=complete&numFailures=0");
+            $"?input=complete&numFailures=0&callEntities=false");
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         string instanceId = await DurableHelpers.ParseInstanceIdAsync(response);
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
@@ -100,7 +100,7 @@ public class RewindOrchestratorTests
         // Rewind a running orchestration
         response = await HttpHelpers.InvokeHttpTrigger(
             "HttpStart_RewindOrchestration",
-            $"?input=run&numFailures=0");
+            $"?input=run&numFailures=0&callEntities=false");
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         instanceId = await DurableHelpers.ParseInstanceIdAsync(response);
         statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
@@ -140,7 +140,7 @@ public class RewindOrchestratorTests
         {
             response = await HttpHelpers.InvokeHttpTrigger(
                "HttpStart_RewindOrchestration",
-               $"?input=complete&numFailures=0&delay=true");
+               $"?input=complete&numFailures=0&callEntities=false&delay=true");
             Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
             instanceId = await DurableHelpers.ParseInstanceIdAsync(response);
             statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
