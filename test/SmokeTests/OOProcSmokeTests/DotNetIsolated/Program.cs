@@ -12,7 +12,9 @@ FunctionsApplicationBuilder builder = FunctionsApplication.CreateBuilder(args);
 builder.ConfigureDurableWorker()
     .AddTasks(r => r
         .AddOrchestrator<HelloCitiesTyped>()
-        .AddActivity<SayHelloTyped>());
+        .AddOrchestrator<EntityOrchestration>()
+        .AddActivity<SayHelloTyped>()
+        .AddEntity<CountingEntity>());
 
 IHost app = builder.Build();
 

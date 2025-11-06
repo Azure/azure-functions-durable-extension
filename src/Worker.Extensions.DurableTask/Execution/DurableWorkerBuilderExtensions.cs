@@ -46,7 +46,7 @@ internal static class DurableWorkerBuilderExtensions
         return builder.BuildTarget == typeof(Worker);
     }
 
-    private class Worker(string name, IDurableTaskFactory factory) : DurableTaskWorker(name, factory)
+    private class Worker(string name, IDurableTaskFactory factory, IExceptionPropertiesProvider? provider = null) : DurableTaskWorker(name, factory)
     {
         public new IDurableTaskFactory Factory => base.Factory;
 

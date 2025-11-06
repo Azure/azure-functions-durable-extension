@@ -1,11 +1,11 @@
 // Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
-using Microsoft.DurableTask;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
-using Microsoft.Extensions.Logging;
+using Microsoft.DurableTask;
 using Microsoft.DurableTask.Client;
+using Microsoft.Extensions.Logging;
 
 namespace DotNetIsolated.Typed;
 
@@ -52,9 +52,9 @@ public class HelloCitiesTyped : TaskOrchestrator<string?, string>
         // methods are derived from the names of the activity classes. Note that both
         // activity classes and activity functions are supported by the source generator.
         string result = "";
-        result += await context.CallActivityAsync<string>("SayHelloTyped", "Tokyo") + " ";
-        result += await context.CallActivityAsync<string>("SayHelloTyped", "London") + " ";
-        result += await context.CallActivityAsync<string>("SayHelloTyped", "Seattle");
+        result += await context.CallActivityAsync<string>("SayHello", "Tokyo") + " ";
+        result += await context.CallActivityAsync<string>("SayHello", "London") + " ";
+        result += await context.CallActivityAsync<string>("SayHello", "Seattle");
         return result;
     }
 }
@@ -63,7 +63,7 @@ public class HelloCitiesTyped : TaskOrchestrator<string?, string>
 /// Class-based activity function implementation. Source generators are used to a generate an activity function
 /// definition that creates an instance of this class and invokes its <see cref="OnRun"/> method.
 /// </summary>
-[DurableTask(nameof(SayHelloTyped))]
+[DurableTask("SayHello")]
 public class SayHelloTyped : TaskActivity<string, string>
 {
     private readonly ILogger? logger;
@@ -84,7 +84,7 @@ public class SayHelloTyped : TaskActivity<string, string>
 
     public override Task<string> RunAsync(TaskActivityContext context, string cityName)
     {
-        this.logger?.LogInformation("Saying hello to {name}", cityName);
+        this.logger?.LogInformation("Saying hello to {name}!", cityName);
         return Task.FromResult($"Hello, {cityName}!");
     }
 }

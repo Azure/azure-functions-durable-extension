@@ -1,29 +1,35 @@
 // Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
-using Microsoft.Azure.Functions.Worker;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.DurableTask.Worker;
 using System.Diagnostics;
+using Microsoft.Azure.Functions.Worker;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 var host = new HostBuilder()
-    .ConfigureFunctionsWebApplication()
-    .ConfigureServices(services => {
+    .ConfigureFunctionsWebApplication(workerApplication =>
+    {
+        // Register async middleware to test the fix for https://github.com/microsoft/durabletask-dotnet/issues/158
+        // This middleware performs async operations that previously caused non-determinism exceptions
+        workerApplication.UseMiddleware<Microsoft.Azure.Durable.Tests.E2E.TestAsyncMiddleware>();
+    })
+    .ConfigureServices(services =>
+    {
         services.AddApplicationInsightsTelemetryWorkerService();
         services.ConfigureFunctionsApplicationInsights();
 
         // Register a custom service for testing dependency injection in entities
         services.AddSingleton<MyInjectedService>();
-        
+
         // Register the custom exception properties provider
-        services.AddSingleton<IExceptionPropertiesProvider, TestExceptionPropertiesProvider>();
+        services.AddSingleton<Microsoft.DurableTask.Worker.IExceptionPropertiesProvider, TestExceptionPropertiesProvider>();
     })
     .Build();
 
 
 // Bool.parse
-if (Environment.GetEnvironmentVariable("DURABLE_ATTACH_DEBUGGER") == "True") {
+if (Environment.GetEnvironmentVariable("DURABLE_ATTACH_DEBUGGER") == "True")
+{
     Debugger.Launch();
 }
 
@@ -33,7 +39,7 @@ host.Run();
 internal class MyInjectedService { }
 
 // Custom exception properties provider for testing
-public class TestExceptionPropertiesProvider : IExceptionPropertiesProvider
+public class TestExceptionPropertiesProvider : Microsoft.DurableTask.Worker.IExceptionPropertiesProvider // This needs the full path identifier now.
 {
     public IDictionary<string, object?>? GetExceptionProperties(Exception exception)
     {
@@ -56,5 +62,5 @@ public class TestExceptionPropertiesProvider : IExceptionPropertiesProvider
             },
             _ => null // No custom properties for other exceptions
         };
-     }
+    }
 }

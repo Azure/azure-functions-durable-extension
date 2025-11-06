@@ -5,6 +5,7 @@ using System;
 using System.Threading.Tasks;
 using Microsoft.Azure.Functions.Worker.Extensions.DurableTask.Exceptions;
 using Microsoft.DurableTask;
+using Microsoft.DurableTask.Worker;
 
 namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask.Execution;
 
@@ -36,7 +37,8 @@ internal partial class DurableFunctionExecutor
         }
         catch (Exception ex)
         {
-            throw new DurableSerializationException(ex);
+            IExceptionPropertiesProvider? exceptionPropertiesProvider = context.InstanceServices.GetService(typeof(IExceptionPropertiesProvider)) as IExceptionPropertiesProvider;
+            throw new DurableSerializationException(ex, exceptionPropertiesProvider);
         }
     }
 
