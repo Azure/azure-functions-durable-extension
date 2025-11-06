@@ -38,9 +38,9 @@ public static class RewindOrchestration
                 context.CallSubOrchestratorAsync<string>(
                     nameof(SucceedSubOrchestration), "succeed_sub_1"),
                 context.CallSubOrchestratorAsync<string>(
-                    nameof(FailParentSubOrchestration), new OrchestrationInput("fail_parent_sub_1", input.NumFailures)),
+                    nameof(FailParentSubOrchestration), new OrchestrationInput("fail_parent_sub_1", input.NumFailures, input.CallEntities)),
                 context.CallSubOrchestratorAsync<string>(
-                    nameof(FailParentSubOrchestration), new OrchestrationInput("fail_parent_sub_2", input.NumFailures)),
+                    nameof(FailParentSubOrchestration), new OrchestrationInput("fail_parent_sub_2", input.NumFailures, input.CallEntities)),
                 context.CallSubOrchestratorAsync<string>(
                     nameof(SucceedSubOrchestration), "succeed_sub_2")
             };
@@ -61,8 +61,8 @@ public static class RewindOrchestration
         List<Task> tasks =
         [
             context.CallActivityAsync<string>(nameof(SucceedActivity), input.Name + "_succeed_activity"),
-            context.CallActivityAsync<string>(nameof(FailActivity), new OrchestrationInput(input.Name + "_fail_activity_1", input.NumFailures)),
-            context.CallActivityAsync<string>(nameof(FailActivity), new OrchestrationInput(input.Name + "_fail_activity_2", input.NumFailures))
+            context.CallActivityAsync<string>(nameof(FailActivity), new OrchestrationInput(input.Name + "_fail_activity_1", input.NumFailures, input.CallEntities)),
+            context.CallActivityAsync<string>(nameof(FailActivity), new OrchestrationInput(input.Name + "_fail_activity_2", input.NumFailures, input.CallEntities))
         ];
         if (input.CallEntities)
         {
@@ -187,11 +187,6 @@ public static class RewindOrchestration
 
     public class OrchestrationInput
     {
-        public OrchestrationInput(string name, int numFailures)
-        {
-            Name = name;
-            NumFailures = numFailures;
-        }
 
         public OrchestrationInput(string name, int numFailures, bool callEntities)
         {
