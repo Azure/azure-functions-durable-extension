@@ -185,20 +185,12 @@ public static class RewindOrchestration
         return invocationCount;
     }
 
-    public class OrchestrationInput
+    public class OrchestrationInput(string name, int numFailures, bool callEntities)
     {
+        public string? Name { get; set; } = name;
 
-        public OrchestrationInput(string name, int numFailures, bool callEntities)
-        {
-            Name = name;
-            NumFailures = numFailures;
-            CallEntities = callEntities;
-        }
+        public int NumFailures { get; set; } = numFailures;
 
-        public string? Name { get; set; }
-
-        public int NumFailures { get; set; }
-
-        public bool CallEntities { get; set; }
+        public bool CallEntities { get; set; } = callEntities;
     }
 }
