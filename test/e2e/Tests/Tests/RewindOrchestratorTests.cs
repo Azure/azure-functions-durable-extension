@@ -31,9 +31,10 @@ public class RewindOrchestratorTests
     [InlineData(2)]
     public async Task RewindFailedOrchestration_ShouldSucceed(int numFailures)
     {
+        bool callEntities = this.fixture.GetDurabilityProvider() != FunctionAppFixture.ConfiguredDurabilityProviderType.MSSQL;
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger(
             "HttpStart_RewindOrchestration",
-            $"?input=fail&numFailures={numFailures}&callEntities={this.fixture.GetDurabilityProvider() != FunctionAppFixture.ConfiguredDurabilityProviderType.MSSQL}");
+            $"?input=fail&numFailures={numFailures}&callEntities={callEntities.ToString().ToLower()}");
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         string instanceId = await DurableHelpers.ParseInstanceIdAsync(response);
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
