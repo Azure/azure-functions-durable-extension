@@ -1020,7 +1020,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             if (status.RuntimeStatus != OrchestrationRuntimeStatus.Failed)
             {
-                return request.CreateResponse(HttpStatusCode.PreconditionFailed, "Only orchestrations in the \"Failed\" state can be rewound.");
+                return request.CreateResponse(
+                    HttpStatusCode.PreconditionFailed,
+                    $"This orchestration has status {status.RuntimeStatus}, but only orchestrations in the \"Failed\" state can be rewound.");
             }
 
             string reason = request.GetQueryNameValuePairs()["reason"];
