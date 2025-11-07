@@ -1015,7 +1015,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             DurableOrchestrationStatus status = await client.GetStatusAsync(instanceId);
             if (status == null)
             {
-                return request.CreateResponse(HttpStatusCode.NotFound);
+                return request.CreateResponse(
+                    HttpStatusCode.NotFound,
+                    $"No orchestration with instance ID \"${instanceId}\" found.");
             }
 
             if (status.RuntimeStatus != OrchestrationRuntimeStatus.Failed)
