@@ -60,7 +60,7 @@ public class FunctionAppFixture : IAsyncLifetime
     internal ConfiguredDurabilityProviderType GetDurabilityProvider()
     {
         string? e2eTestDurableBackendEnvVarValue = Environment.GetEnvironmentVariable("E2E_TEST_DURABLE_BACKEND");
-        switch (e2eTestDurableBackendEnvVarValue)
+        switch (e2eTestDurableBackendEnvVarValue?.ToLower())
         {
             case "mssql":
                 return ConfiguredDurabilityProviderType.MSSQL;

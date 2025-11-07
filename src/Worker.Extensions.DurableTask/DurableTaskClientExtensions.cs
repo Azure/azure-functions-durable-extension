@@ -263,6 +263,7 @@ public static class DurableTaskClientExtensions
             SendEventPostUri = BuildUrl($"{instanceUrl}/raiseEvent/{{eventName}}", commonQueryParameters),
             StatusQueryGetUri = BuildUrl(instanceUrl, commonQueryParameters),
             TerminatePostUri = BuildUrl($"{instanceUrl}/terminate", "reason={{text}}", commonQueryParameters),
+            RewindPostUri = BuildUrl($"{instanceUrl}/rewind", "reason={{text}}", commonQueryParameters),
             SuspendPostUri =  BuildUrl($"{instanceUrl}/suspend", "reason={{text}}", commonQueryParameters),
             ResumePostUri =  BuildUrl($"{instanceUrl}/resume", "reason={{text}}", commonQueryParameters)
         };
