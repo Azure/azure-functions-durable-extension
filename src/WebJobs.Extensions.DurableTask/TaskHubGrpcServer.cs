@@ -301,9 +301,33 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public async override Task<P.RewindInstanceResponse> RewindInstance(P.RewindInstanceRequest request, ServerCallContext context)
         {
+            try
+            {
 #pragma warning disable CS0618 // Type or member is obsolete
-            await this.GetClient(context).RewindAsync(request.InstanceId, request.Reason);
+                await this.GetClient(context).RewindAsync(request.InstanceId, request.Reason);
 #pragma warning restore CS0618 // Type or member is obsolete
+            }
+            catch (ArgumentException ex)
+            {
+                // Instance ID does not exist.
+                throw new RpcException(new Status(StatusCode.NotFound, ex.Message));
+            }
+            catch (InvalidOperationException ex)
+            {
+                // Orchestration is not in a failed state.
+                throw new RpcException(new Status(StatusCode.FailedPrecondition, ex.Message));
+            }
+            catch (NotImplementedException ex)
+            {
+                // Rewind is not supported by the underlying storage provider.
+                throw new RpcException(new Status(StatusCode.Unimplemented, ex.Message));
+            }
+            catch (Exception ex)
+            {
+                // Any other unexpected exceptions.
+                throw new RpcException(new Status(StatusCode.Unknown, ex.Message));
+            }
+
             return new P.RewindInstanceResponse();
         }
 

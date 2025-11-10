@@ -109,4 +109,10 @@ internal sealed class FunctionsDurableTaskClient : DurableTaskClient
     {
         return this.inner.RestartAsync(instanceId, restartWithNewInstanceId, cancellation);
     }
+
+    public override Task RewindInstanceAsync(
+        string instanceId, string reason, CancellationToken cancellation = default)
+    {
+        return this.inner.RewindInstanceAsync(instanceId, reason, cancellation);
+    }
 }

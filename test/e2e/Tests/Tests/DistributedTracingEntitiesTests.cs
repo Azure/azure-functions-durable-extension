@@ -5,6 +5,7 @@ using Xunit.Abstractions;
 using Xunit;
 using System.Diagnostics;
 using System.Net;
+using System.Text.Json;
 
 namespace Microsoft.Azure.Durable.Tests.DotnetIsolatedE2E;
 
@@ -103,15 +104,13 @@ public class DistributedTracingEntitiesTests
         statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(getActivityInfosResponse);
         await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", 30);
         var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
-
-        // Sanitize the JSON string to remove unwanted characters so we can easily parse it into a list
-        var output = orchestrationDetails.Output.Replace("\r", "").Replace("\n", "").Replace("\"", "").Replace("[", "").Replace("]", "").Replace(" ", "");
-        var ids = new List<string>(output.Split(","));
+        var ids = JsonSerializer.Deserialize<List<string>>(orchestrationDetails.Output);
 
         // The execution is as follows:
         // Client signals entity A which signals entity B. 
         // The orchestration then calls entities A and B and aftewards resets their state.
         // We expect 5 Activities to be created - one by the orchestration, two by entity A, and two by entity B.
+        Assert.NotNull(ids);
         Assert.Equal(5, ids.Count);
         Assert.True(ids.All(traceId => traceId.Equals(activity.TraceId.ToString())));
     }
