@@ -1,9 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Collections.Generic;
 using System.Text.Json.Serialization;
-using System.Threading.Tasks;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
 {
@@ -14,19 +10,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
     public class DurableTaskMetadata
     {
         /// <summary>
-        /// Gets or sets the name of the Durable Task Hub used by the function app.
+        /// Gets or sets the name of the Durable Task Hub. This identifies the taskhub being monitored or scaled.
         /// </summary>
         [JsonPropertyName("taskHubName")]
         public string? TaskHubName { get; set; }
 
         /// <summary>
-        /// Gets or sets the maximum number of concurrent orchestrator.
+        /// Gets or sets the maximum number of orchestrator functions that can run concurrently on this worker instance.
+        /// Used by the scale controller to balance orchestration and activity execution load.
         /// </summary>
         [JsonPropertyName("maxConcurrentOrchestratorFunctions")]
         public int? MaxConcurrentOrchestratorFunctions { get; set; }
 
         /// <summary>
-        /// Gets or sets the maximum number of concurrent activity.
+        /// Gets or sets the maximum number of activity functions that can run concurrently on this worker instance.
+        /// Used by the scale controller to balance orchestration and activity execution load.
         /// </summary>
         [JsonPropertyName("maxConcurrentActivityFunctions")]
         public int? MaxConcurrentActivityFunctions { get; set; }
@@ -36,5 +34,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
         /// </summary>
         [JsonPropertyName("storageProvider")]
         public IDictionary<string, object>? StorageProvider { get; set; }
+
+        /// <summary>
+        /// Resolves app settings in <see cref="DurableTaskMetadata"/> using the provided <see cref="INameResolver"/>.
+        /// This allows configuration values such as connection strings to be expanded from environment variables or host settings.
+        /// </summary>
+        /// <param name="metadata">The scale options instance containing configuration values to resolve.</param>
+        /// <param name="nameResolver">The name resolver used to resolve app setting placeholders.</param>
+        public static void ResolveAppSettingOptions(DurableTaskMetadata metadata, INameResolver nameResolver)
+        {
+            if (metadata.StorageProvider.TryGetValue("connectionName", out object connectionNameObj) && connectionNameObj is string connectionName)
+            {
+                metadata.StorageProvider["connectionName"] = nameResolver.Resolve(connectionName);
+            }
+        }
     }
 }

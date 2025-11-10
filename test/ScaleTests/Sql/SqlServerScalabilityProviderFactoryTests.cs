@@ -64,11 +64,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
         public void Constructor_WithMssqlType_CreatesInstance()
         {
             // Arrange - Specify type="mssql" in storage provider
-            var options = CreateOptions("testHub", 10, 20, "TestConnection", "mssql");
+            // Options no longer used - removed CreateOptions call
 
             // Act
             var factory = new SqlServerScalabilityProviderFactory(
-                options,
                 this.configuration,
                 this.nameResolver,
                 this.loggerFactory);
@@ -90,11 +89,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
         public void Constructor_WithAzureStorageType_ReturnsEarly()
         {
             // Arrange - Specify type="AzureStorage" instead of "mssql"
-            var options = CreateOptions("testHub", 10, 20, "TestConnection", "AzureStorage");
+            // Options no longer used - removed CreateOptions call
 
             // Act
             var factory = new SqlServerScalabilityProviderFactory(
-                options,
                 this.configuration,
                 this.nameResolver,
                 this.loggerFactory);
@@ -117,7 +115,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
             Assert.Throws<ArgumentNullException>(() =>
                 new SqlServerScalabilityProviderFactory(
                     null,
-                    this.configuration,
                     this.nameResolver,
                     this.loggerFactory));
         }
@@ -133,17 +130,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
         public void GetScalabilityProvider_WithTriggerMetadataAndMssqlType_ReturnsValidProvider()
         {
             // Arrange
-            var options = CreateOptions("testHub", 10, 20, "TestConnection", "mssql");
+            // Options no longer used - removed CreateOptions call
             var factory = new SqlServerScalabilityProviderFactory(
-                options,
                 this.configuration,
                 this.nameResolver,
                 this.loggerFactory);
 
             var triggerMetadata = CreateTriggerMetadata("testHub", 15, 25, "TestConnection", "mssql");
+            var metadata = triggerMetadata.ExtractDurableTaskMetadata();
 
             // Act
-            var provider = factory.GetScalabilityProvider(triggerMetadata);
+            var provider = factory.GetScalabilityProvider(metadata, triggerMetadata);
 
             // Assert
             Assert.NotNull(provider);
@@ -160,22 +157,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
         [Fact]
         public void GetScalabilityProvider_WithMssqlType_ReturnsValidProvider()
         {
-            // Arrange
-            var options = CreateOptions("testHub", 10, 20, "TestConnection", "mssql");
+            // Arrange - SQL Server now requires metadata
             var factory = new SqlServerScalabilityProviderFactory(
-                options,
                 this.configuration,
                 this.nameResolver,
                 this.loggerFactory);
 
-            // Act - Without trigger metadata, uses hardcoded default
-            var provider = factory.GetScalabilityProvider();
-
-            // Assert
-            Assert.NotNull(provider);
-            Assert.IsType<SqlServerScalabilityProvider>(provider);
-            // Connection name is now from hardcoded default, not from options
-            Assert.Equal("SQLDB_Connection", provider.ConnectionName);
+            // Act & Assert - Should throw NotImplementedException since SQL provider requires metadata
+            Assert.Throws<NotImplementedException>(() => factory.GetScalabilityProvider());
         }
 
         /// <summary>
@@ -189,26 +178,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
         {
             // Arrange - Pass connection name via trigger metadata (Scale Controller payload)
             var triggerMetadata = CreateTriggerMetadata("testHub", 10, 20, "TestConnection", "mssql");
-            
-            var options = new DurableTaskScaleOptions
-            {
-                HubName = "testHub",
-                MaxConcurrentOrchestratorFunctions = 10,
-                MaxConcurrentActivityFunctions = 20,
-                StorageProvider = new Dictionary<string, object>
-                {
-                    { "type", "mssql" },
-                },
-            };
+            var metadata = triggerMetadata.ExtractDurableTaskMetadata();
 
             var factory = new SqlServerScalabilityProviderFactory(
-                Options.Create(options),
                 this.configuration,
                 this.nameResolver,
                 this.loggerFactory);
 
             // Act - Connection name comes from triggerMetadata, not from options
-            var provider = factory.GetScalabilityProvider(triggerMetadata);
+            var provider = factory.GetScalabilityProvider(metadata, triggerMetadata);
 
             // Assert
             Assert.NotNull(provider);
@@ -224,16 +202,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
         [Fact]
         public void ValidateSqlServerOptions_InvalidMaxConcurrent_ThrowsInvalidOperationException()
         {
-            // Arrange - MaxConcurrentOrchestratorFunctions is 0
-            var options = CreateOptions("testHub", 0, 20, "TestConnection", "mssql");
+            // Arrange - SQL Server now requires metadata
             var factory = new SqlServerScalabilityProviderFactory(
-                options,
                 this.configuration,
                 this.nameResolver,
                 this.loggerFactory);
 
-            // Act & Assert
-            Assert.Throws<InvalidOperationException>(() => factory.GetScalabilityProvider());
+            // Act & Assert - Should throw NotImplementedException since SQL provider requires metadata
+            Assert.Throws<NotImplementedException>(() => factory.GetScalabilityProvider());
         }
 
         /// <summary>
@@ -250,38 +226,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
             configBuilder.AddInMemoryCollection(new Dictionary<string, string>());
             var emptyConfig = configBuilder.Build();
 
-            var options = CreateOptions("testHub", 10, 20, "NonExistentConnection", "mssql");
+            // Options no longer used - removed CreateOptions call
             var factory = new SqlServerScalabilityProviderFactory(
-                options,
                 emptyConfig,
                 this.nameResolver,
                 this.loggerFactory);
 
-            // Act & Assert
-            Assert.Throws<InvalidOperationException>(() => factory.GetScalabilityProvider());
+            // Act & Assert - Should throw NotImplementedException since SQL provider requires metadata
+            Assert.Throws<NotImplementedException>(() => factory.GetScalabilityProvider());
         }
 
-        private static IOptions<DurableTaskScaleOptions> CreateOptions(
-            string hubName,
-            int maxOrchestrator,
-            int maxActivity,
-            string connectionName,
-            string storageType = "mssql")
-        {
-            var options = new DurableTaskScaleOptions
-            {
-                HubName = hubName,
-                MaxConcurrentOrchestratorFunctions = maxOrchestrator,
-                MaxConcurrentActivityFunctions = maxActivity,
-                StorageProvider = new Dictionary<string, object>
-                {
-                    { "type", storageType },
-                    { "connectionName", connectionName },
-                },
-            };
-
-            return Options.Create(options);
-        }
+        // CreateOptions helper removed - DurableTaskScaleOptions no longer exists
+        // Tests now rely on TriggerMetadata from Scale Controller instead of DurableTaskScaleOptions
 
         private static TriggerMetadata CreateTriggerMetadata(
             string hubName,
@@ -332,15 +288,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
             Assert.Equal("mssql", storageProvider["type"]?.ToString());
 
             // Create factory
-            var options = CreateOptions(hubName, 10, 20, connectionName, "mssql");
+                // Options no longer used - removed CreateOptions call
             var factory = new SqlServerScalabilityProviderFactory(
-                options,
                 this.configuration,
                 this.nameResolver,
                 this.loggerFactory);
 
+            var metadata = triggerMetadata.ExtractDurableTaskMetadata();
+
             // Act - Create provider from triggerMetadata
-            var provider = factory.GetScalabilityProvider(triggerMetadata);
+            var provider = factory.GetScalabilityProvider(metadata, triggerMetadata);
 
             // Assert - Verify SQL provider was created
             Assert.NotNull(provider);
@@ -417,15 +374,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
             Assert.Equal(connectionName, storageProvider["connectionName"]?.ToString());
 
             // Create factory
-            var options = CreateOptions(hubName, 10, 20, connectionName, "mssql");
+                // Options no longer used - removed CreateOptions call
             var factory = new SqlServerScalabilityProviderFactory(
-                options,
                 this.configuration,
                 this.nameResolver,
                 this.loggerFactory);
 
+            var metadata = triggerMetadata.ExtractDurableTaskMetadata();
+
             // Act - Create provider from triggerMetadata
-            var provider = factory.GetScalabilityProvider(triggerMetadata);
+            var provider = factory.GetScalabilityProvider(metadata, triggerMetadata);
 
             // Assert - Verify provider was created
             Assert.NotNull(provider);
@@ -469,17 +427,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
                 }
             }
 
-            var options = CreateOptions(hubName, 10, 20, connectionName, "mssql");
+                // Options no longer used - removed CreateOptions call
             var factory = new SqlServerScalabilityProviderFactory(
-                options,
                 this.configuration,
                 this.nameResolver,
                 this.loggerFactory);
 
+            var metadata = triggerMetadata.ExtractDurableTaskMetadata();
+
             // Act - Create provider from triggerMetadata with TokenCredential
             // Note: In real scenarios, the TokenCredential would be extracted and used to build
             // a connection string with Authentication="Active Directory Default"
-            var provider = factory.GetScalabilityProvider(triggerMetadata);
+            var provider = factory.GetScalabilityProvider(metadata, triggerMetadata);
 
             // Assert - Verify provider was created
             Assert.NotNull(provider);
@@ -514,9 +473,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
             });
             var testConfiguration = configBuilder.Build();
 
-            var options = CreateOptions("testHub", 10, 20, connectionName, "mssql");
+            // Options no longer used - removed CreateOptions call
             var factory = new SqlServerScalabilityProviderFactory(
-                options,
                 testConfiguration,
                 this.nameResolver,
                 this.loggerFactory);

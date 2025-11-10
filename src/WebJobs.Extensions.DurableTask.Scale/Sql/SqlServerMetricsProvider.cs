@@ -18,11 +18,28 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Sql
         private DateTime metricsTimeStamp = DateTime.MinValue;
         private SqlServerScaleMetric metrics;
 
+        /// <summary>
+        /// Creates a new <see cref="SqlServerMetricsProvider"/> that retrieves scaling
+        /// metrics from the specified SQL orchestration service.
+        /// </summary>
+        /// <param name="service">The SQL orchestration service used to get metrics.</param>
+        /// <exception cref="ArgumentNullException">
+        /// Thrown if <paramref name="service"/> is null.
+        /// </exception>
         public SqlServerMetricsProvider(SqlOrchestrationService service)
         {
             this.service = service ?? throw new ArgumentNullException(nameof(service));
         }
 
+        /// <summary>
+        /// Gets the latest SQL Server scaling metrics, including the recommended worker count. Results are cached for 5 seconds to reduce query load.
+        /// </summary>
+        /// <param name="previousWorkerCount">
+        /// The previous number of workers, used to compare scaling recommendations (optional).
+        /// </param>
+        /// <returns>
+        /// A <see cref="SqlServerScaleMetric"/> containing the recommended worker count.
+        /// </returns>
         public virtual async Task<SqlServerScaleMetric> GetMetricsAsync(int? previousWorkerCount = null)
         {
             // We only want to query the metrics every 5 seconds to avoid excessive SQL queries.

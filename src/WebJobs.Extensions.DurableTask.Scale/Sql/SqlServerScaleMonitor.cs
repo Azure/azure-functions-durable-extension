@@ -23,6 +23,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Sql
         private readonly SqlServerMetricsProvider metricsProvider;
         private int? previousWorkerCount = -1;
 
+        /// <summary>
+        /// Creates a new <see cref="SqlServerScaleMonitor"/> for monitoring scale metrics
+        /// of a Durable Functions task hub using SQL Server.
+        /// </summary>
+        /// <param name="functionId">The ID of the function to monitor.</param>
+        /// <param name="taskHubName">The name of the task hub. Uses "default" if null.</param>
+        /// <param name="sqlMetricsProvider">The metrics provider for SQL Server.</param>
+        /// <exception cref="ArgumentNullException">
+        /// Thrown if <paramref name="sqlMetricsProvider"/> is null.
+        /// </exception>
         public SqlServerScaleMonitor(string functionId, string taskHubName, SqlServerMetricsProvider sqlMetricsProvider)
         {
             // Scalers in Durable Functions are per function IDs. Scalers share the same sqlMetricsProvider in the same task hub.

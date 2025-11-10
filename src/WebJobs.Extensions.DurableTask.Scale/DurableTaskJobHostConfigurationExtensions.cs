@@ -36,18 +36,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
                 throw new ArgumentNullException(nameof(builder));
             }
 
-            builder
-                .AddExtension<DurableTaskScaleExtension>()
-                .BindOptions<DurableTaskScaleOptions>();
+            builder.AddExtension<DurableTaskScaleExtension>();
 
             IServiceCollection serviceCollection = builder.Services;
             serviceCollection.TryAddSingleton<IStorageServiceClientProviderFactory, StorageServiceClientProviderFactory>();
-            
+
             // Register all scalability provider factories
             serviceCollection.AddSingleton<IScalabilityProviderFactory, AzureStorageScalabilityProviderFactory>();
             serviceCollection.AddSingleton<IScalabilityProviderFactory, AzureManagedScalabilityProviderFactory>();
             serviceCollection.AddSingleton<IScalabilityProviderFactory, SqlServerScalabilityProviderFactory>();
-            
+
             return builder;
         }
 
@@ -64,7 +62,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
             DurableTaskTriggersScaleProvider provider = null;
             builder.Services.AddSingleton(serviceProvider =>
             {
-                provider = new DurableTaskTriggersScaleProvider(serviceProvider.GetService<IOptions<DurableTaskScaleOptions>>(), serviceProvider.GetService<INameResolver>(), serviceProvider.GetService<ILoggerFactory>(), serviceProvider.GetService<IEnumerable<IScalabilityProviderFactory>>(), triggerMetadata);
+                provider = new DurableTaskTriggersScaleProvider(serviceProvider.GetService<INameResolver>(), serviceProvider.GetService<ILoggerFactory>(), serviceProvider.GetService<IEnumerable<IScalabilityProviderFactory>>(), triggerMetadata);
                 return provider;
             });
 

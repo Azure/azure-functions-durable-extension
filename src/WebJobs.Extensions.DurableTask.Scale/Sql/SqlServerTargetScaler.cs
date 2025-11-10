@@ -15,6 +15,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Sql
     {
         private readonly SqlServerMetricsProvider sqlMetricsProvider;
 
+        /// <summary>
+        /// Creates a new <see cref="SqlServerTargetScaler"/> for managing target scaling
+        /// of a Durable Functions task hub using SQL Server.
+        /// </summary>
+        /// <param name="functionId">The ID of the function to scale.</param>
+        /// <param name="sqlMetricsProvider">The SQL Server metrics provider.</param>
+        /// <exception cref="ArgumentNullException">
+        /// Thrown if <paramref name="sqlMetricsProvider"/> is null.
+        /// </exception>
         public SqlServerTargetScaler(string functionId, SqlServerMetricsProvider sqlMetricsProvider)
         {
             this.sqlMetricsProvider = sqlMetricsProvider ?? throw new ArgumentNullException(nameof(sqlMetricsProvider));
@@ -22,8 +31,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Sql
             this.TargetScalerDescriptor = new TargetScalerDescriptor(functionId);
         }
 
+        /// <summary>
+        /// Gets the descriptor for this target scaler.
+        /// </summary>
         public TargetScalerDescriptor TargetScalerDescriptor { get; }
 
+        /// <summary> 
+        /// Retrieves the current scale result based on SQL Server metrics, returning the recommended number of workers for the task hub.
+        /// </summary>
+        /// <param name="context">The context for scaling evaluation.</param>
+        /// <returns>The calculated <see cref="TargetScalerResult"/>.</returns>
         public async Task<TargetScalerResult> GetScaleResultAsync(TargetScalerContext context)
         {
             SqlServerScaleMetric sqlScaleMetric = await this.sqlMetricsProvider.GetMetricsAsync();
@@ -34,7 +51,3 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Sql
         }
     }
 }
-
-
-
-

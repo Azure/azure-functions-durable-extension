@@ -12,37 +12,33 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
     internal static class TriggerMetadataExtensions
     {
         /// <summary>
-        /// Extracts DurableTaskScaleOptions from trigger metadata sent by the Scale Controller.
+        /// Extracts DurableTaskMetadata from trigger metadata sent by the Scale Controller.
         /// </summary>
         /// <param name="triggerMetadata">The trigger metadata containing configuration from the Scale Controller.</param>
-        /// <returns>The parsed options, or null if metadata is not available.</returns>
-        public static DurableTaskScaleOptions? ExtractDurableTaskScaleOptions(this TriggerMetadata? triggerMetadata)
+        /// <returns>The parsed metadata, or null if metadata is not available.</returns>
+        public static DurableTaskMetadata? ExtractDurableTaskMetadata(this TriggerMetadata? triggerMetadata)
         {
             if (triggerMetadata?.Metadata == null)
             {
                 return null;
             }
 
+            // Check if already parsed and stored in Properties
+            if (triggerMetadata.Properties != null && 
+                triggerMetadata.Properties.TryGetValue("DurableTaskMetadata", out object cachedMetadata) &&
+                cachedMetadata is DurableTaskMetadata metadata)
+            {
+                return metadata;
+            }
+
             try
             {
                 // Parse the JSON metadata to extract configuration values
-                var metadata = triggerMetadata.Metadata.ToObject<DurableTaskMetadata>();
-                if (metadata == null)
-                {
-                    return null;
-                }
-
-                return new DurableTaskScaleOptions
-                {
-                    HubName = metadata.TaskHubName,
-                    MaxConcurrentActivityFunctions = metadata.MaxConcurrentActivityFunctions,
-                    MaxConcurrentOrchestratorFunctions = metadata.MaxConcurrentOrchestratorFunctions,
-                    StorageProvider = metadata.StorageProvider,
-                };
+                return triggerMetadata.Metadata.ToObject<DurableTaskMetadata>();
             }
             catch
             {
-                // If parsing fails, return null and fall back to constructor options
+                // If parsing fails, return null
                 return null;
             }
         }

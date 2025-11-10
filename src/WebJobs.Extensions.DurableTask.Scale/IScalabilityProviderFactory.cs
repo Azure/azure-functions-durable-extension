@@ -28,9 +28,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
 
         /// <summary>
         /// Creates or retrieves a cached scalability provider to be used in a given function execution.
+        /// This overload accepts pre-deserialized metadata to avoid double deserialization of the metadata payload.
+        /// The triggerMetadata is still passed to allow access to Properties (e.g., token credentials).
         /// </summary>
-        /// <param name="triggerMetadata">Trigger metadata used to create IOrchestrationService for functions scale scenarios.</param>
+        /// <param name="metadata">The pre-deserialized Durable Task metadata from the trigger.</param>
+        /// <param name="triggerMetadata">Trigger metadata used to access Properties like token credentials.</param>
         /// <returns>A scalability provider to be used by a client function.</returns>
-        ScalabilityProvider GetScalabilityProvider(TriggerMetadata triggerMetadata);
+        ScalabilityProvider GetScalabilityProvider(DurableTaskMetadata metadata, TriggerMetadata triggerMetadata);
     }
 }

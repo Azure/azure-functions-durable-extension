@@ -23,7 +23,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureManaged
         internal const string ProviderName = "AzureManaged";
 
         private readonly Dictionary<(string, string?, string?), AzureManagedScalabilityProvider> cachedProviders = new Dictionary<(string, string?, string?), AzureManagedScalabilityProvider>();
-        private readonly DurableTaskScaleOptions options;
         private readonly IConfiguration configuration;
         private readonly INameResolver nameResolver;
         private readonly ILoggerFactory loggerFactory;
@@ -32,9 +31,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureManaged
         /// <summary>
         /// Initializes a new instance of the <see cref="AzureManagedScalabilityProviderFactory"/> class.
         /// </summary>
-        /// <param name="options">
-        /// The <see cref="DurableTaskScaleOptions"/> instance that specifies scaling configuration.
-        /// </param>
         /// <param name="configuration">
         /// The <see cref="IConfiguration"/> interface used to resolve connection strings and application settings.
         /// </param>
@@ -48,20 +44,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureManaged
         /// Thrown if any required argument is <see langword="null"/>.
         /// </exception>
         public AzureManagedScalabilityProviderFactory(
-            IOptions<DurableTaskScaleOptions> options,
             IConfiguration configuration,
             INameResolver nameResolver,
             ILoggerFactory loggerFactory)
         {
-            var optionsValue = options?.Value ?? throw new ArgumentNullException(nameof(options));
             this.configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             this.nameResolver = nameResolver ?? throw new ArgumentNullException(nameof(nameResolver));
             this.loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
             this.logger = this.loggerFactory.CreateLogger(LoggerName);
-
-            // In Scale Controller context, optionsValue will be a default/empty object (can't read host.json)
-            // The real configuration comes from triggerMetadata in GetScalabilityProvider()
-            this.options = optionsValue;
 
             this.DefaultConnectionName = "DURABLE_TASK_SCHEDULER_CONNECTION_STRING";
         }
@@ -78,19 +68,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureManaged
 
         /// <summary>
         /// Returns a default <see cref="ScalabilityProvider"/> instance configured with the default connection and global scaling options.
+        /// This method should never be called for AzureManaged provider as metadata is always required.
         /// </summary>
         /// <returns> A default <see cref="AzureManagedScalabilityProvider"/> instance.</returns>
+        /// <exception cref="NotImplementedException">Always throws as this method should not be called.</exception>
         public virtual ScalabilityProvider GetScalabilityProvider()
         {
-            return this.GetScalabilityProvider(null);
+            throw new NotImplementedException("AzureManaged provider requires metadata and should not use parameterless GetScalabilityProvider()");
         }
 
         /// <summary>
-        /// Creates or retrieves an <see cref="AzureManagedScalabilityProvider"/> instance based on the provided trigger metadata.
+        /// Creates or retrieves an <see cref="AzureManagedScalabilityProvider"/> instance based on the provided pre-deserialized metadata.
         /// </summary>
-        /// <param name="triggerMetadata">
-        /// The trigger metadata contains configuration or identity credentials specific to that trigger.
-        /// </param>
+        /// <param name="metadata">The pre-deserialized Durable Task metadata.</param>
+        /// <param name="triggerMetadata">Trigger metadata used to access Properties like token credentials.</param>
         /// <returns>
         /// An <see cref="AzureManagedScalabilityProvider"/> instance configured using
         /// the specified metadata and resolved connection information.
@@ -98,14 +89,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureManaged
         /// <exception cref="InvalidOperationException">
         /// Thrown if no valid connection string could be resolved for the given connection name.
         /// </exception>
-        public ScalabilityProvider GetScalabilityProvider(TriggerMetadata? triggerMetadata)
+        public ScalabilityProvider GetScalabilityProvider(DurableTaskMetadata? metadata, TriggerMetadata? triggerMetadata)
         {
-            // Extract options from triggerMetadata (sent by Functions Host in SyncTriggers payload)
-            // This is critical for Scale Controller which doesn't have access to host.json
-            DurableTaskScaleOptions? triggerOptions = triggerMetadata.ExtractDurableTaskScaleOptions();
-
-            // Resolve connection name: prioritize triggerOptions, fallback to default
-            string? rawConnectionName = TriggerMetadataExtensions.ResolveConnectionName(triggerOptions?.StorageProvider);
+            // Resolve connection name: prioritize metadata, fallback to default
+            string? rawConnectionName = TriggerMetadataExtensions.ResolveConnectionName(metadata?.StorageProvider);
             string resolvedName = rawConnectionName != null
                 ? this.nameResolver.Resolve(rawConnectionName)
                 : this.DefaultConnectionName;
@@ -125,8 +112,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureManaged
 
             AzureManagedConnectionString azureManagedConnectionString = new AzureManagedConnectionString(connectionString);
 
-            // Extract task hub name from trigger options (from Scale Controller payload)
-            string taskHubName = triggerOptions?.HubName ?? azureManagedConnectionString.TaskHubName;
+            // Extract task hub name from trigger metadata (from Scale Controller payload)
+            string taskHubName = metadata?.TaskHubName ?? azureManagedConnectionString.TaskHubName;
 
             // Include client ID in cache key to handle managed identity changes
             (string, string?, string?) cacheKey = (resolvedName, taskHubName, azureManagedConnectionString.ClientId);
@@ -205,15 +192,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureManaged
                     options.TaskHubName = taskHubName;
                 }
 
-                // Set concurrency limits
-                if (this.options.MaxConcurrentOrchestratorFunctions.HasValue)
+                // Set concurrency limits from metadata
+                if (metadata?.MaxConcurrentOrchestratorFunctions.HasValue == true)
                 {
-                    options.MaxConcurrentOrchestrationWorkItems = this.options.MaxConcurrentOrchestratorFunctions.Value;
+                    options.MaxConcurrentOrchestrationWorkItems = metadata.MaxConcurrentOrchestratorFunctions.Value;
                 }
 
-                if (this.options.MaxConcurrentActivityFunctions.HasValue)
+                if (metadata?.MaxConcurrentActivityFunctions.HasValue == true)
                 {
-                    options.MaxConcurrentActivityWorkItems = this.options.MaxConcurrentActivityFunctions.Value;
+                    options.MaxConcurrentActivityWorkItems = metadata.MaxConcurrentActivityFunctions.Value;
                 }
 
                 this.logger.LogInformation(
@@ -225,9 +212,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureManaged
                 AzureManagedOrchestrationService service = new AzureManagedOrchestrationService(options, this.loggerFactory);
                 AzureManagedScalabilityProvider provider = new AzureManagedScalabilityProvider(service, resolvedName, this.logger);
 
-                // Extract max concurrent values from trigger metadata (from Scale Controller payload), fallback to constructor options
-                provider.MaxConcurrentTaskOrchestrationWorkItems = triggerOptions?.MaxConcurrentOrchestratorFunctions ?? this.options.MaxConcurrentOrchestratorFunctions ?? 10;
-                provider.MaxConcurrentTaskActivityWorkItems = triggerOptions?.MaxConcurrentActivityFunctions ?? this.options.MaxConcurrentActivityFunctions ?? 10;
+                // Extract max concurrent values from trigger metadata (from Scale Controller payload)
+                // Default: 10 times the number of processors on the current machine
+                provider.MaxConcurrentTaskOrchestrationWorkItems = metadata?.MaxConcurrentOrchestratorFunctions ?? (Environment.ProcessorCount * 10);
+                provider.MaxConcurrentTaskActivityWorkItems = metadata?.MaxConcurrentActivityFunctions ?? (Environment.ProcessorCount * 10);
 
                 this.cachedProviders.Add(cacheKey, provider);
                 return provider;

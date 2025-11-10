@@ -18,7 +18,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage
         private const string LoggerName = "Host.Triggers.DurableTask.AzureStorage";
         internal const string ProviderName = "AzureStorage";
 
-        private readonly DurableTaskScaleOptions options;
         private readonly IStorageServiceClientProviderFactory clientProviderFactory;
         private readonly INameResolver nameResolver;
         private readonly ILoggerFactory loggerFactory;
@@ -27,13 +26,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage
         /// <summary>
         /// Initializes a new instance of the <see cref="AzureStorageScalabilityProviderFactory"/> class.
         /// </summary>
-        /// <param name="options">The durable task scale options.</param>
         /// <param name="clientProviderFactory">The storage client provider factory.</param>
         /// <param name="nameResolver">The name resolver for connection strings.</param>
         /// <param name="loggerFactory">The logger factory.</param>
         /// <exception cref="ArgumentNullException">Thrown when required parameters are null.</exception>
         public AzureStorageScalabilityProviderFactory(
-            IOptions<DurableTaskScaleOptions> options,
             IStorageServiceClientProviderFactory clientProviderFactory,
             INameResolver nameResolver,
             ILoggerFactory loggerFactory)
@@ -42,13 +39,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage
             this.nameResolver = nameResolver ?? throw new ArgumentNullException(nameof(nameResolver));
             this.loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
 
-            var optionsValue = options?.Value ?? throw new ArgumentNullException(nameof(options));
-
-            // In Scale Controller context, optionsValue will be a default/empty object (can't read host.json)
-            // The real configuration comes from triggerMetadata in GetScalabilityProvider()
-            this.options = optionsValue;
-
-            // Resolve default connection name directly from payload keys or fall back
+            // Default connection name for Azure Storage
             this.DefaultConnectionName = "AzureWebJobsStorage";
         }
 
@@ -74,9 +65,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage
             {
                 ILogger logger = this.loggerFactory.CreateLogger(LoggerName);
 
-                // Validate Azure Storage specific options
-                this.ValidateAzureStorageOptions();
-
                 // Create StorageAccountClientProvider without credential (connection string)
                 var storageAccountClientProvider = this.clientProviderFactory.GetClientProvider(
                     this.DefaultConnectionName,
@@ -87,37 +75,38 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage
                     this.DefaultConnectionName,
                     logger);
 
-                // Set the max concurrent values from options
-                this.defaultStorageProvider.MaxConcurrentTaskOrchestrationWorkItems = this.options.MaxConcurrentOrchestratorFunctions ?? 10;
-                this.defaultStorageProvider.MaxConcurrentTaskActivityWorkItems = this.options.MaxConcurrentActivityFunctions ?? 10;
+                // Set default max concurrent values
+                this.defaultStorageProvider.MaxConcurrentTaskOrchestrationWorkItems = 10;
+                this.defaultStorageProvider.MaxConcurrentTaskActivityWorkItems = 10;
             }
 
             return this.defaultStorageProvider;
         }
 
         /// <summary>
-        /// Creates and caches a default <see cref="ScalabilityProvider"/> instanceusing Azure Storage as the backend using
-        /// connection and credential information extracted from the given <paramref name="triggerMetadata"/>.
+        /// Creates and caches a default <see cref="ScalabilityProvider"/> instance using Azure Storage as the backend using
+        /// the provided pre-deserialized metadata and trigger metadata for accessing Properties.
         /// </summary>
+        /// <param name="metadata">The pre-deserialized Durable Task metadata.</param>
+        /// <param name="triggerMetadata">Trigger metadata used to access Properties like token credentials.</param>
         /// <returns>
         /// A singleton instance of <see cref="AzureStorageScalabilityProvider"/>.
         /// </returns>
-        public ScalabilityProvider GetScalabilityProvider(TriggerMetadata triggerMetadata)
+        public ScalabilityProvider GetScalabilityProvider(DurableTaskMetadata metadata, TriggerMetadata triggerMetadata)
         {
-            // Extract options from triggerMetadata (sent by Functions Host in SyncTriggers payload)
-            // This is critical for Scale Controller which doesn't have access to host.json
-            DurableTaskScaleOptions? triggerOptions = triggerMetadata.ExtractDurableTaskScaleOptions();
-
             ILogger logger = this.loggerFactory.CreateLogger(LoggerName);
 
-            // Validate Azure Storage specific options
-            this.ValidateAzureStorageOptions();
+            // Validate Azure Storage specific options if metadata is present
+            if (metadata != null)
+            {
+                this.ValidateAzureStorageMetadata(metadata);
+            }
 
             // Extract TokenCredential from triggerMetadata if present (for Managed Identity)
             var tokenCredential = ExtractTokenCredential(triggerMetadata, logger);
 
-            // Resolve connection name: prioritize triggerOptions, fallback to default
-            string? rawConnectionName = TriggerMetadataExtensions.ResolveConnectionName(triggerOptions?.StorageProvider);
+            // Resolve connection name: prioritize metadata, fallback to default
+            string? rawConnectionName = TriggerMetadataExtensions.ResolveConnectionName(metadata?.StorageProvider);
             string connectionName = rawConnectionName != null
                 ? this.nameResolver.Resolve(rawConnectionName)
                 : this.DefaultConnectionName;
@@ -131,9 +120,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage
                 connectionName,
                 logger);
 
-            // Extract max concurrent values from trigger metadata (from Scale Controller payload)
-            provider.MaxConcurrentTaskOrchestrationWorkItems = triggerOptions?.MaxConcurrentOrchestratorFunctions ?? this.options.MaxConcurrentOrchestratorFunctions ?? 10;
-            provider.MaxConcurrentTaskActivityWorkItems = triggerOptions?.MaxConcurrentActivityFunctions ?? this.options.MaxConcurrentActivityFunctions ?? 10;
+            // Extract max concurrent values from metadata
+            provider.MaxConcurrentTaskOrchestrationWorkItems = metadata?.MaxConcurrentOrchestratorFunctions ?? 10;
+            provider.MaxConcurrentTaskActivityWorkItems = metadata?.MaxConcurrentActivityFunctions ?? 10;
 
             return provider;
         }
@@ -177,17 +166,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage
         }
 
         /// <summary>
-        /// Validates Azure Storage specific options.
+        /// Validates Azure Storage specific metadata.
         /// </summary>
-        private void ValidateAzureStorageOptions()
+        private void ValidateAzureStorageMetadata(DurableTaskMetadata metadata)
         {
             const int MinTaskHubNameSize = 3;
             const int MaxTaskHubNameSize = 50;
 
             // Validate hub name for Azure Storage
-            if (!string.IsNullOrWhiteSpace(this.options.HubName))
+            if (!string.IsNullOrWhiteSpace(metadata.TaskHubName))
             {
-                var hubName = this.options.HubName;
+                var hubName = metadata.TaskHubName;
 
                 if (hubName.Length < MinTaskHubNameSize || hubName.Length > MaxTaskHubNameSize)
                 {
@@ -208,15 +197,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage
             }
 
             // Validate max concurrent orchestrator functions
-            if (this.options.MaxConcurrentOrchestratorFunctions.HasValue && this.options.MaxConcurrentOrchestratorFunctions.Value <= 0)
+            if (metadata.MaxConcurrentOrchestratorFunctions.HasValue && metadata.MaxConcurrentOrchestratorFunctions.Value <= 0)
             {
-                throw new System.InvalidOperationException($"{nameof(this.options.MaxConcurrentOrchestratorFunctions)} must be a positive integer.");
+                throw new System.InvalidOperationException($"{nameof(metadata.MaxConcurrentOrchestratorFunctions)} must be a positive integer.");
             }
 
             // Validate max concurrent activity functions
-            if (this.options.MaxConcurrentActivityFunctions.HasValue && this.options.MaxConcurrentActivityFunctions.Value <= 0)
+            if (metadata.MaxConcurrentActivityFunctions.HasValue && metadata.MaxConcurrentActivityFunctions.Value <= 0)
             {
-                throw new System.InvalidOperationException($"{nameof(this.options.MaxConcurrentActivityFunctions)} must be a positive integer.");
+                throw new System.InvalidOperationException($"{nameof(metadata.MaxConcurrentActivityFunctions)} must be a positive integer.");
             }
         }
     }

@@ -61,12 +61,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
         [Fact]
         public void Constructor_ValidParameters_CreatesInstance()
         {
-            // Arrange
-            var options = CreateOptions("testHub", 10, 20, "TestConnection");
-
             // Act
             var factory = new AzureStorageScalabilityProviderFactory(
-                options,
                 this.clientProviderFactory,
                 this.nameResolver,
                 this.loggerFactory);
@@ -83,17 +79,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
         /// Validates that factory properly rejects null options parameter.
         /// Ensures proper error handling for missing configuration.
         /// </summary>
-        [Fact]
-        public void Constructor_NullOptions_ThrowsArgumentNullException()
-        {
-            // Act & Assert
-            Assert.Throws<ArgumentNullException>(() =>
-                new AzureStorageScalabilityProviderFactory(
-                    null,
-                    this.clientProviderFactory,
-                    this.nameResolver,
-                    this.loggerFactory));
-        }
+        // Test removed: Options parameter no longer exists in constructor
 
         /// <summary>
         /// Scenario: Constructor validation - null client provider factory.
@@ -104,12 +90,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
         public void Constructor_NullClientProviderFactory_ThrowsArgumentNullException()
         {
             // Arrange
-            var options = CreateOptions("testHub", 10, 20, "TestConnection");
+            // Options no longer used - removed CreateOptions call
 
             // Act & Assert
             Assert.Throws<ArgumentNullException>(() =>
                 new AzureStorageScalabilityProviderFactory(
-                    options,
                     null,
                     this.nameResolver,
                     this.loggerFactory));
@@ -125,10 +110,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
         public void GetScalabilityProvider_ReturnsValidProvider()
         {
             // Arrange
-            var options = CreateOptions("testHub", 10, 20, "TestConnection");
+            // Options no longer used - removed CreateOptions call
 
             var factory = new AzureStorageScalabilityProviderFactory(
-                options,
                 this.clientProviderFactory,
                 this.nameResolver,
                 this.loggerFactory);
@@ -140,8 +124,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
             Assert.NotNull(provider);
             Assert.IsType<AzureStorageScalabilityProvider>(provider);
             var azureProvider = (AzureStorageScalabilityProvider)provider;
+            // Azure Storage defaults to 10 for both orchestrator and activity
             Assert.Equal(10, azureProvider.MaxConcurrentTaskOrchestrationWorkItems);
-            Assert.Equal(20, azureProvider.MaxConcurrentTaskActivityWorkItems);
+            Assert.Equal(10, azureProvider.MaxConcurrentTaskActivityWorkItems);
         }
 
         /// <summary>
@@ -155,17 +140,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
         public void GetScalabilityProvider_WithTriggerMetadata_ReturnsValidProvider()
         {
             // Arrange
-            var options = CreateOptions("testHub", 10, 20, "TestConnection");
+            // Options no longer used - removed CreateOptions call
             var factory = new AzureStorageScalabilityProviderFactory(
-                options,
                 this.clientProviderFactory,
                 this.nameResolver,
                 this.loggerFactory);
 
             var triggerMetadata = CreateTriggerMetadata("testHub", 15, 25, "TestConnection");
+            var metadata = triggerMetadata.ExtractDurableTaskMetadata();
 
             // Act
-            var provider = factory.GetScalabilityProvider(triggerMetadata);
+            var provider = factory.GetScalabilityProvider(metadata, triggerMetadata);
 
             // Assert
             Assert.NotNull(provider);
@@ -185,16 +170,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
         [Fact]
         public void ValidateAzureStorageOptions_InvalidHubName_ThrowsArgumentException()
         {
-            // Arrange - Hub name too short
-            var options = CreateOptions("ab", 10, 20, "TestConnection");
+            // Arrange - Hub name too short (invalid)
             var factory = new AzureStorageScalabilityProviderFactory(
-                options,
                 this.clientProviderFactory,
                 this.nameResolver,
                 this.loggerFactory);
 
+            var triggerMetadata = CreateTriggerMetadata("ab", 10, 20, "TestConnection"); // "ab" is too short
+            var metadata = triggerMetadata.ExtractDurableTaskMetadata();
+
             // Act & Assert
-            Assert.Throws<ArgumentException>(() => factory.GetScalabilityProvider());
+            Assert.Throws<ArgumentException>(() => factory.GetScalabilityProvider(metadata, triggerMetadata));
         }
 
         /// <summary>
@@ -206,16 +192,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
         [Fact]
         public void ValidateAzureStorageOptions_InvalidMaxConcurrent_ThrowsInvalidOperationException()
         {
-            // Arrange - MaxConcurrentOrchestratorFunctions is 0
-            var options = CreateOptions("testHub", 0, 20, "TestConnection");
+            // Arrange - MaxConcurrentOrchestratorFunctions is 0 (invalid)
             var factory = new AzureStorageScalabilityProviderFactory(
-                options,
                 this.clientProviderFactory,
                 this.nameResolver,
                 this.loggerFactory);
 
+            var triggerMetadata = CreateTriggerMetadata("testHub", 0, 20, "TestConnection"); // 0 is invalid
+            var metadata = triggerMetadata.ExtractDurableTaskMetadata();
+
             // Act & Assert
-            Assert.Throws<InvalidOperationException>(() => factory.GetScalabilityProvider());
+            Assert.Throws<InvalidOperationException>(() => factory.GetScalabilityProvider(metadata, triggerMetadata));
         }
 
         /// <summary>
@@ -228,9 +215,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
         public void GetScalabilityProvider_CachesDefaultProvider()
         {
             // Arrange
-            var options = CreateOptions("testHub", 10, 20, "TestConnection");
+            // Options no longer used - removed CreateOptions call
             var factory = new AzureStorageScalabilityProviderFactory(
-                options,
                 this.clientProviderFactory,
                 this.nameResolver,
                 this.loggerFactory);
@@ -243,26 +229,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
             Assert.Same(provider1, provider2);
         }
 
-        private static IOptions<DurableTaskScaleOptions> CreateOptions(
-            string hubName,
-            int maxOrchestrator,
-            int maxActivity,
-            string connectionName)
-        {
-            var options = new DurableTaskScaleOptions
-            {
-                HubName = hubName,
-                MaxConcurrentOrchestratorFunctions = maxOrchestrator,
-                MaxConcurrentActivityFunctions = maxActivity,
-                StorageProvider = new Dictionary<string, object>
-                {
-                    { "type", "AzureStorage" },
-                    { "connectionName", connectionName },
-                },
-            };
-
-            return Options.Create(options);
-        }
+        // CreateOptions helper removed - DurableTaskScaleOptions no longer exists
+        // Tests now rely on TriggerMetadata from Scale Controller instead of DurableTaskScaleOptions
 
         private static TriggerMetadata CreateTriggerMetadata(
             string hubName,
@@ -301,10 +269,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
         public void GetScalabilityProvider_WithDefaultAzureWebJobsStorage_CreatesProvider()
         {
             // Arrange - Using default AzureWebJobsStorage connection
-            var options = CreateOptions("testHub", 10, 20, "AzureWebJobsStorage");
+            // Options no longer used - removed CreateOptions call
 
             var factory = new AzureStorageScalabilityProviderFactory(
-                options,
                 this.clientProviderFactory,
                 this.nameResolver,
                 this.loggerFactory);
@@ -316,8 +283,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
             Assert.NotNull(provider);
             Assert.IsType<AzureStorageScalabilityProvider>(provider);
             Assert.Equal("AzureWebJobsStorage", provider.ConnectionName);
+            // Azure Storage defaults to 10 for both orchestrator and activity
             Assert.Equal(10, provider.MaxConcurrentTaskOrchestrationWorkItems);
-            Assert.Equal(20, provider.MaxConcurrentTaskActivityWorkItems);
+            Assert.Equal(10, provider.MaxConcurrentTaskActivityWorkItems);
         }
 
         /// <summary>
@@ -346,18 +314,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
 
             foreach (var connectionName in connectionNames)
             {
-                var options = CreateOptions("testHub", 5, 10, connectionName);
+                // Options no longer used - removed CreateOptions call
                 var factory = new AzureStorageScalabilityProviderFactory(
-                    options,
                     clientFactory,
                     this.nameResolver,
                     this.loggerFactory);
 
                 // Pass connection name via trigger metadata (Scale Controller behavior)
                 var triggerMetadata = CreateTriggerMetadata("testHub", 5, 10, connectionName);
+                var metadata = triggerMetadata.ExtractDurableTaskMetadata();
 
                 // Act
-                var provider = factory.GetScalabilityProvider(triggerMetadata);
+                var provider = factory.GetScalabilityProvider(metadata, triggerMetadata);
 
                 // Assert
                 Assert.NotNull(provider);
@@ -376,9 +344,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
         public void Factory_Name_IsAzureStorage()
         {
             // Arrange
-            var options = CreateOptions("testHub", 10, 20, "TestConnection");
+            // Options no longer used - removed CreateOptions call
             var factory = new AzureStorageScalabilityProviderFactory(
-                options,
                 this.clientProviderFactory,
                 this.nameResolver,
                 this.loggerFactory);
@@ -397,21 +364,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
         [Fact]
         public void GetScalabilityProvider_WithAzureStorageType_UsesCorrectProvider()
         {
-            // Arrange - Explicitly set storageProvider type to "AzureStorage"
-            var options = new DurableTaskScaleOptions
-            {
-                HubName = "testHub",
-                MaxConcurrentOrchestratorFunctions = 10,
-                MaxConcurrentActivityFunctions = 20,
-                StorageProvider = new Dictionary<string, object>
-                {
-                    { "type", "AzureStorage" },
-                    { "connectionName", "AzureWebJobsStorage" },
-                },
-            };
-
+            // Arrange
             var factory = new AzureStorageScalabilityProviderFactory(
-                Options.Create(options),
                 this.clientProviderFactory,
                 this.nameResolver,
                 this.loggerFactory);
@@ -446,9 +400,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
             var config = configBuilder.Build();
             var clientFactory = new StorageServiceClientProviderFactory(config, this.loggerFactory);
 
-            var options = CreateOptions("testHub", 10, 20, "MyCustomConnection");
+            // Options no longer used - removed CreateOptions call
             var factory = new AzureStorageScalabilityProviderFactory(
-                options,
                 clientFactory,
                 this.nameResolver,
                 this.loggerFactory);

@@ -102,32 +102,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
             Assert.NotNull(extensionDescriptor);
         }
 
-        /// <summary>
-        /// Scenario: Options configuration binding.
-        /// Validates that DurableTaskScaleOptions is bound and available via IOptions pattern.
-        /// Tests configuration injection mechanism for Scale Controller settings.
-        /// Ensures options can be updated via configuration files or environment variables.
-        /// </summary>
-        [Fact]
-        public void AddDurableTask_BindsDurableTaskScaleOptions()
-        {
-            // Arrange
-            var hostBuilder = new HostBuilder();
-            hostBuilder.ConfigureWebJobs(webJobsBuilder =>
-            {
-                // Act
-                webJobsBuilder.AddDurableTask();
-            });
-
-            var host = hostBuilder.Build();
-            var services = host.Services;
-
-            // Assert
-            // Verify DurableTaskScaleOptions can be retrieved
-            var options = services.GetService<Microsoft.Extensions.Options.IOptions<DurableTaskScaleOptions>>();
-            Assert.NotNull(options);
-            Assert.NotNull(options.Value);
-        }
+        // Test removed: DurableTaskScaleOptions no longer exists - we now rely solely on TriggerMetadata from Scale Controller
 
         /// <summary>
         /// Scenario: Singleton registration for storage client factory.
@@ -335,11 +310,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
             var configuration = services.GetRequiredService<IConfiguration>();
             var nameResolver = services.GetRequiredService<INameResolver>();
             var loggerFactory = services.GetRequiredService<ILoggerFactory>();
-            var options = services.GetRequiredService<Microsoft.Extensions.Options.IOptions<DurableTaskScaleOptions>>();
             
             // Register SQL Server factory (normally done by Scale Controller)
             var sqlFactory = new SqlServerScalabilityProviderFactory(
-                options,
                 configuration,
                 nameResolver,
                 loggerFactory);
@@ -356,7 +329,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
 
             // Create DurableTaskTriggersScaleProvider (this is what Scale Controller does)
             var triggersScaleProvider = new DurableTaskTriggersScaleProvider(
-                options,
                 nameResolver,
                 loggerFactory,
                 scalabilityProviderFactories,

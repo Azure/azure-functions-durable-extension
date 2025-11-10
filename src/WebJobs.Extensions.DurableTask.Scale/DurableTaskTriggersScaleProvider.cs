@@ -16,7 +16,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
         private readonly ITargetScaler targetScaler;
 
         public DurableTaskTriggersScaleProvider(
-            IOptions<DurableTaskScaleOptions> durableTaskScaleOptions,
             INameResolver nameResolver,
             ILoggerFactory loggerFactory,
             IEnumerable<IScalabilityProviderFactory> scalabilityProviderFactories,
@@ -29,38 +28,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
             var metadata = triggerMetadata.Metadata.ToObject<DurableTaskMetadata>()
                 ?? throw new InvalidOperationException($"Failed to deserialize trigger metadata. Payload: {triggerMetadata.Metadata}");
 
-            // Build options from triggerMetadata with optional fallback to DI options
-            // NOTE: durableTaskScaleOptions.Value will be null/empty in Scale Controller context
-            // because Scale Controller doesn't have access to host.json
-            var options = new DurableTaskScaleOptions
+            // Validate required fields
+            if (string.IsNullOrWhiteSpace(metadata.TaskHubName))
             {
-                HubName = metadata.TaskHubName ?? durableTaskScaleOptions.Value?.HubName
-                    ?? throw new InvalidOperationException($"Expected `taskHubName` property in SyncTriggers payload but found none. "),
-                MaxConcurrentActivityFunctions = metadata.MaxConcurrentActivityFunctions ?? durableTaskScaleOptions.Value?.MaxConcurrentActivityFunctions,
-                MaxConcurrentOrchestratorFunctions = metadata.MaxConcurrentOrchestratorFunctions ?? durableTaskScaleOptions.Value?.MaxConcurrentOrchestratorFunctions,
-                StorageProvider = metadata.StorageProvider ?? durableTaskScaleOptions.Value?.StorageProvider ?? new Dictionary<string, object>(),
-            };
-
-            // Resolve app settings (e.g., %MyConnectionString% -> actual value)
-            DurableTaskScaleOptions.ResolveAppSettingOptions(options, nameResolver);
-
-            // Store the parsed options in Properties so factories can use them (avoid re-parsing)
-            // TriggerMetadata.Properties is read-only but the dictionary itself is mutable
-            if (triggerMetadata.Properties != null)
-            {
-                triggerMetadata.Properties["DurableTaskScaleOptions"] = options;
+                throw new InvalidOperationException($"Expected `taskHubName` property in SyncTriggers payload but found none.");
             }
 
+            // Resolve app settings (e.g., %MyConnectionString% -> actual value)
+
+            DurableTaskMetadata.ResolveAppSettingOptions(metadata, nameResolver);
+
             var logger = loggerFactory.CreateLogger<DurableTaskTriggersScaleProvider>();
+
+            // Determine which scalability provider factory to use based on metadata.StorageProvider["type"]
+            // If StorageProvider is null or doesn't contain "type", defaults to "AzureStorage" provider
             IScalabilityProviderFactory scalabilityProviderFactory = DurableTaskScaleExtension.GetScalabilityProviderFactory(
-                options, logger, scalabilityProviderFactories);
+                metadata, logger, scalabilityProviderFactories);
 
-            // Always use the triggerMetadata overload for scale scenarios
-            // The factory will extract the parsed DurableTaskMetadata and TokenCredential if present
-            ScalabilityProvider defaultscalabilityProvider = scalabilityProviderFactory.GetScalabilityProvider(triggerMetadata);
+            // Use the new overload that accepts pre-deserialized metadata to avoid double deserialization of the metadata payload
+            // Still pass triggerMetadata to allow access to Properties (e.g., token credentials)
+            ScalabilityProvider defaultscalabilityProvider = scalabilityProviderFactory.GetScalabilityProvider(metadata, triggerMetadata);
 
-            // Get connection name (options.StorageProvider already has fallback to DI options built in)
-            string? connectionName = GetConnectionNameFromOptions(options.StorageProvider) ?? scalabilityProviderFactory.DefaultConnectionName;
+            // Get connection name from metadata.StorageProvider
+            string? connectionName = GetConnectionNameFromOptions(metadata.StorageProvider) ?? scalabilityProviderFactory.DefaultConnectionName;
 
             logger.LogInformation(
                 "Creating DurableTaskTriggersScaleProvider for function {FunctionName}: connectionName = '{ConnectionName}'",
@@ -72,14 +62,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
                 functionId,
                 functionName,
                 connectionName,
-                options.HubName);
+                metadata.TaskHubName);
 
             this.monitor = ScaleUtils.GetScaleMonitor(
                 defaultscalabilityProvider,
                 functionId,
                 functionName,
                 connectionName,
-                options.HubName);
+                metadata.TaskHubName);
         }
 
         private static string? GetConnectionNameFromOptions(IDictionary<string, object>? storageProvider)

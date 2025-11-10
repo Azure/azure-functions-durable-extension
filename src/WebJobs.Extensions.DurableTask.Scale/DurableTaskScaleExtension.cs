@@ -14,7 +14,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
     {
         private readonly IScalabilityProviderFactory scalabilityProviderFactory;
         private readonly ScalabilityProvider defaultscalabilityProvider;
-        private readonly DurableTaskScaleOptions options;
+        private readonly DurableTaskMetadata metadata;
         private readonly ILogger logger;
         private readonly IEnumerable<IScalabilityProviderFactory> scalabilityProviderFactories;
 
@@ -23,26 +23,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
         /// This constructor resolves the appropriate scalability provider factory
         /// and initializes a default scalability provider used for scaling decisions.
         /// </summary>
-        /// <param name="options">The configuration options for the Durable Task Scale extension.</param>
+        /// <param name="metadata">The metadata for the Durable Task Scale extension.</param>
         /// <param name="logger">The logger instance used for diagnostic output.</param>
         /// <param name="scalabilityProviderFactories">A collection of available scalability provider factories.</param>
         /// <exception cref="ArgumentNullException">
-        /// Thrown when any of the required parameters (<paramref name="options"/>, <paramref name="logger"/>, or <paramref name="scalabilityProviderFactories"/>) are null.
+        /// Thrown when any of the required parameters (<paramref name="metadata"/>, <paramref name="logger"/>, or <paramref name="scalabilityProviderFactories"/>) are null.
         /// </exception>
         public DurableTaskScaleExtension(
-            DurableTaskScaleOptions options,
+            DurableTaskMetadata metadata,
             ILogger logger,
             IEnumerable<IScalabilityProviderFactory> scalabilityProviderFactories)
         {
-            this.options = options ?? throw new ArgumentNullException(nameof(options));
+            this.metadata = metadata ?? throw new ArgumentNullException(nameof(metadata));
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
             this.scalabilityProviderFactories = scalabilityProviderFactories ?? throw new ArgumentNullException(nameof(scalabilityProviderFactories));
 
-            // Determine which scalability provider factory should be used based on configured options.
-            this.scalabilityProviderFactory = GetScalabilityProviderFactory(this.options, this.logger, this.scalabilityProviderFactories);
+            // Determine which scalability provider factory should be used based on configured metadata.
+            this.scalabilityProviderFactory = GetScalabilityProviderFactory(this.metadata, this.logger, this.scalabilityProviderFactories);
 
             // Create a default scalability provider instance from the selected factory.
-            // ? what is default do, if there is no sitemetada or conenction name how to we create? 
             this.defaultscalabilityProvider = this.scalabilityProviderFactory.GetScalabilityProvider();
         }
 
@@ -68,19 +67,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
         }
 
         /// <summary>
-        /// Determines the scalability provider factory based on the given options.
+        /// Determines the scalability provider factory based on the given metadata.
         /// </summary>
-        /// <param name="options">The scale options specifying the target storage provider and hub configuration.</param>
+        /// <param name="metadata">The metadata specifying the target storage provider and hub configuration.</param>
         /// <param name="logger">The logger instance for diagnostic messages.</param>
         /// <param name="scalabilityProviderFactories">A collection of available scalability provider factories.</param>
         /// <returns>The resolved <see cref="IScalabilityProviderFactory"/> suitable for the configured provider.</returns>
         internal static IScalabilityProviderFactory GetScalabilityProviderFactory(
-            DurableTaskScaleOptions options,
+            DurableTaskMetadata metadata,
             ILogger logger,
             IEnumerable<IScalabilityProviderFactory> scalabilityProviderFactories)
         {
             const string DefaultProvider = "AzureStorage";
-            bool storageTypeIsConfigured = options.StorageProvider.TryGetValue("type", out object storageType);
+            object storageType = null;
+            bool storageTypeIsConfigured = metadata.StorageProvider != null && metadata.StorageProvider.TryGetValue("type", out storageType);
 
             if (!storageTypeIsConfigured)
             {

@@ -58,11 +58,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
         public void Constructor_ValidParameters_CreatesInstance()
         {
             // Arrange
-            var options = CreateOptions("testHub", 10, 20, "v3-dtsConnectionMI");
+            // Options no longer used - removed CreateOptions call
 
             // Act
             var factory = new AzureManagedScalabilityProviderFactory(
-                options,
                 this.configuration,
                 this.nameResolver,
                 this.loggerFactory);
@@ -86,7 +85,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
             Assert.Throws<ArgumentNullException>(() =>
                 new AzureManagedScalabilityProviderFactory(
                     null,
-                    this.configuration,
                     this.nameResolver,
                     this.loggerFactory));
         }
@@ -100,12 +98,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
         public void Constructor_NullConfiguration_ThrowsArgumentNullException()
         {
             // Arrange
-            var options = CreateOptions("testHub", 10, 20, "v3-dtsConnectionMI");
+            // Options no longer used - removed CreateOptions call
 
             // Act & Assert
             Assert.Throws<ArgumentNullException>(() =>
                 new AzureManagedScalabilityProviderFactory(
-                    options,
                     null,
                     this.nameResolver,
                     this.loggerFactory));
@@ -121,24 +118,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
         [Fact]
         public void GetScalabilityProvider_WithAzureManagedType_CreatesAzureManagedProvider()
         {
-            // Arrange - Explicitly set storageProvider type to "azureManaged"
-            var options = CreateOptions("testHub", 10, 20, "v3-dtsConnectionMI");
-
+            // Arrange - Azure Managed now requires metadata
             var factory = new AzureManagedScalabilityProviderFactory(
-                options,
                 this.configuration,
                 this.nameResolver,
                 this.loggerFactory);
 
-            // Act
-            var provider = factory.GetScalabilityProvider();
-
-            // Assert
-            Assert.NotNull(provider);
-            Assert.IsType<AzureManagedScalabilityProvider>(provider);
-            Assert.Equal("AzureManaged", factory.Name);
-            Assert.Equal(10, provider.MaxConcurrentTaskOrchestrationWorkItems);
-            Assert.Equal(20, provider.MaxConcurrentTaskActivityWorkItems);
+            // Act & Assert - Should throw NotImplementedException since Azure Managed requires metadata
+            Assert.Throws<NotImplementedException>(() => factory.GetScalabilityProvider());
         }
 
         /// <summary>
@@ -150,26 +137,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
         [Fact]
         public void GetScalabilityProvider_ReturnsValidProvider()
         {
-            // Arrange
-            var options = CreateOptions("testHub", 10, 20, "v3-dtsConnectionMI");
-
+            // Arrange - Azure Managed now requires metadata
             var factory = new AzureManagedScalabilityProviderFactory(
-                options,
                 this.configuration,
                 this.nameResolver,
                 this.loggerFactory);
 
-            // Act - Without trigger metadata, uses hardcoded default
-            var provider = factory.GetScalabilityProvider();
-
-            // Assert
-            Assert.NotNull(provider);
-            Assert.IsType<AzureManagedScalabilityProvider>(provider);
-            var azureProvider = (AzureManagedScalabilityProvider)provider;
-            Assert.Equal(10, azureProvider.MaxConcurrentTaskOrchestrationWorkItems);
-            Assert.Equal(20, azureProvider.MaxConcurrentTaskActivityWorkItems);
-            // Connection name is now from hardcoded default, not from options
-            Assert.Equal("DURABLE_TASK_SCHEDULER_CONNECTION_STRING", azureProvider.ConnectionName);
+            // Act & Assert - Should throw NotImplementedException since Azure Managed requires metadata
+            Assert.Throws<NotImplementedException>(() => factory.GetScalabilityProvider());
         }
 
         /// <summary>
@@ -184,17 +159,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
         public void GetScalabilityProvider_WithTriggerMetadata_ReturnsValidProvider()
         {
             // Arrange
-            var options = CreateOptions("testHub", 10, 20, "v3-dtsConnectionMI");
+            // Options no longer used - removed CreateOptions call
             var factory = new AzureManagedScalabilityProviderFactory(
-                options,
                 this.configuration,
                 this.nameResolver,
                 this.loggerFactory);
 
             var triggerMetadata = CreateTriggerMetadata("testHub", 15, 25, "v3-dtsConnectionMI");
+            var metadata = triggerMetadata.ExtractDurableTaskMetadata();
 
             // Act
-            var provider = factory.GetScalabilityProvider(triggerMetadata);
+            var provider = factory.GetScalabilityProvider(metadata, triggerMetadata);
 
             // Assert
             Assert.NotNull(provider);
@@ -216,20 +191,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
         [Fact]
         public void GetScalabilityProvider_CachesProviderWithSameConnectionAndClientId()
         {
-            // Arrange
-            var options = CreateOptions("testHub", 10, 20, "v3-dtsConnectionMI");
+            // Arrange - Azure Managed now requires metadata
             var factory = new AzureManagedScalabilityProviderFactory(
-                options,
                 this.configuration,
                 this.nameResolver,
                 this.loggerFactory);
 
-            // Act - Call twice with no trigger metadata (same cache key)
-            var provider1 = factory.GetScalabilityProvider();
-            var provider2 = factory.GetScalabilityProvider();
-
-            // Assert - Should be the same cached instance
-            Assert.Same(provider1, provider2);
+            // Act & Assert - Should throw NotImplementedException since Azure Managed requires metadata
+            Assert.Throws<NotImplementedException>(() => factory.GetScalabilityProvider());
         }
 
         /// <summary>
@@ -240,31 +209,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
         [Fact]
         public void GetScalabilityProvider_WithDefaultConnectionName_CreatesProvider()
         {
-            // Arrange - Don't specify connectionName in storageProvider
-            var options = new DurableTaskScaleOptions
-            {
-                HubName = "testHub",
-                MaxConcurrentOrchestratorFunctions = 10,
-                MaxConcurrentActivityFunctions = 20,
-                StorageProvider = new Dictionary<string, object>
-                {
-                    { "type", "azureManaged" },
-                },
-            };
-
+            // Arrange - Azure Managed now requires metadata
             var factory = new AzureManagedScalabilityProviderFactory(
-                Options.Create(options),
                 this.configuration,
                 this.nameResolver,
                 this.loggerFactory);
 
-            // Act
-            var provider = factory.GetScalabilityProvider();
-
-            // Assert
-            Assert.NotNull(provider);
-            Assert.IsType<AzureManagedScalabilityProvider>(provider);
-            Assert.Equal("DURABLE_TASK_SCHEDULER_CONNECTION_STRING", factory.DefaultConnectionName);
+            // Act & Assert - Should throw NotImplementedException since Azure Managed requires metadata
+            Assert.Throws<NotImplementedException>(() => factory.GetScalabilityProvider());
         }
 
         /// <summary>
@@ -275,22 +227,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
         [Fact]
         public void GetScalabilityProvider_MissingConnectionString_CreatesProviderWithDefaultCredential()
         {
-            // Arrange - Use connection name that doesn't exist in configuration
-            var options = CreateOptions("testHub", 10, 20, "NonExistentConnection");
-
+            // Arrange - Azure Managed now requires metadata
             var factory = new AzureManagedScalabilityProviderFactory(
-                options,
                 this.configuration,
                 this.nameResolver,
                 this.loggerFactory);
 
-            // Act - Without trigger metadata and without connection string in config, 
-            // provider is created using DefaultAzureCredential
-            var provider = factory.GetScalabilityProvider();
-
-            // Assert - Provider is created successfully with hardcoded default connection name
-            Assert.NotNull(provider);
-            Assert.Equal("DURABLE_TASK_SCHEDULER_CONNECTION_STRING", provider.ConnectionName);
+            // Act & Assert - Should throw NotImplementedException since Azure Managed requires metadata
+            Assert.Throws<NotImplementedException>(() => factory.GetScalabilityProvider());
         }
 
         /// <summary>
@@ -312,23 +256,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
             });
             var config = configBuilder.Build();
 
-            var options = CreateOptions("testHub", 10, 20, "MyCustomConnection");
             var factory = new AzureManagedScalabilityProviderFactory(
-                options,
                 config,
                 this.nameResolver,
                 this.loggerFactory);
 
-            // Act - Without trigger metadata, uses hardcoded default
-            var provider = factory.GetScalabilityProvider();
-
-            // Assert
-            Assert.NotNull(provider);
-            Assert.Equal("DURABLE_TASK_SCHEDULER_CONNECTION_STRING", provider.ConnectionName);
-            
-            // Verify the connection string was retrieved from configuration
-            var retrievedConnectionString = config["DURABLE_TASK_SCHEDULER_CONNECTION_STRING"];
-            Assert.Equal(testConnectionString, retrievedConnectionString);
+            // Act & Assert - Should throw NotImplementedException since Azure Managed requires metadata
+            Assert.Throws<NotImplementedException>(() => factory.GetScalabilityProvider());
         }
 
         /// <summary>
@@ -339,7 +273,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
         [Fact]
         public void GetScalabilityProvider_UsesTaskHubNameFromConnectionString()
         {
-            // Arrange - Connection string with TaskHub specified
+            // Arrange - Azure Managed now requires metadata
             var configBuilder = new ConfigurationBuilder();
             configBuilder.AddInMemoryCollection(new Dictionary<string, string>
             {
@@ -348,51 +282,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
             });
             var config = configBuilder.Build();
 
-            var options = new DurableTaskScaleOptions
-            {
-                // Don't set HubName in options
-                MaxConcurrentOrchestratorFunctions = 10,
-                MaxConcurrentActivityFunctions = 20,
-                StorageProvider = new Dictionary<string, object>
-                {
-                    { "type", "azureManaged" },
-                },
-            };
-
             var factory = new AzureManagedScalabilityProviderFactory(
-                Options.Create(options),
                 config,
                 this.nameResolver,
                 this.loggerFactory);
 
-            // Act - Without trigger metadata, uses hardcoded default
-            var provider = factory.GetScalabilityProvider();
-
-            // Assert
-            Assert.NotNull(provider);
-            // Provider should be created successfully with task hub from connection string
+            // Act & Assert - Should throw NotImplementedException since Azure Managed requires metadata
+            Assert.Throws<NotImplementedException>(() => factory.GetScalabilityProvider());
         }
 
-        private static IOptions<DurableTaskScaleOptions> CreateOptions(
-            string hubName,
-            int maxOrchestrator,
-            int maxActivity,
-            string connectionName)
-        {
-            var options = new DurableTaskScaleOptions
-            {
-                HubName = hubName,
-                MaxConcurrentOrchestratorFunctions = maxOrchestrator,
-                MaxConcurrentActivityFunctions = maxActivity,
-                StorageProvider = new Dictionary<string, object>
-                {
-                    { "type", "azureManaged" },
-                    { "connectionName", connectionName },
-                },
-            };
-
-            return Options.Create(options);
-        }
+        // CreateOptions helper removed - DurableTaskScaleOptions no longer exists
+        // Tests now rely on TriggerMetadata from Scale Controller instead of DurableTaskScaleOptions
 
         private static TriggerMetadata CreateTriggerMetadata(
             string hubName,

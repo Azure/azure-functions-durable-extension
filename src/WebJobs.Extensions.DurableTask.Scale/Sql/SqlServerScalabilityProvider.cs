@@ -21,6 +21,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Sql
         private readonly object initLock = new object();
         private SqlServerMetricsProvider singletonSqlMetricsProvider;
 
+        /// <summary>
+        /// Creates a new <see cref="SqlServerScalabilityProvider"/> for managing
+        /// scaling operations using a SQL Server–based orchestration service.
+        /// </summary>
+        /// <param name="service">The SQL orchestration service instance.</param>
+        /// <param name="connectionName">The name of the SQL connection.</param>
+        /// <param name="logger">The logger used for diagnostic output.</param>
+        /// <exception cref="ArgumentNullException">
+        /// Thrown if <paramref name="service"/> is null.
+        /// </exception>
         public SqlServerScalabilityProvider(
             SqlOrchestrationService service,
             string connectionName,

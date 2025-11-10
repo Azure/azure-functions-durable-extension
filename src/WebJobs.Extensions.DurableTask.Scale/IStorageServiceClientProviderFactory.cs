@@ -2,9 +2,6 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 #nullable enable
 using Azure.Core;
-using Azure.Data.Tables;
-using Azure.Storage.Blobs;
-using Azure.Storage.Queues;
 using DurableTask.AzureStorage;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale

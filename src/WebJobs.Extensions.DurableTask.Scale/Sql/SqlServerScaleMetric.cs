@@ -17,7 +17,3 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Sql
         public int RecommendedReplicaCount { get; set; }
     }
 }
-
-
-
-
