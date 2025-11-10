@@ -10,10 +10,10 @@ using Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureManaged;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Sql;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests;
+using Microsoft.Azure.WebJobs.Host.Config;
 using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using Xunit;
@@ -38,28 +38,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
         public void AddDurableTask_RegistersRequiredServices()
         {
             // Arrange
-            var hostBuilder = new HostBuilder();
-            hostBuilder.ConfigureServices(services =>
-            {
-                // Register INameResolver - required by AzureStorageScalabilityProviderFactory
-                services.AddSingleton<INameResolver>(new SimpleNameResolver());
-            });
-            hostBuilder.ConfigureWebJobs(webJobsBuilder =>
-            {
-                // Act
-                webJobsBuilder.AddDurableTask();
-            });
-
-            var host = hostBuilder.Build();
-            var services = host.Services;
+            // Use TestWebJobsBuilder directly (no HostBuilder needed) - this matches how Scale Controller uses it
+            var services = new ServiceCollection();
+            services.AddSingleton<INameResolver>(new SimpleNameResolver());
+            services.AddSingleton<ILoggerFactory>(new LoggerFactory());
+            services.AddSingleton<IConfiguration>(new ConfigurationBuilder().Build());
+            
+            var webJobsBuilder = new TestWebJobsBuilder(services);
+            
+            // Act
+            webJobsBuilder.AddDurableTask();
 
             // Assert
+            // Build service provider to resolve services
+            var serviceProvider = services.BuildServiceProvider();
+            
             // Verify IStorageServiceClientProviderFactory is registered
-            var clientProviderFactory = services.GetService<IStorageServiceClientProviderFactory>();
+            var clientProviderFactory = serviceProvider.GetService<IStorageServiceClientProviderFactory>();
             Assert.NotNull(clientProviderFactory);
 
             // Verify IScalabilityProviderFactory is registered
-            var scalabilityProviderFactories = services.GetServices<IScalabilityProviderFactory>().ToList();
+            var scalabilityProviderFactories = serviceProvider.GetServices<IScalabilityProviderFactory>().ToList();
             Assert.NotEmpty(scalabilityProviderFactories);
             Assert.Contains(scalabilityProviderFactories, f => f is AzureStorageScalabilityProviderFactory);
             Assert.Contains(scalabilityProviderFactories, f => f is AzureManagedScalabilityProviderFactory);
@@ -75,30 +74,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
         public void AddDurableTask_RegistersDurableTaskScaleExtension()
         {
             // Arrange
-            var hostBuilder = new HostBuilder();
-            hostBuilder.ConfigureServices(services =>
-            {
-                // Register INameResolver - required by AzureStorageScalabilityProviderFactory
-                services.AddSingleton<INameResolver>(new SimpleNameResolver());
-            });
+            // Use TestWebJobsBuilder directly (no HostBuilder needed) - this matches how Scale Controller uses it
+            var services = new ServiceCollection();
+            services.AddSingleton<INameResolver>(new SimpleNameResolver());
+            services.AddSingleton<ILoggerFactory>(new LoggerFactory());
+            services.AddSingleton<IConfiguration>(new ConfigurationBuilder().Build());
             
-            IServiceCollection capturedServices = null;
-            hostBuilder.ConfigureWebJobs(webJobsBuilder =>
-            {
-                // Capture the service collection before building
-                capturedServices = webJobsBuilder.Services;
-                
-                // Act
-                webJobsBuilder.AddDurableTask();
-            });
-
-            var host = hostBuilder.Build();
+            var webJobsBuilder = new TestWebJobsBuilder(services);
+            
+            // Act
+            webJobsBuilder.AddDurableTask();
 
             // Assert
             // Verify DurableTaskScaleExtension is registered by checking service descriptors
-            Assert.NotNull(capturedServices);
-            var extensionDescriptor = capturedServices
-                .FirstOrDefault(d => d.ServiceType == typeof(Microsoft.Azure.WebJobs.Host.Config.IExtensionConfigProvider) 
+            var extensionDescriptor = services
+                .FirstOrDefault(d => d.ServiceType == typeof(IExtensionConfigProvider) 
                                   && d.ImplementationType == typeof(DurableTaskScaleExtension));
             Assert.NotNull(extensionDescriptor);
         }
@@ -115,20 +105,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
         public void AddDurableTask_RegistersSingletonClientProviderFactory()
         {
             // Arrange
-            var hostBuilder = new HostBuilder();
-            hostBuilder.ConfigureWebJobs(webJobsBuilder =>
-            {
-                // Act
-                webJobsBuilder.AddDurableTask();
-            });
-
-            var host = hostBuilder.Build();
-            var services = host.Services;
+            // Use TestWebJobsBuilder directly (no HostBuilder needed) - this matches how Scale Controller uses it
+            var services = new ServiceCollection();
+            services.AddSingleton<INameResolver>(new SimpleNameResolver());
+            services.AddSingleton<ILoggerFactory>(new LoggerFactory());
+            services.AddSingleton<IConfiguration>(new ConfigurationBuilder().Build());
+            
+            var webJobsBuilder = new TestWebJobsBuilder(services);
+            
+            // Act
+            webJobsBuilder.AddDurableTask();
 
             // Assert
+            // Build service provider to resolve services
+            var serviceProvider = services.BuildServiceProvider();
+            
             // Verify the same instance is returned (singleton)
-            var factory1 = services.GetService<IStorageServiceClientProviderFactory>();
-            var factory2 = services.GetService<IStorageServiceClientProviderFactory>();
+            var factory1 = serviceProvider.GetService<IStorageServiceClientProviderFactory>();
+            var factory2 = serviceProvider.GetService<IStorageServiceClientProviderFactory>();
             Assert.Same(factory1, factory2);
         }
 
@@ -195,31 +189,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
         public void AddDurableTask_WithMultipleConnections_AllCanBeResolved()
         {
             // Arrange - Set up configuration with multiple connections
-            var hostBuilder = new HostBuilder();
-            hostBuilder.ConfigureAppConfiguration((context, config) =>
-            {
-                config.AddInMemoryCollection(new Dictionary<string, string>
+            // Use TestWebJobsBuilder directly (no HostBuilder needed) - this matches how Scale Controller uses it
+            var configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
                 {
                     { "AzureWebJobsStorage", "UseDevelopmentStorage=true" },
                     { "Connection1", "UseDevelopmentStorage=true" },
                     { "Connection2", "UseDevelopmentStorage=true" },
-                });
-            });
-            hostBuilder.ConfigureServices(services =>
-            {
-                services.AddSingleton<INameResolver>(new SimpleNameResolver());
-            });
-            hostBuilder.ConfigureWebJobs(webJobsBuilder =>
-            {
-                webJobsBuilder.AddDurableTask();
-            });
-
-            var host = hostBuilder.Build();
-            var services = host.Services;
+                })
+                .Build();
+            
+            var services = new ServiceCollection();
+            services.AddSingleton<INameResolver>(new SimpleNameResolver());
+            services.AddSingleton<ILoggerFactory>(new LoggerFactory());
+            services.AddSingleton<IConfiguration>(configuration);
+            
+            var webJobsBuilder = new TestWebJobsBuilder(services);
+            webJobsBuilder.AddDurableTask();
 
             // Assert
+            // Build service provider to resolve services
+            var serviceProvider = services.BuildServiceProvider();
+            
             // Verify we can create client providers for different connections
-            var clientProviderFactory = services.GetService<IStorageServiceClientProviderFactory>();
+            var clientProviderFactory = serviceProvider.GetService<IStorageServiceClientProviderFactory>();
             Assert.NotNull(clientProviderFactory);
 
             // Test that we can get client providers for all connections
@@ -240,6 +233,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
         public string Resolve(string name)
         {
             return name;
+        }
+    }
+
+    /// <summary>
+    /// Simple test implementation of IWebJobsBuilder that wraps a ServiceCollection.
+    /// This allows us to test AddDurableTask() without needing a full HostBuilder.
+    /// </summary>
+    internal class TestWebJobsBuilder : IWebJobsBuilder
+    {
+        public TestWebJobsBuilder(IServiceCollection services)
+        {
+            this.Services = services;
+        }
+
+        public IServiceCollection Services { get; }
+
+        public IWebJobsBuilder AddExtension<TExtension>() where TExtension : class, IExtensionConfigProvider
+        {
+            this.Services.AddSingleton<IExtensionConfigProvider, TExtension>();
+            return this;
         }
     }
 
@@ -286,31 +299,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
             Assert.Equal(connectionName, storageProvider["connectionName"]?.ToString());
 
             // Set up DI container with SQL connection string
-            var hostBuilder = new HostBuilder();
-            hostBuilder.ConfigureAppConfiguration((context, config) =>
-            {
-                config.AddInMemoryCollection(new Dictionary<string, string>
+            // Use TestWebJobsBuilder directly (no HostBuilder needed) - this matches how Scale Controller uses it
+            var configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
                 {
                     { $"ConnectionStrings:{connectionName}", TestHelpers.GetSqlConnectionString() },
                     { connectionName, TestHelpers.GetSqlConnectionString() },
-                });
-            });
-            hostBuilder.ConfigureServices(services =>
-            {
-                services.AddSingleton<INameResolver>(new SimpleNameResolver());
-            });
-            hostBuilder.ConfigureWebJobs(webJobsBuilder =>
-            {
-                webJobsBuilder.AddDurableTask();
-            });
-
-            var host = hostBuilder.Build();
-            var services = host.Services;
+                })
+                .Build();
+            
+            var services = new ServiceCollection();
+            services.AddSingleton<INameResolver>(new SimpleNameResolver());
+            services.AddSingleton<ILoggerFactory>(new LoggerFactory());
+            services.AddSingleton<IConfiguration>(configuration);
+            
+            var webJobsBuilder = new TestWebJobsBuilder(services);
+            webJobsBuilder.AddDurableTask();
+            
+            // Build service provider to resolve services
+            var serviceProvider = services.BuildServiceProvider();
 
             // Get configuration and register SQL factory (as Scale Controller would)
-            var configuration = services.GetRequiredService<IConfiguration>();
-            var nameResolver = services.GetRequiredService<INameResolver>();
-            var loggerFactory = services.GetRequiredService<ILoggerFactory>();
+            var nameResolver = serviceProvider.GetRequiredService<INameResolver>();
+            var loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
             
             // Register SQL Server factory (normally done by Scale Controller)
             var sqlFactory = new SqlServerScalabilityProviderFactory(
@@ -320,7 +331,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
             
             // Create a list with all factories (Azure Storage from AddDurableTask + SQL from Scale Controller)
             var scalabilityProviderFactories = new List<IScalabilityProviderFactory>(
-                services.GetServices<IScalabilityProviderFactory>());
+                serviceProvider.GetServices<IScalabilityProviderFactory>());
             scalabilityProviderFactories.Add(sqlFactory);
             
             // Verify SQL Server factory is available
@@ -415,31 +426,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
             Assert.Equal(connectionName, storageProvider["connectionName"]?.ToString());
 
             // Set up DI container with Azure Managed connection string
-            var hostBuilder = new HostBuilder();
-            hostBuilder.ConfigureAppConfiguration((context, config) =>
-            {
-                config.AddInMemoryCollection(new Dictionary<string, string>
+            // Use TestWebJobsBuilder directly (no HostBuilder needed) - this matches how Scale Controller uses it
+            var configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
                 {
                     { $"ConnectionStrings:{connectionName}", "Endpoint=https://test.westus.durabletask.io;Authentication=DefaultAzure" },
                     { connectionName, "Endpoint=https://test.westus.durabletask.io;Authentication=DefaultAzure" },
-                });
-            });
-            hostBuilder.ConfigureServices(services =>
-            {
-                services.AddSingleton<INameResolver>(new SimpleNameResolver());
-            });
-            hostBuilder.ConfigureWebJobs(webJobsBuilder =>
-            {
-                webJobsBuilder.AddDurableTask();
-            });
-
-            var host = hostBuilder.Build();
-            var services = host.Services;
+                })
+                .Build();
+            
+            var services = new ServiceCollection();
+            services.AddSingleton<INameResolver>(new SimpleNameResolver());
+            services.AddSingleton<ILoggerFactory>(new LoggerFactory());
+            services.AddSingleton<IConfiguration>(configuration);
+            
+            var webJobsBuilder = new TestWebJobsBuilder(services);
+            webJobsBuilder.AddDurableTask();
+            
+            // Build service provider to resolve services
+            var serviceProvider = services.BuildServiceProvider();
 
             // Get configuration and register Azure Managed factory (as Scale Controller would)
-            var configuration = services.GetRequiredService<IConfiguration>();
-            var nameResolver = services.GetRequiredService<INameResolver>();
-            var loggerFactory = services.GetRequiredService<ILoggerFactory>();
+            var nameResolver = serviceProvider.GetRequiredService<INameResolver>();
+            var loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
             
             // Register Azure Managed factory (normally done by Scale Controller)
             var azureManagedFactory = new AzureManagedScalabilityProviderFactory(
@@ -449,7 +458,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
             
             // Create a list with all factories (Azure Storage from AddDurableTask + Azure Managed from Scale Controller)
             var scalabilityProviderFactories = new List<IScalabilityProviderFactory>(
-                services.GetServices<IScalabilityProviderFactory>());
+                serviceProvider.GetServices<IScalabilityProviderFactory>());
             scalabilityProviderFactories.Add(azureManagedFactory);
             
             // Verify Azure Managed factory is available (using case-insensitive matching like the actual code)

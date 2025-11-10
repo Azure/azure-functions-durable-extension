@@ -39,10 +39,14 @@ jobs:
         run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
 
       - name: Restore dependencies
-        run: dotnet restore WebJobs.Extensions.DurableTask.sln
+        run: |
+          dotnet restore src/WebJobs.Extensions.DurableTask.Scale/WebJobs.Extensions.DurableTask.Scale.csproj
+          dotnet restore test/ScaleTests/WebJobs.Extensions.DurableTask.Scale.Tests.csproj
 
       - name: Build
-        run: dotnet build WebJobs.Extensions.DurableTask.sln --configuration Release --no-restore
+        run: |
+          dotnet build src/WebJobs.Extensions.DurableTask.Scale/WebJobs.Extensions.DurableTask.Scale.csproj --configuration Release --no-restore
+          dotnet build test/ScaleTests/WebJobs.Extensions.DurableTask.Scale.Tests.csproj --configuration Release --no-restore
 
       - name: Run Azure Storage Scale Tests
         working-directory: test/ScaleTests
@@ -94,10 +98,14 @@ jobs:
           docker ps
 
       - name: Restore dependencies
-        run: dotnet restore WebJobs.Extensions.DurableTask.sln
+        run: |
+          dotnet restore src/WebJobs.Extensions.DurableTask.Scale/WebJobs.Extensions.DurableTask.Scale.csproj
+          dotnet restore test/ScaleTests/WebJobs.Extensions.DurableTask.Scale.Tests.csproj
 
       - name: Build
-        run: dotnet build WebJobs.Extensions.DurableTask.sln --configuration Release --no-restore
+        run: |
+          dotnet build src/WebJobs.Extensions.DurableTask.Scale/WebJobs.Extensions.DurableTask.Scale.csproj --configuration Release --no-restore
+          dotnet build test/ScaleTests/WebJobs.Extensions.DurableTask.Scale.Tests.csproj --configuration Release --no-restore
 
       - name: Run SQL Server Scale Tests
         working-directory: test/ScaleTests
@@ -144,10 +152,14 @@ jobs:
           docker ps
 
       - name: Restore dependencies
-        run: dotnet restore WebJobs.Extensions.DurableTask.sln
+        run: |
+          dotnet restore src/WebJobs.Extensions.DurableTask.Scale/WebJobs.Extensions.DurableTask.Scale.csproj
+          dotnet restore test/ScaleTests/WebJobs.Extensions.DurableTask.Scale.Tests.csproj
 
       - name: Build
-        run: dotnet build WebJobs.Extensions.DurableTask.sln --configuration Release --no-restore
+        run: |
+          dotnet build src/WebJobs.Extensions.DurableTask.Scale/WebJobs.Extensions.DurableTask.Scale.csproj --configuration Release --no-restore
+          dotnet build test/ScaleTests/WebJobs.Extensions.DurableTask.Scale.Tests.csproj --configuration Release --no-restore
 
       - name: Run Azure Managed Scale Tests
         working-directory: test/ScaleTests
