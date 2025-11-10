@@ -16,7 +16,8 @@ on:
       - '.github/workflows/scale-tests.yml'
 
 jobs:
-  scale-tests-azurestorage:
+  azurestorage:
+    name: DurableTask Scale Tests - AzureStorage
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -47,9 +48,10 @@ jobs:
         working-directory: test/ScaleTests
         env:
           AzureWebJobsStorage: UseDevelopmentStorage=true
-        run: dotnet test --configuration Release --no-build --verbosity normal --filter "FullyQualifiedName~AzureStorage"
+        run: dotnet test --configuration Release --no-build --verbosity normal --filter "FullyQualifiedName~AzureStorage|FullyQualifiedName~DurableTaskJobHostConfigurationExtensions"
 
-  scale-tests-sql:
+  mssql:
+    name: DurableTask Scale Tests - MSSQL
     runs-on: ubuntu-latest
     env:
       MSSQL_SA_PASSWORD: "Strong!Passw0rd123"
@@ -101,9 +103,10 @@ jobs:
         working-directory: test/ScaleTests
         env:
           AzureWebJobsStorage: UseDevelopmentStorage=true
-        run: dotnet test --configuration Release --no-build --verbosity normal --filter "FullyQualifiedName~Sql"
+        run: dotnet test --configuration Release --no-build --verbosity normal --filter "FullyQualifiedName~Sql|FullyQualifiedName~DurableTaskTriggersScaleProviderSqlServer"
 
-  scale-tests-azuremanaged:
+  dts:
+    name: DurableTask Scale Tests - DTS
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -150,38 +153,5 @@ jobs:
         working-directory: test/ScaleTests
         env:
           AzureWebJobsStorage: UseDevelopmentStorage=true
-        run: dotnet test --configuration Release --no-build --verbosity normal --filter "FullyQualifiedName~AzureManaged"
-
-  scale-tests-all:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup .NET 8.0
-        uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: 8.0.x
-
-      - name: Set up Node.js (needed for Azurite)
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18.x'
-
-      - name: Install Azurite
-        run: npm install -g azurite
-
-      - name: Start Azurite
-        run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
-
-      - name: Restore dependencies
-        run: dotnet restore WebJobs.Extensions.DurableTask.sln
-
-      - name: Build
-        run: dotnet build WebJobs.Extensions.DurableTask.sln --configuration Release --no-restore
-
-      - name: Run All Scale Tests (without containers)
-        working-directory: test/ScaleTests
-        env:
-          AzureWebJobsStorage: UseDevelopmentStorage=true
-        run: dotnet test --configuration Release --no-build --verbosity normal
+        run: dotnet test --configuration Release --no-build --verbosity normal --filter "FullyQualifiedName~AzureManaged|FullyQualifiedName~DurableTaskTriggersScaleProviderAzureManaged"
 
