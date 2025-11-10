@@ -4,7 +4,6 @@
 using System.Threading.Tasks;
 using DurableTask.AzureStorage;
 using DurableTask.AzureStorage.Monitoring;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage;
 using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Extensions.Logging;
@@ -12,7 +11,7 @@ using Moq;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
+namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
 {
     /// <summary>
     /// Tests for DurableTaskTargetScaler.
@@ -85,4 +84,3 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
     }
 }
-

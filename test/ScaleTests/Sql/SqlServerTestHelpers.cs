@@ -2,10 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
-using System.Threading;
-using System.Threading.Tasks;
 using DurableTask.SqlServer;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests;
 using Microsoft.Data.SqlClient;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests

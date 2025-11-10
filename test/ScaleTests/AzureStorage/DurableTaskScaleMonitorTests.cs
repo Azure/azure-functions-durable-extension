@@ -15,7 +15,7 @@ using Moq;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
+namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
 {
     /// <summary>
     /// Tests for DurableTaskScaleMonitor.
@@ -263,4 +263,3 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
     }
 }
-

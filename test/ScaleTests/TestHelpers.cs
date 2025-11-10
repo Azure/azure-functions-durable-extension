@@ -3,7 +3,7 @@
 
 using System;
 
-namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
+namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
 {
     public static class TestHelpers
     {
@@ -22,47 +22,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             // Priority 1: Use DTMB_SQL_CONNECTION_STRING environment variable if set
             // This is the standard environment variable name used for SQL connection
-            string sqlConnectionString = Environment.GetEnvironmentVariable("DTMB_SQL_CONNECTION_STRING");
-            
+            string? sqlConnectionString = Environment.GetEnvironmentVariable("DTMB_SQL_CONNECTION_STRING");
+
             if (!string.IsNullOrEmpty(sqlConnectionString))
             {
                 return sqlConnectionString;
             }
 
             // Priority 2: Use SQLDB_Connection environment variable if set
-            // This is the standard environment variable name used by the extension
+            // This is the standard environment variable name used by the extension and CI pipeline
             sqlConnectionString = Environment.GetEnvironmentVariable("SQLDB_Connection");
-            
+
             if (!string.IsNullOrEmpty(sqlConnectionString))
             {
                 return sqlConnectionString;
             }
 
-            // Priority 3: Use Azure SQL Database connection string (for local testing with Azure SQL)
-            // Example: Server=tcp:mysqlservertny.database.windows.net,1433;Initial Catalog=testsqlscaling;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;Authentication="Active Directory Default";
-            sqlConnectionString = Environment.GetEnvironmentVariable("SQLDB_Connection_Azure");
-            if (!string.IsNullOrEmpty(sqlConnectionString))
-            {
-                return sqlConnectionString;
-            }
-
-            // Priority 4: Use Docker/local SQL Server connection string (for CI)
-            // CI environments typically set up SQL Server in Docker
-            // Example for Docker: Server=localhost,1433;Database=TestDurableDB;User Id=sa;Password=Strong!Passw0rd;TrustServerCertificate=True;Encrypt=False;
-            sqlConnectionString = Environment.GetEnvironmentVariable("SQLDB_Connection_Local");
-            if (!string.IsNullOrEmpty(sqlConnectionString))
-            {
-                return sqlConnectionString;
-            }
-
-            // Default: Try Docker SQL Server (common in CI)
-            // This assumes SQL Server is running in Docker with default settings
-            // For CI: Docker typically runs SQL Server on localhost:1433
-            sqlConnectionString = "Server=localhost,1433;Database=TestDurableDB;User Id=sa;Password=Strong!Passw0rd;TrustServerCertificate=True;Encrypt=False;";
-            
-            return sqlConnectionString;
+            // If no environment variable is set, throw an exception to ensure tests verify that
+            // the package correctly reads connection strings from configuration/environment variables.
+            // This prevents tests from silently using a hardcoded default that doesn't match the actual environment.
+            throw new InvalidOperationException(
+                "SQL connection string not found in environment variables.");
         }
     }
 }
-
-

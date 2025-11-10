@@ -3,13 +3,10 @@
 
 using System;
 using System.Collections.Generic;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureManaged;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests;
 using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
 using Xunit;
 using Xunit.Abstractions;
@@ -320,5 +317,3 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
         }
     }
 }
-
-

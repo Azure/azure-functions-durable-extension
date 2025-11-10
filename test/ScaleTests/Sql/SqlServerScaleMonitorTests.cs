@@ -1,13 +1,10 @@
 // Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using DurableTask.SqlServer;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Sql;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests;
 using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Extensions.Logging;
 using Xunit;

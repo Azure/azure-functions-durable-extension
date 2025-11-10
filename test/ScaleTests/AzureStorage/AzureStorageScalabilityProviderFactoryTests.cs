@@ -3,15 +3,10 @@
 
 using System;
 using System.Collections.Generic;
-using DurableTask.AzureStorage;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests;
 using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using Moq;
 using Newtonsoft.Json.Linq;
 using Xunit;
 using Xunit.Abstractions;

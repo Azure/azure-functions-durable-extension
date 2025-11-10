@@ -4,7 +4,6 @@
 using System.Threading.Tasks;
 using DurableTask.SqlServer;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Sql;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests;
 using Microsoft.Azure.WebJobs.Host.Scale;
 using Xunit;
 using Xunit.Abstractions;

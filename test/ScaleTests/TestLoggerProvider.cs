@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
 using Xunit.Abstractions;
 
-namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
+namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
 {
     public class TestLoggerProvider : ILoggerProvider
     {
@@ -80,10 +80,3 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
     }
 }
-
-
-
-
-
-
-

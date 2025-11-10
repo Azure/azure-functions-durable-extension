@@ -5,11 +5,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureManaged;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Sql;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests;
 using Microsoft.Azure.WebJobs.Host.Config;
 using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Extensions.Configuration;
@@ -43,16 +41,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
             services.AddSingleton<INameResolver>(new SimpleNameResolver());
             services.AddSingleton<ILoggerFactory>(new LoggerFactory());
             services.AddSingleton<IConfiguration>(new ConfigurationBuilder().Build());
-            
+
             var webJobsBuilder = new TestWebJobsBuilder(services);
-            
-            // Act
+
             webJobsBuilder.AddDurableTask();
 
-            // Assert
             // Build service provider to resolve services
             var serviceProvider = services.BuildServiceProvider();
-            
+
             // Verify IStorageServiceClientProviderFactory is registered
             var clientProviderFactory = serviceProvider.GetService<IStorageServiceClientProviderFactory>();
             Assert.NotNull(clientProviderFactory);
@@ -79,21 +75,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
             services.AddSingleton<INameResolver>(new SimpleNameResolver());
             services.AddSingleton<ILoggerFactory>(new LoggerFactory());
             services.AddSingleton<IConfiguration>(new ConfigurationBuilder().Build());
-            
+
             var webJobsBuilder = new TestWebJobsBuilder(services);
-            
-            // Act
+
             webJobsBuilder.AddDurableTask();
 
-            // Assert
             // Verify DurableTaskScaleExtension is registered by checking service descriptors
             var extensionDescriptor = services
                 .FirstOrDefault(d => d.ServiceType == typeof(IExtensionConfigProvider) 
                                   && d.ImplementationType == typeof(DurableTaskScaleExtension));
             Assert.NotNull(extensionDescriptor);
         }
-
-        // Test removed: DurableTaskScaleOptions no longer exists - we now rely solely on TriggerMetadata from Scale Controller
 
         /// <summary>
         /// Scenario: Singleton registration for storage client factory.
@@ -110,16 +102,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
             services.AddSingleton<INameResolver>(new SimpleNameResolver());
             services.AddSingleton<ILoggerFactory>(new LoggerFactory());
             services.AddSingleton<IConfiguration>(new ConfigurationBuilder().Build());
-            
+
             var webJobsBuilder = new TestWebJobsBuilder(services);
-            
-            // Act
+
             webJobsBuilder.AddDurableTask();
 
-            // Assert
             // Build service provider to resolve services
             var serviceProvider = services.BuildServiceProvider();
-            
+
             // Verify the same instance is returned (singleton)
             var factory1 = serviceProvider.GetService<IStorageServiceClientProviderFactory>();
             var factory2 = serviceProvider.GetService<IStorageServiceClientProviderFactory>();
@@ -135,7 +125,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
         [Fact]
         public void AddDurableTask_NullBuilder_ThrowsArgumentNullException()
         {
-            // Act & Assert
             Assert.Throws<System.ArgumentNullException>(() =>
             {
                 IWebJobsBuilder builder = null;
@@ -144,7 +133,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
         }
 
         /// <summary>
-        /// ✅ KEY SCENARIO 1: Default Azure Storage provider registration.
         /// Validates that AddDurableTask() registers AzureStorageScalabilityProviderFactory.
         /// Tests that Azure Storage is configured as the default scalability provider.
         /// Verifies factory name is "AzureStorage" for Scale Controller identification.
@@ -154,32 +142,35 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
         public void AddDurableTask_RegistersAzureStorageAsDefaultProvider()
         {
             // Arrange
-            var hostBuilder = new HostBuilder();
-            hostBuilder.ConfigureServices(services =>
-            {
-                services.AddSingleton<INameResolver>(new SimpleNameResolver());
-            });
-            hostBuilder.ConfigureWebJobs(webJobsBuilder =>
-            {
-                // Act
-                webJobsBuilder.AddDurableTask();
-            });
+            // Use TestWebJobsBuilder directly (no HostBuilder needed) - this matches how Scale Controller uses it
+            var configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    { "AzureWebJobsStorage", "UseDevelopmentStorage=true" },
+                })
+                .Build();
 
-            var host = hostBuilder.Build();
-            var services = host.Services;
+            var services = new ServiceCollection();
+            services.AddSingleton<INameResolver>(new SimpleNameResolver());
+            services.AddSingleton<ILoggerFactory>(new LoggerFactory());
+            services.AddSingleton<IConfiguration>(configuration);
 
-            // Assert
+            var webJobsBuilder = new TestWebJobsBuilder(services);
+
+            webJobsBuilder.AddDurableTask();
+
+            var serviceProvider = services.BuildServiceProvider();
+
             // Verify AzureStorageScalabilityProviderFactory is registered as the default
-            var scalabilityProviderFactories = services.GetServices<IScalabilityProviderFactory>().ToList();
+            var scalabilityProviderFactories = serviceProvider.GetServices<IScalabilityProviderFactory>().ToList();
             Assert.NotEmpty(scalabilityProviderFactories);
-            
+
             var azureStorageFactory = scalabilityProviderFactories.OfType<AzureStorageScalabilityProviderFactory>().FirstOrDefault();
             Assert.NotNull(azureStorageFactory);
             Assert.Equal("AzureStorage", azureStorageFactory.Name);
         }
 
         /// <summary>
-        /// ✅ KEY SCENARIO 2: Multiple connections configuration resolution.
         /// Validates that factory can resolve multiple connection strings from configuration.
         /// Tests multi-tenant scenarios where different functions use different storage accounts.
         /// Verifies end-to-end DI setup with IConfiguration integration.
@@ -198,19 +189,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
                     { "Connection2", "UseDevelopmentStorage=true" },
                 })
                 .Build();
-            
+
             var services = new ServiceCollection();
             services.AddSingleton<INameResolver>(new SimpleNameResolver());
             services.AddSingleton<ILoggerFactory>(new LoggerFactory());
             services.AddSingleton<IConfiguration>(configuration);
-            
+
             var webJobsBuilder = new TestWebJobsBuilder(services);
             webJobsBuilder.AddDurableTask();
 
-            // Assert
             // Build service provider to resolve services
             var serviceProvider = services.BuildServiceProvider();
-            
+
             // Verify we can create client providers for different connections
             var clientProviderFactory = serviceProvider.GetService<IStorageServiceClientProviderFactory>();
             Assert.NotNull(clientProviderFactory);
@@ -223,45 +213,118 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
                 Assert.NotNull(clientProvider);
             }
         }
-    }
 
-    /// <summary>
-    /// Simple INameResolver implementation for tests that returns the input as-is.
-    /// </summary>
-    internal class SimpleNameResolver : INameResolver
-    {
-        public string Resolve(string name)
+        /// <summary>
+        /// Scenario: End-to-end Azure Managed (DTS) scaling via triggerMetadata with type="azureManaged".
+        /// Validates that when triggerMetadata mentions storageProvider.type="azureManaged", DurableTaskTriggersScaleProvider creates DTS provider.
+        /// Tests that connection string is retrieved from triggerMetadata.storageProvider.connectionName.
+        /// Verifies that both TargetScaler and ScaleMonitor successfully work with Azure Managed backend.
+        /// This test validates the complete integration path that Scale Controller uses.
+        /// </summary>
+        [Fact]
+        public async Task TriggerMetadataWithAzureManagedType_CreatesDTSProviderViaTriggersScaleProvider_AndBothScalersWork()
         {
-            return name;
+            // Arrange - Create triggerMetadata with type="azureManaged" (as Scale Controller would pass)
+            var hubName = "testHub";
+            var connectionName = "v3-dtsConnectionMI";
+            var metadata = new JObject
+            {
+                { "functionName", "TestFunction" },
+                { "type", "activityTrigger" },
+                { "taskHubName", hubName },
+                { "maxConcurrentOrchestratorFunctions", 10 },
+                { "maxConcurrentActivityFunctions", 20 },
+                {
+                    "storageProvider", new JObject
+                    {
+                        { "type", "azureManaged" },
+                        { "connectionName", connectionName },
+                    }
+                },
+            };
+            var triggerMetadata = new TriggerMetadata(metadata);
+
+            // Verify triggerMetadata has correct storageProvider.type
+            var storageProvider = triggerMetadata.Metadata["storageProvider"] as JObject;
+            Assert.NotNull(storageProvider);
+            Assert.Equal("azureManaged", storageProvider["type"]?.ToString());
+            Assert.Equal(connectionName, storageProvider["connectionName"]?.ToString());
+
+            // Set up DI container with Azure Managed connection string
+            // Use TestWebJobsBuilder directly (no HostBuilder needed) - this matches how Scale Controller uses it
+            var configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    { $"ConnectionStrings:{connectionName}", "Endpoint=https://test.westus.durabletask.io;Authentication=DefaultAzure" },
+                    { connectionName, "Endpoint=https://test.westus.durabletask.io;Authentication=DefaultAzure" },
+                })
+                .Build();
+
+            var services = new ServiceCollection();
+            services.AddSingleton<INameResolver>(new SimpleNameResolver());
+            services.AddSingleton<ILoggerFactory>(new LoggerFactory());
+            services.AddSingleton<IConfiguration>(configuration);
+
+            var webJobsBuilder = new TestWebJobsBuilder(services);
+            webJobsBuilder.AddDurableTask();
+
+            // Build service provider to resolve services
+            var serviceProvider = services.BuildServiceProvider();
+
+            // Get configuration and register Azure Managed factory (as Scale Controller would)
+            var nameResolver = serviceProvider.GetRequiredService<INameResolver>();
+            var loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
+
+            // Register Azure Managed factory (normally done by Scale Controller)
+            var azureManagedFactory = new AzureManagedScalabilityProviderFactory(
+                configuration,
+                nameResolver,
+                loggerFactory);
+
+            // Create a list with all factories (Azure Storage from AddDurableTask + Azure Managed from Scale Controller)
+            var scalabilityProviderFactories = new List<IScalabilityProviderFactory>(
+                serviceProvider.GetServices<IScalabilityProviderFactory>());
+            scalabilityProviderFactories.Add(azureManagedFactory);
+
+            // Verify Azure Managed factory is available (using case-insensitive matching like the actual code)
+            var azureManagedFactoryFound = scalabilityProviderFactories.FirstOrDefault(f => string.Equals(f.Name, "AzureManaged", StringComparison.OrdinalIgnoreCase));
+            Assert.NotNull(azureManagedFactoryFound);
+            Assert.IsType<AzureManagedScalabilityProviderFactory>(azureManagedFactoryFound);
+
+            // Create DurableTaskTriggersScaleProvider (this is what Scale Controller does)
+            var triggersScaleProvider = new DurableTaskTriggersScaleProvider(
+                nameResolver,
+                loggerFactory,
+                scalabilityProviderFactories,
+                triggerMetadata);
+
+            // Act - Get TargetScaler from DurableTaskTriggersScaleProvider
+            var targetScaler = triggersScaleProvider.GetTargetScaler();
+
+            // Assert - TargetScaler was created successfully
+            Assert.NotNull(targetScaler);
+
+            // AzureManagedTargetScaler is internal, so we verify it by checking the type name
+            Assert.Equal("AzureManagedTargetScaler", targetScaler.GetType().Name);
+
+            // Act - Get ScaleMonitor from DurableTaskTriggersScaleProvider
+            var scaleMonitor = triggersScaleProvider.GetMonitor();
+
+            // Assert - ScaleMonitor was created successfully (Azure Managed uses DummyScaleMonitor)
+            Assert.NotNull(scaleMonitor);
+
+            // Note: We skip actual service calls (GetScaleResultAsync, GetMetricsAsync) because:
+            // 1. They require a real Azure Managed endpoint or DTS emulator
+            // 2. The test's primary goal is to verify the integration path (triggerMetadata -> provider -> scaler)
+            // 3. The SQL test can connect to a real SQL Server in CI, but Azure Managed requires DTS emulator
+            // The fact that we successfully created the provider and scalers proves the integration works correctly.
+
+            // Verify connection string was successfully retrieved
+            var connectionString = configuration.GetConnectionString(connectionName) ?? configuration[connectionName];
+            Assert.NotNull(connectionString);
+            Assert.NotEmpty(connectionString);
         }
-    }
 
-    /// <summary>
-    /// Simple test implementation of IWebJobsBuilder that wraps a ServiceCollection.
-    /// This allows us to test AddDurableTask() without needing a full HostBuilder.
-    /// </summary>
-    internal class TestWebJobsBuilder : IWebJobsBuilder
-    {
-        public TestWebJobsBuilder(IServiceCollection services)
-        {
-            this.Services = services;
-        }
-
-        public IServiceCollection Services { get; }
-
-        public IWebJobsBuilder AddExtension<TExtension>() where TExtension : class, IExtensionConfigProvider
-        {
-            this.Services.AddSingleton<IExtensionConfigProvider, TExtension>();
-            return this;
-        }
-    }
-
-    /// <summary>
-    /// Tests for end-to-end SQL Server scaling integration via DurableTaskTriggersScaleProvider.
-    /// Validates the complete flow from triggerMetadata to working TargetScaler and ScaleMonitor.
-    /// </summary>
-    public class DurableTaskTriggersScaleProviderSqlServerTests
-    {
         /// <summary>
         /// Scenario: End-to-end SQL Server scaling via triggerMetadata with type="mssql".
         /// Validates that when triggerMetadata mentions storageProvider.type="mssql", DurableTaskTriggersScaleProvider creates SQL provider.
@@ -307,33 +370,33 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
                     { connectionName, TestHelpers.GetSqlConnectionString() },
                 })
                 .Build();
-            
+
             var services = new ServiceCollection();
             services.AddSingleton<INameResolver>(new SimpleNameResolver());
             services.AddSingleton<ILoggerFactory>(new LoggerFactory());
             services.AddSingleton<IConfiguration>(configuration);
-            
+
             var webJobsBuilder = new TestWebJobsBuilder(services);
             webJobsBuilder.AddDurableTask();
-            
+
             // Build service provider to resolve services
             var serviceProvider = services.BuildServiceProvider();
 
             // Get configuration and register SQL factory (as Scale Controller would)
             var nameResolver = serviceProvider.GetRequiredService<INameResolver>();
             var loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
-            
+
             // Register SQL Server factory (normally done by Scale Controller)
             var sqlFactory = new SqlServerScalabilityProviderFactory(
                 configuration,
                 nameResolver,
                 loggerFactory);
-            
+
             // Create a list with all factories (Azure Storage from AddDurableTask + SQL from Scale Controller)
             var scalabilityProviderFactories = new List<IScalabilityProviderFactory>(
                 serviceProvider.GetServices<IScalabilityProviderFactory>());
             scalabilityProviderFactories.Add(sqlFactory);
-            
+
             // Verify SQL Server factory is available
             var sqlFactoryFound = scalabilityProviderFactories.FirstOrDefault(f => f.Name == "mssql");
             Assert.NotNull(sqlFactoryFound);
@@ -382,122 +445,4 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
             Assert.NotEmpty(connectionString);
         }
     }
-
-    /// <summary>
-    /// Tests for end-to-end Azure Managed (DTS) scaling integration via DurableTaskTriggersScaleProvider.
-    /// Validates the complete flow from triggerMetadata to working TargetScaler and ScaleMonitor.
-    /// </summary>
-    public class DurableTaskTriggersScaleProviderAzureManagedTests
-    {
-        /// <summary>
-        /// Scenario: End-to-end Azure Managed (DTS) scaling via triggerMetadata with type="azureManaged".
-        /// Validates that when triggerMetadata mentions storageProvider.type="azureManaged", DurableTaskTriggersScaleProvider creates DTS provider.
-        /// Tests that connection string is retrieved from triggerMetadata.storageProvider.connectionName.
-        /// Verifies that both TargetScaler and ScaleMonitor successfully work with Azure Managed backend.
-        /// This test validates the complete integration path that Scale Controller uses.
-        /// </summary>
-        [Fact]
-        public async Task TriggerMetadataWithAzureManagedType_CreatesDTSProviderViaTriggersScaleProvider_AndBothScalersWork()
-        {
-            // Arrange - Create triggerMetadata with type="azureManaged" (as Scale Controller would pass)
-            var hubName = "testHub";
-            var connectionName = "v3-dtsConnectionMI";
-            var metadata = new JObject
-            {
-                { "functionName", "TestFunction" },
-                { "type", "activityTrigger" },
-                { "taskHubName", hubName },
-                { "maxConcurrentOrchestratorFunctions", 10 },
-                { "maxConcurrentActivityFunctions", 20 },
-                {
-                    "storageProvider", new JObject
-                    {
-                        { "type", "azureManaged" },
-                        { "connectionName", connectionName },
-                    }
-                },
-            };
-            var triggerMetadata = new TriggerMetadata(metadata);
-
-            // Verify triggerMetadata has correct storageProvider.type
-            var storageProvider = triggerMetadata.Metadata["storageProvider"] as JObject;
-            Assert.NotNull(storageProvider);
-            Assert.Equal("azureManaged", storageProvider["type"]?.ToString());
-            Assert.Equal(connectionName, storageProvider["connectionName"]?.ToString());
-
-            // Set up DI container with Azure Managed connection string
-            // Use TestWebJobsBuilder directly (no HostBuilder needed) - this matches how Scale Controller uses it
-            var configuration = new ConfigurationBuilder()
-                .AddInMemoryCollection(new Dictionary<string, string>
-                {
-                    { $"ConnectionStrings:{connectionName}", "Endpoint=https://test.westus.durabletask.io;Authentication=DefaultAzure" },
-                    { connectionName, "Endpoint=https://test.westus.durabletask.io;Authentication=DefaultAzure" },
-                })
-                .Build();
-            
-            var services = new ServiceCollection();
-            services.AddSingleton<INameResolver>(new SimpleNameResolver());
-            services.AddSingleton<ILoggerFactory>(new LoggerFactory());
-            services.AddSingleton<IConfiguration>(configuration);
-            
-            var webJobsBuilder = new TestWebJobsBuilder(services);
-            webJobsBuilder.AddDurableTask();
-            
-            // Build service provider to resolve services
-            var serviceProvider = services.BuildServiceProvider();
-
-            // Get configuration and register Azure Managed factory (as Scale Controller would)
-            var nameResolver = serviceProvider.GetRequiredService<INameResolver>();
-            var loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
-            
-            // Register Azure Managed factory (normally done by Scale Controller)
-            var azureManagedFactory = new AzureManagedScalabilityProviderFactory(
-                configuration,
-                nameResolver,
-                loggerFactory);
-            
-            // Create a list with all factories (Azure Storage from AddDurableTask + Azure Managed from Scale Controller)
-            var scalabilityProviderFactories = new List<IScalabilityProviderFactory>(
-                serviceProvider.GetServices<IScalabilityProviderFactory>());
-            scalabilityProviderFactories.Add(azureManagedFactory);
-            
-            // Verify Azure Managed factory is available (using case-insensitive matching like the actual code)
-            var azureManagedFactoryFound = scalabilityProviderFactories.FirstOrDefault(f => string.Equals(f.Name, "AzureManaged", StringComparison.OrdinalIgnoreCase));
-            Assert.NotNull(azureManagedFactoryFound);
-            Assert.IsType<AzureManagedScalabilityProviderFactory>(azureManagedFactoryFound);
-
-            // Create DurableTaskTriggersScaleProvider (this is what Scale Controller does)
-            var triggersScaleProvider = new DurableTaskTriggersScaleProvider(
-                nameResolver,
-                loggerFactory,
-                scalabilityProviderFactories,
-                triggerMetadata);
-
-            // Act - Get TargetScaler from DurableTaskTriggersScaleProvider
-            var targetScaler = triggersScaleProvider.GetTargetScaler();
-
-            // Assert - TargetScaler was created successfully
-            Assert.NotNull(targetScaler);
-            // AzureManagedTargetScaler is internal, so we verify it by checking the type name
-            Assert.Equal("AzureManagedTargetScaler", targetScaler.GetType().Name);
-
-            // Act - Get ScaleMonitor from DurableTaskTriggersScaleProvider
-            var scaleMonitor = triggersScaleProvider.GetMonitor();
-
-            // Assert - ScaleMonitor was created successfully (Azure Managed uses DummyScaleMonitor)
-            Assert.NotNull(scaleMonitor);
-
-            // Note: We skip actual service calls (GetScaleResultAsync, GetMetricsAsync) because:
-            // 1. They require a real Azure Managed endpoint or DTS emulator
-            // 2. The test's primary goal is to verify the integration path (triggerMetadata -> provider -> scaler)
-            // 3. The SQL test can connect to a real SQL Server in CI, but Azure Managed requires DTS emulator
-            // The fact that we successfully created the provider and scalers proves the integration works correctly.
-
-            // Verify connection string was successfully retrieved
-            var connectionString = configuration.GetConnectionString(connectionName) ?? configuration[connectionName];
-            Assert.NotNull(connectionString);
-            Assert.NotEmpty(connectionString);
-        }
-    }
 }
-

@@ -111,6 +111,7 @@ jobs:
         working-directory: test/ScaleTests
         env:
           AzureWebJobsStorage: UseDevelopmentStorage=true
+          SQLDB_Connection: ${{ env.SQLDB_Connection }}
         run: dotnet test --configuration Release --no-build --verbosity normal --filter "FullyQualifiedName~Sql|FullyQualifiedName~DurableTaskTriggersScaleProviderSqlServer"
 
   dts:
