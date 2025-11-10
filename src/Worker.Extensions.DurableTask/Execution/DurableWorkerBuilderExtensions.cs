@@ -46,6 +46,7 @@ internal static class DurableWorkerBuilderExtensions
         return builder.BuildTarget == typeof(Worker);
     }
 
+#pragma warning disable CS9113 // Parameter is unread. Suppressed to let a breaking change get fixed before we remove this parameter.
     private class Worker(string name, IDurableTaskFactory factory, IExceptionPropertiesProvider? provider = null) : DurableTaskWorker(name, factory)
     {
         public new IDurableTaskFactory Factory => base.Factory;
@@ -55,4 +56,5 @@ internal static class DurableWorkerBuilderExtensions
             return Task.CompletedTask;
         }
     }
+#pragma warning restore CS9113 // Parameter is unread.
 }

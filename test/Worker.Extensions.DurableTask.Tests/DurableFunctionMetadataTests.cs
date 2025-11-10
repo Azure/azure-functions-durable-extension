@@ -125,7 +125,7 @@ public class DurableFunctionMetadataTests
         DurableFunctionMetadata metadata = DurableFunctionMetadata.CreateOrchestrator("TestFunction");
 
         // Assert
-        Assert.Contains("\"name\": \"context\"", metadata.RawBindings[0]);
-        Assert.Contains("\"direction\": \"In\"", metadata.RawBindings[0]);
+        Assert.Contains("\"name\": \"context\"", metadata.RawBindings?[0]);
+        Assert.Contains("\"direction\": \"In\"", metadata.RawBindings?[0]);
     }
 }

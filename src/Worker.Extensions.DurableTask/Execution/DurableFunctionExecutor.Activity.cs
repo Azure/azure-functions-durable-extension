@@ -5,7 +5,6 @@ using System;
 using System.Threading.Tasks;
 using Microsoft.Azure.Functions.Worker.Extensions.DurableTask.Exceptions;
 using Microsoft.DurableTask;
-using Microsoft.DurableTask.Worker;
 
 namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask.Execution;
 
@@ -24,20 +23,19 @@ internal partial class DurableFunctionExecutor
 
     private async ValueTask RunActivityAsync(FunctionContext context, BindingMetadata triggerBinding)
     {
-        if (context.FunctionDefinition.EntryPoint == ActivityEntryPoint)
-        {
-            await this.RunDirectActivityAsync(context, triggerBinding);
-            return;
-        }
-
         try
         {
+            if (context.FunctionDefinition.EntryPoint == ActivityEntryPoint)
+            {
+                await this.RunDirectActivityAsync(context, triggerBinding);
+                return;
+            }
+
             await inner.ExecuteAsync(context);
             return;
         }
         catch (Exception ex)
         {
-            IExceptionPropertiesProvider? exceptionPropertiesProvider = context.InstanceServices.GetService(typeof(IExceptionPropertiesProvider)) as IExceptionPropertiesProvider;
             throw new DurableSerializationException(ex, exceptionPropertiesProvider);
         }
     }
