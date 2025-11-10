@@ -15,7 +15,7 @@ internal partial class DurableFunctionExecutor(
     ExtendedSessionsCache extendedSessionsCache,
     IDurableTaskFactory factory,
     IOptions<DurableTaskWorkerOptions> options,
-    IExceptionPropertiesProvider? exceptionPropertiesProvider)
+    IExceptionPropertiesProvider? exceptionPropertiesProvider = null)
     : IFunctionExecutor
 {
     private DataConverter Converter => options.Value.DataConverter;
