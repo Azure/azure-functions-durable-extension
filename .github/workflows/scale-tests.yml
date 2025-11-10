@@ -1,0 +1,187 @@
+name: DurableTask Scale Tests
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, dev ]
+    paths:
+      - 'src/WebJobs.Extensions.DurableTask.Scale/**'
+      - 'test/ScaleTests/**'
+      - '.github/workflows/scale-tests.yml'
+  pull_request:
+    branches: [ main, dev ]
+    paths:
+      - 'src/WebJobs.Extensions.DurableTask.Scale/**'
+      - 'test/ScaleTests/**'
+      - '.github/workflows/scale-tests.yml'
+
+jobs:
+  scale-tests-azurestorage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 8.0
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Set up Node.js (needed for Azurite)
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18.x'
+
+      - name: Install Azurite
+        run: npm install -g azurite
+
+      - name: Start Azurite
+        run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
+
+      - name: Restore dependencies
+        run: dotnet restore WebJobs.Extensions.DurableTask.sln
+
+      - name: Build
+        run: dotnet build WebJobs.Extensions.DurableTask.sln --configuration Release --no-restore
+
+      - name: Run Azure Storage Scale Tests
+        working-directory: test/ScaleTests
+        env:
+          AzureWebJobsStorage: UseDevelopmentStorage=true
+        run: dotnet test --configuration Release --no-build --verbosity normal --filter "FullyQualifiedName~AzureStorage"
+
+  scale-tests-sql:
+    runs-on: ubuntu-latest
+    env:
+      MSSQL_SA_PASSWORD: "Strong!Passw0rd123"
+      SQLDB_Connection: "Server=localhost,1433;Database=TestDurableDB;User Id=sa;Password=Strong!Passw0rd123;TrustServerCertificate=True;Encrypt=False;"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 8.0
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Set up Node.js (needed for Azurite)
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18.x'
+
+      - name: Install Azurite
+        run: npm install -g azurite
+
+      - name: Start Azurite
+        run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
+
+      - name: Pull SQL Server Docker Image
+        run: docker pull mcr.microsoft.com/mssql/server:2022-latest
+
+      - name: Start SQL Server Container
+        run: |
+          docker run --name mssql-server \
+            -e ACCEPT_EULA=Y \
+            -e "MSSQL_SA_PASSWORD=${{ env.MSSQL_SA_PASSWORD }}" \
+            -e "MSSQL_PID=Express" \
+            -p 1433:1433 \
+            -d mcr.microsoft.com/mssql/server:2022-latest
+
+      - name: Wait for SQL Server to be ready
+        run: |
+          echo "Waiting for SQL Server to be ready..."
+          sleep 30
+          docker ps
+
+      - name: Restore dependencies
+        run: dotnet restore WebJobs.Extensions.DurableTask.sln
+
+      - name: Build
+        run: dotnet build WebJobs.Extensions.DurableTask.sln --configuration Release --no-restore
+
+      - name: Run SQL Server Scale Tests
+        working-directory: test/ScaleTests
+        env:
+          AzureWebJobsStorage: UseDevelopmentStorage=true
+        run: dotnet test --configuration Release --no-build --verbosity normal --filter "FullyQualifiedName~Sql"
+
+  scale-tests-azuremanaged:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 8.0
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Set up Node.js (needed for Azurite)
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18.x'
+
+      - name: Install Azurite
+        run: npm install -g azurite
+
+      - name: Start Azurite
+        run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
+
+      - name: Pull DTS Emulator Docker Image
+        run: docker pull mcr.microsoft.com/dts/dts-emulator:latest
+
+      - name: Start DTS Container
+        run: |
+          docker run -i \
+            -p 8080:8080 \
+            -p 8082:8082 \
+            -d mcr.microsoft.com/dts/dts-emulator:latest
+
+      - name: Wait for DTS to be ready
+        run: |
+          echo "Waiting for DTS to be ready..."
+          sleep 30
+          docker ps
+
+      - name: Restore dependencies
+        run: dotnet restore WebJobs.Extensions.DurableTask.sln
+
+      - name: Build
+        run: dotnet build WebJobs.Extensions.DurableTask.sln --configuration Release --no-restore
+
+      - name: Run Azure Managed Scale Tests
+        working-directory: test/ScaleTests
+        env:
+          AzureWebJobsStorage: UseDevelopmentStorage=true
+        run: dotnet test --configuration Release --no-build --verbosity normal --filter "FullyQualifiedName~AzureManaged"
+
+  scale-tests-all:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 8.0
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Set up Node.js (needed for Azurite)
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18.x'
+
+      - name: Install Azurite
+        run: npm install -g azurite
+
+      - name: Start Azurite
+        run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
+
+      - name: Restore dependencies
+        run: dotnet restore WebJobs.Extensions.DurableTask.sln
+
+      - name: Build
+        run: dotnet build WebJobs.Extensions.DurableTask.sln --configuration Release --no-restore
+
+      - name: Run All Scale Tests (without containers)
+        working-directory: test/ScaleTests
+        env:
+          AzureWebJobsStorage: UseDevelopmentStorage=true
+        run: dotnet test --configuration Release --no-build --verbosity normal
+
