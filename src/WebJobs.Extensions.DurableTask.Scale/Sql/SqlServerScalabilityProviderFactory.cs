@@ -1,5 +1,6 @@
 // Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
+#nullable enable
 
 using System;
 using DurableTask.SqlServer;
@@ -104,19 +105,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Sql
             string connectionName,
             string taskHubName,
             ILogger logger,
-            DurableTaskMetadata metadata = null)
+            DurableTaskMetadata? metadata = null)
         {
             // Resolve connection name first (handles %% wrapping)
             string resolvedConnectionName = this.nameResolver.Resolve(connectionName);
 
             // Try to get connection string from configuration (app settings)
-            string connectionString = this.configuration.GetConnectionString(resolvedConnectionName)
+            string? connectionString = this.configuration.GetConnectionString(resolvedConnectionName)
                                    ?? this.configuration[resolvedConnectionName];
 
             // Fallback to environment variable (matching old implementation behavior)
             if (string.IsNullOrEmpty(connectionString))
             {
-                connectionString = Environment.GetEnvironmentVariable(resolvedConnectionName);
+                connectionString = Environment.GetEnvironmentVariable(resolvedConnectionName) ?? string.Empty;
             }
 
             if (string.IsNullOrEmpty(connectionString))

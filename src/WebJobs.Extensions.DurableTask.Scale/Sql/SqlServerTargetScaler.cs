@@ -27,6 +27,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Sql
         public SqlServerTargetScaler(string functionId, SqlServerMetricsProvider sqlMetricsProvider)
         {
             this.sqlMetricsProvider = sqlMetricsProvider ?? throw new ArgumentNullException(nameof(sqlMetricsProvider));
+
             // Scalers in Durable Functions are per function IDs. Scalers share the same sqlMetricsProvider in the same task hub.
             this.TargetScalerDescriptor = new TargetScalerDescriptor(functionId);
         }
@@ -36,7 +37,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Sql
         /// </summary>
         public TargetScalerDescriptor TargetScalerDescriptor { get; }
 
-        /// <summary> 
+        /// <summary>
         /// Retrieves the current scale result based on SQL Server metrics, returning the recommended number of workers for the task hub.
         /// </summary>
         /// <param name="context">The context for scaling evaluation.</param>

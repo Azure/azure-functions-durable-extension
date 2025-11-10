@@ -1,3 +1,7 @@
+// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+#nullable enable
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -79,7 +83,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
             IEnumerable<IScalabilityProviderFactory> scalabilityProviderFactories)
         {
             const string DefaultProvider = "AzureStorage";
-            object storageType = null;
+            object? storageType = null;
             bool storageTypeIsConfigured = metadata.StorageProvider != null && metadata.StorageProvider.TryGetValue("type", out storageType);
 
             if (!storageTypeIsConfigured)
@@ -98,14 +102,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
 
             try
             {
-                IScalabilityProviderFactory selectedFactory = scalabilityProviderFactories.First(f => string.Equals(f.Name, storageType.ToString(), StringComparison.OrdinalIgnoreCase));
+                IScalabilityProviderFactory selectedFactory = scalabilityProviderFactories.First(f => string.Equals(f.Name, storageType!.ToString(), StringComparison.OrdinalIgnoreCase));
                 logger.LogInformation($"Using the {storageType} storage provider.");
                 return selectedFactory;
             }
             catch (InvalidOperationException e)
             {
                 IList<string> factoryNames = scalabilityProviderFactories.Select(f => f.Name).ToList();
-                throw new InvalidOperationException($"Storage provider type ({storageType}) was not found. Available storage providers: {string.Join(", ", factoryNames)}.", e);
+                throw new InvalidOperationException($"Storage provider type ({storageType?.ToString() ?? "null"}) was not found. Available storage providers: {string.Join(", ", factoryNames)}.", e);
             }
         }
     }

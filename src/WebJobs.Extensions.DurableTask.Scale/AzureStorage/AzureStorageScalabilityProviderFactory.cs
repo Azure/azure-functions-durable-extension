@@ -1,5 +1,6 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
+#nullable enable
 
 using System;
 using System.Collections.Generic;
@@ -21,7 +22,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage
         private readonly IStorageServiceClientProviderFactory clientProviderFactory;
         private readonly INameResolver nameResolver;
         private readonly ILoggerFactory loggerFactory;
-        private AzureStorageScalabilityProvider defaultStorageProvider;
+        private AzureStorageScalabilityProvider? defaultStorageProvider;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AzureStorageScalabilityProviderFactory"/> class.
@@ -128,7 +129,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage
         }
 
         // Scale Controller will return a AzureComponentWrapper which might contain a token crednetial to use.
-        private static global::Azure.Core.TokenCredential ExtractTokenCredential(TriggerMetadata triggerMetadata, ILogger logger)
+        private static global::Azure.Core.TokenCredential? ExtractTokenCredential(TriggerMetadata? triggerMetadata, ILogger? logger)
         {
             if (triggerMetadata?.Properties == null)
             {
@@ -137,7 +138,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage
 
             // Check if metadata contains an AzureComponentFactory wrapper
             // ScaleController passes it as: metadata.Properties[nameof(AzureComponentFactory)] = new AzureComponentFactoryWrapper(...)
-            if (triggerMetadata.Properties.TryGetValue("AzureComponentFactory", out object componentFactoryObj) && componentFactoryObj != null)
+            if (triggerMetadata.Properties.TryGetValue("AzureComponentFactory", out object? componentFactoryObj) && componentFactoryObj != null)
             {
                 // The AzureComponentFactoryWrapper has CreateTokenCredential method
                 // Call it using reflection to get the TokenCredential
@@ -148,7 +149,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage
                     try
                     {
                         // Call CreateTokenCredential(null) to get the TokenCredential from the wrapper
-                        var credential = method.Invoke(componentFactoryObj, new object[] { null });
+                        var credential = method.Invoke(componentFactoryObj, new object?[] { null });
                         if (credential is global::Azure.Core.TokenCredential tokenCredential)
                         {
                             return tokenCredential;

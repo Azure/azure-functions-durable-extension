@@ -142,8 +142,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureManaged
                     AzureManagedOrchestrationServiceOptions.FromConnectionString(connectionString);
 
                 // If triggerMetadata is provided, try to get token credential from it
-                if (triggerMetadata != null && triggerMetadata.Properties != null && 
-                    triggerMetadata.Properties.TryGetValue("GetAzureManagedTokenCredential", out object tokenCredentialFunc))
+                if (triggerMetadata != null && triggerMetadata.Properties != null &&
+                    triggerMetadata.Properties.TryGetValue("GetAzureManagedTokenCredential", out object? tokenCredentialFunc))
                 {
                     if (tokenCredentialFunc is Func<string, TokenCredential> getTokenCredential)
                     {

@@ -24,7 +24,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
             string functionId = triggerMetadata.FunctionName;
             var functionName = new FunctionName(functionId);
 
-            // Deserialize the configuration from triggerMetadata 
+            // Deserialize the configuration from triggerMetadata
             var metadata = triggerMetadata.Metadata.ToObject<DurableTaskMetadata>()
                 ?? throw new InvalidOperationException($"Failed to deserialize trigger metadata. Payload: {triggerMetadata.Metadata}");
 
@@ -35,7 +35,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
             }
 
             // Resolve app settings (e.g., %MyConnectionString% -> actual value)
-
             DurableTaskMetadata.ResolveAppSettingOptions(metadata, nameResolver);
 
             var logger = loggerFactory.CreateLogger<DurableTaskTriggersScaleProvider>();
@@ -80,13 +79,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
             }
 
             // Try connectionName first
-            if (storageProvider.TryGetValue("connectionName", out object value1) && value1 is string s1 && !string.IsNullOrWhiteSpace(s1))
+            if (storageProvider.TryGetValue("connectionName", out object? value1) && value1 is string s1 && !string.IsNullOrWhiteSpace(s1))
             {
                 return s1;
             }
 
             // Try connectionStringName
-            if (storageProvider.TryGetValue("connectionStringName", out object value2) && value2 is string s2 && !string.IsNullOrWhiteSpace(s2))
+            if (storageProvider.TryGetValue("connectionStringName", out object? value2) && value2 is string s2 && !string.IsNullOrWhiteSpace(s2))
             {
                 return s2;
             }

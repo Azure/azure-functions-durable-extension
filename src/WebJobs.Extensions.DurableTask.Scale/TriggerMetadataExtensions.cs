@@ -1,5 +1,6 @@
 // Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
+#nullable enable
 
 using System.Collections.Generic;
 using Microsoft.Azure.WebJobs.Host.Scale;
@@ -21,14 +22,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
             if (triggerMetadata?.Metadata == null)
             {
                 return null;
-            }
-
-            // Check if already parsed and stored in Properties
-            if (triggerMetadata.Properties != null && 
-                triggerMetadata.Properties.TryGetValue("DurableTaskMetadata", out object cachedMetadata) &&
-                cachedMetadata is DurableTaskMetadata metadata)
-            {
-                return metadata;
             }
 
             try

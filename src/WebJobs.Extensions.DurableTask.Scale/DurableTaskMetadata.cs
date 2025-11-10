@@ -1,4 +1,8 @@
-﻿using System.Collections.Generic;
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+#nullable enable
+
+using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
@@ -43,9 +47,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
         /// <param name="nameResolver">The name resolver used to resolve app setting placeholders.</param>
         public static void ResolveAppSettingOptions(DurableTaskMetadata metadata, INameResolver nameResolver)
         {
-            if (metadata.StorageProvider.TryGetValue("connectionName", out object connectionNameObj) && connectionNameObj is string connectionName)
+            if (metadata.StorageProvider != null &&
+                metadata.StorageProvider.TryGetValue("connectionName", out object? connectionNameObj) &&
+                connectionNameObj is string connectionName)
             {
-                metadata.StorageProvider["connectionName"] = nameResolver.Resolve(connectionName);
+                metadata.StorageProvider["connectionName"] = nameResolver.Resolve(connectionName) ?? string.Empty;
             }
         }
     }
