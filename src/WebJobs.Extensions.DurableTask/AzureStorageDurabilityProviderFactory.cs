@@ -218,7 +218,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 UseSeparateQueueForEntityWorkItems = this.useSeparateQueueForEntityWorkItems,
                 EntityMessageReorderWindowInMinutes = this.options.EntityMessageReorderWindowInMinutes,
                 MaxEntityOperationBatchSize = this.options.MaxEntityOperationBatchSize,
+#pragma warning disable CS0618 // Type or member is obsolete
                 AllowReplayingTerminalInstances = this.azureStorageOptions.AllowReplayingTerminalInstances,
+#pragma warning restore CS0618 // Type or member is obsolete
                 PartitionTableOperationTimeout = this.azureStorageOptions.PartitionTableOperationTimeout,
                 QueueClientMessageEncoding = this.azureStorageOptions.QueueClientMessageEncoding,
             };
