@@ -40,7 +40,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
             var connectionString = TestHelpers.GetSqlConnectionString();
             var settings = new SqlOrchestrationServiceSettings(connectionString, this.hubName, schemaName: null);
             var sqlService = new SqlOrchestrationService(settings);
-            
+
             // Create real metrics provider
             this.metricsProvider = new SqlServerMetricsProvider(sqlService);
 

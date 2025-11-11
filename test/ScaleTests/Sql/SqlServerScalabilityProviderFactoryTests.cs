@@ -496,5 +496,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
             var configDatabaseName = testConfiguration[$"{connectionName}__databaseName"];
             Assert.Equal(databaseName, configDatabaseName);
         }
+
     }
 }

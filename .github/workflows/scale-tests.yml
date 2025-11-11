@@ -165,6 +165,7 @@ jobs:
         working-directory: test/ScaleTests
         env:
           AzureWebJobsStorage: UseDevelopmentStorage=true
+          DURABLE_TASK_SCHEDULER_CONNECTION_STRING: "Endpoint=http://localhost:8080;Authentication=None"
         run: dotnet test --configuration Release --no-build --verbosity normal --filter "FullyQualifiedName~AzureManaged&FullyQualifiedName!~Sql&FullyQualifiedName!~DurableTaskTriggersScaleProviderSqlServer"
 
   scale-tests-configuration:
