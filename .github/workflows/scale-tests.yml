@@ -167,7 +167,7 @@ jobs:
           AzureWebJobsStorage: UseDevelopmentStorage=true
         run: dotnet test --configuration Release --no-build --verbosity normal --filter "FullyQualifiedName~AzureManaged&FullyQualifiedName!~Sql&FullyQualifiedName!~DurableTaskTriggersScaleProviderSqlServer"
 
-  scale-tests-all:
+  scale-tests-configuration:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -192,9 +192,9 @@ jobs:
         working-directory: test/ScaleTests
         run: dotnet build --configuration Release
 
-      - name: Run All Scale Tests (without containers)
+      - name: Run Configuration Extension Tests
         working-directory: test/ScaleTests
         env:
           AzureWebJobsStorage: UseDevelopmentStorage=true
-        run: dotnet test --configuration Release --no-build --verbosity normal
+        run: dotnet test --configuration Release --no-build --verbosity normal --filter "FullyQualifiedName~DurableTaskJobHostConfigurationExtensionsTests"
 

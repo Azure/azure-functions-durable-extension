@@ -18,6 +18,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
     /// Tests scale metrics collection, scale status determination, and scale recommendations.
     /// Ensures Scale Controller can make informed autoscaling decisions based on SQL Server metrics.
     /// </summary>
+    [Collection("SqlServerTests")]
     public class SqlServerScaleMonitorTests
     {
         private readonly string hubName = "DurableTaskTriggerHubName";

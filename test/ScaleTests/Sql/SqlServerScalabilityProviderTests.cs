@@ -16,6 +16,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
     /// Validates the SQL Server implementation of ScalabilityProvider.
     /// Tests provider instantiation and scale monitor/scaler creation.
     /// </summary>
+    [Collection("SqlServerTests")]
     public class SqlServerScalabilityProviderTests
     {
         private readonly ITestOutputHelper output;

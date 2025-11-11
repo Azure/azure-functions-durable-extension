@@ -20,6 +20,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
     /// Validates factory creation, provider instantiation, and configuration handling.
     /// Note: SQL Server is NOT the default provider - only created when storageProvider.type = "mssql".
     /// </summary>
+    [CollectionDefinition("SqlServerTests")]
+    public class SqlServerTestCollection : ICollectionFixture<SqlServerTestFixture>
+    {
+        // This class has no code, and is never created. Its purpose is simply
+        // to be the place to apply [CollectionDefinition] and all the
+        // ICollectionFixture<> interfaces.
+    }
+
+    [Collection("SqlServerTests")]
     public class SqlServerScalabilityProviderFactoryTests
     {
         private readonly ITestOutputHelper output;

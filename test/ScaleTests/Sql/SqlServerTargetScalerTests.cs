@@ -16,6 +16,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
     /// Tests worker count calculations based on SQL Server recommended replica count.
     /// Ensures accurate scaling decisions based on SQL Server metrics.
     /// </summary>
+    [Collection("SqlServerTests")]
     public class SqlServerTargetScalerTests
     {
         private readonly ITestOutputHelper output;
