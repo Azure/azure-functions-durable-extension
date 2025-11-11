@@ -16,8 +16,7 @@ on:
       - '.github/workflows/scale-tests.yml'
 
 jobs:
-  azurestorage:
-    name: DurableTask Scale Tests - AzureStorage
+  scale-tests-azurestorage:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -38,28 +37,20 @@ jobs:
       - name: Start Azurite
         run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
 
-      - name: Restore dependencies
-        run: |
-          dotnet restore src/WebJobs.Extensions.DurableTask.Scale/WebJobs.Extensions.DurableTask.Scale.csproj
-          dotnet restore test/ScaleTests/WebJobs.Extensions.DurableTask.Scale.Tests.csproj
-
-      - name: Build
-        run: |
-          dotnet build src/WebJobs.Extensions.DurableTask.Scale/WebJobs.Extensions.DurableTask.Scale.csproj --configuration Release --no-restore
-          dotnet build test/ScaleTests/WebJobs.Extensions.DurableTask.Scale.Tests.csproj --configuration Release --no-restore
+      - name: Restore and Build Scale Tests
+        working-directory: test/ScaleTests
+        run: dotnet build --configuration Release
 
       - name: Run Azure Storage Scale Tests
         working-directory: test/ScaleTests
         env:
           AzureWebJobsStorage: UseDevelopmentStorage=true
-        run: dotnet test --configuration Release --no-build --verbosity normal --filter "FullyQualifiedName~AzureStorage|FullyQualifiedName~DurableTaskJobHostConfigurationExtensions"
+        run: dotnet test --configuration Release --no-build --verbosity normal --filter "FullyQualifiedName~AzureStorage&FullyQualifiedName!~Sql&FullyQualifiedName!~DurableTaskTriggersScaleProviderSqlServer"
 
-  mssql:
-    name: DurableTask Scale Tests - MSSQL
+  scale-tests-sql:
     runs-on: ubuntu-latest
     env:
       MSSQL_SA_PASSWORD: "Strong!Passw0rd123"
-      SQLDB_Connection: "Server=localhost,1433;Database=TestDurableDB;User Id=sa;Password=Strong!Passw0rd123;TrustServerCertificate=True;Encrypt=False;"
     steps:
       - uses: actions/checkout@v4
 
@@ -94,28 +85,42 @@ jobs:
       - name: Wait for SQL Server to be ready
         run: |
           echo "Waiting for SQL Server to be ready..."
-          sleep 30
+          for i in {1..30}; do
+            # Try to connect using sqlcmd (try multiple possible paths for different SQL Server versions)
+            if docker exec mssql-server /opt/mssql-tools18/bin/sqlcmd -S . -U sa -P "${{ env.MSSQL_SA_PASSWORD }}" -Q "SELECT 1" -C > /dev/null 2>&1 || \
+               docker exec mssql-server /opt/mssql-tools/bin/sqlcmd -S . -U sa -P "${{ env.MSSQL_SA_PASSWORD }}" -Q "SELECT 1" -C > /dev/null 2>&1; then
+              echo "SQL Server is ready!"
+              break
+            fi
+            echo "Waiting for SQL Server... ($i/30)"
+            sleep 2
+          done
           docker ps
 
-      - name: Restore dependencies
+      - name: Create database
         run: |
-          dotnet restore src/WebJobs.Extensions.DurableTask.Scale/WebJobs.Extensions.DurableTask.Scale.csproj
-          dotnet restore test/ScaleTests/WebJobs.Extensions.DurableTask.Scale.Tests.csproj
+          echo "Creating TestDurableDB database..."
+          # Try multiple possible sqlcmd paths for different SQL Server versions
+          if docker exec mssql-server /opt/mssql-tools18/bin/sqlcmd -S . -U sa -P "${{ env.MSSQL_SA_PASSWORD }}" -Q "CREATE DATABASE [TestDurableDB] COLLATE Latin1_General_100_BIN2_UTF8" -C 2>/dev/null || \
+             docker exec mssql-server /opt/mssql-tools/bin/sqlcmd -S . -U sa -P "${{ env.MSSQL_SA_PASSWORD }}" -Q "CREATE DATABASE [TestDurableDB] COLLATE Latin1_General_100_BIN2_UTF8" -C; then
+            echo "Database created successfully"
+          else
+            echo "Failed to create database"
+            exit 1
+          fi
 
-      - name: Build
-        run: |
-          dotnet build src/WebJobs.Extensions.DurableTask.Scale/WebJobs.Extensions.DurableTask.Scale.csproj --configuration Release --no-restore
-          dotnet build test/ScaleTests/WebJobs.Extensions.DurableTask.Scale.Tests.csproj --configuration Release --no-restore
+      - name: Restore and Build Scale Tests
+        working-directory: test/ScaleTests
+        run: dotnet build --configuration Release
 
       - name: Run SQL Server Scale Tests
         working-directory: test/ScaleTests
         env:
           AzureWebJobsStorage: UseDevelopmentStorage=true
-          SQLDB_Connection: ${{ env.SQLDB_Connection }}
+          SQLDB_Connection: "Server=localhost,1433;Database=TestDurableDB;User Id=sa;Password=${{ env.MSSQL_SA_PASSWORD }};TrustServerCertificate=True;Encrypt=False;"
         run: dotnet test --configuration Release --no-build --verbosity normal --filter "FullyQualifiedName~Sql|FullyQualifiedName~DurableTaskTriggersScaleProviderSqlServer"
 
-  dts:
-    name: DurableTask Scale Tests - DTS
+  scale-tests-azuremanaged:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -152,19 +157,44 @@ jobs:
           sleep 30
           docker ps
 
-      - name: Restore dependencies
-        run: |
-          dotnet restore src/WebJobs.Extensions.DurableTask.Scale/WebJobs.Extensions.DurableTask.Scale.csproj
-          dotnet restore test/ScaleTests/WebJobs.Extensions.DurableTask.Scale.Tests.csproj
-
-      - name: Build
-        run: |
-          dotnet build src/WebJobs.Extensions.DurableTask.Scale/WebJobs.Extensions.DurableTask.Scale.csproj --configuration Release --no-restore
-          dotnet build test/ScaleTests/WebJobs.Extensions.DurableTask.Scale.Tests.csproj --configuration Release --no-restore
+      - name: Restore and Build Scale Tests
+        working-directory: test/ScaleTests
+        run: dotnet build --configuration Release
 
       - name: Run Azure Managed Scale Tests
         working-directory: test/ScaleTests
         env:
           AzureWebJobsStorage: UseDevelopmentStorage=true
-        run: dotnet test --configuration Release --no-build --verbosity normal --filter "FullyQualifiedName~AzureManaged|FullyQualifiedName~DurableTaskTriggersScaleProviderAzureManaged"
+        run: dotnet test --configuration Release --no-build --verbosity normal --filter "FullyQualifiedName~AzureManaged&FullyQualifiedName!~Sql&FullyQualifiedName!~DurableTaskTriggersScaleProviderSqlServer"
+
+  scale-tests-all:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 8.0
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Set up Node.js (needed for Azurite)
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18.x'
+
+      - name: Install Azurite
+        run: npm install -g azurite
+
+      - name: Start Azurite
+        run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
+
+      - name: Restore and Build Scale Tests
+        working-directory: test/ScaleTests
+        run: dotnet build --configuration Release
+
+      - name: Run All Scale Tests (without containers)
+        working-directory: test/ScaleTests
+        env:
+          AzureWebJobsStorage: UseDevelopmentStorage=true
+        run: dotnet test --configuration Release --no-build --verbosity normal
 
