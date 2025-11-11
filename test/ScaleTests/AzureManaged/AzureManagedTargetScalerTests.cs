@@ -42,7 +42,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
         [Fact]
         public async Task TargetBasedScaling_WithPendingOrchestrations_ReturnsExpectedWorkerCount()
         {
-            var taskHubName = "dtstesthub";
+            var taskHubName = "default";
             var connectionString = TestHelpers.GetAzureManagedConnectionString();
             var options = AzureManagedOrchestrationServiceOptions.FromConnectionString(connectionString);
             options.TaskHubName = taskHubName;
