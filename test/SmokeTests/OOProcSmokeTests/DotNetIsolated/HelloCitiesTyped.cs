@@ -1,11 +1,11 @@
 // Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
-using Microsoft.DurableTask;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
-using Microsoft.Extensions.Logging;
+using Microsoft.DurableTask;
 using Microsoft.DurableTask.Client;
+using Microsoft.Extensions.Logging;
 
 namespace DotNetIsolated.Typed;
 
@@ -30,7 +30,7 @@ public static class HelloCitiesTypedStarter
         // orchestrators that are defined in the current project. The name of the generated extension methods
         // are based on the names of the orchestrator classes. Note that the source generator will *not*
         // generate type-safe extension methods for non-class-based orchestrator functions.
-        string instanceId = await client.ScheduleNewHelloCitiesTypedInstanceAsync();
+        string instanceId = await client.ScheduleNewOrchestrationInstanceAsync(nameof(HelloCitiesTyped));
         logger.LogInformation("Created new orchestration with instance ID = {instanceId}", instanceId);
 
         return client.CreateCheckStatusResponse(req, instanceId);
@@ -52,9 +52,9 @@ public class HelloCitiesTyped : TaskOrchestrator<string?, string>
         // methods are derived from the names of the activity classes. Note that both
         // activity classes and activity functions are supported by the source generator.
         string result = "";
-        result += await context.CallSayHelloTypedAsync("Tokyo") + " ";
-        result += await context.CallSayHelloTypedAsync("London") + " ";
-        result += await context.CallSayHelloTypedAsync("Seattle");
+        result += await context.CallActivityAsync<string>("SayHello", "Tokyo") + " ";
+        result += await context.CallActivityAsync<string>("SayHello", "London") + " ";
+        result += await context.CallActivityAsync<string>("SayHello", "Seattle");
         return result;
     }
 }
@@ -63,7 +63,7 @@ public class HelloCitiesTyped : TaskOrchestrator<string?, string>
 /// Class-based activity function implementation. Source generators are used to a generate an activity function
 /// definition that creates an instance of this class and invokes its <see cref="OnRun"/> method.
 /// </summary>
-[DurableTask(nameof(SayHelloTyped))]
+[DurableTask("SayHello")]
 public class SayHelloTyped : TaskActivity<string, string>
 {
     private readonly ILogger? logger;
@@ -84,7 +84,7 @@ public class SayHelloTyped : TaskActivity<string, string>
 
     public override Task<string> RunAsync(TaskActivityContext context, string cityName)
     {
-        this.logger?.LogInformation("Saying hello to {name}", cityName);
+        this.logger?.LogInformation("Saying hello to {name}!", cityName);
         return Task.FromResult($"Hello, {cityName}!");
     }
 }

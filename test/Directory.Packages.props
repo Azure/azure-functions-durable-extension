@@ -9,9 +9,6 @@
   <ItemGroup>
     <PackageVersion Include="coverlet.collector" Version="6.0.0" />
     <PackageVersion Include="FluentAssertions" Version="4.19.4" />
-    <PackageVersion Include="Microsoft.Azure.DurableTask.Emulator" Version="2.5.4" />
-    <PackageVersion Include="Microsoft.Azure.DurableTask.Netherite.AzureFunctions" Version="3.1.0" />
-    <PackageVersion Include="Microsoft.Azure.DurableTask.Redis" Version="0.1.9-alpha" />
     <PackageVersion Include="Microsoft.Azure.WebJobs.Logging.ApplicationInsights" Version="3.0.33" />
     <PackageVersion Include="Microsoft.Build" Version="17.3.2" />
     <PackageVersion Include="Microsoft.Build.Framework" Version="17.3.2" />
@@ -20,7 +17,6 @@
     <PackageVersion Include="Microsoft.CodeAnalysis" Version="3.9.0" />
     <PackageVersion Include="Microsoft.CodeAnalysis.Workspaces.MSBuild" Version="3.9.0" />
     <PackageVersion Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="2.0.65" />
-    <PackageVersion Include="Microsoft.DurableTask.Abstractions" Version="1.16.0" />
     <PackageVersion Include="Microsoft.DurableTask.Generators" Version="1.0.0-preview.1" />
     <PackageVersion Include="Microsoft.DurableTask.SqlServer.AzureFunctions" Version="1.5.0" />
     <PackageVersion Include="Microsoft.Extensions.Configuration" Version="9.0.0" />
