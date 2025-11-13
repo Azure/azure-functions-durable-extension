@@ -128,7 +128,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
             this.endToEndTraceHelper.ExtensionWarningAnnouncement(
                 "Durable Functions Distributed Tracing V2 is GA now! Learn how to enable the feature by visiting "
                 + "aka.ms/durable-distributed-tracing. "
-                + "To disable this message, you can configure your distributed trace version to \"V2\" or \"None\".");
+                + "To disable this message, you can configure distributedTracingEnabled to \"true\" and version to \"V2\" or \"None\". Setting it to \"None\" would in effect disable the feature.");
         }
 
         private void SetUpV1DistributedTracing()

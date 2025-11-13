@@ -22,7 +22,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private Exception? failure;
 
-        public RemoteOrchestratorContext(OrchestrationRuntimeState runtimeState, TaskOrchestrationEntityParameters? entityParameters, DurableTaskOptions options)
+        public RemoteOrchestratorContext(OrchestrationRuntimeState runtimeState, TaskOrchestrationEntityParameters? entityParameters, DurableTaskOptions options, bool isExtendedSession, bool includePastEvents)
         {
             this.runtimeState = runtimeState ?? throw new ArgumentNullException(nameof(runtimeState));
             this.EntityParameters = entityParameters;
@@ -30,6 +30,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 HttpDefaultAsyncRequestSleepTimeMilliseconds = options.HttpSettings.DefaultAsyncRequestSleepTimeMilliseconds,
             };
+            if (options.ExtendedSessionsEnabled)
+            {
+                this.Configurations.IsExtendedSession = isExtendedSession;
+                this.Configurations.IncludePastEvents = includePastEvents;
+                this.Configurations.ExtendedSessionIdleTimeoutInSeconds = options.ExtendedSessionIdleTimeoutInSeconds;
+            }
         }
 
         [JsonProperty("instanceId")]

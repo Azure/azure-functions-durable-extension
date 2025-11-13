@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using DurableTask.AzureStorage;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage;
 using Microsoft.Extensions.Logging;
 
@@ -219,6 +220,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// to a client event like a termination request or an external event, which gives the framework another opportunity to update the state of
         /// the orchestrator in the "Instances table". To force a replay after enabling this configuration, just send any external event to the affected instanceId.
         /// </remarks>
+        [Obsolete("Alternative recovery mechanisms to automatically synchronize instance and history table state have been implemented")]
         public bool AllowReplayingTerminalInstances { get; set; } = false;
 
         /// <summary>
@@ -231,6 +233,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// This setting is only effective when <see cref="UseTablePartitionManagement"/> is set to true.
         /// </remarks>
         public TimeSpan PartitionTableOperationTimeout { get; set; } = TimeSpan.FromSeconds(2);
+
+        /// <summary>
+        /// Gets or sets the encoding strategy used for Azure Storage Queue messages.
+        /// The default is <see cref="QueueClientMessageEncoding.UTF8"/>.
+        /// </summary>
+        public QueueClientMessageEncoding QueueClientMessageEncoding { get; set; } = QueueClientMessageEncoding.UTF8;
 
         /// <summary>
         /// Throws an exception if the provided hub name violates any naming conventions for the storage provider.

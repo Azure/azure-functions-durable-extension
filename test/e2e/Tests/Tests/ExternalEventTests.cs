@@ -24,7 +24,6 @@ public class ExternalEventTests
     // Test that sending an event to a running orchestrator waiting for an external event will complete successfully,
     // and sending an event to a completed instance will throw a FailedPrecondition RpcException with details error message.
     [Fact]
-    [Trait("PowerShell", "Skip")] // Test not yet implemented in PowerShell
     public async Task RaiseExternalEventTests()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=ExternalEventOrchestrator");
@@ -44,22 +43,37 @@ public class ExternalEventTests
         HttpResponseMessage resendEventResponse = await HttpHelpers.InvokeHttpTriggerWithBody("SendExternalEvent_HttpStart", jsonContent, "application/json");
         string responseContent = await resendEventResponse.Content.ReadAsStringAsync();
 
-        // Verify the returned exception contains the correct information. 
-        Assert.Contains("FailedPrecondition", responseContent);
-        Assert.Contains("The orchestration instance with the provided instance id is not running.", responseContent);
+        // Bug: https://github.com/Azure/azure-functions-durable-js/issues/645
+        if (this.fixture.functionLanguageLocalizer.GetLanguageType() != LanguageType.Node)
+        {
+            // Verify the returned exception contains the correct information. 
+            // In dotnet-isolated, this is the StatusCode of the RPC exception. 
+            // In other languages, it is the exception type
+            Assert.Contains(fixture.functionLanguageLocalizer.GetLocalizedStringValue("ExternalEvent.CompletedInstance.ErrorName"), responseContent);
+
+            // In dotnet-isolated, this is the deliberate error text from the RpcException
+            // In other languages, it is the symptom error
+            Assert.Contains(fixture.functionLanguageLocalizer.GetLocalizedStringValue("ExternalEvent.CompletedInstance.ErrorMessage", instanceId), responseContent);
+        }
     }
 
     // Test that sending an event to a not-exist InstanceId will throw an NotFoundRpc Exception.
     [Fact]
-    [Trait("PowerShell", "Skip")] // Test not yet implemented in PowerShell
     public async Task NotFoundInstanceTest()
     {
-        string jsonContent = JsonSerializer.Serialize("instance-does-not-exist-test");
+        const string testInstanceId = "instance-does-not-exist-test";
+
+        string jsonContent = JsonSerializer.Serialize(testInstanceId);
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTriggerWithBody("SendExternalEvent_HttpStart", jsonContent, "application/json");
         string responseContent = await response.Content.ReadAsStringAsync();
 
         // Verify the returned exception contains the correct information. 
-        Assert.Contains("NotFound", responseContent);
-        Assert.Contains("No instance with ID 'instance-does-not-exist-test' was found", responseContent);
+        // In dotnet-isolated, this is the StatusCode of the RPC exception. 
+        // In other languages, it is the exception type
+        Assert.Contains(fixture.functionLanguageLocalizer.GetLocalizedStringValue("ExternalEvent.InvalidInstance.ErrorName"), responseContent);
+
+        // In dotnet-isolated, this is the deliberate error text from the RpcException
+        // In other languages, it is the symptom error
+        Assert.Contains(fixture.functionLanguageLocalizer.GetLocalizedStringValue("ExternalEvent.InvalidInstance.ErrorMessage", testInstanceId), responseContent);
     }
 }

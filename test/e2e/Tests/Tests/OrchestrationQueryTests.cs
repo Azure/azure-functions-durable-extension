@@ -23,7 +23,7 @@ public class OrchestrationQueryTests
 
 
     [Fact]
-    [Trait("PowerShell", "Skip")] // Test not yet implemented in PowerShell
+    [Trait("PowerShell", "Skip")] // PowerShell does not have a GetAllInstancesAsync equivalent today
     public async Task ListAllOrchestrations_ShouldSucceed()
     {
         using HttpResponseMessage statusResponse = await HttpHelpers.InvokeHttpTrigger("GetAllInstances", "");
@@ -39,7 +39,7 @@ public class OrchestrationQueryTests
 
 
     [Fact]
-    [Trait("PowerShell", "Skip")] // Test not yet implemented in PowerShell
+    [Trait("PowerShell", "Skip")] // PowerShell does not have a GetRunningInstances equivalent today
     public async Task ListRunningOrchestrations_ShouldContainRunningOrchestration()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=LongRunningOrchestrator");
@@ -60,7 +60,8 @@ public class OrchestrationQueryTests
             JsonNode? statusResponseJsonNode = JsonNode.Parse(statusResponseMessage);
             Assert.NotNull(statusResponseJsonNode);
 
-            Assert.Contains(statusResponseJsonNode.AsArray(), x => x?["InstanceId"]?.ToString() == instanceId);
+            Assert.Contains(statusResponseJsonNode.AsArray(), x => x?["InstanceId"]?.ToString() == instanceId ||
+                                                                   x?["instanceId"]?.ToString() == instanceId);
         }
         finally
         {

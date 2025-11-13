@@ -3,8 +3,10 @@
 #nullable enable
 using System;
 using System.Buffers;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -18,6 +20,8 @@ using DurableTask.Core.Tracing;
 using Google.Protobuf;
 using Google.Protobuf.Collections;
 using Google.Protobuf.WellKnownTypes;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using P = Microsoft.DurableTask.Protobuf;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
@@ -227,6 +231,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         Input = resumedEvent.Reason,
                     };
                     break;
+                case EventType.ExecutionRewound:
+                    payload.ExecutionRewound = new P.ExecutionRewoundEvent();
+                    break;
                 default:
                     throw new NotSupportedException($"Found unsupported history event '{e.EventType}'.");
             }
@@ -301,6 +308,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         }
                     }
 
+                    foreach (KeyValuePair<string, string> kvp in completedAction.Tags)
+                    {
+                        action.Tags[kvp.Key] = kvp.Value;
+                    }
+
                     return action;
                 default:
                     throw new NotSupportedException($"Received unsupported action type '{a.OrchestratorActionTypeCase}'.");
@@ -354,7 +366,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 failureDetails.ErrorMessage,
                 failureDetails.StackTrace,
                 GetFailureDetails(failureDetails.InnerFailure),
-                failureDetails.IsNonRetriable);
+                failureDetails.IsNonRetriable,
+                properties: ConvertProperties(failureDetails.Properties));
         }
 
         internal static P.TaskFailureDetails? GetFailureDetails(FailureDetails? failureDetails)
@@ -364,7 +377,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return null;
             }
 
-            return new P.TaskFailureDetails
+            var taskFailure = new P.TaskFailureDetails
             {
                 ErrorType = failureDetails.ErrorType,
                 ErrorMessage = failureDetails.ErrorMessage,
@@ -372,6 +385,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 InnerFailure = GetFailureDetails(failureDetails.InnerFailure),
                 IsNonRetriable = failureDetails.IsNonRetriable,
             };
+
+            if (failureDetails.Properties != null)
+            {
+                foreach (var kvp in failureDetails.Properties)
+                {
+                    taskFailure.Properties[kvp.Key] = ConvertObjectToValue(kvp.Value);
+                }
+            }
+
+            return taskFailure;
         }
 
         internal static OrchestrationQuery ToOrchestrationQuery(P.QueryInstancesRequest request)
@@ -575,6 +598,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         InstanceId = operationAction.StartNewOrchestration.InstanceId,
                         Version = operationAction.StartNewOrchestration.Version,
                         RequestTime = operationAction.StartNewOrchestration.RequestTime?.ToDateTimeOffset(),
+                        ScheduledStartTime = operationAction.StartNewOrchestration.ScheduledTime?.ToDateTime(),
                         ParentTraceContext = operationAction.StartNewOrchestration.ParentTraceContext != null ?
                             new DistributedTraceContext(
                                 operationAction.StartNewOrchestration.ParentTraceContext.TraceParent,
@@ -622,6 +646,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
+        internal static IDictionary<string, object?> ConvertProperties(MapField<string, Value> properties)
+        {
+            return properties.ToDictionary(
+                kvp => kvp.Key,
+                kvp => ConvertValueToObject(kvp.Value));
+        }
+
         internal static MapField<string, Value> ConvertPocoToProtoMap(object? configurations)
         {
             var map = new MapField<string, Value>();
@@ -639,29 +670,83 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 string propertyName = property.Name;
                 object? propertyValue = property.GetValue(configurations);
 
-                map[propertyName] = ConvertToProtoValue(propertyValue);
+                map[propertyName] = ConvertObjectToValue(propertyValue);
             }
 
             return map;
         }
 
-        private static Value ConvertToProtoValue(object? value)
+        internal static Value ConvertObjectToValue(object? obj)
         {
-            if (value is null)
+            return obj switch
             {
-                return Value.ForNull();
-            }
-
-            return value switch
-            {
-                string s => Value.ForString(s),
+                null => Value.ForNull(),
+                string str => Value.ForString(str),
                 bool b => Value.ForBool(b),
                 int i => Value.ForNumber(i),
                 long l => Value.ForNumber(l),
                 float f => Value.ForNumber(f),
                 double d => Value.ForNumber(d),
-                _ => throw new InvalidOperationException($"Unsupported type: {value.GetType()} at durable ProtobufUtils.")
+                decimal dec => Value.ForNumber((double)dec),
+
+                // Handle Newtonsoft.Json types (JValue, JArray, JObject) from deserialized protobuf
+                JValue jv => ConvertJValueToValue(jv),
+                JArray ja => Value.ForList(ja.Select(ConvertObjectToValue).ToArray()),
+                JObject jo => Value.ForStruct(new Struct
+                {
+                    Fields = { jo.Properties().ToDictionary(p => p.Name, p => ConvertObjectToValue(p.Value)) },
+                }),
+
+                // For DateTime and DateTimeOffset, serialize to string directly.
+                DateTime dt => Value.ForString(dt.ToString("O")),
+                DateTimeOffset dto => Value.ForString(dto.ToString("O")),
+                IDictionary<string, object?> dict => Value.ForStruct(new Struct
+                {
+                    Fields = { dict.ToDictionary(kvp => kvp.Key, kvp => ConvertObjectToValue(kvp.Value)) },
+                }),
+                IEnumerable e => Value.ForList(e.Cast<object?>().Select(ConvertObjectToValue).ToArray()),
+
+                // Fallback: convert unlisted type to string.
+                _ => Value.ForString(obj.ToString() ?? string.Empty),
             };
+        }
+
+        internal static Value ConvertJValueToValue(JValue jv)
+        {
+            return jv.Type switch
+            {
+                JTokenType.Null => Value.ForNull(),
+                JTokenType.String => Value.ForString(jv.Value<string>() ?? string.Empty),
+                JTokenType.Boolean => Value.ForBool(jv.Value<bool>()),
+                JTokenType.Integer => Value.ForNumber(jv.Value<long>()),
+                JTokenType.Float => Value.ForNumber(jv.Value<double>()),
+                JTokenType.Date => Value.ForString($"dt:{jv.Value<DateTime>().ToString("O")}"),
+                _ => Value.ForString(jv.ToString()),
+            };
+        }
+
+        internal static object? ConvertValueToObject(Google.Protobuf.WellKnownTypes.Value value)
+        {
+            switch (value.KindCase)
+            {
+                case Google.Protobuf.WellKnownTypes.Value.KindOneofCase.NullValue:
+                    return null;
+                case Google.Protobuf.WellKnownTypes.Value.KindOneofCase.NumberValue:
+                    return value.NumberValue;
+                case Google.Protobuf.WellKnownTypes.Value.KindOneofCase.StringValue:
+                    return value.StringValue;
+                case Google.Protobuf.WellKnownTypes.Value.KindOneofCase.BoolValue:
+                    return value.BoolValue;
+                case Google.Protobuf.WellKnownTypes.Value.KindOneofCase.StructValue:
+                    return value.StructValue.Fields.ToDictionary(
+                        pair => pair.Key,
+                        pair => ConvertValueToObject(pair.Value));
+                case Google.Protobuf.WellKnownTypes.Value.KindOneofCase.ListValue:
+                    return value.ListValue.Values.Select(ConvertValueToObject).ToList();
+                default:
+                    // Fallback: serialize the whole value to JSON string
+                    return JsonConvert.SerializeObject(value);
+            }
         }
     }
 }

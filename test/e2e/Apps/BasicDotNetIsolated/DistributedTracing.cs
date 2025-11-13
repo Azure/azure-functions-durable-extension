@@ -13,13 +13,13 @@ public static class DistributedTracing
     public static async Task<string> RunOrchestrator(
         [OrchestrationTrigger] TaskOrchestrationContext context)
     {
-        string? activityTraceId = await context.CallActivityAsync<string>(nameof(GetDistributedTraceId));
+        string? activityTraceId = await context.CallActivityAsync<string>(nameof(GetDistributedTraceId), input: string.Empty);
 
         return activityTraceId;
     }
 
     [Function(nameof(GetDistributedTraceId))]
-    public static string? GetDistributedTraceId([ActivityTrigger] FunctionContext executionContext)
+    public static string? GetDistributedTraceId([ActivityTrigger]string input, FunctionContext executionContext)
     {
         return Activity.Current?.Id;
     }

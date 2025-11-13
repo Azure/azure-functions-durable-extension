@@ -2,11 +2,8 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System.Text;
-using Azure.Core;
 using Microsoft.Azure.Functions.Worker;
-using Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
 using Microsoft.Azure.Functions.Worker.Http;
-using Microsoft.DurableTask;
 using Microsoft.DurableTask.Client;
 using Microsoft.DurableTask.Entities;
 using Microsoft.Extensions.Logging;

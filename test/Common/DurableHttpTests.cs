@@ -109,7 +109,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     ""testToken"": ""dummy token"",
     ""options"": {
       ""authorityhost"": ""https://dummy.login.microsoftonline.com/"",
-      ""tenantid"": ""tenant_id""
+      ""tenantid"": ""tenant_id"",
+      ""clientid"": null
     }
   },
   ""AsynchronousPatternEnabled"": true
@@ -147,7 +148,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     ""resource"": ""dummy url"",
     ""options"": {
       ""authorityhost"": ""https://dummy.login.microsoftonline.com/"",
-      ""tenantid"": ""tenant_id""
+      ""tenantid"": ""tenant_id"",
+      ""clientid"": null
     }
    },
   ""asynchronousPatternEnabled"": true,
@@ -301,7 +303,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(HttpMethod.Get, durableHttpRequest.Method);
             Assert.Equal(new Uri("https://httpbin.org/get"), durableHttpRequest.Uri);
             Assert.NotNull(durableHttpRequest.Headers); // Headers should be an empty list
-            Assert.Empty(durableHttpRequest.Headers); 
+            Assert.Empty(durableHttpRequest.Headers);
             Assert.Null(durableHttpRequest.Content);
             Assert.False(durableHttpRequest.AsynchronousPatternEnabled);
             Assert.Null(durableHttpRequest.HttpRetryOptions);

@@ -21,6 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       SA_PASSWORD: ${{ secrets.SA_PASSWORD }}
+      FUNCTIONS_INPROC_NET8_ENABLED: "1"
 
     steps:
     - uses: actions/checkout@v4

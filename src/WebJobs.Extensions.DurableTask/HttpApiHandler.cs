@@ -63,6 +63,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private const string PollingInterval = "pollingInterval";
         private const string SuspendOperation = "suspend";
         private const string ResumeOperation = "resume";
+        private const string VersionParameter = "version";
 
         private const string EmptyEntityKeySymbol = "$";
 
@@ -887,12 +888,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         ExecutionId = Guid.NewGuid().ToString(),
                     };
 
+                    var version = queryNameValuePairs[VersionParameter] ?? this.config.Options.DefaultVersion;
+
                     // Create the ExecutionStartedEvent
                     ExecutionStartedEvent executionStartedEvent = new ExecutionStartedEvent(-1, json)
                     {
                         Name = functionName,
                         OrchestrationInstance = instance,
-                        Version = this.config.Options.DefaultVersion,
+                        Version = version,
                     };
 
                     string traceParent = GetHeaderValueFromHeaders("traceparent", request.Headers);
@@ -1012,22 +1015,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             DurableOrchestrationStatus status = await client.GetStatusAsync(instanceId);
             if (status == null)
             {
-                return request.CreateResponse(HttpStatusCode.NotFound);
+                return request.CreateResponse(
+                    HttpStatusCode.NotFound,
+                    $"No orchestration with instance ID \"${instanceId}\" found.");
             }
 
-            switch (status.RuntimeStatus)
+            if (status.RuntimeStatus != OrchestrationRuntimeStatus.Failed)
             {
-                case OrchestrationRuntimeStatus.Canceled:
-                case OrchestrationRuntimeStatus.Terminated:
-                case OrchestrationRuntimeStatus.Completed:
-                    return request.CreateResponse(HttpStatusCode.Gone);
+                return request.CreateResponse(
+                    HttpStatusCode.PreconditionFailed,
+                    $"This orchestration has status {status.RuntimeStatus}, but only orchestrations in the \"Failed\" state can be rewound.");
             }
 
             string reason = request.GetQueryNameValuePairs()["reason"];
 
+            try
+            {
 #pragma warning disable 0618
-            await client.RewindAsync(instanceId, reason);
+                await client.RewindAsync(instanceId, reason);
 #pragma warning restore 0618
+            }
+            catch (NotImplementedException e)
+            {
+                return request.CreateErrorResponse(HttpStatusCode.NotImplemented, "Rewind is not supported by the underlying storage provider.", e);
+            }
 
             return request.CreateResponse(HttpStatusCode.Accepted);
         }

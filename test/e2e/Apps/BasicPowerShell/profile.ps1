@@ -4,5 +4,6 @@
 #
 
 Import-Module -Name AzureFunctions.PowerShell.Durable.SDK -ErrorAction Stop
+Import-Module -Name "MyHelperModule"
 
 $ErrorActionPreference = "Stop"

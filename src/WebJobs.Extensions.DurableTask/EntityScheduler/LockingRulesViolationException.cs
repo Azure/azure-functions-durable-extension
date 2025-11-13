@@ -25,9 +25,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
         }
 
+#pragma warning disable SYSLIB0051 // Type or member is obsolete
         internal LockingRulesViolationException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
         }
+#pragma warning restore SYSLIB0051
     }
 }

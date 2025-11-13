@@ -18,10 +18,14 @@ public class PurgeInstancesTests
     }
 
     [Fact]
-    [Trait("PowerShell", "Skip")] // Test not yet implemented in PowerShell
+    [Trait("PowerShell", "Skip")] // Instance purging not supported in PowerShell
+    [Trait("Python-DTS", "Skip")] // Bug: https://github.com/Azure/azure-functions-durable-python/issues/563
+    [Trait("Node-DTS", "Skip")] // Bug: https://msazure.visualstudio.com/Antares/_workitems/edit/33910424/
     public async Task PurgeOrchestrationHistory_StartAndEnd_Succeeds()
     {
-        DateTime purgeStartTime = DateTime.MinValue;
+        // Previously this test used DateTime.MinValue - however, in Python on Linux specifically,
+        // there is an issue where 0000-00-01 is not a valid date and the API throws. Should probably fix this (?)
+        DateTime purgeStartTime = DateTime.UtcNow - TimeSpan.FromDays(365);
         DateTime purgeEndTime = DateTime.UtcNow;
         string queryParams = $"?purgeStartTime={purgeStartTime:o}&purgeEndTime={purgeEndTime:o}";
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("PurgeOrchestrationHistory", queryParams);
@@ -31,10 +35,14 @@ public class PurgeInstancesTests
     }
 
     [Fact]
-    [Trait("PowerShell", "Skip")] // Test not yet implemented in PowerShell
+    [Trait("PowerShell", "Skip")] // Instance purging not supported in PowerShell
+    [Trait("Python-DTS", "Skip")] // Bug: https://github.com/Azure/azure-functions-durable-python/issues/563
+    [Trait("Node-DTS", "Skip")] // Bug: https://msazure.visualstudio.com/Antares/_workitems/edit/33910424/
     public async Task PurgeOrchestrationHistory_Start_Succeeds()
     {
-        DateTime purgeStartTime = DateTime.MinValue;
+        // Previously this test used DateTime.MinValue - however, in Python on Linux specifically,
+        // there is an issue where 0000-00-01 is not a valid date and the API throws. Should probably fix this (?)
+        DateTime purgeStartTime = DateTime.UtcNow - TimeSpan.FromDays(365);
         DateTime purgeEndTime = DateTime.UtcNow;
         string queryParams = $"?purgeStartTime={purgeStartTime:o}";
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("PurgeOrchestrationHistory", queryParams);
@@ -45,10 +53,12 @@ public class PurgeInstancesTests
 
     [Fact]
     [Trait("DTS", "Skip")] // Skip this test as there is a bug with current DTS backend, the createdTimeTo couldn't be null. 
-    [Trait("PowerShell", "Skip")] // Test not yet implemented in PowerShell
+    [Trait("PowerShell", "Skip")] // Instance purging not supported in PowerShell
+    [Trait("Python", "Skip")] // Bug: purging without start time in Python: https://github.com/Azure/azure-functions-durable-python/issues/560
+    [Trait("Node", "Skip")] // Bug: purging without start time in Node: https://github.com/Azure/azure-functions-durable-js/issues/644
+    [Trait("Java", "Skip")] // Bug: purging without start time in Java: https://github.com/Azure/azure-functions-durable-js/issues/644
     public async Task PurgeOrchestrationHistory_End_Succeeds()
     {
-        DateTime purgeStartTime = DateTime.MinValue;
         DateTime purgeEndTime = DateTime.UtcNow;
         string queryParams = $"?purgeEndTime={purgeEndTime:o}";
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("PurgeOrchestrationHistory", queryParams);
@@ -59,11 +69,12 @@ public class PurgeInstancesTests
 
     [Fact]
     [Trait("DTS", "Skip")] // Skip this test as there is a bug with current DTS backend, the createdTimeTo couldn't be null. 
-    [Trait("PowerShell", "Skip")] // Test not yet implemented in PowerShell
+    [Trait("PowerShell", "Skip")] // Instance purging not supported in PowerShell
+    [Trait("Python", "Skip")] // Bug: purging without start time in Python: https://github.com/Azure/azure-functions-durable-python/issues/560
+    [Trait("Node", "Skip")] // Bug: purging without start time in Node: https://github.com/Azure/azure-functions-durable-js/issues/644
+    [Trait("Java", "Skip")] // Bug: purging without start time in Java: https://github.com/Azure/azure-functions-durable-js/issues/644
     public async Task PurgeOrchestrationHistory_NoBoundaries_Succeeds()
     {
-        DateTime purgeStartTime = DateTime.MinValue;
-        DateTime purgeEndTime = DateTime.UtcNow;
         string queryParams = $"";
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("PurgeOrchestrationHistory", queryParams);
         string actualMessage = await response.Content.ReadAsStringAsync();
@@ -73,7 +84,10 @@ public class PurgeInstancesTests
 
     [Fact]
     [Trait("DTS", "Skip")] // Skip this test as there is a bug with current DTS backend, the createdTimeTo couldn't be null. 
-    [Trait("PowerShell", "Skip")] // Test not yet implemented in PowerShell
+    [Trait("PowerShell", "Skip")] // Instance purging not supported in PowerShell
+    [Trait("Python", "Skip")] // Bug: purging without start time in Python: https://github.com/Azure/azure-functions-durable-python/issues/560
+    [Trait("Node", "Skip")] // Bug: purging without start time in Node: https://github.com/Azure/azure-functions-durable-js/issues/644
+    [Trait("Java", "Skip")] // Bug: purging without start time in Java: https://github.com/Azure/azure-functions-durable-js/issues/644
     public async Task PurgeOrchestrationHistoryAfterInvocation_Succeeds()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=HelloCities");
@@ -92,7 +106,10 @@ public class PurgeInstancesTests
 
     [Fact]
     [Trait("DTS", "Skip")] // Skip this test as there is a bug with current DTS backend, the createdTimeTo couldn't be null. 
-    [Trait("PowerShell", "Skip")] // Test not yet implemented in PowerShell
+    [Trait("PowerShell", "Skip")] // Instance purging not supported in PowerShell
+    [Trait("Python", "Skip")] // Bug: purging without start time in Python: https://github.com/Azure/azure-functions-durable-python/issues/560
+    [Trait("Node", "Skip")] // Bug: purging without start time in Node: https://github.com/Azure/azure-functions-durable-js/issues/644
+    [Trait("Java", "Skip")] // Bug: purging without start time in Java: https://github.com/Azure/azure-functions-durable-js/issues/644
     public async Task PurgeAfterPurge_ZeroRows()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=HelloCities");

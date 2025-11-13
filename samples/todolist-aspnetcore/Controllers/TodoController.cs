@@ -43,7 +43,7 @@ namespace TodoApi.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<TodoItem>>> GetTodoItem()
         {
-            return await _context.TodoItems.ToListAsync();
+            return await EntityFrameworkQueryableExtensions.ToListAsync(_context.TodoItems);
         }
 
         // GET: api/Todo/5

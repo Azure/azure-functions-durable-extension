@@ -47,8 +47,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             byte[] hashByteArray;
             using (HashAlgorithm hashAlgorithm = version == DeterministicGuidVersion.V5
-                ? (HashAlgorithm)SHA1.Create()
-                : MD5.Create())
+                ? (HashAlgorithm)SHA1.Create() /* CodeQL [SM02196] Suppressed: SHA1 is not used for cryptographic purposes here. The information being hashed is not sensitive,
+                                                  and the goal is to generate a deterministic Guid. We cannot update to SHA2-based algorithms without breaking
+                                                  customers' inflight orchestrations. */
+                : MD5.Create()) /* CodeQL [SM02196] Suppressed: MD5 is not used for cryptographic purposes here. The information being hashed is not sensitive,
+                                   and the goal is to generate a deterministic Guid. We cannot update to SHA2-based algorithms without breaking
+                                   customers' inflight orchestrations. */
             {
                 hashAlgorithm.TransformBlock(namespaceValueByteArray, 0, namespaceValueByteArray.Length, null, 0);
                 hashAlgorithm.TransformFinalBlock(nameByteArray, 0, nameByteArray.Length);

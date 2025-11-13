@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Threading;
@@ -1156,6 +1155,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (status == null)
             {
                 throw new ArgumentException($"An orchestrastion with the instanceId {instanceId} was not found.");
+            }
+
+            bool isInstaceNotCompleted = status.RuntimeStatus == OrchestrationRuntimeStatus.Running ||
+                                        status.RuntimeStatus == OrchestrationRuntimeStatus.Pending ||
+                                        status.RuntimeStatus == OrchestrationRuntimeStatus.Suspended;
+
+            if (isInstaceNotCompleted && !restartWithNewInstanceId)
+            {
+                throw new InvalidOperationException($"Instance '{instanceId}' cannot be restarted while it is in state '{status.RuntimeStatus}'. " +
+                    "Wait until it has completed, or restart with a new instance ID.");
             }
 
             return restartWithNewInstanceId ? await ((IDurableOrchestrationClient)this).StartNewAsync(orchestratorFunctionName: status.Name, status.Input)
