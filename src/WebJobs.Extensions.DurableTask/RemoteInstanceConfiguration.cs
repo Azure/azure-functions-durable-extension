@@ -6,7 +6,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// <summary>
     /// Configuration settings for RemoteOrchestratorContext in out-of-process mode, transmitted via gRPC.
     /// </summary>
-    public class RemoteOrchestratorConfiguration
+    public class RemoteInstanceConfiguration
     {
         /// <summary>
         /// Gets or sets the default number of milliseconds between async HTTP status poll requests.
@@ -14,10 +14,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public int HttpDefaultAsyncRequestSleepTimeMilliseconds { get; set; } = 30000;
 
         /// <summary>
-        /// Gets or sets whether or not to include the past history events in the orchestration request.
+        /// Gets or sets whether or not to include the instance state in the instance request.
         /// True by default.
         /// </summary>
-        public bool IncludePastEvents { get; set; } = true;
+        public bool IncludeState { get; set; } = true;
 
         /// <summary>
         /// Gets or sets whether or not the orchestration request is within an extended session.

@@ -111,10 +111,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             WorkItemMetadata workItemMetadata = dispatchContext.GetProperty<WorkItemMetadata>();
-            bool isExtendedSession = workItemMetadata.IsExtendedSession;
-            bool includePastEvents = workItemMetadata.IncludePastEvents;
+            var context = new RemoteOrchestratorContext(
+                runtimeState,
+                entityParameters,
+                this.Options,
+                workItemMetadata.IsExtendedSession,
+                workItemMetadata.IncludeState);
 
-            var context = new RemoteOrchestratorContext(runtimeState, entityParameters, this.Options, isExtendedSession, includePastEvents);
             bool workerRequiresHistory = false;
 
             var input = new TriggeredFunctionData
@@ -354,10 +357,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 isReplay: false);
 
             WorkItemMetadata workItemMetadata = dispatchContext.GetProperty<WorkItemMetadata>();
-            bool isExtendedSession = workItemMetadata.IsExtendedSession;
-            bool includeEntityState = workItemMetadata.IncludePastEvents;
+            var context = new RemoteEntityContext(
+                batchRequest,
+                this.Options,
+                workItemMetadata.IsExtendedSession,
+                workItemMetadata.IncludeState);
 
-            var context = new RemoteEntityContext(batchRequest, this.Options, isExtendedSession, includeEntityState);
             bool workerRequiresEntityState = false;
 
             var input = new TriggeredFunctionData

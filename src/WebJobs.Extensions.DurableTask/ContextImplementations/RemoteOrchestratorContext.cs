@@ -26,14 +26,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             this.runtimeState = runtimeState ?? throw new ArgumentNullException(nameof(runtimeState));
             this.EntityParameters = entityParameters;
-            this.Configurations = new RemoteOrchestratorConfiguration
+            this.Configurations = new RemoteInstanceConfiguration
             {
                 HttpDefaultAsyncRequestSleepTimeMilliseconds = options.HttpSettings.DefaultAsyncRequestSleepTimeMilliseconds,
             };
             if (options.ExtendedSessionsEnabled)
             {
                 this.Configurations.IsExtendedSession = isExtendedSession;
-                this.Configurations.IncludePastEvents = includePastEvents;
+                this.Configurations.IncludeState = includePastEvents;
                 this.Configurations.ExtendedSessionIdleTimeoutInSeconds = options.ExtendedSessionIdleTimeoutInSeconds;
             }
         }
@@ -51,7 +51,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         internal int UpperSchemaVersion { get; } = 4;
 
         [JsonProperty("configurations")]
-        public RemoteOrchestratorConfiguration Configurations { get; private set; }
+        public RemoteInstanceConfiguration Configurations { get; private set; }
 
         [JsonIgnore]
         internal bool OrchestratorCompleted { get; private set; }
