@@ -58,10 +58,6 @@ public static class FunctionsWorkerApplicationBuilderExtensions
         {
             builder.UseMiddleware<DurableTaskFunctionsMiddleware>();
         }
-        builder.Services.AddMemoryCache(options =>
-        {
-            options.ExpirationScanFrequency = TimeSpan.FromSeconds(5);
-        });
 
         builder.Services.TryAddSingleton<DurableFunctionExecutor>();
         builder.Services.TryAddSingleton<ExtendedSessionsCache>();

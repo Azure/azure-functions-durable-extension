@@ -114,7 +114,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             bool isExtendedSession = workItemMetadata.IsExtendedSession;
             bool includePastEvents = workItemMetadata.IncludePastEvents;
 
-            var context = new RemoteOrchestratorContext(runtimeState, entityParameters, this.extension.Options, isExtendedSession, includePastEvents);
+            var context = new RemoteOrchestratorContext(runtimeState, entityParameters, this.Options, isExtendedSession, includePastEvents);
             bool workerRequiresHistory = false;
 
             var input = new TriggeredFunctionData
@@ -353,12 +353,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 functionType: FunctionType.Entity,
                 isReplay: false);
 
-            bool extendedSession = dispatchContext.GetProperty<bool>("extendedSession");
-            bool includeEntityState = dispatchContext.GetProperty<bool>("includeEntityState");
+            WorkItemMetadata workItemMetadata = dispatchContext.GetProperty<WorkItemMetadata>();
+            bool isExtendedSession = workItemMetadata.IsExtendedSession;
+            bool includeEntityState = workItemMetadata.IncludePastEvents;
 
-            // The extendedSession property will be ignored if the middleware does not support extended sessions, but it is important to only set includeEntityState to false if extended sessions are enabled.
-            // Otherwise the entity state will not be added to the EntityBatchRequest by the EntityTriggerAttributeBindingProvider, even if the middleware does not support extended sessions and needs the entity's state.
-            var context = new RemoteEntityContext(batchRequest, this.Options, extendedSession, !this.Options.ExtendedSessionsEnabled || includeEntityState);
+            var context = new RemoteEntityContext(batchRequest, this.Options, isExtendedSession, includeEntityState);
+            bool workerRequiresEntityState = false;
 
             var input = new TriggeredFunctionData
             {
@@ -386,6 +386,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                     byte[] triggerReturnValueBytes = Convert.FromBase64String(triggerReturnValue);
                     P.EntityBatchResult response = P.EntityBatchResult.Parser.ParseFrom(triggerReturnValueBytes);
+                    workerRequiresEntityState = response.RequiresState;
                     context.Result = response.ToEntityBatchResult();
 
                     context.ThrowIfFailed();
@@ -454,6 +455,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
 
                 return;
+            }
+
+            if (workerRequiresEntityState)
+            {
+                throw new SessionAbortedException("The worker has since ended the extended session and needs an entity state to execute the request.");
             }
 
             EntityBatchResult batchResult = context.Result

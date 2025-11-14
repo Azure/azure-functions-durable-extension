@@ -4,6 +4,7 @@
 using System;
 using System.Threading.Tasks;
 using Microsoft.DurableTask.Entities;
+using Microsoft.DurableTask.Worker;
 using Microsoft.DurableTask.Worker.Grpc;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
@@ -20,13 +21,13 @@ public sealed class TaskEntityDispatcher
 {
     private readonly string request;
     private readonly IServiceProvider services;
-    private readonly IMemoryCache entityStates;
+    private readonly ExtendedSessionsCache extendedSessionsCache;
 
-    internal TaskEntityDispatcher(string request, IServiceProvider services, IMemoryCache entityStates)
+    internal TaskEntityDispatcher(string request, IServiceProvider services, ExtendedSessionsCache extendedSessionsCache)
     {
         this.request = request;
         this.services = services;
-        this.entityStates = entityStates;
+        this.extendedSessionsCache = extendedSessionsCache;
     }
 
     internal string Result { get; private set; } = string.Empty;
@@ -43,7 +44,7 @@ public sealed class TaskEntityDispatcher
             throw new ArgumentNullException(nameof(entity));
         }
 
-        this.Result = await GrpcEntityRunner.LoadAndRunAsync(this.request, entity, this.entityStates, this.services);
+        this.Result = await GrpcEntityRunner.LoadAndRunAsync(this.request, entity, this.extendedSessionsCache, this.services);
     }
 
     /// <summary>

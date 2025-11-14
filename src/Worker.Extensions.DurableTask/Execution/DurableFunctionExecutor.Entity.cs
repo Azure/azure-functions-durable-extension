@@ -37,7 +37,7 @@ internal partial class DurableFunctionExecutor
             return;
         }
 
-        TaskEntityDispatcher dispatcher = new(encodedEntityBatch, context.InstanceServices);
+        TaskEntityDispatcher dispatcher = new(encodedEntityBatch, context.InstanceServices, extendedSessionsCache);
         triggerInputData.Value = dispatcher;
         await inner.ExecuteAsync(context);
         context.GetInvocationResult().Value = dispatcher.Result;
