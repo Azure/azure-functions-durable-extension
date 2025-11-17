@@ -16,12 +16,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage
     /// </summary>
     public class AzureStorageScalabilityProviderFactory : IScalabilityProviderFactory
     {
-        private const string LoggerName = "Host.Triggers.DurableTask.AzureStorage";
+        private const string LoggerName = "Triggers.DurableTask.AzureStorage";
         internal const string ProviderName = "AzureStorage";
 
         private readonly IStorageServiceClientProviderFactory clientProviderFactory;
         private readonly INameResolver nameResolver;
         private readonly ILoggerFactory loggerFactory;
+        private readonly ILogger logger;
         private AzureStorageScalabilityProvider? defaultStorageProvider;
 
         /// <summary>
@@ -39,6 +40,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage
             this.clientProviderFactory = clientProviderFactory ?? throw new ArgumentNullException(nameof(clientProviderFactory));
             this.nameResolver = nameResolver ?? throw new ArgumentNullException(nameof(nameResolver));
             this.loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
+            this.logger = this.loggerFactory.CreateLogger(LoggerName);
 
             // Default connection name for Azure Storage
             this.DefaultConnectionName = "AzureWebJobsStorage";
@@ -64,8 +66,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage
         {
             if (this.defaultStorageProvider == null)
             {
-                ILogger logger = this.loggerFactory.CreateLogger(LoggerName);
-
                 // Create StorageAccountClientProvider without credential (connection string)
                 var storageAccountClientProvider = this.clientProviderFactory.GetClientProvider(
                     this.DefaultConnectionName,
@@ -74,7 +74,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage
                 this.defaultStorageProvider = new AzureStorageScalabilityProvider(
                     storageAccountClientProvider,
                     this.DefaultConnectionName,
-                    logger);
+                    this.logger);
 
                 // Set default max concurrent values
                 this.defaultStorageProvider.MaxConcurrentTaskOrchestrationWorkItems = 10;
@@ -95,8 +95,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage
         /// </returns>
         public ScalabilityProvider GetScalabilityProvider(DurableTaskMetadata metadata, TriggerMetadata triggerMetadata)
         {
-            ILogger logger = this.loggerFactory.CreateLogger(LoggerName);
-
             // Validate Azure Storage specific options if metadata is present
             if (metadata != null)
             {
@@ -119,7 +117,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage
             var provider = new AzureStorageScalabilityProvider(
                 storageAccountClientProvider,
                 connectionName,
-                logger);
+                this.logger);
 
             // Extract max concurrent values from metadata
             provider.MaxConcurrentTaskOrchestrationWorkItems = metadata?.MaxConcurrentOrchestratorFunctions ?? 10;

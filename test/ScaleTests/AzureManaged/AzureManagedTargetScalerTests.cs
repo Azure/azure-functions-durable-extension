@@ -46,7 +46,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
             var connectionString = TestHelpers.GetAzureManagedConnectionString();
             var options = AzureManagedOrchestrationServiceOptions.FromConnectionString(connectionString);
             options.TaskHubName = taskHubName;
- 
+
             // This test only cares about max concurrent orchestrations
             options.MaxConcurrentOrchestrationWorkItems = 2;
             options.MaxConcurrentActivityWorkItems = 2;

@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.DurableTask.AzureManagedBackend;
 using Microsoft.DurableTask.AzureManagedBackend.Metrics;
+using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureManaged
 {
@@ -13,11 +14,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureManaged
     {
         private readonly AzureManagedOrchestrationService service;
         private readonly TargetScalerDescriptor descriptor;
+        private readonly ILogger logger;
 
-        public AzureManagedTargetScaler(AzureManagedOrchestrationService service, string functionId)
+        public AzureManagedTargetScaler(AzureManagedOrchestrationService service, string functionId, ILogger logger)
         {
             this.service = service;
             this.descriptor = new TargetScalerDescriptor(functionId);
+            this.logger = logger;
         }
 
         public TargetScalerDescriptor TargetScalerDescriptor => this.descriptor;
@@ -27,6 +30,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureManaged
             TaskHubMetrics metrics = await this.service.GetTaskHubMetricsAsync(default);
             if (metrics is null)
             {
+                this.logger?.LogWarning("Task hub metrics returned null from Azure Managed backend. This may indicate the DTS emulator is being used which may not support metrics. Returning 0 worker count.");
                 return new TargetScalerResult { TargetWorkerCount = 0 };
             }
 

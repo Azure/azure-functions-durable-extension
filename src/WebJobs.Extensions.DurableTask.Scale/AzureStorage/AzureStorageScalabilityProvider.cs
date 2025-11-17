@@ -79,8 +79,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage
             {
                 if (this.singletonDurableTaskMetricsProvider == null)
                 {
-                    // This is only called by the ScaleController, it doesn't run in the Functions Host process.
-                    // Use the StorageAccountClientProvider that was created with the credential in the actory
                     this.singletonDurableTaskMetricsProvider = this.GetMetricsProvider(
                         hubName,
                         this.storageAccountClientProvider,

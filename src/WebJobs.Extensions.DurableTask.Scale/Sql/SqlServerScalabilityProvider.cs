@@ -91,7 +91,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Sql
             {
                 if (this.singletonSqlMetricsProvider == null)
                 {
-                    // This is only called by the ScaleController, it doesn't run in the Functions Host process.
                     this.singletonSqlMetricsProvider = this.GetMetricsProvider(
                         hubName,
                         this.service,

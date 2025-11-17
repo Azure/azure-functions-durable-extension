@@ -43,9 +43,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureManaged
 
         private string GetValue(string name)
         {
-            return this.builder.TryGetValue(name, out object value)
-                ? value as string
-                : null;
+            // Case-insensitive lookup
+            foreach (string key in this.builder.Keys)
+            {
+                if (string.Equals(key, name, System.StringComparison.OrdinalIgnoreCase))
+                {
+                    return this.builder.TryGetValue(key, out object value)
+                        ? value as string
+                        : null;
+                }
+            }
+
+            return null;
         }
     }
 }

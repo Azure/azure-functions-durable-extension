@@ -73,7 +73,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureManaged
         {
             // Create a target scaler that uses the orchestration service's metrics endpoint.
             // All target scalers share the same AzureManagedOrchestrationService in the same task hub.
-            targetScaler = new AzureManagedTargetScaler(this.orchestrationService, functionId);
+            targetScaler = new AzureManagedTargetScaler(this.orchestrationService, functionId, this.logger);
             return true;
         }
 

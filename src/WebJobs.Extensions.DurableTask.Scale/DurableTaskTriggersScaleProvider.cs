@@ -14,6 +14,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
     {
         private readonly IScaleMonitor monitor;
         private readonly ITargetScaler targetScaler;
+        const string defaultConnectionName = "connectionName";
+        const string connectionNameOverride = "connectionStringName";
 
         public DurableTaskTriggersScaleProvider(
             INameResolver nameResolver,
@@ -79,13 +81,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
             }
 
             // Try connectionName first
-            if (storageProvider.TryGetValue("connectionName", out object? value1) && value1 is string s1 && !string.IsNullOrWhiteSpace(s1))
+            if (storageProvider.TryGetValue(defaultConnectionName, out object? value1) && value1 is string s1 && !string.IsNullOrWhiteSpace(s1))
             {
                 return s1;
             }
 
             // Try connectionStringName
-            if (storageProvider.TryGetValue("connectionStringName", out object? value2) && value2 is string s2 && !string.IsNullOrWhiteSpace(s2))
+            if (storageProvider.TryGetValue(connectionNameOverride, out object? value2) && value2 is string s2 && !string.IsNullOrWhiteSpace(s2))
             {
                 return s2;
             }

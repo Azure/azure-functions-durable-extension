@@ -15,12 +15,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Sql
     /// </summary>
     public class SqlServerScalabilityProviderFactory : IScalabilityProviderFactory
     {
-        private const string LoggerName = "Host.Triggers.DurableTask.SqlServer";
+        private const string LoggerName = "Triggers.DurableTask.SqlServer";
         internal const string ProviderName = "mssql";
 
         private readonly IConfiguration configuration;
         private readonly INameResolver nameResolver;
         private readonly ILoggerFactory loggerFactory;
+        private readonly ILogger logger;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SqlServerScalabilityProviderFactory"/> class.
@@ -37,7 +38,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Sql
             this.configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             this.nameResolver = nameResolver ?? throw new ArgumentNullException(nameof(nameResolver));
             this.loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
-
+            this.logger = this.loggerFactory.CreateLogger(LoggerName);
             this.DefaultConnectionName = "SQLDB_Connection";
         }
 
@@ -70,12 +71,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Sql
         /// <returns>A configured SQL Server scalability provider.</returns>
         public ScalabilityProvider GetScalabilityProvider(DurableTaskMetadata metadata, TriggerMetadata triggerMetadata)
         {
-            ILogger logger = this.loggerFactory.CreateLogger(LoggerName);
-
             // Validate SQL Server specific metadata if present
             if (metadata != null)
             {
-                this.ValidateSqlServerMetadata(metadata, logger);
+                this.ValidateSqlServerMetadata(metadata, this.logger);
             }
 
             // Resolve connection name: prioritize metadata, fallback to default
@@ -90,13 +89,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Sql
             var sqlOrchestrationService = this.CreateSqlOrchestrationService(
                 connectionName,
                 taskHubName,
-                logger,
+                this.logger,
                 metadata);
 
             var provider = new SqlServerScalabilityProvider(
                 sqlOrchestrationService,
                 connectionName,
-                logger);
+                this.logger);
 
             return provider;
         }

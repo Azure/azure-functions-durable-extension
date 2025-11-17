@@ -19,7 +19,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureManaged
     /// </summary>
     public class AzureManagedScalabilityProviderFactory : IScalabilityProviderFactory
     {
-        private const string LoggerName = "Host.Triggers.DurableTask.AzureManaged";
+        private const string LoggerName = "Triggers.DurableTask.AzureManaged";
         internal const string ProviderName = "AzureManaged";
 
         private readonly Dictionary<(string, string?, string?), AzureManagedScalabilityProvider> cachedProviders = new Dictionary<(string, string?, string?), AzureManagedScalabilityProvider>();
