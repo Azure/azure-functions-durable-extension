@@ -102,7 +102,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage
             }
 
             // Extract TokenCredential from triggerMetadata if present (for Managed Identity)
-            var tokenCredential = ExtractTokenCredential(triggerMetadata, logger);
+            var tokenCredential = ExtractTokenCredential(triggerMetadata, this.logger);
 
             // Resolve connection name: prioritize metadata, fallback to default
             string? rawConnectionName = TriggerMetadataExtensions.ResolveConnectionName(metadata?.StorageProvider);
