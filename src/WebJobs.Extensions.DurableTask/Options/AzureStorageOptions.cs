@@ -220,6 +220,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// to a client event like a termination request or an external event, which gives the framework another opportunity to update the state of
         /// the orchestrator in the "Instances table". To force a replay after enabling this configuration, just send any external event to the affected instanceId.
         /// </remarks>
+        [Obsolete("Alternative recovery mechanisms to automatically synchronize instance and history table state have been implemented")]
         public bool AllowReplayingTerminalInstances { get; set; } = false;
 
         /// <summary>
