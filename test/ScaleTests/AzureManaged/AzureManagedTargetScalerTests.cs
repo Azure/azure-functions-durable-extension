@@ -133,16 +133,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
             Assert.NotNull(targetScaler);
             Assert.IsType<AzureManagedTargetScaler>(targetScaler);
 
-            // Check if orchestrations are still there after delay for best practice.
-            var verifyQuery = new OrchestrationQuery { RuntimeStatus = status };
-            var verifyResult = await service.GetOrchestrationWithQueryAsync(verifyQuery, CancellationToken.None);
-            int verifyCount = verifyResult.OrchestrationState?.Count ?? 0;
-            this.output.WriteLine($"After delay, found {verifyCount} orchestrations via query");
-
-            // Try to get metrics directly from the service used by target scaler
-            var azureManagedTargetScaler = targetScaler as AzureManagedTargetScaler;
-
-            Assert.NotNull(azureManagedTargetScaler);
+            // Wait for metrics to be available - DTS emulator may need additional time
+            await Task.Delay(2000);
 
             // Get scale result from TargetScaler
             TargetScalerResult scalerResult = await targetScaler.GetScaleResultAsync(new TargetScalerContext());
