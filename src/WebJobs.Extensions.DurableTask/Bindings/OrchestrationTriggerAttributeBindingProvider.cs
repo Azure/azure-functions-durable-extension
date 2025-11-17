@@ -13,7 +13,9 @@ using Microsoft.Azure.WebJobs.Host.Triggers;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using static Microsoft.Azure.WebJobs.Extensions.DurableTask.OutOfProcOrchestrationShim;
+#pragma warning disable CS8981 // The type name only contains lower-cased ascii characters
 using proto = Google.Protobuf.WellKnownTypes;
+#pragma warning restore CS8981
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
