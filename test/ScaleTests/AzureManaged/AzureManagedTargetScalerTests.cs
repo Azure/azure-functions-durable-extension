@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
@@ -131,6 +132,46 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
             Assert.True(targetScalerCreated);
             Assert.NotNull(targetScaler);
             Assert.IsType<AzureManagedTargetScaler>(targetScaler);
+
+            // Debug: Check if orchestrations are still there after delay
+            var verifyQuery = new OrchestrationQuery { RuntimeStatus = status };
+            var verifyResult = await service.GetOrchestrationWithQueryAsync(verifyQuery, CancellationToken.None);
+            int verifyCount = verifyResult.OrchestrationState?.Count ?? 0;
+            this.output.WriteLine($"After delay, found {verifyCount} orchestrations via query");
+
+            // Debug: Try to get metrics directly from the service used by target scaler
+            var azureManagedTargetScaler = targetScaler as AzureManagedTargetScaler;
+            if (azureManagedTargetScaler != null)
+            {
+                // Use reflection to access the private service field for debugging
+                var serviceField = typeof(AzureManagedTargetScaler).GetField("service", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                if (serviceField != null)
+                {
+                    var targetService = serviceField.GetValue(azureManagedTargetScaler) as AzureManagedOrchestrationService;
+                    if (targetService != null)
+                    {
+                        this.output.WriteLine($"Target service MaxConcurrentTaskOrchestrationWorkItems: {targetService.MaxConcurrentTaskOrchestrationWorkItems}");
+                        try
+                        {
+                            var directMetrics = await targetService.GetTaskHubMetricsAsync(default);
+                            if (directMetrics != null)
+                            {
+                                this.output.WriteLine($"Direct metrics - OrchestratorWorkItems: Pending={directMetrics.OrchestratorWorkItems?.PendingCount ?? -1}, Active={directMetrics.OrchestratorWorkItems?.ActiveCount ?? -1}");
+                                this.output.WriteLine($"Direct metrics - ActivityWorkItems: Pending={directMetrics.ActivityWorkItems?.PendingCount ?? -1}, Active={directMetrics.ActivityWorkItems?.ActiveCount ?? -1}");
+                                this.output.WriteLine($"Direct metrics - EntityWorkItems: Pending={directMetrics.EntityWorkItems?.PendingCount ?? -1}, Active={directMetrics.EntityWorkItems?.ActiveCount ?? -1}");
+                            }
+                            else
+                            {
+                                this.output.WriteLine("Direct metrics returned NULL - DTS emulator may not support GetTaskHubMetricsAsync");
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            this.output.WriteLine($"Exception getting direct metrics: {ex.Message}");
+                        }
+                    }
+                }
+            }
 
             // Get scale result from TargetScaler
             TargetScalerResult scalerResult = await targetScaler.GetScaleResultAsync(new TargetScalerContext());
