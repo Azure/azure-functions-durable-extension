@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
@@ -36,7 +35,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
 
         /// <summary>
         /// Scenario: Target scaler calculates correct worker count based on pending orchestrations.
-        /// Validates that with 20 pending orchestrations and MaxConcurrentOrchestrators=2, 
+        /// Validates that with 20 pending orchestrations and MaxConcurrentOrchestrators=2,
         /// the scaler returns 10 workers (20/2 = 10).
         /// Tests the complete flow: create orchestrations -> set concurrency limits -> verify scaling calculation.
         /// </summary>

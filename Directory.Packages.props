@@ -31,7 +31,7 @@
     <PackageVersion Include="Microsoft.DurableTask.Worker.Grpc" Version="1.17.1" />
     <PackageVersion Include="Microsoft.DurableTask.Abstractions" Version="1.17.1" />
     <PackageVersion Include="Microsoft.DurableTask.Analyzers" Version="0.1.0" />
-    <PackageVersion Include="Microsoft.DurableTask.AzureManagedBackend" Version="0.4.3-alpha" />
+    <PackageVersion Include="Microsoft.DurableTask.AzureManagedBackend" Version="1.0.0" />
     <PackageVersion Include="Microsoft.DurableTask.SqlServer" Version="1.5.2" />
     <PackageVersion Include="Microsoft.Data.SqlClient" Version="5.1.2" />
     <PackageVersion Include="Microsoft.Extensions.Azure" Version="1.7.0" />
@@ -59,7 +59,7 @@
     <PackageVersion Include="Microsoft.Azure.DurableTask.Redis" Version="0.1.9-alpha" />
     <PackageVersion Include="Microsoft.Azure.Functions.Worker" Version="2.2.0" />
     <PackageVersion Include="Microsoft.Azure.Functions.Worker.ApplicationInsights" Version="2.0.0" />
-    <PackageVersion Include="Microsoft.Azure.Functions.Worker.Extensions.DurableTask.AzureManaged" Version="0.4.2-alpha" />
+    <PackageVersion Include="Microsoft.Azure.Functions.Worker.Extensions.DurableTask.AzureManaged" Version="1.0.0" />
     <PackageVersion Include="Microsoft.Azure.Functions.Worker.Extensions.DurableTask.SqlServer" Version="1.5.2" />
     <PackageVersion Include="Microsoft.Azure.Functions.Worker.Extensions.Http" Version="3.3.0" />
     <PackageVersion Include="Microsoft.Azure.Functions.Worker.Extensions.Http.AspNetCore" Version="2.0.2" />

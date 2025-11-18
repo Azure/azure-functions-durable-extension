@@ -8,8 +8,6 @@ using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.DurableTask.AzureManagedBackend;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using Newtonsoft.Json.Linq;
 
 #nullable enable
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureManaged
@@ -93,20 +91,36 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureManaged
         {
             // Resolve connection name: prioritize metadata, fallback to default
             string? rawConnectionName = TriggerMetadataExtensions.ResolveConnectionName(metadata?.StorageProvider);
-            string resolvedName = rawConnectionName != null
-                ? this.nameResolver.Resolve(rawConnectionName)
-                : this.DefaultConnectionName;
+            string connectionName = rawConnectionName ?? this.DefaultConnectionName;
 
-            // Try standard configuration sources
-            string? connectionString =
-                this.configuration.GetConnectionString(resolvedName) ??
-                this.configuration[resolvedName] ??
-                Environment.GetEnvironmentVariable(resolvedName);
+            string resolvedValue = this.nameResolver.Resolve(connectionName);
+
+            // nameResolver.Resolve() may return either:
+            // 1. The connection name (if it's an app setting name like "MyConnection")
+            // 2. The connection string value itself (if it's already resolved or is an environment variable)
+            // Check if resolvedValue looks like a connection string (contains "=" which is typical for connection strings)
+            // If it does, use it directly; otherwise, treat it as a connection name and look it up
+            string? connectionString = null;
+
+            if (!string.IsNullOrEmpty(resolvedValue) && resolvedValue.Contains("="))
+            {
+                // resolvedValue is already a connection string
+                connectionString = resolvedValue;
+            }
+            else
+            {
+                // resolvedValue is a connection name, look it up
+                connectionName = resolvedValue;
+                connectionString =
+                    this.configuration.GetConnectionString(resolvedValue) ??
+                    this.configuration[resolvedValue] ??
+                    Environment.GetEnvironmentVariable(resolvedValue);
+            }
 
             if (string.IsNullOrEmpty(connectionString))
             {
                 throw new InvalidOperationException(
-                    $"No valid connection string found for '{resolvedName}'. " +
+                    $"No valid connection string found for '{resolvedValue}'. " +
                     $"Please ensure it is defined in app settings, connection strings, or environment variables.");
             }
 
@@ -116,7 +130,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureManaged
             string taskHubName = metadata?.TaskHubName ?? azureManagedConnectionString.TaskHubName;
 
             // Include client ID in cache key to handle managed identity changes
-            (string, string?, string?) cacheKey = (resolvedName, taskHubName, azureManagedConnectionString.ClientId);
+            // Use the original connection name (rawConnectionName or default) for the cache key, not the connection string value
+            (string, string?, string?) cacheKey = (connectionName, taskHubName, azureManagedConnectionString.ClientId);
 
             this.logger.LogDebug(
                 "Getting durability provider for connection '{Connection}', task hub '{TaskHub}', and client ID '{ClientId}'...",
@@ -149,19 +164,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureManaged
                     {
                         try
                         {
-                            TokenCredential tokenCredential = getTokenCredential(resolvedName);
+                            TokenCredential tokenCredential = getTokenCredential(connectionName);
 
                             if (tokenCredential == null)
                             {
                                 this.logger.LogWarning(
                                     "Token credential retrieved from trigger metadata is null for connection '{Connection}'.",
-                                    resolvedName);
+                                    connectionName);
                             }
                             else
                             {
                                 // Override the credential from connection string
                                 options.TokenCredential = tokenCredential;
-                                this.logger.LogInformation("Retrieved token credential from trigger metadata for connection '{Connection}'", resolvedName);
+                                this.logger.LogInformation("Retrieved token credential from trigger metadata for connection '{Connection}'", connectionName);
                             }
                         }
                         catch (Exception ex)
@@ -169,21 +184,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureManaged
                             this.logger.LogWarning(
                                 ex,
                                 "Failed to get token credential from trigger metadata for connection '{Connection}'",
-                                resolvedName);
+                                connectionName);
                         }
                     }
                     else
                     {
                         this.logger.LogWarning(
                             "Token credential function pointer in trigger metadata is not of expected type for connection '{Connection}'",
-                            resolvedName);
+                            connectionName);
                     }
                 }
                 else
                 {
                     this.logger.LogInformation(
                         "No trigger metadata provided or trigger metadata does not contain 'GetAzureManagedTokenCredential', " +
-                        "using the token credential built from connection string for connection '{Connection}'.", resolvedName);
+                        "using the token credential built from connection string for connection '{Connection}'.", connectionName);
                 }
 
                 // Set task hub name if configured
@@ -210,7 +225,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureManaged
                     cacheKey.Item3 ?? "null");
 
                 AzureManagedOrchestrationService service = new AzureManagedOrchestrationService(options, this.loggerFactory);
-                AzureManagedScalabilityProvider provider = new AzureManagedScalabilityProvider(service, resolvedName, this.logger);
+                AzureManagedScalabilityProvider provider = new AzureManagedScalabilityProvider(service, connectionName, this.logger);
 
                 // Extract max concurrent values from trigger metadata (from Scale Controller payload)
                 // Default: 10 times the number of processors on the current machine

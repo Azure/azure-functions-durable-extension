@@ -41,11 +41,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
             this.nameResolver = new SimpleNameResolver();
         }
 
-        private class SimpleNameResolver : INameResolver
-        {
-            public string Resolve(string name) => name;
-        }
-
         /// <summary>
         /// Scenario: Creating factory with valid parameters.
         /// Validates that factory can be instantiated with proper configuration.
@@ -66,6 +61,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
             // Assert
             Assert.NotNull(factory);
             Assert.Equal("AzureManaged", factory.Name);
+
             // DefaultConnectionName is now hardcoded, not from options
             Assert.Equal("DURABLE_TASK_SCHEDULER_CONNECTION_STRING", factory.DefaultConnectionName);
         }
@@ -173,6 +169,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
             Assert.IsType<AzureManagedScalabilityProvider>(provider);
             var azureProvider = (AzureManagedScalabilityProvider)provider;
             Assert.Equal("v3-dtsConnectionMI", azureProvider.ConnectionName);
+
             // TriggerMetadata values (15, 25) now take priority over options (10, 20)
             Assert.Equal(15, azureProvider.MaxConcurrentTaskOrchestrationWorkItems);
             Assert.Equal(25, azureProvider.MaxConcurrentTaskActivityWorkItems);
@@ -249,7 +246,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
             configBuilder.AddInMemoryCollection(new Dictionary<string, string>
             {
                 // Use the hardcoded default connection name
-                { "DURABLE_TASK_SCHEDULER_CONNECTION_STRING", testConnectionString }
+                { "DURABLE_TASK_SCHEDULER_CONNECTION_STRING", testConnectionString },
             });
             var config = configBuilder.Build();
 
@@ -275,7 +272,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
             configBuilder.AddInMemoryCollection(new Dictionary<string, string>
             {
                 // Use the hardcoded default connection name with TaskHub in connection string
-                { "DURABLE_TASK_SCHEDULER_CONNECTION_STRING", "Endpoint=https://test.westus.durabletask.io;Authentication=DefaultAzure;TaskHub=MyTaskHub" }
+                { "DURABLE_TASK_SCHEDULER_CONNECTION_STRING", "Endpoint=https://test.westus.durabletask.io;Authentication=DefaultAzure;TaskHub=MyTaskHub" },
             });
             var config = configBuilder.Build();
 

@@ -3,11 +3,9 @@
 #nullable enable
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage
 {
