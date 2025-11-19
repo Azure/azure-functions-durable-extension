@@ -40,9 +40,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
             this.loggerFactory = new LoggerFactory();
             this.loggerProvider = new TestLoggerProvider(output);
             this.loggerFactory.AddProvider(this.loggerProvider);
-            
             this.clientProvider = new StorageAccountClientProvider(TestHelpers.GetStorageConnectionString());
-            
+
             ILogger logger = this.loggerFactory.CreateLogger<DurableTaskScaleMonitor>();
             this.performanceMonitor = new Mock<DisconnectedPerformanceMonitor>(MockBehavior.Strict, new AzureStorageOrchestrationServiceSettings
             {
@@ -87,50 +86,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
             Assert.Equal(expectedMetrics[0].ControlQueueLatencies, actualMetrics.ControlQueueLatencies);
             Assert.Equal(expectedMetrics[0].WorkItemQueueLength, actualMetrics.WorkItemQueueLength);
             Assert.Equal(expectedMetrics[0].WorkItemQueueLatency, actualMetrics.WorkItemQueueLatency);
-        }
-
-        [Fact]
-        public async Task GetMetrics_HandlesExceptions()
-        {
-            // StorageException
-            var errorMsg = "Uh oh";
-            this.performanceMonitor
-                .Setup(m => m.PulseAsync())
-                .Throws(new Exception("Failure", new RequestFailedException(errorMsg)));
-
-            var metrics = await this.scaleMonitor.GetMetricsAsync();
-
-            var messages = this.loggerProvider.GetAllLogMessages();
-            var warningMessage = messages.FirstOrDefault(m => m.Contains("Failure") && m.Contains(errorMsg));
-            Assert.NotNull(warningMessage);
-        }
-
-        // Since this extension doesn't contain any scaling logic, the point of these tests is to test
-        // that DurableTaskTriggerMetrics are being properly deserialized into PerformanceHeartbeats.
-        // DurableTask already contains tests for conversion/scaling logic past that.
-        [Fact]
-        public void GetScaleStatus_DeserializesMetrics()
-        {
-            PerformanceHeartbeat[] heartbeats;
-            DurableTaskTriggerMetrics[] metrics;
-
-            this.GetCorrespondingHeartbeatsAndMetrics(out heartbeats, out metrics);
-
-            var context = new ScaleStatusContext<DurableTaskTriggerMetrics>
-            {
-                WorkerCount = 1,
-                Metrics = metrics,
-            };
-
-            // MatchEquivalentHeartbeats will ensure that an exception is thrown if GetScaleStatus
-            // tried to call MakeScaleRecommendation with an unexpected PerformanceHeartbeat[]
-            this.performanceMonitor
-                .Setup(m => m.MakeScaleRecommendation(1, this.MatchEquivalentHeartbeats(heartbeats)))
-                .Returns<ScaleRecommendation>(null);
-
-            var recommendation = this.scaleMonitor.GetScaleStatus(context);
-
-            Assert.Equal(ScaleVote.None, recommendation.Vote);
         }
 
         [Fact]

@@ -6,7 +6,6 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
 {
-
     /// <summary>
     /// Simple test implementation of IWebJobsBuilder that wraps a ServiceCollection.
     /// This allows us to test AddDurableTask() without needing a full HostBuilder.

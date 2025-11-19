@@ -107,22 +107,33 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Sql
             DurableTaskMetadata? metadata = null)
         {
             // Resolve connection name first (handles %% wrapping)
-            string resolvedConnectionName = this.nameResolver.Resolve(connectionName);
+            string resolvedValue = this.nameResolver.Resolve(connectionName);
 
-            // Try to get connection string from configuration (app settings)
-            string? connectionString = this.configuration.GetConnectionString(resolvedConnectionName)
-                                   ?? this.configuration[resolvedConnectionName];
+            // nameResolver.Resolve() may return either:
+            // 1. The connection name (if it's an app setting name like "MyConnection")
+            // 2. The connection string value itself (if it's already resolved or is an environment variable)
+            // Check if resolvedValue looks like a connection string (contains "=" which is typical for connection strings)
+            // If it does, use it directly; otherwise, treat it as a connection name and look it up
+            string? connectionString = null;
 
-            // Fallback to environment variable (matching old implementation behavior)
-            if (string.IsNullOrEmpty(connectionString))
+            if (!string.IsNullOrEmpty(resolvedValue) && resolvedValue.Contains("="))
             {
-                connectionString = Environment.GetEnvironmentVariable(resolvedConnectionName) ?? string.Empty;
+                // resolvedValue is already a connection string
+                connectionString = resolvedValue;
+            }
+            else
+            {
+                // resolvedValue is a connection name, look it up
+                connectionString =
+                    this.configuration.GetConnectionString(resolvedValue) ??
+                    this.configuration[resolvedValue] ??
+                    Environment.GetEnvironmentVariable(resolvedValue);
             }
 
             if (string.IsNullOrEmpty(connectionString))
             {
                 throw new InvalidOperationException(
-                    $"No SQL connection string configuration was found for the app setting or environment variable named '{resolvedConnectionName}'.");
+                    $"No SQL connection string configuration was found for the app setting or environment variable named '{resolvedValue}'.");
             }
 
             // Create SQL Server orchestration service settings - following durabletask-mssql pattern
