@@ -6,7 +6,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Net;
 using System.Net.Http;
 using System.Reflection;
 using System.Text;
@@ -22,11 +21,8 @@ using Microsoft.Azure.WebJobs.Description;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Grpc;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage;
-using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.Host.Config;
 using Microsoft.Azure.WebJobs.Host.Executors;
-using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Azure.WebJobs.Logging;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -171,9 +167,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // Starting with .NET isolated and Java, we have a more efficient out-of-process
             // function invocation protocol. Other languages will use the existing protocol.
             WorkerRuntimeType runtimeType = this.PlatformInformationService.GetWorkerRuntimeType();
-            if (runtimeType == WorkerRuntimeType.DotNetIsolated ||
+            bool manuallyRequestedGrpc = this.PlatformInformationService.GrpcManuallyRequested;
+            if (manuallyRequestedGrpc || 
+                (runtimeType == WorkerRuntimeType.DotNetIsolated ||
                 runtimeType == WorkerRuntimeType.Java ||
-                runtimeType == WorkerRuntimeType.Custom)
+                runtimeType == WorkerRuntimeType.Custom) )
             {
                 this.OutOfProcProtocol = OutOfProcOrchestrationProtocol.MiddlewarePassthrough;
                 this.localGrpcListener = LocalGrpcListener.Create(this, this.Options.GrpcListenerMode);
@@ -464,8 +462,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     WorkerRuntimeType.DotNetIsolated => false,
                     WorkerRuntimeType.Java => false,
 
+                    // Python only uses the HTTP server if gRPC was not manually requested
+                    // If it was, we assume the user is using the durabletask-based SDK and doesn't need HTTP
+                    WorkerRuntimeType.Python => !this.PlatformInformationService.GrpcManuallyRequested,
+
                     // everything else - assume the HTTP server
-                    WorkerRuntimeType.Python => true,
                     WorkerRuntimeType.Node => true,
                     WorkerRuntimeType.PowerShell => true,
                     WorkerRuntimeType.Unknown => true,
