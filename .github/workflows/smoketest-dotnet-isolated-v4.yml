@@ -40,6 +40,11 @@ jobs:
       with:
         dotnet-version: '8.x'
 
+    - name: Set up .NET Core 10.x
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '10.x'
+
     # Install Azurite
     - name: Set up Node.js (needed for Azurite)
       uses: actions/setup-node@v3

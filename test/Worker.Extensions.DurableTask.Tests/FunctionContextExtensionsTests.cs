@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System.Collections.Immutable;
+using System.Collections.ObjectModel;
 using Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
 using Microsoft.Azure.Functions.Worker.Extensions.DurableTask.Execution;
 
@@ -285,7 +286,7 @@ public class FunctionContextExtensionsTests
     {
         public TestBindingContext(IDictionary<string, object?> bindingData)
         {
-            this.BindingData = bindingData.AsReadOnly();
+            this.BindingData = new ReadOnlyDictionary<string, object?>(bindingData);
         }
         public override IReadOnlyDictionary<string, object?> BindingData { get; }
     }
