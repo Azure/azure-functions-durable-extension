@@ -19,6 +19,9 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        dotnet-version: ['6.0', '8.0', '10.0']
     env:
       SA_PASSWORD: ${{ secrets.SA_PASSWORD }}
       FUNCTIONS_INPROC_NET8_ENABLED: "1"
@@ -26,6 +29,6 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Run V4 .NET in-proc w/ MSSQL Smoke Test
-      run: test/SmokeTests/e2e-test.ps1 -DockerfilePath test/SmokeTests/BackendSmokeTests/MSSQL/Dockerfile -HttpStartPath api/DurableFunctionsHttpStart -ContainerName MSSQLApp -SetupSQLServer
+    - name: Run V4 .NET in-proc w/ MSSQL Smoke Test (.NET ${{ matrix.dotnet-version }})
+      run: test/SmokeTests/e2e-test.ps1 -DockerfilePath test/SmokeTests/BackendSmokeTests/MSSQL/Dockerfile -HttpStartPath api/DurableFunctionsHttpStart -ContainerName MSSQLApp -SetupSQLServer -DotNetVersion ${{ matrix.dotnet-version }}
       shell: pwsh

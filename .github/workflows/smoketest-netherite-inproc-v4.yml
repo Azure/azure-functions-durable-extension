@@ -16,12 +16,15 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        dotnet-version: ['6.0', '8.0', '10.0']
 
     env:
       FUNCTIONS_INPROC_NET8_ENABLED: "1"
 
     steps:
     - uses: actions/checkout@v2
-    - name: Run V4 .NET in-proc w/ Netherite Smoke Test
-      run: test/SmokeTests/e2e-test.ps1 -DockerfilePath test/SmokeTests/BackendSmokeTests/Netherite/Dockerfile -HttpStartPath api/DurableFunctionsHttpStart -ContainerName NetheriteApp
+    - name: Run V4 .NET in-proc w/ Netherite Smoke Test (.NET ${{ matrix.dotnet-version }})
+      run: test/SmokeTests/e2e-test.ps1 -DockerfilePath test/SmokeTests/BackendSmokeTests/Netherite/Dockerfile -HttpStartPath api/DurableFunctionsHttpStart -ContainerName NetheriteApp -DotNetVersion ${{ matrix.dotnet-version }}
       shell: pwsh

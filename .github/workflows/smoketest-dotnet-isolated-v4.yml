@@ -16,6 +16,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        dotnet-version: ['6.0', '8.0', '10.0']
     steps:
     - uses: actions/checkout@v2
 
@@ -65,10 +68,10 @@ jobs:
         dotnet nuget push ./out/Microsoft.Azure.WebJobs.Extensions.DurableTask.*.nupkg --source ~/packages &&
         dotnet nuget add source ~/packages
 
-    - name: Build .NET Isolated Smoke Test
+    - name: Build .NET Isolated Smoke Test (.NET ${{ matrix.dotnet-version }})
       run: cd ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated &&
         dotnet restore --verbosity normal &&
-        dotnet build -c Release
+        dotnet build -c Release -f net${{ matrix.dotnet-version }}
 
     - name: Install core tools
       run: npm i -g azure-functions-core-tools@4 --unsafe-perm true
@@ -78,42 +81,42 @@ jobs:
     # when building the smoke test app in docker, causing the build to fail. This is a temporary workaround until the
     # root cause is identified and fixed.
 
-    - name: Run smoke tests (Hello Cities (Typed))
+    - name: Run smoke tests (Hello Cities (Typed)) - .NET ${{ matrix.dotnet-version }}
       shell: pwsh
       run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
         cd ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated && func host start --port 7071 &
         ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated/run-smoke-tests.ps1 -HttpStartPath api/StartHelloCitiesTyped
         
-    - name: Run smoke tests (Hello Cities (Untyped))
+    - name: Run smoke tests (Hello Cities (Untyped)) - .NET ${{ matrix.dotnet-version }}
       shell: pwsh
       run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
         cd ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated && func host start --port 7071 &
         ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated/run-smoke-tests.ps1 -HttpStartPath api/StartHelloCitiesUntyped
 
-    - name: Run smoke tests (Hello Cities) with provided Instance Id
+    - name: Run smoke tests (Hello Cities) with provided Instance Id - .NET ${{ matrix.dotnet-version }}
       shell: pwsh
       run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
         cd ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated && func host start --port 7071 &
         ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated/run-smoke-tests.ps1 -HttpStartPath api/StartHelloCitiesUntyped -TestWithCustomInstanceId
 
-    - name: Run smoke tests (Process Exit)
+    - name: Run smoke tests (Process Exit) - .NET ${{ matrix.dotnet-version }}
       shell: pwsh
       run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
         ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated/run-smoke-tests.ps1 -HttpStartPath api/durable_HttpStartProcessExitOrchestrator
 
-    - name: Run smoke tests (Timeout)
+    - name: Run smoke tests (Timeout) - .NET ${{ matrix.dotnet-version }}
       shell: pwsh
       run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
         cd ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated && func host start --port 7071 &
         ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated/run-smoke-tests.ps1 -HttpStartPath api/durable_HttpStartTimeoutOrchestrator
 
-    - name: Run smoke tests (OOM)
+    - name: Run smoke tests (OOM) - .NET ${{ matrix.dotnet-version }}
       shell: pwsh
       run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
         cd ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated && func host start --port 7071 &
         ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated/run-smoke-tests.ps1 -HttpStartPath api/durable_HttpStartOOMOrchestrator
 
-    - name: Run smoke tests (Entity Counting (Typed))
+    - name: Run smoke tests (Entity Counting (Typed)) - .NET ${{ matrix.dotnet-version }}
       shell: pwsh
       run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
         cd ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated && func host start --port 7071 &

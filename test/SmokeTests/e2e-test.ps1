@@ -16,7 +16,8 @@ param(
      	[string]$tag="2019-latest",
     	[int]$port=1433,
      	[string]$dbname="DurableDB",
-    	[string]$collation="Latin1_General_100_BIN2_UTF8"
+    	[string]$collation="Latin1_General_100_BIN2_UTF8",
+	[string]$DotNetVersion="8.0"
 )
 
 function Exit-OnError() {
@@ -74,8 +75,8 @@ $AzuriteVersion = "3.34.0"
 
 if ($NoSetup -eq $false) {
 	# Build the docker image first, since that's the most critical step
-	Write-Host "Building sample app Docker container from '$DockerfilePath'..." -ForegroundColor Yellow
-	docker build --pull -f $DockerfilePath -t $ImageName --progress plain $PSScriptRoot/../../
+	Write-Host "Building sample app Docker container from '$DockerfilePath' with .NET version $DotNetVersion..." -ForegroundColor Yellow
+	docker build --pull -f $DockerfilePath -t $ImageName --build-arg DOTNET_VERSION=$DotNetVersion --progress plain $PSScriptRoot/../../
 	Exit-OnError
 
 	# Next, download and start the Azurite emulator Docker image
