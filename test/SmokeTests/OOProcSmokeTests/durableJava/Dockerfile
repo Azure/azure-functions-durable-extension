@@ -1,7 +1,8 @@
 ARG DOTNET_VERSION=8
 FROM mcr.microsoft.com/dotnet/sdk:${DOTNET_VERSION}.0 AS build-env
 COPY . /root
-RUN cd /root/test/SmokeTests/OOProcSmokeTests/durableJava && \
+RUN rm -f /root/global.json && \
+    cd /root/test/SmokeTests/OOProcSmokeTests/durableJava && \
     dotnet build -o bin
 
 FROM mcr.microsoft.com/azure-functions/java:4-java8

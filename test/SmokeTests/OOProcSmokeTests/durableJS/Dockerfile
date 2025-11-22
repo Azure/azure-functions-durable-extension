@@ -6,7 +6,8 @@
 ARG DOTNET_VERSION=8
 FROM mcr.microsoft.com/dotnet/sdk:${DOTNET_VERSION}.0 AS build-env
 COPY . /root
-RUN cd /root/test/SmokeTests/OOProcSmokeTests/durableJS && \
+RUN rm -f /root/global.json && \
+    cd /root/test/SmokeTests/OOProcSmokeTests/durableJS && \
     dotnet build -o bin
 
 # Step 2: Deploy and run npm install to get the Durable Functions SDK

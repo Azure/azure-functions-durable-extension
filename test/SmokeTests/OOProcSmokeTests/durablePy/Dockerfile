@@ -6,7 +6,8 @@
 ARG DOTNET_VERSION=8
 FROM mcr.microsoft.com/dotnet/sdk:${DOTNET_VERSION}.0 AS build-env
 COPY . /root
-RUN cd /root/test/SmokeTests/OOProcSmokeTests/durablePy && \
+RUN rm -f /root/global.json && \
+    cd /root/test/SmokeTests/OOProcSmokeTests/durablePy && \
     dotnet build -o bin
 
 # Step 2: Deploy and run pip install to get the Durable Functions SDK

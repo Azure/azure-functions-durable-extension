@@ -6,7 +6,8 @@ FROM mcr.microsoft.com/dotnet/sdk:${DOTNET_VERSION}.0 AS build-env
 
 # Build the DF MSSQL app
 COPY . /root
-RUN cd /root/test/SmokeTests/BackendSmokeTests/MSSQL && \
+RUN rm -f /root/global.json && \
+    cd /root/test/SmokeTests/BackendSmokeTests/MSSQL && \
     mkdir -p /home/site/wwwroot && \
     dotnet publish -c Release --output /home/site/wwwroot
 
