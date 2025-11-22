@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-22.04
     strategy:
       matrix:
-        dotnet-version: ['6.0', '8.0', '10.0']
+        dotnet-version: ['6.0', '8.0']
     steps:
     - uses: actions/checkout@v2
 
@@ -42,11 +42,6 @@ jobs:
       uses: actions/setup-dotnet@v3
       with:
         dotnet-version: '8.x'
-
-    - name: Set up .NET Core 10.x
-      uses: actions/setup-dotnet@v3
-      with:
-        dotnet-version: '10.x'
 
     # Install Azurite
     - name: Set up Node.js (needed for Azurite)

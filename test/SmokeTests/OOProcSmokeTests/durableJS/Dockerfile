@@ -3,8 +3,8 @@
 
 # Step 1: Add the durable extension by building it locally.
 #         This is an alternative to "func extensions install"
-ARG DOTNET_VERSION=8.0
-FROM mcr.microsoft.com/dotnet/sdk:${DOTNET_VERSION} AS build-env
+ARG DOTNET_VERSION=8
+FROM mcr.microsoft.com/dotnet/sdk:${DOTNET_VERSION}.0 AS build-env
 COPY . /root
 RUN cd /root/test/SmokeTests/OOProcSmokeTests/durableJS && \
     dotnet build -o bin

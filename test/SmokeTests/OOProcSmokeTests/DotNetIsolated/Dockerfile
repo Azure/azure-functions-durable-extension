@@ -1,8 +1,8 @@
 ﻿# Copyright (c) .NET Foundation. All rights reserved.
 # Licensed under the MIT License. See LICENSE in the project root for license information.
 
-ARG DOTNET_VERSION=8.0
-FROM mcr.microsoft.com/dotnet/sdk:${DOTNET_VERSION} AS build-env
+ARG DOTNET_VERSION=8
+FROM mcr.microsoft.com/dotnet/sdk:${DOTNET_VERSION}.0 AS build-env
 
 # Step 1: Build the WebJobs extension and publish it as a local NuGet package
 COPY . /root
@@ -27,8 +27,8 @@ RUN cd /root/test/SmokeTests/OOProcSmokeTests/DotNetIsolated && \
     cat /home/site/wwwroot/extensions.json # debugging
 
 # Step 3: Generate the final app image to run
-ARG DOTNET_VERSION=8.0
-FROM mcr.microsoft.com/azure-functions/dotnet-isolated:4-dotnet-isolated${DOTNET_VERSION}
+ARG DOTNET_VERSION=8
+FROM mcr.microsoft.com/azure-functions/dotnet-isolated:4-dotnet-isolated${DOTNET_VERSION}.0
 
 # This is the standard setup for Azure Functions running in Docker containers
 ENV AzureWebJobsScriptRoot=/home/site/wwwroot \

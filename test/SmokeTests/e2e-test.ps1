@@ -17,7 +17,7 @@ param(
     	[int]$port=1433,
      	[string]$dbname="DurableDB",
     	[string]$collation="Latin1_General_100_BIN2_UTF8",
-	[string]$DotNetVersion="8.0"
+	[string]$DotNetVersion="8"
 )
 
 function Exit-OnError() {

@@ -1,8 +1,8 @@
 ﻿# Copyright (c) .NET Foundation. All rights reserved.
 # Licensed under the MIT License. See LICENSE in the project root for license information.
 
-ARG DOTNET_VERSION=8.0
-FROM mcr.microsoft.com/dotnet/sdk:${DOTNET_VERSION} AS build-env
+ARG DOTNET_VERSION=8
+FROM mcr.microsoft.com/dotnet/sdk:${DOTNET_VERSION}.0 AS build-env
 
 # Build the DF MSSQL app
 COPY . /root
@@ -11,7 +11,7 @@ RUN cd /root/test/SmokeTests/BackendSmokeTests/MSSQL && \
     dotnet publish -c Release --output /home/site/wwwroot
 
 # Deploy the app
-ARG DOTNET_VERSION=8.0
+ARG DOTNET_VERSION=8
 FROM mcr.microsoft.com/azure-functions/dotnet:4-dotnet${DOTNET_VERSION}
 ENV AzureWebJobsScriptRoot=/home/site/wwwroot \
     AzureFunctionsJobHost__Logging__Console__IsEnabled=true

@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        dotnet-version: ['6.0', '8.0', '10.0']
+        dotnet-version: ['6', '8']
     env:
       SA_PASSWORD: ${{ secrets.SA_PASSWORD }}
       FUNCTIONS_INPROC_NET8_ENABLED: "1"
