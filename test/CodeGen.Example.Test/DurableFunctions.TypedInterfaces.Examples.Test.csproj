@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFrameworks>net6.0;net8.0;net10.0</TargetFrameworks>
     <Company>Microsoft Corporation</Company>
     <NoWarn>SA0001;SA1600;SA1615</NoWarn>
     <SignAssembly>true</SignAssembly>

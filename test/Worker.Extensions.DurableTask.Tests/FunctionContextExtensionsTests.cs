@@ -285,7 +285,11 @@ public class FunctionContextExtensionsTests
     {
         public TestBindingContext(IDictionary<string, object?> bindingData)
         {
+#if NET8_0_OR_GREATER
             this.BindingData = bindingData.AsReadOnly();
+#else
+            this.BindingData = new System.Collections.ObjectModel.ReadOnlyDictionary<string, object?>(bindingData);
+#endif
         }
         public override IReadOnlyDictionary<string, object?> BindingData { get; }
     }
