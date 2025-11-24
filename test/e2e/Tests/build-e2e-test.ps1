@@ -38,7 +38,7 @@ if ($PSVersionTable.PSEdition -ne 'Core') {
 
 $ErrorActionPreference = "Stop"
 
-$CORE_TOOLS_VERSION = '4.0.7317'
+$CORE_TOOLS_VERSION = '4.5.0'
 
 $ProjectBaseDirectory = "$PSScriptRoot\..\..\..\"
 $ProjectTemporaryPath = Join-Path ([System.IO.Path]::GetTempPath()) "DurableTaskExtensionE2ETests"
