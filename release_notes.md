@@ -9,6 +9,7 @@
 ### Breaking Changes
 
 ### Dependency Updates
+- Updated support for .NET6 and .NET10 (https://github.com/Azure/azure-functions-durable-extension/pull/3263)
 
 ## Microsoft.Azure.WebJobs.Extensions.DurableTask 2.13.7
 
