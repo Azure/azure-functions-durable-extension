@@ -78,8 +78,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.InternalRpcUri = new Uri($"http://127.0.0.1:{listeningPort}/durabletask/");
                     var listenUri = new Uri(this.InternalRpcUri.GetLeftPart(UriPartial.Authority));
 
-                    var builder = Microsoft.Extensions.Hosting.Host.CreateDefaultBuilder()
-                        .ConfigureWebHostDefaults(webBuilder =>
+                    this.localWebHost = new Microsoft.Extensions.Hosting.HostBuilder()
+                        .ConfigureWebHost(webBuilder =>
                         {
                             webBuilder
                                 .UseKestrel(o =>
@@ -89,9 +89,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                                 })
                                 .UseUrls(listenUri.OriginalString)
                                 .Configure(a => a.Run(this.HandleRequestAsync));
-                        });
-
-                    this.localWebHost = builder.Build();
+                        })
+                        .Build();
                     await this.localWebHost.StartAsync();
                     this.IsListening = true;
                     break;
