@@ -73,48 +73,82 @@ jobs:
     - name: Install core tools
       run: npm i -g azure-functions-core-tools@4 --unsafe-perm true
   
-    # Run smoke tests
-    # Unlike other smoke tests, the .NET isolated smoke tests run outside of a docker container, but to race conditions
-    # when building the smoke test app in docker, causing the build to fail. This is a temporary workaround until the
-    # root cause is identified and fixed.
-
-    - name: Run smoke tests (Hello Cities (Typed))
+    # Run smoke tests on .NET 6.0
+    - name: Run smoke tests on .NET 6.0 (Hello Cities (Typed))
       shell: pwsh
       run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
-        cd ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated && func host start --port 7071 &
+        cd ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated && func host start --port 7071 --dotnet-isolated-debug --target-framework net6.0 &
         ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated/run-smoke-tests.ps1 -HttpStartPath api/StartHelloCitiesTyped
         
-    - name: Run smoke tests (Hello Cities (Untyped))
+    - name: Run smoke tests on .NET 6.0 (Hello Cities (Untyped))
       shell: pwsh
       run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
-        cd ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated && func host start --port 7071 &
+        cd ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated && func host start --port 7071 --dotnet-isolated-debug --target-framework net6.0 &
         ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated/run-smoke-tests.ps1 -HttpStartPath api/StartHelloCitiesUntyped
 
-    - name: Run smoke tests (Hello Cities) with provided Instance Id
+    - name: Run smoke tests on .NET 6.0 (Entity Counting (Typed))
       shell: pwsh
       run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
-        cd ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated && func host start --port 7071 &
+        cd ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated && func host start --port 7071 --dotnet-isolated-debug --target-framework net6.0 &
+        ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated/run-smoke-tests.ps1 -HttpStartPath api/StartEntityOrchestration
+
+    # Run smoke tests on .NET 8.0
+    - name: Run smoke tests on .NET 8.0 (Hello Cities (Typed))
+      shell: pwsh
+      run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
+        cd ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated && func host start --port 7071 --dotnet-isolated-debug --target-framework net8.0 &
+        ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated/run-smoke-tests.ps1 -HttpStartPath api/StartHelloCitiesTyped
+        
+    - name: Run smoke tests on .NET 8.0 (Hello Cities (Untyped))
+      shell: pwsh
+      run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
+        cd ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated && func host start --port 7071 --dotnet-isolated-debug --target-framework net8.0 &
+        ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated/run-smoke-tests.ps1 -HttpStartPath api/StartHelloCitiesUntyped
+
+    - name: Run smoke tests on .NET 8.0 (Hello Cities) with provided Instance Id
+      shell: pwsh
+      run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
+        cd ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated && func host start --port 7071 --dotnet-isolated-debug --target-framework net8.0 &
         ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated/run-smoke-tests.ps1 -HttpStartPath api/StartHelloCitiesUntyped -TestWithCustomInstanceId
 
-    - name: Run smoke tests (Process Exit)
+    - name: Run smoke tests on .NET 8.0 (Process Exit)
       shell: pwsh
       run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
         ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated/run-smoke-tests.ps1 -HttpStartPath api/durable_HttpStartProcessExitOrchestrator
 
-    - name: Run smoke tests (Timeout)
+    - name: Run smoke tests on .NET 8.0 (Timeout)
       shell: pwsh
       run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
-        cd ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated && func host start --port 7071 &
+        cd ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated && func host start --port 7071 --dotnet-isolated-debug --target-framework net8.0 &
         ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated/run-smoke-tests.ps1 -HttpStartPath api/durable_HttpStartTimeoutOrchestrator
 
-    - name: Run smoke tests (OOM)
+    - name: Run smoke tests on .NET 8.0 (OOM)
       shell: pwsh
       run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
-        cd ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated && func host start --port 7071 &
+        cd ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated && func host start --port 7071 --dotnet-isolated-debug --target-framework net8.0 &
         ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated/run-smoke-tests.ps1 -HttpStartPath api/durable_HttpStartOOMOrchestrator
 
-    - name: Run smoke tests (Entity Counting (Typed))
+    - name: Run smoke tests on .NET 8.0 (Entity Counting (Typed))
       shell: pwsh
       run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
-        cd ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated && func host start --port 7071 &
+        cd ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated && func host start --port 7071 --dotnet-isolated-debug --target-framework net8.0 &
+        ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated/run-smoke-tests.ps1 -HttpStartPath api/StartEntityOrchestration
+
+    # Run smoke tests on .NET 10.0
+    - name: Run smoke tests on .NET 10.0 (Hello Cities (Typed))
+      shell: pwsh
+      run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
+        cd ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated && func host start --port 7071 --dotnet-isolated-debug --target-framework net10.0 &
+        ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated/run-smoke-tests.ps1 -HttpStartPath api/StartHelloCitiesTyped
+        
+    - name: Run smoke tests on .NET 10.0 (Hello Cities (Untyped))
+      shell: pwsh
+      run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
+        cd ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated && func host start --port 7071 --dotnet-isolated-debug --target-framework net10.0 &
+        ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated/run-smoke-tests.ps1 -HttpStartPath api/StartHelloCitiesUntyped
+
+    - name: Run smoke tests on .NET 10.0 (Entity Counting (Typed))
+      shell: pwsh
+      run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
+        cd ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated && func host start --port 7071 --dotnet-isolated-debug --target-framework net10.0 &
         ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated/run-smoke-tests.ps1 -HttpStartPath api/StartEntityOrchestration
