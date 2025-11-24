@@ -28,7 +28,8 @@ Do {
         Write-Host "Starting the Functions host..." -ForegroundColor Yellow
 
         # The '&' operator is used to run the command in the background
-        cd ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated && func host start --port 7071 &       
+        # Redirect output to a file for debugging
+        cd ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated && func host start --port 7071 > func-output.log 2>&1 &       
         Write-Host "Waiting for the Functions host to start up..." -ForegroundColor Yellow
         Start-Sleep -Seconds 60
     }
@@ -106,6 +107,14 @@ Do {
         # When testing for platform errors, we want to make sure the Functions host is healthy and ready to take requests.
         # The Host can get into bad states (for example, in an OOM-inducing test) where it does not self-heal.
         # For these cases, we manually restart the host to ensure it is in a good state. We only do this once per test.
+
+        $logPath = "./test/SmokeTests/OOProcSmokeTests/DotNetIsolated/func-output.log"
+        if (Test-Path $logPath) {
+            Write-Host "--- Func Host Log (Last 50 lines) ---" -ForegroundColor Cyan
+            Get-Content $logPath | Select-Object -Last 50
+            Write-Host "-------------------------------------" -ForegroundColor Cyan
+        }
+
         if ($haveManuallyRestartedHost -eq $false) {
             
             # We stop the host process and wait for a bit before checking if it is running again.
