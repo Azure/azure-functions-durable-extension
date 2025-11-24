@@ -19,6 +19,16 @@ param(
     	[string]$collation="Latin1_General_100_BIN2_UTF8"
 )
 
+# Set up docker alias for podman if docker is not available
+if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
+	if (Get-Command podman -ErrorAction SilentlyContinue) {
+		Write-Host "Docker not found, using Podman as docker alias" -ForegroundColor Yellow
+		Set-Alias -Name docker -Value podman -Scope Script
+	} else {
+		throw "Neither docker nor podman is available. Please install Docker or Podman."
+	}
+}
+
 function Exit-OnError() {
 	# There appears to be a known problem in GitHub Action's `pwsh` shell preventing it from failing fast on an error:
 	# https://github.com/actions/runner-images/issues/6668#issuecomment-1364540817
@@ -160,8 +170,31 @@ try {
 	# Make sure the Functions runtime is up and running
 	$pingUrl = "http://localhost:8080/admin/host/ping"
 	Write-Host "Pinging app at $pingUrl to ensure the host is healthy" -ForegroundColor Yellow
-	Invoke-RestMethod -Method Post -Uri "http://localhost:8080/admin/host/ping"
-	Exit-OnError
+	
+	# Retry the ping with exponential backoff in case the host is still starting up
+	$maxPingRetries = 10
+	$pingRetryCount = 0
+	$pingSucceeded = $false
+	
+	while ($pingRetryCount -lt $maxPingRetries) {
+		try {
+			Invoke-RestMethod -Method Post -Uri $pingUrl
+			$pingSucceeded = $true
+			Write-Host "Function host is ready!" -ForegroundColor Green
+			break
+		} catch {
+			$pingRetryCount++
+			if ($pingRetryCount -lt $maxPingRetries) {
+				$waitTime = [Math]::Min(2 * $pingRetryCount, 10)
+				Write-Host "Ping attempt $pingRetryCount failed. Retrying in $waitTime seconds..." -ForegroundColor Yellow
+				Start-Sleep -Seconds $waitTime
+			}
+		}
+	}
+	
+	if (-not $pingSucceeded) {
+		throw "Function host failed to respond after $maxPingRetries attempts"
+	}
 
 	if ($NoValidation -eq $false) {
 		$startOrchestrationUri = "http://localhost:8080/$HttpStartPath"
