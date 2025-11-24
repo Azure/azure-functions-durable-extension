@@ -110,7 +110,7 @@ Do {
             
             # We stop the host process and wait for a bit before checking if it is running again.
             Write-Host "Restarting the Functions host..." -ForegroundColor Yellow
-            Stop-Process -Name "func" -Force
+            Stop-Process -Name "func" -Force -ErrorAction SilentlyContinue
             Start-Sleep -Seconds 5
             
             # Log whether the process kill succeeded
