@@ -76,79 +76,118 @@ jobs:
     # Run smoke tests on .NET 6.0
     - name: Run smoke tests on .NET 6.0 (Hello Cities (Typed))
       shell: pwsh
-      run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
+      run: |
+        Get-Process azurite,func,dotnet -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+        azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
         cd ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated && func host start --port 7071 --dotnet-isolated-debug --target-framework net6.0 &
         ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated/run-smoke-tests.ps1 -HttpStartPath api/StartHelloCitiesTyped
+        Get-Process azurite,func,dotnet -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
         
     - name: Run smoke tests on .NET 6.0 (Hello Cities (Untyped))
       shell: pwsh
-      run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
+      run: |
+        Get-Process azurite,func,dotnet -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+        azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
         cd ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated && func host start --port 7071 --dotnet-isolated-debug --target-framework net6.0 &
         ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated/run-smoke-tests.ps1 -HttpStartPath api/StartHelloCitiesUntyped
+        Get-Process azurite,func,dotnet -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
 
     - name: Run smoke tests on .NET 6.0 (Entity Counting (Typed))
       shell: pwsh
-      run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
+      run: |
+        Get-Process azurite,func,dotnet -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+        azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
         cd ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated && func host start --port 7071 --dotnet-isolated-debug --target-framework net6.0 &
         ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated/run-smoke-tests.ps1 -HttpStartPath api/StartEntityOrchestration
+        Get-Process azurite,func,dotnet -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
 
     # Run smoke tests on .NET 8.0
     - name: Run smoke tests on .NET 8.0 (Hello Cities (Typed))
       shell: pwsh
-      run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
+      run: |
+        Get-Process azurite,func,dotnet -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+        azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
         cd ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated && func host start --port 7071 --dotnet-isolated-debug --target-framework net8.0 &
         ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated/run-smoke-tests.ps1 -HttpStartPath api/StartHelloCitiesTyped
+        Get-Process azurite,func,dotnet -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
         
     - name: Run smoke tests on .NET 8.0 (Hello Cities (Untyped))
       shell: pwsh
-      run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
+      run: |
+        Get-Process azurite,func,dotnet -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+        azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
         cd ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated && func host start --port 7071 --dotnet-isolated-debug --target-framework net8.0 &
         ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated/run-smoke-tests.ps1 -HttpStartPath api/StartHelloCitiesUntyped
+        Get-Process azurite,func,dotnet -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
 
     - name: Run smoke tests on .NET 8.0 (Hello Cities) with provided Instance Id
       shell: pwsh
-      run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
+      run: |
+        Get-Process azurite,func,dotnet -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+        azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
         cd ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated && func host start --port 7071 --dotnet-isolated-debug --target-framework net8.0 &
         ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated/run-smoke-tests.ps1 -HttpStartPath api/StartHelloCitiesUntyped -TestWithCustomInstanceId
+        Get-Process azurite,func,dotnet -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
 
     - name: Run smoke tests on .NET 8.0 (Process Exit)
       shell: pwsh
-      run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
+      run: |
+        Get-Process azurite,func,dotnet -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+        azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
         ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated/run-smoke-tests.ps1 -HttpStartPath api/durable_HttpStartProcessExitOrchestrator
+        Get-Process azurite,func,dotnet -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
 
     - name: Run smoke tests on .NET 8.0 (Timeout)
       shell: pwsh
-      run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
+      run: |
+        Get-Process azurite,func,dotnet -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+        azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
         cd ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated && func host start --port 7071 --dotnet-isolated-debug --target-framework net8.0 &
         ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated/run-smoke-tests.ps1 -HttpStartPath api/durable_HttpStartTimeoutOrchestrator
+        Get-Process azurite,func,dotnet -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
 
     - name: Run smoke tests on .NET 8.0 (OOM)
       shell: pwsh
-      run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
+      run: |
+        Get-Process azurite,func,dotnet -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+        azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
         cd ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated && func host start --port 7071 --dotnet-isolated-debug --target-framework net8.0 &
         ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated/run-smoke-tests.ps1 -HttpStartPath api/durable_HttpStartOOMOrchestrator
+        Get-Process azurite,func,dotnet -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
 
     - name: Run smoke tests on .NET 8.0 (Entity Counting (Typed))
       shell: pwsh
-      run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
+      run: |
+        Get-Process azurite,func,dotnet -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+        azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
         cd ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated && func host start --port 7071 --dotnet-isolated-debug --target-framework net8.0 &
         ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated/run-smoke-tests.ps1 -HttpStartPath api/StartEntityOrchestration
+        Get-Process azurite,func,dotnet -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
 
     # Run smoke tests on .NET 10.0
     - name: Run smoke tests on .NET 10.0 (Hello Cities (Typed))
       shell: pwsh
-      run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
+      run: |
+        Get-Process azurite,func,dotnet -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+        azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
         cd ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated && func host start --port 7071 --dotnet-isolated-debug --target-framework net10.0 &
         ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated/run-smoke-tests.ps1 -HttpStartPath api/StartHelloCitiesTyped
+        Get-Process azurite,func,dotnet -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
         
     - name: Run smoke tests on .NET 10.0 (Hello Cities (Untyped))
       shell: pwsh
-      run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
+      run: |
+        Get-Process azurite,func,dotnet -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+        azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
         cd ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated && func host start --port 7071 --dotnet-isolated-debug --target-framework net10.0 &
         ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated/run-smoke-tests.ps1 -HttpStartPath api/StartHelloCitiesUntyped
+        Get-Process azurite,func,dotnet -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
 
     - name: Run smoke tests on .NET 10.0 (Entity Counting (Typed))
       shell: pwsh
-      run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
+      run: |
+        Get-Process azurite,func,dotnet -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+        azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
         cd ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated && func host start --port 7071 --dotnet-isolated-debug --target-framework net10.0 &
         ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated/run-smoke-tests.ps1 -HttpStartPath api/StartEntityOrchestration
+        Get-Process azurite,func,dotnet -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
