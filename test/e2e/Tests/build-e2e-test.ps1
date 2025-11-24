@@ -200,6 +200,7 @@ if (!$SkipBuild)
   
   # Build without --output to ensure multi-targeting works correctly
   dotnet build -c Debug "$WebJobsExtensionProjectDirectory\WebJobs.Extensions.DurableTask.csproj"
+  dotnet pack -c Debug --no-build "$WebJobsExtensionProjectDirectory\WebJobs.Extensions.DurableTask.csproj"
 
   if ($LASTEXITCODE -ne 0) { Set-Location $PSScriptRoot; throw "WebJobs Extension build failed" }
 
