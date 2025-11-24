@@ -15,6 +15,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc.WebApiCompatShim;
+using Microsoft.Extensions.Hosting;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
@@ -34,7 +35,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly Random portGenerator;
         private readonly HashSet<int> attemptedPorts;
 
-        private IWebHost localWebHost;
+        private IHost localWebHost;
 
         public LocalHttpListener(
             EndToEndTraceHelper traceHelper,
@@ -76,17 +77,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     this.InternalRpcUri = new Uri($"http://127.0.0.1:{listeningPort}/durabletask/");
                     var listenUri = new Uri(this.InternalRpcUri.GetLeftPart(UriPartial.Authority));
-                    this.localWebHost = new WebHostBuilder()
-                        .UseKestrel()
-                        .ConfigureKestrel(o =>
-                        {
-                            // remove request's Content size limits
-                            o.Limits.MaxRequestBodySize = null;
-                        })
-                        .UseUrls(listenUri.OriginalString)
-                        .Configure(a => a.Run(this.HandleRequestAsync))
-                        .Build();
 
+                    var builder = Microsoft.Extensions.Hosting.Host.CreateDefaultBuilder()
+                        .ConfigureWebHostDefaults(webBuilder =>
+                        {
+                            webBuilder
+                                .UseKestrel(o =>
+                                {
+                                    // remove request's Content size limits
+                                    o.Limits.MaxRequestBodySize = null;
+                                })
+                                .UseUrls(listenUri.OriginalString)
+                                .Configure(a => a.Run(this.HandleRequestAsync));
+                        });
+
+                    this.localWebHost = builder.Build();
                     await this.localWebHost.StartAsync();
                     this.IsListening = true;
                     break;
@@ -180,15 +185,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        private class NoOpWebHost : IWebHost
+        private class NoOpWebHost : IHost
         {
-            public IFeatureCollection ServerFeatures => throw new NotImplementedException();
-
             public IServiceProvider Services => throw new NotImplementedException();
 
             public void Dispose() { }
-
-            public void Start() { }
 
             public Task StartAsync(CancellationToken cancellationToken = default(CancellationToken)) => Task.CompletedTask;
 
