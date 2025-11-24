@@ -5940,7 +5940,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             BlobContainerClient containerClient = blobServiceClient.GetBlobContainerClient(containerName);
             await containerClient.CreateIfNotExistsAsync();
-            return await containerClient.GetBlobsAsync().CountAsync();
+            var count = 0;
+            await foreach (var blob in containerClient.GetBlobsAsync())
+            {
+                count++;
+            }
+
+            return count;
         }
 
         private static async Task EnsureBlobContainerExists(string containerName)

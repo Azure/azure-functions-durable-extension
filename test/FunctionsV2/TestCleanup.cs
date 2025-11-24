@@ -46,13 +46,19 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
 
             this.output.WriteLine($"Using storage account: {blobServiceClient.AccountName}");
 
-            List<string> taskHubsToDelete = await blobServiceClient
-                .GetBlobContainersAsync()
-                .Where(c => c.Name.Contains("-leases", StringComparison.Ordinal))
-                .Where(c => DateTimeOffset.UtcNow.Subtract(c.Properties.LastModified) > oldTaskHubDeletionThreshold)
-                .Select(c => c.Name[..c.Name.IndexOf("-leases")])
-                .Take(maxDeletedTaskHubs)
-                .ToListAsync();
+            List<string> taskHubsToDelete = new List<string>();
+            await foreach (var container in blobServiceClient.GetBlobContainersAsync())
+            {
+                if (container.Name.Contains("-leases", StringComparison.Ordinal) &&
+                    DateTimeOffset.UtcNow.Subtract(container.Properties.LastModified) > oldTaskHubDeletionThreshold)
+                {
+                    taskHubsToDelete.Add(container.Name[..container.Name.IndexOf("-leases")]);
+                    if (taskHubsToDelete.Count >= maxDeletedTaskHubs)
+                    {
+                        break;
+                    }
+                }
+            }
 
             await Task.WhenAll(taskHubsToDelete.Select(taskHub => this.DeleteTaskHub(taskHub, connectionString)));
         }
