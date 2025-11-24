@@ -53,16 +53,19 @@ jobs:
       run: dotnet restore $solution
 
     - name: Build and pack WebJobs extension
-      run: cd ./src/WebJobs.Extensions.DurableTask &&
-        mkdir ./out &&
-        dotnet build -c Release WebJobs.Extensions.DurableTask.csproj --output ./out &&
-        mkdir ~/packages &&
-        dotnet nuget push ./out/Microsoft.Azure.WebJobs.Extensions.DurableTask.*.nupkg --source ~/packages &&
-        dotnet nuget add source ~/packages
+      run: |
+        cd ./src/WebJobs.Extensions.DurableTask
+        mkdir -p ./out
+        dotnet build -c Release WebJobs.Extensions.DurableTask.csproj --output ./out
+        mkdir -p ~/packages
+        dotnet nuget push ./out/Microsoft.Azure.WebJobs.Extensions.DurableTask.*.nupkg --source ~/packages
+        dotnet nuget add source ~/packages --name local-packages
 
     - name: Build .NET Isolated Smoke Test
-      run: cd ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated &&
-        dotnet restore --verbosity normal &&
+      run: |
+        cd ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated
+        dotnet nuget locals all --clear
+        dotnet restore --verbosity normal
         dotnet build -c Release
 
     - name: Install core tools
