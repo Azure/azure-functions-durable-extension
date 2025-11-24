@@ -5231,13 +5231,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [MemberData(nameof(TestDataGenerator.GetBooleanAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task Dedupe_Default_NotRunning_ThrowsException(bool extendedSessions, string storageProvider)
         {
-           var instanceId = "OverridableStatesDefaultTest_" + Guid.NewGuid().ToString("N");
+            var instanceId = "OverridableStatesDefaultTest_" + Guid.NewGuid().ToString("N");
 
-           using (ITestHost host = TestHelpers.GetJobHost(
-                this.loggerProvider,
-                nameof(this.Dedupe_Default_NotRunning_ThrowsException),
-                extendedSessions,
-                storageProviderType: storageProvider))
+            using (ITestHost host = TestHelpers.GetJobHost(
+                 this.loggerProvider,
+                 nameof(this.Dedupe_Default_NotRunning_ThrowsException),
+                 extendedSessions,
+                 storageProviderType: storageProvider))
             {
                 await host.StartAsync();
 
