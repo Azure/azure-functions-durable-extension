@@ -33,7 +33,7 @@
     <PackageVersion Update="Microsoft.Bcl.AsyncInterfaces" Version="9.0.0"/>
     <PackageVersion Update="Microsoft.Extensions.Azure" Version="1.10.0" />
     <PackageVersion Update="System.Drawing.Common" Version="6.0.0" />
-    <PackageVersion Update="System.Text.Json" Version="9.0.0" />
+    <PackageVersion Update="System.Text.Json" Version="9.0.1" />
   </ItemGroup>
 
 </Project>
