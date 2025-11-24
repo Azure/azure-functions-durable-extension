@@ -6,6 +6,8 @@
     <!-- If enabled, func complains about "Could not load file or assembly 'Microsoft.Extensions.Logging.Abstractions, Version=9.0.0.0" -->
     <!-- This is probably due to the per-TFM versioning we do for Microsoft.Extensions.Logging -->
     <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+    <!-- Suppress NuGet warnings -->
+    <NoWarn>NU1510</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\..\src\WebJobs.Extensions.DurableTask\WebJobs.Extensions.DurableTask.csproj" />

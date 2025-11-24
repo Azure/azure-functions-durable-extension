@@ -18,7 +18,7 @@
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <DebugType>embedded</DebugType>
     <!-- See https://github.com/Azure/azure-functions-durable-extension/issues/1433 -->
-    <NoWarn>NU5125;SA0001</NoWarn>
+    <NoWarn>NU5125;SA0001;NU1510</NoWarn>
   </PropertyGroup>
 
   <PropertyGroup Condition="$(VersionSuffix) == ''">
