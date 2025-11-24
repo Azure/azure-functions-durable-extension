@@ -51,7 +51,25 @@ function Start-And-Wait-Orchestration {
     }
 
     Write-Host "Starting orchestration via POST to $uri..." -ForegroundColor Yellow
-    $result = Invoke-RestMethod -Method Post -Uri $uri
+    
+    $startRetryCount = 0
+    $startMaxRetries = 5
+    $result = $null
+
+    while ($true) {
+        try {
+            $result = Invoke-RestMethod -Method Post -Uri $uri
+            break
+        } catch {
+            $startRetryCount++
+            if ($startRetryCount -ge $startMaxRetries) {
+                throw
+            }
+            Write-Host "Failed to start orchestration (Attempt $startRetryCount of $startMaxRetries). Retrying in $SleepSeconds seconds... Error: $_" -ForegroundColor Yellow
+            Start-Sleep -Seconds $SleepSeconds
+        }
+    }
+
     Write-Host "Started orchestration with instance ID '$($result.id)'!" -ForegroundColor Yellow
 
 	# Check that the returned instance ID matches the requested one (if provided)

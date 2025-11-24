@@ -197,9 +197,17 @@ if (!$SkipBuild)
   }
   $BuildOutputLocation = Resolve-Path $BuildOutputLocation
   Get-ChildItem -Path $BuildOutputLocation -Include * -File -Recurse | ForEach-Object { $_.Delete()}
-  dotnet build -c Debug "$WebJobsExtensionProjectDirectory\WebJobs.Extensions.DurableTask.csproj" --output $BuildOutputLocation
+  
+  # Build without --output to ensure multi-targeting works correctly
+  dotnet build -c Debug "$WebJobsExtensionProjectDirectory\WebJobs.Extensions.DurableTask.csproj"
 
   if ($LASTEXITCODE -ne 0) { Set-Location $PSScriptRoot; throw "WebJobs Extension build failed" }
+
+  # Move the generated nupkg to the expected location
+  $DefaultOutputPath = Join-Path $WebJobsExtensionProjectDirectory "bin/Debug"
+  Get-ChildItem -Path $DefaultOutputPath -Filter *.nupkg | ForEach-Object {
+      Move-Item -Path $_.FullName -Destination $BuildOutputLocation -Force
+  }
 
   if ($E2EAppName)
   {

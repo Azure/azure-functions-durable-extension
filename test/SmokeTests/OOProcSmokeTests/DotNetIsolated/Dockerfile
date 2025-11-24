@@ -6,10 +6,9 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build-env
 # Step 1: Build the WebJobs extension and publish it as a local NuGet package
 COPY . /root
 RUN cd /root/src/WebJobs.Extensions.DurableTask && \
-    mkdir /out && \
-    dotnet build -c Release WebJobs.Extensions.DurableTask.csproj --output /out && \
+    dotnet build -c Release WebJobs.Extensions.DurableTask.csproj && \
     mkdir /packages && \
-    dotnet nuget push /out/Microsoft.Azure.WebJobs.Extensions.DurableTask.*.nupkg --source /packages && \
+    dotnet nuget push bin/Release/Microsoft.Azure.WebJobs.Extensions.DurableTask.*.nupkg --source /packages && \
     dotnet nuget add source /packages
 
 # Step 2: Build the sample app, which references the locally built extension from Step 1
