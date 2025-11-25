@@ -118,15 +118,30 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup .NET Core
+      - name: Set up .NET Core 3.1
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: 6.0.x
+          dotnet-version: '3.1.x'
 
-      - name: Setup .NET Core
+      - name: Set up .NET Core 2.1
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: 8.0.x
+          dotnet-version: '2.1.x'
+
+      - name: Set up .NET Core 6.x
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '6.x'
+
+      - name: Set up .NET Core 8.x
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '8.x'
+
+      - name: Set up .NET 10.x
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '10.x'
 
       - name: Set up Node.js (needed for Azurite)
         uses: actions/setup-node@v3
