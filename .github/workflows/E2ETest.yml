@@ -147,6 +147,9 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '18.x' # Azurite requires at least Node 18
+
+      - name: Install Azurite
+        run: npm install -g azurite
           
       - name: Set up Python
         uses: actions/setup-python@v2
@@ -163,7 +166,7 @@ jobs:
       - name: Setup E2E tests
         shell: pwsh
         run: |
-          .\test\e2e\Tests\build-e2e-test.ps1
+          .\test\e2e\Tests\build-e2e-test.ps1 -SkipStorageEmulator
 
       - name: Build Test Project
         working-directory: test/e2e/Tests
@@ -176,8 +179,12 @@ jobs:
           Add-Content -Path $env:GITHUB_ENV -Value "TEST_APP_NAME=BasicDotNetIsolated"
 
       - name: Run E2E tests (dotnet-isolated)
+        shell: pwsh
         working-directory: test/e2e/Tests
-        run: dotnet test --filter 'AzureStorage!=Skip&Dotnet!=Skip&Dotnet-AzureStorage!=Skip'
+        run: |
+          Start-Job -ScriptBlock { azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 }
+          Start-Sleep -Seconds 5
+          dotnet test --filter 'AzureStorage!=Skip&Dotnet!=Skip&Dotnet-AzureStorage!=Skip'
 
       - name: Setup Environment for PowerShell
         shell: pwsh
@@ -186,8 +193,12 @@ jobs:
           Add-Content -Path $env:GITHUB_ENV -Value "TEST_APP_NAME=BasicPowerShell"
 
       - name: Run E2E tests (PowerShell)
+        shell: pwsh
         working-directory: test/e2e/Tests
-        run: dotnet test --filter 'AzureStorage!=Skip&PowerShell!=Skip&PowerShell-AzureStorage!=Skip'
+        run: |
+          Start-Job -ScriptBlock { azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 }
+          Start-Sleep -Seconds 5
+          dotnet test --filter 'AzureStorage!=Skip&PowerShell!=Skip&PowerShell-AzureStorage!=Skip'
 
       - name: Setup Environment for Python
         shell: pwsh
@@ -196,8 +207,12 @@ jobs:
           Add-Content -Path $env:GITHUB_ENV -Value "TEST_APP_NAME=BasicPython"
 
       - name: Run E2E tests (Python)
+        shell: pwsh
         working-directory: test/e2e/Tests
-        run: dotnet test --filter 'AzureStorage!=Skip&Python!=Skip&Python-AzureStorage!=Skip'
+        run: |
+          Start-Job -ScriptBlock { azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 }
+          Start-Sleep -Seconds 5
+          dotnet test --filter 'AzureStorage!=Skip&Python!=Skip&Python-AzureStorage!=Skip'
 
       - name: Setup Environment for Node
         shell: pwsh
@@ -206,8 +221,12 @@ jobs:
           Add-Content -Path $env:GITHUB_ENV -Value "TEST_APP_NAME=BasicNode"
 
       - name: Run E2E tests (Node)
+        shell: pwsh
         working-directory: test/e2e/Tests
-        run: dotnet test --filter 'AzureStorage!=Skip&Node!=Skip&Node-AzureStorage!=Skip'
+        run: |
+          Start-Job -ScriptBlock { azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 }
+          Start-Sleep -Seconds 5
+          dotnet test --filter 'AzureStorage!=Skip&Node!=Skip&Node-AzureStorage!=Skip'
 
       - name: Setup Environment for Java
         shell: pwsh
@@ -216,8 +235,12 @@ jobs:
           Add-Content -Path $env:GITHUB_ENV -Value "TEST_APP_NAME=BasicJava"
 
       - name: Run E2E tests (Java)
+        shell: pwsh
         working-directory: test/e2e/Tests
-        run: dotnet test --filter 'AzureStorage!=Skip&Java!=Skip&Java-AzureStorage!=Skip'
+        run: |
+          Start-Job -ScriptBlock { azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 }
+          Start-Sleep -Seconds 5
+          dotnet test --filter 'AzureStorage!=Skip&Java!=Skip&Java-AzureStorage!=Skip'
 
   e2e-mssql:
     runs-on: ubuntu-latest
