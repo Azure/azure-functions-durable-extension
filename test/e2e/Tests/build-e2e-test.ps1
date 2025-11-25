@@ -205,7 +205,7 @@ if (!$SkipBuild)
   if ($LASTEXITCODE -ne 0) { Set-Location $PSScriptRoot; throw "WebJobs Extension build failed" }
 
   # Move the generated nupkg to the expected location
-  $DefaultOutputPath = Join-Path $WebJobsExtensionProjectDirectory "bin/Debug"
+  $DefaultOutputPath = Join-Path $WebJobsExtensionProjectDirectory "bin" "Debug"
   Get-ChildItem -Path $DefaultOutputPath -Filter *.nupkg | ForEach-Object {
       Move-Item -Path $_.FullName -Destination $BuildOutputLocation -Force
   }
