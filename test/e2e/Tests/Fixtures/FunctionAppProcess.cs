@@ -74,11 +74,12 @@ internal class FunctionAppProcess
                         throw new InvalidOperationException($"Could not find a built worker app under '{e2eAppBuiltLocationPath}'");
                     }
 
-                    e2eAppPath = Path.GetDirectoryName(e2eHostJson);
+                    e2eAppPath = Path.GetDirectoryName(e2eHostJson)
+                        ?? throw new InvalidOperationException($"Could not determine directory for host.json at '{e2eHostJson}'");
                     break;
             }
 
-            if (e2eAppPath == null)
+            if (e2eAppPath is null)
             {
                 throw new InvalidOperationException($"Could not resolve app path for app name {this.appName}.");
             }

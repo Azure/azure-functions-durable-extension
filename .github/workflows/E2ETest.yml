@@ -25,20 +25,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup .NET 6
+      - name: Setup .NET Core
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: 6.0.x
 
-      - name: Setup .NET 8
+      - name: Setup .NET Core
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: 8.0.x
-
-      - name: Setup .NET 10
-        uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: 10.0.x
 
       - name: Set up Node.js (needed for Azurite)
         uses: actions/setup-node@v3
@@ -133,18 +128,13 @@ jobs:
         with:
           dotnet-version: 8.0.x
 
-      - name: Setup .NET Core
-        uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: 10.0.x
-
       - name: Set up Node.js (needed for Azurite)
         uses: actions/setup-node@v3
         with:
           node-version: '18.x' # Azurite requires at least Node 18
           
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v2
         with:
           python-version: 3.11
 
@@ -230,11 +220,6 @@ jobs:
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: 8.0.x
-
-      - name: Setup .NET Core
-        uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: 10.0.x
 
       - name: Set up Node.js (needed for Azurite)
         uses: actions/setup-node@v3
@@ -332,11 +317,6 @@ jobs:
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: 8.0.x
-
-      - name: Setup .NET Core
-        uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: 10.0.x
 
       - name: Set up Node.js (needed for Azurite)
         uses: actions/setup-node@v3
