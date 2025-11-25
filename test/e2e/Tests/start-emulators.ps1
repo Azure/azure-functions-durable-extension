@@ -62,24 +62,7 @@ if (!$SkipStorageEmulator)
         {
             npm install -g azurite
             New-Item -Path "./azurite" -ItemType Directory -ErrorAction SilentlyContinue
-            
-            # Get the npm global bin path to find azurite
-            $npmPrefix = (npm config get prefix).Trim()
-            $azuritePath = Join-Path $npmPrefix "azurite.cmd"
-            
-            if (!(Test-Path $azuritePath)) {
-                # Fallback to just using the command name if it's in PATH
-                $azuritePath = "azurite.cmd"
-            }
-            
-            Write-Host "Starting Azurite from: $azuritePath"
-            # Use Start-Process without -NoNewWindow to ensure Azurite runs independently
-            # and persists after the script completes. This prevents connection refused errors
-            # when tests run in separate workflow steps.
-            Start-Process $azuritePath -WorkingDirectory "./azurite" -ArgumentList "--silent"
-            
-            # Give Azurite a moment to initialize before we start polling
-            Start-Sleep -Seconds 5
+            Start-Process azurite.cmd -WorkingDirectory "./azurite" -ArgumentList "--silent"
         }
         else
         {
@@ -110,19 +93,10 @@ if (!$SkipStorageEmulator -and $startedStorage -eq $true)
 {
     Write-Host "---Waiting for Storage emulator to be running---"
     $storageEmulatorRunning = IsStorageEmulatorRunning
-    $maxWaitSeconds = 120
-    $waitedSeconds = 0
     while ($storageEmulatorRunning -eq $false)
     {
-        Write-Host "Storage emulator not ready. Waited $waitedSeconds seconds..."
+        Write-Host "Storage emulator not ready."
         Start-Sleep -Seconds 5
-        $waitedSeconds += 5
-        
-        if ($waitedSeconds -ge $maxWaitSeconds) {
-            Write-Error "Storage emulator failed to start within $maxWaitSeconds seconds"
-            exit 1
-        }
-        
         $storageEmulatorRunning = IsStorageEmulatorRunning
     }
     Write-Host "Storage emulator ready."
