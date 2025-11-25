@@ -43,25 +43,24 @@ internal class FunctionAppProcess
 
             string? e2eAppPath;
 
-            string rootDir = Path.GetFullPath(@"../../../../../../");
-            string binDir = @$"test/e2e/Apps/{this.appName}/bin";
+            string rootDir = Path.GetFullPath(Path.Combine("..", "..", "..", "..", "..", ".."));
 
             switch (this.testLanguage)
             {
                 case LanguageType.PowerShell:
                 case LanguageType.Python:
                 case LanguageType.Node:
-                    e2eAppPath = Path.Combine(rootDir, @$"test/e2e/Apps/{this.appName}");
+                    e2eAppPath = Path.Combine(rootDir, "test", "e2e", "Apps", this.appName);
                     break;
                 case LanguageType.Java:
                 case LanguageType.DotnetIsolated:
                 default:
-                    string e2eAppBuiltLocationPath = "";
+                    string e2eAppBuiltLocationPath;
 
                     if (this.testLanguage == LanguageType.Java)
-                        e2eAppBuiltLocationPath = Path.Combine(rootDir, @$"test/e2e/Apps/{this.appName}/target");
+                        e2eAppBuiltLocationPath = Path.Combine(rootDir, "test", "e2e", "Apps", this.appName, "target");
                     else
-                        e2eAppBuiltLocationPath = Path.Combine(rootDir, @$"test/e2e/Apps/{this.appName}/bin");
+                        e2eAppBuiltLocationPath = Path.Combine(rootDir, "test", "e2e", "Apps", this.appName, "bin");
 
                     if (!Path.Exists(e2eAppBuiltLocationPath))
                     {

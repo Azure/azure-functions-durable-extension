@@ -5,9 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Net.Http;
-using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
@@ -49,7 +47,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // Set to a non null value
             this.InternalRpcUri = new Uri($"http://uninitialized");
             this.localWebHost = new NoOpWebHost();
-            this.portGenerator = new Random();
+            this.portGenerator = Random.Shared;
             this.attemptedPorts = new HashSet<int>();
         }
 
@@ -61,7 +59,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public async Task StartAsync()
         {
-            if (this.IsListening == true)
+            if (this.IsListening)
             {
                 throw new InvalidOperationException("The local HTTP listener has already started.");
             }

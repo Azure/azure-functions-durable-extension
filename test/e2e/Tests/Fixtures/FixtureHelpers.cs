@@ -14,7 +14,7 @@ public static class FixtureHelpers
 {
     public static Process GetFuncHostProcess(string appPath, bool enableAuth = false)
     {
-        var cliPath = Path.Combine(Path.GetTempPath(), @"DurableTaskExtensionE2ETests/Azure.Functions.Cli/func");
+        var cliPath = Path.Combine(Path.GetTempPath(), "DurableTaskExtensionE2ETests", "Azure.Functions.Cli", "func");
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
@@ -48,13 +48,15 @@ public static class FixtureHelpers
 
     public static void StartProcessWithLogging(Process funcProcess, ILogger logger)
     {
-        funcProcess.ErrorDataReceived += (sender, e) => { 
-            try { logger.LogError(e?.Data); } 
-            catch (InvalidOperationException) { } 
+        funcProcess.ErrorDataReceived += (sender, e) =>
+        {
+            try { logger.LogError(e?.Data); }
+            catch (InvalidOperationException) { }
         };
-        funcProcess.OutputDataReceived += (sender, e) => { 
-            try { logger.LogInformation(e?.Data); } 
-            catch (InvalidOperationException) { } 
+        funcProcess.OutputDataReceived += (sender, e) =>
+        {
+            try { logger.LogInformation(e?.Data); }
+            catch (InvalidOperationException) { }
         };
 
         funcProcess.Start();
