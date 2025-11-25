@@ -45,6 +45,11 @@ internal class FunctionAppProcess
 
             string rootDir = Path.GetFullPath(Path.Combine("..", "..", "..", "..", "..", ".."));
 
+            if (this.appName is null)
+            {
+                throw new InvalidOperationException("App name is not set.");
+            }
+
             switch (this.testLanguage)
             {
                 case LanguageType.PowerShell:

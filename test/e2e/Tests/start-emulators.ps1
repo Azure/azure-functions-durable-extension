@@ -73,10 +73,13 @@ if (!$SkipStorageEmulator)
             }
             
             Write-Host "Starting Azurite from: $azuritePath"
-            Start-Process $azuritePath -WorkingDirectory "./azurite" -ArgumentList "--silent" -NoNewWindow
+            # Use Start-Process without -NoNewWindow to ensure Azurite runs independently
+            # and persists after the script completes. This prevents connection refused errors
+            # when tests run in separate workflow steps.
+            Start-Process $azuritePath -WorkingDirectory "./azurite" -ArgumentList "--silent"
             
             # Give Azurite a moment to initialize before we start polling
-            Start-Sleep -Seconds 3
+            Start-Sleep -Seconds 5
         }
         else
         {
