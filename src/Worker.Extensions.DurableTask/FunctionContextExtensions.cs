@@ -12,6 +12,16 @@ namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
 internal static class FunctionContextExtensions
 {
     /// <summary>
+    /// Determines whether the function context represents a Durable Task function.
+    /// </summary>
+    /// <param name="context">The function context.</param>
+    /// <returns>True if function is a durable task trigger, false otherwise.</returns>
+    public static bool IsDurableTaskFunction(this FunctionContext context)
+        => context.TryGetOrchestrationBinding(out _)
+        || context.TryGetActivityBinding(out _)
+        || context.TryGetEntityBinding(out _);
+
+    /// <summary>
     /// Tries to get the orchestration trigger binding from the function context.
     /// </summary>
     /// <param name="context">The function context.</param>
