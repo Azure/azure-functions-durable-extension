@@ -73,8 +73,9 @@ public class DistributedTracingEntitiesTests
 
         HttpResponseMessage result = await HttpHelpers.InvokeHttpTrigger("GetActivityInfoOrchestration_Output", $"?id={orchestrationId}");
         Assert.Equal(HttpStatusCode.OK, result.StatusCode);
-        var remainingIds = (await result.Content.ReadAsStringAsync()).Replace("\r", "").Replace("\n", "").Replace("\"", "").Replace("[", "").Replace("]", "").Replace(" ", "");
-        ids.AddRange(remainingIds.Split(","));
+        List<string>? remainingIds = JsonSerializer.Deserialize<List<string>>((await result.Content.ReadAsStringAsync()));
+        Assert.NotNull(remainingIds);
+        ids.AddRange(remainingIds);
         Assert.Equal(8, ids.Count);
         Assert.True(ids.All(traceId => traceId.Equals(activity.TraceId.ToString())));
     }

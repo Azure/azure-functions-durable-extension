@@ -9,6 +9,7 @@ using DurableTask.Core;
 using DurableTask.Core.Entities;
 using DurableTask.Core.History;
 using DurableTask.Core.Query;
+using Google.Protobuf;
 using Microsoft.Azure.WebJobs.Host.Scale;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -598,6 +599,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             targetScaler = null;
             return false;
+        }
+
+        /// <summary>
+        /// Streams the history of the specified orchestration instance as an enumerable of serialized history chunks.
+        /// </summary>
+        /// <param name="instanceId">The instance ID of the orchestration.</param>
+        /// <param name="historyChunkSize">The maximum size (in bytes) of each history chunk.</param>
+        /// <param name="jsonFormatter">The JSON formatter used to serialize the history chunks.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>The enumerable of history chunks representing the orchestration's history.</returns>
+        public virtual Task<IEnumerable<string>> StreamOrchestrationHistoryAsync(string instanceId, JsonFormatter jsonFormatter, CancellationToken cancellationToken)
+        {
+            throw this.GetNotImplementedException(nameof(this.StreamOrchestrationHistoryAsync));
         }
     }
 }
