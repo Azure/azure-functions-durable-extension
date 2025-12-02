@@ -605,7 +605,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// Streams the history of the specified orchestration instance as an enumerable of serialized history chunks.
         /// </summary>
         /// <param name="instanceId">The instance ID of the orchestration.</param>
-        /// <param name="historyChunkSize">The maximum size (in bytes) of each history chunk.</param>
         /// <param name="jsonFormatter">The JSON formatter used to serialize the history chunks.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The enumerable of history chunks representing the orchestration's history.</returns>
