@@ -12,6 +12,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     public class SchemaSpanNamesTests
     {
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void CreateOrchestration_WithoutInstanceId_ReturnsExpectedFormat()
         {
             // Arrange
@@ -26,6 +27,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void CreateOrchestration_WithVersion_ReturnsExpectedFormat()
         {
             // Arrange
@@ -40,6 +42,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(true, "test-instance-123")]
         [InlineData(true, "abc-def-ghi")]
         public void CreateOrchestration_WithIncludeInstanceIdTrue_IncludesInstanceId(bool includeInstanceId, string instanceId)
@@ -56,6 +59,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(false, "test-instance-123")]
         [InlineData(false, "abc-def-ghi")]
         public void CreateOrchestration_WithIncludeInstanceIdFalse_ExcludesInstanceId(bool includeInstanceId, string instanceId)
@@ -72,6 +76,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void CreateOrchestration_WithNullInstanceId_ExcludesInstanceId()
         {
             // Arrange
@@ -87,6 +92,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void CreateOrchestration_WithEmptyInstanceId_ExcludesInstanceId()
         {
             // Arrange
@@ -102,6 +108,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void CreateOrchestration_WithVersionAndInstanceId_ReturnsExpectedFormat()
         {
             // Arrange
@@ -117,6 +124,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void CallOrSignalEntity_WithoutInstanceId_ReturnsExpectedFormat()
         {
             // Arrange
@@ -131,6 +139,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void CallOrSignalEntity_WithIncludeInstanceIdTrue_IncludesInstanceId()
         {
             // Arrange
@@ -146,6 +155,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void CallOrSignalEntity_WithIncludeInstanceIdFalse_ExcludesInstanceId()
         {
             // Arrange
@@ -161,6 +171,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void EntityStartsAnOrchestration_WithoutInstanceId_ReturnsExpectedFormat()
         {
             // Arrange
@@ -174,6 +185,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void EntityStartsAnOrchestration_WithIncludeInstanceIdTrue_IncludesInstanceId()
         {
             // Arrange
@@ -188,6 +200,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void EntityStartsAnOrchestration_WithIncludeInstanceIdFalse_ExcludesInstanceId()
         {
             // Arrange
