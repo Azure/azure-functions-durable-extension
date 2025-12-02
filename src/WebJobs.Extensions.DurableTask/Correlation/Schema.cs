@@ -33,11 +33,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
             internal static string CallOrSignalEntity(string name, string operation)
                 => $"{TraceActivityConstants.Entity}:{name}:{operation}";
 
+            internal static string CallOrSignalEntity(string name, string operation, string? instanceId, bool includeInstanceId)
+                => includeInstanceId && !string.IsNullOrEmpty(instanceId)
+                    ? $"{TraceActivityConstants.Entity}:{name}:{operation} ({instanceId})"
+                    : CallOrSignalEntity(name, operation);
+
             internal static string EntityStartsAnOrchestration(string name)
                 => $"{name}:{TraceActivityConstants.CreateOrchestration}";
 
+            internal static string EntityStartsAnOrchestration(string name, string? instanceId, bool includeInstanceId)
+                => includeInstanceId && !string.IsNullOrEmpty(instanceId)
+                    ? $"{name}:{TraceActivityConstants.CreateOrchestration} ({instanceId})"
+                    : EntityStartsAnOrchestration(name);
+
             internal static string CreateOrchestration(string name, string? version)
                => FormatName(TraceActivityConstants.CreateOrchestration, name, version);
+
+            internal static string CreateOrchestration(string name, string? version, string? instanceId, bool includeInstanceId)
+                => includeInstanceId && !string.IsNullOrEmpty(instanceId)
+                    ? $"{FormatName(TraceActivityConstants.CreateOrchestration, name, version)} ({instanceId})"
+                    : CreateOrchestration(name, version);
 
             private static string FormatName(string prefix, string name, string? version)
                 => string.IsNullOrEmpty(version) ? $"{prefix}:{name}" : $"{prefix}:{name}@{version}";
