@@ -516,14 +516,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         request.InstanceId,
                         executionId: null);
 
-                    // Throw exception or return an empty list?
                     List<HistoryEvent>? historyEvents = JsonConvert.DeserializeObject<List<HistoryEvent>>(
                         jsonHistory,
                         new JsonSerializerSettings()
                         {
                             Converters = { new HistoryEventJsonConverter() },
                         })
-                        ?? throw new RpcException(new Status(StatusCode.Internal, "Failed to deserialize orchestration history."));
+                        ?? throw new Exception($"Failed to deserialize orchestration history.");
 
                     int currentChunkSizeInBytes = 0;
 

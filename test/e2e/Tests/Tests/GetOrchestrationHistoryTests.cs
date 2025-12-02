@@ -67,9 +67,10 @@ public class GetOrchestrationHistoryTests
 
         // Confirm the correct count and sequence of events
         Assert.Equal(8, historyEvents.Count);
+
+        // OrchestratorStarted, ExecutionStarted, SubOrchestrationInstanceCreated, OrchestratorCompleted
         Assert.Equal(EventType.OrchestratorStarted, historyEvents[0].EventType);
         Assert.Equal(EventType.ExecutionStarted, historyEvents[1].EventType);
-
         // Confirm the fields of the ExecutionStartedEvent (name, orchestration input, and orchestration tags)
         var parentExecutionStartedEvent = (ExecutionStartedEvent)historyEvents[1];
         Assert.Equal("ParentOrchestration", parentExecutionStartedEvent.Name);
@@ -81,7 +82,6 @@ public class GetOrchestrationHistoryTests
             Assert.Contains(TagsKey, parentExecutionStartedEvent.Tags.Keys);
             Assert.Contains(TagsValue, parentExecutionStartedEvent.Tags.Values);
         }
-
         Assert.Equal(EventType.SubOrchestrationInstanceCreated, historyEvents[2].EventType);
         var subOrchestrationInstanceCreatedEvent = (SubOrchestrationInstanceCreatedEvent)historyEvents[2];
         Assert.Equal("FailSubOrchestration", subOrchestrationInstanceCreatedEvent.Name);
@@ -92,6 +92,7 @@ public class GetOrchestrationHistoryTests
         }
         Assert.Equal(EventType.OrchestratorCompleted, historyEvents[3].EventType);
 
+        // OrchestratorStarted, SubOrchestrationInstanceFailed, ExecutionCompleted, OrchestratorCompleted
         Assert.Equal(EventType.OrchestratorStarted, historyEvents[4].EventType);
         Assert.Equal(EventType.SubOrchestrationInstanceFailed, historyEvents[5].EventType);
         Assert.Equal(subOrchestrationInstanceCreatedEvent.EventId, ((SubOrchestrationInstanceFailedEvent)historyEvents[5]).TaskScheduledId);
@@ -136,9 +137,10 @@ public class GetOrchestrationHistoryTests
 
         // Confirm the correct count and sequence of events for the suborchestration
         Assert.Equal(8, subOrchestrationHistoryEvents.Count);
+
+        // OrchestratorStarted, ExecutionStarted, TaskScheduled, OrchestratorCompleted
         Assert.Equal(EventType.OrchestratorStarted, subOrchestrationHistoryEvents[0].EventType);
         Assert.Equal(EventType.ExecutionStarted, subOrchestrationHistoryEvents[1].EventType);
-
         // Confirm the fields of the ExecutionStartedEvent for the suborchestration (name, orchestration input, parent information, task ID)
         var subOrchestrationExecutionStartedEvent = (ExecutionStartedEvent)subOrchestrationHistoryEvents[1];
         Assert.Equal("FailSubOrchestration", subOrchestrationExecutionStartedEvent.Name);
@@ -152,7 +154,6 @@ public class GetOrchestrationHistoryTests
             Assert.Equal("ParentOrchestration", subOrchestrationExecutionStartedEvent.ParentInstance.Name);
             Assert.Equal(parentExecutionStartedEvent.OrchestrationInstance.ExecutionId, subOrchestrationExecutionStartedEvent.ParentInstance.OrchestrationInstance.ExecutionId);
         }
-
         Assert.Equal(EventType.TaskScheduled, subOrchestrationHistoryEvents[2].EventType);
         var taskScheduledEvent = (TaskScheduledEvent)subOrchestrationHistoryEvents[2];
         Assert.Equal("ThrowExceptionActivity", taskScheduledEvent.Name);
@@ -164,6 +165,7 @@ public class GetOrchestrationHistoryTests
         }
         Assert.Equal(EventType.OrchestratorCompleted, subOrchestrationHistoryEvents[3].EventType);
 
+        // OrchestratorStarted, TaskFailed, ExecutionCompleted, OrchestratorCompleted
         Assert.Equal(EventType.OrchestratorStarted, subOrchestrationHistoryEvents[4].EventType);
         Assert.Equal(EventType.TaskFailed, subOrchestrationHistoryEvents[5].EventType);
         // Confirm the event ID of the TaskScheduledEvent matches the TaskScheduledId field of the TaskFailedEvent
@@ -225,9 +227,10 @@ public class GetOrchestrationHistoryTests
 
         // Confirm the correct count and sequence of events
         Assert.Equal(8, historyEvents.Count);
+
+        // OrchestratorStarted, ExecutionStarted, SubOrchestrationInstanceCreated, OrchestratorCompleted
         Assert.Equal(EventType.OrchestratorStarted, historyEvents[0].EventType);
         Assert.Equal(EventType.ExecutionStarted, historyEvents[1].EventType);
-
         // Confirm the fields of the ExecutionStartedEvent (name, orchestration input, and orchestration tags)
         var parentExecutionStartedEvent = (ExecutionStartedEvent)historyEvents[1];
         Assert.Equal("ParentOrchestration", parentExecutionStartedEvent.Name);
@@ -239,7 +242,6 @@ public class GetOrchestrationHistoryTests
             Assert.Contains(TagsKey, parentExecutionStartedEvent.Tags.Keys);
             Assert.Contains(TagsValue, parentExecutionStartedEvent.Tags.Values);
         }
-
         Assert.Equal(EventType.SubOrchestrationInstanceCreated, historyEvents[2].EventType);
         var subOrchestrationInstanceCreatedEvent = (SubOrchestrationInstanceCreatedEvent)historyEvents[2];
         Assert.Equal("CallLargeOutputTasksSubOrchestration", subOrchestrationInstanceCreatedEvent.Name);
@@ -250,6 +252,7 @@ public class GetOrchestrationHistoryTests
         }
         Assert.Equal(EventType.OrchestratorCompleted, historyEvents[3].EventType);
 
+        // OrchestratorStarted, SubOrchestrationInstanceCompleted, ExecutionCompleted, OrchestratorCompleted
         Assert.Equal(EventType.OrchestratorStarted, historyEvents[4].EventType);
         Assert.Equal(EventType.SubOrchestrationInstanceCompleted, historyEvents[5].EventType);
         Assert.Equal(EventType.ExecutionCompleted, historyEvents[6].EventType);
@@ -280,9 +283,10 @@ public class GetOrchestrationHistoryTests
 
         // Confirm the correct count and sequence of events for the suborchestration
         Assert.Equal(isNotMSSQL ? 17 : 12, subOrchestrationHistoryEvents.Count);
+
+        // OrchestratorStarted, ExecutionStarted, TaskScheduled, OrchestratorCompleted
         Assert.Equal(EventType.OrchestratorStarted, subOrchestrationHistoryEvents[0].EventType);
         Assert.Equal(EventType.ExecutionStarted, subOrchestrationHistoryEvents[1].EventType);
-
         // Confirm the fields of the ExecutionStartedEvent for the suborchestration (name, orchestration input, parent information, task ID)
         var subOrchestrationExecutionStartedEvent = (ExecutionStartedEvent)subOrchestrationHistoryEvents[1];
         Assert.Equal("CallLargeOutputTasksSubOrchestration", subOrchestrationExecutionStartedEvent.Name);
@@ -295,11 +299,11 @@ public class GetOrchestrationHistoryTests
             Assert.Equal("ParentOrchestration", subOrchestrationExecutionStartedEvent.ParentInstance.Name);
             Assert.Equal(parentExecutionStartedEvent.OrchestrationInstance.ExecutionId, subOrchestrationExecutionStartedEvent.ParentInstance.OrchestrationInstance.ExecutionId);
         }
-
         Assert.Equal(EventType.TaskScheduled, subOrchestrationHistoryEvents[2].EventType);
         Assert.Equal("LargeOutputActivity", ((TaskScheduledEvent)subOrchestrationHistoryEvents[2]).Name);
         Assert.Equal(EventType.OrchestratorCompleted, subOrchestrationHistoryEvents[3].EventType);
 
+        // OrchestratorStarted, TaskCompleted
         Assert.Equal(EventType.OrchestratorStarted, subOrchestrationHistoryEvents[4].EventType);
         Assert.Equal(EventType.TaskCompleted, subOrchestrationHistoryEvents[5].EventType);
         var taskCompletedEvent = (TaskCompletedEvent)subOrchestrationHistoryEvents[5];
@@ -310,11 +314,13 @@ public class GetOrchestrationHistoryTests
         ExecutionCompletedEvent subOrchestrationExecutionCompletedEvent;
         if (isNotMSSQL)
         {
+            // EventSentEvent, TimerCreated, OrchestratorCompleted
             Assert.Equal(EventType.EventSent, subOrchestrationHistoryEvents[6].EventType);
             Assert.Equal(entityId.ToString(), ((EventSentEvent)subOrchestrationHistoryEvents[6]).InstanceId);
             Assert.Equal(EventType.TimerCreated, subOrchestrationHistoryEvents[7].EventType);
             Assert.Equal(EventType.OrchestratorCompleted, subOrchestrationHistoryEvents[8].EventType);
 
+            // OrchestratorStarted, TimerFired, EventSentEvent, OrchestratorCompleted
             Assert.Equal(EventType.OrchestratorStarted, subOrchestrationHistoryEvents[9].EventType);
             Assert.Equal(EventType.TimerFired, subOrchestrationHistoryEvents[10].EventType);
             // Confirm the event ID of the TimerCreatedEvent matches the TimerId field of the TimerFiredEvent
@@ -323,6 +329,7 @@ public class GetOrchestrationHistoryTests
             Assert.Equal(entityId.ToString(), ((EventSentEvent)subOrchestrationHistoryEvents[11]).InstanceId);
             Assert.Equal(EventType.OrchestratorCompleted, subOrchestrationHistoryEvents[12].EventType);
 
+            // OrchestratorStarted, EventRaised, ExecutionCompleted, OrchestratorCompleted
             Assert.Equal(EventType.OrchestratorStarted, subOrchestrationHistoryEvents[13].EventType);
             Assert.Equal(EventType.EventRaised, subOrchestrationHistoryEvents[14].EventType);
             Assert.Equal(EventType.ExecutionCompleted, subOrchestrationHistoryEvents[15].EventType);
@@ -331,10 +338,12 @@ public class GetOrchestrationHistoryTests
         }
         else
         {
+            // TaskScheduled, OrchestratorCompleted
             Assert.Equal(EventType.TaskScheduled, subOrchestrationHistoryEvents[6].EventType);
             Assert.Equal("LargeOutputActivity", ((TaskScheduledEvent)subOrchestrationHistoryEvents[6]).Name);
             Assert.Equal(EventType.OrchestratorCompleted, subOrchestrationHistoryEvents[7].EventType);
 
+            // OrchestratorStarted, TaskCompleted, ExecutionCompleted, OrchestratorCompleted
             Assert.Equal(EventType.OrchestratorStarted, subOrchestrationHistoryEvents[8].EventType);
             taskCompletedEvent = (TaskCompletedEvent)subOrchestrationHistoryEvents[9];
             // Confirm the event ID of the TaskScheduledEvent matches the TaskScheduledId field of the TaskCompletedEvent
