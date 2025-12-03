@@ -107,46 +107,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
-        /// Tests that SendSignalOperationAction is not affected by the default version parameter.
-        /// </summary>
-        [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public void ToOperationAction_SendSignal_NotAffectedByDefaultVersion()
-        {
-            // Arrange
-            var sendSignalAction = new P.SendSignalAction
-            {
-                Name = "TestOperation",
-                InstanceId = "@entity@test",
-                Input = "\"test-input\"",
-            };
-
-            var operationAction = new P.OperationAction
-            {
-                SendSignal = sendSignalAction,
-            };
-
-            var defaultVersion = "2025-10-23";
-
-            // Act
-            var result = operationAction.ToOperationAction(defaultVersion);
-
-            // Assert
-            Assert.NotNull(result);
-            var sendSignalResult = Assert.IsType<SendSignalOperationAction>(result);
-            Assert.Equal("TestOperation", sendSignalResult.Name);
-            Assert.Equal("@entity@test", sendSignalResult.InstanceId);
-        }
-
-        /// <summary>
-        /// Tests backward compatibility - when no default version is provided, behavior should match previous implementation.
+        /// Tests that when no default version is provided, behavior should match previous implementation.
         /// </summary>
         [Theory]
         [InlineData(null, null)] // Null version, no default
         [InlineData("", null)] // Empty version becomes null when no default
         [InlineData("v1.0", "v1.0")] // Explicit version preserved
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public void ToOperationAction_BackwardCompatible_NoDefaultVersion(
+        public void ToOperationAction_NoDefaultVersion(
             string protoVersion,
             string expectedVersion)
         {

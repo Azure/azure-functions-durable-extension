@@ -51,12 +51,16 @@ public static class EntitySchedulesVersionedOrchestration
         string? explicitVersion = context.GetInput<string?>();
 
         var entityId = new EntityInstanceId(nameof(VersionSchedulerEntity), "singleton");
+        var scheduleRequest = new ScheduleOrchestrationRequest
+        {
+            ExplicitVersion = explicitVersion,
+        };
 
         // Call the entity which will schedule an orchestration and return the scheduled instance ID
         string scheduledInstanceId = await context.Entities.CallEntityAsync<string>(
             entityId,
             nameof(VersionSchedulerEntity.ScheduleOrchestration),
-            explicitVersion);
+            scheduleRequest);
 
         // Wait a bit for the scheduled orchestration to complete, then get its output
         // We use a sub-orchestrator to fetch the result
@@ -92,11 +96,15 @@ public static class EntitySchedulesVersionedOrchestration
         FunctionContext executionContext)
     {
         ILogger logger = executionContext.GetLogger(nameof(GetOrchestrationResultActivity));
+        var metadataOptions = new GetInstanceOptions
+        {
+            GetInputsAndOutputs = true,
+        };
 
         // Poll for completion (max 30 seconds)
         for (int i = 0; i < 60; i++)
         {
-            var metadata = await client.GetInstanceAsync(instanceId);
+            var metadata = await client.GetInstanceAsync(instanceId, metadataOptions);
             if (metadata?.RuntimeStatus == OrchestrationRuntimeStatus.Completed)
             {
                 var result = metadata.ReadOutputAs<string>();
@@ -128,7 +136,6 @@ public static class EntitySchedulesVersionedOrchestration
 
 /// <summary>
 /// Entity that schedules orchestrations with or without explicit versions.
-/// This is the key component for testing GitHub issue #3237.
 /// </summary>
 public class VersionSchedulerEntity : TaskEntity<string?>
 {
@@ -136,20 +143,12 @@ public class VersionSchedulerEntity : TaskEntity<string?>
     /// Schedules a new orchestration. If explicitVersion is null or empty,
     /// the orchestration should receive the host's defaultVersion.
     /// </summary>
-    public string ScheduleOrchestration(string? explicitVersion)
+    public string ScheduleOrchestration(ScheduleOrchestrationRequest request)
     {
-        StartOrchestrationOptions options;
-
-        if (string.IsNullOrEmpty(explicitVersion))
-        {
-            // No explicit version - should use host's defaultVersion from host.json
-            options = new StartOrchestrationOptions();
-        }
-        else
-        {
-            // Explicit version provided
-            options = new StartOrchestrationOptions { Version = explicitVersion };
-        }
+        string? explicitVersion = request?.ExplicitVersion;
+        StartOrchestrationOptions options = string.IsNullOrWhiteSpace(explicitVersion)
+            ? new StartOrchestrationOptions()
+            : new StartOrchestrationOptions { Version = explicitVersion };
 
         string instanceId = this.Context.ScheduleNewOrchestration(
             nameof(EntitySchedulesVersionedOrchestration.EntityScheduledVersionedOrchestrator),
@@ -169,4 +168,12 @@ public class VersionSchedulerEntity : TaskEntity<string?>
     {
         return dispatcher.DispatchAsync(this);
     }
+}
+
+/// <summary>
+/// Defines the payload sent to the VersionScheduler entity so that null versions are serialized explicitly.
+/// </summary>
+public sealed class ScheduleOrchestrationRequest
+{
+    public string? ExplicitVersion { get; init; }
 }

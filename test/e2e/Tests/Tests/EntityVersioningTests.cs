@@ -27,7 +27,6 @@ public class EntityVersioningTests
     /// <summary>
     /// Tests that when an entity schedules an orchestration without specifying a version,
     /// the orchestration receives the host's defaultVersion from host.json.
-    /// This is the main fix for GitHub issue #3237.
     /// </summary>
     [Fact]
     [Trait("PowerShell", "Skip")] // Durable Entities not yet implemented in PowerShell
@@ -52,7 +51,6 @@ public class EntityVersioningTests
         var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
 
         // The scheduled orchestration should have received the default version "2.0" from host.json
-        // This verifies the fix for GitHub issue #3237
         Assert.Equal("EntityScheduledVersion: '2.0'", orchestrationDetails.Output);
     }
 
