@@ -8,7 +8,6 @@ using Xunit.Abstractions;
 namespace Microsoft.Azure.Durable.Tests.DotnetIsolatedE2E;
 
 /// <summary>
-/// These tests verify that when an entity schedules an orchestration without specifying a version,
 /// the orchestration receives the host's defaultVersion from host.json (which is "2.0" in the test app).
 /// </summary>
 [Collection(Constants.FunctionAppCollectionName)]
