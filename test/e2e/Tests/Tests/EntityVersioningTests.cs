@@ -55,13 +55,13 @@ public class EntityVersioningTests
     }
 
     /// <summary>
-    /// Tests that when an entity schedules an orchestration with an explicit version,
-    /// that explicit version is used instead of the defaultVersion.
+    /// Tests that when an entity schedules an orchestration with an explicit version
+    /// that matches a configured version, that explicit version is used instead of
+    /// the defaultVersion.
     /// </summary>
     [Theory]
     [InlineData("1.0")]
-    [InlineData("3.0")]
-    [InlineData("custom-version")]
+    [InlineData("2.0")]
     [Trait("PowerShell", "Skip")] // Durable Entities not yet implemented in PowerShell
     [Trait("Java", "Skip")] // Durable Entities not yet implemented in Java
     [Trait("MSSQL", "Skip")] // Durable Entities are not supported in MSSQL for out-of-proc
@@ -84,6 +84,36 @@ public class EntityVersioningTests
 
         // The scheduled orchestration should have received the explicit version
         Assert.Equal($"EntityScheduledVersion: '{explicitVersion}'", orchestrationDetails.Output);
+    }
+
+    /// <summary>
+    /// Tests that when an entity schedules an orchestration with an explicit version that
+    /// does not match any configured version, the scheduled orchestration fails instead of
+    /// silently falling back to the defaultVersion.
+    /// </summary>
+    [Theory]
+    [InlineData("3.0")]
+    [InlineData("custom-version")]
+    [Trait("PowerShell", "Skip")] // Durable Entities not yet implemented in PowerShell
+    [Trait("Java", "Skip")] // Durable Entities not yet implemented in Java
+    [Trait("MSSQL", "Skip")] // Durable Entities are not supported in MSSQL for out-of-proc
+    [Trait("Python", "Skip")] // Entity versioning not implemented in Python
+    [Trait("Node", "Skip")] // Entity versioning not implemented in Node
+    public async Task EntityScheduledOrchestration_Fails_WhenExplicitVersionIsNotConfigured(string explicitVersion)
+    {
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger(
+            "EntitySchedulesVersionedOrchestration_HttpStart",
+            $"?explicitVersion={explicitVersion}");
+
+        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
+
+        string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
+        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", 60);
+
+        var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
+
+        string result = orchestrationDetails.Output;
+        Assert.StartsWith("FAILED: ", result);
     }
 
     /// <summary>
