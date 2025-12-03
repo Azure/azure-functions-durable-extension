@@ -6,7 +6,6 @@ using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -314,10 +313,82 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     }
 
                     return action;
+                case P.OrchestratorAction.OrchestratorActionTypeOneofCase.SendEntityMessage:
+                    RequestMessage? entityMessage = null;
+                    string? eventName = null;
+                    string? targetInstance = null;
+                    switch (a.SendEntityMessage.EntityMessageTypeCase)
+                    {
+                        case P.SendEntityMessageAction.EntityMessageTypeOneofCase.EntityLockRequested:
+                            entityMessage = new RequestMessage()
+                            {
+                                Operation = null,
+                                Id = Guid.Parse(a.SendEntityMessage.EntityLockRequested.CriticalSectionId),
+                                LockSet = a.SendEntityMessage.EntityLockRequested.LockSet.Select(s => EntityId.FromString(s)).ToArray(),
+                                Position = a.SendEntityMessage.EntityLockRequested.Position,
+                                ParentInstanceId = a.SendEntityMessage.EntityLockRequested.ParentInstanceId,
+                            };
+                            targetInstance = a.SendEntityMessage.EntityOperationCalled.TargetInstanceId;
+                            eventName = EncodeEventName(null);
+                            break;
+                        case P.SendEntityMessageAction.EntityMessageTypeOneofCase.EntityUnlockSent:
+                            entityMessage = new RequestMessage()
+                            {
+                                Id = Guid.Parse(a.SendEntityMessage.EntityUnlockSent.CriticalSectionId),
+                                ParentInstanceId = a.SendEntityMessage.EntityUnlockSent.ParentInstanceId,
+                            };
+                            targetInstance = a.SendEntityMessage.EntityUnlockSent.TargetInstanceId;
+                            eventName = "release";
+                            break;
+                        case P.SendEntityMessageAction.EntityMessageTypeOneofCase.EntityOperationCalled:
+                            entityMessage = new RequestMessage()
+                            {
+                                Operation = a.SendEntityMessage.EntityOperationCalled.Operation,
+                                IsSignal = false,
+                                Input = a.SendEntityMessage.EntityOperationCalled.Input,
+                                Id = Guid.Parse(a.SendEntityMessage.EntityOperationCalled.RequestId),
+                                ScheduledTime = a.SendEntityMessage.EntityOperationCalled.ScheduledTime?.ToDateTime(),
+                                ParentInstanceId = a.SendEntityMessage.EntityOperationCalled.ParentInstanceId,
+                                ParentExecutionId = a.SendEntityMessage.EntityOperationCalled.ParentExecutionId,
+                            };
+                            targetInstance = a.SendEntityMessage.EntityOperationCalled.TargetInstanceId;
+                            eventName = EncodeEventName(a.SendEntityMessage.EntityOperationCalled.ScheduledTime?.ToDateTime());
+                            break;
+                        case P.SendEntityMessageAction.EntityMessageTypeOneofCase.EntityOperationSignaled:
+                            entityMessage = new RequestMessage()
+                            {
+                                Operation = a.SendEntityMessage.EntityOperationSignaled.Operation,
+                                IsSignal = true,
+                                Input = a.SendEntityMessage.EntityOperationSignaled.Input,
+                                Id = Guid.Parse(a.SendEntityMessage.EntityOperationSignaled.RequestId),
+                                ScheduledTime = a.SendEntityMessage.EntityOperationSignaled.ScheduledTime?.ToDateTime(),
+                            };
+                            targetInstance = a.SendEntityMessage.EntityOperationSignaled.TargetInstanceId;
+                            eventName = EncodeEventName(a.SendEntityMessage.EntityOperationSignaled.ScheduledTime?.ToDateTime());
+                            break;
+                        default:
+                            throw new NotSupportedException($"Deserialization of SendEntityMessage action type '{a.SendEntityMessage.EntityMessageTypeCase}' is not supported.");
+                    }
+
+                    return new SendEventOrchestratorAction
+                    {
+                        Id = a.Id,
+                        Instance = new OrchestrationInstance
+                        {
+                            InstanceId = targetInstance,
+                        },
+                        EventName = eventName, // TODO: Determine event name for entity messages
+                        EventData = JsonConvert.SerializeObject(entityMessage, new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.None }),
+                    };
+
+                    throw new NotSupportedException("Deserialization of SendEntityMessage action is not supported.");
                 default:
                     throw new NotSupportedException($"Received unsupported action type '{a.OrchestratorActionTypeCase}'.");
             }
         }
+
+        private static string EncodeEventName(DateTime? scheduledTime)
+            => scheduledTime.HasValue ? $"op@{scheduledTime.Value:o}" : "op";
 
         [return: NotNullIfNotNull("parameters")]
         public static P.OrchestratorEntityParameters? ToProtobuf(this TaskOrchestrationEntityParameters? parameters)
