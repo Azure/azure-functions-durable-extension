@@ -96,15 +96,11 @@ public static class EntitySchedulesVersionedOrchestration
         FunctionContext executionContext)
     {
         ILogger logger = executionContext.GetLogger(nameof(GetOrchestrationResultActivity));
-        var metadataOptions = new GetInstanceOptions
-        {
-            GetInputsAndOutputs = true,
-        };
 
         // Poll for completion (max 30 seconds)
         for (int i = 0; i < 60; i++)
         {
-            var metadata = await client.GetInstanceAsync(instanceId, metadataOptions);
+            var metadata = await client.GetInstancesAsync(instanceId, getInputsAndOutputs: true);
             if (metadata?.RuntimeStatus == OrchestrationRuntimeStatus.Completed)
             {
                 var result = metadata.ReadOutputAs<string>();
