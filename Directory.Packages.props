@@ -10,7 +10,7 @@
   <ItemGroup>
     <PackageVersion Include="Azure.Identity" Version="1.17.1" />
     <PackageVersion Include="Grpc.Tools" Version="2.49.0" />
-    <PackageVersion Include="Grpc.Net.Client" Version="2.70.0" />
+    <PackageVersion Include="Grpc.Net.Client" Version="2.71.0" />
     <PackageVersion Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.3.0" />
     <PackageVersion Include="Microsoft.AspNetCore.Mvc.WebApiCompatShim" Version="2.2.0" />
     <PackageVersion Include="Microsoft.Azure.DurableTask.ApplicationInsights" Version="0.8.0" />
