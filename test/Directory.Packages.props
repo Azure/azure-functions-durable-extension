@@ -7,7 +7,7 @@
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Packages.props, $(MSBuildThisFileDirectory)..))" />
 
   <ItemGroup>
-    <PackageVersion Include="coverlet.collector" Version="6.0.0" />
+    <PackageVersion Include="coverlet.collector" Version="6.0.4" />
     <PackageVersion Include="FluentAssertions" Version="4.19.4" />
     <PackageVersion Include="Microsoft.Azure.WebJobs.Logging.ApplicationInsights" Version="3.0.41" />
     <PackageVersion Include="Microsoft.Build" Version="17.3.2" />
