@@ -324,11 +324,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             {
                                 Operation = null,
                                 Id = Guid.Parse(a.SendEntityMessage.EntityLockRequested.CriticalSectionId),
-                                LockSet = a.SendEntityMessage.EntityLockRequested.LockSet.Select(s => EntityId.FromString(s)).ToArray(),
+                                LockSet = a.SendEntityMessage.EntityLockRequested.LockSet.Skip(1).Select(s => EntityId.FromString(s)).ToArray(),
                                 Position = a.SendEntityMessage.EntityLockRequested.Position,
                                 ParentInstanceId = a.SendEntityMessage.EntityLockRequested.ParentInstanceId,
                             };
-                            targetInstance = a.SendEntityMessage.EntityOperationCalled.TargetInstanceId;
+                            targetInstance = a.SendEntityMessage.EntityLockRequested.LockSet.ElementAt(0);
                             eventName = EncodeEventName(null);
                             break;
                         case P.SendEntityMessageAction.EntityMessageTypeOneofCase.EntityUnlockSent:
