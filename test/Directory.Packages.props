@@ -29,7 +29,7 @@
 
   <!-- Transitive dependencies with higher versions -->
   <ItemGroup>
-    <PackageVersion Update="Azure.Identity" Version="1.17.0" />
+    <PackageVersion Update="Azure.Identity" Version="1.17.1" />
     <PackageVersion Update="Microsoft.Bcl.AsyncInterfaces" Version="9.0.0"/>
     <PackageVersion Update="Microsoft.Extensions.Azure" Version="1.10.0" />
     <PackageVersion Update="System.Drawing.Common" Version="6.0.0" />
