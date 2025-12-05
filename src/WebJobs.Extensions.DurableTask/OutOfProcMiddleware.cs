@@ -381,7 +381,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                     byte[] triggerReturnValueBytes = Convert.FromBase64String(triggerReturnValue);
                     P.EntityBatchResult response = P.EntityBatchResult.Parser.ParseFrom(triggerReturnValueBytes);
-                    context.Result = response.ToEntityBatchResult();
+                    context.Result = response.ToEntityBatchResult(this.Options.DefaultVersion);
 
                     context.ThrowIfFailed();
 #pragma warning restore CS0618 // Type or member is obsolete (not intended for general public use)
