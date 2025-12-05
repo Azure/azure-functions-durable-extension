@@ -4,19 +4,19 @@ using Microsoft.DurableTask;
 using Microsoft.DurableTask.Client;
 using Microsoft.Extensions.Logging;
 
-namespace Netherite;
+namespace MSSQL;
 
 public static class DurableFunctionsOrchestrationCSharp
 {
     /// <summary>
-    /// Orchestrates a simple fan-out using Netherite storage provider.
+    /// Orchestrates a simple fan-out using the SQL Server provider.
     /// </summary>
     [Function(nameof(DurableFunctionsOrchestrationCSharp))]
     public static async Task<List<string>> RunOrchestrator(
         [OrchestrationTrigger] TaskOrchestrationContext context)
     {
         ILogger logger = context.CreateReplaySafeLogger(nameof(DurableFunctionsOrchestrationCSharp));
-        logger.LogInformation("Running Netherite orchestration sample.");
+        logger.LogInformation("Running SQL Server orchestration sample.");
 
         var outputs = new List<string>
         {

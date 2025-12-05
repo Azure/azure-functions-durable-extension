@@ -35,7 +35,7 @@ public class ErrorHandlingTests
         await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Failed", 30);
 
         var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
-        
+
         Assert.StartsWith(this.fixture.functionLanguageLocalizer?.GetLocalizedStringValue("RethrownActivityException.ErrorMessage"), orchestrationDetails.Output);
         Assert.Contains("This activity failed", orchestrationDetails.Output);
     }
@@ -55,7 +55,7 @@ public class ErrorHandlingTests
         await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Failed", 30);
 
         var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
-        
+
         Assert.StartsWith(this.fixture.functionLanguageLocalizer.GetLocalizedStringValue("RethrownEntityException.ErrorMessage"), orchestrationDetails.Output);
         // Bug: https://github.com/Azure/azure-functions-durable-js/issues/642
         if (this.fixture.functionLanguageLocalizer.GetLanguageType() != LanguageType.Node)
@@ -149,7 +149,7 @@ public class ErrorHandlingTests
         Assert.Equal("Success", orchestrationDetails.Output);
 
         // Give some time for Core Tools to write logs out
-        Thread.Sleep(500);
+        Thread.Sleep(2000);
 
         Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains(nameof(InvalidOperationException)) &&
                                                               x.Contains("This activity failed"));
@@ -174,7 +174,7 @@ public class ErrorHandlingTests
         Assert.Equal("Success", orchestrationDetails.Output);
 
         // Give some time for Core Tools to write logs out
-        Thread.Sleep(500);
+        Thread.Sleep(2000);
 
         if (this.fixture.functionLanguageLocalizer.GetLanguageType() == LanguageType.Python ||
             this.fixture.functionLanguageLocalizer.GetLanguageType() == LanguageType.Node)
@@ -214,7 +214,7 @@ public class ErrorHandlingTests
         Assert.Equal("Success", orchestrationDetails.Output);
 
         // Give some time for Core Tools to write logs out
-        Thread.Sleep(500);
+        Thread.Sleep(2000);
 
         // We want to ensure that multiline exception messages and inner exceptions are preserved
         Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains(nameof(InvalidOperationException)) &&
@@ -239,7 +239,7 @@ public class ErrorHandlingTests
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
 
         await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", 30);
-        
+
         var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
         // Deserialize the output to FailureDetails
         var failureDetails = JsonConvert.DeserializeObject<TaskFailureDetails>(orchestrationDetails.Output);
@@ -251,19 +251,19 @@ public class ErrorHandlingTests
 
         // Check that custom properties are included
         Assert.NotNull(failureDetails.Properties);
-        
+
         // Verify string property
         Assert.True(failureDetails.Properties.ContainsKey("StringProperty"));
         Assert.Equal("validation-error-123", failureDetails.Properties["StringProperty"]);
-        
+
         // Verify int property
         Assert.True(failureDetails.Properties.ContainsKey("IntProperty"));
         Assert.Equal((long)100, failureDetails.Properties["IntProperty"]);
-        
+
         // Verify long property
         Assert.True(failureDetails.Properties.ContainsKey("LongProperty"));
         Assert.Equal(999999999L, failureDetails.Properties["LongProperty"]);
-        
+
         // Verify DateTime property
 
         Assert.True(failureDetails.Properties.ContainsKey("DateTimeProperty"));
@@ -276,7 +276,7 @@ public class ErrorHandlingTests
         Assert.Equal("VALIDATION_FAILED", dictProperty["error_code"]);
         Assert.Equal((long)3, dictProperty["retry_count"]);
         Assert.Equal(true, dictProperty["is_critical"]);
-        
+
         // Verify list property
         Assert.True(failureDetails.Properties.ContainsKey("ListProperty"));
         var listProperty = JsonConvert.DeserializeObject<List<object>>(failureDetails.Properties["ListProperty"]!.ToString()!);
@@ -286,7 +286,7 @@ public class ErrorHandlingTests
         Assert.Equal("error2", listProperty[1]);
         Assert.Equal((long)500, listProperty[2]);
         Assert.Null(listProperty[3]);
-        
+
         // Verify null property
         Assert.True(failureDetails.Properties.ContainsKey("NullProperty"));
         Assert.Null(failureDetails.Properties["NullProperty"]);

@@ -143,7 +143,7 @@ public class VersionSchedulerEntity : TaskEntity<string?>
     {
         string? explicitVersion = request?.ExplicitVersion;
         StartOrchestrationOptions options = string.IsNullOrWhiteSpace(explicitVersion)
-            ? new StartOrchestrationOptions()
+            ? new StartOrchestrationOptions { Version = null }
             : new StartOrchestrationOptions { Version = explicitVersion };
 
         string instanceId = this.Context.ScheduleNewOrchestration(

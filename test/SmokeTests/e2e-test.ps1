@@ -16,7 +16,10 @@ param(
      	[string]$tag="2019-latest",
     	[int]$port=1433,
      	[string]$dbname="DurableDB",
-    	[string]$collation="Latin1_General_100_BIN2_UTF8"
+    	[string]$collation="Latin1_General_100_BIN2_UTF8",
+	[string]$ContainerEngine="docker",
+	[string]$Platform="",
+	[string]$NetheriteEventHubsConnection="UseDevelopmentStorage=true"
 )
 
 function Exit-OnError() {
@@ -72,29 +75,58 @@ function Start-And-Wait-Orchestration {
 $ErrorActionPreference = "Stop"
 $AzuriteVersion = "3.34.0"
 
+$engine = $ContainerEngine
+$platformArgs = @()
+if (-not [string]::IsNullOrWhiteSpace($Platform)) {
+	$platformArgs = @("--platform", $Platform)
+}
+
 if ($NoSetup -eq $false) {
 	# Build the docker image first, since that's the most critical step
 	Write-Host "Building sample app Docker container from '$DockerfilePath'..." -ForegroundColor Yellow
-	docker build --pull -f $DockerfilePath -t $ImageName --progress plain $PSScriptRoot/../../
+	$buildArgs = @("build", "--pull", "-f", $DockerfilePath, "-t", $ImageName)
+	if ($platformArgs.Count -gt 0) {
+		$buildArgs += $platformArgs
+	}
+	$buildArgs += "$PSScriptRoot/../../"
+	& $engine @buildArgs
 	Exit-OnError
 
 	# Next, download and start the Azurite emulator Docker image
 	Write-Host "Pulling down the mcr.microsoft.com/azure-storage/azurite:$AzuriteVersion image..." -ForegroundColor Yellow
-	docker pull "mcr.microsoft.com/azure-storage/azurite:${AzuriteVersion}"
+	$azuritePull = @("pull", "mcr.microsoft.com/azure-storage/azurite:${AzuriteVersion}")
+	if ($platformArgs.Count -gt 0) {
+		$azuritePull += $platformArgs
+	}
+	& $engine @azuritePull
 	Exit-OnError
 
 	Write-Host "Starting Azurite storage emulator using default ports..." -ForegroundColor Yellow
-	docker run --name 'azurite' -p 10000:10000 -p 10001:10001 -p 10002:10002 -d "mcr.microsoft.com/azure-storage/azurite:${AzuriteVersion}"
+	$azuriteRun = @("run", "--name", "azurite", "-p", "10000:10000", "-p", "10001:10001", "-p", "10002:10002", "-d")
+	if ($platformArgs.Count -gt 0) {
+		$azuriteRun = @("run") + $platformArgs + $azuriteRun[1..($azuriteRun.Count - 1)]
+	}
+	$azuriteRun += "mcr.microsoft.com/azure-storage/azurite:${AzuriteVersion}"
+	& $engine @azuriteRun
 	Exit-OnError
 
  	if ($SetupSQLServer -eq $true) {
 		Write-Host "Pulling down the mcr.microsoft.com/mssql/server:$tag image..."
-		docker pull mcr.microsoft.com/mssql/server:$tag
+		$mssqlPull = @("pull", "mcr.microsoft.com/mssql/server:$tag")
+		if ($platformArgs.Count -gt 0) {
+			$mssqlPull += $platformArgs
+		}
+		& $engine @mssqlPull
 		Exit-OnError
 
 		# Start the SQL Server docker container with the specified edition
 		Write-Host "Starting SQL Server $tag $sqlpid docker container on port $port" -ForegroundColor DarkYellow
-		docker run --name mssql-server -e 'ACCEPT_EULA=Y' -e "MSSQL_SA_PASSWORD=$pw" -e "MSSQL_PID=$sqlpid" -p ${port}:1433 -d mcr.microsoft.com/mssql/server:$tag
+		$mssqlRun = @("run", "--name", "mssql-server", "-e", "ACCEPT_EULA=Y", "-e", "MSSQL_SA_PASSWORD=$pw", "-e", "MSSQL_PID=$sqlpid", "-p", "${port}:1433", "-d")
+		if ($platformArgs.Count -gt 0) {
+			$mssqlRun = @("run") + $platformArgs + $mssqlRun[1..($mssqlRun.Count - 1)]
+		}
+		$mssqlRun += "mcr.microsoft.com/mssql/server:$tag"
+		& $engine @mssqlRun
 		Exit-OnError
 
 		# Wait for SQL Server to be ready
@@ -103,23 +135,23 @@ if ($NoSetup -eq $false) {
 		Exit-OnError
 
 		Write-Host "Checking if SQL Server is still running..." -ForegroundColor Yellow
-		$sqlServerStatus = docker inspect -f '{{.State.Status}}' mssql-server
+		$sqlServerStatus = & $engine inspect -f '{{.State.Status}}' mssql-server
 		Exit-OnError
 
 		if ($sqlServerStatus -ne "running") {
 			Write-Host "Unexpected SQL Server status: $sqlServerStatus" -ForegroundColor Yellow
-			docker logs mssql-server
+			& $engine logs mssql-server
 			exit 1;
 		}
 
  		# Get SQL Server IP Address - used to create SQLDB_Connection
 		Write-Host "Getting IP Address..." -ForegroundColor Yellow
-	 	$serverIpAddress = docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' mssql-server
+	 	$serverIpAddress = & $engine inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' mssql-server
 		Exit-OnError
 
 	 	# Create the database with strict binary collation
 		Write-Host "Creating '$dbname' database with '$collation' collation" -ForegroundColor DarkYellow
-		docker exec -d mssql-server /opt/mssql-tools18/bin/sqlcmd -S . -U sa -P "$pw" -Q "CREATE DATABASE [$dbname] COLLATE $collation"
+		& $engine exec -d mssql-server /opt/mssql-tools18/bin/sqlcmd -S . -U sa -P "$pw" -Q "CREATE DATABASE [$dbname] COLLATE $collation"
 		Exit-OnError
 
   		# Wait for database to be ready
@@ -129,19 +161,37 @@ if ($NoSetup -eq $false) {
 
   		# Finally, start up the application container, connecting to the SQL Server container
 		Write-Host "Starting the $ContainerName application container" -ForegroundColor Yellow
-	 	docker run --name $ContainerName -p 8080:80 -it --add-host=host.docker.internal:host-gateway -d `
-			--env "SQLDB_Connection=Server=$serverIpAddress,1433;Database=$dbname;User=sa;Password=$pw;" `
-			--env 'AzureWebJobsStorage=UseDevelopmentStorage=true;DevelopmentStorageProxyUri=http://host.docker.internal' `
-			--env 'WEBSITE_HOSTNAME=localhost:8080' `
-			$ImageName
+	 	$appRunArgs = @("run")
+		if ($platformArgs.Count -gt 0) {
+			$appRunArgs += $platformArgs
+		}
+	 	$appRunArgs += @("--name", $ContainerName, "-p", "8080:80", "-it", "--add-host=host.docker.internal:host-gateway", "-d",
+			"--env", "SQLDB_Connection=Server=$serverIpAddress,1433;Database=$dbname;User=sa;Password=$pw;",
+			"--env", "AzureWebJobsStorage=UseDevelopmentStorage=true;DevelopmentStorageProxyUri=http://host.docker.internal",
+			"--env", "WEBSITE_HOSTNAME=localhost:8080",
+			"--env", "FUNCTIONS_WORKER_RUNTIME=dotnet-isolated")
+		if ($DockerfilePath -like "*Netherite*") {
+			$appRunArgs += @("--env", "SingleHost=$NetheriteEventHubsConnection")
+		}
+	 	$appRunArgs += $ImageName
+	 	& $engine @appRunArgs
 		Exit-OnError
    	}
     	else {
 		Write-Host "Starting $ContainerName application container" -ForegroundColor Yellow
-		docker run --name $ContainerName -p 8080:80 -it --add-host=host.docker.internal:host-gateway -d `
-			--env 'AzureWebJobsStorage=UseDevelopmentStorage=true;DevelopmentStorageProxyUri=http://host.docker.internal' `
-			--env 'WEBSITE_HOSTNAME=localhost:8080' `
-			$ImageName
+		$appRunArgs = @("run")
+		if ($platformArgs.Count -gt 0) {
+			$appRunArgs += $platformArgs
+		}
+		$appRunArgs += @("--name", $ContainerName, "-p", "8080:80", "-it", "--add-host=host.docker.internal:host-gateway", "-d",
+			"--env", "AzureWebJobsStorage=UseDevelopmentStorage=true;DevelopmentStorageProxyUri=http://host.docker.internal",
+			"--env", "WEBSITE_HOSTNAME=localhost:8080",
+			"--env", "FUNCTIONS_WORKER_RUNTIME=dotnet-isolated")
+		if ($DockerfilePath -like "*Netherite*") {
+			$appRunArgs += @("--env", "SingleHost=$NetheriteEventHubsConnection")
+		}
+		$appRunArgs += $ImageName
+		& $engine @appRunArgs
      	}
 		Exit-OnError
 }
@@ -153,7 +203,7 @@ if ($sleep -gt  0) {
 }
 
 # Check to see what containers are running
-docker ps
+& $engine ps
 Exit-OnError
 
 try {
@@ -187,7 +237,7 @@ try {
 
 	# Dump the docker logs to make debugging the issue easier
 	Write-Host "Below are the docker logs for the app container:" -ForegroundColor Red
-	docker logs $ContainerName
+	& $engine logs $ContainerName
 
 	# Rethrow the original exception
 	throw

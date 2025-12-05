@@ -13,6 +13,7 @@ public class DistributedTracingTests
     private readonly FunctionAppFixture fixture;
     private readonly ITestOutputHelper output;
     private readonly ActivityListener activityListener;
+    private static readonly ActivitySource activitySource = new ActivitySource("DistributedTracingTests");
 
     public DistributedTracingTests(FunctionAppFixture fixture, ITestOutputHelper testOutputHelper)
     {
@@ -40,7 +41,6 @@ public class DistributedTracingTests
     public async Task DistributedTracingTest()
     {
         // Start Activity
-        ActivitySource activitySource = new ActivitySource("DistributedTracingTests");
         using Activity? activity = activitySource.StartActivity("HttpTriggerTests");
 
         Assert.NotNull(activity);

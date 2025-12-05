@@ -27,7 +27,13 @@ param(
     $SkipBuild,
 
     [string]
-    $E2EAppName = ""
+    $E2EAppName = "",
+
+    [string]
+    $ContainerEngine = "docker",
+
+    [string]
+    $Platform = ""
 )
 
 if ($PSVersionTable.PSEdition -ne 'Core') {
@@ -37,6 +43,12 @@ if ($PSVersionTable.PSEdition -ne 'Core') {
 }
 
 $ErrorActionPreference = "Stop"
+
+$engine = $ContainerEngine
+$platformArgs = @()
+if (-not [string]::IsNullOrWhiteSpace($Platform)) {
+  $platformArgs = @("--platform", $Platform)
+}
 
 $CORE_TOOLS_VERSION = '4.0.7317'
 
@@ -231,11 +243,20 @@ else
 
 function StartMSSQLContainer($mssqlPwd) {
   Write-Host "Pulling down the mcr.microsoft.com/mssql/server:2022-latest image..."
-  docker pull mcr.microsoft.com/mssql/server:2022-latest
+  $pullArgs = @("pull", "mcr.microsoft.com/mssql/server:2022-latest")
+  if ($platformArgs.Count -gt 0) {
+    $pullArgs += $platformArgs
+  }
+  & $engine @pullArgs
 
   # Start the SQL Server docker container with the specified edition
   Write-Host "Starting SQL Server 2022-latest Express docker container on port 1433" -ForegroundColor DarkYellow
-  docker run --name mssql-server -e ACCEPT_EULA=Y -e "MSSQL_SA_PASSWORD=$mssqlPwd" -e "MSSQL_PID=Express" -p 1433:1433 -d mcr.microsoft.com/mssql/server:2022-latest
+  $runArgs = @("run", "--name", "mssql-server", "-e", "ACCEPT_EULA=Y", "-e", "MSSQL_SA_PASSWORD=$mssqlPwd", "-e", "MSSQL_PID=Express", "-p", "1433:1433", "-d")
+  if ($platformArgs.Count -gt 0) {
+    $runArgs = @("run") + $platformArgs + $runArgs[1..($runArgs.Count - 1)]
+  }
+  $runArgs += "mcr.microsoft.com/mssql/server:2022-latest"
+  & $engine @runArgs
 
   if ($LASTEXITCODE -ne 0) {
       exit $LASTEXITCODE
@@ -246,16 +267,25 @@ function StartMSSQLContainer($mssqlPwd) {
   Start-Sleep -Seconds 30
 
   # Check to see what containers are running
-  docker ps
+  & $engine ps
 }
 
 function StartDTSContainer() {
   Write-Host "Pulling down the mcr.microsoft.com/dts/dts-emulator:latest image..."
-  docker pull mcr.microsoft.com/dts/dts-emulator:latest
+  $pullArgs = @("pull", "mcr.microsoft.com/dts/dts-emulator:latest")
+  if ($platformArgs.Count -gt 0) {
+    $pullArgs += $platformArgs
+  }
+  & $engine @pullArgs
 
   # Start the DTS Server docker container with the specified edition
   Write-Host "Starting DTS docker container on port 8080" -ForegroundColor DarkYellow
-  docker run -i -p 8080:8080 -p 8082:8082 -d mcr.microsoft.com/dts/dts-emulator:latest
+  $runArgs = @("run", "-i", "-p", "8080:8080", "-p", "8082:8082", "-d")
+  if ($platformArgs.Count -gt 0) {
+    $runArgs = @("run") + $platformArgs + $runArgs[1..($runArgs.Count - 1)]
+  }
+  $runArgs += "mcr.microsoft.com/dts/dts-emulator:latest"
+  & $engine @runArgs
 
   if ($LASTEXITCODE -ne 0) {
       exit $LASTEXITCODE
@@ -266,7 +296,7 @@ function StartDTSContainer() {
   Start-Sleep -Seconds 30
 
   # Check to see what containers are running
-  docker ps
+  & $engine ps
 }
 
 Set-Location $PSScriptRoot
