@@ -168,10 +168,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // function invocation protocol. Other languages will use the existing protocol.
             WorkerRuntimeType runtimeType = this.PlatformInformationService.GetWorkerRuntimeType();
             bool manuallyRequestedGrpc = this.PlatformInformationService.GrpcManuallyRequested;
-            if (manuallyRequestedGrpc || 
+            if (manuallyRequestedGrpc ||
                 (runtimeType == WorkerRuntimeType.DotNetIsolated ||
                 runtimeType == WorkerRuntimeType.Java ||
-                runtimeType == WorkerRuntimeType.Custom) )
+                runtimeType == WorkerRuntimeType.Custom))
             {
                 this.OutOfProcProtocol = OutOfProcOrchestrationProtocol.MiddlewarePassthrough;
                 this.localGrpcListener = LocalGrpcListener.Create(this, this.Options.GrpcListenerMode);
