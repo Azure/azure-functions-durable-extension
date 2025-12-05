@@ -37,6 +37,8 @@ public static class FixtureHelpers
         funcProcess.StartInfo.ArgumentList.Add("host");
         funcProcess.StartInfo.ArgumentList.Add("start");
         funcProcess.StartInfo.ArgumentList.Add("--verbose");
+        funcProcess.StartInfo.ArgumentList.Add("--target-framework");
+        funcProcess.StartInfo.ArgumentList.Add("net10.0");
 
         if (enableAuth)
         {
