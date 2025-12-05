@@ -85,7 +85,7 @@ namespace WebJobs.Extensions.DurableTask.CodeGen.Example
         // Don't add trigger attribute
         [FunctionName("Divide")]
         public Task Divide(
-            [ActivityTrigger] IDurableActivityContext context
+            IDurableActivityContext context
         )
         {
             return Task.FromResult(0);

@@ -285,7 +285,7 @@ public class FunctionContextExtensionsTests
     {
         public TestBindingContext(IDictionary<string, object?> bindingData)
         {
-            this.BindingData = bindingData.AsReadOnly();
+            this.BindingData = new System.Collections.ObjectModel.ReadOnlyDictionary<string, object?>(bindingData);
         }
         public override IReadOnlyDictionary<string, object?> BindingData { get; }
     }

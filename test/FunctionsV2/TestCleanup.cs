@@ -14,6 +14,10 @@ using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Xunit;
 using Xunit.Abstractions;
 
+#if NET10_0_OR_GREATER
+using AsyncLinq = System.Linq.AsyncEnumerable;
+#endif
+
 namespace WebJobs.Extensions.DurableTask.Tests.V2
 {
     public class TestCleanup
@@ -46,6 +50,18 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
 
             this.output.WriteLine($"Using storage account: {blobServiceClient.AccountName}");
 
+#if NET10_0_OR_GREATER
+            List<string> taskHubsToDelete = await AsyncLinq.ToListAsync(
+                AsyncLinq.Take(
+                    AsyncLinq.Select(
+                        AsyncLinq.Where(
+                            AsyncLinq.Where(
+                                blobServiceClient.GetBlobContainersAsync(),
+                                c => c.Name.Contains("-leases", StringComparison.Ordinal)),
+                            c => DateTimeOffset.UtcNow.Subtract(c.Properties.LastModified) > oldTaskHubDeletionThreshold),
+                        c => c.Name[..c.Name.IndexOf("-leases")]),
+                    maxDeletedTaskHubs));
+#else
             List<string> taskHubsToDelete = await blobServiceClient
                 .GetBlobContainersAsync()
                 .Where(c => c.Name.Contains("-leases", StringComparison.Ordinal))
@@ -53,6 +69,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
                 .Select(c => c.Name[..c.Name.IndexOf("-leases")])
                 .Take(maxDeletedTaskHubs)
                 .ToListAsync();
+#endif
 
             await Task.WhenAll(taskHubsToDelete.Select(taskHub => this.DeleteTaskHub(taskHub, connectionString)));
         }

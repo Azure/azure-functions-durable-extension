@@ -29,6 +29,10 @@ using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
 
+#if NET10_0_OR_GREATER
+using AsyncLinq = System.Linq.AsyncEnumerable;
+#endif
+
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
     public class DurableTaskEndToEndTests : IDisposable
@@ -5231,13 +5235,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [MemberData(nameof(TestDataGenerator.GetBooleanAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task Dedupe_Default_NotRunning_ThrowsException(bool extendedSessions, string storageProvider)
         {
-           var instanceId = "OverridableStatesDefaultTest_" + Guid.NewGuid().ToString("N");
+            var instanceId = "OverridableStatesDefaultTest_" + Guid.NewGuid().ToString("N");
 
-           using (ITestHost host = TestHelpers.GetJobHost(
-                this.loggerProvider,
-                nameof(this.Dedupe_Default_NotRunning_ThrowsException),
-                extendedSessions,
-                storageProviderType: storageProvider))
+            using (ITestHost host = TestHelpers.GetJobHost(
+                 this.loggerProvider,
+                 nameof(this.Dedupe_Default_NotRunning_ThrowsException),
+                 extendedSessions,
+                 storageProviderType: storageProvider))
             {
                 await host.StartAsync();
 
@@ -5940,7 +5944,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             BlobContainerClient containerClient = blobServiceClient.GetBlobContainerClient(containerName);
             await containerClient.CreateIfNotExistsAsync();
+#if NET10_0_OR_GREATER
+            return await AsyncLinq.CountAsync(containerClient.GetBlobsAsync());
+#else
             return await containerClient.GetBlobsAsync().CountAsync();
+#endif
         }
 
         private static async Task EnsureBlobContainerExists(string containerName)

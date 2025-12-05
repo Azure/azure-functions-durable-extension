@@ -15,6 +15,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc.WebApiCompatShim;
+using Microsoft.Extensions.Hosting;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
@@ -34,7 +35,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly Random portGenerator;
         private readonly HashSet<int> attemptedPorts;
 
+#if NET6_0
+#pragma warning disable ASPDEPR004 // Type 'IWebHost' is obsolete
         private IWebHost localWebHost;
+#pragma warning restore ASPDEPR004
+#else
+        private IHost localWebHost;
+#endif
 
         public LocalHttpListener(
             EndToEndTraceHelper traceHelper,
@@ -47,7 +54,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             // Set to a non null value
             this.InternalRpcUri = new Uri($"http://uninitialized");
+#if NET6_0
+#pragma warning disable ASPDEPR004 // Type 'IWebHost' is obsolete
             this.localWebHost = new NoOpWebHost();
+#pragma warning restore ASPDEPR004
+#else
+            this.localWebHost = new NoOpHost();
+#endif
             this.portGenerator = new Random();
             this.attemptedPorts = new HashSet<int>();
         }
@@ -76,6 +89,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     this.InternalRpcUri = new Uri($"http://127.0.0.1:{listeningPort}/durabletask/");
                     var listenUri = new Uri(this.InternalRpcUri.GetLeftPart(UriPartial.Authority));
+
+#if NET6_0
+                    // Use legacy WebHostBuilder for .NET 6 (IWebHost is obsolete in .NET 10+)
+#pragma warning disable ASPDEPR008 // Type 'WebHostBuilder' is obsolete
                     this.localWebHost = new WebHostBuilder()
                         .UseKestrel()
                         .ConfigureKestrel(o =>
@@ -86,7 +103,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         .UseUrls(listenUri.OriginalString)
                         .Configure(a => a.Run(this.HandleRequestAsync))
                         .Build();
+#pragma warning restore ASPDEPR008
+#else
+                    // Use modern WebApplication for .NET 8+
+                    var builder = WebApplication.CreateSlimBuilder();
+                    builder.WebHost.UseKestrel(o =>
+                    {
+                        // remove request's Content size limits
+                        o.Limits.MaxRequestBodySize = null;
+                    });
+                    builder.WebHost.UseUrls(listenUri.OriginalString);
 
+                    var app = builder.Build();
+                    app.Run(this.HandleRequestAsync);
+
+                    this.localWebHost = app;
+#endif
                     await this.localWebHost.StartAsync();
                     this.IsListening = true;
                     break;
@@ -180,6 +212,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
+#if NET6_0
+#pragma warning disable ASPDEPR004 // Type 'IWebHost' is obsolete
         private class NoOpWebHost : IWebHost
         {
             public IFeatureCollection ServerFeatures => throw new NotImplementedException();
@@ -194,5 +228,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             public Task StopAsync(CancellationToken cancellationToken = default(CancellationToken)) => Task.CompletedTask;
         }
+#pragma warning restore ASPDEPR004
+#else
+        private class NoOpHost : IHost
+        {
+            public IServiceProvider Services => throw new NotImplementedException();
+
+            public void Dispose() { }
+
+            public Task StartAsync(CancellationToken cancellationToken = default(CancellationToken)) => Task.CompletedTask;
+
+            public Task StopAsync(CancellationToken cancellationToken = default(CancellationToken)) => Task.CompletedTask;
+        }
+#endif
     }
 }

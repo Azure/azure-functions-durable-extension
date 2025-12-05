@@ -17,7 +17,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v5
     - name: Run V4 Node 20 Smoke Test
       run: test/SmokeTests/e2e-test.ps1 -DockerfilePath test/SmokeTests/OOProcSmokeTests/durableJS/Dockerfile -HttpStartPath api/DurableFunctionsHttpStart -TestWithCustomInstanceId
       shell: pwsh

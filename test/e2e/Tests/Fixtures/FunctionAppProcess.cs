@@ -63,7 +63,7 @@ internal class FunctionAppProcess
                     else
                         e2eAppBuiltLocationPath = Path.Combine(rootDir, @$"test/e2e/Apps/{this.appName}/bin");
 
-                    if (!Path.Exists(e2eAppBuiltLocationPath))
+                    if (!Directory.Exists(e2eAppBuiltLocationPath))
                     {
                         throw new InvalidOperationException($"The app bin path {e2eAppBuiltLocationPath} does not exist!");
                     }

@@ -24,7 +24,7 @@ jobs:
       FUNCTIONS_INPROC_NET8_ENABLED: "1"
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
 
     - name: Run V4 .NET in-proc w/ MSSQL Smoke Test
       run: test/SmokeTests/e2e-test.ps1 -DockerfilePath test/SmokeTests/BackendSmokeTests/MSSQL/Dockerfile -HttpStartPath api/DurableFunctionsHttpStart -ContainerName MSSQLApp -SetupSQLServer

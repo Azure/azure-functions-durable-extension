@@ -21,27 +21,37 @@ jobs:
     runs-on: windows-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v5
       with:
         submodules: true
 
     - name: Setup .NET
-      uses: actions/setup-dotnet@v3
+      uses: actions/setup-dotnet@v5
 
     - name: Set up .NET Core 3.1
-      uses: actions/setup-dotnet@v3
+      uses: actions/setup-dotnet@v5
       with:
         dotnet-version: '3.1.x'
 
     - name: Set up .NET Core 2.1
-      uses: actions/setup-dotnet@v3
+      uses: actions/setup-dotnet@v5
       with:
         dotnet-version: '2.1.x'
 
     - name: Set up .NET 6.0
-      uses: actions/setup-dotnet@v3
+      uses: actions/setup-dotnet@v5
       with:
         dotnet-version: '6.0.x'
+
+    - name: Set up .NET 8.0
+      uses: actions/setup-dotnet@v5
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Set up .NET 10.0
+      uses: actions/setup-dotnet@v5
+      with:
+        dotnet-version: '10.0.x'
 
     - name: Restore dependencies
       run: dotnet restore $solution
