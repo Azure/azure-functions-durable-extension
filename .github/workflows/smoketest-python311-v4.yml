@@ -1,4 +1,4 @@
-name: Smoke Test - Python 3.7 on Functions V4
+name: Smoke Test - Python 3.11 on Functions V4
 
 on:
   workflow_dispatch:
@@ -18,6 +18,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v5
-    - name: Run V4 Python 3.7 Smoke Test
+    - name: Run V4 Python 3.11 Smoke Test
       run: test/SmokeTests/e2e-test.ps1 -DockerfilePath test/SmokeTests/OOProcSmokeTests/durablePy/Dockerfile -HttpStartPath api/DurableFunctionsHttpStart -ContainerName pyApp -TestWithCustomInstanceId
       shell: pwsh

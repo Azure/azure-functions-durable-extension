@@ -35,8 +35,8 @@ public class DurableTaskRegistryExtensionsTests
     {
         // Arrange
         DurableTaskRegistry registry = new DurableTaskRegistry();
-        registry.AddOrchestrator<TestOrchestrator>("Orchestrator1");
-        registry.AddOrchestrator<TestOrchestrator>("Orchestrator2");
+        registry.AddOrchestrator<RegistryTestOrchestrator>("Orchestrator1");
+        registry.AddOrchestrator<RegistryTestOrchestrator>("Orchestrator2");
 
         // Act
         List<KeyValuePair<TaskName, Func<IServiceProvider, ITaskOrchestrator>>> orchestrators = registry.GetOrchestrators().ToList();
@@ -73,8 +73,8 @@ public class DurableTaskRegistryExtensionsTests
     {
         // Arrange
         DurableTaskRegistry registry = new DurableTaskRegistry();
-        registry.AddActivity<TestActivity>("Activity1");
-        registry.AddActivity<TestActivity>("Activity2");
+        registry.AddActivity<RegistryTestActivity>("Activity1");
+        registry.AddActivity<RegistryTestActivity>("Activity2");
 
         // Act
         List<KeyValuePair<TaskName, Func<IServiceProvider, ITaskActivity>>> activities = registry.GetActivities().ToList();
@@ -111,8 +111,8 @@ public class DurableTaskRegistryExtensionsTests
     {
         // Arrange
         DurableTaskRegistry registry = new DurableTaskRegistry();
-        registry.AddEntity<TestEntity>("Entity1");
-        registry.AddEntity<TestEntity>("Entity2");
+        registry.AddEntity<RegistryTestEntity>("Entity1");
+        registry.AddEntity<RegistryTestEntity>("Entity2");
 
         // Act
         List<KeyValuePair<TaskName, Func<IServiceProvider, ITaskEntity>>> entities = registry.GetEntities().ToList();
@@ -128,9 +128,9 @@ public class DurableTaskRegistryExtensionsTests
     {
         // Arrange
         DurableTaskRegistry registry = new DurableTaskRegistry();
-        registry.AddOrchestrator<TestOrchestrator>("Orchestrator1");
-        registry.AddActivity<TestActivity>("Activity1");
-        registry.AddEntity<TestEntity>("Entity1");
+        registry.AddOrchestrator<RegistryTestOrchestrator>("Orchestrator1");
+        registry.AddActivity<RegistryTestActivity>("Activity1");
+        registry.AddEntity<RegistryTestEntity>("Entity1");
 
         // Act
         List<KeyValuePair<TaskName, Func<IServiceProvider, ITaskOrchestrator>>> orchestrators = registry.GetOrchestrators().ToList();
@@ -145,9 +145,9 @@ public class DurableTaskRegistryExtensionsTests
     {
         // Arrange
         DurableTaskRegistry registry = new DurableTaskRegistry();
-        registry.AddOrchestrator<TestOrchestrator>("Orchestrator1");
-        registry.AddActivity<TestActivity>("Activity1");
-        registry.AddEntity<TestEntity>("Entity1");
+        registry.AddOrchestrator<RegistryTestOrchestrator>("Orchestrator1");
+        registry.AddActivity<RegistryTestActivity>("Activity1");
+        registry.AddEntity<RegistryTestEntity>("Entity1");
 
         // Act
         List<KeyValuePair<TaskName, Func<IServiceProvider, ITaskActivity>>> activities = registry.GetActivities().ToList();
@@ -162,9 +162,9 @@ public class DurableTaskRegistryExtensionsTests
     {
         // Arrange
         DurableTaskRegistry registry = new DurableTaskRegistry();
-        registry.AddOrchestrator<TestOrchestrator>("Orchestrator1");
-        registry.AddActivity<TestActivity>("Activity1");
-        registry.AddEntity<TestEntity>("Entity1");
+        registry.AddOrchestrator<RegistryTestOrchestrator>("Orchestrator1");
+        registry.AddActivity<RegistryTestActivity>("Activity1");
+        registry.AddEntity<RegistryTestEntity>("Entity1");
 
         // Act
         List<KeyValuePair<TaskName, Func<IServiceProvider, ITaskEntity>>> entities = registry.GetEntities().ToList();
@@ -174,7 +174,7 @@ public class DurableTaskRegistryExtensionsTests
         Assert.Equal("Entity1", entities[0].Key.ToString());
     }
 
-    private class TestOrchestrator : TaskOrchestrator<object, object>
+    private class RegistryTestOrchestrator : TaskOrchestrator<object, object>
     {
         public override Task<object> RunAsync(TaskOrchestrationContext context, object input)
         {
@@ -182,7 +182,7 @@ public class DurableTaskRegistryExtensionsTests
         }
     }
 
-    private class TestActivity : TaskActivity<object, object>
+    private class RegistryTestActivity : TaskActivity<object, object>
     {
         public override Task<object> RunAsync(TaskActivityContext context, object input)
         {
@@ -190,7 +190,7 @@ public class DurableTaskRegistryExtensionsTests
         }
     }
 
-    private class TestEntity : TaskEntity<string>
+    private class RegistryTestEntity : TaskEntity<string>
     {
         public Task RunAsync(TaskEntityContext context)
         {
