@@ -72,6 +72,29 @@ function Start-And-Wait-Orchestration {
     return $false
 }
 
+function Wait-ForHostPing {
+	param(
+		[string]$Uri,
+		[int]$MaxRetries = 20,
+		[int]$SleepSeconds = 3
+	)
+
+	$attempt = 0
+	while ($attempt -lt $MaxRetries) {
+		try {
+			Invoke-RestMethod -Method Post -Uri $Uri | Out-Null
+			Write-Host "Host responded to ping after attempt $($attempt + 1)." -ForegroundColor Yellow
+			return $true
+		} catch {
+			$attempt++
+			Write-Host "Host not ready (attempt $attempt/$MaxRetries): $($_.Exception.Message)" -ForegroundColor Yellow
+			Start-Sleep -Seconds $SleepSeconds
+		}
+	}
+
+	return $false
+}
+
 $ErrorActionPreference = "Stop"
 $AzuriteVersion = "3.34.0"
 
@@ -210,8 +233,10 @@ try {
 	# Make sure the Functions runtime is up and running
 	$pingUrl = "http://localhost:8080/admin/host/ping"
 	Write-Host "Pinging app at $pingUrl to ensure the host is healthy" -ForegroundColor Yellow
-	Invoke-RestMethod -Method Post -Uri "http://localhost:8080/admin/host/ping"
-	Exit-OnError
+	$hostReady = Wait-ForHostPing -Uri $pingUrl
+	if (-not $hostReady) {
+		throw "Function host is not responding after waiting for readiness checks."
+	}
 
 	if ($NoValidation -eq $false) {
 		$startOrchestrationUri = "http://localhost:8080/$HttpStartPath"
