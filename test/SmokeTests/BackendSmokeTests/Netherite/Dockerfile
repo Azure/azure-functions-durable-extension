@@ -7,7 +7,7 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build-env
 COPY . /root
 RUN cd /root/test/SmokeTests/BackendSmokeTests/Netherite && \
     mkdir -p /home/site/wwwroot && \
-    dotnet publish -c Release --output /home/site/wwwroot
+    dotnet publish -c Release -f net10.0 --output /home/site/wwwroot
 
 # Deploy the app
 FROM mcr.microsoft.com/azure-functions/dotnet-isolated:4-dotnet-isolated10.0

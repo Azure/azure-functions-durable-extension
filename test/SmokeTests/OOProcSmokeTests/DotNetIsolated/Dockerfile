@@ -20,8 +20,8 @@ RUN cd /root/src/WebJobs.Extensions.DurableTask && \
 RUN cd /root/test/SmokeTests/OOProcSmokeTests/DotNetIsolated && \
     mkdir -p /home/site/wwwroot && \
     dotnet restore --verbosity normal && \
-    dotnet build -c Release && \
-    dotnet publish -c Release --no-build --output /home/site/wwwroot && \
+    dotnet build -c Release -f net10.0 && \
+    dotnet publish -c Release -f net10.0 --no-build --output /home/site/wwwroot && \
     ls -aR /home/site/wwwroot && \
     cat /home/site/wwwroot/extensions.json # debugging
 
