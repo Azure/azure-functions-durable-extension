@@ -42,13 +42,13 @@ public static class DurableFunctionsOrchestrationCSharp
     /// <summary>
     /// HTTP starter that schedules the orchestration and returns management URLs.
     /// </summary>
-    [Function(nameof(DurableFunctionsHttpStart))]
+    [Function("DurableFunctionsHttpStart")]
     public static async Task<HttpResponseData> HttpStart(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestData req,
         [DurableClient] DurableTaskClient client,
         FunctionContext context)
     {
-        ILogger logger = context.GetLogger(nameof(DurableFunctionsHttpStart));
+        ILogger logger = context.GetLogger(nameof(HttpStart));
 
         string instanceId = await client.ScheduleNewOrchestrationInstanceAsync(nameof(DurableFunctionsOrchestrationCSharp));
         logger.LogInformation("Started orchestration with ID = '{instanceId}'.", instanceId);

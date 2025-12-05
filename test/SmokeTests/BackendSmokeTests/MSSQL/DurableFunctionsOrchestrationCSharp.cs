@@ -48,7 +48,7 @@ public static class DurableFunctionsOrchestrationCSharp
         [DurableClient] DurableTaskClient client,
         FunctionContext context)
     {
-        ILogger logger = context.GetLogger(nameof(DurableFunctionsHttpStart));
+        ILogger logger = context.GetLogger(nameof(HttpStart));
 
         string instanceId = await client.ScheduleNewOrchestrationInstanceAsync(nameof(DurableFunctionsOrchestrationCSharp));
         logger.LogInformation("Started orchestration with ID = '{instanceId}'.", instanceId);
