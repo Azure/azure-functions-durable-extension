@@ -11,6 +11,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     public class DurableTaskInstanceIdTelemetryInitializerTests
     {
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void Initialize_WithIncludeInstanceIdTrue_AppendsInstanceId()
         {
             // Arrange
@@ -38,6 +39,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void Initialize_WithIncludeInstanceIdFalse_DoesNotAppendInstanceId()
         {
             // Arrange
@@ -65,6 +67,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void Initialize_WithCreateOrchestration_DoesNotAppendInstanceId()
         {
             // Arrange
@@ -93,6 +96,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void Initialize_WithEmptyOperationName_SetsFromActivityAndAppends()
         {
             // Arrange
