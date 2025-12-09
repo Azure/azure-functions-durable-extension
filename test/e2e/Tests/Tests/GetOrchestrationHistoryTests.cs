@@ -5,10 +5,10 @@ using System.Net;
 using DurableTask.Core;
 using DurableTask.Core.History;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
+using Microsoft.DurableTask.Entities;
 using Newtonsoft.Json;
 using Xunit;
 using Xunit.Abstractions;
-using static Microsoft.Azure.Durable.Tests.E2E.GetOrchestrationHistory;
 
 namespace Microsoft.Azure.Durable.Tests.DotnetIsolatedE2E;
 
@@ -24,6 +24,9 @@ public class GetOrchestrationHistoryTests
     private const string TagsValue = "value";
 
     private readonly Dictionary<string, string> tags = new() { { TagsKey, TagsValue } };
+
+    // Duplicated from GetOrchestrationHistory since the import is failing - see comment above the ComplexInput class.
+    private static readonly EntityInstanceId entityId = new("SimpleEntity", "singleton");
 
     public GetOrchestrationHistoryTests(FunctionAppFixture fixture, ITestOutputHelper testOutputHelper)
     {
@@ -369,5 +372,48 @@ public class GetOrchestrationHistoryTests
         getOrchestrationHistoryResponse = await HttpHelpers.InvokeHttpTrigger("GetInstanceHistory", $"?instanceId={entityId}");
         Assert.Equal(HttpStatusCode.NotFound, getOrchestrationHistoryResponse.StatusCode);
         getOrchestrationHistoryResponse.Dispose();
+    }
+
+    // Unfortunately something about building from the command line fails if we try to import this from the GetOrchestrationHistory class
+    // (even though it builds just fine in Visual Studio). As such the GitHub pipelines fail.
+    // For now we will just duplicate this class here.
+    public class ComplexInput(
+        string? orchestrationType,
+        string subOrchestrationInstanceId,
+        int outputSize,
+        bool callEntities,
+        Dictionary<string, string>? tags)
+    {
+        public bool CallEntities { get; set; } = callEntities;
+
+        public string? OrchestrationType { get; set; } = orchestrationType;
+
+        public string SubOrchestrationInstanceId { get; set; } = subOrchestrationInstanceId;
+
+        public int OutputSize { get; set; } = outputSize;
+
+        public Dictionary<string, string>? Tags { get; set; } = tags;
+
+        public override bool Equals(object? obj)
+        {
+            if (obj is not ComplexInput other)
+            {
+                return false;
+            }
+            return other.CallEntities == this.CallEntities
+                && ((other.OrchestrationType is null && this.OrchestrationType is null)
+                || (other.OrchestrationType is not null && this.OrchestrationType is not null
+                && other.OrchestrationType.Equals(this.OrchestrationType)))
+                && other.SubOrchestrationInstanceId.Equals(this.SubOrchestrationInstanceId)
+                && other.OutputSize == this.OutputSize
+                && ((other.Tags is null && this.Tags is null)
+                || (other.Tags is not null && this.Tags is not null
+                && other.Tags.OrderBy(x => x.Key).SequenceEqual(this.Tags.OrderBy(x => x.Key))));
+        }
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(this.CallEntities, this.OrchestrationType, this.SubOrchestrationInstanceId, this.OutputSize, this.Tags);
+        }
     }
 }

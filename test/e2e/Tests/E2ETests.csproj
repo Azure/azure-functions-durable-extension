@@ -28,7 +28,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\src\WebJobs.Extensions.DurableTask\WebJobs.Extensions.DurableTask.csproj" />
-    <ProjectReference Include="..\Apps\BasicDotNetIsolated\app.csproj" />
   </ItemGroup>
 
 </Project>
