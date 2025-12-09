@@ -77,7 +77,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             WorkerRuntimeType runtimeType = platformInfo.GetWorkerRuntimeType();
             if (runtimeType == WorkerRuntimeType.DotNetIsolated ||
                 runtimeType == WorkerRuntimeType.Java ||
-                (runtimeType == WorkerRuntimeType.Python && platformInfo.GrpcManuallyRequested) ||
                 runtimeType == WorkerRuntimeType.Custom)
             {
                 this.useSeparateQueueForEntityWorkItems = true;
@@ -216,7 +215,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 LoggerFactory = this.loggerFactory,
                 UseLegacyPartitionManagement = this.azureStorageOptions.UseLegacyPartitionManagement,
                 UseTablePartitionManagement = this.azureStorageOptions.UseTablePartitionManagement,
-                UseSeparateQueueForEntityWorkItems = this.useSeparateQueueForEntityWorkItems,
+                UseSeparateQueueForEntityWorkItems = this.useSeparateQueueForEntityWorkItems || DurableTaskExtension.DurableRequiresGrpc,
                 EntityMessageReorderWindowInMinutes = this.options.EntityMessageReorderWindowInMinutes,
                 MaxEntityOperationBatchSize = this.options.MaxEntityOperationBatchSize,
 #pragma warning disable CS0618 // Type or member is obsolete

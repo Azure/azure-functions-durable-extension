@@ -51,6 +51,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             // The entity class name defaults to the method name.
             var entityName = new FunctionName(name);
+            if (trigger.DurableRequiresGrpc)
+            {
+                DurableTaskExtension.DurableRequiresGrpc = true;
+                this.config.ConfigureForGrpcProtocol();
+            }
+
             this.config.RegisterEntity(entityName, null);
             var binding = new EntityTriggerBinding(this.config, parameter, entityName, this.connectionName);
             return Task.FromResult<ITriggerBinding?>(binding);

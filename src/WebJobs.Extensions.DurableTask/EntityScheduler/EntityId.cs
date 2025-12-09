@@ -88,11 +88,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 throw new ArgumentException(nameof(instanceId));
             }
+
             var pos = instanceId.IndexOf('@', 1);
             if (pos <= 0 || instanceId[0] != '@')
             {
                 throw new ArgumentException($"Instance ID '{instanceId}' is not a valid entity ID.", nameof(instanceId));
             }
+
             var entityName = instanceId.Substring(1, pos - 1);
             var entityKey = instanceId.Substring(pos + 1);
             return new EntityId(entityName, entityKey);

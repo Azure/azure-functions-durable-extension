@@ -77,14 +77,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     [Obsolete]
     public interface IPlatformInformation
     {
-
-        /// <summary>
-        /// Determines whether the user has manually requested the gRPC protocol for worker communications.
-        /// </summary>
-        /// Used in Python when using the new durabletask-based Functions SDK.
-        /// <returns>True if the user has requested gRPC, False otherwise.</returns>
-        bool GrpcManuallyRequested { get; }
-
         /// <summary>
         /// Determine the underlying plan is Consumption or not.
         /// </summary>

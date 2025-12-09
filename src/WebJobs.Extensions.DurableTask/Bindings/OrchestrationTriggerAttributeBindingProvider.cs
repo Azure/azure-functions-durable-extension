@@ -70,6 +70,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             this.config.RegisterOrchestrator(orchestratorName, null);
+            if (trigger.DurableRequiresGrpc)
+            {
+                DurableTaskExtension.DurableRequiresGrpc = true;
+                this.config.ConfigureForGrpcProtocol();
+            }
+
             var binding = new OrchestrationTriggerBinding(this.config, parameter, orchestratorName, this.connectionName, this.platormInformation);
             return Task.FromResult<ITriggerBinding?>(binding);
         }

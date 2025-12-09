@@ -22,25 +22,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private WorkerRuntimeType? workerRuntimeType;
 
-        public bool GrpcManuallyRequested
-        {
-            get
-            {
-                string? grpcSetting = this.ReadEnviromentVariable("DURABLE_FUNCTIONS_GRPC_OPT_IN");
-                if (string.IsNullOrEmpty(grpcSetting))
-                {
-                    return false;
-                }
-
-                if (bool.TryParse(grpcSetting, out bool grpcManuallyRequested))
-                {
-                    return grpcManuallyRequested;
-                }
-
-                return false;
-            }
-        }
-
         public DefaultPlatformInformation(INameResolver nameResolver, ILoggerFactory loggerFactory)
         {
             this.nameResolver = nameResolver;

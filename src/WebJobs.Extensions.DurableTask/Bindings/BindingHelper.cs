@@ -23,6 +23,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public IAsyncCollector<StartOrchestrationArgs> CreateAsyncCollector(DurableClientAttribute clientAttribute)
         {
             IDurableOrchestrationClient client = this.config.GetClient(clientAttribute);
+            if (clientAttribute.DurableRequiresGrpc)
+            {
+                DurableTaskExtension.DurableRequiresGrpc = true;
+                this.config.ConfigureForGrpcProtocol();
+            }
+
             return new OrchestrationClientAsyncCollector(client);
         }
 

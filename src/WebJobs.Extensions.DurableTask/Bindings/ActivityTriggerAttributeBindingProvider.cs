@@ -51,6 +51,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             // The activity name defaults to the method name.
             var activityName = new FunctionName(name);
+            if (trigger.DurableRequiresGrpc)
+            {
+                DurableTaskExtension.DurableRequiresGrpc = true;
+                this.durableTaskConfig.ConfigureForGrpcProtocol();
+            }
+
             this.durableTaskConfig.RegisterActivity(activityName, null);
             var binding = new ActivityTriggerBinding(this, parameter, trigger, activityName, this.durableTaskConfig);
             return Task.FromResult<ITriggerBinding?>(binding);
