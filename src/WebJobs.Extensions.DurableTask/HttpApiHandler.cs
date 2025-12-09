@@ -904,11 +904,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     if (traceParent != null)
                     {
                         ActivityContext.TryParse(traceParent, traceState, out ActivityContext parentActivityContext);
-                        using Activity scheduleOrchestrationActivity = TraceHelper.StartActivityForNewOrchestration(executionStartedEvent, parentActivityContext, includeInstanceIdInOperationName: this.durableTaskOptions.Tracing.IncludeInstanceIdInOperationName);
+                        using Activity scheduleOrchestrationActivity = TraceHelper.StartActivityForNewOrchestration(executionStartedEvent, parentActivityContext);
                     }
                     else
                     {
-                        using Activity scheduleOrchestrationActivity = TraceHelper.StartActivityForNewOrchestration(executionStartedEvent, default, includeInstanceIdInOperationName: this.durableTaskOptions.Tracing.IncludeInstanceIdInOperationName);
+                        using Activity scheduleOrchestrationActivity = TraceHelper.StartActivityForNewOrchestration(executionStartedEvent, default);
                     }
 
                     await durableClient.DurabilityProvider.CreateTaskOrchestrationAsync(
