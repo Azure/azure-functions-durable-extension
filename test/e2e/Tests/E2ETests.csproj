@@ -5,7 +5,9 @@
     <LangVersion>latest</LangVersion>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <RootNamespace>Microsoft.Azure.Durable.Tests.DotnetIsolatedE2E</RootNamespace>
+	<SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\..\..\sign.snk</AssemblyOriginatorKeyFile>
+	<RootNamespace>Microsoft.Azure.Durable.Tests.DotnetIsolatedE2E</RootNamespace>
     <!-- Only add the following line when you want to locally debug
     <RunSettingsFilePath>$(MSBuildProjectDirectory)\test.runsettings</RunSettingsFilePath> -->
   </PropertyGroup>
@@ -22,6 +24,11 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\src\WebJobs.Extensions.DurableTask\WebJobs.Extensions.DurableTask.csproj" />
+    <ProjectReference Include="..\Apps\BasicDotNetIsolated\app.csproj" />
   </ItemGroup>
 
 </Project>

@@ -60,7 +60,6 @@ public class GetOrchestrationHistoryTests
             jsonHistory,
             new JsonSerializerSettings()
             {
-                // I had to make the HistoryEventJsonConverter public to use it here. Is this a good reason?
                 Converters = { new HistoryEventJsonConverter() },
             });
         Assert.NotNull(historyEvents);
@@ -130,7 +129,6 @@ public class GetOrchestrationHistoryTests
             subOrchestrationJsonHistory,
             new JsonSerializerSettings()
             {
-                // I had to make the HistoryEventJsonConverter public to use it here. Is this a good reason?
                 Converters = { new HistoryEventJsonConverter() },
             });
         Assert.NotNull(subOrchestrationHistoryEvents);
@@ -220,7 +218,6 @@ public class GetOrchestrationHistoryTests
             jsonHistory,
             new JsonSerializerSettings()
             {
-                // I had to make the HistoryEventJsonConverter public to use it here. Is this a good reason?
                 Converters = { new HistoryEventJsonConverter() },
             });
         Assert.NotNull(historyEvents);
@@ -276,7 +273,6 @@ public class GetOrchestrationHistoryTests
             subOrchestrationJsonHistory,
             new JsonSerializerSettings()
             {
-                // I had to make the HistoryEventJsonConverter public to use it here. Is this a good reason?
                 Converters = { new HistoryEventJsonConverter() },
             });
         Assert.NotNull(subOrchestrationHistoryEvents);

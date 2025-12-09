@@ -197,13 +197,13 @@ public static class GetOrchestrationHistory
             }
             return other.CallEntities == this.CallEntities
                 && ((other.OrchestrationType is null && this.OrchestrationType is null)
-                    || (other.OrchestrationType is not null && this.OrchestrationType is not null
-                    && other.OrchestrationType.Equals(this.OrchestrationType)))
+                || (other.OrchestrationType is not null && this.OrchestrationType is not null
+                && other.OrchestrationType.Equals(this.OrchestrationType)))
                 && other.SubOrchestrationInstanceId.Equals(this.SubOrchestrationInstanceId)
                 && other.OutputSize == this.OutputSize
                 && ((other.Tags is null && this.Tags is null)
-                    || (other.Tags is not null && this.Tags is not null
-                    && other.Tags.OrderBy(x => x.Key).SequenceEqual(this.Tags.OrderBy(x => x.Key))));
+                || (other.Tags is not null && this.Tags is not null
+                && other.Tags.OrderBy(x => x.Key).SequenceEqual(this.Tags.OrderBy(x => x.Key))));
         }
 
         public override int GetHashCode()
