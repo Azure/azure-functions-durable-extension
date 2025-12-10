@@ -31,31 +31,37 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
                 return;
             }
 
-            // Check if it is an orchestration activity
+            // Check if it is an orchestration, activity, or entity span
             string? type = activity.GetTagItem(Schema.Task.Type) as string;
             string? operation = activity.GetTagItem(Schema.Task.Operation) as string;
-            if (type == TraceActivityConstants.Orchestration)
+
+            // Support orchestration, activity, and entity spans
+            if (type != TraceActivityConstants.Orchestration &&
+                type != TraceActivityConstants.Activity &&
+                type != TraceActivityConstants.Entity)
             {
-                // Exclude create_orchestration spans via operation tag
-                if (operation == TraceActivityConstants.CreateOrchestration)
+                return;
+            }
+
+            // Exclude create_orchestration spans via operation tag
+            if (operation == TraceActivityConstants.CreateOrchestration)
+            {
+                return;
+            }
+
+            string? instanceId = activity.GetTagItem(Schema.Task.InstanceId) as string;
+            if (!string.IsNullOrEmpty(instanceId))
+            {
+                // If the operation name is empty, use the activity display name
+                if (string.IsNullOrEmpty(telemetry.Context.Operation.Name))
                 {
-                    return;
+                    telemetry.Context.Operation.Name = activity.DisplayName;
                 }
 
-                string? instanceId = activity.GetTagItem(Schema.Task.InstanceId) as string;
-                if (!string.IsNullOrEmpty(instanceId))
+                // Append instance ID to operation name if not already present
+                if (!telemetry.Context.Operation.Name.Contains(instanceId))
                 {
-                    // If the operation name is empty, use the activity display name
-                    if (string.IsNullOrEmpty(telemetry.Context.Operation.Name))
-                    {
-                        telemetry.Context.Operation.Name = activity.DisplayName;
-                    }
-
-                    // Append instance ID to operation name if not already present
-                    if (!telemetry.Context.Operation.Name.Contains(instanceId))
-                    {
-                        telemetry.Context.Operation.Name = $"{telemetry.Context.Operation.Name} ({instanceId})";
-                    }
+                    telemetry.Context.Operation.Name = $"{telemetry.Context.Operation.Name} ({instanceId})";
                 }
             }
         }
