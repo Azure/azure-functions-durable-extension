@@ -79,7 +79,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
         private static T CreateTelemetryCore<T>(Activity activity)
             where T : OperationTelemetry, new()
         {
-            T telemetry = new()
+            T telemetry = new ()
             {
                 Name = activity.DisplayName,
                 Id = activity.SpanId.ToString(),
@@ -117,7 +117,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
             this.listener?.Dispose();
             if (this.telemetryClient != null)
             {
-                using CancellationTokenSource cts = new(millisecondsDelay: 5000);
+                using CancellationTokenSource cts = new (millisecondsDelay: 5000);
                 try
                 {
                     await this.telemetryClient.FlushAsync(cts.Token);
