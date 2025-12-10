@@ -6,6 +6,8 @@
 
 ### Bug Fixes
 
+- Check if function invocation already has an executor before registering durable executor. (#3265)
+
 ### Breaking Changes
 
 ### Dependency Updates
