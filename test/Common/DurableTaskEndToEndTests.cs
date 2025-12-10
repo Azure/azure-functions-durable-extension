@@ -5493,6 +5493,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 {
                     await host.StartAsync();
                     Assert.Equal(expectedHubName, options.HubName);
+                    await host.StopAsync();
                 }
             }
             finally
