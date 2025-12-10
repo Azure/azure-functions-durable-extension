@@ -5476,7 +5476,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [InlineData("-1taskhubnametest", "t1taskhubnametest")]
         [InlineData("--------", "DefaultTaskHub")]
         [InlineData("bb", "bbHub")]
-        public void TaskHubName_DefaultHubName_UseSanitized(string siteName, string expectedHubName)
+        public async Task TaskHubName_DefaultHubName_UseSanitized(string siteName, string expectedHubName)
         {
             string currSiteName = Environment.GetEnvironmentVariable("WEBSITE_SITE_NAME");
             string currSlotName = Environment.GetEnvironmentVariable("WEBSITE_SLOT_NAME");
@@ -5491,6 +5491,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 using (var host = TestHelpers.GetJobHostWithOptions(this.loggerProvider, options))
                 {
+                    await host.StartAsync();
                     Assert.Equal(expectedHubName, options.HubName);
                 }
             }

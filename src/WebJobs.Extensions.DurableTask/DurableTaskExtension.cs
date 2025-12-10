@@ -77,7 +77,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private INameResolver nameResolver;
         private ILoggerFactory loggerFactory;
 
-        private OutOfProcOrchestrationProtocol outOfProcProtocol;
         private DurabilityProvider defaultDurabilityProvider;
         private Func<TaskHubWorker> getTaskHubWorker;
         private TaskHubWorker taskHubWorker;
@@ -216,19 +215,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal IApplicationLifetimeWrapper HostLifetimeService { get; } = HostLifecycleService.NoOp;
 
-        internal OutOfProcOrchestrationProtocol OutOfProcProtocol
-        {
-            get
-            {
-                // <-- Put your breakpoint here
-                return this.outOfProcProtocol;
-            }
-
-            set
-            {
-                this.outOfProcProtocol = value;
-            }
-        }
+        internal OutOfProcOrchestrationProtocol OutOfProcProtocol { get; set; }
 
         internal static MessagePayloadDataConverter CreateMessageDataConverter(IMessageSerializerSettingsFactory messageSerializerSettingsFactory)
         {
