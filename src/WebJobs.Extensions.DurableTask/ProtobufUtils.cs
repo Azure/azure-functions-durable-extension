@@ -328,7 +328,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                                 Position = a.SendEntityMessage.EntityLockRequested.Position,
                                 ParentInstanceId = a.SendEntityMessage.EntityLockRequested.ParentInstanceId,
                             };
-                            targetInstance = a.SendEntityMessage.EntityLockRequested.LockSet.ElementAt(0);
+                            targetInstance = a.SendEntityMessage.EntityLockRequested.LockSet.ElementAt(a.SendEntityMessage.EntityLockRequested.Position);
                             eventName = EncodeEventName(null);
                             break;
                         case P.SendEntityMessageAction.EntityMessageTypeOneofCase.EntityUnlockSent:
@@ -377,7 +377,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         {
                             InstanceId = targetInstance,
                         },
-                        EventName = eventName, // TODO: Determine event name for entity messages
+                        EventName = eventName,
                         EventData = JsonConvert.SerializeObject(entityMessage, new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.None }),
                     };
 
