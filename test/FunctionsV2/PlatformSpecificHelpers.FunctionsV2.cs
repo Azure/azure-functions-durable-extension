@@ -8,7 +8,6 @@ using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.ApplicationInsights.Channel;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage;
 using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Extensions.DependencyInjection;
@@ -187,7 +186,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             builder.Services.AddSingleton(options);
 
-            var serviceCollection = builder.AddExtension<DurableTaskExtension>()
+            var serviceCollection = builder.AddExtension<TestDurableTaskExtension>()
                 .BindOptions<DurableTaskOptions>()
                 .Services.AddSingleton<IConnectionInfoResolver, WebJobsConnectionInfoProvider>();
 

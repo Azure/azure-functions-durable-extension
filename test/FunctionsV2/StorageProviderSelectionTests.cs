@@ -52,11 +52,9 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
                 options: options,
                 durabilityProviderFactories: durabilityProviderFactories))
             {
-                await host.StartAsync();
                 azureStorageMock.Verify(a => a.GetDurabilityProvider(), string.Equals(storageProvider, "AzureStorage") ? Times.Once() : Times.Never());
                 microsoftSQLMock.Verify(m => m.GetDurabilityProvider(), string.Equals(storageProvider, "MicrosoftSQL") ? Times.Once() : Times.Never());
                 netheriteMock.Verify(n => n.GetDurabilityProvider(), string.Equals(storageProvider, "Netherite") ? Times.Once() : Times.Never());
-                await host.StopAsync();
             }
         }
 
@@ -111,11 +109,9 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
             using (ITestHost host = TestHelpers.GetJobHostWithMultipleDurabilityProviders(
                 durabilityProviderFactories: durabilityProviderFactories))
             {
-                await host.StartAsync();
                 netheriteMock.Verify(n => n.GetDurabilityProvider(), Times.Never());
                 azureStorageMock.Verify(a => a.GetDurabilityProvider(), Times.Once());
                 microsoftSQLMock.Verify(m => m.GetDurabilityProvider(), Times.Never());
-                await host.StopAsync();
             }
         }
 
