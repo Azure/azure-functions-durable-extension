@@ -1,5 +1,6 @@
 // Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
+#nullable enable
 using System;
 using Microsoft.Azure.WebJobs.Host.Scale;
 
@@ -21,19 +22,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
         string DefaultConnectionName { get; }
 
         /// <summary>
-        /// Creates or retrieves a scalability provider to be used throughout the extension.
+        /// Creates or retrieves a cached scalability provider.
+        /// This method is used for both runtime-driven scaling and Scale Controller scenarios.
         /// </summary>
-        /// <returns>A scalability provider to be used by the Durable Task Extension.</returns>
-        ScalabilityProvider GetScalabilityProvider();
-
-        /// <summary>
-        /// Creates or retrieves a cached scalability provider to be used in a given function execution.
-        /// This overload accepts pre-deserialized metadata to avoid double deserialization of the metadata payload.
-        /// The triggerMetadata is still passed to allow access to Properties (e.g., token credentials).
-        /// </summary>
-        /// <param name="metadata">The pre-deserialized Durable Task metadata from the trigger.</param>
-        /// <param name="triggerMetadata">Trigger metadata used to access Properties like token credentials.</param>
-        /// <returns>A scalability provider to be used by a client function.</returns>
-        ScalabilityProvider GetScalabilityProvider(DurableTaskMetadata metadata, TriggerMetadata triggerMetadata);
+        /// <param name="metadata">
+        /// The Durable Task metadata containing task hub name, max concurrency settings, and storage provider configuration.
+        /// For runtime-driven scaling: constructed from DurableTaskOptions (host.json).
+        /// For Scale Controller: deserialized from SyncTriggers payload.
+        /// </param>
+        /// <param name="triggerMetadata">
+        /// Trigger metadata used to access Properties like token credentials (Scale Controller only).
+        /// This is null for runtime-driven scaling since it runs in the host process.
+        /// </param>
+        /// <returns>A scalability provider configured with the specified metadata.</returns>
+        ScalabilityProvider GetScalabilityProvider(DurableTaskMetadata metadata, TriggerMetadata? triggerMetadata);
     }
 }

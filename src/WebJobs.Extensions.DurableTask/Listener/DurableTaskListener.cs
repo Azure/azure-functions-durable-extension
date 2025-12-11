@@ -4,23 +4,15 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale;
 using Microsoft.Azure.WebJobs.Host.Listeners;
-using Microsoft.Azure.WebJobs.Host.Scale;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
-    internal sealed class DurableTaskListener : IListener, IScaleMonitorProvider, ITargetScalerProvider
+    internal sealed class DurableTaskListener : IListener
     {
         private readonly DurableTaskExtension config;
-        private readonly string functionId;
         private readonly FunctionName functionName;
         private readonly FunctionType functionType;
-        private readonly string connectionName;
-
-        private readonly Lazy<IScaleMonitor> scaleMonitor;
-
-        private readonly Lazy<ITargetScaler> targetScaler;
 
         public DurableTaskListener(
             DurableTaskExtension config,
@@ -36,26 +28,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new ArgumentNullException(nameof(functionName));
             }
 
-            this.functionId = functionId;
             this.functionName = functionName;
             this.functionType = functionType;
-            this.connectionName = connectionName;
-
-            this.scaleMonitor = new Lazy<IScaleMonitor>(() =>
-                ScaleUtils.GetScaleMonitor(
-                    this.config.DefaultDurabilityProvider,
-                    this.functionId,
-                    this.functionName,
-                    this.connectionName,
-                    this.config.Options.HubName));
-
-            this.targetScaler = new Lazy<ITargetScaler>(() =>
-                ScaleUtils.GetTargetScaler(
-                    this.config.DefaultDurabilityProvider,
-                    this.functionId,
-                    this.functionName,
-                    this.connectionName,
-                    this.config.Options.HubName));
         }
 
         public Task StartAsync(CancellationToken cancellationToken)
@@ -91,16 +65,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public void Dispose()
         {
-        }
-
-        public IScaleMonitor GetMonitor()
-        {
-            return this.scaleMonitor.Value;
-        }
-
-        public ITargetScaler GetTargetScaler()
-        {
-            return this.targetScaler.Value;
         }
     }
 }

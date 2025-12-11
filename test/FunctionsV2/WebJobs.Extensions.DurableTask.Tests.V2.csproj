@@ -40,6 +40,13 @@
   
   <ItemGroup>
     <ProjectReference Include="..\..\src\WebJobs.Extensions.DurableTask\WebJobs.Extensions.DurableTask.csproj" />
+    <ProjectReference Include="..\..\src\WebJobs.Extensions.DurableTask.Scale\WebJobs.Extensions.DurableTask.Scale.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Exclude old scaling test files that still need updating for the new scale package -->
+    <Compile Remove="DurableTaskScaleMonitorTests.cs" />
+    <Compile Remove="DurableTaskListenerTests.cs" />
   </ItemGroup>
 
   <ItemGroup>

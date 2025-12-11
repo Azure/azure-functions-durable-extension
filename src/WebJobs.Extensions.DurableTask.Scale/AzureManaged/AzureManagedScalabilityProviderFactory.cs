@@ -87,7 +87,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureManaged
         /// <exception cref="InvalidOperationException">
         /// Thrown if no valid connection string could be resolved for the given connection name.
         /// </exception>
-        public ScalabilityProvider GetScalabilityProvider(DurableTaskMetadata? metadata, TriggerMetadata? triggerMetadata)
+        public ScalabilityProvider GetScalabilityProvider(DurableTaskMetadata metadata, TriggerMetadata? triggerMetadata)
         {
             // Resolve connection name: prioritize metadata, fallback to default
             string? rawConnectionName = TriggerMetadataExtensions.ResolveConnectionName(metadata?.StorageProvider);

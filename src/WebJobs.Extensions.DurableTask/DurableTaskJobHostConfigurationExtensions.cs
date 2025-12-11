@@ -37,7 +37,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             serviceCollection.TryAddSingleton<INameResolver, DefaultNameResolver>();
             serviceCollection.TryAddSingleton<IConnectionInfoResolver, StandardConnectionInfoProvider>();
-            serviceCollection.TryAddSingleton<IStorageServiceClientProviderFactory, StorageServiceClientProviderFactory>();
+            serviceCollection.TryAddSingleton<Storage.IStorageServiceClientProviderFactory, Storage.StorageServiceClientProviderFactory>();
             serviceCollection.AddAzureClientsCore();
             serviceCollection.TryAddSingleton<IDurabilityProviderFactory, AzureStorageDurabilityProviderFactory>();
             serviceCollection.TryAddSingleton<IDurableClientFactory, DurableClientFactory>();
@@ -82,13 +82,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             IServiceCollection serviceCollection = builder.Services;
             serviceCollection.AddAzureClientsCore();
             serviceCollection.TryAddSingleton<IConnectionInfoResolver, WebJobsConnectionInfoProvider>();
-            serviceCollection.TryAddSingleton<IStorageServiceClientProviderFactory, StorageServiceClientProviderFactory>();
+            serviceCollection.TryAddSingleton<Storage.IStorageServiceClientProviderFactory, Storage.StorageServiceClientProviderFactory>();
             serviceCollection.TryAddSingleton<IDurableHttpMessageHandlerFactory, DurableHttpMessageHandlerFactory>();
             serviceCollection.AddSingleton<IDurabilityProviderFactory, AzureStorageDurabilityProviderFactory>();
             serviceCollection.TryAddSingleton<IMessageSerializerSettingsFactory, MessageSerializerSettingsFactory>();
             serviceCollection.TryAddSingleton<IErrorSerializerSettingsFactory, ErrorSerializerSettingsFactory>();
             serviceCollection.TryAddSingleton<IApplicationLifetimeWrapper, HostLifecycleService>();
             serviceCollection.AddSingleton<ITelemetryActivator, TelemetryActivator>();
+
+            // Register scalability provider factories from the scale package using the scale package's registration method
+            // Note: This delegates to the Scale package which registers all scalability providers
+            Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.DurableTaskJobHostConfigurationExtensions.AddDurableTask(builder);
             serviceCollection.TryAddSingleton<IDurableClientFactory, DurableClientFactory>();
 #pragma warning disable CS0612, CS0618 // Type or member is obsolete
             serviceCollection.TryAddSingleton<IConnectionStringResolver, WebJobsConnectionStringProvider>();
@@ -106,17 +110,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         internal static IWebJobsBuilder AddDurableScaleForTrigger(this IWebJobsBuilder builder, TriggerMetadata triggerMetadata)
         {
             // this segment adheres to the followings pattern: https://github.com/Azure/azure-sdk-for-net/pull/38756
-            DurableTaskTriggersScaleProvider provider = null;
-            builder.Services.AddSingleton(serviceProvider =>
-            {
-                provider = new DurableTaskTriggersScaleProvider(serviceProvider.GetService<IOptions<DurableTaskOptions>>(), serviceProvider.GetService<INameResolver>(), serviceProvider.GetService<ILoggerFactory>(), serviceProvider.GetService<IEnumerable<IDurabilityProviderFactory>>(), triggerMetadata);
-                return provider;
-            });
-
-            // Commenting out incremental scale model for hotfix release 3.0.0-rc.4, SC uses TBS by default
-            // builder.Services.AddSingleton<IScaleMonitorProvider>(serviceProvider => serviceProvider.GetServices<DurableTaskTriggersScaleProvider>().Single(x => x == provider));
-            builder.Services.AddSingleton<ITargetScalerProvider>(serviceProvider => serviceProvider.GetServices<DurableTaskTriggersScaleProvider>().Single(x => x == provider));
-            return builder;
+            // Delegate to the scale package's method for registering the scale provider
+            return Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.DurableTaskJobHostConfigurationExtensions.AddDurableScaleForTrigger(builder, triggerMetadata);
         }
 
         /// <summary>

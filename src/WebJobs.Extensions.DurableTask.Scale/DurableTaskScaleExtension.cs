@@ -46,7 +46,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
             this.scalabilityProviderFactory = GetScalabilityProviderFactory(this.metadata, this.logger, this.scalabilityProviderFactories);
 
             // Create a default scalability provider instance from the selected factory.
-            this.defaultscalabilityProvider = this.scalabilityProviderFactory.GetScalabilityProvider();
+            // For runtime-driven scaling, pass metadata with triggerMetadata = null (no Scale Controller properties needed)
+            this.defaultscalabilityProvider = this.scalabilityProviderFactory.GetScalabilityProvider(this.metadata, triggerMetadata: null);
         }
 
         /// <summary>

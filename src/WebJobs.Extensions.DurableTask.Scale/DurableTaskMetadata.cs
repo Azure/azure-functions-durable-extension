@@ -54,5 +54,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
                 metadata.StorageProvider["connectionName"] = nameResolver.Resolve(connectionName) ?? string.Empty;
             }
         }
+
+        /// <summary>
+        /// Creates a DurableTaskMetadata instance from DurableTaskOptions for runtime-driven scaling.
+        /// Extracts only the configuration needed for scaling decisions.
+        /// </summary>
+        /// <param name="options">The Durable Task options from host.json.</param>
+        /// <returns>A DurableTaskMetadata instance with configuration for scaling.</returns>
+        public static DurableTaskMetadata FromOptions(object options)
+        {
+            // Use reflection to extract values since we can't reference WebJobs.Extensions.DurableTask from here
+            var optionsType = options.GetType();
+            var hubNameProp = optionsType.GetProperty("HubName");
+            var maxConcurrentOrchestratorsProp = optionsType.GetProperty("MaxConcurrentOrchestratorFunctions");
+            var maxConcurrentActivitiesProp = optionsType.GetProperty("MaxConcurrentActivityFunctions");
+            var storageProviderProp = optionsType.GetProperty("StorageProvider");
+
+            return new DurableTaskMetadata
+            {
+                TaskHubName = hubNameProp?.GetValue(options) as string,
+                MaxConcurrentOrchestratorFunctions = maxConcurrentOrchestratorsProp?.GetValue(options) as int?,
+                MaxConcurrentActivityFunctions = maxConcurrentActivitiesProp?.GetValue(options) as int?,
+                StorageProvider = storageProviderProp?.GetValue(options) as IDictionary<string, object>,
+            };
+        }
     }
 }

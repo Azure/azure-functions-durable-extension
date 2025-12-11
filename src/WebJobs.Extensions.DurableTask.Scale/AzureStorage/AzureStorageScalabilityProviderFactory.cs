@@ -91,7 +91,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage
         /// <returns>
         /// A singleton instance of <see cref="AzureStorageScalabilityProvider"/>.
         /// </returns>
-        public ScalabilityProvider GetScalabilityProvider(DurableTaskMetadata metadata, TriggerMetadata triggerMetadata)
+        public ScalabilityProvider GetScalabilityProvider(DurableTaskMetadata metadata, TriggerMetadata? triggerMetadata)
         {
             // Validate Azure Storage specific options if metadata is present
             if (metadata != null)

@@ -9,6 +9,7 @@ using DurableTask.AzureStorage.Monitoring;
 using DurableTask.Core;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests;
 using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
@@ -18,7 +19,6 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
 using Xunit.Abstractions;
-using static Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.ScaleUtils;
 using static Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests.PlatformSpecificHelpers;
 
 namespace WebJobs.Extensions.DurableTask.Tests.V2
@@ -30,7 +30,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         private readonly Mock<DurableTaskMetricsProvider> metricsProviderMock;
         private readonly Mock<DurableTaskTriggerMetrics> triggerMetricsMock;
         private readonly Mock<IOrchestrationService> orchestrationServiceMock;
-        private readonly Mock<DurabilityProvider> durabilityProviderMock;
+        private readonly Mock<AzureStorageScalabilityProvider> scalabilityProviderMock;
         private readonly TestLoggerProvider loggerProvider;
         private readonly ITestOutputHelper output;
 
@@ -55,17 +55,16 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
             this.triggerMetricsMock = new Mock<DurableTaskTriggerMetrics>(MockBehavior.Strict);
             this.orchestrationServiceMock = new Mock<IOrchestrationService>(MockBehavior.Strict);
 
-            this.durabilityProviderMock = new Mock<DurabilityProvider>(
+            this.scalabilityProviderMock = new Mock<AzureStorageScalabilityProvider>(
                 MockBehavior.Strict,
-                "storageProviderName",
-                this.orchestrationServiceMock.Object,
-                new Mock<IOrchestrationServiceClient>().Object,
-                "connectionName");
+                storageAccountClientProvider,
+                "connectionName",
+                logger);
 
             this.targetScaler = new DurableTaskTargetScaler(
                 "FunctionId",
                 this.metricsProviderMock.Object,
-                this.durabilityProviderMock.Object,
+                this.scalabilityProviderMock.Object,
                 logger);
         }
 
@@ -100,17 +99,19 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         public async Task TestGetTargetScaler(bool supportsTBS)
         {
             ITargetScaler targetScaler = new Mock<ITargetScaler>().Object;
-            this.durabilityProviderMock.Setup(m => m.TryGetTargetScaler(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), out targetScaler))
+            this.scalabilityProviderMock.Setup(m => m.TryGetTargetScaler(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), out targetScaler))
                 .Returns(supportsTBS);
 
-            var scaler = ScaleUtils.GetTargetScaler(this.durabilityProviderMock.Object, "FunctionId", new FunctionName("FunctionName"), "connectionName", "HubName");
+            ITargetScaler scaler;
             if (!supportsTBS)
             {
-                Assert.IsType<NoOpTargetScaler>(scaler);
-                await Assert.ThrowsAsync<NotSupportedException>(() => scaler.GetScaleResultAsync(context: null));
+                // When TBS is not supported, scalability provider returns false
+                this.scalabilityProviderMock.Object.TryGetTargetScaler("FunctionId", "FunctionName", "HubName", "connectionName", out scaler);
+                Assert.Null(scaler);
             }
             else
             {
+                this.scalabilityProviderMock.Object.TryGetTargetScaler("FunctionId", "FunctionName", "HubName", "connectionName", out scaler);
                 Assert.Equal(targetScaler, scaler);
             }
         }
@@ -122,17 +123,19 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         public void TestGetScaleMonitor(bool supportsScaleMonitor)
         {
             IScaleMonitor scaleMonitor = new Mock<IScaleMonitor>().Object;
-            this.durabilityProviderMock.Setup(m => m.TryGetScaleMonitor(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), out scaleMonitor))
+            this.scalabilityProviderMock.Setup(m => m.TryGetScaleMonitor(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), out scaleMonitor))
                 .Returns(supportsScaleMonitor);
 
-            var monitor = ScaleUtils.GetScaleMonitor(this.durabilityProviderMock.Object, "FunctionId", new FunctionName("FunctionName"), "connectionName", "HubName");
+            IScaleMonitor monitor;
             if (!supportsScaleMonitor)
             {
-                Assert.IsType<NoOpScaleMonitor>(monitor);
-                Assert.Throws<InvalidOperationException>(() => monitor.GetScaleStatus(context: null));
+                // When scale monitor is not supported, scalability provider returns false
+                this.scalabilityProviderMock.Object.TryGetScaleMonitor("FunctionId", "FunctionName", "HubName", "connectionName", out monitor);
+                Assert.Null(monitor);
             }
             else
             {
+                this.scalabilityProviderMock.Object.TryGetScaleMonitor("FunctionId", "FunctionName", "HubName", "connectionName", out monitor);
                 Assert.Equal(scaleMonitor, monitor);
             }
         }

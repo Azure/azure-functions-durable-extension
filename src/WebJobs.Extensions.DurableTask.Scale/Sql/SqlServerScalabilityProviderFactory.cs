@@ -69,7 +69,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Sql
         /// <param name="metadata">The pre-deserialized Durable Task metadata.</param>
         /// <param name="triggerMetadata">Trigger metadata (for future extensions, e.g., token credentials).</param>
         /// <returns>A configured SQL Server scalability provider.</returns>
-        public ScalabilityProvider GetScalabilityProvider(DurableTaskMetadata metadata, TriggerMetadata triggerMetadata)
+        public ScalabilityProvider GetScalabilityProvider(DurableTaskMetadata metadata, TriggerMetadata? triggerMetadata)
         {
             // Validate SQL Server specific metadata if present
             if (metadata != null)

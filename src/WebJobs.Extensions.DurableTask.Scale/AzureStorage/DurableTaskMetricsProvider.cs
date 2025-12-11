@@ -11,7 +11,7 @@ using Newtonsoft.Json;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage
 {
-    internal class DurableTaskMetricsProvider
+    public class DurableTaskMetricsProvider
     {
         private readonly string hubName;
         private readonly ILogger logger;

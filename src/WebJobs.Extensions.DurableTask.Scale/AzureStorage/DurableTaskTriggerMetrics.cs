@@ -5,7 +5,7 @@ using Microsoft.Azure.WebJobs.Host.Scale;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage
 {
-    internal class DurableTaskTriggerMetrics : ScaleMetrics
+    public class DurableTaskTriggerMetrics : ScaleMetrics
     {
         /// <summary>
         /// The number of partitions in the task hub.

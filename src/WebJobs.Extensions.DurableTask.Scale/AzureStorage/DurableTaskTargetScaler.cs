@@ -12,7 +12,7 @@ using Newtonsoft.Json;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage
 {
-    internal class DurableTaskTargetScaler : ITargetScaler
+    public class DurableTaskTargetScaler : ITargetScaler
     {
         private readonly DurableTaskMetricsProvider metricsProvider;
         private readonly TargetScalerResult scaleResult;

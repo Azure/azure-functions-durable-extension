@@ -10,7 +10,7 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
 {
-    internal class DurableTaskTriggersScaleProvider : IScaleMonitorProvider, ITargetScalerProvider
+    public class DurableTaskTriggersScaleProvider : IScaleMonitorProvider, ITargetScalerProvider
     {
         private const string DefaultConnectionName = "connectionName";
         private const string ConnectionNameOverride = "connectionStringName";
