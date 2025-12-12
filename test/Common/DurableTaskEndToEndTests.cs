@@ -645,54 +645,43 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             File.Delete(LinuxAppServiceLogger.LoggingPath); // To ensure the test generates the path
             string orchestratorName = nameof(TestOrchestrations.ThrowOrchestrator);
 
-            string? storedStorageEnvVarValue = Environment.GetEnvironmentVariable("AzureWebJobsStorage");
-            Environment.SetEnvironmentVariable("AzureWebJobsStorage", "UseDevelopmentStorage=true");
-
-            try
-            {
                 // Simulate linux dedicated via enviroment variables
-                var nameResolver = new SimpleNameResolver(new Dictionary<string, string>()
+            var nameResolver = new SimpleNameResolver(new Dictionary<string, string>()
             {
                 { "WEBSITE_INSTANCE_ID", "val1" },
                 { "FUNCTIONS_LOGS_MOUNT_PATH", "val2" },
                 { "FUNCTIONS_WORKER_RUNTIME", "python" },
             });
 
-                // Run trivial orchestrator
-                using (var host = TestHelpers.GetJobHost(
-                    this.loggerProvider,
-                    nameResolver: nameResolver,
-                    testName: "RemovesNewlinesFromExceptions",
-                    enableExtendedSessions: false,
-                    storageProviderType: "azure_storage"))
-                {
-                    await host.StartAsync();
-
-                    // This orchestrator should error out on null inputs
-                    var client = await host.StartOrchestratorAsync(orchestratorName, input: null, this.output);
-                    var status = await client.WaitForCompletionAsync(this.output);
-                    await host.StopAsync();
-                }
-
-                await TestHelpers.WaitUntilTrue(
-                    predicate: () =>
-                    {
-                        /* Exceptions have newlines embeded in them. Therefore, if there are as many lines
-                         * as there are JSON (each of which has 1 EventTimestamp field), then we know that
-                         * Exceptions must have had their newlines removed.
-                         */
-                        List<string> lines = TestHelpers.WriteSafeReadAllLines(LinuxAppServiceLogger.LoggingPath);
-                        int countTimeStampCols = Regex.Matches(string.Join("", lines), "\"EventTimestamp\":").Count;
-                        return lines.Count == countTimeStampCols;
-                    },
-                    conditionDescription: "Log file exists and newlines are removed from exceptions",
-                    timeout: TimeSpan.FromSeconds(65)); // enabling at least 2 file-buffer flushes (happen every 30 seconds)
-            }
-            finally
+            // Run trivial orchestrator
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameResolver: nameResolver,
+                testName: "RemovesNewlinesFromExceptions",
+                enableExtendedSessions: false,
+                storageProviderType: "azure_storage"))
             {
-                // Restore original env var value
-                Environment.SetEnvironmentVariable("AzureWebJobsStorage", storedStorageEnvVarValue);
+                await host.StartAsync();
+
+                // This orchestrator should error out on null inputs
+                var client = await host.StartOrchestratorAsync(orchestratorName, input: null, this.output);
+                await client.WaitForCompletionAsync(this.output);
+                await host.StopAsync();
             }
+
+            await TestHelpers.WaitUntilTrue(
+                predicate: () =>
+                {
+                    /* Exceptions have newlines embeded in them. Therefore, if there are as many lines
+                        * as there are JSON (each of which has 1 EventTimestamp field), then we know that
+                        * Exceptions must have had their newlines removed.
+                        */
+                    List<string> lines = TestHelpers.WriteSafeReadAllLines(LinuxAppServiceLogger.LoggingPath);
+                    int countTimeStampCols = Regex.Matches(string.Join("", lines), "\"EventTimestamp\":").Count;
+                    return lines.Count == countTimeStampCols;
+                },
+                conditionDescription: "Log file exists and newlines are removed from exceptions",
+                timeout: TimeSpan.FromSeconds(65)); // enabling at least 2 file-buffer flushes (happen every 30 seconds)
         }
 
         /// <summary>
