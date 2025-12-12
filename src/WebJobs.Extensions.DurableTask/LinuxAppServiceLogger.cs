@@ -166,8 +166,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // Generate JSON string to log based on the EventSource message
             string jsonString = this.GenerateLogStr(eventData, extensionGuid);
 
-            Console.WriteLine("Linux app service logger logging line");
-
             // We write to console in Linux Consumption
             if (this.writeToConsole)
             {
@@ -179,7 +177,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 // We write to a file in Linux Dedicated
                 // Our file logger already handles file rolling (archiving) and deletion of old logs
-                Console.WriteLine("Linux app service logger writing to file");
                 this.fileLogger.Log(jsonString);
             }
         }

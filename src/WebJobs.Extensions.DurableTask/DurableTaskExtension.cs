@@ -458,8 +458,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string stampName = this.PlatformInformationService.GetLinuxStampName();
             string containerName = this.PlatformInformationService.GetContainerName();
 
-            Console.WriteLine("Initializing linux logging");
-
             // in linux consumption, logs are emitted to the console.
             // In other linux plans, they are emitted to a logfile.
             var linuxLogger = new LinuxAppServiceLogger(writeToConsole: inConsumption || isManagedAppEnvironment, containerName, tenant, stampName);
