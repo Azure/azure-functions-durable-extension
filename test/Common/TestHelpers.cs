@@ -342,7 +342,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// <param name="predicate">Predicate to wait until it returns true.</param>
         /// <param name="timeout">Time to wait until predicate is true.</param>
         /// <param name="retryInterval">How frequently to test predicate. Defaults to 100 ms.</param>
-        public static async Task WaitUntilTrue(Func<bool> predicate, string conditionDescription, TimeSpan timeout, TimeSpan? retryInterval = null)
+        public static async Task WaitUntilTrue(Func<bool> predicate, string conditionDescription, TimeSpan timeout, TimeSpan? retryInterval = null, ITestOutputHelper output = null)
         {
             if (retryInterval == null)
             {
@@ -353,9 +353,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             do
             {
-                if (predicate())
+                try
                 {
-                    return;
+                    if (predicate())
+                    {
+                        return;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    if (output is not null)
+                    {
+                        output.WriteLine($"Exception thrown while evaluating predicate: {ex}");
+                    }
                 }
 
                 await Task.Delay(retryInterval.Value);

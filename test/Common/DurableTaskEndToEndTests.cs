@@ -489,7 +489,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             await TestHelpers.WaitUntilTrue(
                 predicate: () => File.Exists(LinuxAppServiceLogger.LoggingPath),
                 conditionDescription: "Log file exists",
-                timeout: TimeSpan.FromSeconds(20));
+                timeout: TimeSpan.FromSeconds(20),
+                output: this.output);
         }
 
         /// <summary>
@@ -681,7 +682,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     return lines.Count == countTimeStampCols;
                 },
                 conditionDescription: "Log file exists and newlines are removed from exceptions",
-                timeout: TimeSpan.FromSeconds(65)); // enabling at least 2 file-buffer flushes (happen every 30 seconds)
+                timeout: TimeSpan.FromSeconds(65),
+                output: this.output); // enabling at least 2 file-buffer flushes (happen every 30 seconds)
         }
 
         /// <summary>
@@ -732,7 +734,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             await TestHelpers.WaitUntilTrue(
                 predicate: () => File.Exists(LinuxAppServiceLogger.LoggingPath),
                 conditionDescription: "Log file exists",
-                timeout: TimeSpan.FromSeconds(30));
+                timeout: TimeSpan.FromSeconds(30),
+                output: this.output);
 
             // add a minute wait to ensure logs are fully written
             await Task.Delay(TimeSpan.FromMinutes(1));
@@ -781,7 +784,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     return true;
                 },
                 conditionDescription: "Log file contains all required fields and expected events",
-                timeout: TimeSpan.FromSeconds(35));
+                timeout: TimeSpan.FromSeconds(35),
+                output: this.output);
         }
 
         /// <summary>
