@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using DurableTask.Core;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests;
@@ -36,7 +35,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         [InlineData("AzureStorage")]
         [InlineData("MicrosoftSQL")]
         [InlineData("Netherite")]
-        public async Task StorageProviderTypeSpecified_CorrectStorageProviderFactoryUsed(string storageProvider)
+        public void StorageProviderTypeSpecified_CorrectStorageProviderFactoryUsed(string storageProvider)
         {
             var orchestrationServiceClientMock = new Mock<IOrchestrationServiceClient>();
             Mock<IDurabilityProviderFactory> azureStorageMock = GetAzureStorageStorageProviderMock(orchestrationServiceClientMock);
@@ -97,7 +96,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task SelectingDefaultStorageProviderWhenNoTypeIsProvided()
+        public void SelectingDefaultStorageProviderWhenNoTypeIsProvided()
         {
             var orchestrationServiceClientMock = new Mock<IOrchestrationServiceClient>();
             Mock<IDurabilityProviderFactory> azureStorageMock = GetAzureStorageStorageProviderMock(orchestrationServiceClientMock);
