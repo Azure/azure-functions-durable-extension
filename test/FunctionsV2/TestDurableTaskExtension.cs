@@ -40,7 +40,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     telemetryActivator)
         {
             // Access DefaultDurabilityProvider to ensure it gets initialized during tests
-            var unused = this.DefaultDurabilityProvider;
+            _ = this.DefaultDurabilityProvider;
         }
     }
 }

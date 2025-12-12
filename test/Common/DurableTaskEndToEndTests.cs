@@ -642,6 +642,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             // Set a different logging path, since the CI is Windows-based instead of linux.
             LinuxAppServiceLogger.LoggingPath = Path.Combine(Directory.GetCurrentDirectory(), "logfile_RemovesNewlinesFromExceptions.log");
+            this.output.WriteLine("Logging path: " + LinuxAppServiceLogger.LoggingPath);
             File.Delete(LinuxAppServiceLogger.LoggingPath); // To ensure the test generates the path
             string orchestratorName = nameof(TestOrchestrations.ThrowOrchestrator);
 
@@ -667,6 +668,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var client = await host.StartOrchestratorAsync(orchestratorName, input: null, this.output);
                 var status = await client.WaitForCompletionAsync(this.output);
                 await host.StopAsync();
+                throw new Exception("Intentional fail");
             }
 
             await TestHelpers.WaitUntilTrue(

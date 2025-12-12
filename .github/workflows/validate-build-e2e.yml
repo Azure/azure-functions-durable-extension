@@ -62,5 +62,5 @@ jobs:
     - name: Run FunctionsV2 tests (only DurableEntity_CleanEntityStorage test, which is flaky)
       run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 & dotnet test ./test/FunctionsV2/WebJobs.Extensions.DurableTask.Tests.V2.csproj  --filter "FullyQualifiedName~Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests.DurableTaskEndToEndTests.DurableEntity_CleanEntityStorage"
 
-    - name: Run FunctionsV2 tests (all other E2E tests)
-      run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 & dotnet test ./test/FunctionsV2/WebJobs.Extensions.DurableTask.Tests.V2.csproj  --filter "FullyQualifiedName~Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests.DurableTaskEndToEndTests&FullyQualifiedName!~Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests.DurableTaskEndToEndTests.DurableEntity_CleanEntityStorage"
+    - name: Run FunctionsV2 tests (Just the failing test for debugging)
+      run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 & dotnet test ./test/FunctionsV2/WebJobs.Extensions.DurableTask.Tests.V2.csproj  --filter "FullyQualifiedName~Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests.DurableTaskEndToEndTests.RemovesNewlinesFromExceptions" -v:detailed
