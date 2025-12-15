@@ -1352,7 +1352,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             return $"A Task Hub Worker is already started for the task hub '{hubName}' but the extension called getTaskHubWorker() again. " +
                 "Please report this at https://github.com/Azure/azure-functions-durable-extension/issues \n" +
-                "At: " + new StackTrace().ToString();
+                "At: " + new StackTrace();
         }
 
         internal async Task<bool> StartTaskHubWorkerIfNotStartedAsync()
