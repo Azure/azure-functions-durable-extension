@@ -367,7 +367,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     // specifically a newly-exposed race condition in RemovesNewlinesFromExceptions where the LinuxAppServiceLogger
                     // was still buffering the log output when the predicate tried to read it, causing the equivalent of a
                     // FileNotFound error.
-                    // Predicates that fail due to deterministic exceptions 
+                    // Predicates that fail consistently will still fail tests, though the thrown exception type becomes TimeoutException.
                     if (output is not null)
                     {
                         output.WriteLine($"Exception thrown while evaluating predicate: {ex}");
