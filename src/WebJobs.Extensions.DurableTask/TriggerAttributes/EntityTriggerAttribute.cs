@@ -32,16 +32,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public string EntityName { get; set; }
 
         /// <summary>
-        /// Gets or sets a value indicating whether this orchestration requires gRPC communication. Default false.
+        /// Gets or sets a value indicating whether this entity requires gRPC communication. Default false.
         /// </summary>
         /// <remarks>
-        /// If set to true, the Durable extension will start a gRPC server to handle communication for this orchestration,
+        /// If set to true, the Durable extension will start a gRPC server to handle communication for this entity,
         /// regardless of the detected worker runtime. This is used for languages migrating from HTTP to gRPC to allow the
         /// worker to communicate the desired connection type back to the host.
         /// </remarks>
         /// <value>
         /// True if gRPC is required; otherwise, false.
         /// </value>
-        public bool DurableRequiresGrpc { get; set; } = false;
+        public bool DurableRequiresGrpc { get; set; }
     }
 }

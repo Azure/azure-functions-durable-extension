@@ -380,8 +380,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         EventName = eventName,
                         EventData = JsonConvert.SerializeObject(entityMessage, new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.None }),
                     };
-
-                    throw new NotSupportedException("Deserialization of SendEntityMessage action is not supported.");
                 default:
                     throw new NotSupportedException($"Received unsupported action type '{a.OrchestratorActionTypeCase}'.");
             }

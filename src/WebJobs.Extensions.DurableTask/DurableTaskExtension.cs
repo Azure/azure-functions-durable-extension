@@ -178,6 +178,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             else
             {
+                // The extension will initially call ConfigureForHttpProtocol for the other languages (Python, Node.js, PowerShell).
+                // If these languages return functions with metadata including the ConfigureForGrpcProtocol flag, we will call
+                // ConfigureForGrpcProtocol when indexing, overriding this behavior and causing the lambda evaluated later in
+                // getTaskHubWorker() to start the gRPC server instead of the HTTP server.
                 this.ConfigureForHttpProtocol();
             }
         }
@@ -206,7 +210,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <value>
         /// True if the functionapp requested gRPC via function metadata, otherwise false.
         /// </value>
-        public static bool DurableRequiresGrpc { get; set; } = false;
+        public static bool DurableRequiresGrpc { get; set; }
 
         internal TimeSpan MessageReorderWindow
             => this.DefaultDurabilityProvider.GuaranteesOrderedDelivery ? TimeSpan.Zero : TimeSpan.FromMinutes(this.Options.EntityMessageReorderWindowInMinutes);
@@ -365,6 +369,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             this.getTaskHubWorker = () =>
             {
+                // Ensure that getTaskHubWorker() can only be called once.
+                this.getTaskHubWorker = () => 
+                {
+                    this.TraceHelper.ExtensionWarningEvent(this.Options.HubName, string.Empty, string.Empty, this.GetTaskHubWorkerDuplicateMessage(this.Options.HubName));
+                    return this.taskHubWorker ?? throw new InvalidOperationException("TaskHubWorker was unexpectedly null");
+                };
+
                 this.TraceConfigurationSettings();
 
                 var newTaskHubWorker = new TaskHubWorker(this.DefaultDurabilityProvider, this, this, loggerFactory: this.loggerFactory, versioningSettings: new VersioningSettings
@@ -1127,6 +1138,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <returns>Returns a <see cref="IDurableClient"/> instance. The returned instance may be a cached instance.</returns>
         protected internal virtual IDurableClient GetClient(DurableClientAttribute attribute)
         {
+            if (attribute.DurableRequiresGrpc)
+            {
+                // In the case when an app has only a durable client binding initialized, we still need to detect and start
+                // the HTTP or gRPC server as requested by the client type. Because this is now tied to the TaskHubWorker init,
+                // this normally needs to be done before the listeners start. Thankfully, even though DurableClient doesn't have
+                // an equivalent to the AttributeBindingProviders used by the trigger types for this, the durable client only case
+                // does not start the listeners, so we can defer initializing the task hub until first execution.
+                this.ConfigureForGrpcProtocol();
+
+                // Accessing the task hub will call getTaskHubWorker() if it hasn't been initialized yet, starting the appropriate
+                // server.
+                _ = this.TaskHubWorker;
+            }
+
             DurableClient client = this.cachedClients.GetOrAdd(
                 attribute,
                 attr =>
@@ -1321,6 +1346,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             return message;
+        }
+
+        internal string GetTaskHubWorkerDuplicateMessage(string hubName)
+        {
+            return $"A Task Hub Worker is already started for the task hub '{hubName}' but the extension called getTaskHubWorker() again. " +
+                "Please report this at https://github.com/Azure/azure-functions-durable-extension/issues \n" +
+                "At: " + new StackTrace().ToString();
         }
 
         internal async Task<bool> StartTaskHubWorkerIfNotStartedAsync()

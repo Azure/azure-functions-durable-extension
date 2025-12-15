@@ -42,6 +42,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <value>
         /// True if gRPC is required; otherwise, false.
         /// </value>
-        public bool DurableRequiresGrpc { get; set; } = false;
+        public bool DurableRequiresGrpc { get; set; }
     }
 }

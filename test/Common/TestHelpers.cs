@@ -362,6 +362,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 }
                 catch (Exception ex)
                 {
+                    // This method now catches and logs exceptions thrown by the predicate.
+                    // This is to prevent tests from failing due to transient errors in the predicate evaluation,
+                    // specifically a newly-exposed race condition in RemovesNewlinesFromExceptions where the LinuxAppServiceLogger
+                    // was still buffering the log output when the predicate tried to read it, causing the equivalent of a
+                    // FileNotFound error.
+                    // Predicates that fail due to deterministic exceptions 
                     if (output is not null)
                     {
                         output.WriteLine($"Exception thrown while evaluating predicate: {ex}");
