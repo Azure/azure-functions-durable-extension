@@ -72,7 +72,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.config.RegisterOrchestrator(orchestratorName, null);
             if (trigger.DurableRequiresGrpc)
             {
-                DurableTaskExtension.DurableRequiresGrpc = true;
                 this.config.ConfigureForGrpcProtocol();
             }
 

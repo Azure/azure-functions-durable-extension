@@ -25,7 +25,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             IDurableOrchestrationClient client = this.config.GetClient(clientAttribute);
             if (clientAttribute.DurableRequiresGrpc)
             {
-                DurableTaskExtension.DurableRequiresGrpc = true;
                 this.config.ConfigureForGrpcProtocol();
             }
 

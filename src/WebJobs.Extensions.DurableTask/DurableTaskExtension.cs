@@ -416,6 +416,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (this.OutOfProcProtocol != OutOfProcOrchestrationProtocol.OrchestratorShim)
             {
                 this.OutOfProcProtocol = OutOfProcOrchestrationProtocol.OrchestratorShim;
+                DurableTaskExtension.DurableRequiresGrpc = false;
             }
         }
 
@@ -426,6 +427,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.OutOfProcProtocol = OutOfProcOrchestrationProtocol.MiddlewarePassthrough;
                 this.localGrpcListener = LocalGrpcListener.Create(this, this.Options.GrpcListenerMode);
                 this.HostLifetimeService.OnStopped.Register(this.StopLocalGrpcServer);
+                DurableTaskExtension.DurableRequiresGrpc = true;
             }
         }
 

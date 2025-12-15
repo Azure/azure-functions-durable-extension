@@ -53,7 +53,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             var activityName = new FunctionName(name);
             if (trigger.DurableRequiresGrpc)
             {
-                DurableTaskExtension.DurableRequiresGrpc = true;
                 this.durableTaskConfig.ConfigureForGrpcProtocol();
             }
 
