@@ -55,7 +55,6 @@ AI verification (required if AI was used):
 
 # Testing
 ## Automated tests
-- Command(s):
 - Result: Passed / Failed (link logs if failed)
 
 ## Manual validation (only if runtime/behavior changed)
