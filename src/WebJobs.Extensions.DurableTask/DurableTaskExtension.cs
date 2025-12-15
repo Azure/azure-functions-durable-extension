@@ -1146,11 +1146,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 // an equivalent to the AttributeBindingProviders used by the trigger types for this, the durable client only case
                 // does not start the listeners, so we can defer initializing the task hub until first execution.
                 this.ConfigureForGrpcProtocol();
-
-                // Accessing the task hub will call getTaskHubWorker() if it hasn't been initialized yet, starting the appropriate
-                // server.
-                _ = this.TaskHubWorker;
             }
+
+            // Accessing the task hub will call getTaskHubWorker() if it hasn't been initialized yet, starting the appropriate
+            // server.
+            _ = this.TaskHubWorker;
 
             DurableClient client = this.cachedClients.GetOrAdd(
                 attribute,
