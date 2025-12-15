@@ -103,6 +103,7 @@ internal sealed partial class FunctionsOrchestrationContext : TaskOrchestrationC
                 {
                     InstanceId = subOrchestrationOptions.InstanceId,
                     Version = subOrchestrationOptions.Version?.Version ?? defaultVersion,
+                    Tags = subOrchestrationOptions.Tags,
                 };
             }
             else
