@@ -108,5 +108,28 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.NotNull(json);
             Assert.Equal("AnyState", json["OverridableExistingInstanceStates"].ToString());
         }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void Format_IncludesComplexProperties()
+        {
+            // Arrange
+            var options = new DurableTaskOptions
+            {
+                HubName = "TestHub",
+            };
+
+            // Act
+            IOptionsFormatter formatter = options;
+            string result = formatter.Format();
+            JObject json = JObject.Parse(result);
+
+            // Assert - verify complex properties are present
+            Assert.NotNull(json);
+            Assert.NotNull(json["HttpSettings"]);
+            Assert.NotNull(json["Tracing"]);
+            Assert.NotNull(json["Notifications"]);
+            Assert.NotNull(json["AppLeaseOptions"]);
+        }
     }
 }

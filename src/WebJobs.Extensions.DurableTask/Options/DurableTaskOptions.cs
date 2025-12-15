@@ -435,6 +435,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 { nameof(this.LocalRpcEndpointEnabled), this.LocalRpcEndpointEnabled },
                 { nameof(this.MaxGrpcMessageSizeInBytes), this.MaxGrpcMessageSizeInBytes },
                 { nameof(this.GrpcHttpClientTimeout), this.GrpcHttpClientTimeout },
+                { nameof(this.HttpSettings), this.HttpSettings != null ? JObject.FromObject(this.HttpSettings) : null },
+                { nameof(this.StorageProvider), this.StorageProvider != null && this.StorageProvider.Count > 0 ? JObject.FromObject(this.StorageProvider) : null },
+                { nameof(this.Tracing), this.Tracing != null ? JObject.FromObject(this.Tracing) : null },
+                { nameof(this.Notifications), this.Notifications != null ? JObject.FromObject(this.Notifications) : null },
+                { nameof(this.AppLeaseOptions), this.AppLeaseOptions != null ? JObject.FromObject(this.AppLeaseOptions) : null },
             };
 
             return options.ToString(Formatting.Indented);
