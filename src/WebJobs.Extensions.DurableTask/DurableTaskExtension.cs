@@ -370,7 +370,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.getTaskHubWorker = () =>
             {
                 // Ensure that getTaskHubWorker() can only be called once.
-                this.getTaskHubWorker = () => 
+                this.getTaskHubWorker = () =>
                 {
                     this.TraceHelper.ExtensionWarningEvent(this.Options.HubName, string.Empty, string.Empty, this.GetTaskHubWorkerDuplicateMessage(this.Options.HubName));
                     return this.taskHubWorker ?? throw new InvalidOperationException("TaskHubWorker was unexpectedly null");
