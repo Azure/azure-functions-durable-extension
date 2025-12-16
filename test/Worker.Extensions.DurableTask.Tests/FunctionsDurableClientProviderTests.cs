@@ -75,8 +75,8 @@ public class FunctionsDurableClientProviderTests
         Assert.NotNull(expectedMethodConfig);
 
         // Verify the service config contains the method config
-        Assert.Single(serviceConfig.MethodConfigs);
-        Assert.Equal(expectedMethodConfig, serviceConfig.MethodConfigs[0]);
+        Assert.Single(serviceConfig!.MethodConfigs);
+        Assert.Equal(expectedMethodConfig, serviceConfig!.MethodConfigs[0]);
     }
 
     /// <summary>
