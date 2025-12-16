@@ -5,18 +5,45 @@
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
+using Grpc.Core;
 using Grpc.Net.Client;
+using Grpc.Net.Client.Configuration;
 
 namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
 
 internal partial class FunctionsDurableClientProvider
 {
+    // Default retry policy for transient gRPC failures.
+    // This handles cases where the server is temporarily unavailable.
+    private static readonly MethodConfig DefaultMethodConfig = new()
+    {
+        Names = { MethodName.Default },
+        RetryPolicy = new RetryPolicy
+        {
+            MaxAttempts = 5,
+            InitialBackoff = TimeSpan.FromSeconds(1),
+            MaxBackoff = TimeSpan.FromSeconds(5),
+            BackoffMultiplier = 1.5,
+            RetryableStatusCodes = { StatusCode.Unavailable },
+        },
+    };
+
+    private static readonly ServiceConfig DefaultServiceConfig = new()
+    {
+        MethodConfigs = { DefaultMethodConfig },
+    };
+
     private static GrpcChannel CreateChannel(ClientKey key, int? maxGrpcMessageSize, TimeSpan grpcHttpClientTimeout)
     {
         IReadOnlyDictionary<string, string> headers = key.GetHeaders();
         if (headers.Count == 0)
         {
-            return GrpcChannel.ForAddress(key.Address);
+            GrpcChannelOptions defaultOptions = new()
+            {
+                ServiceConfig = DefaultServiceConfig,
+            };
+
+            return GrpcChannel.ForAddress(key.Address, defaultOptions);
         }
 
         HttpClient httpClient = new()
@@ -33,7 +60,8 @@ internal partial class FunctionsDurableClientProvider
         {
             HttpClient = httpClient,
             DisposeHttpClient = true,
-            MaxReceiveMessageSize = maxGrpcMessageSize
+            MaxReceiveMessageSize = maxGrpcMessageSize,
+            ServiceConfig = DefaultServiceConfig,
         };
 
         return GrpcChannel.ForAddress(key.Address, options);
