@@ -491,21 +491,39 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new RpcException(new Status(StatusCode.NotFound, $"Orchestration instance with ID {request.InstanceId} was not found."));
             }
 
+            async Task<(P.HistoryChunk, int)> AddToHistoryChunkAndStream(HistoryEvent historyEvent, P.HistoryChunk historyChunk, int currentChunkSizeInBytes)
+            {
+                P.HistoryEvent result = ProtobufUtils.ToHistoryEventProto(historyEvent);
+
+                int currentEventSize = result.CalculateSize();
+                if (currentChunkSizeInBytes + currentEventSize > MaxHistoryChunkSizeInBytes)
+                {
+                    // If we exceeded the chunk size threshold, send what we have so far.
+                    await responseStream.WriteAsync(historyChunk);
+                    historyChunk = new ();
+                    currentChunkSizeInBytes = 0;
+                }
+
+                historyChunk.Events.Add(result);
+                currentChunkSizeInBytes += currentEventSize;
+                return (historyChunk, currentChunkSizeInBytes);
+            }
+
             try
             {
+                int currentChunkSizeInBytes = 0;
+                P.HistoryChunk historyChunk = new ();
+
                 // First, try to use the streaming API if it's implemented.
                 try
                 {
-                    IEnumerable<string> historyChunks = await this.GetDurabilityProvider(context).StreamOrchestrationHistoryAsync(
+                    IAsyncEnumerable<HistoryEvent> historyEvents = await this.GetDurabilityProvider(context).StreamOrchestrationHistoryAsync(
                         request.InstanceId,
-                        new JsonFormatter(new JsonFormatter.Settings(formatDefaultValues: true)),
                         context.CancellationToken);
 
-                    JsonParser jsonParser = new (JsonParser.Settings.Default.WithIgnoreUnknownFields(true));
-                    foreach (string chunk in historyChunks)
+                    await foreach (HistoryEvent historyEvent in historyEvents)
                     {
-                        context.CancellationToken.ThrowIfCancellationRequested();
-                        await responseStream.WriteAsync(jsonParser.Parse<P.HistoryChunk>(chunk));
+                        (historyChunk, currentChunkSizeInBytes) = await AddToHistoryChunkAndStream(historyEvent, historyChunk, currentChunkSizeInBytes);
                     }
                 }
 
@@ -524,33 +542,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         })
                         ?? throw new Exception($"Failed to deserialize orchestration history.");
 
-                    int currentChunkSizeInBytes = 0;
-
-                    P.HistoryChunk chunk = new ();
-
                     foreach (HistoryEvent historyEvent in historyEvents)
                     {
-                        context.CancellationToken.ThrowIfCancellationRequested();
-                        P.HistoryEvent result = ProtobufUtils.ToHistoryEventProto(historyEvent);
-
-                        int currentEventSize = result.CalculateSize();
-                        if (currentChunkSizeInBytes + currentEventSize > MaxHistoryChunkSizeInBytes)
-                        {
-                            // If we exceeded the chunk size threshold, send what we have so far.
-                            await responseStream.WriteAsync(chunk);
-                            chunk = new ();
-                            currentChunkSizeInBytes = 0;
-                        }
-
-                        chunk.Events.Add(result);
-                        currentChunkSizeInBytes += currentEventSize;
+                        (historyChunk, currentChunkSizeInBytes) = await AddToHistoryChunkAndStream(historyEvent, historyChunk, currentChunkSizeInBytes);
                     }
+                }
 
-                    // Send the last chunk, which may be smaller than the maximum chunk size.
-                    if (chunk.Events.Count > 0)
-                    {
-                        await responseStream.WriteAsync(chunk);
-                    }
+                // Send the last chunk, which may be smaller than the maximum chunk size.
+                if (historyChunk.Events.Count > 0)
+                {
+                    await responseStream.WriteAsync(historyChunk);
                 }
             }
             catch (OperationCanceledException)
