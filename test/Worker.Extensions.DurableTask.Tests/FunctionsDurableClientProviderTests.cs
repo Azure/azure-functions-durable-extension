@@ -48,9 +48,10 @@ public class FunctionsDurableClientProviderTests
         Assert.Equal(TimeSpan.FromSeconds(5), retryPolicy.MaxBackoff);
         Assert.Equal(1.5, retryPolicy.BackoffMultiplier);
 
-        // Verify only UNAVAILABLE status code is retried
-        Assert.Single(retryPolicy.RetryableStatusCodes);
+        // Verify UNAVAILABLE and RESOURCE_EXHAUSTED status codes are retried
+        Assert.Equal(2, retryPolicy.RetryableStatusCodes.Count);
         Assert.Contains(StatusCode.Unavailable, retryPolicy.RetryableStatusCodes);
+        Assert.Contains(StatusCode.ResourceExhausted, retryPolicy.RetryableStatusCodes);
     }
 
     /// <summary>

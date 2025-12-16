@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
 internal partial class FunctionsDurableClientProvider
 {
     // Default retry policy for transient gRPC failures.
-    // This handles cases where the server is temporarily unavailable.
+    // This handles cases where the server is temporarily unavailable or rate limiting.
     private static readonly MethodConfig DefaultMethodConfig = new()
     {
         Names = { MethodName.Default },
@@ -24,7 +24,7 @@ internal partial class FunctionsDurableClientProvider
             InitialBackoff = TimeSpan.FromSeconds(1),
             MaxBackoff = TimeSpan.FromSeconds(5),
             BackoffMultiplier = 1.5,
-            RetryableStatusCodes = { StatusCode.Unavailable },
+            RetryableStatusCodes = { StatusCode.Unavailable, StatusCode.ResourceExhausted },
         },
     };
 
