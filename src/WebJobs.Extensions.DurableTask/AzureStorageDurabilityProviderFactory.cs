@@ -223,6 +223,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #pragma warning restore CS0618 // Type or member is obsolete
                 PartitionTableOperationTimeout = this.azureStorageOptions.PartitionTableOperationTimeout,
                 QueueClientMessageEncoding = this.azureStorageOptions.QueueClientMessageEncoding,
+                UseInstanceTableEtag = this.azureStorageOptions.UseInstanceTableEtag,
             };
 
             if (this.inConsumption)
