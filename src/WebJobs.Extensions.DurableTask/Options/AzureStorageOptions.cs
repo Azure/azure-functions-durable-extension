@@ -244,10 +244,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// When true, an etag is used when attempting to make instance table updates upon completing an orchestration work item.
         /// </summary>
         /// <remarks>
-        /// By default, etags are only used when updating the history table upon completing an orchestration work item. This can lead 
+        /// By default, etags are only used when updating the history table upon completing an orchestration work item. This can lead
         /// to subtle race conditions where the instance table is incorrectly updated. Consider the following scenario:
         /// 1. Worker A completes an orchestration work item, sends outgoing messages, updates the history table, then stalls.
-        /// 2. Worker B picks up the next and final orchestration work item for the same instance and completes it, updating the history 
+        /// 2. Worker B picks up the next and final orchestration work item for the same instance and completes it, updating the history
         /// table and instance table with the new terminal status.
         /// 3. Worker A resumes and overrides the terminal status in the instance table with an incorrect non-terminal status.
         /// This will leave the instance status of the orchestration permanently as "Running" even though it has actually completed.
