@@ -272,7 +272,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         Input = a.CreateSubOrchestration.Input,
                         Name = a.CreateSubOrchestration.Name,
                         InstanceId = a.CreateSubOrchestration.InstanceId,
-                        Tags = null, // TODO
+                        Tags = a.CreateSubOrchestration.Tags.ToDictionary(),
                         Version = a.CreateSubOrchestration.Version,
                     };
                 case P.OrchestratorAction.OrchestratorActionTypeOneofCase.CreateTimer:
