@@ -16,9 +16,9 @@ internal class DurableTaskFunctionsMiddleware(DurableFunctionExecutor invoker) :
     /// <inheritdoc />
     public Task Invoke(FunctionContext functionContext, FunctionExecutionDelegate next)
     {
-        if (functionContext.TryGetOrchestrationBinding(out _)
-            || functionContext.TryGetEntityBinding(out _)
-            || functionContext.TryGetActivityBinding(out _))
+        // If the function is a Durable Task function and there is no executor registered yet,
+        // register the Durable Function executor.
+        if (functionContext.Features.Get<IFunctionExecutor>() is null && functionContext.IsDurableTaskFunction())
         {
             functionContext.Features.Set<IFunctionExecutor>(invoker);
         }

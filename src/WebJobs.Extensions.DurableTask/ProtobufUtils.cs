@@ -260,7 +260,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         Input = a.CreateSubOrchestration.Input,
                         Name = a.CreateSubOrchestration.Name,
                         InstanceId = a.CreateSubOrchestration.InstanceId,
-                        Tags = null, // TODO
+                        Tags = a.CreateSubOrchestration.Tags.ToDictionary(),
                         Version = a.CreateSubOrchestration.Version,
                     };
                 case P.OrchestratorAction.OrchestratorActionTypeOneofCase.CreateTimer:
@@ -540,9 +540,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// Converts a <see cref="P.EntityBatchResult" /> to a <see cref="OperationBatchResult" />.
         /// </summary>
         /// <param name="entityBatchResult">The operation result to convert.</param>
+        /// <param name="defaultVersion">The default version to use for orchestrations started by the entity when no explicit version is specified.</param>
         /// <returns>The converted operation result.</returns>
         [return: NotNullIfNotNull("entityBatchResult")]
-        internal static EntityBatchResult? ToEntityBatchResult(this P.EntityBatchResult? entityBatchResult)
+        internal static EntityBatchResult? ToEntityBatchResult(this P.EntityBatchResult? entityBatchResult, string? defaultVersion = null)
         {
             if (entityBatchResult == null)
             {
@@ -551,7 +552,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             return new EntityBatchResult()
             {
-                Actions = entityBatchResult.Actions.Select(operationAction => operationAction!.ToOperationAction()).ToList(),
+                Actions = entityBatchResult.Actions.Select(operationAction => operationAction!.ToOperationAction(defaultVersion)).ToList(),
                 EntityState = entityBatchResult.EntityState,
                 Results = entityBatchResult.Results.Select(operationResult => operationResult!.ToOperationResult()).ToList(),
                 FailureDetails = GetFailureDetails(entityBatchResult.FailureDetails),
@@ -562,9 +563,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// Converts a <see cref="P.OperationAction" /> to a <see cref="OperationAction" />.
         /// </summary>
         /// <param name="operationAction">The operation action to convert.</param>
+        /// <param name="defaultVersion">The default version to use for orchestrations started by the entity when no explicit version is specified.</param>
         /// <returns>The converted operation action.</returns>
         [return: NotNullIfNotNull("operationAction")]
-        internal static OperationAction? ToOperationAction(this P.OperationAction? operationAction)
+        internal static OperationAction? ToOperationAction(this P.OperationAction? operationAction, string? defaultVersion = null)
         {
             if (operationAction == null)
             {
@@ -590,13 +592,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     };
 
                 case P.OperationAction.OperationActionTypeOneofCase.StartNewOrchestration:
+                    // Apply the default version if no explicit version is provided.
+                    // This ensures orchestrations scheduled from entities use the host's default version,
+                    // consistent with orchestrations started via the client or from other orchestrations.
+                    string? version = operationAction.StartNewOrchestration.Version;
+                    if (string.IsNullOrWhiteSpace(version))
+                    {
+                        version = defaultVersion;
+                    }
 
                     return new StartNewOrchestrationOperationAction()
                     {
                         Name = operationAction.StartNewOrchestration.Name,
                         Input = operationAction.StartNewOrchestration.Input,
                         InstanceId = operationAction.StartNewOrchestration.InstanceId,
-                        Version = operationAction.StartNewOrchestration.Version,
+                        Version = version,
                         RequestTime = operationAction.StartNewOrchestration.RequestTime?.ToDateTimeOffset(),
                         ScheduledStartTime = operationAction.StartNewOrchestration.ScheduledTime?.ToDateTime(),
                         ParentTraceContext = operationAction.StartNewOrchestration.ParentTraceContext != null ?

@@ -11,11 +11,30 @@ namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
 
 internal partial class FunctionsDurableClientProvider
 {
+    // Default service config JSON for retry policy.
+    // This handles cases where the server is temporarily unavailable or rate limiting.
+    // Using JSON format as required by Grpc.Core ChannelOption.
+    private const string DefaultServiceConfigJson = @"{
+        ""methodConfig"": [{
+            ""name"": [{ ""service"": """" }],
+            ""retryPolicy"": {
+                ""maxAttempts"": 5,
+                ""initialBackoff"": ""1s"",
+                ""maxBackoff"": ""5s"",
+                ""backoffMultiplier"": 1.5,
+                ""retryableStatusCodes"": [""UNAVAILABLE"", ""RESOURCE_EXHAUSTED""]
+            }
+        }]
+    }";
+
     private static Channel CreateChannel(ClientKey key, int? maxGrpcMessageSize, TimeSpan grpcHttpClientTimeout)
     {
         IReadOnlyDictionary<string, string> headers = key.GetHeaders();
         string address = $"{key.Address.Host}:{key.Address.Port}";
-        var options = new List<ChannelOption>();
+        var options = new List<ChannelOption>
+        {
+            new ChannelOption("grpc.service_config", DefaultServiceConfigJson),
+        };
 
         if (maxGrpcMessageSize.HasValue)
         {
