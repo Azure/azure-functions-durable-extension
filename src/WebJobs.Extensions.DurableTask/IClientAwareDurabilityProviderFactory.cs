@@ -1,15 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     /// <summary>
     /// Interface implemented by DurabilityProviderFactories that are aware of the client that references them.
     /// </summary>
-    internal interface IClientAwareDurabilityProviderFactory
+    public interface IClientAwareDurabilityProviderFactory
     {
         /// <summary>
         /// Configures the factory with a reference to the DurableTaskExtension client. Allows access to client properties when constructing the durability provider.
