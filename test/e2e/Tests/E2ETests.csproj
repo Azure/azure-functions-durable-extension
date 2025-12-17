@@ -5,9 +5,9 @@
     <LangVersion>latest</LangVersion>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-	<SignAssembly>true</SignAssembly>
+    <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>..\..\..\sign.snk</AssemblyOriginatorKeyFile>
-	<RootNamespace>Microsoft.Azure.Durable.Tests.DotnetIsolatedE2E</RootNamespace>
+    <RootNamespace>Microsoft.Azure.Durable.Tests.DotnetIsolatedE2E</RootNamespace>
     <!-- Only add the following line when you want to locally debug
     <RunSettingsFilePath>$(MSBuildProjectDirectory)\test.runsettings</RunSettingsFilePath> -->
   </PropertyGroup>

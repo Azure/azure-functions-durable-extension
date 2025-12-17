@@ -370,8 +370,11 @@ public class GetOrchestrationHistoryTests
     public async Task GetOrchestrationHistory_InvalidInstanceId_ThrowsArgumentException()
     {
         string nonExistentInstanceId = Guid.NewGuid().ToString();
+        // Try to get the history for a non-existent orchestration instance ID
         HttpResponseMessage getOrchestrationHistoryResponse = await HttpHelpers.InvokeHttpTrigger("GetInstanceHistory", $"?instanceId={nonExistentInstanceId}");
         Assert.Equal(HttpStatusCode.NotFound, getOrchestrationHistoryResponse.StatusCode);
+        getOrchestrationHistoryResponse.Dispose();
+        // Try to get the history for an entity instance ID
         getOrchestrationHistoryResponse = await HttpHelpers.InvokeHttpTrigger("GetInstanceHistory", $"?instanceId={entityId}");
         Assert.Equal(HttpStatusCode.NotFound, getOrchestrationHistoryResponse.StatusCode);
         getOrchestrationHistoryResponse.Dispose();
