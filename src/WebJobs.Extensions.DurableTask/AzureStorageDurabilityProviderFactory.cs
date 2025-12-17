@@ -10,7 +10,7 @@ using Newtonsoft.Json;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
-    internal class AzureStorageDurabilityProviderFactory : IDurabilityProviderFactory, IClientAwareDurabilityProviderFactory
+    internal class AzureStorageDurabilityProviderFactory : IDurabilityProviderFactory, IExtensionAwareDurabilityProviderFactory
     {
         private const string LoggerName = "Host.Triggers.DurableTask.AzureStorage";
         internal const string ProviderName = "AzureStorage";
@@ -27,7 +27,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         // Must wait to get settings until we have validated taskhub name.
         private bool hasValidatedOptions;
         private AzureStorageOrchestrationServiceSettings defaultSettings;
-        private DurableTaskExtension durableClient;
+        private DurableTaskExtension config;
 
         public AzureStorageDurabilityProviderFactory(
             IOptions<DurableTaskOptions> options,
@@ -216,7 +216,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 LoggerFactory = this.loggerFactory,
                 UseLegacyPartitionManagement = this.azureStorageOptions.UseLegacyPartitionManagement,
                 UseTablePartitionManagement = this.azureStorageOptions.UseTablePartitionManagement,
-                UseSeparateQueueForEntityWorkItems = this.useSeparateQueueForEntityWorkItems || (this.durableClient?.DurableRequiresGrpc ?? false),
+                UseSeparateQueueForEntityWorkItems = this.useSeparateQueueForEntityWorkItems || (this.config?.DurableRequiresGrpc ?? false),
                 EntityMessageReorderWindowInMinutes = this.options.EntityMessageReorderWindowInMinutes,
                 MaxEntityOperationBatchSize = this.options.MaxEntityOperationBatchSize,
 #pragma warning disable CS0618 // Type or member is obsolete
@@ -248,9 +248,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return settings;
         }
 
-        public void ConfigureWithDurableClient(DurableTaskExtension client)
+        public void ConfigureWithDurableExtension(DurableTaskExtension config)
         {
-            this.durableClient = client;
+            this.config = config;
         }
     }
  }

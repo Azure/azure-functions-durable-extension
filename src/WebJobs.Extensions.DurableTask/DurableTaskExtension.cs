@@ -360,9 +360,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 ? azureStorageDurabilityProviderFactory.DefaultConnectionName
                 : null;
 
-            if (this.durabilityProviderFactory is IClientAwareDurabilityProviderFactory clientAwareDurabilityProviderFactory)
+            if (this.durabilityProviderFactory is IExtensionAwareDurabilityProviderFactory clientAwareDurabilityProviderFactory)
             {
-                clientAwareDurabilityProviderFactory.ConfigureWithDurableClient(this);
+                clientAwareDurabilityProviderFactory.ConfigureWithDurableExtension(this);
             }
 
             context.AddBindingRule<OrchestrationTriggerAttribute>()
