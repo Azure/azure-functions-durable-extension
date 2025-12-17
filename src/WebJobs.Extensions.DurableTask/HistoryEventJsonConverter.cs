@@ -23,7 +23,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// otherwise, a <see cref="JsonSerializationException"/> (for a missing EventType property) or <see cref="NotSupportedException"/>
     /// (for an unknown EventType) will be thrown.
     /// </remarks>
-    public class HistoryEventJsonConverter : JsonConverter
+    internal class HistoryEventJsonConverter : JsonConverter
     {
         /// <inheritdoc/>
         public override bool CanWrite => false;

@@ -40,6 +40,7 @@ public class GetOrchestrationHistoryTests
     [Trait("Python", "Skip")] // The GetOrchestrationHistory API is not implemented in Python
     [Trait("PowerShell", "Skip")] // The GetOrchestrationHistory API is not implemented in PowerShell
     [Trait("Node", "Skip")] // The GetOrchestrationHistory API is not implemented in Node
+    /// Tests that the nested failure details of an orchestration and its failed suborchestration can be retrieved successfully
     public async Task GetOrchestrationHistory_FailedOrchestration()
     {
         bool isNotMSSQL = this.fixture.GetDurabilityProvider() != FunctionAppFixture.ConfiguredDurabilityProviderType.MSSQL;
@@ -198,6 +199,8 @@ public class GetOrchestrationHistoryTests
     [Trait("Python", "Skip")] // The GetOrchestrationHistory API is not implemented in Python
     [Trait("PowerShell", "Skip")] // The GetOrchestrationHistory API is not implemented in PowerShell
     [Trait("Node", "Skip")] // The GetOrchestrationHistory API is not implemented in Node
+    /// Tests that an orchestration with a large history that exceeds the maximum size of a single history chunk (2 MB) and requires multiple chunks
+    /// to be streamed can be retrieved successfully
     public async Task GetOrchestrationHistory_LargeHistory()
     {
         bool isNotMSSQL = this.fixture.GetDurabilityProvider() != FunctionAppFixture.ConfiguredDurabilityProviderType.MSSQL;

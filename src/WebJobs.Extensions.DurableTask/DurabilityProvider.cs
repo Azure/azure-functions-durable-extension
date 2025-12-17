@@ -9,7 +9,6 @@ using DurableTask.Core;
 using DurableTask.Core.Entities;
 using DurableTask.Core.History;
 using DurableTask.Core.Query;
-using Google.Protobuf;
 using Microsoft.Azure.WebJobs.Host.Scale;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
