@@ -10,7 +10,7 @@ using Newtonsoft.Json;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
-    internal class AzureStorageDurabilityProviderFactory : IDurabilityProviderFactory
+    internal class AzureStorageDurabilityProviderFactory : IDurabilityProviderFactory, IClientAwareDurabilityProviderFactory
     {
         private const string LoggerName = "Host.Triggers.DurableTask.AzureStorage";
         internal const string ProviderName = "AzureStorage";
@@ -27,6 +27,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         // Must wait to get settings until we have validated taskhub name.
         private bool hasValidatedOptions;
         private AzureStorageOrchestrationServiceSettings defaultSettings;
+        private DurableTaskExtension durableClient;
 
         public AzureStorageDurabilityProviderFactory(
             IOptions<DurableTaskOptions> options,
@@ -215,7 +216,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 LoggerFactory = this.loggerFactory,
                 UseLegacyPartitionManagement = this.azureStorageOptions.UseLegacyPartitionManagement,
                 UseTablePartitionManagement = this.azureStorageOptions.UseTablePartitionManagement,
-                UseSeparateQueueForEntityWorkItems = this.useSeparateQueueForEntityWorkItems || DurableTaskExtension.DurableRequiresGrpc,
+                UseSeparateQueueForEntityWorkItems = this.useSeparateQueueForEntityWorkItems || (this.durableClient?.DurableRequiresGrpc ?? false),
                 EntityMessageReorderWindowInMinutes = this.options.EntityMessageReorderWindowInMinutes,
                 MaxEntityOperationBatchSize = this.options.MaxEntityOperationBatchSize,
 #pragma warning disable CS0618 // Type or member is obsolete
@@ -245,6 +246,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             return settings;
+        }
+
+        public void ConfigureWithDurableClient(DurableTaskExtension client)
+        {
+            this.durableClient = client;
         }
     }
  }

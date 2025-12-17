@@ -212,7 +212,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <value>
         /// True if the functionapp requested gRPC via function metadata, otherwise false.
         /// </value>
-        public static bool DurableRequiresGrpc { get; set; }
+        public bool DurableRequiresGrpc { get; set; }
 
         internal TimeSpan MessageReorderWindow
             => this.DefaultDurabilityProvider.GuaranteesOrderedDelivery ? TimeSpan.Zero : TimeSpan.FromMinutes(this.Options.EntityMessageReorderWindowInMinutes);
@@ -360,6 +360,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 ? azureStorageDurabilityProviderFactory.DefaultConnectionName
                 : null;
 
+            if (this.durabilityProviderFactory is IClientAwareDurabilityProviderFactory clientAwareDurabilityProviderFactory)
+            {
+                clientAwareDurabilityProviderFactory.ConfigureWithDurableClient(this);
+            }
+
             context.AddBindingRule<OrchestrationTriggerAttribute>()
                 .BindToTrigger(new OrchestrationTriggerAttributeBindingProvider(this, connectionName, this.PlatformInformationService));
 
@@ -435,7 +440,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (this.OutOfProcProtocol != OutOfProcOrchestrationProtocol.OrchestratorShim)
             {
                 this.OutOfProcProtocol = OutOfProcOrchestrationProtocol.OrchestratorShim;
-                DurableTaskExtension.DurableRequiresGrpc = false;
+                this.DurableRequiresGrpc = false;
             }
         }
 
@@ -446,7 +451,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.OutOfProcProtocol = OutOfProcOrchestrationProtocol.MiddlewarePassthrough;
                 this.localGrpcListener = LocalGrpcListener.Create(this, this.Options.GrpcListenerMode);
                 this.HostLifetimeService.OnStopped.Register(this.StopLocalGrpcServer);
-                DurableTaskExtension.DurableRequiresGrpc = true;
+                this.DurableRequiresGrpc = true;
             }
         }
 
