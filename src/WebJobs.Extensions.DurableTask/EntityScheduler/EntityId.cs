@@ -86,7 +86,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             if (string.IsNullOrEmpty(instanceId))
             {
-                throw new ArgumentException(nameof(instanceId));
+                throw new ArgumentException("Instance ID cannot be null or empty.", nameof(instanceId));
             }
 
             var pos = instanceId.IndexOf('@', 1);

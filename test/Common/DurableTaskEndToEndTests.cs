@@ -673,10 +673,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             await TestHelpers.WaitUntilTrue(
                 predicate: () =>
                 {
-                    /* Exceptions have newlines embeded in them. Therefore, if there are as many lines
-                        * as there are JSON (each of which has 1 EventTimestamp field), then we know that
-                        * Exceptions must have had their newlines removed.
-                        */
+                    /* Exceptions have newlines embedded in them. Therefore, if there are as many lines
+                     * as there are JSON (each of which has 1 EventTimestamp field), then we know that
+                     * Exceptions must have had their newlines removed.
+                     */
                     List<string> lines = TestHelpers.WriteSafeReadAllLines(LinuxAppServiceLogger.LoggingPath);
                     int countTimeStampCols = Regex.Matches(string.Join("", lines), "\"EventTimestamp\":").Count;
                     return lines.Count == countTimeStampCols;
