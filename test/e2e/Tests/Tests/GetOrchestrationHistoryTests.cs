@@ -156,6 +156,12 @@ public class GetOrchestrationHistoryTests
             Assert.Equal("ParentOrchestration", subOrchestrationExecutionStartedEvent.ParentInstance.Name);
             Assert.Equal(parentExecutionStartedEvent.OrchestrationInstance.ExecutionId, subOrchestrationExecutionStartedEvent.ParentInstance.OrchestrationInstance.ExecutionId);
         }
+        if (checkTagsAndFailureDetails)
+        {
+            Assert.NotNull(subOrchestrationExecutionStartedEvent.Tags);
+            Assert.Contains(TagsKey, subOrchestrationExecutionStartedEvent.Tags.Keys);
+            Assert.Contains(TagsValue, subOrchestrationExecutionStartedEvent.Tags.Values);
+        }
         Assert.Equal(EventType.TaskScheduled, subOrchestrationHistoryEvents[2].EventType);
         var taskScheduledEvent = (TaskScheduledEvent)subOrchestrationHistoryEvents[2];
         Assert.Equal("ThrowExceptionActivity", taskScheduledEvent.Name);
