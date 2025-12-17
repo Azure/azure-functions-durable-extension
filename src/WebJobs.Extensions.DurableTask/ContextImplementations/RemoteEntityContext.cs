@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using DurableTask.Core.Entities;
 using DurableTask.Core.Entities.OperationFormat;
-using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
