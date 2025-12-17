@@ -673,7 +673,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             System.Type type = configurations.GetType();
-            PropertyInfo[] properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
+            PropertyInfo[] properties = type.GetProperties(BindingFlags.Instance | BindingFlags.NonPublic);
 
             foreach (PropertyInfo property in properties)
             {
