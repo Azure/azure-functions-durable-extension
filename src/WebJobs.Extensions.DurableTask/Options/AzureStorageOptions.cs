@@ -241,6 +241,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public QueueClientMessageEncoding QueueClientMessageEncoding { get; set; } = QueueClientMessageEncoding.UTF8;
 
         /// <summary>
+        /// When true, an etag is used when attempting to make instance table updates upon completing an orchestration work item.
+        /// </summary>
+        /// <remarks>
+        /// By default, etags are only used when updating the history table upon completing an orchestration work item. This can lead
+        /// to subtle race conditions where the instance table is incorrectly updated. Consider the following scenario:
+        /// 1. Worker A completes an orchestration work item, sends outgoing messages, updates the history table, then stalls.
+        /// 2. Worker B picks up the next and final orchestration work item for the same instance and completes it, updating the history
+        /// table and instance table with the new terminal status.
+        /// 3. Worker A resumes and overrides the terminal status in the instance table with an incorrect non-terminal status.
+        /// This will leave the instance status of the orchestration permanently as "Running" even though it has actually completed.
+        /// To prevent such scenarios, enabling this setting will ensure that instance table updates also use etags. This would prevent
+        /// worker A's update in step 3 from completing. Enabling this setting will also introduce a performance overhead since the instance
+        /// table must now be read before processing every orchestration work item to obtain the latest etag.
+        /// </remarks>
+        public bool UseInstanceTableEtag { get; set; } = false;
+
+        /// <summary>
         /// Throws an exception if the provided hub name violates any naming conventions for the storage provider.
         /// </summary>
         public void ValidateHubName(string hubName)
