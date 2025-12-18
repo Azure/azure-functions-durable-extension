@@ -354,14 +354,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             };
                             targetInstance = a.SendEntityMessage.EntityOperationCalled.TargetInstanceId;
                             scheduledTime = a.SendEntityMessage.EntityOperationCalled.ScheduledTime?.ToDateTime();
-                            if (scheduledTime.HasValue)
-                            {
-                                eventName = EntityMessageEventNames.ScheduledRequestMessageEventName(scheduledTime.Value);
-                            }
-                            else
-                            {
-                                eventName = EntityMessageEventNames.RequestMessageEventName;
-                            }
+                            eventName = scheduledTime.HasValue
+                                ? EntityMessageEventNames.ScheduledRequestMessageEventName(scheduledTime.Value)
+                                : EntityMessageEventNames.RequestMessageEventName;
 
                             break;
                         case P.SendEntityMessageAction.EntityMessageTypeOneofCase.EntityOperationSignaled:
@@ -375,14 +370,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             };
                             targetInstance = a.SendEntityMessage.EntityOperationSignaled.TargetInstanceId;
                             scheduledTime = a.SendEntityMessage.EntityOperationSignaled.ScheduledTime?.ToDateTime();
-                            if (scheduledTime.HasValue)
-                            {
-                                eventName = EntityMessageEventNames.ScheduledRequestMessageEventName(scheduledTime.Value);
-                            }
-                            else
-                            {
-                                eventName = EntityMessageEventNames.RequestMessageEventName;
-                            }
+                            eventName = scheduledTime.HasValue
+                                ? EntityMessageEventNames.ScheduledRequestMessageEventName(scheduledTime.Value)
+                                : EntityMessageEventNames.RequestMessageEventName;
 
                             break;
                         default:
