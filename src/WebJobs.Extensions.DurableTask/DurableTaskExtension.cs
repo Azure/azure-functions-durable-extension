@@ -176,7 +176,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             else
             {
                 // The extension will initially call ConfigureForHttpProtocol for the other languages (Python, Node.js, PowerShell).
-                // If these languages return functions with metadata including the ConfigureForGrpcProtocol flag, we will call
+                // If these languages return functions with metadata including the DurableRequiresGrpc property, we will call
                 // ConfigureForGrpcProtocol when indexing, overriding this behavior and causing the lambda evaluated later in
                 // taskHubWorker's initializer to start the gRPC server instead of the HTTP server.
                 this.ConfigureForHttpProtocol();
