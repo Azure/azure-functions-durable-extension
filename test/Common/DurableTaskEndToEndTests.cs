@@ -287,7 +287,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
-        /// By simulating the appropiate environment variables for Linux Consumption,
+        /// By simulating the appropriate environment variables for Linux Consumption,
         /// this test checks that we are emitting logs from DurableTask.AzureStorage
         /// and reading the DurabilityProvider's EventSourceName property correctly.
         /// </summary>
@@ -304,7 +304,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 // Set console to write to StringWritter
                 Console.SetOut(sw);
 
-                // Simulate enviroment variables indicating linux consumption
+                // Simulate environment variables indicating linux consumption
                 var nameResolver = new SimpleNameResolver(new Dictionary<string, string>()
                 {
                     { "CONTAINER_NAME", "val1" },
@@ -337,7 +337,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
-        /// By simulating the appropiate environment variables for Linux Consumption,
+        /// By simulating the appropriate environment variables for Linux Consumption,
         /// this test checks that we are emitting logs from DurableTask-CustomSource
         /// and reading the DurabilityProvider's EventSourceName property correctly.
         /// </summary>
@@ -354,7 +354,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 // Set console to write to StringWritter
                 Console.SetOut(sw);
 
-                // Simulate enviroment variables indicating linux consumption
+                // Simulate environment variables indicating linux consumption
                 var nameResolver = new SimpleNameResolver(new Dictionary<string, string>()
                 {
                     { "CONTAINER_NAME", "val1" },
@@ -387,7 +387,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
-        /// By simulating the appropiate enviorment variables for Linux Consumption,
+        /// By simulating the appropriate environment variables for Linux Consumption,
         /// this test checks that we are writing our JSON logs to the console. It does not
         /// verify the contents of the JSON logs themselves (expensive) but instead checks that,
         /// at least, we are writing messages beginning with the expected linux-dedicated prefix.
@@ -405,7 +405,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 // Set console to write to StringWritter
                 Console.SetOut(sw);
 
-                // Simulate enviroment variables indicating linux consumption
+                // Simulate environment variables indicating linux consumption
                 var nameResolver = new SimpleNameResolver(new Dictionary<string, string>()
                 {
                     { "CONTAINER_NAME", "val1" },
@@ -450,7 +450,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
-        /// By simulating the appropiate enviorment variables for Linux Dedicated,
+        /// By simulating the appropriate environment variables for Linux Dedicated,
         /// this test checks that we are writing our JSON logs to a file. It does not
         /// verify the contents of the JSON logs themselves (expensive) but instead checks that,
         /// at least, the log file we are writing to now exists in the file system.
@@ -464,7 +464,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             File.Delete(LinuxAppServiceLogger.LoggingPath); // To ensure the test generates the path
             string orchestratorName = nameof(TestOrchestrations.SayHelloInline);
 
-            // Simulate linux dedicated via enviroment variables
+            // Simulate linux dedicated via environment variables
             var nameResolver = new SimpleNameResolver(new Dictionary<string, string>()
             {
                 { "WEBSITE_INSTANCE_ID", "val1" },
@@ -494,7 +494,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
-        /// By simulating the appropiate enviorment variables for Linux Consumption,
+        /// By simulating the appropriate environment variables for Linux Consumption,
         /// this test checks that we are filtering verbose logs from DurableTask.Core by default in Linux.
         /// </summary>
         [Fact]
@@ -510,7 +510,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 // Set console to write to StringWritter
                 Console.SetOut(sw);
 
-                // Simulate enviroment variables indicating linux consumption
+                // Simulate environment variables indicating linux consumption
                 var nameResolver = new SimpleNameResolver(new Dictionary<string, string>()
                 {
                     { "CONTAINER_NAME", "val1" },
@@ -561,7 +561,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
-        /// By simulating the appropiate enviorment variables for Linux Consumption,
+        /// By simulating the appropriate environment variables for Linux Consumption,
         /// this test checks that we can enable verbose logs from DurableTask.Core in Linux.
         /// </summary>
         [Fact]
@@ -577,7 +577,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 // Set console to write to StringWritter
                 Console.SetOut(sw);
 
-                // Simulate enviroment variables indicating linux consumption
+                // Simulate environment variables indicating linux consumption
                 var nameResolver = new SimpleNameResolver(new Dictionary<string, string>()
                 {
                     { "CONTAINER_NAME", "val1" },
@@ -633,7 +633,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
-        /// By simulating the appropiate enviorment variables for Linux Dedicated,
+        /// By simulating the appropriate environment variables for Linux Dedicated,
         /// this test checks our logs have their newlines escaped, which otherwise
         /// could cause problems in our logging pipeline.
         /// </summary>
@@ -646,7 +646,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             File.Delete(LinuxAppServiceLogger.LoggingPath); // To ensure the test generates the path
             string orchestratorName = nameof(TestOrchestrations.ThrowOrchestrator);
 
-                // Simulate linux dedicated via enviroment variables
+                // Simulate linux dedicated via environment variables
             var nameResolver = new SimpleNameResolver(new Dictionary<string, string>()
             {
                 { "WEBSITE_INSTANCE_ID", "val1" },
@@ -687,7 +687,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
-        /// By simulating the appropiate enviorment variables for Linux Dedicated,
+        /// By simulating the appropriate environment variables for Linux Dedicated,
         /// this test checks our JSON logs satisfy a minimal set of requirements:
         /// (1) Is JSON parseable
         /// (2) Contains minimal expected fields: EventId, TimeStamp,
@@ -705,7 +705,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             File.Delete(LinuxAppServiceLogger.LoggingPath); // To ensure the test generates the path
             string orchestratorName = nameof(TestOrchestrations.ThrowOrchestrator);
 
-            // Simulate linux dedicated via enviroment variables
+            // Simulate linux dedicated via environment variables
             var nameResolver = new SimpleNameResolver(new Dictionary<string, string>()
             {
                 { "WEBSITE_INSTANCE_ID", "val1" },

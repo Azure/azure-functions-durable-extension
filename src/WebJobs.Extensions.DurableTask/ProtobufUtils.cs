@@ -317,6 +317,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     RequestMessage? entityMessage = null;
                     string? eventName = null;
                     string? targetInstance = null;
+                    DateTime? scheduledTime = null;
                     switch (a.SendEntityMessage.EntityMessageTypeCase)
                     {
                         case P.SendEntityMessageAction.EntityMessageTypeOneofCase.EntityLockRequested:
@@ -329,7 +330,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                                 ParentInstanceId = a.SendEntityMessage.EntityLockRequested.ParentInstanceId,
                             };
                             targetInstance = a.SendEntityMessage.EntityLockRequested.LockSet.ElementAt(a.SendEntityMessage.EntityLockRequested.Position);
-                            eventName = EncodeEventName(null);
+                            eventName = EntityMessageEventNames.RequestMessageEventName;
                             break;
                         case P.SendEntityMessageAction.EntityMessageTypeOneofCase.EntityUnlockSent:
                             entityMessage = new RequestMessage()
@@ -338,7 +339,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                                 ParentInstanceId = a.SendEntityMessage.EntityUnlockSent.ParentInstanceId,
                             };
                             targetInstance = a.SendEntityMessage.EntityUnlockSent.TargetInstanceId;
-                            eventName = "release";
+                            eventName = EntityMessageEventNames.ReleaseMessageEventName;
                             break;
                         case P.SendEntityMessageAction.EntityMessageTypeOneofCase.EntityOperationCalled:
                             entityMessage = new RequestMessage()
@@ -352,7 +353,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                                 ParentExecutionId = a.SendEntityMessage.EntityOperationCalled.ParentExecutionId,
                             };
                             targetInstance = a.SendEntityMessage.EntityOperationCalled.TargetInstanceId;
-                            eventName = EncodeEventName(a.SendEntityMessage.EntityOperationCalled.ScheduledTime?.ToDateTime());
+                            scheduledTime = a.SendEntityMessage.EntityOperationCalled.ScheduledTime?.ToDateTime();
+                            if (scheduledTime.HasValue)
+                            {
+                                eventName = EntityMessageEventNames.ScheduledRequestMessageEventName(scheduledTime.Value);
+                            }
+                            else
+                            {
+                                eventName = EntityMessageEventNames.RequestMessageEventName;
+                            }
+
                             break;
                         case P.SendEntityMessageAction.EntityMessageTypeOneofCase.EntityOperationSignaled:
                             entityMessage = new RequestMessage()
@@ -364,7 +374,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                                 ScheduledTime = a.SendEntityMessage.EntityOperationSignaled.ScheduledTime?.ToDateTime(),
                             };
                             targetInstance = a.SendEntityMessage.EntityOperationSignaled.TargetInstanceId;
-                            eventName = EncodeEventName(a.SendEntityMessage.EntityOperationSignaled.ScheduledTime?.ToDateTime());
+                            scheduledTime = a.SendEntityMessage.EntityOperationSignaled.ScheduledTime?.ToDateTime();
+                            if (scheduledTime.HasValue)
+                            {
+                                eventName = EntityMessageEventNames.ScheduledRequestMessageEventName(scheduledTime.Value);
+                            }
+                            else
+                            {
+                                eventName = EntityMessageEventNames.RequestMessageEventName;
+                            }
+
                             break;
                         default:
                             throw new NotSupportedException($"Deserialization of SendEntityMessage action type '{a.SendEntityMessage.EntityMessageTypeCase}' is not supported.");
@@ -384,9 +403,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     throw new NotSupportedException($"Received unsupported action type '{a.OrchestratorActionTypeCase}'.");
             }
         }
-
-        private static string EncodeEventName(DateTime? scheduledTime)
-            => scheduledTime.HasValue ? $"op@{scheduledTime.Value:o}" : "op";
 
         [return: NotNullIfNotNull("parameters")]
         public static P.OrchestratorEntityParameters? ToProtobuf(this TaskOrchestrationEntityParameters? parameters)

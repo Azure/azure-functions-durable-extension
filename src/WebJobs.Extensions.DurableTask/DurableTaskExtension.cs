@@ -82,7 +82,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private bool isTaskHubWorkerStarted;
         private HttpClient durableHttpClient;
         private EventSourceListener eventSourceListener;
-        private bool grpcServerStarted = false;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DurableTaskExtension"/>.
@@ -221,12 +220,37 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 // and this is the latest point in the pipeline available to us.
                 if (this.OutOfProcProtocol == OutOfProcOrchestrationProtocol.MiddlewarePassthrough)
                 {
-                    this.StartLocalGrpcServer();
+                    this.localGrpcListener?.StartAsync(default).GetAwaiter().GetResult();
                 }
 
                 if (this.OutOfProcProtocol == OutOfProcOrchestrationProtocol.OrchestratorShim)
                 {
-                    this.StartLocalHttpServer();
+                    bool? shouldEnable = this.Options.LocalRpcEndpointEnabled;
+                    if (!shouldEnable.HasValue)
+                    {
+                        WorkerRuntimeType runtimeType = this.PlatformInformationService.GetWorkerRuntimeType();
+                        shouldEnable = runtimeType switch
+                        {
+                            // dotnet runs in process
+                            WorkerRuntimeType.DotNet => false,
+
+                            // dotnet-isolated and java use a gRPC server instead of the HTTP server
+                            WorkerRuntimeType.DotNetIsolated => false,
+                            WorkerRuntimeType.Java => false,
+
+                            // everything else - assume the HTTP server
+                            WorkerRuntimeType.Python => true, // This method will only be called for Python if we already know that we are using the HTTP protocol
+                            WorkerRuntimeType.Node => true,
+                            WorkerRuntimeType.PowerShell => true,
+                            WorkerRuntimeType.Unknown => true,
+                            _ => true,
+                        };
+                    }
+
+                    if (shouldEnable == true)
+                    {
+                        this.HttpApiHandler.StartLocalHttpServerAsync().GetAwaiter().GetResult();
+                    }
                 }
 
                 return newTaskHubWorker;
@@ -489,53 +513,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.eventSourceListener?.Dispose();
         }
 
-        private void StartLocalHttpServer()
-        {
-            bool? shouldEnable = this.Options.LocalRpcEndpointEnabled;
-            if (!shouldEnable.HasValue)
-            {
-                WorkerRuntimeType runtimeType = this.PlatformInformationService.GetWorkerRuntimeType();
-                shouldEnable = runtimeType switch
-                {
-                    // dotnet runs in process
-                    WorkerRuntimeType.DotNet => false,
-
-                    // dotnet-isolated and java use a gRPC server instead of the HTTP server
-                    WorkerRuntimeType.DotNetIsolated => false,
-                    WorkerRuntimeType.Java => false,
-
-                    // everything else - assume the HTTP server
-                    WorkerRuntimeType.Python => true, // This method will only be called for Python if we already know that we are using the HTTP protocol
-                    WorkerRuntimeType.Node => true,
-                    WorkerRuntimeType.PowerShell => true,
-                    WorkerRuntimeType.Unknown => true,
-                    _ => true,
-                };
-            }
-
-            if (shouldEnable == true)
-            {
-                this.HttpApiHandler.StartLocalHttpServerAsync().GetAwaiter().GetResult();
-            }
-        }
-
         internal void StopLocalHttpServer()
         {
             this.HttpApiHandler.StopLocalHttpServerAsync().GetAwaiter().GetResult();
         }
 
-        internal void StartLocalGrpcServer()
-        {
-            if (!this.grpcServerStarted)
-            {
-                this.localGrpcListener.StartAsync(default).GetAwaiter().GetResult();
-                this.grpcServerStarted = true;
-            }
-        }
-
         private void StopLocalGrpcServer()
         {
-            this.localGrpcListener.StopAsync(default).GetAwaiter().GetResult();
+            this.localGrpcListener?.StopAsync(default).GetAwaiter().GetResult();
         }
 
         private void InitializeForFunctionsV1(ExtensionConfigContext context)
