@@ -66,6 +66,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #pragma warning restore CS0169
         private readonly bool isOptionsConfigured;
         private readonly Guid extensionGuid;
+        private readonly Lazy<TaskHubWorker> taskHubWorker;
 
         private ILocalGrpcListener localGrpcListener;
 #pragma warning disable CS0612 // Type or member is obsolete
@@ -78,9 +79,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private ILoggerFactory loggerFactory;
 
         private DurabilityProvider defaultDurabilityProvider;
-        private bool taskHubWorkerInitialized;
-        private TaskHubWorker taskHubWorker;
-
         private bool isTaskHubWorkerStarted;
         private HttpClient durableHttpClient;
         private EventSourceListener eventSourceListener;
@@ -181,16 +179,61 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 // The extension will initially call ConfigureForHttpProtocol for the other languages (Python, Node.js, PowerShell).
                 // If these languages return functions with metadata including the ConfigureForGrpcProtocol flag, we will call
                 // ConfigureForGrpcProtocol when indexing, overriding this behavior and causing the lambda evaluated later in
-                // GetTaskHubWorker() to start the gRPC server instead of the HTTP server.
+                // taskHubWorker's initializer to start the gRPC server instead of the HTTP server.
                 this.ConfigureForHttpProtocol();
             }
 
-            this.taskHubWorkerInitialized = false;
+            // Define a Lazy<TaskHubWorker> to defer creation of the Task Hub (which relies on knowing the OutOfProcProtocol, which might change
+            // during worker indexing) until its first use. This extension must never resolve the Value of taskHubWorker until after indexing is complete.
+            this.taskHubWorker = new Lazy<TaskHubWorker>(() =>
+            {
+                this.TraceConfigurationSettings();
+
+                var newTaskHubWorker = new TaskHubWorker(this.DefaultDurabilityProvider, this, this, loggerFactory: this.loggerFactory, versioningSettings: new VersioningSettings
+                {
+                    Version = this.Options.DefaultVersion, // A null (or empty) version is valid as it signifies non-versioned case.
+                    MatchStrategy = this.Options.VersionMatchStrategy, // The default value for this is to no-op on versioning.
+                    FailureStrategy = this.Options.VersionFailureStrategy, // The default value for this is to ignore work if there is a mismatch.
+                });
+
+                // Add middleware to the DTFx dispatcher so that we can inject our own logic
+                // into and customize the orchestration execution pipeline.
+                // Note that the order of the middleware added determines the order in which it executes.
+                if (this.OutOfProcProtocol == OutOfProcOrchestrationProtocol.MiddlewarePassthrough)
+                {
+                    // This is a newer, more performant flavor of orchestration/activity middleware that is being
+                    // enabled for newer language runtimes.
+                    var ooprocMiddleware = new OutOfProcMiddleware(this);
+                    newTaskHubWorker.AddActivityDispatcherMiddleware(ooprocMiddleware.CallActivityAsync);
+                    newTaskHubWorker.AddOrchestrationDispatcherMiddleware(ooprocMiddleware.CallOrchestratorAsync);
+                    newTaskHubWorker.AddEntityDispatcherMiddleware(ooprocMiddleware.CallEntityAsync);
+                }
+                else
+                {
+                    // This is the older middleware implementation that is currently in use for in-process .NET
+                    // and the older out-of-proc languages, like Node.js, Python, and PowerShell.
+                    newTaskHubWorker.AddActivityDispatcherMiddleware(this.ActivityMiddleware);
+                    newTaskHubWorker.AddOrchestrationDispatcherMiddleware(this.EntityMiddleware);
+                    newTaskHubWorker.AddOrchestrationDispatcherMiddleware(this.OrchestrationMiddleware);
+                }
+
+                // The RPC server needs to be started sometime before any functions can be triggered
+                // and this is the latest point in the pipeline available to us.
+                if (this.OutOfProcProtocol == OutOfProcOrchestrationProtocol.MiddlewarePassthrough)
+                {
+                    this.StartLocalGrpcServer();
+                }
+
+                if (this.OutOfProcProtocol == OutOfProcOrchestrationProtocol.OrchestratorShim)
+                {
+                    this.StartLocalHttpServer();
+                }
+
+                return newTaskHubWorker;
+            });
         }
 
         internal DurableTaskOptions Options { get; }
-
-        private TaskHubWorker TaskHubWorker => this.taskHubWorker ??= this.GetTaskHubWorker();
 
         internal DurabilityProvider DefaultDurabilityProvider => this.defaultDurabilityProvider ??= this.durabilityProviderFactory.GetDurabilityProvider();
 
@@ -374,66 +417,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             context.AddBindingRule<EntityTriggerAttribute>()
                 .BindToTrigger(new EntityTriggerAttributeBindingProvider(this, connectionName));
-        }
-
-        private TaskHubWorker GetTaskHubWorker()
-        {
-            // Warn if GetTaskHubWorker() is called more than once.
-            if (this.taskHubWorkerInitialized)
-            {
-                this.TraceHelper.ExtensionWarningEvent(this.Options.HubName, string.Empty, string.Empty, this.GetTaskHubWorkerDuplicateMessage(this.Options.HubName));
-                if (this.taskHubWorker is not null)
-                {
-                    return this.taskHubWorker;
-                }
-
-                this.TraceHelper.ExtensionInformationalEvent(this.Options.HubName, string.Empty, string.Empty, this.GetTaskHubWorkerWasNullMessage(), true);
-            }
-
-            this.TraceConfigurationSettings();
-
-            var newTaskHubWorker = new TaskHubWorker(this.DefaultDurabilityProvider, this, this, loggerFactory: this.loggerFactory, versioningSettings: new VersioningSettings
-            {
-                Version = this.Options.DefaultVersion, // A null (or empty) version is valid as it signifies non-versioned case.
-                MatchStrategy = this.Options.VersionMatchStrategy, // The default value for this is to no-op on versioning.
-                FailureStrategy = this.Options.VersionFailureStrategy, // The default value for this is to ignore work if there is a mismatch.
-            });
-
-            // Add middleware to the DTFx dispatcher so that we can inject our own logic
-            // into and customize the orchestration execution pipeline.
-            // Note that the order of the middleware added determines the order in which it executes.
-            if (this.OutOfProcProtocol == OutOfProcOrchestrationProtocol.MiddlewarePassthrough)
-            {
-                // This is a newer, more performant flavor of orchestration/activity middleware that is being
-                // enabled for newer language runtimes.
-                var ooprocMiddleware = new OutOfProcMiddleware(this);
-                newTaskHubWorker.AddActivityDispatcherMiddleware(ooprocMiddleware.CallActivityAsync);
-                newTaskHubWorker.AddOrchestrationDispatcherMiddleware(ooprocMiddleware.CallOrchestratorAsync);
-                newTaskHubWorker.AddEntityDispatcherMiddleware(ooprocMiddleware.CallEntityAsync);
-            }
-            else
-            {
-                // This is the older middleware implementation that is currently in use for in-process .NET
-                // and the older out-of-proc languages, like Node.js, Python, and PowerShell.
-                newTaskHubWorker.AddActivityDispatcherMiddleware(this.ActivityMiddleware);
-                newTaskHubWorker.AddOrchestrationDispatcherMiddleware(this.EntityMiddleware);
-                newTaskHubWorker.AddOrchestrationDispatcherMiddleware(this.OrchestrationMiddleware);
-            }
-
-            // The RPC server needs to be started sometime before any functions can be triggered
-            // and this is the latest point in the pipeline available to us.
-            if (this.OutOfProcProtocol == OutOfProcOrchestrationProtocol.MiddlewarePassthrough)
-            {
-                this.StartLocalGrpcServer();
-            }
-
-            if (this.OutOfProcProtocol == OutOfProcOrchestrationProtocol.OrchestratorShim)
-            {
-                this.StartLocalHttpServer();
-            }
-
-            this.taskHubWorkerInitialized = true;
-            return newTaskHubWorker;
         }
 
         internal void ConfigureForHttpProtocol()
@@ -1155,16 +1138,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (attribute.DurableRequiresGrpc)
             {
                 // In the case when an app has only a durable client binding initialized, we still need to detect and start
-                // the HTTP or gRPC server as requested by the client type. Because this is now tied to the TaskHubWorker init,
+                // the HTTP or gRPC server as requested by the client type. Because this is now tied to the taskHubWorker's Lazy initializer,
                 // this normally needs to be done before the listeners start. Thankfully, even though DurableClient doesn't have
                 // an equivalent to the AttributeBindingProviders used by the trigger types for this, the durable client only case
                 // does not start the listeners, so we can defer initializing the task hub until first execution.
                 this.ConfigureForGrpcProtocol();
             }
 
-            // Accessing the task hub will call GetTaskHubWorker() if it hasn't been initialized yet, starting the appropriate
-            // server.
-            _ = this.TaskHubWorker;
+            // Accessing the task hub's value will start the appropriate server.
+            _ = this.taskHubWorker.Value;
 
             DurableClient client = this.cachedClients.GetOrAdd(
                 attribute,
@@ -1362,18 +1344,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return message;
         }
 
-        private string GetTaskHubWorkerDuplicateMessage(string hubName)
-        {
-            return $"A Task Hub Worker is already started for the task hub '{hubName}' but the extension called GetTaskHubWorker() again. " +
-                "Please report this at https://github.com/Azure/azure-functions-durable-extension/issues \n" +
-                "At: " + new StackTrace();
-        }
-
-        private string GetTaskHubWorkerWasNullMessage()
-        {
-            return $"TaskHubWorker was null on second call to GetTaskHubWorker, attempting to create a new one.";
-        }
-
         internal async Task<bool> StartTaskHubWorkerIfNotStartedAsync()
         {
             if (!this.isTaskHubWorkerStarted)
@@ -1391,13 +1361,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                         Stopwatch sw = Stopwatch.StartNew();
                         await this.DefaultDurabilityProvider.CreateIfNotExistsAsync();
-                        await this.TaskHubWorker.StartAsync();
+                        await this.taskHubWorker.Value.StartAsync();
 
-                        this.TaskHubWorker.TaskOrchestrationDispatcher.EntitiesEnabled = true;
+                        this.taskHubWorker.Value.TaskOrchestrationDispatcher.EntitiesEnabled = true;
 
                         if (this.Options.StoreInputsInOrchestrationHistory)
                         {
-                            this.TaskHubWorker.TaskOrchestrationDispatcher.IncludeParameters = true;
+                            this.taskHubWorker.Value.TaskOrchestrationDispatcher.IncludeParameters = true;
                         }
 
                         this.TraceHelper.ExtensionInformationalEvent(
@@ -1409,14 +1379,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                         // Enable flowing exception information from activities
                         // to the parent orchestration code.
-                        if (this.TaskHubWorker.TaskActivityDispatcher != null)
+                        if (this.taskHubWorker.Value.TaskActivityDispatcher != null)
                         {
-                            this.TaskHubWorker.TaskActivityDispatcher.IncludeDetails = true;
+                            this.taskHubWorker.Value.TaskActivityDispatcher.IncludeDetails = true;
                         }
 
-                        if (this.TaskHubWorker.TaskOrchestrationDispatcher != null)
+                        if (this.taskHubWorker.Value.TaskOrchestrationDispatcher != null)
                         {
-                            this.TaskHubWorker.TaskOrchestrationDispatcher.IncludeDetails = true;
+                            this.taskHubWorker.Value.TaskOrchestrationDispatcher.IncludeDetails = true;
                         }
 
                         if (this.LifeCycleNotificationHelper is EventGridLifeCycleNotificationHelper lifeCycleNotificationHelper)
@@ -1456,7 +1426,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         writeToUserLogs: true);
 
                     Stopwatch sw = Stopwatch.StartNew();
-                    await this.TaskHubWorker.StopAsync(isForced: !isGracefulStop);
+                    await this.taskHubWorker.Value.StopAsync(isForced: !isGracefulStop);
                     this.isTaskHubWorkerStarted = false;
 
                     this.TraceHelper.ExtensionInformationalEvent(
