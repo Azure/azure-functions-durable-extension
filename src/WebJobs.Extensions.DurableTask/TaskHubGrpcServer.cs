@@ -3,7 +3,9 @@
 
 #nullable enable
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
@@ -12,9 +14,11 @@ using DurableTask.Core.Exceptions;
 using DurableTask.Core.History;
 using DurableTask.Core.Query;
 using DurableTask.Core.Serializing.Internal;
+using Google.Protobuf;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
+using Newtonsoft.Json;
 using DTCore = DurableTask.Core;
 using P = Microsoft.DurableTask.Protobuf;
 
@@ -22,6 +26,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     internal class TaskHubGrpcServer : P.TaskHubSidecarService.TaskHubSidecarServiceBase
     {
+        private const int MaxHistoryChunkSizeInBytes = 2 * 1024 * 1024; // 2 MB
         private readonly DurableTaskExtension extension;
 
         public TaskHubGrpcServer(DurableTaskExtension extension)
@@ -64,6 +69,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     Version = request.Version != null ? request.Version : this.extension.Options.DefaultVersion,
                     OrchestrationInstance = instance,
                     ScheduledStartTime = request.ScheduledStartTimestamp?.ToDateTime(),
+                    Tags = request.Tags.ToDictionary(),
                 };
 
                 // Get the parent trace context from CreateInstanceRequest
@@ -473,6 +479,89 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     FailureDetails = request.GetInputsAndOutputs ? GetFailureDetails(state.FailureDetails) : null,
                 },
             };
+        }
+
+        public async override Task StreamInstanceHistory(
+            P.StreamInstanceHistoryRequest request,
+            IServerStreamWriter<P.HistoryChunk> responseStream,
+            ServerCallContext context)
+        {
+            if (await this.GetClient(context).GetStatusAsync(request.InstanceId, showInput: false) is null)
+            {
+                throw new RpcException(new Status(StatusCode.NotFound, $"Orchestration instance with ID {request.InstanceId} was not found."));
+            }
+
+            async Task<(P.HistoryChunk, int)> AddToHistoryChunkAndStream(HistoryEvent historyEvent, P.HistoryChunk historyChunk, int currentChunkSizeInBytes)
+            {
+                P.HistoryEvent result = ProtobufUtils.ToHistoryEventProto(historyEvent);
+
+                int currentEventSize = result.CalculateSize();
+                if (currentChunkSizeInBytes + currentEventSize > MaxHistoryChunkSizeInBytes)
+                {
+                    // If we exceeded the chunk size threshold, send what we have so far.
+                    await responseStream.WriteAsync(historyChunk);
+                    historyChunk = new ();
+                    currentChunkSizeInBytes = 0;
+                }
+
+                historyChunk.Events.Add(result);
+                currentChunkSizeInBytes += currentEventSize;
+                return (historyChunk, currentChunkSizeInBytes);
+            }
+
+            try
+            {
+                int currentChunkSizeInBytes = 0;
+                P.HistoryChunk historyChunk = new ();
+
+                // First, try to use the streaming API if it's implemented.
+                try
+                {
+                    IAsyncEnumerable<HistoryEvent> historyEvents = await this.GetDurabilityProvider(context).StreamOrchestrationHistoryAsync(
+                        request.InstanceId,
+                        context.CancellationToken);
+
+                    await foreach (HistoryEvent historyEvent in historyEvents)
+                    {
+                        (historyChunk, currentChunkSizeInBytes) = await AddToHistoryChunkAndStream(historyEvent, historyChunk, currentChunkSizeInBytes);
+                    }
+                }
+
+                // Otherwise default to the older non-streaming implementation.
+                catch (NotImplementedException)
+                {
+                    string jsonHistory = await this.GetDurabilityProvider(context).GetOrchestrationHistoryAsync(
+                        request.InstanceId,
+                        executionId: null);
+
+                    List<HistoryEvent>? historyEvents = JsonConvert.DeserializeObject<List<HistoryEvent>>(
+                        jsonHistory,
+                        new JsonSerializerSettings()
+                        {
+                            Converters = { new HistoryEventJsonConverter() },
+                        })
+                        ?? throw new Exception($"Failed to deserialize orchestration history.");
+
+                    foreach (HistoryEvent historyEvent in historyEvents)
+                    {
+                        (historyChunk, currentChunkSizeInBytes) = await AddToHistoryChunkAndStream(historyEvent, historyChunk, currentChunkSizeInBytes);
+                    }
+                }
+
+                // Send the last chunk, which may be smaller than the maximum chunk size.
+                if (historyChunk.Events.Count > 0)
+                {
+                    await responseStream.WriteAsync(historyChunk);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                throw new RpcException(new Status(StatusCode.Cancelled, $"Orchestration history streaming cancelled for instance {request.InstanceId}"));
+            }
+            catch (Exception ex)
+            {
+                throw new RpcException(new Status(StatusCode.Internal, $"Failed to stream orchestration history for instance {request.InstanceId}: {ex.Message}"));
+            }
         }
 
         private static P.TaskFailureDetails? GetFailureDetails(FailureDetails? failureDetails)
