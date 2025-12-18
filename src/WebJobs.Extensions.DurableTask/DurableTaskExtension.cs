@@ -207,12 +207,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         internal TypedCodeProvider TypedCodeProvider { get; private set; }
 
         /// <summary>
-        /// A global static accessible to DurabilityProviders to know whether the app has requested gRPC via worker metadata.
+        /// A property available to DurabilityProviders implementing IExtensionAwareDurabilityProviderFactory
+        /// used to determine whether the app has requested gRPC via worker metadata.
         /// </summary>
         /// <value>
         /// True if the functionapp requested gRPC via function metadata, otherwise false.
         /// </value>
-        public bool DurableRequiresGrpc { get; set; }
+        public bool DurableRequiresGrpc { get; private set; }
 
         internal TimeSpan MessageReorderWindow
             => this.DefaultDurabilityProvider.GuaranteesOrderedDelivery ? TimeSpan.Zero : TimeSpan.FromMinutes(this.Options.EntityMessageReorderWindowInMinutes);
