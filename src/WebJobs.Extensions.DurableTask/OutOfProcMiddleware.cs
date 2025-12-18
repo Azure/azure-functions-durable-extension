@@ -205,14 +205,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new SessionAbortedException(reason);
             }
 
+            if (workerRequiresHistory)
+            {
+                throw new SessionAbortedException("The worker has since ended the extended session and needs an orchestration history to execute the orchestration request.");
+            }
+
             OrchestratorExecutionResult orchestratorResult;
             if (functionResult.Succeeded)
             {
-                if (workerRequiresHistory)
-                {
-                    throw new SessionAbortedException("The worker has since ended the extended session and needs an orchestration history to execute the orchestration request.");
-                }
-
                 orchestratorResult = context.GetResult();
 
                 if (context.OrchestratorCompleted)
@@ -430,6 +430,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new SessionAbortedException(reason);
             }
 
+            if (workerRequiresEntityState)
+            {
+                throw new SessionAbortedException("The worker has since ended the extended session and needs an entity state to execute the request.");
+            }
+
             if (!functionResult.Succeeded)
             {
                 this.TraceHelper.FunctionFailed(
@@ -460,11 +465,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
 
                 return;
-            }
-
-            if (workerRequiresEntityState)
-            {
-                throw new SessionAbortedException("The worker has since ended the extended session and needs an entity state to execute the request.");
             }
 
             EntityBatchResult batchResult = context.Result

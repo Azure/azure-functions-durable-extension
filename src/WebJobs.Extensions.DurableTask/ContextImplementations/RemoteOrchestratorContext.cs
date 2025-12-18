@@ -51,7 +51,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         internal int UpperSchemaVersion { get; } = 4;
 
         [JsonProperty("configurations")]
-        public RemoteInstanceConfiguration Configurations { get; private set; }
+        public RemoteInstanceConfiguration Configurations { get; }
 
         [JsonIgnore]
         internal bool OrchestratorCompleted { get; private set; }

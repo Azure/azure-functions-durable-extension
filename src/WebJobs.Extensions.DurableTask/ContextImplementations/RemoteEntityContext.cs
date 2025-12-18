@@ -29,7 +29,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         internal EntityBatchRequest Request { get; private set; }
 
         [JsonProperty("configurations")]
-        public RemoteInstanceConfiguration? Configurations { get; private set; }
+        public RemoteInstanceConfiguration? Configurations { get; }
 
         [JsonIgnore]
         internal EntityBatchResult? Result { get; set; }
