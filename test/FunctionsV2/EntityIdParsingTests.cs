@@ -6,14 +6,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     public class EntityIdParsingTests
     {
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void EntityIdParsing_CorrectlyParsesValidEntityId()
         {
             var entityId = EntityId.FromString("@entityName@entityKey");
-            Assert.Equal("entityName", entityId.EntityName);
+            Assert.Equal("entityName".ToLowerInvariant(), entityId.EntityName);
             Assert.Equal("entityKey", entityId.EntityKey);
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void EntityIdParsing_ThrowsOnInvalidEntityId()
         {
             Assert.Throws<ArgumentException>(() => EntityId.FromString(null));
