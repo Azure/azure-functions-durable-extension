@@ -276,6 +276,7 @@ message CreateSubOrchestrationAction {
     google.protobuf.StringValue version = 3;
     google.protobuf.StringValue input = 4;
     TraceContext parentTraceContext = 5;
+    map<string, string> tags = 6;
 }
 
 message CreateTimerAction {
@@ -356,6 +357,13 @@ message OrchestratorResponse {
 
     // Whether or not a history is required to complete the original OrchestratorRequest and none was provided.
     bool requiresHistory = 7;
+
+    // True if this is a partial (chunked) completion. The backend must keep the work item open until the final chunk (isPartial=false).
+    bool isPartial = 8;
+
+    // Zero-based position of the current chunk within a chunked completion sequence.
+    // This field is omitted for non-chunked completions.
+    google.protobuf.Int32Value chunkIndex = 9;
 }
 
 message CreateInstanceRequest {
@@ -797,6 +805,16 @@ enum WorkerCapability {
     // When set, the service may return work items without any history events as an optimization.
     // It is strongly recommended that all SDKs support this capability.
     WORKER_CAPABILITY_HISTORY_STREAMING = 1;
+
+    // Indicates that the worker supports scheduled tasks.
+    // The service may send schedule-triggered orchestration work items,
+    // and the worker must handle them, including the scheduledTime field.
+    WORKER_CAPABILITY_SCHEDULED_TASKS = 2;
+
+    // Signals that the worker can handle large payloads stored externally (e.g., Blob Storage).
+    // Work items may contain URI references instead of inline data, and the worker must fetch them.
+    // This avoids message size limits and reduces network overhead.
+    WORKER_CAPABILITY_LARGE_PAYLOADS = 3;
 }
 
 message WorkItem {

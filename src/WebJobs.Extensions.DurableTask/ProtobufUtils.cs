@@ -65,16 +65,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     var completedEvent = (ExecutionCompletedEvent)e;
                     payload.ExecutionCompleted = new P.ExecutionCompletedEvent
                     {
-                        OrchestrationStatus = P.OrchestrationStatus.Completed,
+                        OrchestrationStatus = (P.OrchestrationStatus)completedEvent.OrchestrationStatus,
                         Result = completedEvent.Result,
-                    };
-                    break;
-                case EventType.ExecutionFailed:
-                    var failedEvent = (ExecutionCompletedEvent)e;
-                    payload.ExecutionCompleted = new P.ExecutionCompletedEvent
-                    {
-                        OrchestrationStatus = P.OrchestrationStatus.Failed,
-                        Result = failedEvent.Result,
+                        FailureDetails = GetFailureDetails(completedEvent.FailureDetails),
                     };
                     break;
                 case EventType.ExecutionStarted:
@@ -108,6 +101,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             TraceState = startedEvent.ParentTraceContext.TraceState,
                         },
                     };
+
+                    if (startedEvent.Tags != null)
+                    {
+                        foreach (KeyValuePair<string, string> tag in startedEvent.Tags)
+                        {
+                            payload.ExecutionStarted.Tags[tag.Key] = tag.Value;
+                        }
+                    }
+
                     break;
                 case EventType.ExecutionTerminated:
                     var terminatedEvent = (ExecutionTerminatedEvent)e;
@@ -124,6 +126,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         Version = taskScheduledEvent.Version,
                         Input = taskScheduledEvent.Input,
                     };
+
+                    if (taskScheduledEvent.Tags != null)
+                    {
+                        foreach (KeyValuePair<string, string> tag in taskScheduledEvent.Tags)
+                        {
+                            payload.TaskScheduled.Tags[tag.Key] = tag.Value;
+                        }
+                    }
+
                     break;
                 case EventType.TaskCompleted:
                     var taskCompletedEvent = (TaskCompletedEvent)e;
@@ -251,6 +262,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         Input = a.ScheduleTask.Input,
                         Name = a.ScheduleTask.Name,
                         Version = a.ScheduleTask.Version,
+                        Tags = a.ScheduleTask.Tags.ToDictionary(),
                     };
                 case P.OrchestratorAction.OrchestratorActionTypeOneofCase.CreateSubOrchestration:
                     return new CreateSubOrchestrationAction
@@ -259,7 +271,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         Input = a.CreateSubOrchestration.Input,
                         Name = a.CreateSubOrchestration.Name,
                         InstanceId = a.CreateSubOrchestration.InstanceId,
-                        Tags = null, // TODO
+                        Tags = a.CreateSubOrchestration.Tags.ToDictionary(),
                         Version = a.CreateSubOrchestration.Version,
                     };
                 case P.OrchestratorAction.OrchestratorActionTypeOneofCase.CreateTimer:
