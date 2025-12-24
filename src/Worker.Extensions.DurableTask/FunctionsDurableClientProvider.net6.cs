@@ -35,12 +35,15 @@ internal partial class FunctionsDurableClientProvider
 
     private static GrpcChannel CreateChannel(ClientKey key, int? maxGrpcMessageSize, TimeSpan grpcHttpClientTimeout)
     {
+        int effectiveMaxMessageSize = maxGrpcMessageSize ?? int.MaxValue;
         IReadOnlyDictionary<string, string> headers = key.GetHeaders();
         if (headers.Count == 0)
         {
             GrpcChannelOptions defaultOptions = new()
             {
                 ServiceConfig = DefaultServiceConfig,
+                MaxReceiveMessageSize = effectiveMaxMessageSize,
+                MaxSendMessageSize = effectiveMaxMessageSize,
             };
 
             return GrpcChannel.ForAddress(key.Address, defaultOptions);
@@ -60,7 +63,8 @@ internal partial class FunctionsDurableClientProvider
         {
             HttpClient = httpClient,
             DisposeHttpClient = true,
-            MaxReceiveMessageSize = maxGrpcMessageSize,
+            MaxReceiveMessageSize = effectiveMaxMessageSize,
+            MaxSendMessageSize = effectiveMaxMessageSize,
             ServiceConfig = DefaultServiceConfig,
         };
 

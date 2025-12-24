@@ -189,6 +189,48 @@ public class FunctionsDurableClientProviderTests
     }
 
     /// <summary>
+    /// Tests that when no explicit gRPC message size is provided, the channel uses the maximum allowed value by default.
+    /// </summary>
+    [Fact]
+    public async Task GetClient_UsesMaxMessageSizeByDefault()
+    {
+        // Arrange
+        var mockLoggerFactory = new Mock<ILoggerFactory>();
+        mockLoggerFactory.Setup(x => x.CreateLogger(It.IsAny<string>())).Returns(Mock.Of<ILogger>());
+
+        var clientOptions = new DurableTaskClientOptions();
+        var mockOptions = new Mock<IOptions<DurableTaskClientOptions>>();
+        mockOptions.Setup(x => x.Value).Returns(clientOptions);
+
+        var provider = new FunctionsDurableClientProvider(mockLoggerFactory.Object, mockOptions.Object);
+
+        Uri endpoint = new Uri("http://localhost:12345");
+
+        // Act
+        provider.GetClient(
+            endpoint,
+            taskHub: "TestTaskHub",
+            connectionName: null,
+            maxGrpcMessageSizeInBytes: null,
+            grpcHttpClientTimeout: TimeSpan.FromMinutes(1));
+
+        FieldInfo? clientsField = typeof(FunctionsDurableClientProvider).GetField("clients", BindingFlags.NonPublic | BindingFlags.Instance);
+        var clients = Assert.IsAssignableFrom<System.Collections.IDictionary>(clientsField?.GetValue(provider));
+        object holder = Assert.Single(clients.Values.Cast<object>());
+
+        FieldInfo? channelField = holder.GetType().GetField("channel", BindingFlags.NonPublic | BindingFlags.Instance);
+        var channel = Assert.IsType<GrpcChannel>(channelField?.GetValue(holder));
+
+        // Assert
+        PropertyInfo? receiveMaxProperty = channel.GetType().GetProperty("ReceiveMaxMessageSize", BindingFlags.NonPublic | BindingFlags.Instance);
+        var receiveMax = Assert.IsAssignableFrom<int?>(receiveMaxProperty?.GetValue(channel));
+        Assert.Equal(int.MaxValue, receiveMax);
+
+        // Clean up
+        await provider.DisposeAsync();
+    }
+
+    /// <summary>
     /// Tests that retry policy configuration values match expected defaults.
     /// </summary>
     [Fact]
