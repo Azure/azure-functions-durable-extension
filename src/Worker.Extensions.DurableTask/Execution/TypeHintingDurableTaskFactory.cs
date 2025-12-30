@@ -92,8 +92,7 @@ internal sealed class TypeHintingDurableTaskFactory : IDurableTaskFactory2
         private async Task<object?> RunWithHintAsync(TaskActivityContext context, object? input)
         {
             object? result = await this.inner.RunAsync(context, input).ConfigureAwait(false);
-            ObjectConverterShim.SetSerializationType(this.OutputType);
-            return result;
+            return ObjectConverterShim.WithDeclaredType(result, this.OutputType);
         }
     }
 }

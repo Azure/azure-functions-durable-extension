@@ -4,7 +4,6 @@
 using System;
 using System.IO;
 using System.Text;
-using System.Threading;
 using Azure.Core.Serialization;
 using Microsoft.DurableTask;
 
@@ -15,8 +14,6 @@ namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
 /// </summary>
 internal class ObjectConverterShim : DataConverter
 {
-    private static readonly AsyncLocal<Type?> SerializationType = new();
-
     private readonly ObjectSerializer serializer;
 
     public ObjectConverterShim(ObjectSerializer serializer)
@@ -42,20 +39,40 @@ internal class ObjectConverterShim : DataConverter
             return null;
         }
 
-        Type? declaredType = SerializationType.Value ?? value.GetType();
-        try
+        if (value is SerializationHint hint)
         {
-            BinaryData data = this.serializer.Serialize(value, declaredType, default);
-            return data.ToString();
+            return this.Serialize(hint.Value, hint.DeclaredType);
         }
-        finally
-        {
-            SerializationType.Value = null;
-        }
+
+        return this.Serialize(value, value.GetType());
     }
 
-    internal static void SetSerializationType(Type? type)
+    internal static SerializationHint WithDeclaredType(object? value, Type? declaredType)
     {
-        SerializationType.Value = type;
+        return new SerializationHint(value, declaredType);
+    }
+
+    private string? Serialize(object? value, Type? declaredType)
+    {
+        if (value is null)
+        {
+            return null;
+        }
+
+        BinaryData data = this.serializer.Serialize(value, declaredType ?? value.GetType(), default);
+        return data.ToString();
+    }
+
+    internal sealed class SerializationHint
+    {
+        public SerializationHint(object? value, Type? declaredType)
+        {
+            this.Value = value;
+            this.DeclaredType = declaredType;
+        }
+
+        public object? Value { get; }
+
+        public Type? DeclaredType { get; }
     }
 }

@@ -27,8 +27,8 @@ public class ObjectConverterShimTests
         Assert.NotEqual(declaredJson, runtimeJson);
         Assert.Equal(runtimeJson, converter.Serialize(value));
 
-        ObjectConverterShim.SetSerializationType(typeof(BaseResponse));
-        string hintedJson = converter.Serialize(value)!;
+        string hintedJson = converter.Serialize(
+            ObjectConverterShim.WithDeclaredType(value, typeof(BaseResponse)))!;
 
         Assert.Equal(declaredJson, hintedJson);
         Assert.Equal(runtimeJson, converter.Serialize(value));
