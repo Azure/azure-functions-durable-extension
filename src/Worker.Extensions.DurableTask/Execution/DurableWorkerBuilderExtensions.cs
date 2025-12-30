@@ -47,7 +47,8 @@ internal static class DurableWorkerBuilderExtensions
     }
 
 #pragma warning disable CS9113 // Parameter is unread. Suppressed to let a breaking change get fixed before we remove this parameter.
-    private class Worker(string name, IDurableTaskFactory factory, IExceptionPropertiesProvider? provider = null) : DurableTaskWorker(name, factory)
+    private class Worker(string name, IDurableTaskFactory factory, IExceptionPropertiesProvider? provider = null)
+        : DurableTaskWorker(name, TypeHintingDurableTaskFactory.WrapIfNeeded(factory))
     {
         public new IDurableTaskFactory Factory => base.Factory;
 
