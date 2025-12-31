@@ -1,25 +1,71 @@
-<!-- Start the PR description with some context for the change. -->
+# Summary
+## What changed?
+-
 
+## Why is this change needed?
+-
 
-<!-- Make sure to delete the markdown comments and the below sections when squash merging -->
-### Issue describing the changes in this PR
+## Issues / work items
+- Resolves #
+- Related #
 
-resolves #issue_for_this_pr
+---
 
-### Pull request checklist
+# Project checklist
+- [ ] Documentation changes are not required
+  - [ ] Otherwise: Documentation PR is ready to merge and referenced in `pending_docs.md`
+- [ ] Release notes are not required for the next release
+  - [ ] Otherwise: Notes added to `release_notes.md`
+- [ ] Backport is not required
+  - [ ] Otherwise: Backport tracked by issue/PR #issue_or_pr
+- [ ] All required tests have been added/updated (unit tests, E2E tests)
+- [ ] No extra work is required to be leveraged by OutOfProc SDKs
+  - [ ] Otherwise: Work tracked here: #issue_or_pr_in_each_sdk
+- [ ] No change to the version of the `WebJobs.Extensions.DurableTask` package
+  - [ ] Otherwise: Major/minor updates are reflected in `/src/Worker.Extensions.DurableTask/AssemblyInfo.cs`
+- [ ] No EventIds were added to `EventSource` logs
+  - [ ] Otherwise: Ensure EventIds are within the supported range in the existing Windows infrastructure (validate via deployed telemetry). If needed, extend the range via a PR such as https://msazure.visualstudio.com/One/_git/AAPT-Antares-Websites/pullrequest/7463263?_a=files
+- [ ] This change should be added to the `v2.x` branch
+  - [ ] Otherwise: This change applies exclusively to `WebJobs.Extensions.DurableTask` v3.x and will be retained only in the `dev` and `main` branches
+- [ ] Breaking change?
+  - [ ] If yes:
+    - Impact:
+    - Migration guidance:
+---
 
-* [ ] My changes **do not** require documentation changes
-    * [ ] Otherwise: Documentation PR is ready to merge and referenced in `pending_docs.md`
-* [ ] My changes **should not** be added to the release notes for the next release
-    * [ ] Otherwise: I've added my notes to `release_notes.md`
-* [ ] My changes **do not** need to be backported to a previous version
-    * [ ] Otherwise: Backport tracked by issue/PR #issue_or_pr
-* [ ] I have added all required tests (Unit tests, E2E tests)
-* [ ] My changes **do not** require any extra work to be leveraged by OutOfProc SDKs
-    * [ ] Otherwise: That work is being tracked here: #issue_or_pr_in_each_sdk
-* [ ] My changes **do not** change the version of the WebJobs.Extensions.DurableTask package
-    * [ ] Otherwise: major or minor version updates are reflected in `/src/Worker.Extensions.DurableTask/AssemblyInfo.cs`
-* [ ] My changes **do not** add EventIds to our EventSource logs
-    * [ ] Otherwise: Ensure the EventIds are within the supported range in our existing Windows infrastructure. You may validate this with a deployed app's telemetry. You may also extend the range by completing a PR such as [this one](https://msazure.visualstudio.com/One/_git/AAPT-Antares-Websites/pullrequest/7463263?_a=files).
-* [ ] My changes **should** be added to **v2.x** branch.
-    * [ ] Otherwise: This change applies exclusively to WebJobs.Extensions.DurableTask v3.x. It will be retained only in the `dev` and `main` branches and will not be merged into the `v2.x` branch.
+# AI-assisted code disclosure (required)
+## Was an AI tool used? (select one)
+- [ ] No
+- [ ] Yes, AI helped write parts of this PR (e.g., GitHub Copilot)
+- [ ] Yes, an AI agent generated most of this PR
+
+If AI was used:
+- Tool(s):
+- AI-assisted areas/files:
+- What you changed after AI output:
+
+AI verification (required if AI was used):
+- [ ] I understand the code and can explain it
+- [ ] I verified referenced APIs/types exist and are correct
+- [ ] I reviewed edge cases/failure paths (timeouts, retries, cancellation, exceptions)
+- [ ] I reviewed concurrency/async behavior
+- [ ] I checked for unintended breaking or behavior changes
+
+---
+
+# Testing
+## Automated tests
+- Result: Passed / Failed (link logs if failed)
+
+## Manual validation (only if runtime/behavior changed)
+- Environment (OS, .NET version, components):
+- Steps + observed results:
+  1.
+  2.
+  3.
+- Evidence (optional):
+
+---
+
+# Notes for reviewers
+- N/A

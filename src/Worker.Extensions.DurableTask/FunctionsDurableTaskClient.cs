@@ -1,9 +1,10 @@
 // Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
-using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using DurableTask.Core.History;
 using Microsoft.DurableTask;
 using Microsoft.DurableTask.Client;
 using Microsoft.DurableTask.Client.Entities;
@@ -114,5 +115,12 @@ internal sealed class FunctionsDurableTaskClient : DurableTaskClient
         string instanceId, string reason, CancellationToken cancellation = default)
     {
         return this.inner.RewindInstanceAsync(instanceId, reason, cancellation);
+    }
+
+    public override Task<IList<HistoryEvent>> GetOrchestrationHistoryAsync(
+        string instanceId,
+        CancellationToken cancellation = default)
+    {
+        return this.inner.GetOrchestrationHistoryAsync(instanceId, cancellation);
     }
 }
