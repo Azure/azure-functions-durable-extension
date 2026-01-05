@@ -1,6 +1,26 @@
 // Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+/* This sample demonstrates how to make authenticated HTTP calls using Managed Identity.
+ * The orchestrator uses CallHttpAsync with a ManagedIdentityTokenSource to automatically
+ * acquire and refresh Azure AD tokens for calling Azure Resource Manager APIs.
+ *
+ * This example lists all VMs in a subscription and restarts them sequentially.
+ *
+ * Documentation:
+ * https://docs.microsoft.com/azure/azure-functions/durable/durable-functions-http-features
+ *
+ * To run this sample:
+ *   1. Enable managed identity on your Azure Function App
+ *   2. Grant the managed identity permissions to your subscription (e.g., VM Contributor role)
+ *   3. Start the function app
+ *   4. Make an HTTP POST request to: http://localhost:7071/api/RestartVMs_HttpStart
+ *      Include JSON body: {"subscriptionId": "your-subscription-id", "resourceGroup": "your-resource-group"}
+ *
+ * Required setup:
+ *   - Function App must have a system-assigned or user-assigned managed identity
+ *   - The identity must have permissions to list and restart VMs in the target subscription
+ */
 using System;
 using System.Collections.Generic;
 using System.Net;
@@ -15,10 +35,10 @@ using Newtonsoft.Json.Linq;
 
 namespace VSSample
 {
-    // To authorize ARM calls, your subscription has to have permissions to your function app.
-    // Making the subscription an owner of your function app is one solution to this.
     public static class RestartVMs
     {
+        // Orchestrator function that uses managed identity to call Azure Resource Manager APIs.
+        // Demonstrates durable HTTP with automatic token acquisition and refresh.
         [FunctionName("RestartVMs")]
         public static async Task RunOrchestrator(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
@@ -66,6 +86,8 @@ namespace VSSample
             }
         }
 
+        // HTTP trigger function to start the VM restart orchestration.
+        // Validates input and provides an example payload for error cases.
         [FunctionName("RestartVMs_HttpStart")]
         public static async Task<HttpResponseMessage> HttpStart(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestMessage req,
@@ -92,6 +114,7 @@ namespace VSSample
             return starter.CreateCheckStatusResponse(req, instanceId);
         }
 
+        // Input model for the orchestration containing Azure subscription information
         class ResourceInfo
         {
             [JsonProperty("apiVersion", DefaultValueHandling = DefaultValueHandling.Ignore)]
