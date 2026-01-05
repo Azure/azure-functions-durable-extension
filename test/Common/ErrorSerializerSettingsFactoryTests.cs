@@ -83,17 +83,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             // Arrange
             var factory = new ErrorSerializerSettingsFactory();
             var settings = factory.CreateJsonSerializerSettings();
-
-            // Create an exception that has a TargetSite
-            Exception exceptionWithTargetSite;
-            try
-            {
-                throw new InvalidOperationException("Test exception");
-            }
-            catch (Exception ex)
-            {
-                exceptionWithTargetSite = ex;
-            }
+            var exceptionWithTargetSite = CreateThrownException("Test exception");
 
             // Verify that the exception has a TargetSite before serialization
             Assert.NotNull(exceptionWithTargetSite.TargetSite);
@@ -149,16 +139,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             // Arrange
             var factory = new ErrorSerializerSettingsFactory();
             var settings = factory.CreateJsonSerializerSettings();
-
-            Exception exceptionWithStackTrace;
-            try
-            {
-                throw new InvalidOperationException("Test message");
-            }
-            catch (Exception ex)
-            {
-                exceptionWithStackTrace = ex;
-            }
+            var exceptionWithStackTrace = CreateThrownException("Test message");
 
             // Act
             var serialized = JsonConvert.SerializeObject(exceptionWithStackTrace, settings);
@@ -192,6 +173,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             // The dangerous property should NOT be serialized as a JSON property (look for the colon pattern)
             Assert.DoesNotContain("\"SelfReference\":", serialized);
             Assert.DoesNotContain("\"ProblematicProperty\":", serialized);
+        }
+
+        /// <summary>
+        /// Creates an exception that has been thrown and caught, ensuring it has
+        /// populated TargetSite and StackTrace properties.
+        /// </summary>
+        /// <param name="message">The exception message.</param>
+        /// <returns>An exception with populated stack trace information.</returns>
+        private static Exception CreateThrownException(string message)
+        {
+            try
+            {
+                throw new InvalidOperationException(message);
+            }
+            catch (Exception ex)
+            {
+                return ex;
+            }
         }
 
         /// <summary>
