@@ -30,6 +30,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         DurableOrchestrationContextBase // for v1 legacy compatibility.
 #pragma warning restore 618
     {
+        /// <summary>
+        /// AsyncLocal to track the current orchestration context. This is used in addition to
+        /// OrchestrationContext.IsOrchestratorThread to detect illegal async usage patterns
+        /// like calling activities from within ContinueWith blocks. AsyncLocal properly flows
+        /// with async context, unlike [ThreadStatic] which doesn't.
+        /// </summary>
+        private static readonly AsyncLocal<DurableOrchestrationContext> CurrentContext = new AsyncLocal<DurableOrchestrationContext>();
+
         private readonly Dictionary<string, IEventTaskCompletionSource> pendingExternalEvents =
             new Dictionary<string, IEventTaskCompletionSource>(StringComparer.OrdinalIgnoreCase);
 
@@ -1203,6 +1211,36 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 throw new InvalidOperationException(
                     "Multithreaded execution was detected. This can happen if the orchestrator function code awaits on a task that was not created by a DurableOrchestrationContext method. More details can be found in this article https://learn.microsoft.com/azure/azure-functions/durable/durable-functions-code-constraints.");
+            }
+
+            // Additional check using AsyncLocal to detect illegal access from ContinueWith blocks.
+            // The AsyncLocal value properly flows with async context, unlike the [ThreadStatic]
+            // IsOrchestratorThread which can be incorrectly true if thread pool reuses the same thread.
+            if (CurrentContext.Value != this)
+            {
+                throw new InvalidOperationException(
+                    "Multithreaded execution was detected. This can happen if the orchestrator function code awaits on a task that was not created by a DurableOrchestrationContext method. More details can be found in this article https://learn.microsoft.com/azure/azure-functions/durable/durable-functions-code-constraints.");
+            }
+        }
+
+        /// <summary>
+        /// Sets this context as the current context for the async flow.
+        /// This should be called at the start of orchestration execution.
+        /// </summary>
+        internal void SetAsCurrentContext()
+        {
+            CurrentContext.Value = this;
+        }
+
+        /// <summary>
+        /// Clears the current context from the async flow.
+        /// This should be called at the end of orchestration execution.
+        /// </summary>
+        internal void ClearCurrentContext()
+        {
+            if (CurrentContext.Value == this)
+            {
+                CurrentContext.Value = null;
             }
         }
 

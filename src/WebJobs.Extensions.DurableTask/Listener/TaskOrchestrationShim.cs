@@ -138,6 +138,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             RegisteredFunctionInfo orchestratorInfo,
             OrchestrationContext innerContext)
         {
+            // Set the current context for the async flow to enable detection of illegal
+            // ContinueWith usage. This uses AsyncLocal which properly flows with async context.
+            this.context.SetAsCurrentContext();
+
             try
             {
                 Task invokeTask = this.FunctionInvocationCallback();
@@ -205,6 +209,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             finally
             {
                 this.context.IsCompleted = true;
+
+                // Clear the current context from the async flow
+                this.context.ClearCurrentContext();
             }
         }
 
