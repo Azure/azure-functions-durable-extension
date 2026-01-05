@@ -18,8 +18,8 @@ This folder contains precompiled C# samples demonstrating various Durable Functi
 
 ### Prerequisites
 
-- [.NET Core SDK](https://dotnet.microsoft.com/download) 3.1 or later
-- [Azure Functions Core Tools](https://docs.microsoft.com/azure/azure-functions/functions-run-local) v3.x or later
+- [.NET SDK](https://dotnet.microsoft.com/download/dotnet) 6.0 or later
+- [Azure Functions Core Tools](https://docs.microsoft.com/azure/azure-functions/functions-run-local) v4.x or later
 - [Azure Storage Emulator](https://docs.microsoft.com/azure/storage/common/storage-use-emulator) or an Azure Storage account
 
 ### Building the Sample
