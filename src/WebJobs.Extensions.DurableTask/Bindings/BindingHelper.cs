@@ -143,7 +143,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             public string? HttpBaseUrl { get; set; }
 
             /// <summary>
-            /// Optional setting that specifies the maximum gRPC receive message size (in bytes) for the DurableTaskClient.
+            /// Optional setting that specifies the maximum gRPC message size (in bytes) for the DurableTaskClient (both receive and send).
             /// Defaults to <see cref="int.MaxValue"/>.
             /// </summary>
             [JsonProperty("maxGrpcMessageSizeInBytes")]
