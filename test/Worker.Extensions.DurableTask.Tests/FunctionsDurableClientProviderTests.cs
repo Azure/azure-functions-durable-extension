@@ -225,6 +225,9 @@ public class FunctionsDurableClientProviderTests
         PropertyInfo? receiveMaxProperty = channel.GetType().GetProperty("ReceiveMaxMessageSize", BindingFlags.NonPublic | BindingFlags.Instance);
         var receiveMax = Assert.IsAssignableFrom<int?>(receiveMaxProperty?.GetValue(channel));
         Assert.Equal(int.MaxValue, receiveMax);
+        PropertyInfo? sendMaxProperty = channel.GetType().GetProperty("SendMaxMessageSize", BindingFlags.NonPublic | BindingFlags.Instance);
+        var sendMax = Assert.IsAssignableFrom<int?>(sendMaxProperty?.GetValue(channel));
+        Assert.Equal(int.MaxValue, sendMax);
 
         // Clean up
         await provider.DisposeAsync();
