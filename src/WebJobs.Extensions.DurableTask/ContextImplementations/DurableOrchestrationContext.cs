@@ -31,6 +31,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #pragma warning restore 618
     {
         /// <summary>
+        /// Error message for multithreaded execution detection.
+        /// </summary>
+        private const string MultithreadedAccessErrorMessage =
+            "Multithreaded execution was detected. This can happen if the orchestrator function code awaits on a task that was not created by a DurableOrchestrationContext method. More details can be found in this article https://learn.microsoft.com/azure/azure-functions/durable/durable-functions-code-constraints.";
+
+        /// <summary>
         /// AsyncLocal to track the current orchestration context. This is used in addition to
         /// OrchestrationContext.IsOrchestratorThread to detect illegal async usage patterns
         /// like calling activities from within ContinueWith blocks. AsyncLocal properly flows
@@ -1209,8 +1215,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             if (!OrchestrationContext.IsOrchestratorThread)
             {
-                throw new InvalidOperationException(
-                    "Multithreaded execution was detected. This can happen if the orchestrator function code awaits on a task that was not created by a DurableOrchestrationContext method. More details can be found in this article https://learn.microsoft.com/azure/azure-functions/durable/durable-functions-code-constraints.");
+                throw new InvalidOperationException(MultithreadedAccessErrorMessage);
             }
 
             // Additional check using AsyncLocal to detect illegal access from ContinueWith blocks.
@@ -1218,8 +1223,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // IsOrchestratorThread which can be incorrectly true if thread pool reuses the same thread.
             if (CurrentContext.Value != this)
             {
-                throw new InvalidOperationException(
-                    "Multithreaded execution was detected. This can happen if the orchestrator function code awaits on a task that was not created by a DurableOrchestrationContext method. More details can be found in this article https://learn.microsoft.com/azure/azure-functions/durable/durable-functions-code-constraints.");
+                throw new InvalidOperationException(MultithreadedAccessErrorMessage);
             }
         }
 
@@ -1238,6 +1242,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </summary>
         internal void ClearCurrentContext()
         {
+            // Only clear the context if it matches this instance.
+            // If it doesn't match, it could indicate a programming error or nested orchestration scenario.
+            // We use Debug.Assert to help detect such issues during development.
+            System.Diagnostics.Debug.Assert(
+                CurrentContext.Value == null || CurrentContext.Value == this,
+                "ClearCurrentContext called when the current context does not match this instance. This may indicate a programming error.");
+
             if (CurrentContext.Value == this)
             {
                 CurrentContext.Value = null;
