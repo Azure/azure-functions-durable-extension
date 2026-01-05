@@ -36,6 +36,7 @@ internal partial class FunctionsDurableClientProvider
         {
             new ChannelOption("grpc.service_config", DefaultServiceConfigJson),
             new ChannelOption(ChannelOptions.MaxReceiveMessageLength, effectiveMaxMessageSize),
+            new ChannelOption(ChannelOptions.MaxSendMessageLength, effectiveMaxMessageSize),
         };
 
         return headers.Count > 0
