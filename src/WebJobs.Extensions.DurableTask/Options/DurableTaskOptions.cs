@@ -255,7 +255,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public AppLeaseOptions AppLeaseOptions { get; set; } = AppLeaseOptions.DefaultOptions;
 
         /// <summary>
-        /// Option to control the receive message size in bytes of the gRPC client, which is used by Durable Functions C# Isolated and Java (and potentially more languages in the future).
+        /// Option to control the message size (both receive and send) in bytes of the gRPC client, which is used by Durable Functions C# Isolated and Java (and potentially more languages in the future).
         /// Defaults to <see cref="int.MaxValue"/>.
         /// The maximum allowable value is <see cref="int.MaxValue"/>, which corresponds to the durable grpc server's receive limit.
         /// </summary>
