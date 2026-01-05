@@ -191,7 +191,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
                 else
                 {
-                    throw new ArgumentException($"Don't know how to bind to {value?.GetType().Name ?? "null"}.", nameof(value));
+                    throw new InvalidOperationException(
+                        "Durable orchestrator functions do not support direct invocation. " +
+                        "To start an orchestration, use an HTTP trigger function or the DurableClient binding to call 'StartNewAsync'.");
                 }
             }
 

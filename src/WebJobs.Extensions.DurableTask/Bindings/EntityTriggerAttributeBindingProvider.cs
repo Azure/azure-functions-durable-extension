@@ -141,7 +141,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
                 else
                 {
-                    throw new ArgumentException($"Don't know how to bind to {value?.GetType().Name ?? "null"}.", nameof(value));
+                    throw new InvalidOperationException(
+                        "Durable entity functions do not support direct invocation. " +
+                        "To interact with an entity, use an HTTP trigger function or the DurableClient binding to call entity methods.");
                 }
             }
 
