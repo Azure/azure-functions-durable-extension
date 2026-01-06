@@ -114,6 +114,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public void Format_IncludesComplexProperties()
         {
             // Arrange
+            // Complex properties (HttpSettings, Tracing, Notifications, AppLeaseOptions)
+            // are initialized with default values in DurableTaskOptions constructor
             var options = new DurableTaskOptions
             {
                 HubName = "TestHub",
@@ -124,7 +126,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             string result = formatter.Format();
             JObject json = JObject.Parse(result);
 
-            // Assert - verify complex properties are present
+            // Assert - verify complex properties with default values are present
             Assert.NotNull(json);
             Assert.NotNull(json["HttpSettings"]);
             Assert.NotNull(json["Tracing"]);
