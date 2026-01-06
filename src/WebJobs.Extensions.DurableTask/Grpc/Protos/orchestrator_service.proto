@@ -599,6 +599,7 @@ message EntityBatchRequest {
     string instanceId = 1;
     google.protobuf.StringValue entityState = 2;
     repeated OperationRequest operations = 3;
+    map<string, google.protobuf.Value> properties = 4;
 }
 
 message EntityBatchResult {
@@ -608,6 +609,8 @@ message EntityBatchResult {
     TaskFailureDetails failureDetails = 4;
     string completionToken = 5;
     repeated OperationInfo operationInfos = 6; // used only with DTS
+    // Whether or not an entity state is required to complete the original EntityBatchRequest and none was provided.
+    bool requiresState = 7;
 }
 
 message EntityRequest {
