@@ -5,11 +5,60 @@ using System;
 using Microsoft.Azure.WebJobs.Hosting;
 using Newtonsoft.Json.Linq;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
+    /// <summary>
+    /// Tests for IOptionsFormatter implementation in DurableTaskOptions.
+    /// The IOptionsFormatter interface is used by Azure WebJobs infrastructure to format
+    /// configuration options for diagnostics and logging purposes.
+    /// </summary>
     public class DurableTaskOptionsFormatterTests
     {
+        private readonly ITestOutputHelper output;
+
+        public DurableTaskOptionsFormatterTests(ITestOutputHelper output)
+        {
+            this.output = output;
+        }
+
+        /// <summary>
+        /// Example demonstrating typical usage of the IOptionsFormatter.Format() method.
+        /// In production, this is typically called by Azure WebJobs infrastructure for diagnostics.
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void Format_UsageExample()
+        {
+            // Arrange - Configure DurableTaskOptions as you would in your application
+            var options = new DurableTaskOptions
+            {
+                HubName = "MyTaskHub",
+                MaxConcurrentActivityFunctions = 20,
+                MaxConcurrentOrchestratorFunctions = 10,
+                ExtendedSessionsEnabled = true,
+                UseAppLease = true,
+            };
+
+            // Act - Get formatted output (typically done by Azure WebJobs infrastructure)
+            IOptionsFormatter formatter = options;
+            string formattedOptions = formatter.Format();
+
+            // This formatted string can be logged for diagnostics:
+            // logger.LogInformation($"Current Durable Task Options: {formattedOptions}");
+
+            // Output for demonstration
+            this.output.WriteLine("Formatted DurableTaskOptions:");
+            this.output.WriteLine(formattedOptions);
+
+            // Assert - Verify the formatted output contains expected configuration
+            JObject json = JObject.Parse(formattedOptions);
+            Assert.Equal("MyTaskHub", json["HubName"].ToString());
+            Assert.Equal(20, json["MaxConcurrentActivityFunctions"].Value<int?>());
+            Assert.Equal(10, json["MaxConcurrentOrchestratorFunctions"].Value<int?>());
+        }
+
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void Format_ReturnsValidJson()
