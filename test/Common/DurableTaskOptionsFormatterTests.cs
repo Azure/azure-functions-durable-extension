@@ -131,5 +131,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.NotNull(json["Notifications"]);
             Assert.NotNull(json["AppLeaseOptions"]);
         }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void Format_ExcludesStorageProviderForSecurity()
+        {
+            // Arrange
+            var options = new DurableTaskOptions
+            {
+                HubName = "TestHub",
+            };
+            options.StorageProvider["connectionString"] = "sensitive-value";
+
+            // Act
+            IOptionsFormatter formatter = options;
+            string result = formatter.Format();
+            JObject json = JObject.Parse(result);
+
+            // Assert - StorageProvider should not be included to avoid exposing secrets
+            Assert.NotNull(json);
+            Assert.Null(json["StorageProvider"]);
+        }
     }
 }
