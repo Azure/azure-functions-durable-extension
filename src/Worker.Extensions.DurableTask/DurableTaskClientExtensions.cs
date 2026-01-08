@@ -138,12 +138,7 @@ public static class DurableTaskClientExtensions
             return url;
         }
 
-        // TODO: To better support scenarios involving proxies or application gateways, this
-        //       code should take the X-Forwarded-Host, X-Forwarded-Proto, and Forwarded HTTP
-        //       request headers into consideration and generate the base URL accordingly.
-        //       More info: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Forwarded.
-        //       One potential workaround is to set ASPNETCORE_FORWARDEDHEADERS_ENABLED to true.
-        string baseUrl = request.Url.GetLeftPart(UriPartial.Authority);
+        string baseUrl = GetBaseUrl(request);
         string formattedInstanceId = Uri.EscapeDataString(instanceId);
         string instanceUrl = $"{baseUrl}/runtime/webhooks/durabletask/instances/{formattedInstanceId}";
         string? commonQueryParameters = GetQueryParams(client);
@@ -157,8 +152,8 @@ public static class DurableTaskClientExtensions
             sendEventPostUri = BuildUrl($"{instanceUrl}/raiseEvent/{{eventName}}", commonQueryParameters),
             statusQueryGetUri = BuildUrl(instanceUrl, commonQueryParameters),
             terminatePostUri = BuildUrl($"{instanceUrl}/terminate", "reason={{text}}", commonQueryParameters),
-            suspendPostUri =  BuildUrl($"{instanceUrl}/suspend", "reason={{text}}", commonQueryParameters),
-            resumePostUri =  BuildUrl($"{instanceUrl}/resume", "reason={{text}}", commonQueryParameters)
+            suspendPostUri = BuildUrl($"{instanceUrl}/suspend", "reason={{text}}", commonQueryParameters),
+            resumePostUri = BuildUrl($"{instanceUrl}/resume", "reason={{text}}", commonQueryParameters)
         };
     }
 
@@ -171,5 +166,189 @@ public static class DurableTaskClientExtensions
     private static string? GetQueryParams(DurableTaskClient client)
     {
         return client is FunctionsDurableTaskClient functions ? functions.QueryString : null;
+    }
+
+    /// <summary>
+    /// Extracts the base URL from the request, taking into account forwarded headers
+    /// for scenarios involving proxies or application gateways.
+    /// </summary>
+    /// <param name="request">The HTTP request.</param>
+    /// <returns>The base URL including scheme and authority.</returns>
+    /// <remarks>
+    /// This method checks headers in the following order:
+    /// 1. Standard "Forwarded" header (RFC 7239)
+    /// 2. "X-Forwarded-Host" and "X-Forwarded-Proto" headers
+    /// 3. Falls back to the original request URL.
+    /// Security: Host and protocol values are validated to prevent header injection attacks.
+    /// </remarks>
+    internal static string GetBaseUrl(HttpRequestData request)
+    {
+        // Check for standard Forwarded header (RFC 7239)
+        // Format: Forwarded: host=example.com;proto=https
+        if (request.Headers.TryGetValues("Forwarded", out var forwardedValues))
+        {
+            foreach (string forwarded in forwardedValues)
+            {
+                if (string.IsNullOrEmpty(forwarded))
+                {
+                    continue;
+                }
+
+                string? host = null;
+                string? proto = null;
+
+                // Parse the Forwarded header - directives are separated by semicolons
+                // Multiple proxies are separated by commas; we use the first (leftmost) entry
+                string firstEntry = forwarded.Split(',')[0];
+                string[] parts = firstEntry.Split(';');
+
+                foreach (string part in parts)
+                {
+                    string trimmed = part.Trim();
+                    if (trimmed.StartsWith("host=", StringComparison.OrdinalIgnoreCase))
+                    {
+                        host = trimmed.Substring(5).Trim('"');
+                    }
+                    else if (trimmed.StartsWith("proto=", StringComparison.OrdinalIgnoreCase))
+                    {
+                        proto = trimmed.Substring(6).Trim('"');
+                    }
+                }
+
+                if (!string.IsNullOrEmpty(host) && IsValidHost(host))
+                {
+                    proto = GetValidatedProtocol(proto, request.Url.Scheme);
+                    return $"{proto}://{host}";
+                }
+
+            }
+        }
+
+        // Check for X-Forwarded-Host and X-Forwarded-Proto headers
+        string? forwardedHost = null;
+        string? forwardedProto = null;
+
+        if (request.Headers.TryGetValues("X-Forwarded-Host", out var hostValues))
+        {
+            foreach (string hostValue in hostValues)
+            {
+                // X-Forwarded-Host can contain multiple values separated by commas
+                // Use the first (leftmost) value which represents the original client request
+                string candidate = hostValue.Split(',')[0].Trim();
+                if (!string.IsNullOrEmpty(candidate) && IsValidHost(candidate))
+                {
+                    forwardedHost = candidate;
+                    break;
+                }
+            }
+        }
+
+        if (request.Headers.TryGetValues("X-Forwarded-Proto", out var protoValues))
+        {
+            foreach (string protoValue in protoValues)
+            {
+                forwardedProto = protoValue.Split(',')[0].Trim();
+                if (!string.IsNullOrEmpty(forwardedProto))
+                {
+                    break;
+                }
+            }
+        }
+
+        if (!string.IsNullOrEmpty(forwardedHost))
+        {
+            forwardedProto = GetValidatedProtocol(forwardedProto, request.Url.Scheme);
+            return $"{forwardedProto}://{forwardedHost}";
+        }
+
+        // Fall back to the original request URL
+        return request.Url.GetLeftPart(UriPartial.Authority);
+    }
+
+    /// <summary>
+    /// Validates and returns a safe protocol value.
+    /// Only allows "http" or "https" to prevent protocol injection attacks.
+    /// </summary>
+    /// <param name="protocol">The protocol to validate.</param>
+    /// <param name="fallback">The fallback protocol if validation fails.</param>
+    /// <returns>A validated protocol string.</returns>
+    private static string GetValidatedProtocol(string? protocol, string fallback)
+    {
+        if (string.IsNullOrEmpty(protocol))
+        {
+            return fallback;
+        }
+
+        // Only allow http or https to prevent protocol injection
+        if (protocol.Equals("http", StringComparison.OrdinalIgnoreCase) ||
+            protocol.Equals("https", StringComparison.OrdinalIgnoreCase))
+        {
+            return protocol.ToLowerInvariant();
+        }
+
+        return fallback;
+    }
+
+    /// <summary>
+    /// Validates that a host value is safe to use in URL construction.
+    /// Prevents host header injection attacks by rejecting malformed or malicious host values.
+    /// </summary>
+    /// <param name="host">The host value to validate.</param>
+    /// <returns>True if the host is valid, false otherwise.</returns>
+    private static bool IsValidHost(string host)
+    {
+        if (string.IsNullOrWhiteSpace(host))
+        {
+            return false;
+        }
+
+        // Reject hosts containing characters that could be used for injection attacks
+        // These characters should never appear in a valid host:
+        // - Path separators (/, \)
+        // - Query/fragment markers (?, #)
+        // - Whitespace or control characters
+        // - URL encoding markers (%)
+        // - Characters that could break URL structure (@, <, >, ", ')
+        foreach (char c in host)
+        {
+            if (c == '/' || c == '\\' || c == '?' || c == '#' ||
+                c == '@' || c == '<' || c == '>' || c == '"' || c == '\'' ||
+                c == '%' || char.IsControl(c) || char.IsWhiteSpace(c))
+            {
+                return false;
+            }
+        }
+
+        // Attempt to construct a URI to validate the host format
+        // This catches malformed hosts that passed the character check
+        if (Uri.TryCreate($"https://{host}/", UriKind.Absolute, out Uri? testUri))
+        {
+            // Ensure the host wasn't interpreted differently than intended
+            // At this point, characters such as '@' have already been rejected by the
+            // validation loop above. Here we ensure that Uri parsing did not reinterpret
+            // a valid-looking host (optionally with port) into a different host/port pair.
+            // Detect if the input host contains a port specification
+            // For IPv6, the port comes after the closing bracket: [::1]:8080
+            // For IPv4/hostname, any colon indicates a port: example.com:8080
+            int lastBracket = host.LastIndexOf(']');
+            int lastColon = host.LastIndexOf(':');
+            bool hostHasPort = lastColon > lastBracket;
+
+            string constructedHost;
+            if (hostHasPort && testUri.Port != -1)
+            {
+                // Input host included a port, so include it in comparison
+                constructedHost = $"{testUri.Host}:{testUri.Port}";
+            }
+            else
+            {
+                // No port in input, compare host only
+                constructedHost = testUri.Host;
+            }
+
+            return string.Equals(host, constructedHost, StringComparison.OrdinalIgnoreCase);
+        }
+
+        return false;
     }
 }
