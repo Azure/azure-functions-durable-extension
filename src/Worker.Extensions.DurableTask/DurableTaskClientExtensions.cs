@@ -215,7 +215,7 @@ public static class DurableTaskClientExtensions
                     }
                 }
 
-                if (!string.IsNullOrEmpty(host) && IsValidHost(host))
+                if (!string.IsNullOrEmpty(host) && IsValidHost(host!))
                 {
                     proto = GetValidatedProtocol(proto, request.Url.Scheme);
                     return $"{proto}://{host}";
@@ -280,7 +280,7 @@ public static class DurableTaskClientExtensions
         }
 
         // Only allow http or https to prevent protocol injection
-        if (protocol.Equals("http", StringComparison.OrdinalIgnoreCase) ||
+        if (protocol!.Equals("http", StringComparison.OrdinalIgnoreCase) ||
             protocol.Equals("https", StringComparison.OrdinalIgnoreCase))
         {
             return protocol.ToLowerInvariant();
@@ -338,12 +338,12 @@ public static class DurableTaskClientExtensions
             if (hostHasPort && testUri.Port != -1)
             {
                 // Input host included a port, so include it in comparison
-                constructedHost = $"{testUri.Host}:{testUri.Port}";
+                constructedHost = $"{testUri!.Host}:{testUri.Port}";
             }
             else
             {
                 // No port in input, compare host only
-                constructedHost = testUri.Host;
+                constructedHost = testUri!.Host;
             }
 
             return string.Equals(host, constructedHost, StringComparison.OrdinalIgnoreCase);
