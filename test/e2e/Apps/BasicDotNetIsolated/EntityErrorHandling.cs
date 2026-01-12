@@ -15,7 +15,7 @@ public static class EntityErrorHandling
     [Function(nameof(ThrowEntityOrchestration))]
     public static async Task<string> ThrowEntityOrchestration([OrchestrationTrigger] TaskOrchestrationContext context)
     {
-        var entityId = new EntityInstanceId(nameof(Counter), "MyExceptionEntity");
+        var entityId = new EntityInstanceId(nameof(Counter), "myCounter");
 
         int entityResult = await context.Entities.CallEntityAsync<int>(entityId, "ThrowFirstTimeOnly", context.InstanceId);
         return "Success";
@@ -24,7 +24,7 @@ public static class EntityErrorHandling
     [Function(nameof(CatchEntityOrchestration))]
     public static async Task<string> CatchEntityOrchestration([OrchestrationTrigger] TaskOrchestrationContext context)
     {
-        var entityId = new EntityInstanceId(nameof(Counter), "MyExceptionEntity");
+        var entityId = new EntityInstanceId(nameof(Counter), "myCounter");
 
         try
         {
@@ -42,7 +42,7 @@ public static class EntityErrorHandling
     [Function(nameof(RetryEntityOrchestration))]
     public static async Task<string> RetryEntityOrchestration([OrchestrationTrigger] TaskOrchestrationContext context)
     {
-        var entityId = new EntityInstanceId(nameof(Counter), "MyExceptionEntity");
+        var entityId = new EntityInstanceId(nameof(Counter), "myCounter");
 
         try
         {

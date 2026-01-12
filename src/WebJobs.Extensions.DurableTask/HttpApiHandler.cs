@@ -566,6 +566,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return request.CreateResponse(HttpStatusCode.NotFound);
             }
 
+            // We need to confirm that the instance is an orchestration before checking that it has a terminal runtime status,
+            // since entities can also be purged and have runtime status "Running". All entities have instance IDs that start with
+            // '@', but orchestrations can also have such instance IDs. This runtime status check will therefore not necessarily be
+            // performed for all orchestrations, but it is guaranteed to at least not be performed for any entities.
+            else if (instanceId[0] != '@' && (status.RuntimeStatus == OrchestrationRuntimeStatus.Pending
+                || status.RuntimeStatus == OrchestrationRuntimeStatus.Running
+                || status.RuntimeStatus == OrchestrationRuntimeStatus.Suspended))
+            {
+                return request.CreateResponse(
+                     HttpStatusCode.PreconditionFailed,
+                     $"Only orchestrations in a terminal state can be purged, but the orchestration with instance ID " +
+                     $"{instanceId} has status {status.RuntimeStatus}");
+            }
+
             PurgeHistoryResult purgeHistoryResult = await client.PurgeInstanceHistoryAsync(instanceId);
             return request.CreateResponse(HttpStatusCode.OK, purgeHistoryResult);
         }
