@@ -63,13 +63,13 @@ public class PurgeOrchestrationHistory {
                 }
 
                 PurgeInstanceCriteria filter = new PurgeInstanceCriteria();
-                    filter.setCreatedTimeFrom(purgeStartTime);
-                    filter.setCreatedTimeTo(purgeEndTime);
-                    filter.setRuntimeStatusList(Arrays.asList(
-                        OrchestrationRuntimeStatus.COMPLETED,
-                        OrchestrationRuntimeStatus.FAILED,
-                        OrchestrationRuntimeStatus.TERMINATED
-                    ));
+                filter.setCreatedTimeFrom(purgeStartTime);
+                filter.setCreatedTimeTo(purgeEndTime);
+                filter.setRuntimeStatusList(Arrays.asList(
+                    OrchestrationRuntimeStatus.COMPLETED,
+                    OrchestrationRuntimeStatus.FAILED,
+                    OrchestrationRuntimeStatus.TERMINATED
+                ));
 
                 purgeResult = client.purgeInstances(filter);
 

@@ -19,7 +19,7 @@ async def purge_history(req: func.HttpRequest, client: df.DurableOrchestrationCl
     try:
         instance_id = req.params.get("instanceId")
         if instance_id:
-            result = await client.purge_instance_history()
+            result = await client.purge_instance_history(instance_id)
             logging.info(f"Finished purging history for instance {instance_id}")
         else:
             # Parse optional query parameters for purgeStartTime and purgeEndTime

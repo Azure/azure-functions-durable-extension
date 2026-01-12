@@ -141,7 +141,7 @@ public class PurgeInstancesTests
 
         // For all of the following tests, since non-.NET languages throws a generic error in the case of a failure to purge there is no great way 
         // to return specific status codes, whereas .NET isolated returns specific error types which can be used to return specific status codes.
-        // So, in the non-.NET case, we simply check for the BadRequest status code.
+        // So, in the non-.NET case, we simply check for the InternalServerError status code.
         void AssertFailedPurgeResponseStatusCode(HttpResponseMessage purgeHttpResponse)
         {
             if (this.fixture.functionLanguageLocalizer.GetLanguageType() == LanguageType.DotnetIsolated)
@@ -243,14 +243,12 @@ public class PurgeInstancesTests
             Assert.Equal(HttpStatusCode.Accepted, orchestrationResponse.StatusCode);
 
             // Wait for orchestration to complete
-            string orchestrationInstanceId = await DurableHelpers.ParseInstanceIdAsync(orchestrationResponse);
+            await DurableHelpers.ParseInstanceIdAsync(orchestrationResponse);
             string orchestrationStatusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(orchestrationResponse);
             await DurableHelpers.WaitForOrchestrationStateAsync(orchestrationStatusQueryGetUri, "Completed", 30);
 
-            // Purge the entity instance
             string entityName = "Counter";
             string entityKey = "myCounter";
-
             // Purge the entity instance
             using HttpResponseMessage purgeEntity = await HttpHelpers.InvokeHttpTrigger(
                 "PurgeOrchestrationHistory",
