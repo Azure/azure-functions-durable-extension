@@ -115,6 +115,7 @@ message SubOrchestrationInstanceCreatedEvent {
     google.protobuf.StringValue version = 3;
     google.protobuf.StringValue input = 4;
     TraceContext parentTraceContext = 5;
+    map<string, string> tags = 6;
 }
 
 message SubOrchestrationInstanceCompletedEvent {
@@ -225,6 +226,11 @@ message ExecutionRewoundEvent {
     google.protobuf.StringValue parentExecutionId = 2; // used only for rewinding suborchestrations, null otherwise
     google.protobuf.StringValue instanceId = 3; // used only for rewinding suborchestrations, null otherwise
     TraceContext parentTraceContext = 4; // used only for rewinding suborchestrations, null otherwise
+    google.protobuf.StringValue name = 5; // used by DTS backend only
+    google.protobuf.StringValue version = 6; // used by DTS backend only
+    google.protobuf.StringValue input = 7;  // used by DTS backend only
+    ParentInstanceInfo parentInstance = 8; // used by DTS backend only
+    map<string, string> tags = 9; // used by DTS backend only
 }
 
 message HistoryEvent {
@@ -483,6 +489,19 @@ message QueryInstancesResponse {
     google.protobuf.StringValue continuationToken = 2;
 }
 
+message ListInstanceIdsRequest {
+    repeated OrchestrationStatus runtimeStatus = 1;
+    google.protobuf.Timestamp completedTimeFrom = 2;
+    google.protobuf.Timestamp completedTimeTo = 3;
+    int32 pageSize = 4;
+    google.protobuf.StringValue lastInstanceKey = 5;
+}
+
+message ListInstanceIdsResponse {
+    repeated string instanceIds = 1;
+    google.protobuf.StringValue lastInstanceKey = 2;
+}
+
 message PurgeInstancesRequest {
     oneof request {
         string instanceId = 1;
@@ -490,6 +509,8 @@ message PurgeInstancesRequest {
         InstanceBatch instanceBatch = 4;
     }
     bool recursive = 3;
+    // used in the case when an instanceId is specified to determine if the purge request is for an orchestration (as opposed to an entity)
+    bool isOrchestration = 5;
 }
 
 message PurgeInstanceFilter {
@@ -750,6 +771,9 @@ service TaskHubSidecarService {
     // rpc DeleteInstance(DeleteInstanceRequest) returns (DeleteInstanceResponse);
 
     rpc QueryInstances(QueryInstancesRequest) returns (QueryInstancesResponse);
+
+    rpc ListInstanceIds(ListInstanceIdsRequest) returns (ListInstanceIdsResponse);
+    
     rpc PurgeInstances(PurgeInstancesRequest) returns (PurgeInstancesResponse);
 
     rpc GetWorkItems(GetWorkItemsRequest) returns (stream WorkItem);
