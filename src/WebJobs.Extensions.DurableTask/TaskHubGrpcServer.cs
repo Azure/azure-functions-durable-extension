@@ -14,7 +14,6 @@ using DurableTask.Core.Exceptions;
 using DurableTask.Core.History;
 using DurableTask.Core.Query;
 using DurableTask.Core.Serializing.Internal;
-using Google.Protobuf;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
@@ -388,9 +387,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             }
 
                             // Orchestration is in an invalid state for purging
-                            if (orchestrationState.OrchestrationStatus == OrchestrationStatus.Pending
-                                || orchestrationState.OrchestrationStatus == OrchestrationStatus.Running
-                                || orchestrationState.OrchestrationStatus == OrchestrationStatus.Suspended)
+                            if (!IsOrchestrationCompleted(orchestrationState.OrchestrationStatus))
                             {
                                 throw new InvalidOperationException($"Only orchestrations in a terminal state can be purged, but the " +
                                     $"orchestration with instance ID {request.InstanceId} has status {orchestrationState.OrchestrationStatus}");
@@ -658,6 +655,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 LockedBy = metaData.LockedBy,
                 SerializedState = metaData.SerializedState,
             };
+        }
+
+        private static bool IsOrchestrationCompleted(OrchestrationStatus status)
+        {
+            return status == OrchestrationStatus.Completed ||
+                status == OrchestrationStatus.Terminated ||
+                status == OrchestrationStatus.Failed;
         }
     }
 }

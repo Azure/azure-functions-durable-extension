@@ -19,7 +19,6 @@ using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using DTCore = DurableTask.Core;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
@@ -570,9 +569,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // since entities can also be purged and have runtime status "Running". All entities have instance IDs that start with
             // '@', but orchestrations can also have such instance IDs. This runtime status check will therefore not necessarily be
             // performed for all orchestrations, but it is guaranteed to at least not be performed for any entities.
-            else if (instanceId[0] != '@' && (status.RuntimeStatus == OrchestrationRuntimeStatus.Pending
-                || status.RuntimeStatus == OrchestrationRuntimeStatus.Running
-                || status.RuntimeStatus == OrchestrationRuntimeStatus.Suspended))
+            else if (instanceId[0] != '@' && !IsCompletedStatus(status.RuntimeStatus))
             {
                 return request.CreateResponse(
                      HttpStatusCode.PreconditionFailed,
