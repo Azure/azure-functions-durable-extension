@@ -26,6 +26,8 @@ internal sealed partial class FunctionsOrchestrationContext : TaskOrchestrationC
     private InputConverter? inputConverter;
     private EntityFeature? entities;
 
+    internal FunctionContext FunctionContext => this.functionContext;
+
     public FunctionsOrchestrationContext(TaskOrchestrationContext innerContext, FunctionContext functionContext)
     {
         this.innerContext = innerContext;
