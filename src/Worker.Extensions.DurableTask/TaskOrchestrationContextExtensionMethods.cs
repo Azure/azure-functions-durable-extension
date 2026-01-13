@@ -8,6 +8,7 @@ using System.Net.Http;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
 using Microsoft.Azure.Functions.Worker.Extensions.DurableTask.Http;
 using Microsoft.Extensions.Logging;
@@ -166,6 +167,32 @@ public static class TaskOrchestrationContextExtensionMethods
         };
 
         return context.CallHttpAsync(request);
+    }
+
+    /// <summary>
+    /// Gets the <see cref="FunctionContext"/> associated with the current orchestration context.
+    /// </summary>
+    /// <remarks>
+    /// This method is intended for use in Azure Functions environments where additional function-level
+    /// context is needed. If the <paramref name="context"/> is not backed by an Azure Functions
+    /// orchestration, the method returns <c>null</c>.
+    /// </remarks>
+    /// <param name="context">The <see cref="TaskOrchestrationContext"/> from which to obtain the <see cref="FunctionContext"/>.</param>
+    /// <returns>The <see cref="FunctionContext"/> if available; otherwise, <c>null</c>.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="context"/> is <c>null</c>.</exception>
+    public static FunctionContext? GetFunctionContext(this TaskOrchestrationContext context)
+    {
+        if (context is null)
+        {
+            throw new ArgumentNullException(nameof(context));
+        }
+
+        if (context is FunctionsOrchestrationContext functionsContext)
+        {
+            return functionsContext.FunctionContext;
+        }
+
+        return null;
     }
 
     private static DurableHttpRequest CreateLocationPollRequest(DurableHttpRequest durableHttpRequest, string locationUri)
