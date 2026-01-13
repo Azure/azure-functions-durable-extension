@@ -139,7 +139,7 @@ public class PurgeInstancesTests
             Assert.Matches(@"^Purged 1 records$", purgeMessage);
         }
 
-        // For all of the following tests, since non-.NET languages throws a generic error in the case of a failure to purge there is no great way 
+        // For all of the following tests, since non-.NET languages throw a generic error in the case of a failure to purge there is no great way 
         // to return specific status codes, whereas .NET isolated returns specific error types which can be used to return specific status codes.
         // So, in the non-.NET case, we simply check for the InternalServerError status code.
         void AssertFailedPurgeResponseStatusCode(HttpResponseMessage purgeHttpResponse)
