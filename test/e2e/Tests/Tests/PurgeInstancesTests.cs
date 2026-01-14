@@ -167,19 +167,23 @@ public class PurgeInstancesTests
         await AssertPurgeNumber(purgeCompleted);
 
         // Terminated orchestration, should succeed
-        using HttpResponseMessage startTerminatedOrchestrationResponse = await HttpHelpers.InvokeHttpTrigger(
-            "StartOrchestration",
-            "?orchestrationName=LongRunningOrchestrator");
-        Assert.Equal(HttpStatusCode.Accepted, startTerminatedOrchestrationResponse.StatusCode);
-        string terminatedInstanceId = await DurableHelpers.ParseInstanceIdAsync(startTerminatedOrchestrationResponse);
-        string terminatedStatusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(startTerminatedOrchestrationResponse);
-        await DurableHelpers.WaitForOrchestrationStateAsync(terminatedStatusQueryGetUri, "Running", 30);
-        using HttpResponseMessage terminateResponse = await HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={terminatedInstanceId}");
-        Assert.Equal(HttpStatusCode.OK, terminateResponse.StatusCode);
-        await DurableHelpers.WaitForOrchestrationStateAsync(terminatedStatusQueryGetUri, "Terminated", 30);
-        using HttpResponseMessage purgeTerminated = await HttpHelpers.InvokeHttpTrigger("PurgeOrchestrationHistory", $"?instanceId={terminatedInstanceId}");
-        Assert.Equal(HttpStatusCode.OK, purgeTerminated.StatusCode);
-        await AssertPurgeNumber(purgeTerminated);
+        if (this.fixture.functionLanguageLocalizer.GetLanguageType() != LanguageType.Java
+            && this.fixture.GetDurabilityProvider() != FunctionAppFixture.ConfiguredDurabilityProviderType.MSSQL) // Bug: https://github.com/microsoft/durabletask-java/issues/237
+        {
+            using HttpResponseMessage startTerminatedOrchestrationResponse = await HttpHelpers.InvokeHttpTrigger(
+                "StartOrchestration",
+                "?orchestrationName=LongRunningOrchestrator");
+            Assert.Equal(HttpStatusCode.Accepted, startTerminatedOrchestrationResponse.StatusCode);
+            string terminatedInstanceId = await DurableHelpers.ParseInstanceIdAsync(startTerminatedOrchestrationResponse);
+            string terminatedStatusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(startTerminatedOrchestrationResponse);
+            await DurableHelpers.WaitForOrchestrationStateAsync(terminatedStatusQueryGetUri, "Running", 30);
+            using HttpResponseMessage terminateResponse = await HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={terminatedInstanceId}");
+            Assert.Equal(HttpStatusCode.OK, terminateResponse.StatusCode);
+            await DurableHelpers.WaitForOrchestrationStateAsync(terminatedStatusQueryGetUri, "Terminated", 30);
+            using HttpResponseMessage purgeTerminated = await HttpHelpers.InvokeHttpTrigger("PurgeOrchestrationHistory", $"?instanceId={terminatedInstanceId}");
+            Assert.Equal(HttpStatusCode.OK, purgeTerminated.StatusCode);
+            await AssertPurgeNumber(purgeTerminated);
+        }
 
         // Failed orchestration, should succeed
         using HttpResponseMessage startFailedOrchestrationResponse = await HttpHelpers.InvokeHttpTrigger(
@@ -238,8 +242,8 @@ public class PurgeInstancesTests
         {
             // Start an orchestration that interacts with an entity
             HttpResponseMessage orchestrationResponse = await HttpHelpers.InvokeHttpTrigger(
-                "StartOrchestration", 
-                "?orchestrationName=CatchEntityOrchestration");
+                "StartOrchestration",
+                "?orchestrationName=InvokeDummyEntityOrchestration");
             Assert.Equal(HttpStatusCode.Accepted, orchestrationResponse.StatusCode);
 
             // Wait for orchestration to complete
@@ -247,8 +251,8 @@ public class PurgeInstancesTests
             string orchestrationStatusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(orchestrationResponse);
             await DurableHelpers.WaitForOrchestrationStateAsync(orchestrationStatusQueryGetUri, "Completed", 30);
 
-            string entityName = "Counter";
-            string entityKey = "myCounter";
+            string entityName = "DummyEntity";
+            string entityKey = "myEntity";
             // Purge the entity instance
             using HttpResponseMessage purgeEntity = await HttpHelpers.InvokeHttpTrigger(
                 "PurgeOrchestrationHistory",

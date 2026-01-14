@@ -53,3 +53,14 @@ async def purge_history(req: func.HttpRequest, client: df.DurableOrchestrationCl
             status_code=500,
             mimetype="text/plain"
         )
+
+@bp.orchestration_trigger(context_name="context", orchestration="InvokeDummyEntityOrchestration")
+def invoke_entity_function(context: df.DurableOrchestrationContext):
+    entityId = df.EntityId("DummyEntity", "myEntity")
+    yield context.call_entity(entityId, "get")
+    return "Success"
+
+@bp.entity_trigger(context_name="context")
+def DummyEntity(context):
+    context.set_state("state")
+    context.set_result(0)

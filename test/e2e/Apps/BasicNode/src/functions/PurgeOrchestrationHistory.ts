@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 import { app, HttpHandler, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
+import { OrchestrationContext, OrchestrationHandler, EntityContext, EntityHandler } from "durable-functions";
 import * as df from 'durable-functions';
 
 // HTTP handler for PurgeOrchestrationHistory
@@ -60,6 +61,19 @@ const PurgeOrchestrationHistory: HttpHandler = async (req: HttpRequest, context:
         };
     }
 };
+
+const InvokeDummyEntityOrchestration: OrchestrationHandler = function* (context: OrchestrationContext) {
+    const entityId = new df.EntityId("DummyEntity", "myEntity");
+    yield context.df.callEntity(entityId, "get");
+    return "Success";
+};
+df.app.orchestration("InvokeDummyEntityOrchestration", InvokeDummyEntityOrchestration);
+
+const DummyEntity: EntityHandler<string> = (context: EntityContext<string>) => {
+    context.df.setState("state");
+    context.df.return(0);
+};
+df.app.entity("DummyEntity", DummyEntity);
 
 app.http('PurgeOrchestrationHistory', {
     route: 'PurgeOrchestrationHistory',

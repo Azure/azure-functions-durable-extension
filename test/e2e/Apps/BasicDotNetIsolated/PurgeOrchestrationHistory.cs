@@ -5,7 +5,9 @@ using System.Net;
 using Grpc.Core;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
+using Microsoft.DurableTask;
 using Microsoft.DurableTask.Client;
+using Microsoft.DurableTask.Entities;
 using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.Durable.Tests.E2E;
@@ -67,5 +69,23 @@ public static class PurgeOrchestrationHistory
             await response.WriteStringAsync($"Failed to purge all instance history: {ex.Message}");
             return response;
         }
+    }
+
+    [Function(nameof(InvokeDummyEntityOrchestration))]
+    public static async Task<string> InvokeDummyEntityOrchestration([OrchestrationTrigger] TaskOrchestrationContext context)
+    {
+        var entityId = new EntityInstanceId(nameof(DummyEntity), "myEntity");
+        await context.Entities.CallEntityAsync(entityId, string.Empty);
+        return "Success";
+    }
+
+    [Function(nameof(DummyEntity))]
+    public static Task DummyEntity([EntityTrigger] TaskEntityDispatcher dispatcher)
+    {
+        return dispatcher.DispatchAsync(operation =>
+        {
+            operation.State.SetState("state");
+            return new(0);
+        });
     }
 }

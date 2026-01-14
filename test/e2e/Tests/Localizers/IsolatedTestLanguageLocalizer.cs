@@ -8,7 +8,7 @@ internal class IsolatedTestLanguageLocalizer : ITestLanguageLocalizer
     {
         { "CaughtActivityException.ErrorMessage", "Task 'RaiseException' (#0) failed with an unhandled exception:" },
         { "RethrownActivityException.ErrorMessage", "Microsoft.DurableTask.TaskFailedException" },
-        { "CaughtEntityException.ErrorMessage", "Operation 'ThrowFirstTimeOnly' of entity '@counter@myCounter' failed:" },
+        { "CaughtEntityException.ErrorMessage", "Operation 'ThrowFirstTimeOnly' of entity '@counter@MyExceptionEntity' failed:" },
         { "RethrownEntityException.ErrorMessage", "Microsoft.DurableTask.Entities.EntityOperationFailedException" },
         { "ExternalEvent.CompletedInstance.ErrorName", "FailedPrecondition" },
         { "ExternalEvent.CompletedInstance.ErrorMessage", "The orchestration instance with the provided instance id is not running." },
