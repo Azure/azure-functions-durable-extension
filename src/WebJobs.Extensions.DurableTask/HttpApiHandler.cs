@@ -560,11 +560,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             IDurableOrchestrationClient client = this.GetClient(request);
 
+            if (string.IsNullOrEmpty(instanceId))
+            {
+                return request.CreateErrorResponse(
+                    HttpStatusCode.BadRequest,
+                    "Instance ID provided to the purge instance history request must not be null or empty.");
+            }
+
             // We need to confirm that the instance is an orchestration before checking that it has a terminal runtime status,
             // since entities can also be purged and have runtime status "Running". All entities have instance IDs that start with
             // '@', but orchestrations can also have such instance IDs. This runtime status check will therefore not necessarily be
             // performed for all orchestrations, but it is guaranteed to at least not be performed for any entities.
-            if (instanceId[0] != '@')
+            if (!string.IsNullOrEmpty(instanceId) && instanceId[0] != '@')
             {
                 DurableOrchestrationStatus status = await client.GetStatusAsync(instanceId, showHistory: false);
                 if (status == null)
