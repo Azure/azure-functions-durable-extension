@@ -571,7 +571,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // since entities can also be purged and have runtime status "Running". All entities have instance IDs that start with
             // '@', but orchestrations can also have such instance IDs. This runtime status check will therefore not necessarily be
             // performed for all orchestrations, but it is guaranteed to at least not be performed for any entities.
-            if (!string.IsNullOrEmpty(instanceId) && instanceId[0] != '@')
+            if (instanceId[0] != '@')
             {
                 DurableOrchestrationStatus status = await client.GetStatusAsync(instanceId, showHistory: false);
                 if (status == null)
