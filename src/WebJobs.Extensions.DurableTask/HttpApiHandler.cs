@@ -574,13 +574,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (instanceId[0] != '@')
             {
                 DurableOrchestrationStatus status = await client.GetStatusAsync(instanceId, showHistory: false);
+                if (status == null)
+                {
+                    return request.CreateResponse(HttpStatusCode.NotFound);
+                }
 
-                // if (status == null)
-                // {
-                //   return request.CreateResponse(HttpStatusCode.NotFound);
-                // }
-
-                if (status != null && !IsCompletedStatus(status.RuntimeStatus))
+                if (!IsCompletedStatus(status.RuntimeStatus))
                 {
                     return request.CreateResponse(
                      HttpStatusCode.PreconditionFailed,
