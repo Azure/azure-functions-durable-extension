@@ -133,10 +133,10 @@ public class PurgeInstancesTests
     [Trait("PowerShell", "Skip")] // Instance purging not supported in PowerShell
     public async Task PurgeOnlyPurgesTerminalOrchestrations()
     {
-        static async Task AssertPurgeNumber(HttpResponseMessage purgeHttpResponse)
+        static async Task AssertPurgeCount(HttpResponseMessage purgeHttpResponse, int purgeCount)
         {
             string purgeMessage = await purgeHttpResponse.Content.ReadAsStringAsync();
-            Assert.Matches(@"^Purged 1 records$", purgeMessage);
+            Assert.Matches($@"^Purged {purgeCount} records$", purgeMessage);
         }
 
         // For all of the following tests, since non-.NET languages throw a generic error in the case of a failure to purge there is no great way 
@@ -164,7 +164,7 @@ public class PurgeInstancesTests
         await DurableHelpers.WaitForOrchestrationStateAsync(completedStatusQueryGetUri, "Completed", 30);
         HttpResponseMessage purgeCompleted = await HttpHelpers.InvokeHttpTrigger("PurgeOrchestrationHistory", $"?instanceId={completedInstanceId}");
         Assert.Equal(HttpStatusCode.OK, purgeCompleted.StatusCode);
-        await AssertPurgeNumber(purgeCompleted);
+        await AssertPurgeCount(purgeCompleted, 1);
 
         // Terminated orchestration, should succeed
         if (this.fixture.functionLanguageLocalizer.GetLanguageType() != LanguageType.Java
@@ -182,7 +182,7 @@ public class PurgeInstancesTests
             await DurableHelpers.WaitForOrchestrationStateAsync(terminatedStatusQueryGetUri, "Terminated", 30);
             using HttpResponseMessage purgeTerminated = await HttpHelpers.InvokeHttpTrigger("PurgeOrchestrationHistory", $"?instanceId={terminatedInstanceId}");
             Assert.Equal(HttpStatusCode.OK, purgeTerminated.StatusCode);
-            await AssertPurgeNumber(purgeTerminated);
+            await AssertPurgeCount(purgeTerminated, 1);
         }
 
         // Failed orchestration, should succeed
@@ -195,7 +195,12 @@ public class PurgeInstancesTests
         await DurableHelpers.WaitForOrchestrationStateAsync(failedStatusQueryGetUri, "Failed", 30);
         using HttpResponseMessage purgeFailed = await HttpHelpers.InvokeHttpTrigger("PurgeOrchestrationHistory", $"?instanceId={failedInstanceId}");
         Assert.Equal(HttpStatusCode.OK, purgeFailed.StatusCode);
-        await AssertPurgeNumber(purgeFailed);
+        await AssertPurgeCount(purgeFailed, 1);
+
+        // Non-existent orchestration, should succeed and have purge count of 0
+        using HttpResponseMessage purgeNonExistent = await HttpHelpers.InvokeHttpTrigger("PurgeOrchestrationHistory", $"?instanceId={Guid.NewGuid()}");
+        Assert.Equal(HttpStatusCode.OK, purgeNonExistent.StatusCode);
+        await AssertPurgeCount(purgeNonExistent, 0);
 
         // Running orchestration, should fail
         using HttpResponseMessage startRunningOrchestrationResponse = await HttpHelpers.InvokeHttpTrigger(
@@ -254,11 +259,18 @@ public class PurgeInstancesTests
             string entityName = "DummyEntity";
             string entityKey = "myEntity";
             // Purge the entity instance
-            using HttpResponseMessage purgeEntity = await HttpHelpers.InvokeHttpTrigger(
+            using HttpResponseMessage purgeExistentEntity = await HttpHelpers.InvokeHttpTrigger(
                 "PurgeOrchestrationHistory",
                 $"?instanceId={new EntityInstanceId(entityName, entityKey)}");
-            Assert.Equal(HttpStatusCode.OK, purgeEntity.StatusCode);
-            await AssertPurgeNumber(purgeEntity);
+            Assert.Equal(HttpStatusCode.OK, purgeExistentEntity.StatusCode);
+            await AssertPurgeCount(purgeExistentEntity, 1);
+
+            // Now attempt to purge a non-existent entity instance, purge count should be 0
+            using HttpResponseMessage purgeNonExistentEntity = await HttpHelpers.InvokeHttpTrigger(
+                "PurgeOrchestrationHistory",
+                $"?instanceId={new EntityInstanceId(entityName + "3", entityKey)}");
+            Assert.Equal(HttpStatusCode.OK, purgeNonExistentEntity.StatusCode);
+            await AssertPurgeCount(purgeNonExistentEntity, 0);
         }
     }
 }
