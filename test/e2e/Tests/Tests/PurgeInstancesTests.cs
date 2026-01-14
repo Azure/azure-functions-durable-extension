@@ -124,21 +124,14 @@ public class PurgeInstancesTests
         string purgeMessage = await purgeResponse.Content.ReadAsStringAsync();
         Assert.Matches(@"^Purged [0-9]* records$", purgeMessage);
         using HttpResponseMessage purgeAgainResponse = await HttpHelpers.InvokeHttpTrigger("PurgeOrchestrationHistory", $"?purgeEndTime={purgeEndTime:o}");
-        string purgeAgainMessage = await purgeAgainResponse.Content.ReadAsStringAsync();
-        Assert.Matches(@"^Purged 0 records$", purgeAgainMessage);
         Assert.Equal(HttpStatusCode.OK, purgeAgainResponse.StatusCode);
+        await AssertPurgeCount(purgeAgainResponse, 0);
     }
 
     [Fact]
     [Trait("PowerShell", "Skip")] // Instance purging not supported in PowerShell
     public async Task PurgeOnlyPurgesTerminalOrchestrations()
     {
-        static async Task AssertPurgeCount(HttpResponseMessage purgeHttpResponse, int purgeCount)
-        {
-            string purgeMessage = await purgeHttpResponse.Content.ReadAsStringAsync();
-            Assert.Matches($@"^Purged {purgeCount} records$", purgeMessage);
-        }
-
         // For all of the following tests, since non-.NET languages throw a generic error in the case of a failure to purge there is no great way 
         // to return specific status codes, whereas .NET isolated returns specific error types which can be used to return specific status codes.
         // So, in the non-.NET case, we simply check for the InternalServerError status code.
@@ -238,39 +231,45 @@ public class PurgeInstancesTests
         await DurableHelpers.WaitForOrchestrationStateAsync(suspendedStatusQueryGetUri, "Suspended", 30);
         using HttpResponseMessage purgeSuspended = await HttpHelpers.InvokeHttpTrigger("PurgeOrchestrationHistory", $"?instanceId={suspendedInstanceId}");
         AssertFailedPurgeResponseStatusCode(purgeSuspended);
+    }
 
-        // Entity, should succeed
-        // MSSQL does not currently support entities, nor do PowerShell or Java
-        if (this.fixture.GetDurabilityProvider() != FunctionAppFixture.ConfiguredDurabilityProviderType.MSSQL
-            && this.fixture.functionLanguageLocalizer.GetLanguageType() != LanguageType.PowerShell
-            && this.fixture.functionLanguageLocalizer.GetLanguageType() != LanguageType.Java)
-        {
-            // Start an orchestration that interacts with an entity
-            HttpResponseMessage orchestrationResponse = await HttpHelpers.InvokeHttpTrigger(
-                "StartOrchestration",
-                "?orchestrationName=InvokeDummyEntityOrchestration");
-            Assert.Equal(HttpStatusCode.Accepted, orchestrationResponse.StatusCode);
+    [Fact]
+    [Trait("PowerShell", "Skip")] // Instance purging not supported in PowerShell
+    [Trait("Java", "Skip")] // Entities are not implemented in Java
+    [Trait("MSSQL", "Skip")] // Entities are not supported in MSSQL
+    public async Task PurgeEntity()
+    {
+        // Start an orchestration that interacts with an entity
+        HttpResponseMessage orchestrationResponse = await HttpHelpers.InvokeHttpTrigger(
+            "StartOrchestration",
+            "?orchestrationName=InvokeDummyEntityOrchestration");
+        Assert.Equal(HttpStatusCode.Accepted, orchestrationResponse.StatusCode);
 
-            // Wait for orchestration to complete
-            await DurableHelpers.ParseInstanceIdAsync(orchestrationResponse);
-            string orchestrationStatusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(orchestrationResponse);
-            await DurableHelpers.WaitForOrchestrationStateAsync(orchestrationStatusQueryGetUri, "Completed", 30);
+        // Wait for orchestration to complete
+        await DurableHelpers.ParseInstanceIdAsync(orchestrationResponse);
+        string orchestrationStatusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(orchestrationResponse);
+        await DurableHelpers.WaitForOrchestrationStateAsync(orchestrationStatusQueryGetUri, "Completed", 30);
 
-            string entityName = "DummyEntity";
-            string entityKey = "myEntity";
-            // Purge the entity instance
-            using HttpResponseMessage purgeExistentEntity = await HttpHelpers.InvokeHttpTrigger(
-                "PurgeOrchestrationHistory",
-                $"?instanceId={new EntityInstanceId(entityName, entityKey)}");
-            Assert.Equal(HttpStatusCode.OK, purgeExistentEntity.StatusCode);
-            await AssertPurgeCount(purgeExistentEntity, 1);
+        string entityName = "DummyEntity";
+        string entityKey = "myEntity";
+        // Purge the entity instance
+        using HttpResponseMessage purgeExistentEntity = await HttpHelpers.InvokeHttpTrigger(
+            "PurgeOrchestrationHistory",
+            $"?instanceId={new EntityInstanceId(entityName, entityKey)}");
+        Assert.Equal(HttpStatusCode.OK, purgeExistentEntity.StatusCode);
+        await AssertPurgeCount(purgeExistentEntity, 1);
 
-            // Now attempt to purge a non-existent entity instance, purge count should be 0
-            using HttpResponseMessage purgeNonExistentEntity = await HttpHelpers.InvokeHttpTrigger(
-                "PurgeOrchestrationHistory",
-                $"?instanceId={new EntityInstanceId(entityName + "3", entityKey)}");
-            Assert.Equal(HttpStatusCode.OK, purgeNonExistentEntity.StatusCode);
-            await AssertPurgeCount(purgeNonExistentEntity, 0);
-        }
+        // Now attempt to purge a non-existent entity instance, purge count should be 0
+        using HttpResponseMessage purgeNonExistentEntity = await HttpHelpers.InvokeHttpTrigger(
+            "PurgeOrchestrationHistory",
+            $"?instanceId={new EntityInstanceId(entityName + "3", entityKey)}");
+        Assert.Equal(HttpStatusCode.OK, purgeNonExistentEntity.StatusCode);
+        await AssertPurgeCount(purgeNonExistentEntity, 0);
+    }
+
+    private static async Task AssertPurgeCount(HttpResponseMessage purgeHttpResponse, int purgeCount)
+    {
+        string purgeMessage = await purgeHttpResponse.Content.ReadAsStringAsync();
+        Assert.Matches($@"^Purged {purgeCount} records$", purgeMessage);
     }
 }
