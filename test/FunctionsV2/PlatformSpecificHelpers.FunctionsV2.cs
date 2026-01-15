@@ -186,7 +186,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             builder.Services.AddSingleton(options);
 
-            var serviceCollection = builder.AddExtension<TestDurableTaskExtension>()
+            var serviceCollection = builder.AddExtension<DurableTaskExtension>()
                 .BindOptions<DurableTaskOptions>()
                 .Services.AddSingleton<IConnectionInfoResolver, WebJobsConnectionInfoProvider>();
 

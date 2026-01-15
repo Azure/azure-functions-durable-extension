@@ -610,5 +610,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             throw this.GetNotImplementedException(nameof(this.StreamOrchestrationHistoryAsync));
         }
+
+        /// <summary>
+        /// Attempts to modify the durability service's UseSeparateQueueForEntityWorkItems property.
+        /// </summary>
+        /// <param name="newValue">The value to set</param>
+        public virtual void SetUseSeparateQueueForEntityWorkItems(bool newValue)
+        {
+            throw this.GetNotImplementedException(nameof(this.SetUseSeparateQueueForEntityWorkItems));
+        }
     }
 }

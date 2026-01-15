@@ -10,7 +10,7 @@ using Newtonsoft.Json;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
-    internal class AzureStorageDurabilityProviderFactory : IDurabilityProviderFactory, IExtensionAwareDurabilityProviderFactory
+    internal class AzureStorageDurabilityProviderFactory : IDurabilityProviderFactory
     {
         private const string LoggerName = "Host.Triggers.DurableTask.AzureStorage";
         internal const string ProviderName = "AzureStorage";
@@ -20,14 +20,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly AzureStorageOptions azureStorageOptions;
         private readonly INameResolver nameResolver;
         private readonly ILoggerFactory loggerFactory;
-        private readonly bool useSeparateQueueForEntityWorkItems;
         private readonly bool inConsumption; // If true, optimize defaults for consumption
         private AzureStorageDurabilityProvider defaultStorageProvider;
 
         // Must wait to get settings until we have validated taskhub name.
+        private bool useSeparateQueueForEntityWorkItems;
         private bool hasValidatedOptions;
         private AzureStorageOrchestrationServiceSettings defaultSettings;
-        private DurableTaskExtension config;
 
         public AzureStorageDurabilityProviderFactory(
             IOptions<DurableTaskOptions> options,
@@ -220,7 +219,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 // gRPC-based entity listeners require a dedicated queue for entity work items.
                 // When DurableRequiresGrpc is true we must force UseSeparateQueueForEntityWorkItems to true,
                 // even if the host configuration did not explicitly request it.
-                UseSeparateQueueForEntityWorkItems = this.useSeparateQueueForEntityWorkItems || (this.config?.DurableRequiresGrpc ?? false),
+                UseSeparateQueueForEntityWorkItems = this.useSeparateQueueForEntityWorkItems,
                 EntityMessageReorderWindowInMinutes = this.options.EntityMessageReorderWindowInMinutes,
                 MaxEntityOperationBatchSize = this.options.MaxEntityOperationBatchSize,
 #pragma warning disable CS0618 // Type or member is obsolete
@@ -253,9 +252,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return settings;
         }
 
-        public void ConfigureWithDurableExtension(DurableTaskExtension config)
+        public void SetUseSeparateQueueForEntityWorkItems(bool newValue)
         {
-            this.config = config;
+            this.useSeparateQueueForEntityWorkItems = newValue;
         }
     }
  }

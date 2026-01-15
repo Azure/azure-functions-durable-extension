@@ -279,5 +279,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return true;
             }
         }
+
+        public override void SetUseSeparateQueueForEntityWorkItems(bool newValue)
+        {
+            this.serviceClient.SetUseSeparateQueueForEntityWorkItems(newValue);
+        }
     }
 }

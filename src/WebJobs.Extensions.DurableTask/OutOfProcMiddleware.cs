@@ -112,7 +112,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             WorkItemMetadata workItemMetadata = dispatchContext.GetProperty<WorkItemMetadata>();
             bool isExtendedSession = workItemMetadata.IsExtendedSession;
-            bool includePastEvents = workItemMetadata.IncludePastEvents;
+            bool includePastEvents = workItemMetadata.IncludeState;
 
             var context = new RemoteOrchestratorContext(runtimeState, entityParameters, this.extension.Options, isExtendedSession, includePastEvents);
             bool workerRequiresHistory = false;

@@ -66,7 +66,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #pragma warning restore CS0169
         private readonly bool isOptionsConfigured;
         private readonly Guid extensionGuid;
-        private readonly Lazy<TaskHubWorker> taskHubWorker;
 
         private ILocalGrpcListener localGrpcListener;
 #pragma warning disable CS0612 // Type or member is obsolete
@@ -79,6 +78,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private ILoggerFactory loggerFactory;
 
         private DurabilityProvider defaultDurabilityProvider;
+        private TaskHubWorker taskHubWorker;
         private bool isTaskHubWorkerStarted;
         private HttpClient durableHttpClient;
         private EventSourceListener eventSourceListener;
@@ -181,80 +181,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 // taskHubWorker's initializer to start the gRPC server instead of the HTTP server.
                 this.ConfigureForHttpProtocol();
             }
-
-            // Define a Lazy<TaskHubWorker> to defer creation of the Task Hub (which relies on knowing the OutOfProcProtocol, which might change
-            // during worker indexing) until its first use. This extension must never resolve the Value of taskHubWorker until after indexing is complete.
-            this.taskHubWorker = new Lazy<TaskHubWorker>(() =>
-            {
-                this.TraceConfigurationSettings();
-
-                var newTaskHubWorker = new TaskHubWorker(this.DefaultDurabilityProvider, this, this, loggerFactory: this.loggerFactory, versioningSettings: new VersioningSettings
-                {
-                    Version = this.Options.DefaultVersion, // A null (or empty) version is valid as it signifies non-versioned case.
-                    MatchStrategy = this.Options.VersionMatchStrategy, // The default value for this is to no-op on versioning.
-                    FailureStrategy = this.Options.VersionFailureStrategy, // The default value for this is to ignore work if there is a mismatch.
-                });
-
-                // Add middleware to the DTFx dispatcher so that we can inject our own logic
-                // into and customize the orchestration execution pipeline.
-                // Note that the order of the middleware added determines the order in which it executes.
-                if (this.OutOfProcProtocol == OutOfProcOrchestrationProtocol.MiddlewarePassthrough)
-                {
-                    // This is a newer, more performant flavor of orchestration/activity middleware that is being
-                    // enabled for newer language runtimes.
-                    var ooprocMiddleware = new OutOfProcMiddleware(this);
-                    newTaskHubWorker.AddActivityDispatcherMiddleware(ooprocMiddleware.CallActivityAsync);
-                    newTaskHubWorker.AddOrchestrationDispatcherMiddleware(ooprocMiddleware.CallOrchestratorAsync);
-                    newTaskHubWorker.AddEntityDispatcherMiddleware(ooprocMiddleware.CallEntityAsync);
-                }
-                else
-                {
-                    // This is the older middleware implementation that is currently in use for in-process .NET
-                    // and the older out-of-proc languages, like Node.js, Python, and PowerShell.
-                    newTaskHubWorker.AddActivityDispatcherMiddleware(this.ActivityMiddleware);
-                    newTaskHubWorker.AddOrchestrationDispatcherMiddleware(this.EntityMiddleware);
-                    newTaskHubWorker.AddOrchestrationDispatcherMiddleware(this.OrchestrationMiddleware);
-                }
-
-                // The RPC server needs to be started sometime before any functions can be triggered
-                // and this is the latest point in the pipeline available to us.
-                if (this.OutOfProcProtocol == OutOfProcOrchestrationProtocol.MiddlewarePassthrough)
-                {
-                    this.localGrpcListener?.StartAsync(default).GetAwaiter().GetResult();
-                }
-
-                if (this.OutOfProcProtocol == OutOfProcOrchestrationProtocol.OrchestratorShim)
-                {
-                    bool? shouldEnable = this.Options.LocalRpcEndpointEnabled;
-                    if (!shouldEnable.HasValue)
-                    {
-                        WorkerRuntimeType runtimeType = this.PlatformInformationService.GetWorkerRuntimeType();
-                        shouldEnable = runtimeType switch
-                        {
-                            // dotnet runs in process
-                            WorkerRuntimeType.DotNet => false,
-
-                            // dotnet-isolated and java use a gRPC server instead of the HTTP server
-                            WorkerRuntimeType.DotNetIsolated => false,
-                            WorkerRuntimeType.Java => false,
-
-                            // everything else - assume the HTTP server
-                            WorkerRuntimeType.Python => true, // This method will only be called for Python if we already know that we are using the HTTP protocol
-                            WorkerRuntimeType.Node => true,
-                            WorkerRuntimeType.PowerShell => true,
-                            WorkerRuntimeType.Unknown => true,
-                            _ => true,
-                        };
-                    }
-
-                    if (shouldEnable == true)
-                    {
-                        this.HttpApiHandler.StartLocalHttpServerAsync().GetAwaiter().GetResult();
-                    }
-                }
-
-                return newTaskHubWorker;
-            });
         }
 
         internal DurableTaskOptions Options { get; }
@@ -273,15 +199,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal TypedCodeProvider TypedCodeProvider { get; private set; }
 
-        /// <summary>
-        /// A property available to DurabilityProviders implementing IExtensionAwareDurabilityProviderFactory
-        /// used to determine whether the app has requested gRPC via worker metadata.
-        /// </summary>
-        /// <value>
-        /// True if the functionapp requested gRPC via function metadata, otherwise false.
-        /// </value>
-        public bool DurableRequiresGrpc { get; private set; }
-
         internal TimeSpan MessageReorderWindow
             => this.DefaultDurabilityProvider.GuaranteesOrderedDelivery ? TimeSpan.Zero : TimeSpan.FromMinutes(this.Options.EntityMessageReorderWindowInMinutes);
 
@@ -290,6 +207,78 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         internal IApplicationLifetimeWrapper HostLifetimeService { get; } = HostLifecycleService.NoOp;
 
         internal OutOfProcOrchestrationProtocol OutOfProcProtocol { get; set; }
+
+        private TaskHubWorker InitializeTaskHubWorker()
+        {
+            this.TraceConfigurationSettings();
+
+            var newTaskHubWorker = new TaskHubWorker(this.DefaultDurabilityProvider, this, this, loggerFactory: this.loggerFactory, versioningSettings: new VersioningSettings
+            {
+                Version = this.Options.DefaultVersion, // A null (or empty) version is valid as it signifies non-versioned case.
+                MatchStrategy = this.Options.VersionMatchStrategy, // The default value for this is to no-op on versioning.
+                FailureStrategy = this.Options.VersionFailureStrategy, // The default value for this is to ignore work if there is a mismatch.
+            });
+
+            // Add middleware to the DTFx dispatcher so that we can inject our own logic
+            // into and customize the orchestration execution pipeline.
+            // Note that the order of the middleware added determines the order in which it executes.
+            if (this.OutOfProcProtocol == OutOfProcOrchestrationProtocol.MiddlewarePassthrough)
+            {
+                // This is a newer, more performant flavor of orchestration/activity middleware that is being
+                // enabled for newer language runtimes.
+                var ooprocMiddleware = new OutOfProcMiddleware(this);
+                newTaskHubWorker.AddActivityDispatcherMiddleware(ooprocMiddleware.CallActivityAsync);
+                newTaskHubWorker.AddOrchestrationDispatcherMiddleware(ooprocMiddleware.CallOrchestratorAsync);
+                newTaskHubWorker.AddEntityDispatcherMiddleware(ooprocMiddleware.CallEntityAsync);
+            }
+            else
+            {
+                // This is the older middleware implementation that is currently in use for in-process .NET
+                // and the older out-of-proc languages, like Node.js, Python, and PowerShell.
+                newTaskHubWorker.AddActivityDispatcherMiddleware(this.ActivityMiddleware);
+                newTaskHubWorker.AddOrchestrationDispatcherMiddleware(this.EntityMiddleware);
+                newTaskHubWorker.AddOrchestrationDispatcherMiddleware(this.OrchestrationMiddleware);
+            }
+
+            // The RPC server needs to be started sometime before any functions can be triggered
+            // and this is the latest point in the pipeline available to us.
+            if (this.OutOfProcProtocol == OutOfProcOrchestrationProtocol.MiddlewarePassthrough)
+            {
+                this.localGrpcListener?.StartAsync(default).GetAwaiter().GetResult();
+            }
+
+            if (this.OutOfProcProtocol == OutOfProcOrchestrationProtocol.OrchestratorShim)
+            {
+                bool? shouldEnable = this.Options.LocalRpcEndpointEnabled;
+                if (!shouldEnable.HasValue)
+                {
+                    WorkerRuntimeType runtimeType = this.PlatformInformationService.GetWorkerRuntimeType();
+                    shouldEnable = runtimeType switch
+                    {
+                        // dotnet runs in process
+                        WorkerRuntimeType.DotNet => false,
+
+                        // dotnet-isolated and java use a gRPC server instead of the HTTP server
+                        WorkerRuntimeType.DotNetIsolated => false,
+                        WorkerRuntimeType.Java => false,
+
+                        // everything else - assume the HTTP server
+                        WorkerRuntimeType.Python => true, // This method will only be called for Python if we already know that we are using the HTTP protocol
+                        WorkerRuntimeType.Node => true,
+                        WorkerRuntimeType.PowerShell => true,
+                        WorkerRuntimeType.Unknown => true,
+                        _ => true,
+                    };
+                }
+
+                if (shouldEnable == true)
+                {
+                    this.HttpApiHandler.StartLocalHttpServerAsync().GetAwaiter().GetResult();
+                }
+            }
+
+            return newTaskHubWorker;
+        }
 
         internal static MessagePayloadDataConverter CreateMessageDataConverter(IMessageSerializerSettingsFactory messageSerializerSettingsFactory)
         {
@@ -351,6 +340,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         internal string GetBackendInfo()
         {
             return this.DefaultDurabilityProvider.GetBackendInfo();
+        }
+
+        // Because TaskHubWorker will use and save the defaultDurabilityProvider's UseSeparateQueueForEntityWorkItems value
+        // when it is constructed, we must prevent the TaskHubWorker from being created before worker indexing, to give
+        // us time to call ConfigureForGrpcProtocol() in case the function metadata explicitly requests it.
+        internal TaskHubWorker EnsureTaskHubWorker()
+        {
+            return this.taskHubWorker ??= this.InitializeTaskHubWorker();
+        }
+
+        // All calls to EnsureTaskHubWorker are guaranteed to happen after indexing. Every other call should use this method
+        // and guard against InvalidOperationException unless we are sure the task hub worker will have been initialized.
+        internal TaskHubWorker GetTaskHubWorkerOrThrow()
+        {
+            return this.taskHubWorker ?? throw new InvalidOperationException("Tried to access task hub worker before it was instantiated");
         }
 
         /// <summary>
@@ -428,11 +432,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 ? azureStorageDurabilityProviderFactory.DefaultConnectionName
                 : null;
 
-            if (this.durabilityProviderFactory is IExtensionAwareDurabilityProviderFactory clientAwareDurabilityProviderFactory)
-            {
-                clientAwareDurabilityProviderFactory.ConfigureWithDurableExtension(this);
-            }
-
             context.AddBindingRule<OrchestrationTriggerAttribute>()
                 .BindToTrigger(new OrchestrationTriggerAttributeBindingProvider(this, connectionName, this.PlatformInformationService));
 
@@ -448,7 +447,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (this.OutOfProcProtocol != OutOfProcOrchestrationProtocol.OrchestratorShim)
             {
                 this.OutOfProcProtocol = OutOfProcOrchestrationProtocol.OrchestratorShim;
-                this.DurableRequiresGrpc = false;
+                try
+                {
+                    this.durabilityProviderFactory.SetUseSeparateQueueForEntityWorkItems(false);
+                    this.DefaultDurabilityProvider.SetUseSeparateQueueForEntityWorkItems(false);
+                }
+                catch (NotImplementedException ex)
+                {
+                    this.TraceHelper.ExtensionWarningEvent(this.Options.HubName, string.Empty, string.Empty, $"Could not set UseSeparateQueueForEntityWorkItems: {ex}");
+                }
             }
         }
 
@@ -459,7 +466,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.OutOfProcProtocol = OutOfProcOrchestrationProtocol.MiddlewarePassthrough;
                 this.localGrpcListener = LocalGrpcListener.Create(this, this.Options.GrpcListenerMode);
                 this.HostLifetimeService.OnStopped.Register(this.StopLocalGrpcServer);
-                this.DurableRequiresGrpc = true;
+                try
+                {
+                    this.durabilityProviderFactory.SetUseSeparateQueueForEntityWorkItems(true);
+                    this.DefaultDurabilityProvider.SetUseSeparateQueueForEntityWorkItems(true);
+                }
+                catch (NotImplementedException ex)
+                {
+                    this.TraceHelper.ExtensionWarningEvent(this.Options.HubName, string.Empty, string.Empty, $"Could not set UseSeparateQueueForEntityWorkItems: {ex}");
+                }
             }
         }
 
@@ -560,7 +575,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <returns>A task representing the async delete operation.</returns>
         public Task DeleteTaskHubAsync()
         {
-            return this.DefaultDurabilityProvider.DeleteAsync();
+            return this.defaultDurabilityProvider?.DeleteAsync();
         }
 
         /// <summary>
@@ -1130,8 +1145,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.ConfigureForGrpcProtocol();
             }
 
-            // Accessing the task hub's value will start the appropriate server.
-            _ = this.taskHubWorker.Value;
+            // We must ensure the TaskHubWorker exists so that we know we have started the appropriate server.
+            _ = this.EnsureTaskHubWorker();
 
             DurableClient client = this.cachedClients.GetOrAdd(
                 attribute,
@@ -1346,13 +1361,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                         Stopwatch sw = Stopwatch.StartNew();
                         await this.DefaultDurabilityProvider.CreateIfNotExistsAsync();
-                        await this.taskHubWorker.Value.StartAsync();
+                        await this.EnsureTaskHubWorker().StartAsync();
 
-                        this.taskHubWorker.Value.TaskOrchestrationDispatcher.EntitiesEnabled = true;
+                        this.GetTaskHubWorkerOrThrow().TaskOrchestrationDispatcher.EntitiesEnabled = true;
 
                         if (this.Options.StoreInputsInOrchestrationHistory)
                         {
-                            this.taskHubWorker.Value.TaskOrchestrationDispatcher.IncludeParameters = true;
+                            this.GetTaskHubWorkerOrThrow().TaskOrchestrationDispatcher.IncludeParameters = true;
                         }
 
                         this.TraceHelper.ExtensionInformationalEvent(
@@ -1364,14 +1379,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                         // Enable flowing exception information from activities
                         // to the parent orchestration code.
-                        if (this.taskHubWorker.Value.TaskActivityDispatcher != null)
+                        if (this.GetTaskHubWorkerOrThrow().TaskActivityDispatcher != null)
                         {
-                            this.taskHubWorker.Value.TaskActivityDispatcher.IncludeDetails = true;
+                            this.GetTaskHubWorkerOrThrow().TaskActivityDispatcher.IncludeDetails = true;
                         }
 
-                        if (this.taskHubWorker.Value.TaskOrchestrationDispatcher != null)
+                        if (this.GetTaskHubWorkerOrThrow().TaskOrchestrationDispatcher != null)
                         {
-                            this.taskHubWorker.Value.TaskOrchestrationDispatcher.IncludeDetails = true;
+                            this.GetTaskHubWorkerOrThrow().TaskOrchestrationDispatcher.IncludeDetails = true;
                         }
 
                         if (this.LifeCycleNotificationHelper is EventGridLifeCycleNotificationHelper lifeCycleNotificationHelper)
@@ -1411,7 +1426,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         writeToUserLogs: true);
 
                     Stopwatch sw = Stopwatch.StartNew();
-                    await this.taskHubWorker.Value.StopAsync(isForced: !isGracefulStop);
+                    await this.taskHubWorker?.StopAsync(isForced: !isGracefulStop);
                     this.isTaskHubWorkerStarted = false;
 
                     this.TraceHelper.ExtensionInformationalEvent(
