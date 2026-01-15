@@ -53,7 +53,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             var activityName = new FunctionName(name);
             if (trigger.DurableRequiresGrpc)
             {
-                // The DurableRequiresGrpc attribute property indicates that a language typically
+                // The function's metadata includes the DurableRequiresGrpc attribute, indicating that a language typically
                 // configured for HTTP wants to use gRPC instead. Currently only Python uses this flag for the durabletask-based
                 // Python SDK.
                 // Calling this method will cause the extension to use gRPC instead of HTTP when starting the task hub.

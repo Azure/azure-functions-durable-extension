@@ -215,10 +215,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 LoggerFactory = this.loggerFactory,
                 UseLegacyPartitionManagement = this.azureStorageOptions.UseLegacyPartitionManagement,
                 UseTablePartitionManagement = this.azureStorageOptions.UseTablePartitionManagement,
-
-                // gRPC-based entity listeners require a dedicated queue for entity work items.
-                // When DurableRequiresGrpc is true we must force UseSeparateQueueForEntityWorkItems to true,
-                // even if the host configuration did not explicitly request it.
                 UseSeparateQueueForEntityWorkItems = this.useSeparateQueueForEntityWorkItems,
                 EntityMessageReorderWindowInMinutes = this.options.EntityMessageReorderWindowInMinutes,
                 MaxEntityOperationBatchSize = this.options.MaxEntityOperationBatchSize,
