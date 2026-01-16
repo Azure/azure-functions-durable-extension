@@ -282,7 +282,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public override void SetUseSeparateQueueForEntityWorkItems(bool newValue)
         {
-            this.serviceClient.SetUseSeparateQueueForEntityWorkItems(newValue);
+            this.serviceClient.UseSeparateQueuesForEntityWorkItems = newValue;
         }
     }
 }
