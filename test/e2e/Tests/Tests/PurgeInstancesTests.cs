@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using Microsoft.DurableTask.Entities;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -123,8 +124,152 @@ public class PurgeInstancesTests
         string purgeMessage = await purgeResponse.Content.ReadAsStringAsync();
         Assert.Matches(@"^Purged [0-9]* records$", purgeMessage);
         using HttpResponseMessage purgeAgainResponse = await HttpHelpers.InvokeHttpTrigger("PurgeOrchestrationHistory", $"?purgeEndTime={purgeEndTime:o}");
-        string purgeAgainMessage = await purgeAgainResponse.Content.ReadAsStringAsync();
-        Assert.Matches(@"^Purged 0 records$", purgeAgainMessage);
         Assert.Equal(HttpStatusCode.OK, purgeAgainResponse.StatusCode);
+        await AssertPurgeCount(purgeAgainResponse, 0);
+    }
+
+    [Fact]
+    [Trait("PowerShell", "Skip")] // Instance purging not supported in PowerShell
+    public async Task PurgeOnlyPurgesTerminalOrchestrations()
+    {
+        // For all of the following tests, since non-.NET languages throw a generic error in the case of a failure to purge there is no great way 
+        // to return specific status codes, whereas .NET isolated returns specific error types which can be used to return specific status codes.
+        // So, in the non-.NET case, we simply check for the InternalServerError status code.
+        void AssertFailedPurgeResponseStatusCode(HttpResponseMessage purgeHttpResponse)
+        {
+            if (this.fixture.functionLanguageLocalizer.GetLanguageType() == LanguageType.DotnetIsolated)
+            {
+                Assert.Equal(HttpStatusCode.PreconditionFailed, purgeHttpResponse.StatusCode);
+            }
+            else
+            {
+                Assert.Equal(HttpStatusCode.InternalServerError, purgeHttpResponse.StatusCode);
+            }
+        }
+
+        // Completed orchestration, should succeed
+        using HttpResponseMessage startCompletedOrchestrationResponse = await HttpHelpers.InvokeHttpTrigger(
+            "StartOrchestration",
+            "?orchestrationName=HelloCities");
+        Assert.Equal(HttpStatusCode.Accepted, startCompletedOrchestrationResponse.StatusCode);
+        string completedInstanceId = await DurableHelpers.ParseInstanceIdAsync(startCompletedOrchestrationResponse);
+        string completedStatusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(startCompletedOrchestrationResponse);
+        await DurableHelpers.WaitForOrchestrationStateAsync(completedStatusQueryGetUri, "Completed", 30);
+        HttpResponseMessage purgeCompleted = await HttpHelpers.InvokeHttpTrigger("PurgeOrchestrationHistory", $"?instanceId={completedInstanceId}");
+        Assert.Equal(HttpStatusCode.OK, purgeCompleted.StatusCode);
+        await AssertPurgeCount(purgeCompleted, 1);
+
+        // Terminated orchestration, should succeed
+        if (this.fixture.functionLanguageLocalizer.GetLanguageType() != LanguageType.Java
+            && this.fixture.GetDurabilityProvider() != FunctionAppFixture.ConfiguredDurabilityProviderType.MSSQL) // Bug: https://github.com/microsoft/durabletask-java/issues/237
+        {
+            using HttpResponseMessage startTerminatedOrchestrationResponse = await HttpHelpers.InvokeHttpTrigger(
+                "StartOrchestration",
+                "?orchestrationName=LongRunningOrchestrator");
+            Assert.Equal(HttpStatusCode.Accepted, startTerminatedOrchestrationResponse.StatusCode);
+            string terminatedInstanceId = await DurableHelpers.ParseInstanceIdAsync(startTerminatedOrchestrationResponse);
+            string terminatedStatusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(startTerminatedOrchestrationResponse);
+            await DurableHelpers.WaitForOrchestrationStateAsync(terminatedStatusQueryGetUri, "Running", 30);
+            using HttpResponseMessage terminateResponse = await HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={terminatedInstanceId}");
+            Assert.Equal(HttpStatusCode.OK, terminateResponse.StatusCode);
+            await DurableHelpers.WaitForOrchestrationStateAsync(terminatedStatusQueryGetUri, "Terminated", 30);
+            using HttpResponseMessage purgeTerminated = await HttpHelpers.InvokeHttpTrigger("PurgeOrchestrationHistory", $"?instanceId={terminatedInstanceId}");
+            Assert.Equal(HttpStatusCode.OK, purgeTerminated.StatusCode);
+            await AssertPurgeCount(purgeTerminated, 1);
+        }
+
+        // Failed orchestration, should succeed
+        using HttpResponseMessage startFailedOrchestrationResponse = await HttpHelpers.InvokeHttpTrigger(
+            "StartOrchestration",
+            "?orchestrationName=HelloActivityDIFailure");
+        Assert.Equal(HttpStatusCode.Accepted, startFailedOrchestrationResponse.StatusCode);
+        string failedInstanceId = await DurableHelpers.ParseInstanceIdAsync(startFailedOrchestrationResponse);
+        string failedStatusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(startFailedOrchestrationResponse);
+        await DurableHelpers.WaitForOrchestrationStateAsync(failedStatusQueryGetUri, "Failed", 30);
+        using HttpResponseMessage purgeFailed = await HttpHelpers.InvokeHttpTrigger("PurgeOrchestrationHistory", $"?instanceId={failedInstanceId}");
+        Assert.Equal(HttpStatusCode.OK, purgeFailed.StatusCode);
+        await AssertPurgeCount(purgeFailed, 1);
+
+        // Non-existent orchestration, should succeed and have purge count of 0
+        using HttpResponseMessage purgeNonExistent = await HttpHelpers.InvokeHttpTrigger("PurgeOrchestrationHistory", $"?instanceId={Guid.NewGuid()}");
+        Assert.Equal(HttpStatusCode.OK, purgeNonExistent.StatusCode);
+        await AssertPurgeCount(purgeNonExistent, 0);
+
+        // Running orchestration, should fail
+        using HttpResponseMessage startRunningOrchestrationResponse = await HttpHelpers.InvokeHttpTrigger(
+            "StartOrchestration",
+            "?orchestrationName=LongRunningOrchestrator");
+        Assert.Equal(HttpStatusCode.Accepted, startRunningOrchestrationResponse.StatusCode);
+        string runningInstanceId = await DurableHelpers.ParseInstanceIdAsync(startRunningOrchestrationResponse);
+        string runningStatusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(startRunningOrchestrationResponse);
+        await DurableHelpers.WaitForOrchestrationStateAsync(runningStatusQueryGetUri, "Running", 30);
+        using HttpResponseMessage purgeRunning = await HttpHelpers.InvokeHttpTrigger("PurgeOrchestrationHistory", $"?instanceId={runningInstanceId}");
+        AssertFailedPurgeResponseStatusCode(purgeRunning);
+
+        // Pending orchestration, should fail
+        DateTime scheduledStartTime = DateTime.UtcNow + TimeSpan.FromMinutes(1);
+        using HttpResponseMessage startPendingOrchestrationResponse = await HttpHelpers.InvokeHttpTrigger(
+            "HelloCities_HttpStart_Scheduled",
+            $"?ScheduledStartTime={scheduledStartTime:o}");
+        Assert.Equal(HttpStatusCode.Accepted, startPendingOrchestrationResponse.StatusCode);
+        string pendingInstanceId = await DurableHelpers.ParseInstanceIdAsync(startPendingOrchestrationResponse);
+        string pendingStatusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(startPendingOrchestrationResponse);
+        await DurableHelpers.WaitForOrchestrationStateAsync(pendingStatusQueryGetUri, "Pending", 30);
+        using HttpResponseMessage purgePending = await HttpHelpers.InvokeHttpTrigger("PurgeOrchestrationHistory", $"?instanceId={pendingInstanceId}");
+        AssertFailedPurgeResponseStatusCode(purgePending);
+
+        // Suspended orchestration, should fail
+        using HttpResponseMessage startSuspendedOrchestrationResponse = await HttpHelpers.InvokeHttpTrigger(
+            "StartOrchestration",
+            "?orchestrationName=LongRunningOrchestrator");
+        Assert.Equal(HttpStatusCode.Accepted, startSuspendedOrchestrationResponse.StatusCode);
+        string suspendedInstanceId = await DurableHelpers.ParseInstanceIdAsync(startSuspendedOrchestrationResponse);
+        string suspendedStatusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(startSuspendedOrchestrationResponse);
+        await DurableHelpers.WaitForOrchestrationStateAsync(suspendedStatusQueryGetUri, "Running", 30);
+        using HttpResponseMessage suspendResponse = await HttpHelpers.InvokeHttpTrigger("SuspendInstance", $"?instanceId={suspendedInstanceId}");
+        Assert.Equal(HttpStatusCode.OK, suspendResponse.StatusCode);
+        await DurableHelpers.WaitForOrchestrationStateAsync(suspendedStatusQueryGetUri, "Suspended", 30);
+        using HttpResponseMessage purgeSuspended = await HttpHelpers.InvokeHttpTrigger("PurgeOrchestrationHistory", $"?instanceId={suspendedInstanceId}");
+        AssertFailedPurgeResponseStatusCode(purgeSuspended);
+    }
+
+    [Fact]
+    [Trait("PowerShell", "Skip")] // Instance purging not supported in PowerShell
+    [Trait("Java", "Skip")] // Entities are not implemented in Java
+    [Trait("MSSQL", "Skip")] // Entities are not supported in MSSQL
+    public async Task PurgeEntity()
+    {
+        // Start an orchestration that interacts with an entity
+        HttpResponseMessage orchestrationResponse = await HttpHelpers.InvokeHttpTrigger(
+            "StartOrchestration",
+            "?orchestrationName=InvokeDummyEntityOrchestration");
+        Assert.Equal(HttpStatusCode.Accepted, orchestrationResponse.StatusCode);
+
+        // Wait for orchestration to complete
+        await DurableHelpers.ParseInstanceIdAsync(orchestrationResponse);
+        string orchestrationStatusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(orchestrationResponse);
+        await DurableHelpers.WaitForOrchestrationStateAsync(orchestrationStatusQueryGetUri, "Completed", 30);
+
+        string entityName = "DummyEntity";
+        string entityKey = "myEntity";
+        // Purge the entity instance
+        using HttpResponseMessage purgeExistentEntity = await HttpHelpers.InvokeHttpTrigger(
+            "PurgeOrchestrationHistory",
+            $"?instanceId={new EntityInstanceId(entityName, entityKey)}");
+        Assert.Equal(HttpStatusCode.OK, purgeExistentEntity.StatusCode);
+        await AssertPurgeCount(purgeExistentEntity, 1);
+
+        // Now attempt to purge a non-existent entity instance, purge count should be 0
+        using HttpResponseMessage purgeNonExistentEntity = await HttpHelpers.InvokeHttpTrigger(
+            "PurgeOrchestrationHistory",
+            $"?instanceId={new EntityInstanceId(entityName + "3", entityKey)}");
+        Assert.Equal(HttpStatusCode.OK, purgeNonExistentEntity.StatusCode);
+        await AssertPurgeCount(purgeNonExistentEntity, 0);
+    }
+
+    private static async Task AssertPurgeCount(HttpResponseMessage purgeHttpResponse, int purgeCount)
+    {
+        string purgeMessage = await purgeHttpResponse.Content.ReadAsStringAsync();
+        Assert.Matches($@"^Purged {purgeCount} records$", purgeMessage);
     }
 }

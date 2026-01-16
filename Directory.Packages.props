@@ -13,7 +13,7 @@
     <PackageVersion Include="Grpc.Net.Client" Version="2.71.0" />
     <PackageVersion Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.3.0" />
     <PackageVersion Include="Microsoft.AspNetCore.Mvc.WebApiCompatShim" Version="2.2.0" />
-    <PackageVersion Include="Microsoft.Azure.DurableTask.ApplicationInsights" Version="0.8.1" />
+    <PackageVersion Include="Microsoft.Azure.DurableTask.ApplicationInsights" Version="0.9.0" />
     <PackageVersion Include="Microsoft.Azure.DurableTask.AzureStorage" Version="2.8.1" />
     <PackageVersion Include="Microsoft.Azure.DurableTask.Core" Version="3.7.0" />
     <PackageVersion Include="Microsoft.Azure.Functions.Worker.Core" Version="2.2.0" />
@@ -27,9 +27,9 @@
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="3.9.0" />
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="3.9.0" />
     <PackageVersion Include="Microsoft.CodeAnalysis.Workspaces.Common" Version="3.9.0" />
-    <PackageVersion Include="Microsoft.DurableTask.Client.Grpc" Version="1.18.0" />
-    <PackageVersion Include="Microsoft.DurableTask.Worker.Grpc" Version="1.18.0" />
-    <PackageVersion Include="Microsoft.DurableTask.Abstractions" Version="1.18.0" />
+    <PackageVersion Include="Microsoft.DurableTask.Client.Grpc" Version="1.19.1" />
+    <PackageVersion Include="Microsoft.DurableTask.Worker.Grpc" Version="1.19.1" />
+    <PackageVersion Include="Microsoft.DurableTask.Abstractions" Version="1.19.1" />
     <PackageVersion Include="Microsoft.DurableTask.Analyzers" Version="0.2.0" />
     <PackageVersion Include="Microsoft.Extensions.Azure" Version="1.7.0" />
     <PackageVersion Include="Microsoft.Extensions.Caching.Memory" Version="10.0.0" />

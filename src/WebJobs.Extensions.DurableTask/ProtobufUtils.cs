@@ -571,9 +571,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// Converts a <see cref="EntityBatchRequest" /> to <see cref="P.EntityBatchRequest" />.
         /// </summary>
         /// <param name="entityBatchRequest">The operation request to convert.</param>
+        /// <param name="configurations">The remote instance configuration options for this batch request.</param>
         /// <returns>The converted operation request.</returns>
         [return: NotNullIfNotNull("entityBatchRequest")]
-        internal static P.EntityBatchRequest? ToEntityBatchRequest(this EntityBatchRequest? entityBatchRequest)
+        internal static P.EntityBatchRequest? ToEntityBatchRequest(this EntityBatchRequest? entityBatchRequest, RemoteInstanceConfiguration? configurations)
         {
             if (entityBatchRequest == null)
             {
@@ -583,8 +584,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             var batchRequest = new P.EntityBatchRequest()
             {
                 InstanceId = entityBatchRequest.InstanceId,
-                EntityState = entityBatchRequest.EntityState,
+                EntityState = configurations?.IncludeState == false ? null : entityBatchRequest.EntityState,
             };
+
+            batchRequest.Properties.Add(ProtobufUtils.ConvertPocoToProtoMap(configurations));
 
             foreach (var operation in entityBatchRequest.Operations ?? Enumerable.Empty<OperationRequest>())
             {
@@ -758,7 +761,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             System.Type type = configurations.GetType();
-            PropertyInfo[] properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
+            PropertyInfo[] properties = type.GetProperties(BindingFlags.Instance | BindingFlags.NonPublic);
 
             foreach (PropertyInfo property in properties)
             {
