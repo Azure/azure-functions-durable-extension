@@ -170,7 +170,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     var orchestratorRequest = new Microsoft.DurableTask.Protobuf.OrchestratorRequest()
                     {
                         InstanceId = remoteContext.InstanceId,
-                        PastEvents = { remoteContext.Configurations.IncludePastEvents ? remoteContext.PastEvents.Select(ProtobufUtils.ToHistoryEventProto) : Enumerable.Empty<Microsoft.DurableTask.Protobuf.HistoryEvent>() },
+                        PastEvents = { remoteContext.Configurations.IncludeState ? remoteContext.PastEvents.Select(ProtobufUtils.ToHistoryEventProto) : Enumerable.Empty<Microsoft.DurableTask.Protobuf.HistoryEvent>() },
                         NewEvents = { remoteContext.NewEvents.Select(ProtobufUtils.ToHistoryEventProto) },
                         EntityParameters = remoteContext.EntityParameters.ToProtobuf(),
                     };

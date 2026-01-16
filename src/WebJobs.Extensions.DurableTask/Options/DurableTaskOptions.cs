@@ -3,12 +3,14 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Net.Http;
 using DurableTask.AzureStorage.Partitioning;
 using DurableTask.Core;
 using DurableTask.Core.Settings;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Grpc;
 using Microsoft.Azure.WebJobs.Host;
+using Microsoft.Azure.WebJobs.Hosting;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
@@ -19,7 +21,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// <summary>
     /// Configuration options for the Durable Task extension.
     /// </summary>
-    public class DurableTaskOptions
+    public class DurableTaskOptions : IOptionsFormatter
     {
         internal const string DefaultHubName = "TestHubName";
         private string originalHubName;
@@ -427,6 +429,42 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             return false;
+        }
+
+        /// <inheritdoc/>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        string IOptionsFormatter.Format()
+        {
+            JObject options = new JObject
+            {
+                { nameof(this.HubName), this.HubName },
+                { nameof(this.DefaultVersion), this.DefaultVersion },
+                { nameof(this.VersionMatchStrategy), this.VersionMatchStrategy.ToString() },
+                { nameof(this.VersionFailureStrategy), this.VersionFailureStrategy.ToString() },
+                { nameof(this.MaxConcurrentActivityFunctions), this.MaxConcurrentActivityFunctions },
+                { nameof(this.MaxConcurrentOrchestratorFunctions), this.MaxConcurrentOrchestratorFunctions },
+                { nameof(this.MaxConcurrentEntityFunctions), this.MaxConcurrentEntityFunctions },
+                { nameof(this.MaxEntityOperationBatchSize), this.MaxEntityOperationBatchSize },
+                { nameof(this.ExtendedSessionsEnabled), this.ExtendedSessionsEnabled },
+                { nameof(this.ExtendedSessionIdleTimeoutInSeconds), this.ExtendedSessionIdleTimeoutInSeconds },
+                { nameof(this.MaxOrchestrationActions), this.MaxOrchestrationActions },
+                { nameof(this.OverridableExistingInstanceStates), this.OverridableExistingInstanceStates.ToString() },
+                { nameof(this.EntityMessageReorderWindowInMinutes), this.EntityMessageReorderWindowInMinutes },
+                { nameof(this.UseGracefulShutdown), this.UseGracefulShutdown },
+                { nameof(this.RollbackEntityOperationsOnExceptions), this.RollbackEntityOperationsOnExceptions },
+                { nameof(this.ThrowStatusExceptionsOnRaiseEvent), this.ThrowStatusExceptionsOnRaiseEvent },
+                { nameof(this.UseAppLease), this.UseAppLease },
+                { nameof(this.StoreInputsInOrchestrationHistory), this.StoreInputsInOrchestrationHistory },
+                { nameof(this.LocalRpcEndpointEnabled), this.LocalRpcEndpointEnabled },
+                { nameof(this.MaxGrpcMessageSizeInBytes), this.MaxGrpcMessageSizeInBytes },
+                { nameof(this.GrpcHttpClientTimeout), this.GrpcHttpClientTimeout },
+                { nameof(this.HttpSettings), this.HttpSettings != null ? JObject.FromObject(this.HttpSettings) : null },
+                { nameof(this.Tracing), this.Tracing != null ? JObject.FromObject(this.Tracing) : null },
+                { nameof(this.Notifications), this.Notifications != null ? JObject.FromObject(this.Notifications) : null },
+                { nameof(this.AppLeaseOptions), this.AppLeaseOptions != null ? JObject.FromObject(this.AppLeaseOptions) : null },
+            };
+
+            return options.ToString(Formatting.Indented);
         }
     }
 }

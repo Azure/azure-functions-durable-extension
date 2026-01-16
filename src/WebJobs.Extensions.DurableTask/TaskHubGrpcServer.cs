@@ -14,7 +14,6 @@ using DurableTask.Core.Exceptions;
 using DurableTask.Core.History;
 using DurableTask.Core.Query;
 using DurableTask.Core.Serializing.Internal;
-using Google.Protobuf;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
@@ -387,6 +386,34 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 switch (request.RequestCase)
                 {
                     case P.PurgeInstancesRequest.RequestOneofCase.InstanceId:
+                        // We need to confirm that the instance is an orchestration before checking that it has a terminal runtime status,
+                        // since entities can also be purged and have runtime status "Running".
+                        // Some clients will explicitly set the IsOrchestration flag when purging orchestrations, so for these clients, we are guaranteed
+                        // that if the field is true, the instance corresponds to an orchestration. For other clients, this field is false by
+                        // default for all requests, so we make a best-effort check by looking at the instance ID format:
+                        // All entities have instance IDs that start with '@', but orchestrations can also have such instance IDs.
+                        // This runtime status check will therefore not necessarily be performed for all orchestrations, but it is guaranteed to
+                        // at least not be performed for any entities.
+                        if (request.IsOrchestration || !request.InstanceId.StartsWith('@'))
+                        {
+                            OrchestrationState orchestrationState = await this.GetDurabilityProvider(context)
+                                .GetOrchestrationStateAsync(request.InstanceId, executionId: null);
+
+                            // Orchestration does not exist
+                            if (orchestrationState?.OrchestrationInstance == null)
+                            {
+                                result = new PurgeResult(0);
+                                break;
+                            }
+
+                            // Orchestration is in an invalid state for purging
+                            if (!IsOrchestrationCompleted(orchestrationState.OrchestrationStatus))
+                            {
+                                throw new InvalidOperationException($"Only orchestrations in a terminal state can be purged, but the " +
+                                    $"orchestration with instance ID {request.InstanceId} has status {orchestrationState.OrchestrationStatus}");
+                            }
+                        }
+
                         result = await purgeClient.PurgeInstanceStateAsync(request.InstanceId);
                         break;
 
@@ -405,6 +432,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 // Rethrow RPC-related exceptions as-is.
                 throw;
+            }
+            catch (InvalidOperationException ex)
+            {
+                throw new RpcException(new Status(StatusCode.FailedPrecondition, ex.Message));
+            }
+            catch (NotSupportedException ex)
+            {
+                // Purging is not supported by the underlying storage provider.
+                throw new RpcException(new Status(StatusCode.Unimplemented, ex.Message));
             }
             catch (Exception ex)
             {
@@ -639,6 +675,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 LockedBy = metaData.LockedBy,
                 SerializedState = metaData.SerializedState,
             };
+        }
+
+        private static bool IsOrchestrationCompleted(OrchestrationStatus status)
+        {
+            return status == OrchestrationStatus.Completed ||
+                status == OrchestrationStatus.Terminated ||
+                status == OrchestrationStatus.Failed;
         }
 
         private async Task TerminateExistingNonTerminalInstance(P.CreateInstanceRequest request, ServerCallContext context, IEnumerable<OrchestrationStatus> dedupeStatuses)

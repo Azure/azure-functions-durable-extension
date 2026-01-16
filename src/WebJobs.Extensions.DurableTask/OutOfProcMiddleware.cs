@@ -111,10 +111,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             WorkItemMetadata workItemMetadata = dispatchContext.GetProperty<WorkItemMetadata>();
-            bool isExtendedSession = workItemMetadata.IsExtendedSession;
-            bool includePastEvents = workItemMetadata.IncludePastEvents;
+            var context = new RemoteOrchestratorContext(
+                runtimeState,
+                entityParameters,
+                this.Options,
+                workItemMetadata.IsExtendedSession,
+                workItemMetadata.IncludeState);
 
-            var context = new RemoteOrchestratorContext(runtimeState, entityParameters, this.extension.Options, isExtendedSession, includePastEvents);
             bool workerRequiresHistory = false;
 
             var input = new TriggeredFunctionData
@@ -202,14 +205,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new SessionAbortedException(reason);
             }
 
+            if (workerRequiresHistory)
+            {
+                throw new SessionAbortedException("The worker has since ended the extended session and needs an orchestration history to execute the orchestration request.");
+            }
+
             OrchestratorExecutionResult orchestratorResult;
             if (functionResult.Succeeded)
             {
-                if (workerRequiresHistory)
-                {
-                    throw new SessionAbortedException("The worker has since ended the extended session and needs an orchestration history to execute the orchestration request.");
-                }
-
                 orchestratorResult = context.GetResult();
 
                 if (context.OrchestratorCompleted)
@@ -353,7 +356,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 functionType: FunctionType.Entity,
                 isReplay: false);
 
-            var context = new RemoteEntityContext(batchRequest);
+            WorkItemMetadata workItemMetadata = dispatchContext.GetProperty<WorkItemMetadata>();
+            var context = new RemoteEntityContext(
+                batchRequest,
+                this.Options,
+                workItemMetadata.IsExtendedSession,
+                workItemMetadata.IncludeState);
+
+            bool workerRequiresEntityState = false;
 
             var input = new TriggeredFunctionData
             {
@@ -381,6 +391,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                     byte[] triggerReturnValueBytes = Convert.FromBase64String(triggerReturnValue);
                     P.EntityBatchResult response = P.EntityBatchResult.Parser.ParseFrom(triggerReturnValueBytes);
+                    workerRequiresEntityState = response.RequiresState;
                     context.Result = response.ToEntityBatchResult(this.Options.DefaultVersion);
 
                     context.ThrowIfFailed();
@@ -417,6 +428,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 // This will abort the current execution and force an durable retry
                 throw new SessionAbortedException(reason);
+            }
+
+            if (workerRequiresEntityState)
+            {
+                throw new SessionAbortedException("The worker has since ended the extended session and needs an entity state to execute the request.");
             }
 
             if (!functionResult.Succeeded)
