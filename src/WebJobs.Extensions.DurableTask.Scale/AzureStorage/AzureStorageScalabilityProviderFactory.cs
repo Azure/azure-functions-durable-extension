@@ -5,6 +5,7 @@
 using System;
 using System.Linq;
 using Microsoft.Azure.WebJobs.Host.Scale;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage
@@ -18,6 +19,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage
         internal const string ProviderName = "AzureStorage";
 
         private readonly IStorageServiceClientProviderFactory clientProviderFactory;
+        private readonly IConfiguration configuration;
         private readonly INameResolver nameResolver;
         private readonly ILoggerFactory loggerFactory;
         private readonly ILogger logger;
@@ -27,15 +29,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage
         /// Initializes a new instance of the <see cref="AzureStorageScalabilityProviderFactory"/> class.
         /// </summary>
         /// <param name="clientProviderFactory">The storage client provider factory.</param>
+        /// <param name="configuration">The configuration for reading connection strings.</param>
         /// <param name="nameResolver">The name resolver for connection strings.</param>
         /// <param name="loggerFactory">The logger factory.</param>
         /// <exception cref="ArgumentNullException">Thrown when required parameters are null.</exception>
         public AzureStorageScalabilityProviderFactory(
             IStorageServiceClientProviderFactory clientProviderFactory,
+            IConfiguration configuration,
             INameResolver nameResolver,
             ILoggerFactory loggerFactory)
         {
             this.clientProviderFactory = clientProviderFactory ?? throw new ArgumentNullException(nameof(clientProviderFactory));
+            this.configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             this.nameResolver = nameResolver ?? throw new ArgumentNullException(nameof(nameResolver));
             this.loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
             this.logger = this.loggerFactory.CreateLogger(LoggerName);
@@ -102,11 +107,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage
             // Extract TokenCredential from triggerMetadata if present (for Managed Identity)
             var tokenCredential = ExtractTokenCredential(triggerMetadata, this.logger);
 
-            // Resolve connection name: prioritize metadata, fallback to default
+            // Get connection name from metadata, fallback to default
             string? rawConnectionName = TriggerMetadataExtensions.ResolveConnectionName(metadata?.StorageProvider);
-            string connectionName = rawConnectionName != null
-                ? this.nameResolver.Resolve(rawConnectionName)
-                : this.DefaultConnectionName;
+            string connectionName = rawConnectionName ?? this.DefaultConnectionName;
 
             var storageAccountClientProvider = this.clientProviderFactory.GetClientProvider(
                 connectionName,

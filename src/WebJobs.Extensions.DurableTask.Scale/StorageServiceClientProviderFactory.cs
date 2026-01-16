@@ -73,7 +73,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
             }
 
             // Priority 2: Use connection string (default approach)
-            var connectionString = this.configuration.GetConnectionString(connectionName) ?? this.configuration[connectionName];
+            var connectionString =
+                this.configuration.GetConnectionString(connectionName) ??
+                this.configuration[connectionName] ??
+                Environment.GetEnvironmentVariable(connectionName);
             if (!string.IsNullOrEmpty(connectionString))
             {
                 this.logger.LogInformation("Using connection string authentication for connection: {ConnectionName}", connectionName);

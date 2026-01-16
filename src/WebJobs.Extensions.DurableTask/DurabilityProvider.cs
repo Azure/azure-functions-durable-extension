@@ -494,6 +494,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return this.GetOrchestrationServiceClient().PurgeOrchestrationHistoryAsync(thresholdDateTimeUtc, timeRangeFilterType);
         }
 
+        /// <summary>
+        /// Streams the history of the specified orchestration instance as an enumerable of history events.
+        /// </summary>
+        /// <param name="instanceId">The instance ID of the orchestration.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>The enumerable of history events representing the orchestration's history.</returns>
+        public virtual Task<IAsyncEnumerable<HistoryEvent>> StreamOrchestrationHistoryAsync(string instanceId, CancellationToken cancellationToken)
+        {
+            throw this.GetNotImplementedException(nameof(this.StreamOrchestrationHistoryAsync));
+        }
+
         // The next few IOrchestrationServiceXXXClient methods are called by gRPC-based out-of-proc implementations
 
         /// <inheritdoc />

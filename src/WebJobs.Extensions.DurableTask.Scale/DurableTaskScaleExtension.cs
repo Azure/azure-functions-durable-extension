@@ -11,68 +11,39 @@ using Microsoft.Extensions.Logging;
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
 {
     /// <summary>
-    /// Provides configuration and initialization logic for the Durable Task Scale extension.
-    /// This extension enables scale controller to make scaling decisions based on the current load of Durable Task backends.
+    /// WebJobs extension for Durable Task scaling.
+    /// This extension is registered by the Scale Controller to enable scaling decisions.
     /// </summary>
     public class DurableTaskScaleExtension : IExtensionConfigProvider
     {
-        private readonly IScalabilityProviderFactory scalabilityProviderFactory;
-        private readonly ScalabilityProvider defaultscalabilityProvider;
-        private readonly DurableTaskMetadata metadata;
+        private const string DefaultProvider = "AzureStorage";
         private readonly ILogger logger;
-        private readonly IEnumerable<IScalabilityProviderFactory> scalabilityProviderFactories;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DurableTaskScaleExtension"/> class.
-        /// This constructor resolves the appropriate scalability provider factory
-        /// and initializes a default scalability provider used for scaling decisions.
         /// </summary>
-        /// <param name="metadata">The metadata for the Durable Task Scale extension.</param>
-        /// <param name="logger">The logger instance used for diagnostic output.</param>
-        /// <param name="scalabilityProviderFactories">A collection of available scalability provider factories.</param>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when any of the required parameters (<paramref name="metadata"/>, <paramref name="logger"/>, or <paramref name="scalabilityProviderFactories"/>) are null.
-        /// </exception>
-        public DurableTaskScaleExtension(
-            DurableTaskMetadata metadata,
-            ILogger logger,
-            IEnumerable<IScalabilityProviderFactory> scalabilityProviderFactories)
+        /// <param name="loggerFactory">The logger factory for creating loggers.</param>
+        public DurableTaskScaleExtension(ILoggerFactory loggerFactory)
         {
-            this.metadata = metadata ?? throw new ArgumentNullException(nameof(metadata));
-            this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            this.scalabilityProviderFactories = scalabilityProviderFactories ?? throw new ArgumentNullException(nameof(scalabilityProviderFactories));
-
-            // Determine which scalability provider factory should be used based on configured metadata.
-            this.scalabilityProviderFactory = GetScalabilityProviderFactory(this.metadata, this.logger, this.scalabilityProviderFactories);
-
-            // Create a default scalability provider instance from the selected factory.
-            // For runtime-driven scaling, pass metadata with triggerMetadata = null (no Scale Controller properties needed)
-            this.defaultscalabilityProvider = this.scalabilityProviderFactory.GetScalabilityProvider(this.metadata, triggerMetadata: null);
+            this.logger = loggerFactory.CreateLogger<DurableTaskScaleExtension>();
+            this.logger.LogInformation("DurableTaskScaleExtension initialized.");
         }
 
         /// <summary>
-        /// Gets the resolved <see cref="IScalabilityProviderFactory"/> instance.
-        /// This factory is responsible for creating scalability providers based on the configured backend (e.g., Azure Storage, MSSQL, Netherite).
+        /// Initializes the extension. Called by the WebJobs framework during host startup.
         /// </summary>
-        public IScalabilityProviderFactory ScalabilityProviderFactory => this.scalabilityProviderFactory;
-
-        /// <summary>
-        /// Gets the default <see cref="ScalabilityProvider"/> instance created by the selected factory.
-        /// This provider exposes methods to query current orchestration load and activity state for scaling decisions.
-        /// </summary>
-        public ScalabilityProvider DefaultScalabilityProvider => this.defaultscalabilityProvider;
-
-        /// <summary>
-        /// Inherited from IExtensionConfigProvider. Not used here.
-        /// </summary>
-        /// <param name="context">The extension configuration context provided by the WebJobs host.</param>
+        /// <param name="context">The extension configuration context.</param>
         public void Initialize(ExtensionConfigContext context)
         {
-            // No initialization required for scale extension
+            // The actual scaling work is done by DurableTaskTriggersScaleProvider.
+            // This extension just needs to exist for the WebJobs framework to properly
+            // initialize the host lifecycle.
+            this.logger.LogInformation("DurableTaskScaleExtension.Initialize called.");
         }
 
         /// <summary>
         /// Determines the scalability provider factory based on the given metadata.
+        /// If no storage provider type is configured, defaults to AzureStorage.
         /// </summary>
         /// <param name="metadata">The metadata specifying the target storage provider and hub configuration.</param>
         /// <param name="logger">The logger instance for diagnostic messages.</param>
@@ -83,7 +54,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
             ILogger logger,
             IEnumerable<IScalabilityProviderFactory> scalabilityProviderFactories)
         {
-            const string DefaultProvider = "AzureStorage";
             object? storageType = null;
             bool storageTypeIsConfigured = metadata.StorageProvider != null && metadata.StorageProvider.TryGetValue("type", out storageType);
 

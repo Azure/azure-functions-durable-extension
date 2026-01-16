@@ -5,6 +5,7 @@ using System;
 using System.Linq;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureManaged;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Netherite;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Sql;
 using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Extensions.Configuration;
@@ -15,13 +16,13 @@ using Microsoft.Extensions.Logging;
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
 {
     /// <summary>
-    /// Provides extension methods for registering the <see cref="DurableTaskScaleExtension"/> with an <see cref="IWebJobsBuilder"/> or <c>JobHostConfiguration</c>.
+    /// Provides extension methods for registering Durable Task scaling components with an <see cref="IWebJobsBuilder"/>.
     /// </summary>
-    public static class DurableTaskJobHostConfigurationExtensions
+    public static class DurableTaskScaleConfigurationExtensions
     {
         /// <summary>
-        /// Adds the <see cref="DurableTaskScaleExtension"/> to the specified <see cref="IWebJobsBuilder"/>.
-        /// This enables Durable Task–based scaling capabilities for WebJobs and Azure Functions hosts.
+        /// Registers scalability provider factories for Durable Task scaling.
+        /// This is called by the Scale Controller to enable scaling decisions based on Durable Task backend load.
         /// </summary>
         /// <param name="builder">The <see cref="IWebJobsBuilder"/> to configure.</param>
         /// <returns>The same <see cref="IWebJobsBuilder"/> instance, to allow for fluent chaining.</returns>
@@ -35,14 +36,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
                 throw new ArgumentNullException(nameof(builder));
             }
 
+            // Register the extension with the WebJobs framework.
+            // This is required for proper host lifecycle management.
             builder.AddExtension<DurableTaskScaleExtension>();
 
             IServiceCollection serviceCollection = builder.Services;
-
-            // Note: IConfiguration should be provided by the Scale Controller via ConfigureAppConfiguration
-            // which registers it when the host is built. Our factory functions are called lazily when services
-            // are resolved (after host is built), so IConfiguration will be available at that time.
-            // We don't register IConfiguration here - we rely on the Scale Controller to provide it.
 
             // Register StorageServiceClientProviderFactory using factory function to ensure proper construction
             serviceCollection.TryAddSingleton<IStorageServiceClientProviderFactory>(serviceProvider =>
@@ -52,12 +50,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
                     serviceProvider.GetRequiredService<ILoggerFactory>());
             });
 
-            // Register all scalability provider factories using factory functions to ensure proper construction
-            // This ensures factories are constructed even if some dependencies are resolved lazily
+            // Register all scalability provider factories
             serviceCollection.AddSingleton<IScalabilityProviderFactory>(serviceProvider =>
             {
                 return new AzureStorageScalabilityProviderFactory(
                     serviceProvider.GetRequiredService<IStorageServiceClientProviderFactory>(),
+                    serviceProvider.GetRequiredService<IConfiguration>(),
                     serviceProvider.GetRequiredService<INameResolver>(),
                     serviceProvider.GetRequiredService<ILoggerFactory>());
             });
@@ -78,6 +76,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
                     serviceProvider.GetRequiredService<ILoggerFactory>());
             });
 
+            serviceCollection.AddSingleton<IScalabilityProviderFactory>(serviceProvider =>
+            {
+                return new NetheriteScalabilityProviderFactory(
+                    serviceProvider.GetRequiredService<IConfiguration>(),
+                    serviceProvider.GetRequiredService<ILoggerFactory>());
+            });
+
             return builder;
         }
 
@@ -88,7 +93,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
         /// <param name="builder">The <see cref="IWebJobsBuilder"/> to configure.</param>
         /// <param name="triggerMetadata">Metadata describing the trigger to be monitored for scaling.</param>
         /// <returns>The same <see cref="IWebJobsBuilder"/> instance, to allow for fluent chaining.</returns>
-        public static IWebJobsBuilder AddDurableScaleForTrigger(this IWebJobsBuilder builder, TriggerMetadata triggerMetadata)
+        internal static IWebJobsBuilder AddDurableScaleForTrigger(this IWebJobsBuilder builder, TriggerMetadata triggerMetadata)
         {
             IServiceCollection serviceCollection = builder.Services;
 
@@ -131,7 +136,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
                 catch (Exception ex)
                 {
                     var loggerFactory = serviceProvider.GetService<ILoggerFactory>();
-                    var logger = loggerFactory?.CreateLogger(typeof(DurableTaskJobHostConfigurationExtensions));
+                    var logger = loggerFactory?.CreateLogger(typeof(DurableTaskScaleConfigurationExtensions));
                     logger?.LogError(
                         ex,
                         "Failed to create DurableTaskTriggersScaleProvider for function {FunctionName}. " +

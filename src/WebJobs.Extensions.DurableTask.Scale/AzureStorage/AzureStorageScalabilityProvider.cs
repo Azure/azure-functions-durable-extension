@@ -46,6 +46,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage
         }
 
         /// <inheritdoc/>
+        /// Note: ScaleMonitor is not used in prod. Can be cleaned in future.
         public override bool TryGetScaleMonitor(
             string functionId,
             string functionName,
@@ -68,6 +69,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage
             }
         }
 
+        /// <inheritdoc/>
         public override bool TryGetTargetScaler(
             string functionId,
             string functionName,

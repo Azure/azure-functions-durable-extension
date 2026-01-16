@@ -27,8 +27,8 @@
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="3.9.0" />
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="3.9.0" />
     <PackageVersion Include="Microsoft.CodeAnalysis.Workspaces.Common" Version="3.9.0" />
+    <PackageVersion Include="Microsoft.DurableTask.AzureManagedBackend" Version="1.0.0" />
     <PackageVersion Include="Microsoft.DurableTask.SqlServer" Version="1.5.2" />
-    <PackageVersion Include="Microsoft.Data.SqlClient" Version="5.1.2" />
     <PackageVersion Include="Microsoft.DurableTask.Client.Grpc" Version="1.18.0" />
     <PackageVersion Include="Microsoft.DurableTask.Worker.Grpc" Version="1.18.0" />
     <PackageVersion Include="Microsoft.DurableTask.Abstractions" Version="1.18.0" />
@@ -56,6 +56,7 @@
     <PackageVersion Include="Microsoft.ApplicationInsights.WorkerService" Version="2.22.0" />
     <PackageVersion Include="Microsoft.Azure.DurableTask.Emulator" Version="2.5.4" />
     <PackageVersion Include="Microsoft.Azure.DurableTask.Netherite.AzureFunctions" Version="3.1.0" />
+	<PackageVersion Include="Microsoft.Azure.DurableTask.Netherite" Version="3.1.1" />
     <PackageVersion Include="Microsoft.Azure.DurableTask.Redis" Version="0.1.9-alpha" />
     <PackageVersion Include="Microsoft.Azure.Functions.Worker" Version="2.2.0" />
     <PackageVersion Include="Microsoft.Azure.Functions.Worker.ApplicationInsights" Version="2.0.0" />

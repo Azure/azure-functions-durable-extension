@@ -89,38 +89,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureManaged
         /// </exception>
         public ScalabilityProvider GetScalabilityProvider(DurableTaskMetadata metadata, TriggerMetadata? triggerMetadata)
         {
-            // Resolve connection name: prioritize metadata, fallback to default
+            // Get connection name from metadata, fallback to default
             string? rawConnectionName = TriggerMetadataExtensions.ResolveConnectionName(metadata?.StorageProvider);
             string connectionName = rawConnectionName ?? this.DefaultConnectionName;
-
-            string resolvedValue = this.nameResolver.Resolve(connectionName);
-
-            // nameResolver.Resolve() may return either:
-            // 1. The connection name (if it's an app setting name like "MyConnection")
-            // 2. The connection string value itself (if it's already resolved or is an environment variable)
-            // Check if resolvedValue looks like a connection string (contains "=" which is typical for connection strings)
-            // If it does, use it directly; otherwise, treat it as a connection name and look it up
-            string? connectionString = null;
-
-            if (!string.IsNullOrEmpty(resolvedValue) && resolvedValue.Contains("="))
-            {
-                // resolvedValue is already a connection string
-                connectionString = resolvedValue;
-            }
-            else
-            {
-                // resolvedValue is a connection name, look it up
-                connectionName = resolvedValue;
-                connectionString =
-                    this.configuration.GetConnectionString(resolvedValue) ??
-                    this.configuration[resolvedValue] ??
-                    Environment.GetEnvironmentVariable(resolvedValue);
-            }
+            this.logger.LogInformation("using connectionName" + connectionName);
+            // Look up connection string from configuration
+            string? connectionString =
+                this.configuration.GetConnectionString(connectionName) ??
+                this.configuration[connectionName] ??
+                Environment.GetEnvironmentVariable(connectionName);
 
             if (string.IsNullOrEmpty(connectionString))
             {
                 throw new InvalidOperationException(
-                    $"No valid connection string found for '{resolvedValue}'. " +
+                    $"No valid connection string found for '{connectionName}'. " +
                     $"Please ensure it is defined in app settings, connection strings, or environment variables.");
             }
 

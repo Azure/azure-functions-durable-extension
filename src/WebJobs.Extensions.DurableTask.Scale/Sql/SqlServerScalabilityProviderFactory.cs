@@ -77,11 +77,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Sql
                 this.ValidateSqlServerMetadata(metadata, this.logger);
             }
 
-            // Resolve connection name: prioritize metadata, fallback to default
+            // Get connection name from metadata, fallback to default
+            // Note: Scale Controller already resolves %xxx% wrapping before calling the extension,
+            // so we just need to get the raw value here
             string? rawConnectionName = TriggerMetadataExtensions.ResolveConnectionName(metadata?.StorageProvider);
-            string connectionName = rawConnectionName != null
-                ? this.nameResolver.Resolve(rawConnectionName)
-                : this.DefaultConnectionName;
+            string connectionName = rawConnectionName ?? this.DefaultConnectionName;
 
             // Extract task hub name from trigger metadata (from Scale Controller payload)
             string taskHubName = metadata?.TaskHubName ?? "default";
@@ -100,40 +100,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Sql
             return provider;
         }
 
+        /// <summary>
+        /// Creates a SqlOrchestrationService from a connection name.
+        /// </summary>
         private SqlOrchestrationService CreateSqlOrchestrationService(
             string connectionName,
             string taskHubName,
             ILogger logger,
             DurableTaskMetadata? metadata = null)
         {
-            // Resolve connection name first (handles %% wrapping)
-            string resolvedValue = this.nameResolver.Resolve(connectionName);
-
-            // nameResolver.Resolve() may return either:
-            // 1. The connection name (if it's an app setting name like "MyConnection")
-            // 2. The connection string value itself (if it's already resolved or is an environment variable)
-            // Check if resolvedValue looks like a connection string (contains "=" which is typical for connection strings)
-            // If it does, use it directly; otherwise, treat it as a connection name and look it up
-            string? connectionString = null;
-
-            if (!string.IsNullOrEmpty(resolvedValue) && resolvedValue.Contains("="))
-            {
-                // resolvedValue is already a connection string
-                connectionString = resolvedValue;
-            }
-            else
-            {
-                // resolvedValue is a connection name, look it up
-                connectionString =
-                    this.configuration.GetConnectionString(resolvedValue) ??
-                    this.configuration[resolvedValue] ??
-                    Environment.GetEnvironmentVariable(resolvedValue);
-            }
+            // Look up connection string from configuration
+            this.logger.LogInformation("using connectionName" +  connectionName);
+            string? connectionString =
+                this.configuration.GetConnectionString(connectionName) ??
+                this.configuration[connectionName] ??
+                Environment.GetEnvironmentVariable(connectionName);
 
             if (string.IsNullOrEmpty(connectionString))
             {
                 throw new InvalidOperationException(
-                    $"No SQL connection string configuration was found for the app setting or environment variable named '{resolvedValue}'.");
+                    $"No SQL connection string found for '{connectionName}'.");
             }
 
             // Create SQL Server orchestration service settings - following durabletask-mssql pattern

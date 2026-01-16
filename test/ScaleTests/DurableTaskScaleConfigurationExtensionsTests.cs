@@ -14,11 +14,11 @@ using Xunit;
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
 {
     /// <summary>
-    /// Tests for DurableTaskJobHostConfigurationExtensions.
+    /// Tests for DurableTaskScaleConfigurationExtensions.
     /// Validates Dependency Injection registration when Scale Controller calls AddDurableTask().
     /// Ensures all required services are properly registered for the scale package to function.
     /// </summary>
-    public class DurableTaskJobHostConfigurationExtensionsTests
+    public class DurableTaskScaleConfigurationExtensionsTests
     {
         /// <summary>
         /// Scenario: Core service registration in DI container.
@@ -77,7 +77,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
 
             // Verify DurableTaskScaleExtension is registered by checking service descriptors
             var extensionDescriptor = services
-                .FirstOrDefault(d => d.ServiceType == typeof(IExtensionConfigProvider) 
+                .FirstOrDefault(d => d.ServiceType == typeof(IExtensionConfigProvider)
                                   && d.ImplementationType == typeof(DurableTaskScaleExtension));
             Assert.NotNull(extensionDescriptor);
         }

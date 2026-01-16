@@ -12,16 +12,19 @@ using Microsoft.Extensions.Logging;
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Netherite
 {
     /// <summary>
-    /// Factory class responsible for creating and managing instances of <see cref="NetheriteScalabilityProvider"/>.
+    /// Factory class responsible for creating instances of <see cref="NetheriteScalabilityProvider"/>.
     /// </summary>
     public class NetheriteScalabilityProviderFactory : IScalabilityProviderFactory
     {
         private const string LoggerName = "Triggers.DurableTask.Netherite";
         internal const string ProviderName = "Netherite";
 
-        private readonly Dictionary<(string, string?), NetheriteScalabilityProvider> cachedProviders = new Dictionary<(string, string?), NetheriteScalabilityProvider>();
+        // Default connection names matching Netherite's NetheriteOrchestrationServiceSettings defaults
+        internal const string DefaultStorageConnectionName = "AzureWebJobsStorage";
+        internal const string DefaultEventHubsConnectionName = "EventHubsConnection";
+
+        private readonly Dictionary<(string, string, string), NetheriteScalabilityProvider> cachedProviders = new Dictionary<(string, string, string), NetheriteScalabilityProvider>();
         private readonly IConfiguration configuration;
-        private readonly INameResolver nameResolver;
         private readonly ILoggerFactory loggerFactory;
         private readonly ILogger logger;
 
@@ -31,9 +34,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Netherite
         /// <param name="configuration">
         /// The <see cref="IConfiguration"/> interface used to resolve connection strings and application settings.
         /// </param>
-        /// <param name="nameResolver">
-        /// The <see cref="INameResolver"/> used to resolve environment-variable references.
-        /// </param>
         /// <param name="loggerFactory">
         /// The <see cref="ILoggerFactory"/> used to create loggers for diagnostics.
         /// </param>
@@ -42,16 +42,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Netherite
         /// </exception>
         public NetheriteScalabilityProviderFactory(
             IConfiguration configuration,
-            INameResolver nameResolver,
             ILoggerFactory loggerFactory)
         {
             this.configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
-            this.nameResolver = nameResolver ?? throw new ArgumentNullException(nameof(nameResolver));
             this.loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
             this.logger = this.loggerFactory.CreateLogger(LoggerName);
 
-            // Default connection name format: "StorageConnectionName,EventHubsConnectionName"
-            this.DefaultConnectionName = "Storage,EventHubsConnection";
+            // Default connection name for Netherite (storage connection)
+            this.DefaultConnectionName = DefaultStorageConnectionName;
         }
 
         /// <summary>
@@ -65,10 +63,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Netherite
         public string DefaultConnectionName { get; }
 
         /// <summary>
-        /// Returns a default <see cref="ScalabilityProvider"/> instance configured with the default connection and global scaling options.
+        /// Returns a default <see cref="ScalabilityProvider"/> instance.
         /// This method should never be called for Netherite provider as metadata is always required.
         /// </summary>
-        /// <returns> A default <see cref="NetheriteScalabilityProvider"/> instance.</returns>
+        /// <returns>A default <see cref="NetheriteScalabilityProvider"/> instance.</returns>
         /// <exception cref="NotImplementedException">Always throws as this method should not be called.</exception>
         public virtual ScalabilityProvider GetScalabilityProvider()
         {
@@ -76,7 +74,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Netherite
         }
 
         /// <summary>
-        /// Creates or retrieves a <see cref="NetheriteScalabilityProvider"/> instance based on the provided pre-deserialized metadata.
+        /// Creates a <see cref="NetheriteScalabilityProvider"/> instance based on the provided pre-deserialized metadata.
         /// </summary>
         /// <param name="metadata">The pre-deserialized Durable Task metadata.</param>
         /// <param name="triggerMetadata">Trigger metadata used to access Properties like token credentials.</param>
@@ -89,36 +87,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Netherite
         /// </exception>
         public ScalabilityProvider GetScalabilityProvider(DurableTaskMetadata metadata, TriggerMetadata? triggerMetadata)
         {
-            // Resolve connection name: prioritize metadata, fallback to default
-            string? rawConnectionName = TriggerMetadataExtensions.ResolveConnectionName(metadata?.StorageProvider);
-            string connectionName = rawConnectionName ?? this.DefaultConnectionName;
+            // Netherite requires two separate connections:
+            // 1. Storage connection (for blobs/tables) - defaults to "AzureWebJobsStorage"
+            // 2. Event Hubs connection - defaults to "EventHubsConnection"
+            // These can be configured in host.json under extensions.durableTask.storageProvider:
+            //   "StorageConnectionName": "AzureWebJobsStorage"
+            //   "EventHubsConnectionName": "EventHubsConnection"
+            // See: https://learn.microsoft.com/en-us/azure/azure-functions/durable/quickstart-netherite
 
-            // For Netherite, the connection name can be:
-            // 1. A comma-separated pair: "StorageConnectionName,EventHubsConnectionName"
-            // 2. A single connection name that will be used for both storage and event hubs
-            string storageConnectionName;
-            string eventHubsConnectionName;
+            string storageConnectionName = ResolveStorageProviderProperty(metadata?.StorageProvider, "StorageConnectionName")
+                ?? DefaultStorageConnectionName;
+            string eventHubsConnectionName = ResolveStorageProviderProperty(metadata?.StorageProvider, "EventHubsConnectionName")
+                ?? DefaultEventHubsConnectionName;
 
-            if (connectionName.Contains(","))
-            {
-                var parts = connectionName.Split(',');
-                if (parts.Length != 2)
-                {
-                    throw new InvalidOperationException(
-                        $"Invalid Netherite connection name format: '{connectionName}'. " +
-                        $"Expected format: 'StorageConnectionName,EventHubsConnectionName'");
-                }
-
-                storageConnectionName = parts[0].Trim();
-                eventHubsConnectionName = parts[1].Trim();
-            }
-            else
-            {
-                // Use the same connection name for both
-                storageConnectionName = connectionName;
-                eventHubsConnectionName = connectionName;
-            }
-
+            this.logger.LogInformation("using storage connectionName" + storageConnectionName + " using eventhub connection" + eventHubsConnectionName);
             // Resolve the connection strings
             string resolvedStorageConnectionString = this.ResolveConnectionString(storageConnectionName);
             string resolvedEventHubsConnectionString = this.ResolveConnectionString(eventHubsConnectionName);
@@ -126,28 +108,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Netherite
             // Extract task hub name from metadata
             string taskHubName = metadata?.TaskHubName ?? "default";
 
-            // Include task hub name in cache key
-            (string, string?) cacheKey = (connectionName, taskHubName);
-
-            this.logger.LogDebug(
-                "Getting durability provider for connection '{Connection}' and task hub '{TaskHub}'...",
-                cacheKey.Item1,
-                cacheKey.Item2 ?? "null");
+            // Cache key: (taskHub, storageConnection, eventHubsConnection)
+            (string, string, string) cacheKey = (taskHubName, storageConnectionName, eventHubsConnectionName);
 
             lock (this.cachedProviders)
             {
-                // If a provider has already been created for this connection name and task hub, return it.
+                // If a provider has already been created for this configuration, return it.
                 if (this.cachedProviders.TryGetValue(cacheKey, out NetheriteScalabilityProvider? cachedProvider))
                 {
                     this.logger.LogDebug(
-                        "Returning cached durability provider for connection '{Connection}' and task hub '{TaskHub}'",
-                        cacheKey.Item1,
-                        cacheKey.Item2);
+                        "Returning cached Netherite scalability provider for task hub '{TaskHub}', storage '{Storage}', eventHubs '{EventHubs}'",
+                        taskHubName,
+                        storageConnectionName,
+                        eventHubsConnectionName);
                     return cachedProvider;
                 }
 
                 // Create Netherite orchestration service settings
-                var settings = new NetheriteOrchestrationServiceSettings
+                 var settings = new NetheriteOrchestrationServiceSettings
                 {
                     HubName = taskHubName,
                     StorageConnectionName = storageConnectionName,
@@ -165,7 +143,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Netherite
                     settings.MaxConcurrentActivityFunctions = metadata.MaxConcurrentActivityFunctions.Value;
                 }
 
-                // Create a simple connection resolver that returns the resolved connection strings
+                // Create a connection resolver that Netherite uses to translate connection names
+                // (e.g., "AzureWebJobsStorage") into actual connection strings.
+                // This is called by settings.Validate() and internally by NetheriteOrchestrationService
+                // when it connects to Event Hubs and Azure Storage.
                 var connectionResolver = ConnectionResolver.FromConnectionNameToConnectionStringResolver(
                     (name) =>
                     {
@@ -178,25 +159,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Netherite
                             return resolvedEventHubsConnectionString;
                         }
 
-                        // Fall back to name resolver
-                        return this.nameResolver.Resolve(name);
+                        // Fall back to direct lookup for any other connection names
+                        return this.ResolveConnectionString(name);
                     });
 
                 // Validate the settings
                 settings.Validate(connectionResolver);
 
                 this.logger.LogInformation(
-                    "Creating durability provider for connection '{Connection}' and task hub '{TaskHub}'...",
-                    cacheKey.Item1,
-                    cacheKey.Item2);
+                    "Creating Netherite scalability provider for task hub '{TaskHub}', storage '{Storage}', eventHubs '{EventHubs}'",
+                    taskHubName,
+                    storageConnectionName,
+                    eventHubsConnectionName);
 
                 // Create the Netherite orchestration service
                 var service = new NetheriteOrchestrationService(settings, this.loggerFactory, serviceProvider: null);
 
-                // Create our scalability provider
-                var provider = new NetheriteScalabilityProvider(service, settings, connectionName, this.logger);
+                // Create our scalability provider - use storage connection name as the primary connection name
+                var provider = new NetheriteScalabilityProvider(service, settings, storageConnectionName, this.logger);
 
-                // Extract max concurrent values from trigger metadata (from Scale Controller payload)
+                // Set max concurrent values from metadata
                 // Default: 10 times the number of processors on the current machine
                 provider.MaxConcurrentTaskOrchestrationWorkItems = metadata?.MaxConcurrentOrchestratorFunctions ?? (Environment.ProcessorCount * 10);
                 provider.MaxConcurrentTaskActivityWorkItems = metadata?.MaxConcurrentActivityFunctions ?? (Environment.ProcessorCount * 10);
@@ -206,36 +188,48 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Netherite
             }
         }
 
+        /// <summary>
+        /// Extracts a property value from the storage provider configuration dictionary.
+        /// Performs case-insensitive property name lookup.
+        /// </summary>
+        private static string? ResolveStorageProviderProperty(IDictionary<string, object>? storageProvider, string propertyName)
+        {
+            if (storageProvider == null)
+            {
+                return null;
+            }
+
+            // Try exact match first
+            if (storageProvider.TryGetValue(propertyName, out object? value) && value is string stringValue && !string.IsNullOrWhiteSpace(stringValue))
+            {
+                return stringValue;
+            }
+
+            // Fall back to case-insensitive search
+            foreach (var kvp in storageProvider)
+            {
+                if (string.Equals(kvp.Key, propertyName, StringComparison.OrdinalIgnoreCase) && kvp.Value is string strValue && !string.IsNullOrWhiteSpace(strValue))
+                {
+                    return strValue;
+                }
+            }
+
+            return null;
+        }
+
         private string ResolveConnectionString(string connectionName)
         {
-            // Resolve the connection name first (handles %% wrapping)
-            string resolvedValue = this.nameResolver.Resolve(connectionName);
-
-            // nameResolver.Resolve() may return either:
-            // 1. The connection name (if it's an app setting name like "MyConnection")
-            // 2. The connection string value itself (if it's already resolved or is an environment variable)
-            // Check if resolvedValue looks like a connection string (contains "=" which is typical for connection strings)
-            // If it does, use it directly; otherwise, treat it as a connection name and look it up
-            string? connectionString = null;
-
-            if (!string.IsNullOrEmpty(resolvedValue) && resolvedValue.Contains("="))
-            {
-                // resolvedValue is already a connection string
-                connectionString = resolvedValue;
-            }
-            else
-            {
-                // resolvedValue is a connection name, look it up
-                connectionString =
-                    this.configuration.GetConnectionString(resolvedValue) ??
-                    this.configuration[resolvedValue] ??
-                    Environment.GetEnvironmentVariable(resolvedValue);
-            }
+            // Look up connection string from configuration
+            // Note: Scale Controller already resolves %xxx% wrapping before calling the extension
+            string? connectionString =
+                this.configuration.GetConnectionString(connectionName) ??
+                this.configuration[connectionName] ??
+                Environment.GetEnvironmentVariable(connectionName);
 
             if (string.IsNullOrEmpty(connectionString))
             {
                 throw new InvalidOperationException(
-                    $"No valid connection string found for '{resolvedValue}'. " +
+                    $"No valid connection string found for '{connectionName}'. " +
                     $"Please ensure it is defined in app settings, connection strings, or environment variables.");
             }
 

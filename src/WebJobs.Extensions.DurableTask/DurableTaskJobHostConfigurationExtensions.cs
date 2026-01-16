@@ -2,18 +2,13 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage;
-using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
@@ -90,9 +85,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             serviceCollection.TryAddSingleton<IApplicationLifetimeWrapper, HostLifecycleService>();
             serviceCollection.AddSingleton<ITelemetryActivator, TelemetryActivator>();
 
-            // Register scalability provider factories from the scale package using the scale package's registration method
-            // Note: This delegates to the Scale package which registers all scalability providers
-            Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.DurableTaskJobHostConfigurationExtensions.AddDurableTask(builder);
+            // NOTE: We do NOT register anything from the Scale package here.
+            // Runtime-driven scaling is handled entirely by the host infrastructure:
+            // - Scale Controller calls Scale.AddDurableTask() and Scale.AddDurableScaleForTrigger() directly
+            // - The Scale package is self-contained and gets metadata from TriggerMetadata (not from DI)
+            // - Function app host doesn't need Scale package registrations for normal operation
             serviceCollection.TryAddSingleton<IDurableClientFactory, DurableClientFactory>();
 #pragma warning disable CS0612, CS0618 // Type or member is obsolete
             serviceCollection.TryAddSingleton<IConnectionStringResolver, WebJobsConnectionStringProvider>();
@@ -100,18 +97,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #pragma warning restore CS0612, CS0618 // Type or member is obsolete
 
             return builder;
-        }
-
-        /// <summary>
-        /// Adds the <see cref="IScaleMonitor"/> and <see cref="ITargetScaler"/> providers for the Durable Triggers.
-        /// </summary>
-        /// <param name="builder">The <see cref="IWebJobsBuilder"/> to configure.</param>
-        /// <returns>Returns the provided <see cref="IWebJobsBuilder"/>.</returns>
-        internal static IWebJobsBuilder AddDurableScaleForTrigger(this IWebJobsBuilder builder, TriggerMetadata triggerMetadata)
-        {
-            // this segment adheres to the followings pattern: https://github.com/Azure/azure-sdk-for-net/pull/38756
-            // Delegate to the scale package's method for registering the scale provider
-            return Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.DurableTaskJobHostConfigurationExtensions.AddDurableScaleForTrigger(builder, triggerMetadata);
         }
 
         /// <summary>
