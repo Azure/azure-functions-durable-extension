@@ -248,7 +248,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (this.OutOfProcProtocol == OutOfProcOrchestrationProtocol.OrchestratorShim)
             {
                 bool? shouldEnable = this.Options.LocalRpcEndpointEnabled;
-                if (!shouldEnable.HasValue)
+                if (shouldEnable is null)
                 {
                     WorkerRuntimeType runtimeType = this.PlatformInformationService.GetWorkerRuntimeType();
                     shouldEnable = runtimeType switch
@@ -454,6 +454,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
                 catch (NotImplementedException ex)
                 {
+                    // This happens when the customer is using a durability provider/provider factory that does not yet support SetUseSeparateQueueForEntityWorkItems.
+                    // It only represents a real problem when the customer is also using a language config that requires configuring gRPC during function indexing,
+                    // like for the gRPC-based Python SDK. Eventually, this method will be implemented on all durability provider SDKs and should never appear.
                     this.TraceHelper.ExtensionWarningEvent(this.Options.HubName, string.Empty, string.Empty, $"Could not set UseSeparateQueueForEntityWorkItems: {ex}");
                 }
             }
@@ -473,6 +476,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
                 catch (NotImplementedException ex)
                 {
+                    // This happens when the customer is using a durability provider/provider factory that does not yet support SetUseSeparateQueueForEntityWorkItems.
+                    // It only represents a real problem when the customer is also using a language config that requires configuring gRPC during function indexing,
+                    // like for the gRPC-based Python SDK. Eventually, this method will be implemented on all durability provider SDKs and should never appear.
                     this.TraceHelper.ExtensionWarningEvent(this.Options.HubName, string.Empty, string.Empty, $"Could not set UseSeparateQueueForEntityWorkItems: {ex}");
                 }
             }
