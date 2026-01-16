@@ -12,6 +12,7 @@ using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
+using DurableTask.Core.Exceptions;
 using DurableTask.Core.History;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Routing.Template;
@@ -945,6 +946,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             catch (JsonReaderException e)
             {
                 return request.CreateErrorResponse(HttpStatusCode.BadRequest, "Invalid JSON content", e);
+            }
+            catch (OrchestrationAlreadyExistsException e)
+            {
+                return request.CreateErrorResponse(HttpStatusCode.Conflict, e.Message);
+            }
+            catch (OperationCanceledException)
+            {
+                return request.CreateErrorResponse(
+                    HttpStatusCode.RequestTimeout,
+                    $"Create instance request exceeded timeout of {this.durableTaskOptions.OrchestrationCreationRequestTimeoutInSeconds} " +
+                    $"seconds for instance ID {instanceId} while waiting for the termination of the existing instance with this instance ID.");
             }
         }
 

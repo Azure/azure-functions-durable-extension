@@ -183,6 +183,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 this.OutOfProcProtocol = OutOfProcOrchestrationProtocol.OrchestratorShim;
             }
+
+            this.defaultDurabilityProvider.OrchestrationCreationRequestTimeoutInSeconds = this.Options.OrchestrationCreationRequestTimeoutInSeconds;
         }
 
         internal DurableTaskOptions Options { get; }

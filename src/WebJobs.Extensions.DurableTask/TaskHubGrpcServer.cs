@@ -55,6 +55,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             try
             {
+                var allStatuses = new List<OrchestrationStatus>()
+                {
+                    OrchestrationStatus.Running,
+                    OrchestrationStatus.Pending,
+                    OrchestrationStatus.Suspended,
+                    OrchestrationStatus.Completed,
+                    OrchestrationStatus.Failed,
+                    OrchestrationStatus.Terminated,
+                };
+
+                OrchestrationStatus[] dedupeStatuses = allStatuses
+                    .Except(request.OrchestrationIdReusePolicy.ReplaceableStatus
+                    .Select(status => (OrchestrationStatus)status))
+                    .Union(this.extension.Options.OverridableExistingInstanceStates.ToDedupeStatuses())
+                    .ToArray();
+
                 // Create the orchestration instance
                 var instance = new OrchestrationInstance
                 {
@@ -87,7 +103,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         Event = executionStartedEvent,
                         OrchestrationInstance = instance,
                     },
-                    this.GetStatusesNotToOverride());
+                    dedupeStatuses,
+                    context.CancellationToken);
 
                 return new P.CreateInstanceResponse
                 {
@@ -102,6 +119,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 throw new RpcException(new Status(StatusCode.AlreadyExists, $"An Orchestration instance with the ID {request.InstanceId} already exists."));
             }
+            catch (OperationCanceledException)
+            {
+                throw new RpcException(new Status(
+                    StatusCode.Cancelled,
+                    context.CancellationToken.IsCancellationRequested
+                    ? $"Create instance request cancelled for instance ID {request.InstanceId}"
+                    : $"Create instance request exceeded timeout of {this.extension.Options.OrchestrationCreationRequestTimeoutInSeconds} seconds " +
+                      $"for instance ID {request.InstanceId} while waiting for the termination of the existing instance with this instance ID."));
+            }
             catch (Exception ex)
             {
                 this.extension.TraceHelper.ExtensionWarningEvent(
@@ -111,12 +137,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     message: $"Failed to start instanceId {request.InstanceId} due to internal exception.\n Exception trace: {ex}.");
                 throw new RpcException(new Status(StatusCode.Internal, $"Failed to start instance with ID {request.InstanceId}.\nInner Exception message: {ex.Message}."));
             }
-        }
-
-        private OrchestrationStatus[] GetStatusesNotToOverride()
-        {
-            OverridableStates overridableStates = this.extension.Options.OverridableExistingInstanceStates;
-            return overridableStates.ToDedupeStatuses();
         }
 
         public async override Task<P.RaiseEventResponse> RaiseEvent(P.RaiseEventRequest request, ServerCallContext context)
@@ -619,6 +639,89 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 LockedBy = metaData.LockedBy,
                 SerializedState = metaData.SerializedState,
             };
+        }
+
+        private async Task TerminateExistingNonTerminalInstance(P.CreateInstanceRequest request, ServerCallContext context, IEnumerable<OrchestrationStatus> dedupeStatuses)
+        {
+            var runningStatuses = new List<P.OrchestrationStatus>()
+            {
+                P.OrchestrationStatus.Running,
+                P.OrchestrationStatus.Pending,
+                P.OrchestrationStatus.Suspended,
+            };
+
+            // Only check if an existing instance with this instance ID is running if:
+            // 1. The user explicitly specified in their options settings that any existing instance state is overridable
+            // (as opposed to only terminal states), and
+            // 2. The reusable statuses passed to the creation request contain at least one non-terminal status.
+            if (this.extension.Options.OverridableExistingInstanceStates == OverridableStates.AnyState
+                && request.OrchestrationIdReusePolicy.ReplaceableStatus.Any(status => runningStatuses.Contains(status)))
+            {
+                OrchestrationState orchestrationState = await this.GetDurabilityProvider(context)
+                        .GetOrchestrationStateAsync(request.InstanceId, executionId: null);
+
+                if (orchestrationState?.OrchestrationInstance != null)
+                {
+                    // If an existing instance is found, check if its status is in the list of reusable statuses.
+                    if (!request.OrchestrationIdReusePolicy.ReplaceableStatus.Contains((P.OrchestrationStatus)orchestrationState.OrchestrationStatus))
+                    {
+                        throw new OrchestrationAlreadyExistsException();
+                    }
+
+                    // If the existing instance is in a non-terminal state, terminate it before creating a new instance.
+                    if (runningStatuses.Contains((P.OrchestrationStatus)orchestrationState.OrchestrationStatus))
+                    {
+                        OrchestrationStatus originalStatus = orchestrationState.OrchestrationStatus;
+
+                        // Check for cancellation before attempting to terminate
+                        if (context.CancellationToken.IsCancellationRequested)
+                        {
+                            throw new RpcException(new Status(StatusCode.Cancelled, $"Create instance request cancelled for instance ID {request.InstanceId}"));
+                        }
+
+                        await this.GetClient(context).TerminateAsync(request.InstanceId, $"A new instance creation request has been issued for instance " +
+                            $"{request.InstanceId}, which currently has status {orchestrationState.OrchestrationStatus}. Since the " +
+                            $"{nameof(DurableTaskOptions.OverridableExistingInstanceStates)} is set to {nameof(OverridableStates.AnyState)}, and the dedupe " +
+                            $"statuses of the creation request, {dedupeStatuses}, do not contain the orchestration's status, the orchestration has been " +
+                            $"terminated and a new instance with the same instance ID will be created.");
+
+                        var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(90));
+                        using var linkedCts =
+                            CancellationTokenSource.CreateLinkedTokenSource(
+                                context.CancellationToken,
+                                timeoutCts.Token);
+
+                        while (!linkedCts.IsCancellationRequested
+                            && orchestrationState != null
+                            && orchestrationState.OrchestrationStatus != OrchestrationStatus.Terminated)
+                        {
+                            await Task.Delay(TimeSpan.FromSeconds(1), context.CancellationToken);
+                            orchestrationState = await this.GetDurabilityProvider(context)
+                                .GetOrchestrationStateAsync(request.InstanceId, executionId: null);
+                        }
+
+                        if (linkedCts.IsCancellationRequested)
+                        {
+                            throw new RpcException(new Status(
+                                StatusCode.Cancelled,
+                                context.CancellationToken.IsCancellationRequested
+                                ? $"Create instance request cancelled for instance ID {request.InstanceId}"
+                                : $"Create instance request exceeded timeout of 100 seconds for instance ID {request.InstanceId} " +
+                                  $"while waiting for the termination of the existing instance with this instance ID."));
+                        }
+
+                        this.extension.TraceHelper.ExtensionInformationalEvent(
+                            this.extension.Options.HubName,
+                            functionName: request.Name,
+                            instanceId: request.InstanceId,
+                            message: $"Successfully terminated existing instance with instance ID {request.InstanceId} and status {originalStatus} " +
+                                     $"in create instance request. Will proceed to create a new instance with this ID.",
+                            writeToUserLogs: true);
+
+                        // What should we do if the dedupe statuses contain the Terminated status? Then the creation request after this point will fail. Should we remove this status?
+                    }
+                }
+            }
         }
     }
 }
