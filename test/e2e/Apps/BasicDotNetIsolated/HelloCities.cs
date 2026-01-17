@@ -49,14 +49,7 @@ public static class HelloCities
         ILogger logger = executionContext.GetLogger(nameof(StartOrchestration));
 
         // Function input comes from the request content.
-        if (instanceId is not null)
-        {
-            await client.ScheduleNewOrchestrationInstanceAsync(orchestrationName, new StartOrchestrationOptions(InstanceId: instanceId));
-        }
-        else
-        {
-            instanceId = await client.ScheduleNewOrchestrationInstanceAsync(orchestrationName);
-        }
+        await client.ScheduleNewOrchestrationInstanceAsync(orchestrationName, new StartOrchestrationOptions(InstanceId: instanceId));
 
         logger.LogInformation("Started orchestration with ID = '{instanceId}'.", instanceId);
 
@@ -75,13 +68,9 @@ public static class HelloCities
     {
         ILogger logger = executionContext.GetLogger("HelloCities_HttpStart");
 
-        var startOptions = new StartOrchestrationOptions(StartAt: scheduledStartTime);
+        var startOptions = new StartOrchestrationOptions(StartAt: scheduledStartTime, InstanceId: instanceId);
 
         // Function input comes from the request content.
-        if (instanceId is not null)
-        {
-            startOptions = startOptions with { InstanceId = instanceId };
-        }
         instanceId = await client.ScheduleNewOrchestrationInstanceAsync(
             nameof(HelloCities), startOptions);
 
