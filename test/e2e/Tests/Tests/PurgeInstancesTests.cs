@@ -161,7 +161,7 @@ public class PurgeInstancesTests
 
         // Terminated orchestration, should succeed
         if (this.fixture.functionLanguageLocalizer.GetLanguageType() != LanguageType.Java
-            && this.fixture.GetDurabilityProvider() != FunctionAppFixture.ConfiguredDurabilityProviderType.MSSQL) // Bug: https://github.com/microsoft/durabletask-java/issues/237
+            || this.fixture.GetDurabilityProvider() != FunctionAppFixture.ConfiguredDurabilityProviderType.MSSQL) // Bug: https://github.com/microsoft/durabletask-java/issues/237
         {
             using HttpResponseMessage startTerminatedOrchestrationResponse = await HttpHelpers.InvokeHttpTrigger(
                 "StartOrchestration",
@@ -207,16 +207,21 @@ public class PurgeInstancesTests
         AssertFailedPurgeResponseStatusCode(purgeRunning);
 
         // Pending orchestration, should fail
-        DateTime scheduledStartTime = DateTime.UtcNow + TimeSpan.FromMinutes(1);
-        using HttpResponseMessage startPendingOrchestrationResponse = await HttpHelpers.InvokeHttpTrigger(
-            "HelloCities_HttpStart_Scheduled",
-            $"?ScheduledStartTime={scheduledStartTime:o}");
-        Assert.Equal(HttpStatusCode.Accepted, startPendingOrchestrationResponse.StatusCode);
-        string pendingInstanceId = await DurableHelpers.ParseInstanceIdAsync(startPendingOrchestrationResponse);
-        string pendingStatusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(startPendingOrchestrationResponse);
-        await DurableHelpers.WaitForOrchestrationStateAsync(pendingStatusQueryGetUri, "Pending", 30);
-        using HttpResponseMessage purgePending = await HttpHelpers.InvokeHttpTrigger("PurgeOrchestrationHistory", $"?instanceId={pendingInstanceId}");
-        AssertFailedPurgeResponseStatusCode(purgePending);
+        // Scheduled start times are currently only implemented in Java and .NET isolated, which is the only true way to get an orchestration in a "Pending" state
+        if (this.fixture.functionLanguageLocalizer.GetLanguageType() == LanguageType.DotnetIsolated
+            || this.fixture.functionLanguageLocalizer.GetLanguageType() == LanguageType.Java)
+        {
+            DateTime scheduledStartTime = DateTime.UtcNow + TimeSpan.FromMinutes(1);
+            using HttpResponseMessage startPendingOrchestrationResponse = await HttpHelpers.InvokeHttpTrigger(
+                "HelloCities_HttpStart_Scheduled",
+                $"?ScheduledStartTime={scheduledStartTime:o}");
+            Assert.Equal(HttpStatusCode.Accepted, startPendingOrchestrationResponse.StatusCode);
+            string pendingInstanceId = await DurableHelpers.ParseInstanceIdAsync(startPendingOrchestrationResponse);
+            string pendingStatusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(startPendingOrchestrationResponse);
+            await DurableHelpers.WaitForOrchestrationStateAsync(pendingStatusQueryGetUri, "Pending", 30);
+            using HttpResponseMessage purgePending = await HttpHelpers.InvokeHttpTrigger("PurgeOrchestrationHistory", $"?instanceId={pendingInstanceId}");
+            AssertFailedPurgeResponseStatusCode(purgePending);
+        }
 
         // Suspended orchestration, should fail
         using HttpResponseMessage startSuspendedOrchestrationResponse = await HttpHelpers.InvokeHttpTrigger(

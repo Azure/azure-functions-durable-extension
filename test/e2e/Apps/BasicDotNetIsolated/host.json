@@ -11,7 +11,8 @@
         "versionMatchStrategy": "CurrentOrOlder",
         "versionFailureStrategy": "Fail",
         "extendedSessionsEnabled": true,
-        "extendedSessionIdleTimeoutInSeconds": 30
+        "extendedSessionIdleTimeoutInSeconds": 30,
+        "overridableExistingInstanceStates": "AnyState"
     }
   }
 }

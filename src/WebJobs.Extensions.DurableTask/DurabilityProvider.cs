@@ -415,6 +415,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc />
+        /// should this method comment be updated too? to mention terminating existing instances?
         public async virtual Task CreateTaskOrchestrationAsync(TaskMessage creationMessage, OrchestrationStatus[] dedupeStatuses)
         {
             using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(this.OrchestrationCreationRequestTimeoutInSeconds));

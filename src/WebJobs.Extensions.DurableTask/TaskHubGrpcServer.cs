@@ -64,9 +64,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     OrchestrationStatus.Terminated,
                 };
 
+                // Not all clients are necessarily configured to set the OrchestrationIdReusePolicy field of the request.
+                // If it is null, we assume that they do not support per-request-dedupe statuses, and default to using just
+                // the OverridableExistingInstanceStates setting instead.
+                List<OrchestrationStatus> reusableStatuses = request.OrchestrationIdReusePolicy is null
+                    ? allStatuses
+                    : request.OrchestrationIdReusePolicy.ReplaceableStatus.Select(status => (OrchestrationStatus)status).ToList();
+
                 OrchestrationStatus[] dedupeStatuses = allStatuses
-                    .Except(request.OrchestrationIdReusePolicy.ReplaceableStatus
-                    .Select(status => (OrchestrationStatus)status))
+                    .Except(reusableStatuses)
                     .Union(this.extension.Options.OverridableExistingInstanceStates.ToDedupeStatuses())
                     .ToArray();
 
