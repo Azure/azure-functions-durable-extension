@@ -49,7 +49,7 @@ public static class HelloCities
         ILogger logger = executionContext.GetLogger(nameof(StartOrchestration));
 
         // Function input comes from the request content.
-        await client.ScheduleNewOrchestrationInstanceAsync(orchestrationName, new StartOrchestrationOptions(InstanceId: instanceId));
+        instanceId = await client.ScheduleNewOrchestrationInstanceAsync(orchestrationName, new StartOrchestrationOptions(InstanceId: instanceId));
 
         logger.LogInformation("Started orchestration with ID = '{instanceId}'.", instanceId);
 
