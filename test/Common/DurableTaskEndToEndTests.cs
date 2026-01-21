@@ -5395,14 +5395,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 string instanceId = instanceIdBase + "_" + terminalStatus;
 
                 TestDurableClient client;
-                if (terminalStatus != OrchestrationRuntimeStatus.Failed)
-                {
-                    client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.Counter), initialValue, this.output, instanceId: instanceId);
-                }
-                else
-                {
-                    client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.ThrowOrchestrator), string.Empty, this.output, instanceId: instanceId);
-                }
+                client = await host.StartOrchestratorAsync(
+                    terminalStatus == OrchestrationRuntimeStatus.Failed ? nameof(TestOrchestrations.ThrowOrchestrator) : nameof(TestOrchestrations.Counter),
+                    terminalStatus == OrchestrationRuntimeStatus.Failed ? string.Empty : initialValue,
+                    this.output,
+                    instanceId: instanceId);
 
                 await client.WaitForStartupAsync(this.output);
                 DurableOrchestrationStatus status = null;

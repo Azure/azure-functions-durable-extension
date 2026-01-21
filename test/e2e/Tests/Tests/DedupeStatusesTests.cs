@@ -139,7 +139,7 @@ public class DedupeStatusesTests
         HttpStatusCode expectedCode = HttpStatusCode.Accepted)
     {
         string queryString = $"?orchestrationName={orchestrationName}&instanceId={instanceId}&dedupeStatuses={JsonSerializer.Serialize(dedupeStatuses)}";
-      
+
         if (scheduledStartTime is not null)
         {
             queryString += $"&scheduledStartTime={scheduledStartTime:o}";

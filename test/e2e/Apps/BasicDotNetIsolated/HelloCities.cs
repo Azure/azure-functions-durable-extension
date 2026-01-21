@@ -109,7 +109,7 @@ public static class HelloCities
 
         if (scheduledStartTime is not null)
         {
-           startOptions = startOptions with { StartAt = scheduledStartTime };
+            startOptions = startOptions with { StartAt = scheduledStartTime };
         }
 
         // Function input comes from the request content.

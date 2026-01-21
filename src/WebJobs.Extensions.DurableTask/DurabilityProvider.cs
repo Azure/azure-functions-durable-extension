@@ -435,7 +435,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <see cref="OrchestrationAlreadyExistsException"/> will be thrown.
         /// If the array contains all of the running statuses (<see cref="OrchestrationStatus.Pending"/>, <see cref="OrchestrationStatus.Running"/>,
         /// and <see cref="OrchestrationStatus.Suspended"/>), then only terminal statuses can be reused.
-        /// If at least one of these statuses is not included in the array, then if an instance with that status is found, it will first be terminated via
+        /// If at least one of these statuses is not included in the array, then if an instance with that status is found, it will first be terminated
         /// before a new orchestration is created.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task that completes when the creation message for the task orchestration instance is enqueued.</returns>
