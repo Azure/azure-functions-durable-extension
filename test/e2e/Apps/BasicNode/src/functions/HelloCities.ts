@@ -33,7 +33,7 @@ const HelloCitiesHttpStartScheduled: HttpHandler = async (request: HttpRequest, 
     const client = df.getClient(context);
     const body: unknown = await request.text();
 
-    const instanceId: string =  await client.startNew("HelloCities", { input: request.params.ScheduledStartTime });
+    const instanceId: string = await client.startNew("HelloCities", { input: request.params.ScheduledStartTime });
 
     context.log(`Started orchestration with ID = '${instanceId}'.`);
 
