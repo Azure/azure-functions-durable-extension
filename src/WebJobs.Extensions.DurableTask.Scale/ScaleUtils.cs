@@ -8,9 +8,9 @@ using Microsoft.Azure.WebJobs.Host.Scale;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
 {
-    internal static class ScaleUtils
+    public static class ScaleUtils
     {
-        internal static IScaleMonitor GetScaleMonitor(ScalabilityProvider durabilityProvider, string functionId, FunctionName functionName, string? connectionName, string hubName)
+        public static IScaleMonitor GetScaleMonitor(ScalabilityProvider durabilityProvider, string functionId, FunctionName functionName, string? connectionName, string hubName)
         {
             if (durabilityProvider.TryGetScaleMonitor(
                     functionId,
@@ -65,7 +65,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
         }
 
 #pragma warning disable SA1201 // Elements should appear in the correct order
-        internal static ITargetScaler GetTargetScaler(ScalabilityProvider durabilityProvider, string functionId, FunctionName functionName, string? connectionName, string hubName)
+        public static ITargetScaler GetTargetScaler(ScalabilityProvider durabilityProvider, string functionId, FunctionName functionName, string? connectionName, string hubName)
 #pragma warning restore SA1201 // Elements should appear in the correct order
         {
             if (durabilityProvider.TryGetTargetScaler(

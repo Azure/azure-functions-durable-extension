@@ -8,7 +8,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
     /// <summary>
     /// The name of a durable function.
     /// </summary>
-    internal struct FunctionName
+    public struct FunctionName
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="FunctionName"/> struct.

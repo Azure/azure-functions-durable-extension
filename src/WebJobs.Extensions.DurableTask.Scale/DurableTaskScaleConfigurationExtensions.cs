@@ -78,9 +78,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
 
             serviceCollection.AddSingleton<IScalabilityProviderFactory>(serviceProvider =>
             {
+                // Pass IServiceProvider for runtime scaling identity support
+                // Netherite uses it to resolve AzureComponentFactory for managed identity
                 return new NetheriteScalabilityProviderFactory(
                     serviceProvider.GetRequiredService<IConfiguration>(),
-                    serviceProvider.GetRequiredService<ILoggerFactory>());
+                    serviceProvider.GetRequiredService<ILoggerFactory>(),
+                    serviceProvider);
             });
 
             return builder;

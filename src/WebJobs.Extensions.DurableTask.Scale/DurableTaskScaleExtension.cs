@@ -49,7 +49,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
         /// <param name="logger">The logger instance for diagnostic messages.</param>
         /// <param name="scalabilityProviderFactories">A collection of available scalability provider factories.</param>
         /// <returns>The resolved <see cref="IScalabilityProviderFactory"/> suitable for the configured provider.</returns>
-        internal static IScalabilityProviderFactory GetScalabilityProviderFactory(
+        public static IScalabilityProviderFactory GetScalabilityProviderFactory(
             DurableTaskMetadata metadata,
             ILogger logger,
             IEnumerable<IScalabilityProviderFactory> scalabilityProviderFactories)

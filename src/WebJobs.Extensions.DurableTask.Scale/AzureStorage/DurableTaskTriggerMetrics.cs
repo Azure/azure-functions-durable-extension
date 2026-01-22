@@ -5,6 +5,9 @@ using Microsoft.Azure.WebJobs.Host.Scale;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage
 {
+    /// <summary>
+    /// Represents scale-related metrics for AzureStorage backend.
+    /// </summary>
     public class DurableTaskTriggerMetrics : ScaleMetrics
     {
         /// <summary>

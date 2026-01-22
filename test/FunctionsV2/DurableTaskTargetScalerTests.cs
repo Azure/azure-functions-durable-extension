@@ -44,7 +44,10 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
             ILogger logger = loggerFactory.CreateLogger(LogCategories.CreateTriggerCategory("DurableTask"));
 
             DisconnectedPerformanceMonitor nullPerformanceMonitorMock = null;
-            StorageAccountClientProvider storageAccountClientProvider = null;
+
+            // Use development storage connection string to create a real StorageAccountClientProvider
+            // This is required because AzureStorageScalabilityProvider validates that storageAccountClientProvider is not null
+            var storageAccountClientProvider = new StorageAccountClientProvider("UseDevelopmentStorage=true");
             this.metricsProviderMock = new Mock<DurableTaskMetricsProvider>(
                 MockBehavior.Strict,
                 "HubName",
@@ -79,8 +82,9 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         [InlineData(10, 10, 30, "[10, 10, 10, 1]", 4)]
         public async Task TestTargetScaler(int maxConcurrentActivities, int maxConcurrentOrchestrators, int workItemQueueLength, string controlQueueLengths, int expectedWorkerCount)
         {
-            this.orchestrationServiceMock.SetupGet(m => m.MaxConcurrentTaskActivityWorkItems).Returns(maxConcurrentActivities);
-            this.orchestrationServiceMock.SetupGet(m => m.MaxConcurrentTaskOrchestrationWorkItems).Returns(maxConcurrentOrchestrators);
+            // Setup scalability provider mock to return max concurrent values
+            this.scalabilityProviderMock.SetupGet(m => m.MaxConcurrentTaskActivityWorkItems).Returns(maxConcurrentActivities);
+            this.scalabilityProviderMock.SetupGet(m => m.MaxConcurrentTaskOrchestrationWorkItems).Returns(maxConcurrentOrchestrators);
 
             this.triggerMetricsMock.SetupGet(m => m.WorkItemQueueLength).Returns(workItemQueueLength);
             this.triggerMetricsMock.SetupGet(m => m.ControlQueueLengths).Returns(controlQueueLengths);
@@ -92,53 +96,8 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
             Assert.Equal(expectedWorkerCount, targetWorkerCount);
         }
 
-        [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task TestGetTargetScaler(bool supportsTBS)
-        {
-            ITargetScaler targetScaler = new Mock<ITargetScaler>().Object;
-            this.scalabilityProviderMock.Setup(m => m.TryGetTargetScaler(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), out targetScaler))
-                .Returns(supportsTBS);
-
-            ITargetScaler scaler;
-            if (!supportsTBS)
-            {
-                // When TBS is not supported, scalability provider returns false
-                this.scalabilityProviderMock.Object.TryGetTargetScaler("FunctionId", "FunctionName", "HubName", "connectionName", out scaler);
-                Assert.Null(scaler);
-            }
-            else
-            {
-                this.scalabilityProviderMock.Object.TryGetTargetScaler("FunctionId", "FunctionName", "HubName", "connectionName", out scaler);
-                Assert.Equal(targetScaler, scaler);
-            }
-        }
-
-        [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [InlineData(true)]
-        [InlineData(false)]
-        public void TestGetScaleMonitor(bool supportsScaleMonitor)
-        {
-            IScaleMonitor scaleMonitor = new Mock<IScaleMonitor>().Object;
-            this.scalabilityProviderMock.Setup(m => m.TryGetScaleMonitor(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), out scaleMonitor))
-                .Returns(supportsScaleMonitor);
-
-            IScaleMonitor monitor;
-            if (!supportsScaleMonitor)
-            {
-                // When scale monitor is not supported, scalability provider returns false
-                this.scalabilityProviderMock.Object.TryGetScaleMonitor("FunctionId", "FunctionName", "HubName", "connectionName", out monitor);
-                Assert.Null(monitor);
-            }
-            else
-            {
-                this.scalabilityProviderMock.Object.TryGetScaleMonitor("FunctionId", "FunctionName", "HubName", "connectionName", out monitor);
-                Assert.Equal(scaleMonitor, monitor);
-            }
-        }
+        // Note: Removed TestGetTargetScaler and TestGetScaleMonitor tests as they only tested mock behavior,
+        // not actual code in the Scale package. The ScaleHostE2ETest below tests the real scaling functionality.
 
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]

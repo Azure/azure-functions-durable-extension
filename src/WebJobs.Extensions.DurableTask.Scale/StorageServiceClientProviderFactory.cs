@@ -12,7 +12,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
     /// <summary>
     /// Factory for creating azure storage client providers.
     /// </summary>
-    internal class StorageServiceClientProviderFactory : IStorageServiceClientProviderFactory
+    public class StorageServiceClientProviderFactory : IStorageServiceClientProviderFactory
     {
         private readonly IConfiguration configuration;
         private readonly ILoggerFactory loggerFactory;

@@ -6,7 +6,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Net;
 using System.Net.Http;
 using System.Reflection;
 using System.Text;
@@ -22,11 +21,9 @@ using Microsoft.Azure.WebJobs.Description;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Grpc;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage;
-using Microsoft.Azure.WebJobs.Host;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale;
 using Microsoft.Azure.WebJobs.Host.Config;
 using Microsoft.Azure.WebJobs.Host.Executors;
-using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Azure.WebJobs.Logging;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -81,6 +78,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private INameResolver nameResolver;
         private ILoggerFactory loggerFactory;
         private DurabilityProvider defaultDurabilityProvider;
+        private IEnumerable<IScalabilityProviderFactory> scalabilityProviderFactories;
         private TaskHubWorker taskHubWorker;
         private bool isTaskHubWorkerStarted;
         private HttpClient durableHttpClient;
@@ -117,7 +115,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #pragma warning disable CS0618 // Type or member is obsolete
             IWebHookProvider webhookProvider = null,
 #pragma warning restore CS0618 // Type or member is obsolete
-            ITelemetryActivator telemetryActivator = null)
+            ITelemetryActivator telemetryActivator = null,
+            IEnumerable<IScalabilityProviderFactory> scalabilityProviderFactories = null)
         {
             this.extensionGuid = Guid.NewGuid();
 
@@ -126,6 +125,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.nameResolver = nameResolver ?? throw new ArgumentNullException(nameof(nameResolver));
             this.loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
             this.PlatformInformationService = platformInformationService ?? throw new ArgumentNullException(nameof(platformInformationService));
+            this.scalabilityProviderFactories = scalabilityProviderFactories ?? Enumerable.Empty<IScalabilityProviderFactory>();
             DurableTaskOptions.ResolveAppSettingOptions(this.Options, this.nameResolver);
 
             ILogger logger = loggerFactory.CreateLogger(LoggerCategoryName);
@@ -1042,6 +1042,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         internal string GetDefaultConnectionName()
         {
             return this.defaultDurabilityProvider.ConnectionName;
+        }
+
+        /// <summary>
+        /// Gets the registered scalability provider factories for runtime scaling.
+        /// </summary>
+        internal IEnumerable<IScalabilityProviderFactory> GetScalabilityProviderFactories()
+        {
+            return this.scalabilityProviderFactories;
+        }
+
+        /// <summary>
+        /// Gets a logger for scale-related logging.
+        /// </summary>
+        internal ILogger GetLogger()
+        {
+            return this.loggerFactory.CreateLogger(LoggerCategoryName);
         }
 
         internal RegisteredFunctionInfo GetOrchestratorInfo(FunctionName orchestratorFunction)

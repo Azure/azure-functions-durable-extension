@@ -12,6 +12,9 @@ using Newtonsoft.Json;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage
 {
+    /// <summary>
+    /// Target scaler that computes the desired worker count based on scale metrics from the Azure Storage backend.
+    /// </summary>
     public class DurableTaskTargetScaler : ITargetScaler
     {
         private readonly DurableTaskMetricsProvider metricsProvider;
@@ -20,6 +23,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage
         private readonly ILogger logger;
         private readonly string scaler;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DurableTaskTargetScaler"/>.
+        /// </summary>
+        /// <param name="scalerId">
+        /// The unique identifier for this target scaler.
+        /// </param>
+        /// <param name="metricsProvider">
+        /// Provides Durable Task scale metrics used to compute the target worker count.
+        /// </param>
+        /// <param name="scalabilityProvider">
+        /// Provides backend-specific scaling capabilities and configuration.
+        /// </param>
+        /// <param name="logger">
+        /// The logger instance used for diagnostics and telemetry.
+        /// </param>
         public DurableTaskTargetScaler(
             string scalerId,
             DurableTaskMetricsProvider metricsProvider,
@@ -40,6 +58,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage
 
         private int MaxConcurrentOrchestrators => this.scalabilityProvider.MaxConcurrentTaskOrchestrationWorkItems;
 
+        /// <summary>
+        /// Computes the target worker count based on current Durable Task trigger metrics.
+        /// </summary>
+        /// <param name="context">
+        /// The scaling context provided by the scale controller.
+        /// </param>
+        /// <returns>
+        /// A <see cref="TargetScalerResult"/> containing the computed target worker count.
+        /// </returns>
+        /// <exception cref="Exception">
+        /// Thrown when metrics cannot be retrieved or processed.
+        /// </exception>
         public async Task<TargetScalerResult> GetScaleResultAsync(TargetScalerContext context)
         {
             DurableTaskTriggerMetrics? metrics = null;

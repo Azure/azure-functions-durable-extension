@@ -93,6 +93,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureManaged
             string? rawConnectionName = TriggerMetadataExtensions.ResolveConnectionName(metadata?.StorageProvider);
             string connectionName = rawConnectionName ?? this.DefaultConnectionName;
             this.logger.LogInformation("using connectionName" + connectionName);
+
             // Look up connection string from configuration
             string? connectionString =
                 this.configuration.GetConnectionString(connectionName) ??
@@ -108,8 +109,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureManaged
 
             AzureManagedConnectionString azureManagedConnectionString = new AzureManagedConnectionString(connectionString);
 
-            // Extract task hub name from trigger metadata (from Scale Controller payload)
-            string taskHubName = metadata?.TaskHubName ?? azureManagedConnectionString.TaskHubName;
+            // Extract task hub name from metadata
+            string? taskHubName = metadata?.TaskHubName ?? azureManagedConnectionString.TaskHubName;
 
             // Include client ID in cache key to handle managed identity changes
             // Use the original connection name (rawConnectionName or default) for the cache key, not the connection string value
@@ -134,11 +135,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureManaged
                     return cachedProvider;
                 }
 
-                // Create options from the connection string
+                // Create options from the connection string.
+                // For runtime-driven scaling, token credentials are loaded directly from the host.
                 AzureManagedOrchestrationServiceOptions options =
                     AzureManagedOrchestrationServiceOptions.FromConnectionString(connectionString);
 
-                // If triggerMetadata is provided, try to get token credential from it
+                // If triggerMetadata is provided (from functions Scale Controller), try to get token credential from it.
                 if (triggerMetadata != null && triggerMetadata.Properties != null &&
                     triggerMetadata.Properties.TryGetValue("GetAzureManagedTokenCredential", out object? tokenCredentialFunc))
                 {

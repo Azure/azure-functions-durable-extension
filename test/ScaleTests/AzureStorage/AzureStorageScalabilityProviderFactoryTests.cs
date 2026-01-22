@@ -59,6 +59,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
             // Act
             var factory = new AzureStorageScalabilityProviderFactory(
                 this.clientProviderFactory,
+                this.configuration,
                 this.nameResolver,
                 this.loggerFactory);
 
@@ -91,6 +92,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
             Assert.Throws<ArgumentNullException>(() =>
                 new AzureStorageScalabilityProviderFactory(
                     null,
+                    this.configuration,
                     this.nameResolver,
                     this.loggerFactory));
         }
@@ -109,6 +111,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
 
             var factory = new AzureStorageScalabilityProviderFactory(
                 this.clientProviderFactory,
+                this.configuration,
                 this.nameResolver,
                 this.loggerFactory);
 
@@ -138,6 +141,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
             // Options no longer used - removed CreateOptions call
             var factory = new AzureStorageScalabilityProviderFactory(
                 this.clientProviderFactory,
+                this.configuration,
                 this.nameResolver,
                 this.loggerFactory);
 
@@ -168,6 +172,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
             // Arrange - Hub name too short (invalid)
             var factory = new AzureStorageScalabilityProviderFactory(
                 this.clientProviderFactory,
+                this.configuration,
                 this.nameResolver,
                 this.loggerFactory);
 
@@ -190,6 +195,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
             // Arrange - MaxConcurrentOrchestratorFunctions is 0 (invalid)
             var factory = new AzureStorageScalabilityProviderFactory(
                 this.clientProviderFactory,
+                this.configuration,
                 this.nameResolver,
                 this.loggerFactory);
 
@@ -213,6 +219,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
             // Options no longer used - removed CreateOptions call
             var factory = new AzureStorageScalabilityProviderFactory(
                 this.clientProviderFactory,
+                this.configuration,
                 this.nameResolver,
                 this.loggerFactory);
 
@@ -268,6 +275,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
 
             var factory = new AzureStorageScalabilityProviderFactory(
                 this.clientProviderFactory,
+                this.configuration,
                 this.nameResolver,
                 this.loggerFactory);
 
@@ -312,6 +320,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
                 // Options no longer used - removed CreateOptions call
                 var factory = new AzureStorageScalabilityProviderFactory(
                     clientFactory,
+                    config,
                     this.nameResolver,
                     this.loggerFactory);
 
@@ -342,6 +351,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
             // Options no longer used - removed CreateOptions call
             var factory = new AzureStorageScalabilityProviderFactory(
                 this.clientProviderFactory,
+                this.configuration,
                 this.nameResolver,
                 this.loggerFactory);
 
@@ -362,6 +372,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
             // Arrange
             var factory = new AzureStorageScalabilityProviderFactory(
                 this.clientProviderFactory,
+                this.configuration,
                 this.nameResolver,
                 this.loggerFactory);
 
@@ -398,6 +409,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Tests
             // Options no longer used - removed CreateOptions call
             var factory = new AzureStorageScalabilityProviderFactory(
                 clientFactory,
+                config,
                 this.nameResolver,
                 this.loggerFactory);
 
