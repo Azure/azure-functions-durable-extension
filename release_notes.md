@@ -4,6 +4,8 @@
 
 ### New Features
 
+- Add `GetFunctionContext` extension method on `TaskOrchestrationContext` to retrieve the underlying `FunctionContext` in Azure Functions orchestrations.
+
 ### Bug Fixes
 
 - Check if function invocation already has an executor before registering durable executor. (#3265)
