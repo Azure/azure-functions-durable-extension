@@ -5,8 +5,9 @@
     <AssemblyName>Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale</AssemblyName>
     <RootNamespace>Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale</RootNamespace>
     <MajorVersion>1</MajorVersion>
-    <MinorVersion>0</MinorVersion>
-    <PatchVersion>0</PatchVersion>
+    <MinorVersion>1</MinorVersion>
+    <PatchVersion>1</PatchVersion>
+	<VersionSuffix>test.13</VersionSuffix>
     <VersionPrefix>$(MajorVersion).$(MinorVersion).$(PatchVersion)</VersionPrefix>
     <FileVersion>$(MajorVersion).$(MinorVersion).$(PatchVersion)</FileVersion>
     <AssemblyVersion>$(MajorVersion).0.0.0</AssemblyVersion>
@@ -43,6 +44,7 @@
     <PackageReference Include="Microsoft.DurableTask.AzureManagedBackend" />
 	  <PackageReference Include ="Microsoft.Azure.DurableTask.Netherite" />
     <PackageReference Include="Azure.Identity" />
+    <PackageReference Include="Microsoft.Extensions.Azure" />
     <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="All" />
     <PackageReference Include="StyleCop.Analyzers" PrivateAssets="All" />
   </ItemGroup>

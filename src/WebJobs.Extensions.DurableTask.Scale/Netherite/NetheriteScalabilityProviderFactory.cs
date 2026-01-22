@@ -239,12 +239,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Netherite
                     }
                 }
 
-                // Create the Netherite orchestration service
-                // Pass effectiveServiceProvider for identity support (Netherite uses it to resolve AzureComponentFactory)
-                var service = new NetheriteOrchestrationService(settings, this.loggerFactory, effectiveServiceProvider);
-
                 // Create our scalability provider
-                var provider = new NetheriteScalabilityProvider(service, settings, connectionName, this.logger);
+                var provider = new NetheriteScalabilityProvider(settings, connectionName, this.logger);
 
                 // Extract max concurrent values from trigger metadata (from Scale Controller payload)
                 // Default: 10 times the number of processors on the current machine

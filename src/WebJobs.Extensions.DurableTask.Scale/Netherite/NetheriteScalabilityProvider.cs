@@ -16,7 +16,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Netherite
     /// </summary>
     public class NetheriteScalabilityProvider : ScalabilityProvider
     {
-        private readonly NetheriteOrchestrationService orchestrationService;
         private readonly NetheriteOrchestrationServiceSettings settings;
         private readonly string connectionName;
         private readonly ILogger logger;
@@ -43,13 +42,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Netherite
         /// Thrown if <paramref name="orchestrationService"/> is <see langword="null"/>.
         /// </exception>
         public NetheriteScalabilityProvider(
-            NetheriteOrchestrationService orchestrationService,
             NetheriteOrchestrationServiceSettings settings,
             string connectionName,
             ILogger logger)
             : base("Netherite", connectionName)
         {
-            this.orchestrationService = orchestrationService ?? throw new ArgumentNullException(nameof(orchestrationService));
             this.settings = settings ?? throw new ArgumentNullException(nameof(settings));
             this.connectionName = connectionName;
             this.logger = logger;
