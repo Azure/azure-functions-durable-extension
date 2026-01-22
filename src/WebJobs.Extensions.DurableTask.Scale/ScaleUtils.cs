@@ -8,11 +8,37 @@ using Microsoft.Azure.WebJobs.Host.Scale;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
 {
+    /// <summary>
+    /// Provides helper methods for resolving scale monitors and target scalers from a <see cref="ScalabilityProvider"/>.
+    /// </summary>
     public static class ScaleUtils
     {
-        public static IScaleMonitor GetScaleMonitor(ScalabilityProvider durabilityProvider, string functionId, FunctionName functionName, string? connectionName, string hubName)
+        /// <summary>
+        /// Resolves an <see cref="IScaleMonitor"/> for the specified Durable Task trigger
+        /// using the provided scalability provider.
+        /// </summary>
+        /// <param name="scalabilityProvider">
+        /// The scalability provider used to obtain backend-specific scale monitoring support.
+        /// </param>
+        /// <param name="functionId">
+        /// The unique identifier of the function.
+        /// </param>
+        /// <param name="functionName">
+        /// The name of the function.
+        /// </param>
+        /// <param name="connectionName">
+        /// The name of the storage connection, if specified.
+        /// </param>
+        /// <param name="hubName">
+        /// The Durable Task hub name.
+        /// </param>
+        /// <returns>
+        /// An <see cref="IScaleMonitor"/> instance when scale monitoring is supported;
+        /// otherwise, a no-op scale monitor.
+        /// </returns>
+        public static IScaleMonitor GetScaleMonitor(ScalabilityProvider scalabilityProvider, string functionId, FunctionName functionName, string? connectionName, string hubName)
         {
-            if (durabilityProvider.TryGetScaleMonitor(
+            if (scalabilityProvider.TryGetScaleMonitor(
                     functionId,
                     functionName.Name,
                     hubName,
@@ -65,10 +91,33 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
         }
 
 #pragma warning disable SA1201 // Elements should appear in the correct order
-        public static ITargetScaler GetTargetScaler(ScalabilityProvider durabilityProvider, string functionId, FunctionName functionName, string? connectionName, string hubName)
+        /// <summary>
+        /// Resolves an <see cref="ITargetScaler"/> for the specified Durable Task trigger
+        /// using the provided scalability provider.
+        /// </summary>
+        /// <param name="scalabilityProvider">
+        /// The scalability provider used to obtain backend-specific target scaling support.
+        /// </param>
+        /// <param name="functionId">
+        /// The unique identifier of the function.
+        /// </param>
+        /// <param name="functionName">
+        /// The name of the function.
+        /// </param>
+        /// <param name="connectionName">
+        /// The name of the storage connection, if specified.
+        /// </param>
+        /// <param name="hubName">
+        /// The Durable Task hub name.
+        /// </param>
+        /// <returns>
+        /// An <see cref="ITargetScaler"/> instance when target-based scaling is supported;
+        /// otherwise, a no-op target scaler.
+        /// </returns>
+        public static ITargetScaler GetTargetScaler(ScalabilityProvider scalabilityProvider, string functionId, FunctionName functionName, string? connectionName, string hubName)
 #pragma warning restore SA1201 // Elements should appear in the correct order
         {
-            if (durabilityProvider.TryGetTargetScaler(
+            if (scalabilityProvider.TryGetTargetScaler(
                     functionId,
                     functionName.Name,
                     hubName,

@@ -6,10 +6,13 @@ using System;
 using System.Collections.Generic;
 using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
 {
+    /// <summary>
+    /// Provides scale monitoring and target scaling for Durable Task triggers
+    /// by delegating to backend-specific scalability providers.
+    /// </summary>
     public class DurableTaskTriggersScaleProvider : IScaleMonitorProvider, ITargetScalerProvider
     {
         private const string DefaultConnectionName = "connectionName";
@@ -18,6 +21,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
         private readonly IScaleMonitor monitor;
         private readonly ITargetScaler targetScaler;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DurableTaskTriggersScaleProvider"/> class.
+        /// </summary>
+        /// <param name="nameResolver">
+        /// Resolves application setting values referenced in trigger metadata.
+        /// </param>
+        /// <param name="loggerFactory">
+        /// Factory used to create loggers for diagnostics.
+        /// </param>
+        /// <param name="scalabilityProviderFactories">
+        /// A collection of scalability provider factories used to resolve
+        /// the appropriate backend implementation.
+        /// </param>
+        /// <param name="triggerMetadata">
+        /// The trigger metadata containing Durable Task configuration.
+        /// </param>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown when required trigger metadata is missing or cannot be deserialized.
+        /// </exception>
         public DurableTaskTriggersScaleProvider(
             INameResolver nameResolver,
             ILoggerFactory loggerFactory,
@@ -96,11 +118,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
             return null;
         }
 
+        /// <summary>
+        /// Gets the scale monitor used to observe load and trigger scaling decisions.
+        /// </summary>
+        /// <returns>
+        /// An <see cref="IScaleMonitor"/> instance.
+        /// </returns>
         public IScaleMonitor GetMonitor()
         {
             return this.monitor;
         }
 
+        /// <summary>
+        /// Gets the target scaler used to compute the desired worker count.
+        /// </summary>
+        /// <returns>
+        /// An <see cref="ITargetScaler"/> instance.
+        /// </returns>
         public ITargetScaler GetTargetScaler()
         {
             return this.targetScaler;

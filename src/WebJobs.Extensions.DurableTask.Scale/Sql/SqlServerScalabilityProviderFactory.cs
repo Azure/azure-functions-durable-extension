@@ -110,7 +110,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Sql
             DurableTaskMetadata? metadata = null)
         {
             // Look up connection string from configuration
-            this.logger.LogInformation("using connectionName" +  connectionName);
+            this.logger.LogInformation("using connectionName" + connectionName);
             string? connectionString =
                 this.configuration.GetConnectionString(connectionName) ??
                 this.configuration[connectionName] ??

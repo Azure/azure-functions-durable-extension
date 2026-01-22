@@ -18,6 +18,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
         private readonly ILoggerFactory loggerFactory;
         private readonly ILogger logger;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="StorageServiceClientProviderFactory"/> class.
+        /// </summary>
+        /// <param name="configuration">
+        /// The configuration source used to resolve storage account settings.
+        /// </param>
+        /// <param name="loggerFactory">
+        /// The logger factory used to create diagnostic loggers.
+        /// </param>
         public StorageServiceClientProviderFactory(
             IConfiguration configuration,
             ILoggerFactory loggerFactory)
@@ -27,6 +36,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
             this.logger = loggerFactory.CreateLogger<StorageServiceClientProviderFactory>();
         }
 
+        /// <summary>
+        /// Creates a <see cref="StorageAccountClientProvider"/> for the specified connection name,
+        /// resolving authentication and connection settings from configuration.
+        /// </summary>
+        /// <param name="connectionName">
+        /// The name of the storage connection to resolve.
+        /// </param>
+        /// <param name="tokenCredential">
+        /// An optional token credential used for token-based authentication when supported.
+        /// </param>
+        /// <returns>
+        /// A configured <see cref="StorageAccountClientProvider"/> instance.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        /// Thrown when <paramref name="connectionName"/> is <see langword="null"/> or empty.
+        /// </exception>
         public StorageAccountClientProvider GetClientProvider(string connectionName, TokenCredential tokenCredential = null)
         {
             if (string.IsNullOrEmpty(connectionName))
@@ -34,7 +59,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
                 throw new ArgumentNullException(nameof(connectionName));
             }
 
-            // Priority 1: If tokenCredential is provided, check if Managed Identity is configured
+            // step 1: If tokenCredential is provided, check if Managed Identity is configured
             // (account name or service URIs). This takes precedence because if these are set,
             // it indicates an explicit intent to use Managed Identity.
             if (tokenCredential != null)
@@ -64,15 +89,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
 
                 // If tokenCredential is provided but no account name or service URIs are configured,
                 // ignore the tokenCredential and fall through to use connection string instead.
-                // This handles the case where Scale Controller provides DefaultAzureCredential
-                // but we should use connection string.
                 this.logger.LogInformation(
                     "TokenCredential provided but no account name or service URIs found for connection: {ConnectionName}. " +
                     "Falling back to connection string authentication.",
                     connectionName);
             }
 
-            // Priority 2: Use connection string (default approach)
+            // step 2: Use connection string (default approach)
             var connectionString =
                 this.configuration.GetConnectionString(connectionName) ??
                 this.configuration[connectionName] ??

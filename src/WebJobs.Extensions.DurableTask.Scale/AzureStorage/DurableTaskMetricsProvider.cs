@@ -11,6 +11,9 @@ using Newtonsoft.Json;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage
 {
+    /// <summary>
+    /// Collects Durable Task scale metrics from the Azure Storage backend.
+    /// </summary>
     public class DurableTaskMetricsProvider
     {
         private readonly string hubName;
@@ -21,6 +24,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage
 
         private DisconnectedPerformanceMonitor performanceMonitor;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DurableTaskMetricsProvider"/> class.
+        /// </summary>
+        /// <param name="hubName">
+        /// The name of the task hub from which metrics are collected.
+        /// </param>
+        /// <param name="logger">
+        /// The logger used for diagnostic and warning messages.
+        /// </param>
+        /// <param name="performanceMonitor">
+        /// The performance monitor used to retrieve task hub heartbeat data.
+        /// </param>
+        /// <param name="storageAccountClientProvider">
+        /// Provides Azure Storage clients required to access task hub resources.
+        /// </param>
         public DurableTaskMetricsProvider(
             string hubName,
             ILogger logger,
@@ -35,6 +53,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage
             this.heartbeatTimeStamp = DateTime.MinValue;
         }
 
+        /// <summary>
+        /// Get current metrics on Azure Storage backend.
+        /// </summary>
+        /// <returns>DurableTaskTriggerMetrics with target worker count.</returns>
         public virtual async Task<DurableTaskTriggerMetrics> GetMetricsAsync()
         {
             DurableTaskTriggerMetrics metrics = new DurableTaskTriggerMetrics();

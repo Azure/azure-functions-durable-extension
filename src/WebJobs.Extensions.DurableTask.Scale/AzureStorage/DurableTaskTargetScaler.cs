@@ -52,6 +52,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage
             this.logger = logger;
         }
 
+        /// <summary>
+        /// Gets the descriptor that identifies this target scaler.
+        /// </summary>
         public TargetScalerDescriptor TargetScalerDescriptor { get; }
 
         private int MaxConcurrentActivities => this.scalabilityProvider.MaxConcurrentTaskActivityWorkItems;
