@@ -24,13 +24,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage
         /// <summary>
         /// Initializes a new <see cref="AzureStorageScalabilityProvider"/> instance for scaling using Azure Storage.
         /// </summary>
-        /// </summary>
         /// <param name="storageAccountClientProvider">
         /// Provides Azure Storage clients using resolved configuration, including
         /// connection strings or token-based credentials.</param>
         /// <param name="connectionName">The name of the storage connection used to resolve host configuration.</param>
         /// <param name="logger">The logger instance used for diagnostics and telemetry.</param>
-        /// <exception cref="ArgumentNullException"></exception>
         public AzureStorageScalabilityProvider(
             StorageAccountClientProvider storageAccountClientProvider,
             string connectionName,

@@ -90,7 +90,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
             }
         }
 
-#pragma warning disable SA1201 // Elements should appear in the correct order
         /// <summary>
         /// Resolves an <see cref="ITargetScaler"/> for the specified Durable Task trigger
         /// using the provided scalability provider.
@@ -114,6 +113,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
         /// An <see cref="ITargetScaler"/> instance when target-based scaling is supported;
         /// otherwise, a no-op target scaler.
         /// </returns>
+#pragma warning disable SA1201 // Elements should appear in the correct order
         public static ITargetScaler GetTargetScaler(ScalabilityProvider scalabilityProvider, string functionId, FunctionName functionName, string? connectionName, string hubName)
 #pragma warning restore SA1201 // Elements should appear in the correct order
         {
