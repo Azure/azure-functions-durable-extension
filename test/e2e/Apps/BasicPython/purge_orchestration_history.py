@@ -15,27 +15,32 @@ bp = df.Blueprint()
 @bp.route(route="PurgeOrchestrationHistory", methods=["GET", "POST"])
 @bp.durable_client_input(client_name="client")
 async def purge_history(req: func.HttpRequest, client: df.DurableOrchestrationClient):
-    logging.info("Starting purge all instance history")
+    logging.info("Starting to purge instance histories")
     try:
-        # Parse optional query parameters for purgeStartTime and purgeEndTime
-        purge_start_time: Optional[datetime] = None
-        purge_end_time: Optional[datetime] = None
-        if req.params.get("purgeStartTime"):
-            purge_start_time = datetime.fromisoformat(req.params["purgeStartTime"])
-        if req.params.get("purgeEndTime"):
-            purge_end_time = datetime.fromisoformat(req.params["purgeEndTime"])
+        instance_id = req.params.get("instanceId")
+        if instance_id:
+            result = await client.purge_instance_history(instance_id)
+            logging.info(f"Finished purging history for instance {instance_id}")
+        else:
+            # Parse optional query parameters for purgeStartTime and purgeEndTime
+            purge_start_time: Optional[datetime] = None
+            purge_end_time: Optional[datetime] = None
+            if req.params.get("purgeStartTime"):
+                purge_start_time = datetime.fromisoformat(req.params["purgeStartTime"])
+            if req.params.get("purgeEndTime"):
+                purge_end_time = datetime.fromisoformat(req.params["purgeEndTime"])
 
-        # Purge orchestration history
-        result = await client.purge_instance_history_by(
-            created_time_from=purge_start_time,
-            created_time_to=purge_end_time,
-            runtime_status=[
-                df.OrchestrationRuntimeStatus.Completed,
-                df.OrchestrationRuntimeStatus.Failed,
-                df.OrchestrationRuntimeStatus.Terminated,
-            ],
-        )
-        logging.info("Finished purge all instance history")
+            # Purge orchestration history
+            result = await client.purge_instance_history_by(
+                created_time_from=purge_start_time,
+                created_time_to=purge_end_time,
+                runtime_status=[
+                    df.OrchestrationRuntimeStatus.Completed,
+                    df.OrchestrationRuntimeStatus.Failed,
+                    df.OrchestrationRuntimeStatus.Terminated,
+                ],
+            )
+            logging.info("Finished purge all instance history")
         return func.HttpResponse(
             f"Purged {result.instances_deleted} records",
             status_code=200,
@@ -48,3 +53,14 @@ async def purge_history(req: func.HttpRequest, client: df.DurableOrchestrationCl
             status_code=500,
             mimetype="text/plain"
         )
+
+@bp.orchestration_trigger(context_name="context", orchestration="InvokeDummyEntityOrchestration")
+def invoke_entity_function(context: df.DurableOrchestrationContext):
+    entityId = df.EntityId("DummyEntity", "myEntity")
+    yield context.call_entity(entityId, "get")
+    return "Success"
+
+@bp.entity_trigger(context_name="context")
+def DummyEntity(context):
+    context.set_state("state")
+    context.set_result(0)
