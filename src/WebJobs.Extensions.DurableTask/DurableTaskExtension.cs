@@ -445,7 +445,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal void ConfigureForHttpProtocol()
         {
-            lock(this.protocolLockObject) 
+            lock (this.protocolLockObject)
             {
                 if (this.OutOfProcProtocol != OutOfProcOrchestrationProtocol.OrchestratorShim)
                 {
