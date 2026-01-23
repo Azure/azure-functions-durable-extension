@@ -1,4 +1,4 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
@@ -8,7 +8,6 @@ using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.ApplicationInsights.Channel;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage;
 using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Extensions.DependencyInjection;
@@ -153,7 +152,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             if (durabilityProviderFactoryType != null)
             {
                 builder.Services.AddSingleton(typeof(IDurabilityProviderFactory), durabilityProviderFactoryType);
-                options.Value.StorageProvider.Add("type", durabilityProviderFactoryType.Name);
+
                 builder.AddDurableTask(options);
                 return builder;
             }

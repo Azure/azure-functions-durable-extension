@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
@@ -14,16 +14,12 @@
     <Company>Microsoft Corporation</Company>
     <LangVersion>9.0</LangVersion>
     <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\..\sign.snk</AssemblyOriginatorKeyFile>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <DebugType>embedded</DebugType>
     <NoWarn>NU5125;SA0001</NoWarn>
   </PropertyGroup>
-
-  <ItemGroup>
-    <InternalsVisibleTo Include="WebJobs.Extensions.DurableTask.Scale.Tests" />
-    <InternalsVisibleTo Include="DynamicProxyGenAssembly2" /> <!-- For Moq to create proxies -->
-  </ItemGroup>
 
   <PropertyGroup Condition="$(VersionSuffix) == ''">
     <Version>$(MajorVersion).$(MinorVersion).$(PatchVersion)</Version>
