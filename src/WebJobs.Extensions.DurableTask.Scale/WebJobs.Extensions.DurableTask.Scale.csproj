@@ -5,15 +5,15 @@
     <AssemblyName>Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale</AssemblyName>
     <RootNamespace>Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale</RootNamespace>
     <MajorVersion>1</MajorVersion>
-    <MinorVersion>1</MinorVersion>
-    <PatchVersion>1</PatchVersion>
-	<VersionSuffix>test.13</VersionSuffix>
+    <MinorVersion>0</MinorVersion>
+    <PatchVersion>0</PatchVersion>
+	<VersionSuffix></VersionSuffix>
     <VersionPrefix>$(MajorVersion).$(MinorVersion).$(PatchVersion)</VersionPrefix>
     <FileVersion>$(MajorVersion).$(MinorVersion).$(PatchVersion)</FileVersion>
     <AssemblyVersion>$(MajorVersion).0.0.0</AssemblyVersion>
     <Company>Microsoft Corporation</Company>
     <LangVersion>9.0</LangVersion>
-    <SignAssembly>false</SignAssembly>
+    <SignAssembly>true</SignAssembly>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <DebugType>embedded</DebugType>
