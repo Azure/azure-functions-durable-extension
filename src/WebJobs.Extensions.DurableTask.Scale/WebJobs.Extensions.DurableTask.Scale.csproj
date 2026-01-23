@@ -18,7 +18,7 @@
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <DebugType>embedded</DebugType>
-    <NoWarn>NU5125;SA0001</NoWarn>
+    <NoWarn>NU5125;SA0001;CS8002</NoWarn>
   </PropertyGroup>
 
   <PropertyGroup Condition="$(VersionSuffix) == ''">
