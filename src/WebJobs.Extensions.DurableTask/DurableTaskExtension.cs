@@ -445,23 +445,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal void ConfigureForHttpProtocol()
         {
-            if (this.OutOfProcProtocol != OutOfProcOrchestrationProtocol.OrchestratorShim)
+            lock(this.protocolLockObject) 
             {
-                this.OutOfProcProtocol = OutOfProcOrchestrationProtocol.OrchestratorShim;
-                try
+                if (this.OutOfProcProtocol != OutOfProcOrchestrationProtocol.OrchestratorShim)
                 {
-                    // We must call SetUseSeparateQueueForEntityWorkItems on both the factory and the provider,
-                    // given that DefaultDurabilityProvider is initialized by the factory before this method is called, but
-                    // we must also ensure that any new providers created by the factory use the updated value.
-                    this.durabilityProviderFactory.SetUseSeparateQueueForEntityWorkItems(false);
-                    this.DefaultDurabilityProvider.SetUseSeparateQueueForEntityWorkItems(false);
-                }
-                catch (NotImplementedException ex)
-                {
-                    // This happens when the customer is using a durability provider/provider factory that does not yet support SetUseSeparateQueueForEntityWorkItems.
-                    // It only represents a real problem when the customer is also using a language config that requires configuring gRPC during function indexing,
-                    // like for the gRPC-based Python SDK. Eventually, this method will be implemented on all durability provider SDKs and should never appear.
-                    this.TraceHelper.ExtensionWarningEvent(this.Options.HubName, string.Empty, string.Empty, $"Could not set UseSeparateQueueForEntityWorkItems: {ex}");
+                    this.OutOfProcProtocol = OutOfProcOrchestrationProtocol.OrchestratorShim;
+                    try
+                    {
+                        // We must call SetUseSeparateQueueForEntityWorkItems on both the factory and the provider,
+                        // given that DefaultDurabilityProvider is initialized by the factory before this method is called, but
+                        // we must also ensure that any new providers created by the factory use the updated value.
+                        this.durabilityProviderFactory.SetUseSeparateQueueForEntityWorkItems(false);
+                        this.DefaultDurabilityProvider.SetUseSeparateQueueForEntityWorkItems(false);
+                    }
+                    catch (NotImplementedException ex)
+                    {
+                        // This happens when the customer is using a durability provider/provider factory that does not yet support SetUseSeparateQueueForEntityWorkItems.
+                        // It only represents a real problem when the customer is also using a language config that requires configuring gRPC during function indexing,
+                        // like for the gRPC-based Python SDK. Eventually, this method will be implemented on all durability provider SDKs and should never appear.
+                        this.TraceHelper.ExtensionWarningEvent(this.Options.HubName, string.Empty, string.Empty, $"Could not set UseSeparateQueueForEntityWorkItems: {ex}");
+                    }
                 }
             }
         }

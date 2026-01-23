@@ -24,6 +24,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Throws<ArgumentException>(() => EntityId.FromString(null));
             Assert.Throws<ArgumentException>(() => EntityId.FromString(""));
             Assert.Throws<ArgumentException>(() => EntityId.FromString("invalidEntityId"));
+            Assert.Throws<ArgumentException>(() => EntityId.FromString("@"));
+            Assert.Throws<ArgumentException>(() => EntityId.FromString("@@"));
+            Assert.Throws<ArgumentException>(() => EntityId.FromString("@invalid@"));
+            Assert.Throws<ArgumentException>(() => EntityId.FromString("@@invalid"));
             Assert.Throws<ArgumentException>(() => EntityId.FromString("invalid@symbolplacement"));
             Assert.Throws<ArgumentException>(() => EntityId.FromString("invalid@symbol@placement"));
         }

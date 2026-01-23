@@ -97,6 +97,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             var entityName = instanceId.Substring(1, pos - 1);
             var entityKey = instanceId.Substring(pos + 1);
+            if (string.IsNullOrEmpty(entityName) || string.IsNullOrEmpty(entityKey))
+            {
+                throw new ArgumentException($"Instance ID '{instanceId}' is not a valid entity ID.", nameof(instanceId));
+            }
+
             return new EntityId(entityName, entityKey);
         }
 
