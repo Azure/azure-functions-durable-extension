@@ -28,6 +28,21 @@
     <Version>$(MajorVersion).$(MinorVersion).$(PatchVersion)-$(VersionSuffix)</Version>
   </PropertyGroup>
 
+  <!-- NuGet Publishing Metadata -->
+  <PropertyGroup>
+    <Title>Azure Functions Durable Task Scale Extension</Title>
+    <Authors>Microsoft</Authors>
+    <Description>Azure WebJobs SDK Scale Extension for the Durable Task Framework</Description>
+    <PackageReleaseNotes>https://github.com/Azure/azure-functions-durable-extension/releases/</PackageReleaseNotes>
+    <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
+    <PackageTags>Microsoft Azure WebJobs Durable Extension Orchestration Workflow Functions Scale</PackageTags>
+    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/Azure/azure-functions-durable-extension</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/Azure/azure-functions-durable-extension/</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+  </PropertyGroup>
 
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />

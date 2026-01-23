@@ -261,6 +261,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Netherite
                     this.configuration[connectionName] ??
                     Environment.GetEnvironmentVariable(connectionName);
 
+            // If not found and connection name is "Storage", also try "AzureWebJobsStorage"
+            // Azure Functions automatically prefixes connection names with "AzureWebJobs"
+            if (string.IsNullOrEmpty(connectionString) && string.Equals(connectionName, "Storage", StringComparison.OrdinalIgnoreCase))
+            {
+                connectionString =
+                        this.configuration.GetConnectionString("AzureWebJobsStorage") ??
+                        this.configuration["AzureWebJobsStorage"] ??
+                        Environment.GetEnvironmentVariable("AzureWebJobsStorage");
+            }
+
             if (string.IsNullOrEmpty(connectionString))
             {
                 throw new InvalidOperationException(
