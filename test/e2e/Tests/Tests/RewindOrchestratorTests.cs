@@ -65,6 +65,20 @@ public class RewindOrchestratorTests
                 Assert.Equal(1, kvp.Value);
             }
         }
+
+        // Give some time for Core Tools to write logs out
+        Thread.Sleep(500);
+
+        // Verify that the ClientOperationReceived logs were emitted with a FunctionInvocationId
+        ClientOperationLogHelpers.AssertClientOperationLogExists(
+            this.fixture.TestLogs.CoreToolsLogs,
+            "StartOrchestration",
+            instanceId);
+        // Should have numFailures rewind operations logged for this instance
+        Assert.Equal(numFailures, ClientOperationLogHelpers.GetClientOperationLogCount(
+            this.fixture.TestLogs.CoreToolsLogs,
+            "Rewind",
+            instanceId));
     }
 
     [Fact]

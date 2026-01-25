@@ -16,6 +16,10 @@ internal class DurableTaskFunctionsMiddleware(DurableFunctionExecutor invoker) :
     /// <inheritdoc />
     public Task Invoke(FunctionContext functionContext, FunctionExecutionDelegate next)
     {
+        // Set the function invocation ID for correlation with host-side logs.
+        // This is used by the gRPC call invoker to add correlation headers.
+        InvocationIdCallInvoker.SetCurrentInvocationId(functionContext.InvocationId);
+
         // If the function is a Durable Task function and there is no executor registered yet,
         // register the Durable Function executor.
         if (functionContext.Features.Get<IFunctionExecutor>() is null && functionContext.IsDurableTaskFunction())

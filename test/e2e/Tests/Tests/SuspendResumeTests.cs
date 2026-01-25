@@ -42,6 +42,23 @@ public class SuspendResumeTests
             await AssertRequestSucceedsAsync(resumeResponse);
 
             await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Running", 5);
+
+            // Give some time for Core Tools to write logs out
+            Thread.Sleep(500);
+
+            // Verify that the ClientOperationReceived logs were emitted with a FunctionInvocationId
+            ClientOperationLogHelpers.AssertClientOperationLogExists(
+                this.fixture.TestLogs.CoreToolsLogs,
+                "StartOrchestration",
+                instanceId);
+            ClientOperationLogHelpers.AssertClientOperationLogExists(
+                this.fixture.TestLogs.CoreToolsLogs,
+                "Suspend",
+                instanceId);
+            ClientOperationLogHelpers.AssertClientOperationLogExists(
+                this.fixture.TestLogs.CoreToolsLogs,
+                "Resume",
+                instanceId);
         }
         finally
         {

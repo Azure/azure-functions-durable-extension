@@ -39,6 +39,19 @@ public class ExternalEventTests
         // Make sure orchestration instance completes successfully.
         await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", 30);
 
+        // Give some time for Core Tools to write logs out
+        Thread.Sleep(500);
+
+        // Verify that the ClientOperationReceived logs were emitted with a FunctionInvocationId
+        ClientOperationLogHelpers.AssertClientOperationLogExists(
+            this.fixture.TestLogs.CoreToolsLogs,
+            "StartOrchestration",
+            instanceId);
+        ClientOperationLogHelpers.AssertClientOperationLogExists(
+            this.fixture.TestLogs.CoreToolsLogs,
+            "RaiseEvent",
+            instanceId);
+
         // Send external event again to the completed orchestrator, which we will get a exception back.
         HttpResponseMessage resendEventResponse = await HttpHelpers.InvokeHttpTriggerWithBody("SendExternalEvent_HttpStart", jsonContent, "application/json");
         string responseContent = await resendEventResponse.Content.ReadAsStringAsync();

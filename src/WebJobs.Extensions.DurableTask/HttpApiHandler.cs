@@ -66,6 +66,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private const string EmptyEntityKeySymbol = "$";
 
+        // HTTP Header for correlating client operations with function invocations
+        private const string FunctionInvocationIdHeader = "X-Azure-Functions-InvocationId";
+
         // API Routes
         private static readonly TemplateMatcher StartOrchestrationRoute = GetStartOrchestrationRoute();
         private static readonly TemplateMatcher EntityRoute = GetEntityRoute();
@@ -567,6 +570,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     "Instance ID provided to the purge instance history request must not be null or empty.");
             }
 
+            // Extract function invocation ID for correlation logging
+            string functionInvocationId = GetHeaderValueFromHeaders(FunctionInvocationIdHeader, request.Headers);
+            this.traceHelper.ClientOperationReceived(
+                this.durableTaskOptions.HubName,
+                "PurgeInstanceHistory",
+                instanceId,
+                functionInvocationId);
+
             // We need to confirm that the instance is an orchestration before checking that it has a terminal runtime status,
             // since entities can also be purged and have runtime status "Running". All entities have instance IDs that start with
             // '@', but orchestrations can also have such instance IDs. This runtime status check will therefore not necessarily be
@@ -814,6 +825,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             IDurableOrchestrationClient client = this.GetClient(request);
 
+            // Extract function invocation ID for correlation logging
+            string functionInvocationId = GetHeaderValueFromHeaders(FunctionInvocationIdHeader, request.Headers);
+            this.traceHelper.ClientOperationReceived(
+                this.durableTaskOptions.HubName,
+                "Terminate",
+                instanceId,
+                functionInvocationId);
+
             DurableOrchestrationStatus status = await client.GetStatusAsync(instanceId);
             if (status == null)
             {
@@ -838,6 +857,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             IDurableOrchestrationClient client = this.GetClient(request);
 
+            // Extract function invocation ID for correlation logging
+            string functionInvocationId = GetHeaderValueFromHeaders(FunctionInvocationIdHeader, request.Headers);
+            this.traceHelper.ClientOperationReceived(
+                this.durableTaskOptions.HubName,
+                "Suspend",
+                instanceId,
+                functionInvocationId);
+
             DurableOrchestrationStatus status = await client.GetStatusAsync(instanceId);
             if (status == null)
             {
@@ -861,6 +888,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string instanceId)
         {
             IDurableOrchestrationClient client = this.GetClient(request);
+
+            // Extract function invocation ID for correlation logging
+            string functionInvocationId = GetHeaderValueFromHeaders(FunctionInvocationIdHeader, request.Headers);
+            this.traceHelper.ClientOperationReceived(
+                this.durableTaskOptions.HubName,
+                "Resume",
+                instanceId,
+                functionInvocationId);
 
             DurableOrchestrationStatus status = await client.GetStatusAsync(instanceId);
             if (status == null)
@@ -901,6 +936,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
 
                 string id = string.IsNullOrEmpty(instanceId) ? Guid.NewGuid().ToString("N") : instanceId;
+
+                // Extract function invocation ID for correlation logging
+                string functionInvocationId = GetHeaderValueFromHeaders(FunctionInvocationIdHeader, request.Headers);
+                this.traceHelper.ClientOperationReceived(
+                    this.durableTaskOptions.HubName,
+                    "StartOrchestration",
+                    id,
+                    functionInvocationId);
 
                 if (client is DurableClient durableClient)
                 {
@@ -1034,6 +1077,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             IDurableOrchestrationClient client = this.GetClient(request);
 
+            // Extract function invocation ID for correlation logging
+            string functionInvocationId = GetHeaderValueFromHeaders(FunctionInvocationIdHeader, request.Headers);
+            this.traceHelper.ClientOperationReceived(
+                this.durableTaskOptions.HubName,
+                "Rewind",
+                instanceId,
+                functionInvocationId);
+
             DurableOrchestrationStatus status = await client.GetStatusAsync(instanceId);
             if (status == null)
             {
@@ -1071,6 +1122,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string eventName)
         {
             IDurableOrchestrationClient client = this.GetClient(request);
+
+            // Extract function invocation ID for correlation logging
+            string functionInvocationId = GetHeaderValueFromHeaders(FunctionInvocationIdHeader, request.Headers);
+            this.traceHelper.ClientOperationReceived(
+                this.durableTaskOptions.HubName,
+                "RaiseEvent",
+                instanceId,
+                functionInvocationId);
 
             DurableOrchestrationStatus status = await client.GetStatusAsync(instanceId);
             if (status == null)
@@ -1138,6 +1197,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             EntityId entityId)
         {
             IDurableEntityClient client = this.GetClient(request);
+
+            // Extract function invocation ID for correlation logging
+            string functionInvocationId = GetHeaderValueFromHeaders(FunctionInvocationIdHeader, request.Headers);
+            this.traceHelper.ClientOperationReceived(
+                this.durableTaskOptions.HubName,
+                "SignalEntity",
+                entityId.ToString(),
+                functionInvocationId);
 
             string operationName;
 
