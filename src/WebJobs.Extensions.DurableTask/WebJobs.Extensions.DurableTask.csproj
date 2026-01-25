@@ -53,10 +53,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\WebJobs.Extensions.DurableTask.Scale\WebJobs.Extensions.DurableTask.Scale.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="Azure.Identity" />
     <PackageReference Include="Microsoft.Azure.WebJobs" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.Rpc" />

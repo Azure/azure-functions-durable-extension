@@ -2,16 +2,15 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureManaged;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.AzureStorage;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Netherite;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale.Sql;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage;
+using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Extensions.Azure;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
@@ -38,7 +37,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             serviceCollection.TryAddSingleton<INameResolver, DefaultNameResolver>();
             serviceCollection.TryAddSingleton<IConnectionInfoResolver, StandardConnectionInfoProvider>();
-            serviceCollection.TryAddSingleton<Storage.IStorageServiceClientProviderFactory, Storage.StorageServiceClientProviderFactory>();
+            serviceCollection.TryAddSingleton<IStorageServiceClientProviderFactory, StorageServiceClientProviderFactory>();
             serviceCollection.AddAzureClientsCore();
             serviceCollection.TryAddSingleton<IDurabilityProviderFactory, AzureStorageDurabilityProviderFactory>();
             serviceCollection.TryAddSingleton<IDurableClientFactory, DurableClientFactory>();
@@ -83,17 +82,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             IServiceCollection serviceCollection = builder.Services;
             serviceCollection.AddAzureClientsCore();
             serviceCollection.TryAddSingleton<IConnectionInfoResolver, WebJobsConnectionInfoProvider>();
-            serviceCollection.TryAddSingleton<Storage.IStorageServiceClientProviderFactory, Storage.StorageServiceClientProviderFactory>();
+            serviceCollection.TryAddSingleton<IStorageServiceClientProviderFactory, StorageServiceClientProviderFactory>();
             serviceCollection.TryAddSingleton<IDurableHttpMessageHandlerFactory, DurableHttpMessageHandlerFactory>();
             serviceCollection.AddSingleton<IDurabilityProviderFactory, AzureStorageDurabilityProviderFactory>();
             serviceCollection.TryAddSingleton<IMessageSerializerSettingsFactory, MessageSerializerSettingsFactory>();
             serviceCollection.TryAddSingleton<IErrorSerializerSettingsFactory, ErrorSerializerSettingsFactory>();
             serviceCollection.TryAddSingleton<IApplicationLifetimeWrapper, HostLifecycleService>();
             serviceCollection.AddSingleton<ITelemetryActivator, TelemetryActivator>();
-
-            // Register IScalabilityProviderFactory for runtime scaling.
-            RegisterScalePackageFactories(serviceCollection);
-
             serviceCollection.TryAddSingleton<IDurableClientFactory, DurableClientFactory>();
 #pragma warning disable CS0612, CS0618 // Type or member is obsolete
             serviceCollection.TryAddSingleton<IConnectionStringResolver, WebJobsConnectionStringProvider>();
@@ -104,52 +99,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <summary>
-        /// Registers scalability provider factories from WebJobs.Extensions.DurableTask.Scale for runtime scaling.
+        /// Adds the <see cref="IScaleMonitor"/> and <see cref="ITargetScaler"/> providers for the Durable Triggers.
         /// </summary>
-        private static void RegisterScalePackageFactories(IServiceCollection serviceCollection)
+        /// <param name="builder">The <see cref="IWebJobsBuilder"/> to configure.</param>
+        /// <returns>Returns the provided <see cref="IWebJobsBuilder"/>.</returns>
+        internal static IWebJobsBuilder AddDurableScaleForTrigger(this IWebJobsBuilder builder, TriggerMetadata triggerMetadata)
         {
-            // Register adapter that converts Storage.IStorageServiceClientProviderFactory to Scale.IStorageServiceClientProviderFactory
-            // This allows runtime scaling to use identity-based authentication via AzureComponentFactory
-            serviceCollection.TryAddSingleton<Scale.IStorageServiceClientProviderFactory>(serviceProvider =>
+            // this segment adheres to the followings pattern: https://github.com/Azure/azure-sdk-for-net/pull/38756
+            DurableTaskTriggersScaleProvider provider = null;
+            builder.Services.AddSingleton(serviceProvider =>
             {
-                var mainFactory = serviceProvider.GetRequiredService<Storage.IStorageServiceClientProviderFactory>();
-                return new ScaleStorageClientProviderFactoryAdapter(mainFactory);
+                provider = new DurableTaskTriggersScaleProvider(serviceProvider.GetService<IOptions<DurableTaskOptions>>(), serviceProvider.GetService<INameResolver>(), serviceProvider.GetService<ILoggerFactory>(), serviceProvider.GetService<IEnumerable<IDurabilityProviderFactory>>(), triggerMetadata);
+                return provider;
             });
 
-            // Register all scalability provider factories from Scale package
-            serviceCollection.AddSingleton<IScalabilityProviderFactory>(serviceProvider =>
-            {
-                return new AzureStorageScalabilityProviderFactory(
-                    serviceProvider.GetRequiredService<Scale.IStorageServiceClientProviderFactory>(),
-                    serviceProvider.GetRequiredService<IConfiguration>(),
-                    serviceProvider.GetRequiredService<INameResolver>(),
-                    serviceProvider.GetRequiredService<ILoggerFactory>());
-            });
-
-            serviceCollection.AddSingleton<IScalabilityProviderFactory>(serviceProvider =>
-            {
-                return new AzureManagedScalabilityProviderFactory(
-                    serviceProvider.GetRequiredService<IConfiguration>(),
-                    serviceProvider.GetRequiredService<INameResolver>(),
-                    serviceProvider.GetRequiredService<ILoggerFactory>());
-            });
-
-            serviceCollection.AddSingleton<IScalabilityProviderFactory>(serviceProvider =>
-            {
-                return new SqlServerScalabilityProviderFactory(
-                    serviceProvider.GetRequiredService<IConfiguration>(),
-                    serviceProvider.GetRequiredService<INameResolver>(),
-                    serviceProvider.GetRequiredService<ILoggerFactory>());
-            });
-
-            serviceCollection.AddSingleton<IScalabilityProviderFactory>(serviceProvider =>
-            {
-                // Pass IServiceProvider becasue Netherite uses it to resolve AzureComponentFactory for managed identity
-                return new NetheriteScalabilityProviderFactory(
-                    serviceProvider.GetRequiredService<IConfiguration>(),
-                    serviceProvider.GetRequiredService<ILoggerFactory>(),
-                    serviceProvider);
-            });
+            // Commenting out incremental scale model for hotfix release 3.0.0-rc.4, SC uses TBS by default
+            // builder.Services.AddSingleton<IScaleMonitorProvider>(serviceProvider => serviceProvider.GetServices<DurableTaskTriggersScaleProvider>().Single(x => x == provider));
+            builder.Services.AddSingleton<ITargetScalerProvider>(serviceProvider => serviceProvider.GetServices<DurableTaskTriggersScaleProvider>().Single(x => x == provider));
+            return builder;
         }
 
         /// <summary>

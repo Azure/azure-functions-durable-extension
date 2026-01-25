@@ -494,17 +494,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return this.GetOrchestrationServiceClient().PurgeOrchestrationHistoryAsync(thresholdDateTimeUtc, timeRangeFilterType);
         }
 
-        /// <summary>
-        /// Streams the history of the specified orchestration instance as an enumerable of history events.
-        /// </summary>
-        /// <param name="instanceId">The instance ID of the orchestration.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>The enumerable of history events representing the orchestration's history.</returns>
-        public virtual Task<IAsyncEnumerable<HistoryEvent>> StreamOrchestrationHistoryAsync(string instanceId, CancellationToken cancellationToken)
-        {
-            throw this.GetNotImplementedException(nameof(this.StreamOrchestrationHistoryAsync));
-        }
-
         // The next few IOrchestrationServiceXXXClient methods are called by gRPC-based out-of-proc implementations
 
         /// <inheritdoc />
@@ -569,6 +558,66 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         internal virtual bool ConnectionNameMatches(DurabilityProvider durabilityProvider)
         {
             return this.ConnectionName.Equals(durabilityProvider.ConnectionName);
+        }
+
+        /// <summary>
+        /// Tries to obtain a scale monitor for autoscaling.
+        /// </summary>
+        /// <param name="functionId">Function id.</param>
+        /// <param name="functionName">Function name.</param>
+        /// <param name="hubName">Task hub name.</param>
+        /// <param name="connectionName">The name of the storage-specific connection settings.</param>
+        /// <param name="scaleMonitor">The scale monitor.</param>
+        /// <returns>True if autoscaling is supported, false otherwise.</returns>
+        public virtual bool TryGetScaleMonitor(
+            string functionId,
+            string functionName,
+            string hubName,
+            string connectionName,
+            out IScaleMonitor scaleMonitor)
+        {
+            scaleMonitor = null;
+            return false;
+        }
+
+        /// <summary>
+        /// Tries to obtain a scaler for target based scaling.
+        /// </summary>
+        /// <param name="functionId">Function id.</param>
+        /// <param name="functionName">Function name.</param>
+        /// <param name="hubName">Task hub name.</param>
+        /// <param name="connectionName">The name of the storage-specific connection settings.</param>
+        /// <param name="targetScaler">The target-based scaler.</param>
+        /// <returns>True if target-based scaling is supported, false otherwise.</returns>
+        public virtual bool TryGetTargetScaler(
+            string functionId,
+            string functionName,
+            string hubName,
+            string connectionName,
+            out ITargetScaler targetScaler)
+        {
+            targetScaler = null;
+            return false;
+        }
+
+        /// <summary>
+        /// Streams the history of the specified orchestration instance as an enumerable of history events.
+        /// </summary>
+        /// <param name="instanceId">The instance ID of the orchestration.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>The enumerable of history events representing the orchestration's history.</returns>
+        public virtual Task<IAsyncEnumerable<HistoryEvent>> StreamOrchestrationHistoryAsync(string instanceId, CancellationToken cancellationToken)
+        {
+            throw this.GetNotImplementedException(nameof(this.StreamOrchestrationHistoryAsync));
+        }
+
+        /// <summary>
+        /// Attempts to modify the durability service's UseSeparateQueueForEntityWorkItems property.
+        /// </summary>
+        /// <param name="newValue">The value to set</param>
+        public virtual void SetUseSeparateQueueForEntityWorkItems(bool newValue)
+        {
+            throw this.GetNotImplementedException(nameof(this.SetUseSeparateQueueForEntityWorkItems));
         }
     }
 }

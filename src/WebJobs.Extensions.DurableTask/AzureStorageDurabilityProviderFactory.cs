@@ -20,11 +20,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly AzureStorageOptions azureStorageOptions;
         private readonly INameResolver nameResolver;
         private readonly ILoggerFactory loggerFactory;
-        private readonly bool useSeparateQueueForEntityWorkItems;
         private readonly bool inConsumption; // If true, optimize defaults for consumption
         private AzureStorageDurabilityProvider defaultStorageProvider;
 
         // Must wait to get settings until we have validated taskhub name.
+        private bool useSeparateQueueForEntityWorkItems;
         private bool hasValidatedOptions;
         private AzureStorageOrchestrationServiceSettings defaultSettings;
 
@@ -246,6 +246,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             return settings;
+        }
+
+        public void SetUseSeparateQueueForEntityWorkItems(bool newValue)
+        {
+            this.useSeparateQueueForEntityWorkItems = newValue;
         }
     }
  }

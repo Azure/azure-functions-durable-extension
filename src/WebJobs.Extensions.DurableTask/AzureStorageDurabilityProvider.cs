@@ -35,6 +35,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private readonly object initLock = new object();
 
+        private DurableTaskMetricsProvider singletonDurableTaskMetricsProvider;
+
         public AzureStorageDurabilityProvider(
             AzureStorageOrchestrationService service,
             IStorageServiceClientProviderFactory clientProviderFactory,
@@ -221,6 +223,66 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 InstanceIdPrefix = condition.InstanceIdPrefix,
                 FetchInput = condition.ShowInput,
             };
+        }
+
+        internal DurableTaskMetricsProvider GetMetricsProvider(
+            string hubName,
+            StorageAccountClientProvider storageAccountClientProvider,
+            ILogger logger)
+        {
+            return new DurableTaskMetricsProvider(hubName, logger, performanceMonitor: null, storageAccountClientProvider);
+        }
+
+        /// <inheritdoc/>
+        public override bool TryGetScaleMonitor(
+            string functionId,
+            string functionName,
+            string hubName,
+            string connectionName,
+            out IScaleMonitor scaleMonitor)
+        {
+            lock (this.initLock)
+            {
+                if (this.singletonDurableTaskMetricsProvider == null)
+                {
+                    // This is only called by the ScaleController, it doesn't run in the Functions Host process.
+                    this.singletonDurableTaskMetricsProvider = this.GetMetricsProvider(
+                        hubName,
+                        this.clientProviderFactory.GetClientProvider(connectionName),
+                        this.logger);
+                }
+
+                scaleMonitor = new DurableTaskScaleMonitor(functionId, hubName, this.logger, this.singletonDurableTaskMetricsProvider);
+                return true;
+            }
+        }
+
+        public override bool TryGetTargetScaler(
+            string functionId,
+            string functionName,
+            string hubName,
+            string connectionName,
+            out ITargetScaler targetScaler)
+        {
+            lock (this.initLock)
+            {
+                if (this.singletonDurableTaskMetricsProvider == null)
+                {
+                    // This is only called by the ScaleController, it doesn't run in the Functions Host process.
+                    this.singletonDurableTaskMetricsProvider = this.GetMetricsProvider(
+                        hubName,
+                        this.clientProviderFactory.GetClientProvider(connectionName),
+                        this.logger);
+                }
+
+                targetScaler = new DurableTaskTargetScaler(functionId, this.singletonDurableTaskMetricsProvider, this, this.logger);
+                return true;
+            }
+        }
+
+        public override void SetUseSeparateQueueForEntityWorkItems(bool newValue)
+        {
+            this.serviceClient.UseSeparateQueuesForEntityWorkItems = newValue;
         }
     }
 }
