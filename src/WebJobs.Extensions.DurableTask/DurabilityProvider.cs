@@ -414,7 +414,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc />
-        /// should this method comment be updated too? to mention terminating existing instances?
         public async virtual Task CreateTaskOrchestrationAsync(TaskMessage creationMessage, OrchestrationStatus[] dedupeStatuses)
         {
             using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(this.OrchestrationCreationRequestTimeoutInSeconds));
@@ -716,10 +715,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
                             orchestrationState = await this.GetOrchestrationStateAsync(instanceId, executionId: null);
                         }
-
-                        // What should we do here? If dedupe statuses contains terminated, then the creation call afterwards will fail.
-                        // Or should we throw an invalid argument exception if dedupeStatuses contains terminated but also allows for reuse of a running status?
-                        // dedupeStatuses = dedupeStatuses.Except(new List<OrchestrationStatus>() { OrchestrationStatus.Terminated }).ToArray();
                     }
                 }
             }
