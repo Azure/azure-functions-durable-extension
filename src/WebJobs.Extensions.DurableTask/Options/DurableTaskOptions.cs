@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Net.Http;
 using DurableTask.AzureStorage.Partitioning;
-using DurableTask.Core;
 using DurableTask.Core.Settings;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Grpc;
 using Microsoft.Azure.WebJobs.Host;
