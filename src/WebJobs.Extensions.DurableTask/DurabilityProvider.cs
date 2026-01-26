@@ -113,6 +113,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <summary>
         /// Gets the amount of time in seconds before a creation request for an orchestration times out.
         /// Default value is 180 seconds.
+        /// </summary>
         internal int OrchestrationCreationRequestTimeoutInSeconds { get; private set; } = 180;
 
         /// <inheritdoc/>
