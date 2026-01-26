@@ -288,7 +288,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
-        /// By simulating the appropiate environment variables for Linux Consumption,
+        /// By simulating the appropriate environment variables for Linux Consumption,
         /// this test checks that we are emitting logs from DurableTask.AzureStorage
         /// and reading the DurabilityProvider's EventSourceName property correctly.
         /// </summary>
@@ -305,7 +305,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 // Set console to write to StringWritter
                 Console.SetOut(sw);
 
-                // Simulate enviroment variables indicating linux consumption
+                // Simulate environment variables indicating linux consumption
                 var nameResolver = new SimpleNameResolver(new Dictionary<string, string>()
                 {
                     { "CONTAINER_NAME", "val1" },
@@ -338,7 +338,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
-        /// By simulating the appropiate environment variables for Linux Consumption,
+        /// By simulating the appropriate environment variables for Linux Consumption,
         /// this test checks that we are emitting logs from DurableTask-CustomSource
         /// and reading the DurabilityProvider's EventSourceName property correctly.
         /// </summary>
@@ -355,7 +355,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 // Set console to write to StringWritter
                 Console.SetOut(sw);
 
-                // Simulate enviroment variables indicating linux consumption
+                // Simulate environment variables indicating linux consumption
                 var nameResolver = new SimpleNameResolver(new Dictionary<string, string>()
                 {
                     { "CONTAINER_NAME", "val1" },
@@ -388,7 +388,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
-        /// By simulating the appropiate enviorment variables for Linux Consumption,
+        /// By simulating the appropriate environment variables for Linux Consumption,
         /// this test checks that we are writing our JSON logs to the console. It does not
         /// verify the contents of the JSON logs themselves (expensive) but instead checks that,
         /// at least, we are writing messages beginning with the expected linux-dedicated prefix.
@@ -406,7 +406,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 // Set console to write to StringWritter
                 Console.SetOut(sw);
 
-                // Simulate enviroment variables indicating linux consumption
+                // Simulate environment variables indicating linux consumption
                 var nameResolver = new SimpleNameResolver(new Dictionary<string, string>()
                 {
                     { "CONTAINER_NAME", "val1" },
@@ -451,7 +451,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
-        /// By simulating the appropiate enviorment variables for Linux Dedicated,
+        /// By simulating the appropriate environment variables for Linux Dedicated,
         /// this test checks that we are writing our JSON logs to a file. It does not
         /// verify the contents of the JSON logs themselves (expensive) but instead checks that,
         /// at least, the log file we are writing to now exists in the file system.
@@ -465,7 +465,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             File.Delete(LinuxAppServiceLogger.LoggingPath); // To ensure the test generates the path
             string orchestratorName = nameof(TestOrchestrations.SayHelloInline);
 
-            // Simulate linux dedicated via enviroment variables
+            // Simulate linux dedicated via environment variables
             var nameResolver = new SimpleNameResolver(new Dictionary<string, string>()
             {
                 { "WEBSITE_INSTANCE_ID", "val1" },
@@ -490,11 +490,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             await TestHelpers.WaitUntilTrue(
                 predicate: () => File.Exists(LinuxAppServiceLogger.LoggingPath),
                 conditionDescription: "Log file exists",
-                timeout: TimeSpan.FromSeconds(20));
+                timeout: TimeSpan.FromSeconds(20),
+                output: this.output);
         }
 
         /// <summary>
-        /// By simulating the appropiate enviorment variables for Linux Consumption,
+        /// By simulating the appropriate environment variables for Linux Consumption,
         /// this test checks that we are filtering verbose logs from DurableTask.Core by default in Linux.
         /// </summary>
         [Fact]
@@ -510,7 +511,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 // Set console to write to StringWritter
                 Console.SetOut(sw);
 
-                // Simulate enviroment variables indicating linux consumption
+                // Simulate environment variables indicating linux consumption
                 var nameResolver = new SimpleNameResolver(new Dictionary<string, string>()
                 {
                     { "CONTAINER_NAME", "val1" },
@@ -561,7 +562,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
-        /// By simulating the appropiate enviorment variables for Linux Consumption,
+        /// By simulating the appropriate environment variables for Linux Consumption,
         /// this test checks that we can enable verbose logs from DurableTask.Core in Linux.
         /// </summary>
         [Fact]
@@ -577,7 +578,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 // Set console to write to StringWritter
                 Console.SetOut(sw);
 
-                // Simulate enviroment variables indicating linux consumption
+                // Simulate environment variables indicating linux consumption
                 var nameResolver = new SimpleNameResolver(new Dictionary<string, string>()
                 {
                     { "CONTAINER_NAME", "val1" },
@@ -633,7 +634,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
-        /// By simulating the appropiate enviorment variables for Linux Dedicated,
+        /// By simulating the appropriate environment variables for Linux Dedicated,
         /// this test checks our logs have their newlines escaped, which otherwise
         /// could cause problems in our logging pipeline.
         /// </summary>
@@ -646,7 +647,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             File.Delete(LinuxAppServiceLogger.LoggingPath); // To ensure the test generates the path
             string orchestratorName = nameof(TestOrchestrations.ThrowOrchestrator);
 
-            // Simulate linux dedicated via enviroment variables
+                // Simulate linux dedicated via environment variables
             var nameResolver = new SimpleNameResolver(new Dictionary<string, string>()
             {
                 { "WEBSITE_INSTANCE_ID", "val1" },
@@ -666,14 +667,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 // This orchestrator should error out on null inputs
                 var client = await host.StartOrchestratorAsync(orchestratorName, input: null, this.output);
-                var status = await client.WaitForCompletionAsync(this.output);
+                await client.WaitForCompletionAsync(this.output);
                 await host.StopAsync();
             }
 
             await TestHelpers.WaitUntilTrue(
                 predicate: () =>
                 {
-                    /* Exceptions have newlines embeded in them. Therefore, if there are as many lines
+                    /* Exceptions have newlines embedded in them. Therefore, if there are as many lines
                      * as there are JSON (each of which has 1 EventTimestamp field), then we know that
                      * Exceptions must have had their newlines removed.
                      */
@@ -682,11 +683,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     return lines.Count == countTimeStampCols;
                 },
                 conditionDescription: "Log file exists and newlines are removed from exceptions",
-                timeout: TimeSpan.FromSeconds(65)); // enabling at least 2 file-buffer flushes (happen every 30 seconds)
+                timeout: TimeSpan.FromSeconds(65),
+                output: this.output); // enabling at least 2 file-buffer flushes (happen every 30 seconds)
         }
 
         /// <summary>
-        /// By simulating the appropiate enviorment variables for Linux Dedicated,
+        /// By simulating the appropriate environment variables for Linux Dedicated,
         /// this test checks our JSON logs satisfy a minimal set of requirements:
         /// (1) Is JSON parseable
         /// (2) Contains minimal expected fields: EventId, TimeStamp,
@@ -704,7 +706,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             File.Delete(LinuxAppServiceLogger.LoggingPath); // To ensure the test generates the path
             string orchestratorName = nameof(TestOrchestrations.ThrowOrchestrator);
 
-            // Simulate linux dedicated via enviroment variables
+            // Simulate linux dedicated via environment variables
             var nameResolver = new SimpleNameResolver(new Dictionary<string, string>()
             {
                 { "WEBSITE_INSTANCE_ID", "val1" },
@@ -733,7 +735,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             await TestHelpers.WaitUntilTrue(
                 predicate: () => File.Exists(LinuxAppServiceLogger.LoggingPath),
                 conditionDescription: "Log file exists",
-                timeout: TimeSpan.FromSeconds(30));
+                timeout: TimeSpan.FromSeconds(30),
+                output: this.output);
 
             // add a minute wait to ensure logs are fully written
             await Task.Delay(TimeSpan.FromMinutes(1));
@@ -782,7 +785,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     return true;
                 },
                 conditionDescription: "Log file contains all required fields and expected events",
-                timeout: TimeSpan.FromSeconds(35));
+                timeout: TimeSpan.FromSeconds(35),
+                output: this.output);
         }
 
         /// <summary>
@@ -5582,11 +5586,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData("Task-Hub-Name-Test", "TaskHubNameTest")]
         [InlineData("1TaskHubNameTest", "t1TaskHubNameTest")]
-        [InlineData("-taskhubnametest", "taskhubnametest")]
-        [InlineData("-1taskhubnametest", "t1taskhubnametest")]
+        [InlineData("-taskhubnametest2", "taskhubnametest2")]
+        [InlineData("-2taskhubnametest", "t2taskhubnametest")]
         [InlineData("--------", "DefaultTaskHub")]
         [InlineData("bb", "bbHub")]
-        public void TaskHubName_DefaultHubName_UseSanitized(string siteName, string expectedHubName)
+        public async Task TaskHubName_DefaultHubName_UseSanitized(string siteName, string expectedHubName)
         {
             string currSiteName = Environment.GetEnvironmentVariable("WEBSITE_SITE_NAME");
             string currSlotName = Environment.GetEnvironmentVariable("WEBSITE_SLOT_NAME");
@@ -5601,7 +5605,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 using (var host = TestHelpers.GetJobHostWithOptions(this.loggerProvider, options))
                 {
+                    await host.StartAsync();
                     Assert.Equal(expectedHubName, options.HubName);
+                    await host.StopAsync();
                 }
             }
             finally
@@ -5899,7 +5905,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public void TaskHubName_DefaultNameSiteTooLong_UsesSanitizedHubName()
+        public async Task TaskHubName_DefaultNameSiteTooLong_UsesSanitizedHubName()
         {
             string currSiteName = Environment.GetEnvironmentVariable("WEBSITE_SITE_NAME");
             string currSlotName = Environment.GetEnvironmentVariable("WEBSITE_SLOT_NAME");
@@ -5915,7 +5921,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 using (var host = TestHelpers.GetJobHostWithOptions(this.loggerProvider, options))
                 {
+                    await host.StartAsync();
                     Assert.Equal(expectedHubName, options.HubName);
+                    await host.StopAsync();
                 }
             }
             finally

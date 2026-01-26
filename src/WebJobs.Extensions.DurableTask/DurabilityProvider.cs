@@ -1,4 +1,4 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
@@ -648,6 +648,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public virtual Task<IAsyncEnumerable<HistoryEvent>> StreamOrchestrationHistoryAsync(string instanceId, CancellationToken cancellationToken)
         {
             throw this.GetNotImplementedException(nameof(this.StreamOrchestrationHistoryAsync));
+        }
+
+        /// <summary>
+        /// Attempts to modify the durability service's UseSeparateQueueForEntityWorkItems property.
+        /// </summary>
+        /// <param name="newValue">The value to set.</param>
+        public virtual void SetUseSeparateQueueForEntityWorkItems(bool newValue)
+        {
+            throw this.GetNotImplementedException(nameof(this.SetUseSeparateQueueForEntityWorkItems));
         }
 
         /// <summary>

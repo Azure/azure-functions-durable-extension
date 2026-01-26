@@ -70,6 +70,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             this.config.RegisterOrchestrator(orchestratorName, null);
+            if (trigger.DurableRequiresGrpc)
+            {
+                // The function's metadata sets the DurableRequiresGrpc attribute property, indicating that a language typically
+                // configured for HTTP wants to use gRPC instead. Currently only Python uses this property for the durabletask-based
+                // Python SDK.
+                // Calling this method will cause the extension to use gRPC instead of HTTP when starting the task hub.
+                this.config.ConfigureForGrpcProtocol();
+            }
+
             var binding = new OrchestrationTriggerBinding(this.config, parameter, orchestratorName, this.connectionName, this.platormInformation);
             return Task.FromResult<ITriggerBinding?>(binding);
         }

@@ -62,6 +62,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public bool ExternalClient { get; set; }
 
         /// <summary>
+        /// Gets or sets a value indicating whether this client binding requires gRPC communication. Default false.
+        /// </summary>
+        /// <remarks>
+        /// If set to true, the Durable extension will start a gRPC server to handle communication for this client binding,
+        /// regardless of the detected worker runtime. This is used for languages migrating from HTTP to gRPC to allow the
+        /// worker to communicate the desired connection type back to the host.
+        /// </remarks>
+        /// <value>
+        /// True if gRPC is required; otherwise, false.
+        /// </value>
+        public bool DurableRequiresGrpc { get; set; }
+
+        /// <summary>
         /// Returns a hash code for this attribute.
         /// </summary>
         /// <returns>A hash code for this attribute.</returns>

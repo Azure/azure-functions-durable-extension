@@ -40,5 +40,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // Only providers that require TriggerMetadata for scale should implement it.
             throw new NotImplementedException("This provider does not support GetDurabilityProvider with TriggerMetadata.");
         }
+
+        /// <summary>
+        /// Sets the value of UseSeparateQueueForEntityWorkItems to be used for new DurabilityProviders created with this factory.
+        /// </summary>
+        /// <param name="newValue">The value of UseSeparateQueueForEntityWorkItems to use for all new providers.</param>
+        /// <exception cref="NotImplementedException">Thrown if the implementation of this interface has not yet defined this method, caught and used for warnings in the extension.</exception>
+        void SetUseSeparateQueueForEntityWorkItems(bool newValue)
+        {
+            throw new NotImplementedException($"The {this.Name} provider does not support SetUseSeparateQueueForEntityWorkItems.");
+        }
     }
 }
