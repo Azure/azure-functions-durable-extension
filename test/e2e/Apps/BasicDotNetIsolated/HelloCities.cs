@@ -117,9 +117,12 @@ public static class HelloCities
         {
             await client.ScheduleNewOrchestrationInstanceAsync(orchestrationName, startOptions);
         }
-        catch (Exception)
+        catch (OrchestrationAlreadyExistsException ex)
         {
-            return req.CreateResponse(HttpStatusCode.BadRequest);
+            // Tests expect BadRequest for orchestration dedupe scenarios.
+            HttpResponseData response = req.CreateResponse(HttpStatusCode.BadRequest);
+            await response.WriteStringAsync(ex.Message);
+            return response;
         }
 
         logger.LogInformation("Started orchestration with ID = '{instanceId}'.", instanceId);
