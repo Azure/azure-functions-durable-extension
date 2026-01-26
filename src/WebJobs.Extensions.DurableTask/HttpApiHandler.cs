@@ -934,13 +934,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         using Activity scheduleOrchestrationActivity = TraceHelper.StartActivityForNewOrchestration(executionStartedEvent, default);
                     }
 
-                    await durableClient.DurabilityProvider.CreateTaskOrchestrationAsync(
-                        new TaskMessage
-                        {
-                            Event = executionStartedEvent,
-                            OrchestrationInstance = instance,
-                        },
-                        this.config.Options.OverridableExistingInstanceStates.ToDedupeStatuses());
+                    try
+                    {
+                        await durableClient.DurabilityProvider.CreateTaskOrchestrationAsync(
+                            new TaskMessage
+                            {
+                                Event = executionStartedEvent,
+                                OrchestrationInstance = instance,
+                            },
+                            this.config.Options.OverridableExistingInstanceStates.ToDedupeStatuses());
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        return request.CreateErrorResponse(
+                            HttpStatusCode.RequestTimeout,
+                            $"Create instance request exceeded timeout of {durableClient.DurabilityProvider.OrchestrationCreationRequestTimeoutInSeconds} " +
+                            $"seconds for instance ID {instanceId} while waiting for the termination of the existing instance with this instance ID.");
+                    }
                 }
                 else
                 {
@@ -972,13 +982,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             catch (OrchestrationAlreadyExistsException e)
             {
                 return request.CreateErrorResponse(HttpStatusCode.Conflict, e.Message);
-            }
-            catch (OperationCanceledException)
-            {
-                return request.CreateErrorResponse(
-                    HttpStatusCode.RequestTimeout,
-                    $"Create instance request exceeded timeout of {this.durableTaskOptions.OrchestrationCreationRequestTimeoutInSeconds} " +
-                    $"seconds for instance ID {instanceId} while waiting for the termination of the existing instance with this instance ID.");
             }
         }
 

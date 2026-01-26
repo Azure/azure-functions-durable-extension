@@ -111,10 +111,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public virtual string EventSourceName { get; set; }
 
         /// <summary>
-        /// Gets or sets the amount of time in seconds before a creation request for an orchestration times out.
+        /// Gets the amount of time in seconds before a creation request for an orchestration times out.
         /// Default value is 180 seconds.
-        /// </summary>
-        internal int OrchestrationCreationRequestTimeoutInSeconds { get; set; } = 180;
+        internal int OrchestrationCreationRequestTimeoutInSeconds { get; private set; } = 180;
 
         /// <inheritdoc/>
         public int TaskOrchestrationDispatcherCount => this.GetOrchestrationService().TaskOrchestrationDispatcherCount;
@@ -437,22 +436,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// and <see cref="OrchestrationStatus.Suspended"/>), then only terminal statuses can be reused.
         /// If at least one of these statuses is not included in the array, then if an instance with that status is found, it will first be terminated
         /// before a new orchestration is created.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <param name="cancellationToken">The cancellation token used to cancel waiting for an existing instance to terminate in the case that a
+        /// non-terminal instance is found whose runtime status is not included in <paramref name="dedupeStatuses"/>.</param>
         /// <returns>A task that completes when the creation message for the task orchestration instance is enqueued.</returns>
         /// <exception cref="OrchestrationAlreadyExistsException">Thrown if an orchestration with the same instance ID already exists and its status
         /// is in <paramref name="dedupeStatuses"/>.</exception>
         /// <exception cref="OperationCanceledException">Thrown if the operation is cancelled via <paramref name="cancellationToken"/>.</exception>
         public async Task CreateTaskOrchestrationAsync(TaskMessage creationMessage, OrchestrationStatus[] dedupeStatuses, CancellationToken cancellationToken)
         {
-            using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(this.OrchestrationCreationRequestTimeoutInSeconds));
-            using var linkedCts =
-                CancellationTokenSource.CreateLinkedTokenSource(
-                    cancellationToken,
-                    timeoutCts.Token);
             await this.TerminateTaskOrchestrationWithReusableRunningStatusAndWaitAsync(
                 creationMessage.OrchestrationInstance.InstanceId,
                 dedupeStatuses,
-                linkedCts.Token);
+                cancellationToken);
             await this.GetOrchestrationServiceClient().CreateTaskOrchestrationAsync(creationMessage, dedupeStatuses);
         }
 

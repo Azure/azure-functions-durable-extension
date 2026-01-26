@@ -126,12 +126,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             catch (OperationCanceledException)
             {
-                throw new RpcException(new Status(
-                    StatusCode.Cancelled,
-                    context.CancellationToken.IsCancellationRequested
-                    ? $"Create instance request cancelled for instance ID {request.InstanceId}"
-                    : $"Create instance request exceeded timeout of {this.extension.Options.OrchestrationCreationRequestTimeoutInSeconds} seconds " +
-                      $"for instance ID {request.InstanceId} while waiting for the termination of the existing instance with this instance ID."));
+                throw new RpcException(new Status(StatusCode.Cancelled, $"Create instance request cancelled for instance ID {request.InstanceId}"));
             }
             catch (Exception ex)
             {

@@ -274,21 +274,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public TimeSpan? GrpcHttpClientTimeout { get; set; } = TimeSpan.FromSeconds(100);
 
         /// <summary>
-        /// Gets or sets the amount of time in seconds before a creation request for an orchestration times out.
-        /// Default value is 180 seconds.
-        /// </summary>
-        /// <remarks>
-        /// This setting is applicable when <see cref="OverridableExistingInstanceStates"/> is set to <see cref="OverridableStates.AnyState"/>.
-        /// If an orchestration in a non-terminal state already exists with the instance ID passed to the creation request, then this
-        /// orchestration will be terminated before the new orchestration is created. This setting controls how long the extension will wait
-        /// for the orchestration to reach a status of <see cref="OrchestrationStatus.Terminated"/> before failing the creation request.
-        /// </remarks>
-        /// <value>
-        /// The number of seconds before a creation request for an orchestration times out.
-        /// </value>
-        public int OrchestrationCreationRequestTimeoutInSeconds { get; set; } = 180;
-
-        /// <summary>
         /// Gets or sets the local gRPC listener mode, controlling what version of gRPC listener is created.
         /// </summary>
         internal LocalGrpcListenerMode GrpcListenerMode { get; set; }
@@ -403,13 +388,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (this.MaxEntityOperationBatchSize <= 0)
             {
                 throw new InvalidOperationException($"{nameof(this.MaxEntityOperationBatchSize)} must be a positive integer value.");
-            }
-
-            if (this.OrchestrationCreationRequestTimeoutInSeconds <= 0 || this.OrchestrationCreationRequestTimeoutInSeconds >= 230)
-            {
-                throw new InvalidOperationException($"{nameof(this.OrchestrationCreationRequestTimeoutInSeconds)} must be a positive integer value less than 230 seconds," +
-                    $"which is the maximum amount of time that an HTTP triggered Function can take to respond to a request." +
-                    $"See https://docs.azure.cn/en-us//azure-functions/functions-scale#timeout");
             }
         }
 
