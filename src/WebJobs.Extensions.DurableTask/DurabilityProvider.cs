@@ -685,6 +685,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 OrchestrationStatus.Suspended,
             };
 
+            bool IsRunning(OrchestrationStatus status) =>
+                runningStatuses.Contains(status);
+
             // At least one running status is reusable, so determine if an orchestration already exists with this status and terminate it if so
             if (runningStatuses.Any(status => !dedupeStatuses.Contains(status)))
             {
@@ -698,7 +701,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             $"'{orchestrationState.OrchestrationStatus}' already exists");
                     }
 
-                    if (runningStatuses.Contains(orchestrationState.OrchestrationStatus))
+                    if (IsRunning(orchestrationState.OrchestrationStatus))
                     {
                         // Check for cancellation before attempting to terminate the orchestration
                         cancellationToken.ThrowIfCancellationRequested();
@@ -710,7 +713,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             $"{string.Join(", ", dedupeStatuses)}, do not contain the orchestration's status, the orchestration has been " +
                             $"terminated and a new instance with the same instance ID will be created.");
 
-                        while (orchestrationState != null && orchestrationState.OrchestrationStatus != OrchestrationStatus.Terminated)
+                        while (orchestrationState != null && IsRunning(orchestrationState.OrchestrationStatus))
                         {
                             cancellationToken.ThrowIfCancellationRequested();
                             await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
