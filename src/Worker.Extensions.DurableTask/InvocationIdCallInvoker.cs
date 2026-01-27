@@ -91,7 +91,20 @@ internal sealed class InvocationIdCallInvoker : CallInvoker
             return options;
         }
 
-        Metadata headers = options.Headers ?? new Metadata();
+        // Clone existing headers to avoid mutating caller-provided metadata
+        // and filter out any existing invocation ID to prevent duplicates
+        Metadata headers = new Metadata();
+        if (options.Headers is not null)
+        {
+            foreach (var entry in options.Headers)
+            {
+                if (!string.Equals(entry.Key, InvocationIdMetadataKey, StringComparison.OrdinalIgnoreCase))
+                {
+                    headers.Add(entry);
+                }
+            }
+        }
+
         headers.Add(InvocationIdMetadataKey, invocationId);
         return options.WithHeaders(headers);
     }

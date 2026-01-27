@@ -15,11 +15,6 @@ namespace Microsoft.Azure.Durable.Tests.DotnetIsolatedE2E;
 internal static class ClientOperationLogHelpers
 {
     /// <summary>
-    /// The log message prefix for client operation correlation logs.
-    /// </summary>
-    private const string ClientOperationLogPrefix = "Client operation '";
-
-    /// <summary>
     /// Asserts that a ClientOperationReceived log was emitted for the specified operation and instance,
     /// and that a corresponding FunctionScheduled log exists for the same instance (enabling correlation).
     /// Note: This assertion is skipped if the SDK doesn't propagate the FunctionInvocationId header yet,
