@@ -1471,7 +1471,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
-            return this.HttpApiHandler.HandleRequestAsync(request);
+            return this.HttpApiHandler.HandleRequestAsync(request, cancellationToken);
         }
 
         internal static string ValidatePayloadSize(string payload)
