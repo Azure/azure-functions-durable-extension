@@ -283,7 +283,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        public async Task<HttpResponseMessage> HandleRequestAsync(HttpRequestMessage request)
+        public async Task<HttpResponseMessage> HandleRequestAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             try
             {
@@ -307,7 +307,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     string instanceId = (string)routeValues[InstanceIdRouteParameter];
                     if (request.Method == HttpMethod.Post)
                     {
-                        return await this.HandleStartOrchestratorRequestAsync(request, functionName, instanceId);
+                        return await this.HandleStartOrchestratorRequestAsync(request, functionName, instanceId, cancellationToken);
                     }
                     else
                     {
@@ -884,7 +884,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private async Task<HttpResponseMessage> HandleStartOrchestratorRequestAsync(
             HttpRequestMessage request,
             string functionName,
-            string instanceId)
+            string instanceId,
+            CancellationToken cancellationToken)
         {
             try
             {
@@ -942,14 +943,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                                 Event = executionStartedEvent,
                                 OrchestrationInstance = instance,
                             },
-                            this.config.Options.OverridableExistingInstanceStates.ToDedupeStatuses());
+                            this.config.Options.OverridableExistingInstanceStates.ToDedupeStatuses(),
+                            cancellationToken);
                     }
                     catch (OperationCanceledException)
                     {
-                        return request.CreateErrorResponse(
-                            HttpStatusCode.RequestTimeout,
-                            $"Create instance request exceeded timeout of {durableClient.DurabilityProvider.OrchestrationCreationRequestTimeoutInSeconds} " +
-                            $"seconds for instance ID {instanceId} while waiting for the termination of the existing instance with this instance ID.");
+                        return request.CreateErrorResponse(HttpStatusCode.RequestTimeout, $"Create instance request cancelled for instance ID {instanceId}");
                     }
                 }
                 else

@@ -442,7 +442,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <exception cref="OrchestrationAlreadyExistsException">Thrown if an orchestration with the same instance ID already exists and its status
         /// is in <paramref name="dedupeStatuses"/>.</exception>
         /// <exception cref="OperationCanceledException">Thrown if the operation is cancelled via <paramref name="cancellationToken"/>.</exception>
-        public async Task CreateTaskOrchestrationAsync(TaskMessage creationMessage, OrchestrationStatus[] dedupeStatuses, CancellationToken cancellationToken)
+        public async virtual Task CreateTaskOrchestrationAsync(TaskMessage creationMessage, OrchestrationStatus[] dedupeStatuses, CancellationToken cancellationToken)
         {
             await this.TerminateTaskOrchestrationWithReusableRunningStatusAndWaitAsync(
                 creationMessage.OrchestrationInstance.InstanceId,
