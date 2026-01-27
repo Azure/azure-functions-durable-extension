@@ -14,19 +14,26 @@ namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
 internal class DurableTaskFunctionsMiddleware(DurableFunctionExecutor invoker) : IFunctionsWorkerMiddleware
 {
     /// <inheritdoc />
-    public Task Invoke(FunctionContext functionContext, FunctionExecutionDelegate next)
+    public async Task Invoke(FunctionContext functionContext, FunctionExecutionDelegate next)
     {
         // Set the function invocation ID for correlation with host-side logs.
         // This is used by the gRPC call invoker to add correlation headers.
         InvocationIdCallInvoker.SetCurrentInvocationId(functionContext.InvocationId);
-
-        // If the function is a Durable Task function and there is no executor registered yet,
-        // register the Durable Function executor.
-        if (functionContext.Features.Get<IFunctionExecutor>() is null && functionContext.IsDurableTaskFunction())
+        try
         {
-            functionContext.Features.Set<IFunctionExecutor>(invoker);
-        }
+            // If the function is a Durable Task function and there is no executor registered yet,
+            // register the Durable Function executor.
+            if (functionContext.Features.Get<IFunctionExecutor>() is null && functionContext.IsDurableTaskFunction())
+            {
+                functionContext.Features.Set<IFunctionExecutor>(invoker);
+            }
 
-        return next(functionContext);
+            await next(functionContext);
+        }
+        finally
+        {
+            // Clear the invocation ID to prevent leaking to subsequent executions
+            InvocationIdCallInvoker.SetCurrentInvocationId(null);
+        }
     }
 }

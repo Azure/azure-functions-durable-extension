@@ -272,4 +272,102 @@ public class InvocationIdCallInvokerTests
             InvocationIdCallInvoker.SetCurrentInvocationId(null);
         }
     }
+
+    [Fact]
+    public void AsyncUnaryCall_AddsInvocationIdToMetadata()
+    {
+        // Arrange
+        const string expectedInvocationId = "test-invocation-id-async";
+        CallOptions capturedOptions = default;
+
+        var mockInner = new Mock<CallInvoker>();
+        mockInner
+            .Setup(x => x.AsyncUnaryCall(
+                It.IsAny<Method<string, string>>(),
+                It.IsAny<string>(),
+                It.IsAny<CallOptions>(),
+                It.IsAny<string>()))
+            .Callback<Method<string, string>, string, CallOptions, string>((m, h, o, r) => capturedOptions = o)
+            .Returns(new AsyncUnaryCall<string>(
+                Task.FromResult("response"),
+                Task.FromResult(new Metadata()),
+                () => Status.DefaultSuccess,
+                () => new Metadata(),
+                () => { }));
+
+        var invoker = new InvocationIdCallInvoker(mockInner.Object);
+        var method = new Method<string, string>(MethodType.Unary, "TestService", "TestMethod", Marshallers.StringMarshaller, Marshallers.StringMarshaller);
+
+        InvocationIdCallInvoker.SetCurrentInvocationId(expectedInvocationId);
+
+        try
+        {
+            // Act
+            invoker.AsyncUnaryCall(method, null, new CallOptions(), "request");
+
+            // Assert
+            Assert.NotNull(capturedOptions.Headers);
+            var header = capturedOptions.Headers.FirstOrDefault(h => h.Key == InvocationIdMetadataKey);
+            Assert.NotNull(header);
+            Assert.Equal(expectedInvocationId, header.Value);
+        }
+        finally
+        {
+            InvocationIdCallInvoker.SetCurrentInvocationId(null);
+        }
+    }
+
+    [Fact]
+    public void AsyncUnaryCall_PreservesExistingHeaders()
+    {
+        // Arrange
+        const string expectedInvocationId = "test-invocation-id-async";
+        const string existingHeaderKey = "existing-header";
+        const string existingHeaderValue = "existing-value";
+        CallOptions capturedOptions = default;
+
+        var mockInner = new Mock<CallInvoker>();
+        mockInner
+            .Setup(x => x.AsyncUnaryCall(
+                It.IsAny<Method<string, string>>(),
+                It.IsAny<string>(),
+                It.IsAny<CallOptions>(),
+                It.IsAny<string>()))
+            .Callback<Method<string, string>, string, CallOptions, string>((m, h, o, r) => capturedOptions = o)
+            .Returns(new AsyncUnaryCall<string>(
+                Task.FromResult("response"),
+                Task.FromResult(new Metadata()),
+                () => Status.DefaultSuccess,
+                () => new Metadata(),
+                () => { }));
+
+        var invoker = new InvocationIdCallInvoker(mockInner.Object);
+        var method = new Method<string, string>(MethodType.Unary, "TestService", "TestMethod", Marshallers.StringMarshaller, Marshallers.StringMarshaller);
+        var originalHeaders = new Metadata { { existingHeaderKey, existingHeaderValue } };
+
+        InvocationIdCallInvoker.SetCurrentInvocationId(expectedInvocationId);
+
+        try
+        {
+            // Act
+            invoker.AsyncUnaryCall(method, null, new CallOptions(headers: originalHeaders), "request");
+
+            // Assert
+            Assert.NotNull(capturedOptions.Headers);
+
+            // Verify invocation ID was added
+            var invocationHeader = capturedOptions.Headers.FirstOrDefault(h => h.Key == InvocationIdMetadataKey);
+            Assert.NotNull(invocationHeader);
+            Assert.Equal(expectedInvocationId, invocationHeader.Value);
+
+            // Verify existing header was preserved
+            var existingHeader = capturedOptions.Headers.FirstOrDefault(h => h.Key == existingHeaderKey);
+            Assert.NotNull(existingHeader);
+            Assert.Equal(existingHeaderValue, existingHeader.Value);
+        }
+        finally
+        {
+            InvocationIdCallInvoker.SetCurrentInvocationId(null);
+        }
+    }
 }
