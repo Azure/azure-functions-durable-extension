@@ -40,6 +40,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly IOrchestrationServiceClient innerServiceClient;
         private readonly IEntityOrchestrationService entityOrchestrationService;
         private readonly string connectionName;
+        private readonly int orchestrationCreationRequestTimeoutInSeconds = 180;
 
         /// <summary>
         /// Creates the default <see cref="DurabilityProvider"/>.
@@ -109,12 +110,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// Event source name (e.g. DurableTask-AzureStorage).
         /// </summary>
         public virtual string EventSourceName { get; set; }
-
-        /// <summary>
-        /// Gets the amount of time in seconds before a creation request for an orchestration times out.
-        /// Default value is 180 seconds.
-        /// </summary>
-        internal int OrchestrationCreationRequestTimeoutInSeconds { get; private set; } = 180;
 
         /// <inheritdoc/>
         public int TaskOrchestrationDispatcherCount => this.GetOrchestrationService().TaskOrchestrationDispatcherCount;
@@ -415,14 +410,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc />
-        public async virtual Task CreateTaskOrchestrationAsync(TaskMessage creationMessage, OrchestrationStatus[] dedupeStatuses)
+        public Task CreateTaskOrchestrationAsync(TaskMessage creationMessage, OrchestrationStatus[] dedupeStatuses)
         {
-            using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(this.OrchestrationCreationRequestTimeoutInSeconds));
-            await this.TerminateTaskOrchestrationWithReusableRunningStatusAndWaitAsync(
-                creationMessage.OrchestrationInstance.InstanceId,
-                dedupeStatuses,
-                timeoutCts.Token);
-            await this.GetOrchestrationServiceClient().CreateTaskOrchestrationAsync(creationMessage, dedupeStatuses);
+            using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(this.orchestrationCreationRequestTimeoutInSeconds));
+            return this.CreateTaskOrchestrationAsync(creationMessage, dedupeStatuses, timeoutCts.Token);
         }
 
         /// <summary>
