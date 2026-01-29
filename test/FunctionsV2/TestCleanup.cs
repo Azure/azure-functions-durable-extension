@@ -28,8 +28,9 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
             this.loggerProvider = new TestLoggerProvider(output);
         }
 
-        // This test should never fail. The sole purpose is to cleanup old taskhubs in the CI
-        // storage account to prevent clutter now that TaskHub names are non-deterministic.
+        /// <summary>
+        /// Cleans up old task hubs in the CI storage account to prevent clutter.
+        /// </summary>
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task CleanupOldAzureStorageTaskHubs()
@@ -46,13 +47,22 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
 
             this.output.WriteLine($"Using storage account: {blobServiceClient.AccountName}");
 
-            List<string> taskHubsToDelete = await blobServiceClient
-                .GetBlobContainersAsync()
+            var containers = blobServiceClient.GetBlobContainersAsync();
+#if NET10_0_OR_GREATER
+            // .NET 10 uses the BCL async LINQ helpers to avoid duplicate method definitions.
+            var filtered = System.Linq.AsyncEnumerable.Where(containers, c => c.Name.Contains("-leases", StringComparison.Ordinal));
+            var filteredByAge = System.Linq.AsyncEnumerable.Where(filtered, c => DateTimeOffset.UtcNow.Subtract(c.Properties.LastModified) > oldTaskHubDeletionThreshold);
+            var selected = System.Linq.AsyncEnumerable.Select(filteredByAge, c => c.Name[..c.Name.IndexOf("-leases")]);
+            var taken = System.Linq.AsyncEnumerable.Take(selected, maxDeletedTaskHubs);
+            List<string> taskHubsToDelete = await System.Linq.AsyncEnumerable.ToListAsync(taken);
+#else
+            List<string> taskHubsToDelete = await containers
                 .Where(c => c.Name.Contains("-leases", StringComparison.Ordinal))
                 .Where(c => DateTimeOffset.UtcNow.Subtract(c.Properties.LastModified) > oldTaskHubDeletionThreshold)
                 .Select(c => c.Name[..c.Name.IndexOf("-leases")])
                 .Take(maxDeletedTaskHubs)
                 .ToListAsync();
+#endif
 
             await Task.WhenAll(taskHubsToDelete.Select(taskHub => this.DeleteTaskHub(taskHub, connectionString)));
         }
