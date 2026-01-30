@@ -29,6 +29,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private const string OrchestratorsControllerSegment = "orchestrators/";
         private const string EntitiesControllerSegment = "entities/";
         private const string AppLeaseMakePrimaryControllerSegment = "makeprimary/";
+        private const string ManagementControllerSegment = "management/";
 
         // Route parameters
         private const string FunctionNameRouteParameter = "functionName";
@@ -37,6 +38,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private const string EntityKeyRouteParameter = "entityKey";
         private const string OperationRouteParameter = "operation";
         private const string EventNameRouteParameter = "eventName";
+        private const string ConfigureGrpcRouteParameter = "configureGrpc";
 
         // Query string parameters
         private const string TaskHubParameter = "taskHub";
@@ -72,6 +74,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private static readonly TemplateMatcher InstancesRoute = GetInstancesRoute();
         private static readonly TemplateMatcher InstanceRaiseEventRoute = GetInstanceRaiseEventRoute();
         private static readonly TemplateMatcher AppLeaseMakePrimaryRoute = MakePrimaryRoute();
+        private static readonly TemplateMatcher ConfigureGrpcRoute = GetConfigureGrpcRoute();
 
         private readonly ILogger logger;
         private readonly MessagePayloadDataConverter messageDataConverter;
@@ -173,6 +176,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private static TemplateMatcher GetInstanceRaiseEventRoute()
         {
             return new TemplateMatcher(TemplateParser.Parse($"{InstancesControllerSegment}{{{InstanceIdRouteParameter}?}}/{RaiseEventOperation}/{{{EventNameRouteParameter}}}"), new RouteValueDictionary());
+        }
+
+        private static TemplateMatcher GetConfigureGrpcRoute()
+        {
+            return new TemplateMatcher(TemplateParser.Parse($"{ManagementControllerSegment}{{{ConfigureGrpcRouteParameter}}}"), new RouteValueDictionary());
         }
 
         // /makeprimary
@@ -433,6 +441,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 if (AppLeaseMakePrimaryRoute.TryMatch(path, routeValues))
                 {
                     return await this.HandleMakePrimaryRequestAsync(request);
+                }
+
+                if (ConfigureGrpcRoute.TryMatch(path, routeValues))
+                {
+                    return await this.HandleConfigureGrpcRequest(request);
                 }
 
                 return request.CreateResponse(HttpStatusCode.NotFound);
@@ -724,6 +737,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             await client.MakeCurrentAppPrimaryAsync();
 
             return request.CreateResponse(HttpStatusCode.OK);
+        }
+
+        private async Task<HttpResponseMessage> HandleConfigureGrpcRequest(HttpRequestMessage request)
+        {
+            this.config.ClearCachedTaskHubWorker();
+            this.config.ConfigureForGrpcProtocol();
+
+            var attribute = this.CreateClientAttributeFromRequest(request);
+            IDurableOrchestrationClient client = this.GetClient(request, attribute);
+            var bindings = new BindingHelper(this.config);
+            string clientString = bindings.DurableOrchestrationClientToString(client, attribute);
+
+            return request.CreateResponse(HttpStatusCode.OK, clientString);
         }
 
         private static StatusResponsePayload ConvertFrom(DurableOrchestrationStatus status)
@@ -1197,21 +1223,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        private IDurableClient GetClient(HttpRequestMessage request, DurableClientAttribute existingAttribute = null)
+        private DurableClientAttribute CreateClientAttributeFromRequest(HttpRequestMessage request, string taskHub = null, string connectionName = null)
         {
-            string taskHub = existingAttribute?.TaskHub;
-            string connectionName = existingAttribute?.ConnectionName;
-
             NameValueCollection pairs = request.GetQueryNameValuePairs();
             foreach (string key in pairs.AllKeys)
             {
-                if (taskHub == null
+                if (taskHub is null 
                     && key.Equals(TaskHubParameter, StringComparison.OrdinalIgnoreCase)
                     && !string.IsNullOrWhiteSpace(pairs[key]))
                 {
                     taskHub = pairs[key];
                 }
-                else if (connectionName == null
+                else if (connectionName is null
                     && key.Equals(ConnectionParameter, StringComparison.OrdinalIgnoreCase)
                     && !string.IsNullOrWhiteSpace(pairs[key]))
                 {
@@ -1224,6 +1247,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 TaskHub = taskHub,
                 ConnectionName = connectionName,
             };
+
+            return attribute;
+        }
+
+        private IDurableClient GetClient(HttpRequestMessage request, DurableClientAttribute existingAttribute = null)
+        {
+            string taskHub = existingAttribute?.TaskHub;
+            string connectionName = existingAttribute?.ConnectionName;
+
+            var attribute = this.CreateClientAttributeFromRequest(request, taskHub, connectionName);
 
             return this.GetClient(attribute);
         }

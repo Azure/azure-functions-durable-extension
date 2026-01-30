@@ -501,6 +501,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
+        internal void ClearCachedTaskHubWorker()
+        {
+            this.taskHubWorker.Dispose();
+            this.taskHubWorker = null;
+        }
+
         internal string GetLocalRpcAddress()
         {
             if (this.OutOfProcProtocol == OutOfProcOrchestrationProtocol.MiddlewarePassthrough)
