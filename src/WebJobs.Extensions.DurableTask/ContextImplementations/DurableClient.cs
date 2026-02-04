@@ -174,21 +174,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc />
-        Task<string> IDurableOrchestrationClient.StartNewAsync<T>(string orchestratorFunctionName, string instanceId, T input)
-        {
-            return this.StartNewAsync<T>(orchestratorFunctionName, instanceId, input, tags: null);
-        }
-
-        /// <summary>
-        /// Starts a new instance of the specified orchestrator function with optional tags.
-        /// </summary>
-        /// <param name="orchestratorFunctionName">The name of the orchestrator function to start.</param>
-        /// <param name="instanceId">The ID to use for the new orchestration instance.</param>
-        /// <param name="input">JSON-serializable input value for the orchestrator function.</param>
-        /// <param name="tags">A dictionary of key-value pairs to associate with the orchestration instance.</param>
-        /// <typeparam name="T">The type of the input value for the orchestrator function.</typeparam>
-        /// <returns>A task that completes when the orchestration is started.</returns>
-        public async Task<string> StartNewAsync<T>(string orchestratorFunctionName, string instanceId, T input, IDictionary<string, string> tags)
+        public async Task<string> StartNewAsync<T>(string orchestratorFunctionName, string instanceId, T input)
         {
             if (this.ClientReferencesCurrentApp(this))
             {
@@ -215,7 +201,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             OrchestrationStatus[] dedupeStatuses = this.GetStatusesNotToOverride();
             Task<OrchestrationInstance> createTask = this.client.CreateOrchestrationInstanceAsync(
-                orchestratorFunctionName, this.durableTaskOptions.DefaultVersion, instanceId, input, tags, dedupeStatuses);
+                orchestratorFunctionName, this.durableTaskOptions.DefaultVersion, instanceId, input, null, dedupeStatuses);
 
             this.traceHelper.FunctionScheduled(
                 this.TaskHubName,
@@ -1182,8 +1168,33 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             JToken input = ParseToJToken(state.Input);
-            return restartWithNewInstanceId ? await ((IDurableOrchestrationClient)this).StartNewAsync(orchestratorFunctionName: state.Name, input)
-                : await ((IDurableOrchestrationClient)this).StartNewAsync(orchestratorFunctionName: state.Name, instanceId: state.OrchestrationInstance.InstanceId, input);
+
+            string newInstanceId = null;
+
+            if (restartWithNewInstanceId)
+            {
+                newInstanceId = Guid.NewGuid().ToString("N");
+            }
+
+            OrchestrationStatus[] dedupeStatuses = this.GetStatusesNotToOverride();
+            Task<OrchestrationInstance> createTask = this.client.CreateOrchestrationInstanceAsync(
+                name: state.Name,
+                version: this.durableTaskOptions.DefaultVersion,
+                instanceId: restartWithNewInstanceId ? newInstanceId : instanceId,
+                input: input,
+                tags: state.Tags,
+                dedupeStatuses: dedupeStatuses);
+
+            this.traceHelper.FunctionScheduled(
+                this.TaskHubName,
+                state.Name,
+                instanceId,
+                reason: "NewInstance",
+                functionType: FunctionType.Orchestrator,
+                isReplay: false);
+
+            OrchestrationInstance instance = await createTask;
+            return instance.InstanceId;
         }
 
         /// <inheritdoc/>
