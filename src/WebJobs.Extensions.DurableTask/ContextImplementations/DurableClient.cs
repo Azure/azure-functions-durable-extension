@@ -174,7 +174,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc />
-        async Task<string> IDurableOrchestrationClient.StartNewAsync<T>(string orchestratorFunctionName, string instanceId, T input)
+        Task<string> IDurableOrchestrationClient.StartNewAsync<T>(string orchestratorFunctionName, string instanceId, T input)
+        {
+            return this.StartNewAsync<T>(orchestratorFunctionName, instanceId, input, tags: null);
+        }
+
+        /// <summary>
+        /// Starts a new instance of the specified orchestrator function with optional tags.
+        /// </summary>
+        /// <param name="orchestratorFunctionName">The name of the orchestrator function to start.</param>
+        /// <param name="instanceId">The ID to use for the new orchestration instance.</param>
+        /// <param name="input">JSON-serializable input value for the orchestrator function.</param>
+        /// <param name="tags">A dictionary of key-value pairs to associate with the orchestration instance.</param>
+        /// <typeparam name="T">The type of the input value for the orchestrator function.</typeparam>
+        /// <returns>A task that completes when the orchestration is started.</returns>
+        public async Task<string> StartNewAsync<T>(string orchestratorFunctionName, string instanceId, T input, IDictionary<string, string> tags)
         {
             if (this.ClientReferencesCurrentApp(this))
             {
@@ -201,7 +215,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             OrchestrationStatus[] dedupeStatuses = this.GetStatusesNotToOverride();
             Task<OrchestrationInstance> createTask = this.client.CreateOrchestrationInstanceAsync(
-                orchestratorFunctionName, this.durableTaskOptions.DefaultVersion, instanceId, input, null, dedupeStatuses);
+                orchestratorFunctionName, this.durableTaskOptions.DefaultVersion, instanceId, input, tags, dedupeStatuses);
 
             this.traceHelper.FunctionScheduled(
                 this.TaskHubName,
@@ -1150,25 +1164,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         async Task<string> IDurableOrchestrationClient.RestartAsync(string instanceId, bool restartWithNewInstanceId)
         {
-            DurableOrchestrationStatus status = await ((IDurableOrchestrationClient)this).GetStatusAsync(instanceId, showHistory: false, showHistoryOutput: false, showInput: true);
+            OrchestrationState state = await this.GetOrchestrationInstanceStateAsync(instanceId);
 
-            if (status == null)
+            if (state == null)
             {
                 throw new ArgumentException($"An orchestrastion with the instanceId {instanceId} was not found.");
             }
 
-            bool isInstaceNotCompleted = status.RuntimeStatus == OrchestrationRuntimeStatus.Running ||
-                                        status.RuntimeStatus == OrchestrationRuntimeStatus.Pending ||
-                                        status.RuntimeStatus == OrchestrationRuntimeStatus.Suspended;
+            bool isInstaceNotCompleted = state.OrchestrationStatus == OrchestrationStatus.Running ||
+                                        state.OrchestrationStatus == OrchestrationStatus.Pending ||
+                                        state.OrchestrationStatus == OrchestrationStatus.Suspended;
 
             if (isInstaceNotCompleted && !restartWithNewInstanceId)
             {
-                throw new InvalidOperationException($"Instance '{instanceId}' cannot be restarted while it is in state '{status.RuntimeStatus}'. " +
+                throw new InvalidOperationException($"Instance '{instanceId}' cannot be restarted while it is in state '{state.OrchestrationStatus}'. " +
                     "Wait until it has completed, or restart with a new instance ID.");
             }
 
-            return restartWithNewInstanceId ? await ((IDurableOrchestrationClient)this).StartNewAsync(orchestratorFunctionName: status.Name, status.Input)
-                : await ((IDurableOrchestrationClient)this).StartNewAsync(orchestratorFunctionName: status.Name, instanceId: status.InstanceId, status.Input);
+            JToken input = ParseToJToken(state.Input);
+            return restartWithNewInstanceId ? await ((IDurableOrchestrationClient)this).StartNewAsync(orchestratorFunctionName: state.Name, input)
+                : await ((IDurableOrchestrationClient)this).StartNewAsync(orchestratorFunctionName: state.Name, instanceId: state.OrchestrationInstance.InstanceId, input);
         }
 
         /// <inheritdoc/>
