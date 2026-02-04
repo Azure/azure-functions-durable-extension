@@ -935,21 +935,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         using Activity scheduleOrchestrationActivity = TraceHelper.StartActivityForNewOrchestration(executionStartedEvent, default);
                     }
 
-                    try
-                    {
-                        await durableClient.DurabilityProvider.CreateTaskOrchestrationAsync(
-                            new TaskMessage
-                            {
-                                Event = executionStartedEvent,
-                                OrchestrationInstance = instance,
-                            },
-                            this.config.Options.OverridableExistingInstanceStates.ToDedupeStatuses(),
-                            cancellationToken);
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        return request.CreateErrorResponse(HttpStatusCode.RequestTimeout, $"Create instance request cancelled for instance ID {instanceId}");
-                    }
+                    await durableClient.DurabilityProvider.CreateTaskOrchestrationAsync(
+                        new TaskMessage
+                        {
+                            Event = executionStartedEvent,
+                            OrchestrationInstance = instance,
+                        },
+                        this.config.Options.OverridableExistingInstanceStates.ToDedupeStatuses(),
+                        cancellationToken);
                 }
                 else
                 {

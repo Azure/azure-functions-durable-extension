@@ -5279,6 +5279,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
+        // This method returns an array of [bool extendedSessions, string storageProvider, bool anyStateOverridable, bool suspend]
+        // It combines the GetBooleanAndFullFeaturedStorageProviderOptionsWithOverridableStates with both true and false for suspend.
         public static IEnumerable<object[]> GetBooleanAndFullFeaturedStorageProviderOptionsWithOverridableStatesAndSuspend()
         {
             foreach (object[] data in GetBooleanAndFullFeaturedStorageProviderOptionsWithOverridableStates())
@@ -5288,6 +5290,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
+        // This method returns an array of [bool extendedSessions, string storageProvider, bool anyStateOverridable]
+        // It combines the TestDataGenerator.GetBooleanAndFullFeaturedStorageProviderOptions with both true and false for anyStateOverridable.
         public static IEnumerable<object[]> GetBooleanAndFullFeaturedStorageProviderOptionsWithOverridableStates()
         {
             foreach (object[] data in TestDataGenerator.GetBooleanAndFullFeaturedStorageProviderOptions())

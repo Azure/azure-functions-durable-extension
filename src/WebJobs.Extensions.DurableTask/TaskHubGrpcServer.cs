@@ -54,15 +54,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             try
             {
-                var allStatuses = new List<OrchestrationStatus>()
-                {
-                    OrchestrationStatus.Running,
-                    OrchestrationStatus.Pending,
-                    OrchestrationStatus.Suspended,
-                    OrchestrationStatus.Completed,
-                    OrchestrationStatus.Failed,
-                    OrchestrationStatus.Terminated,
-                };
+                List<OrchestrationStatus> allStatuses = System.Enum
+                    .GetValues<OrchestrationStatus>()
+                    .ToList();
 
                 // Not all clients are necessarily configured to set the OrchestrationIdReusePolicy field of the request.
                 // If it is null, we assume that they do not support per-request-dedupe statuses, and default to using just
@@ -123,10 +117,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             catch (InvalidOperationException ex) when (ex.Message.EndsWith("already exists.")) // for older versions of DTF.AS and DTFx.Netherite
             {
                 throw new RpcException(new Status(StatusCode.AlreadyExists, $"An Orchestration instance with the ID {request.InstanceId} already exists."));
-            }
-            catch (OperationCanceledException)
-            {
-                throw new RpcException(new Status(StatusCode.Cancelled, $"Create instance request cancelled for instance ID {request.InstanceId}"));
             }
             catch (Exception ex)
             {
