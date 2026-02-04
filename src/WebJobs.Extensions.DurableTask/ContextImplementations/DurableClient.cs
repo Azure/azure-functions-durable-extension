@@ -174,7 +174,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc />
-        public async Task<string> StartNewAsync<T>(string orchestratorFunctionName, string instanceId, T input)
+        async Task<string> IDurableOrchestrationClient.StartNewAsync<T>(string orchestratorFunctionName, string instanceId, T input)
         {
             if (this.ClientReferencesCurrentApp(this))
             {
