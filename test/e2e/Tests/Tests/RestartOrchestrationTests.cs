@@ -80,6 +80,18 @@ public class RestartOrchestrationTests
         {
             Assert.Equal(instanceId, restartInstanceId);
         }
+
+        HttpResponseMessage result = await HttpHelpers.InvokeHttpTrigger("RestartOrchestrator_Query_Tags", $"?id={restartInstanceId}");
+
+        // Verify RestartOrchestrator_Query_Tags endpoint returns OK and response contains output (and tags when backend returns them).
+        Assert.Equal(HttpStatusCode.OK, result.StatusCode);
+        var content = await result.Content.ReadAsStringAsync();
+        Assert.Contains("output", content);
+        // When the durability provider returns tags in GetInstance, verify the restarted instance has the expected tag.
+        if (content.Contains("\"tags\":{}") == false && content.Contains("tags"))
+        {
+            Assert.Contains("testtag", content);
+        }
     }
 
     [Fact]
