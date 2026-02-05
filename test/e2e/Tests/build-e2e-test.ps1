@@ -21,6 +21,9 @@ param(
     [Switch]
     $SkipCoreTools,
 
+    [Switch]
+    $UpdateCoreTools,
+
     # This param can be used during local runs of the build script to deliberately skip the build and run only the azurite/mssql logic
     # For instance, the command ./build-e2e-test.ps1 -SkipBuild -StartMSSqlContainer will start azurite and the MSSQL docker container only. 
     [Switch]
@@ -38,7 +41,7 @@ if ($PSVersionTable.PSEdition -ne 'Core') {
 
 $ErrorActionPreference = "Stop"
 
-$CORE_TOOLS_VERSION = '4.0.7317'
+$CORE_TOOLS_VERSION = '4.6.0'
 
 $ProjectBaseDirectory = "$PSScriptRoot\..\..\..\"
 $ProjectTemporaryPath = Join-Path ([System.IO.Path]::GetTempPath()) "DurableTaskExtensionE2ETests"
@@ -62,7 +65,7 @@ function StopOnFailedExecution {
 }
 
 $FUNC_CLI_DIRECTORY = Join-Path $ProjectTemporaryPath 'Azure.Functions.Cli'
-if($SkipCoreTools -or (Test-Path $FUNC_CLI_DIRECTORY))
+if(($SkipCoreTools -or (Test-Path $FUNC_CLI_DIRECTORY)) -and -not $UpdateCoreTools)
 {
   Write-Host "---Skipping Core Tools download---"  
 }
