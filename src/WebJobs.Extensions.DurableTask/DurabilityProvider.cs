@@ -704,12 +704,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             $"{string.Join(", ", dedupeStatuses)}, do not contain the orchestration's status, the orchestration has been " +
                             $"terminated and a new instance with the same instance ID will be created.");
 
-                        while (orchestrationState != null && IsRunning(orchestrationState.OrchestrationStatus))
-                        {
-                            cancellationToken.ThrowIfCancellationRequested();
-                            await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
-                            orchestrationState = await this.GetOrchestrationStateAsync(instanceId, executionId: null);
-                        }
+                        await this.WaitForOrchestrationAsync(
+                            instanceId,
+                            orchestrationState.OrchestrationInstance.ExecutionId,
+                            TimeSpan.MaxValue,
+                            cancellationToken);
                     }
                 }
             }
