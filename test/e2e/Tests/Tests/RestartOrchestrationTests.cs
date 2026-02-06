@@ -28,6 +28,7 @@ public class RestartOrchestrationTests
     [Trait("Java", "Skip")] // RestartAsync not yet implemented in Java
     [Trait("Python", "Skip")] // RestartAsync not supported in Python
     [Trait("Node", "Skip")] // RestartAsync not supported in Node
+    [Trait("MSSQL", "Skip")] // MSSQL doesn't support tags at ExecutionStarted Event.
     // Test behavior of restartasync of durabletaskclient.
     // When restart with a instanceid and startwithnewinstanceid is false, the orchestration should be restarted with the same instance id.
     // When restart with a instanceid and startwithnewinstanceid is true, the orchestration should be restarted with a new instance id.

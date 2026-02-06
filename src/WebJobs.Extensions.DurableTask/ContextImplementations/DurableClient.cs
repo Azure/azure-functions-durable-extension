@@ -1,4 +1,4 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
@@ -199,20 +199,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new ArgumentException($"Instance ID lengths must not exceed {MaxInstanceIdLength} characters.");
             }
 
-            OrchestrationStatus[] dedupeStatuses = this.GetStatusesNotToOverride();
-            Task<OrchestrationInstance> createTask = this.client.CreateOrchestrationInstanceAsync(
-                orchestratorFunctionName, this.durableTaskOptions.DefaultVersion, instanceId, input, null, dedupeStatuses);
-
-            this.traceHelper.FunctionScheduled(
-                this.TaskHubName,
-                orchestratorFunctionName,
-                instanceId,
-                reason: "NewInstance",
-                functionType: FunctionType.Orchestrator,
-                isReplay: false);
-
-            OrchestrationInstance instance = await createTask;
-            return instance.InstanceId;
+            return await this.CreateOrchestrationInstanceAndTraceAsync(orchestratorFunctionName, instanceId, input, tags: null, "NewInstance");
         }
 
         private OrchestrationStatus[] GetStatusesNotToOverride()
@@ -1150,18 +1137,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         async Task<string> IDurableOrchestrationClient.RestartAsync(string instanceId, bool restartWithNewInstanceId)
         {
+            // GetOrchestrationInstanceStateAsync will throw ArgumentException if the provided instanceid is not found.
             OrchestrationState state = await this.GetOrchestrationInstanceStateAsync(instanceId);
 
-            if (state == null)
-            {
-                throw new ArgumentException($"An orchestrastion with the instanceId {instanceId} was not found.");
-            }
-
-            bool isInstaceNotCompleted = state.OrchestrationStatus == OrchestrationStatus.Running ||
+            bool isInstanceNotCompleted = state.OrchestrationStatus == OrchestrationStatus.Running ||
                                         state.OrchestrationStatus == OrchestrationStatus.Pending ||
                                         state.OrchestrationStatus == OrchestrationStatus.Suspended;
 
-            if (isInstaceNotCompleted && !restartWithNewInstanceId)
+            if (isInstanceNotCompleted && !restartWithNewInstanceId)
             {
                 throw new InvalidOperationException($"Instance '{instanceId}' cannot be restarted while it is in state '{state.OrchestrationStatus}'. " +
                     "Wait until it has completed, or restart with a new instance ID.");
@@ -1176,25 +1159,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 newInstanceId = Guid.NewGuid().ToString("N");
             }
 
-            OrchestrationStatus[] dedupeStatuses = this.GetStatusesNotToOverride();
-            Task<OrchestrationInstance> createTask = this.client.CreateOrchestrationInstanceAsync(
-                name: state.Name,
-                version: this.durableTaskOptions.DefaultVersion,
+            return await this.CreateOrchestrationInstanceAndTraceAsync(
+                orchestratorFunctionName: state.Name,
                 instanceId: restartWithNewInstanceId ? newInstanceId : instanceId,
                 input: input,
                 tags: state.Tags,
-                dedupeStatuses: dedupeStatuses);
-
-            this.traceHelper.FunctionScheduled(
-                this.TaskHubName,
-                state.Name,
-                instanceId,
-                reason: "NewInstance",
-                functionType: FunctionType.Orchestrator,
-                isReplay: false);
-
-            OrchestrationInstance instance = await createTask;
-            return instance.InstanceId;
+                reason: "RestartInstance");
         }
 
         /// <inheritdoc/>
@@ -1250,6 +1220,34 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             return this.durabilityProvider.MakeCurrentAppPrimaryAsync();
+        }
+
+        private async Task<string> CreateOrchestrationInstanceAndTraceAsync(
+            string orchestratorFunctionName,
+            string instanceId,
+            object input,
+            IDictionary<string, string> tags,
+            string reason)
+        {
+            OrchestrationStatus[] dedupeStatuses = this.GetStatusesNotToOverride();
+            Task<OrchestrationInstance> createTask = this.client.CreateOrchestrationInstanceAsync(
+                orchestratorFunctionName,
+                this.durableTaskOptions.DefaultVersion,
+                instanceId,
+                input,
+                tags,
+                dedupeStatuses);
+
+            this.traceHelper.FunctionScheduled(
+                this.TaskHubName,
+                orchestratorFunctionName,
+                instanceId,
+                reason: reason,
+                functionType: FunctionType.Orchestrator,
+                isReplay: false);
+
+            OrchestrationInstance instance = await createTask;
+            return instance.InstanceId;
         }
 
         private class EventIndexDateMapping
