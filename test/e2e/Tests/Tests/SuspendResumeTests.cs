@@ -45,15 +45,15 @@ public class SuspendResumeTests
 
             // Verify that the ClientOperationReceived logs were emitted with a FunctionInvocationId
             ClientOperationLogHelpers.AssertClientOperationLogExists(
-                this.fixture.TestLogs.CoreToolsLogs,
+                () => this.fixture.TestLogs.CoreToolsLogs,
                 "StartOrchestration",
                 instanceId);
             ClientOperationLogHelpers.AssertClientOperationLogExists(
-                this.fixture.TestLogs.CoreToolsLogs,
+                () => this.fixture.TestLogs.CoreToolsLogs,
                 "Suspend",
                 instanceId);
             ClientOperationLogHelpers.AssertClientOperationLogExists(
-                this.fixture.TestLogs.CoreToolsLogs,
+                () => this.fixture.TestLogs.CoreToolsLogs,
                 "Resume",
                 instanceId);
         }

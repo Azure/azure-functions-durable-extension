@@ -69,7 +69,7 @@ public class RewindOrchestratorTests
         // Verify that the ClientOperationReceived logs were emitted with a FunctionInvocationId
         // Note: These assertions are conditional - they only verify IF the SDK supports the header
         ClientOperationLogHelpers.AssertClientOperationLogExists(
-            this.fixture.TestLogs.CoreToolsLogs,
+            () => this.fixture.TestLogs.CoreToolsLogs,
             "StartOrchestration",
             instanceId);
         // Should have numFailures rewind operations logged for this instance (if SDK supports the header)

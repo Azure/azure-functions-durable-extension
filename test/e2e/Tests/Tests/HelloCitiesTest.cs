@@ -37,7 +37,7 @@ public class HttpEndToEndTests
 
         // Verify that the ClientOperationReceived log was emitted with a FunctionInvocationId
         ClientOperationLogHelpers.AssertClientOperationLogExists(
-            this.fixture.TestLogs.CoreToolsLogs,
+            () => this.fixture.TestLogs.CoreToolsLogs,
             "StartOrchestration",
             instanceId);
     }

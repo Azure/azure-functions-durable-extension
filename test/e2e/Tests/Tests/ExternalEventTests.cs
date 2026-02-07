@@ -41,11 +41,11 @@ public class ExternalEventTests
 
         // Verify that the ClientOperationReceived logs were emitted with a FunctionInvocationId
         ClientOperationLogHelpers.AssertClientOperationLogExists(
-            this.fixture.TestLogs.CoreToolsLogs,
+            () => this.fixture.TestLogs.CoreToolsLogs,
             "StartOrchestration",
             instanceId);
         ClientOperationLogHelpers.AssertClientOperationLogExists(
-            this.fixture.TestLogs.CoreToolsLogs,
+            () => this.fixture.TestLogs.CoreToolsLogs,
             "RaiseEvent",
             instanceId);
 

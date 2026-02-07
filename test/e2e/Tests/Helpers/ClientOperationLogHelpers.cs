@@ -19,19 +19,20 @@ internal static class ClientOperationLogHelpers
     /// was emitted for the specified operation and instance. Retries with polling to avoid flaky
     /// tests caused by log flush timing.
     /// </summary>
-    /// <param name="logs">The collection of Core Tools logs.</param>
+    /// <param name="getLogs">A function that returns the current collection of Core Tools logs (re-evaluated on each poll).</param>
     /// <param name="operationType">The expected operation type (e.g., "StartOrchestration", "TerminateInstance").</param>
     /// <param name="instanceId">The expected instance ID.</param>
     /// <param name="maxWaitSeconds">Maximum time to wait for the log to appear (default: 5 seconds).</param>
     public static void AssertClientOperationLogExists(
-        IEnumerable<string> logs,
+        Func<IEnumerable<string>> getLogs,
         string operationType,
         string instanceId,
         int maxWaitSeconds = 5)
     {
-        // Poll for the log to appear, giving Core Tools time to flush logs
+        // Poll for the log to appear, giving Core Tools time to flush logs.
+        // Re-fetch logs on each iteration since CoreToolsLogs returns a snapshot.
         bool hasClientOperationLog = WaitForCondition(
-            () => logs.Any(log =>
+            () => getLogs().Any(log =>
                 log.Contains($"Client operation '{operationType}' received") &&
                 log.Contains($"for instance '{instanceId}'")),
             maxWaitSeconds);
@@ -41,7 +42,7 @@ internal static class ClientOperationLogHelpers
         if (hasClientOperationLog)
         {
             // Verify the log has a valid FunctionInvocationId (not empty)
-            Assert.Contains(logs, log =>
+            Assert.Contains(getLogs(), log =>
                 log.Contains($"Client operation '{operationType}' received") &&
                 log.Contains($"for instance '{instanceId}'") &&
                 log.Contains("FunctionInvocationId:") &&
@@ -54,7 +55,7 @@ internal static class ClientOperationLogHelpers
         {
             // FunctionStarting log format: "{instanceId}: Function '{functionName} ({functionType})' started. ..."
             // FunctionScheduled log format: "{instanceId}: Function '{functionName} ({functionType})' scheduled. ..."
-            Assert.Contains(logs, log =>
+            Assert.Contains(getLogs(), log =>
                 log.Contains($"{instanceId}: Function '") &&
                 (log.Contains("started") || log.Contains("scheduled")));
         }
