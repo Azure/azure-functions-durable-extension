@@ -66,9 +66,6 @@ public class RewindOrchestratorTests
             }
         }
 
-        // Give some time for Core Tools to write logs out
-        Thread.Sleep(500);
-
         // Verify that the ClientOperationReceived logs were emitted with a FunctionInvocationId
         // Note: These assertions are conditional - they only verify IF the SDK supports the header
         ClientOperationLogHelpers.AssertClientOperationLogExists(

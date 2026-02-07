@@ -15,25 +15,26 @@ namespace Microsoft.Azure.Durable.Tests.DotnetIsolatedE2E;
 internal static class ClientOperationLogHelpers
 {
     /// <summary>
-    /// Asserts that a ClientOperationReceived log was emitted for the specified operation and instance,
-    /// and that a corresponding FunctionScheduled log exists for the same instance (enabling correlation).
-    /// Note: This assertion is skipped if the SDK doesn't propagate the FunctionInvocationId header yet,
-    /// which happens when testing against older SDK versions that don't have this feature.
+    /// Waits for Core Tools logs to be flushed, then asserts that a ClientOperationReceived log
+    /// was emitted for the specified operation and instance. Retries with polling to avoid flaky
+    /// tests caused by log flush timing.
     /// </summary>
     /// <param name="logs">The collection of Core Tools logs.</param>
     /// <param name="operationType">The expected operation type (e.g., "StartOrchestration", "TerminateInstance").</param>
     /// <param name="instanceId">The expected instance ID.</param>
+    /// <param name="maxWaitSeconds">Maximum time to wait for the log to appear (default: 5 seconds).</param>
     public static void AssertClientOperationLogExists(
         IEnumerable<string> logs,
         string operationType,
-        string instanceId)
+        string instanceId,
+        int maxWaitSeconds = 5)
     {
-        // Log format: "Client operation '{operationType}' received for instance '{instanceId}'. FunctionInvocationId: {functionInvocationId}. ..."
-        // Note: The ClientOperationReceived log is only emitted when the SDK sends the FunctionInvocationId header.
-        // If the SDK doesn't support this yet (e.g., older versions), we skip the assertion.
-        bool hasClientOperationLog = logs.Any(log =>
-            log.Contains($"Client operation '{operationType}' received") &&
-            log.Contains($"for instance '{instanceId}'"));
+        // Poll for the log to appear, giving Core Tools time to flush logs
+        bool hasClientOperationLog = WaitForCondition(
+            () => logs.Any(log =>
+                log.Contains($"Client operation '{operationType}' received") &&
+                log.Contains($"for instance '{instanceId}'")),
+            maxWaitSeconds);
 
         // TODO: Remove this conditional check once all SDKs are released with FunctionInvocationId support.
         // Tracking issue: https://github.com/Azure/azure-functions-durable-extension/issues/3327
@@ -136,5 +137,24 @@ internal static class ClientOperationLogHelpers
             log.Contains($"Client operation '{operationType}' received") &&
             log.Contains($"for instance '{instanceId}'") &&
             log.Contains("FunctionInvocationId:"));
+    }
+
+    /// <summary>
+    /// Polls a condition with a 250ms interval, returning true if it becomes true within the timeout.
+    /// </summary>
+    private static bool WaitForCondition(Func<bool> condition, int maxWaitSeconds)
+    {
+        DateTime deadline = DateTime.UtcNow.AddSeconds(maxWaitSeconds);
+        while (DateTime.UtcNow < deadline)
+        {
+            if (condition())
+            {
+                return true;
+            }
+
+            Thread.Sleep(250);
+        }
+
+        return condition();
     }
 }

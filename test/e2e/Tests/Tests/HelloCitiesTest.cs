@@ -35,9 +35,6 @@ public class HttpEndToEndTests
         var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
         Assert.Contains(partialExpectedOutput, orchestrationDetails.Output);
 
-        // Give some time for Core Tools to write logs out
-        Thread.Sleep(500);
-
         // Verify that the ClientOperationReceived log was emitted with a FunctionInvocationId
         ClientOperationLogHelpers.AssertClientOperationLogExists(
             this.fixture.TestLogs.CoreToolsLogs,

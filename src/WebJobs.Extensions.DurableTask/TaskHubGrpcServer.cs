@@ -66,12 +66,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 };
 
                 // Log correlation information for client operations
-                string? functionInvocationId = GetFunctionInvocationId(context);
-                this.extension.TraceHelper.ClientOperationReceived(
-                    this.extension.Options.HubName,
-                    "StartOrchestration",
-                    instance.InstanceId,
-                    functionInvocationId);
+                this.LogClientOperationReceived(context, "StartOrchestration", instance.InstanceId);
 
                 // Create the ExecutionStartedEvent
                 ExecutionStartedEvent executionStartedEvent = new ExecutionStartedEvent(-1, request.Input)
@@ -135,12 +130,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             bool throwStatusExceptionsOnRaiseEvent = this.extension.Options.ThrowStatusExceptionsOnRaiseEvent ?? this.extension.DefaultDurabilityProvider.CheckStatusBeforeRaiseEvent;
 
             // Log correlation information for client operations
-            string? functionInvocationId = GetFunctionInvocationId(context);
-            this.extension.TraceHelper.ClientOperationReceived(
-                this.extension.Options.HubName,
-                "RaiseEvent",
-                request.InstanceId,
-                functionInvocationId);
+            this.LogClientOperationReceived(context, "RaiseEvent", request.InstanceId);
 
             try
             {
@@ -181,12 +171,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.CheckEntitySupport(context, out var durabilityProvider, out var entityOrchestrationService);
 
             // Log correlation information for client operations
-            string? functionInvocationId = GetFunctionInvocationId(context);
-            this.extension.TraceHelper.ClientOperationReceived(
-                this.extension.Options.HubName,
-                "SignalEntity",
-                request.InstanceId,
-                functionInvocationId);
+            this.LogClientOperationReceived(context, "SignalEntity", request.InstanceId);
 
             Activity? signalEntityActivity = null;
 
@@ -294,12 +279,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public async override Task<P.TerminateResponse> TerminateInstance(P.TerminateRequest request, ServerCallContext context)
         {
             // Log correlation information for client operations
-            string? functionInvocationId = GetFunctionInvocationId(context);
-            this.extension.TraceHelper.ClientOperationReceived(
-                this.extension.Options.HubName,
-                "Terminate",
-                request.InstanceId,
-                functionInvocationId);
+            this.LogClientOperationReceived(context, "Terminate", request.InstanceId);
 
             try
             {
@@ -331,12 +311,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public async override Task<P.SuspendResponse> SuspendInstance(P.SuspendRequest request, ServerCallContext context)
         {
             // Log correlation information for client operations
-            string? functionInvocationId = GetFunctionInvocationId(context);
-            this.extension.TraceHelper.ClientOperationReceived(
-                this.extension.Options.HubName,
-                "Suspend",
-                request.InstanceId,
-                functionInvocationId);
+            this.LogClientOperationReceived(context, "Suspend", request.InstanceId);
 
             await this.GetClient(context).SuspendAsync(request.InstanceId, request.Reason);
             return new P.SuspendResponse();
@@ -345,12 +320,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public async override Task<P.ResumeResponse> ResumeInstance(P.ResumeRequest request, ServerCallContext context)
         {
             // Log correlation information for client operations
-            string? functionInvocationId = GetFunctionInvocationId(context);
-            this.extension.TraceHelper.ClientOperationReceived(
-                this.extension.Options.HubName,
-                "Resume",
-                request.InstanceId,
-                functionInvocationId);
+            this.LogClientOperationReceived(context, "Resume", request.InstanceId);
 
             await this.GetClient(context).ResumeAsync(request.InstanceId, request.Reason);
             return new P.ResumeResponse();
@@ -359,12 +329,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public async override Task<P.RewindInstanceResponse> RewindInstance(P.RewindInstanceRequest request, ServerCallContext context)
         {
             // Log correlation information for client operations
-            string? functionInvocationId = GetFunctionInvocationId(context);
-            this.extension.TraceHelper.ClientOperationReceived(
-                this.extension.Options.HubName,
-                "Rewind",
-                request.InstanceId,
-                functionInvocationId);
+            this.LogClientOperationReceived(context, "Rewind", request.InstanceId);
 
             try
             {
@@ -420,16 +385,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             var purgeClient = (IOrchestrationServicePurgeClient)this.GetDurabilityProvider(context);
 
-            // Extract function invocation ID for correlation logging
-            string? functionInvocationId = GetFunctionInvocationId(context);
+            // Log correlation information for client operations
             string instanceId = request.RequestCase == P.PurgeInstancesRequest.RequestOneofCase.InstanceId
                 ? request.InstanceId
                 : "(filter)";
-            this.extension.TraceHelper.ClientOperationReceived(
-                this.extension.Options.HubName,
-                "PurgeInstances",
-                instanceId,
-                functionInvocationId);
+            this.LogClientOperationReceived(context, "PurgeInstances", instanceId);
 
             PurgeResult result;
             try
@@ -708,6 +668,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             Metadata.Entry? entry = context.RequestHeaders.FirstOrDefault(
                 e => string.Equals(e.Key, FunctionInvocationIdMetadataKey, StringComparison.OrdinalIgnoreCase));
             return entry?.Value;
+        }
+
+        private void LogClientOperationReceived(ServerCallContext context, string operationType, string instanceId)
+        {
+            string? functionInvocationId = GetFunctionInvocationId(context);
+            this.extension.TraceHelper.ClientOperationReceived(
+                this.extension.Options.HubName,
+                operationType,
+                instanceId,
+                functionInvocationId);
         }
 
         private void CheckEntitySupport(ServerCallContext context, out DurabilityProvider durabilityProvider, out IEntityOrchestrationService entityOrchestrationService)

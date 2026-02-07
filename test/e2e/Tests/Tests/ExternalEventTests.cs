@@ -39,9 +39,6 @@ public class ExternalEventTests
         // Make sure orchestration instance completes successfully.
         await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", 30);
 
-        // Give some time for Core Tools to write logs out
-        Thread.Sleep(500);
-
         // Verify that the ClientOperationReceived logs were emitted with a FunctionInvocationId
         ClientOperationLogHelpers.AssertClientOperationLogExists(
             this.fixture.TestLogs.CoreToolsLogs,
