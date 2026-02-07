@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Durable.Tests.DotnetIsolatedE2E;
 
 /// <summary>
 /// Helper methods for verifying client operation correlation logs in e2e tests.
-/// These logs are emitted when client operations (StartOrchestration, TerminateInstance, etc.)
+/// These logs are emitted when client operations (StartOrchestration, Terminate, etc.)
 /// are received with a FunctionInvocationId header, enabling correlation between out-of-process
 /// workers and host-side orchestration events.
 /// </summary>
@@ -20,7 +20,7 @@ internal static class ClientOperationLogHelpers
     /// tests caused by log flush timing.
     /// </summary>
     /// <param name="getLogs">A function that returns the current collection of Core Tools logs (re-evaluated on each poll).</param>
-    /// <param name="operationType">The expected operation type (e.g., "StartOrchestration", "TerminateInstance").</param>
+    /// <param name="operationType">The expected operation type (e.g., "StartOrchestration", "Terminate").</param>
     /// <param name="instanceId">The expected instance ID.</param>
     /// <param name="maxWaitSeconds">Maximum time to wait for the log to appear (default: 5 seconds).</param>
     public static void AssertClientOperationLogExists(
@@ -66,7 +66,7 @@ internal static class ClientOperationLogHelpers
     /// This overload is useful when the instance ID is not known ahead of time.
     /// </summary>
     /// <param name="logs">The collection of Core Tools logs.</param>
-    /// <param name="operationType">The expected operation type (e.g., "StartOrchestration", "TerminateInstance").</param>
+    /// <param name="operationType">The expected operation type (e.g., "StartOrchestration", "Terminate").</param>
     public static void AssertClientOperationLogExists(
         IEnumerable<string> logs,
         string operationType)
