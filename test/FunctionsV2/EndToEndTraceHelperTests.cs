@@ -188,7 +188,8 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
                 this.messages = messages;
             }
 
-            public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+            public IDisposable? BeginScope<TState>(TState state)
+                where TState : notnull => null;
 
             public bool IsEnabled(LogLevel logLevel) => true;
 
