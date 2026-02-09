@@ -1,6 +1,8 @@
 ﻿# Copyright (c) .NET Foundation. All rights reserved.
 # Licensed under the MIT License. See LICENSE in the project root for license information.
 
+# NOTE: Always use .NET 10 SDK because global.json requires SDK 10.0.102.
+# The SDK can still build for net8.0 target framework.
 ARG DOTNET_SDK_TAG=10.0
 ARG TARGET_FRAMEWORK=net8.0
 ARG DOTNET_ISOLATED_TAG=4-dotnet-isolated8.0
@@ -10,12 +12,16 @@ ARG TARGET_FRAMEWORK
 # Step 1: Build the WebJobs extension and publish it as a local NuGet package
 COPY . /root
 RUN cd /root/src/WebJobs.Extensions.DurableTask && \
-    mkdir /out && \
+    mkdir -p /out && \
+    mkdir -p /out/$TARGET_FRAMEWORK && \
+    mkdir -p /packages && \
     dotnet build -c Release WebJobs.Extensions.DurableTask.csproj --output /out && \
-    dotnet build -c Release -f net8.0 WebJobs.Extensions.DurableTask.csproj --output /out/net8 && \
-    mkdir /packages && \
     dotnet nuget push /out/Microsoft.Azure.WebJobs.Extensions.DurableTask.*.nupkg --source /packages && \
     dotnet nuget add source /packages
+
+# Step 1b: Build the WebJobs extension for the specific target framework
+RUN cd /root/src/WebJobs.Extensions.DurableTask && \
+    dotnet build -c Release -f $TARGET_FRAMEWORK WebJobs.Extensions.DurableTask.csproj --output /out/$TARGET_FRAMEWORK
 
 # Step 2: Build the sample app, which references the locally built extension from Step 1
 #         IMPORTANT: restore seems to need to be done separately to ensure the correct
@@ -27,7 +33,7 @@ RUN cd /root/test/SmokeTests/OOProcSmokeTests/DotNetIsolated && \
     dotnet restore DotNetIsolated.csproj --verbosity normal -p:TargetFramework=$TARGET_FRAMEWORK && \
     dotnet build DotNetIsolated.csproj -c Release -f $TARGET_FRAMEWORK && \
     dotnet publish DotNetIsolated.csproj -c Release -f $TARGET_FRAMEWORK --no-build --output /home/site/wwwroot && \
-    cp /out/net8/Microsoft.Azure.WebJobs.Extensions.DurableTask.dll /home/site/wwwroot/.azurefunctions/ && \
+    cp /out/$TARGET_FRAMEWORK/Microsoft.Azure.WebJobs.Extensions.DurableTask.dll /home/site/wwwroot/.azurefunctions/ && \
     ls -aR /home/site/wwwroot && \
     cat /home/site/wwwroot/extensions.json # debugging
 
