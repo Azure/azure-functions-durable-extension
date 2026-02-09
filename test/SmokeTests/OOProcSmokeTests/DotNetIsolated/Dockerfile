@@ -15,13 +15,14 @@ RUN cd /root/src/WebJobs.Extensions.DurableTask && \
     mkdir -p /out && \
     mkdir -p /out/$TARGET_FRAMEWORK && \
     mkdir -p /packages && \
-    dotnet build -c Release WebJobs.Extensions.DurableTask.csproj --output /out && \
+    dotnet restore WebJobs.Extensions.DurableTask.csproj && \
+    dotnet build -c Release WebJobs.Extensions.DurableTask.csproj --no-restore --output /out && \
     dotnet nuget push /out/Microsoft.Azure.WebJobs.Extensions.DurableTask.*.nupkg --source /packages && \
     dotnet nuget add source /packages
 
 # Step 1b: Build the WebJobs extension for the specific target framework
 RUN cd /root/src/WebJobs.Extensions.DurableTask && \
-    dotnet build -c Release -f $TARGET_FRAMEWORK WebJobs.Extensions.DurableTask.csproj --output /out/$TARGET_FRAMEWORK
+    dotnet build -c Release -f $TARGET_FRAMEWORK WebJobs.Extensions.DurableTask.csproj --no-restore --output /out/$TARGET_FRAMEWORK
 
 # Step 2: Build the sample app, which references the locally built extension from Step 1
 #         IMPORTANT: restore seems to need to be done separately to ensure the correct

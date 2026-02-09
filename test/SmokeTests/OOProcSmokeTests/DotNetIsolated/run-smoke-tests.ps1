@@ -27,8 +27,19 @@ Do {
     if ($isFunctionsHostRunning -eq $null) {
         Write-Host "Starting the Functions host..." -ForegroundColor Yellow
 
-        # The '&' operator is used to run the command in the background
-        cd ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated && func host start --port 7071 &       
+        # Get the directory where this script is located (the DotNetIsolated folder)
+        $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+        if ([string]::IsNullOrEmpty($scriptDir)) {
+            $scriptDir = "./test/SmokeTests/OOProcSmokeTests/DotNetIsolated"
+        }
+
+        # Start the Functions host as a background job
+        Start-Job -ScriptBlock {
+            param($dir)
+            Set-Location $dir
+            func host start --port 7071
+        } -ArgumentList $scriptDir
+
         Write-Host "Waiting for the Functions host to start up..." -ForegroundColor Yellow
         Start-Sleep -Seconds 60
     }
@@ -110,7 +121,12 @@ Do {
             
             # We stop the host process and wait for a bit before checking if it is running again.
             Write-Host "Restarting the Functions host..." -ForegroundColor Yellow
-            Stop-Process -Name "func" -Force
+            Stop-Process -Name "func" -Force -ErrorAction SilentlyContinue
+
+            # Also stop any background jobs that might be running the host
+            Get-Job | Stop-Job -ErrorAction SilentlyContinue
+            Get-Job | Remove-Job -ErrorAction SilentlyContinue
+
             Start-Sleep -Seconds 5
             
             # Log whether the process kill succeeded
