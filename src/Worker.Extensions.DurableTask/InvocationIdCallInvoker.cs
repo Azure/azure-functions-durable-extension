@@ -105,7 +105,7 @@ internal sealed class InvocationIdCallInvoker : CallInvoker
             }
         }
 
-        headers.Add(InvocationIdMetadataKey, invocationId);
+        headers.Add(InvocationIdMetadataKey, invocationId!);
         return options.WithHeaders(headers);
     }
 }
