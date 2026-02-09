@@ -72,7 +72,7 @@ jobs:
 
     - name: Build .NET Isolated Smoke Test
       run: cd ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated &&
-        dotnet restore --verbosity normal -f ${{ matrix.targetFramework }} &&
+        dotnet restore --verbosity normal -p:TargetFramework=${{ matrix.targetFramework }} &&
         dotnet build -c Release -f ${{ matrix.targetFramework }}
 
     - name: Install core tools
