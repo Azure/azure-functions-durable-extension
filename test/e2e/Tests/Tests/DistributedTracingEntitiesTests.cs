@@ -114,5 +114,13 @@ public class DistributedTracingEntitiesTests
         Assert.NotNull(ids);
         Assert.Equal(5, ids.Count);
         Assert.True(ids.All(traceId => traceId.Equals(activity.TraceId.ToString())));
+
+        // Verify that the ClientOperationReceived log was emitted for the SignalEntity call.
+        // Note: Entity names are lowercased by the SDK's EntityInstanceId constructor.
+        ClientOperationLogHelpers.AssertClientOperationLogExists(
+            () => _fixture.TestLogs.CoreToolsLogs,
+            "SignalEntity",
+            "@activityrecorderentity@mainEntity",
+            _fixture.functionLanguageLocalizer.GetLanguageType());
     }
 }

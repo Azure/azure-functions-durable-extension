@@ -198,6 +198,18 @@ public class GetOrchestrationHistoryTests
             Assert.Equal(taskFailureDetails.ErrorType, subOrchestrationFailureDetails.InnerFailure.ErrorType);
             Assert.Equal(taskFailureDetails.ErrorMessage, subOrchestrationFailureDetails.InnerFailure.ErrorMessage);
         }
+
+        // Verify that the ClientOperationReceived logs were emitted with a FunctionInvocationId
+        ClientOperationLogHelpers.AssertClientOperationLogExists(
+            () => this.fixture.TestLogs.CoreToolsLogs,
+            "StartOrchestration",
+            instanceId,
+            this.fixture.functionLanguageLocalizer.GetLanguageType());
+        ClientOperationLogHelpers.AssertClientOperationLogExists(
+            () => this.fixture.TestLogs.CoreToolsLogs,
+            "StreamInstanceHistory",
+            instanceId,
+            this.fixture.functionLanguageLocalizer.GetLanguageType());
     }
 
     [Fact]
@@ -276,6 +288,18 @@ public class GetOrchestrationHistoryTests
         Assert.Equal(result, JsonConvert.DeserializeObject<ComplexInput>(executionCompletedEvent.Result));
         Assert.Equal(subOrchestrationInstanceCreatedEvent.EventId, subOrchestrationCompletedEvent.TaskScheduledId);
         Assert.Equal(result, JsonConvert.DeserializeObject<ComplexInput>(subOrchestrationCompletedEvent.Result));
+
+        // Verify that the ClientOperationReceived logs were emitted with a FunctionInvocationId
+        ClientOperationLogHelpers.AssertClientOperationLogExists(
+            () => this.fixture.TestLogs.CoreToolsLogs,
+            "StartOrchestration",
+            instanceId,
+            this.fixture.functionLanguageLocalizer.GetLanguageType());
+        ClientOperationLogHelpers.AssertClientOperationLogExists(
+            () => this.fixture.TestLogs.CoreToolsLogs,
+            "StreamInstanceHistory",
+            instanceId,
+            this.fixture.functionLanguageLocalizer.GetLanguageType());
 
         // The suborchestration calls Activities/entities with large outputs, so it should force multiple history chunks in the streaming process
         using HttpResponseMessage getSubOrchestrationHistoryResponse = await HttpHelpers.InvokeHttpTrigger("GetInstanceHistory", $"?instanceId={subOrchestrationInstanceId}");

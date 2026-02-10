@@ -1,4 +1,6 @@
 name: End to End Test - .NET Isolated/Func V4
+permissions:
+  contents: read
 
 on:
   workflow_dispatch:

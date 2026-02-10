@@ -152,6 +152,37 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.logger.LogWarning(message);
         }
 
+        public void ClientOperationReceived(
+            string hubName,
+            string operationType,
+            string instanceId,
+            string? functionInvocationId)
+        {
+            // Only log if a function invocation ID was provided (for correlation purposes)
+            if (!string.IsNullOrEmpty(functionInvocationId))
+            {
+                EtwEventSource.Instance.ClientOperationReceived(
+                    hubName,
+                    LocalAppName,
+                    LocalSlotName,
+                    operationType,
+                    instanceId,
+                    functionInvocationId,
+                    ExtensionVersion);
+
+                this.logger.LogInformation(
+                    "Client operation '{operationType}' received for instance '{instanceId}'. FunctionInvocationId: {functionInvocationId}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
+                    operationType,
+                    instanceId,
+                    functionInvocationId,
+                    hubName,
+                    LocalAppName,
+                    LocalSlotName,
+                    ExtensionVersion,
+                    this.sequenceNumber++);
+            }
+        }
+
         public void FunctionScheduled(
             string hubName,
             string functionName,
