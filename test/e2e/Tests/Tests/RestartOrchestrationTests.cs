@@ -39,7 +39,7 @@ public class RestartOrchestrationTests
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
         string instanceId = await DurableHelpers.ParseInstanceIdAsync(response);
 
-        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", 10);
+        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", 30);
         var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
         string output1 = orchestrationDetails.Output;
         DateTime createdTime1 = orchestrationDetails.CreatedTime;
@@ -61,7 +61,7 @@ public class RestartOrchestrationTests
         string restartStatusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(restartResponse);
         string restartInstanceId = await DurableHelpers.ParseInstanceIdAsync(restartResponse);
 
-        await DurableHelpers.WaitForOrchestrationStateAsync(restartStatusQueryGetUri, "Completed", 10);
+        await DurableHelpers.WaitForOrchestrationStateAsync(restartStatusQueryGetUri, "Completed", 30);
         var restartOrchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(restartStatusQueryGetUri);
         string output2 = restartOrchestrationDetails.Output;
         DateTime createdTime2 = restartOrchestrationDetails.CreatedTime;

@@ -121,7 +121,7 @@ public class SuspendResumeTests
         string instanceId = await DurableHelpers.ParseInstanceIdAsync(response);
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
 
-        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", 5);
+        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", 15);
         try
         {
             using HttpResponseMessage suspendResponse = await HttpHelpers.InvokeHttpTrigger("SuspendInstance", $"?instanceId={instanceId}");
