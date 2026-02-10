@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Grpc.Core;
 using Microsoft.DurableTask.Client;
 using Microsoft.DurableTask.Client.Grpc;
 using Microsoft.Extensions.Logging;
@@ -135,9 +136,13 @@ internal partial class FunctionsDurableClientProvider : IAsyncDisposable
                 connectionName);
 
             GrpcChannel channel = CreateChannel(key, maxGrpcMessageSizeInBytes, grpcHttpClientTimeout);
+
+            // Wrap the channel's call invoker with our InvocationIdCallInvoker to add correlation headers
+            CallInvoker callInvoker = new InvocationIdCallInvoker(channel.CreateCallInvoker());
+
             GrpcDurableTaskClientOptions options = new()
             {
-                Channel = channel,
+                CallInvoker = callInvoker,
                 DataConverter = this.options.DataConverter,
                 EnableEntitySupport = this.options.EnableEntitySupport,
             };

@@ -3,8 +3,10 @@
 
 #nullable enable
 using System;
+using System.Collections.Generic;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
@@ -102,6 +104,103 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
                 // If raw data is not being traced,
                 // kusto and the ilogger should get the same data
                 Assert.Equal(iLoggerString, kustoTableString);
+            }
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void ClientOperationReceived_LogsWhenInvocationIdProvided()
+        {
+            // Arrange
+            var logMessages = new List<string>();
+            var testLogger = new TestLogger(logMessages);
+            var traceHelper = new EndToEndTraceHelper(
+                logger: testLogger,
+                traceReplayEvents: false);
+
+            // Act
+            traceHelper.ClientOperationReceived(
+                hubName: "TestHub",
+                operationType: "StartOrchestration",
+                instanceId: "test-instance-123",
+                functionInvocationId: "invocation-456");
+
+            // Assert
+            Assert.Single(logMessages);
+            Assert.Contains("StartOrchestration", logMessages[0]);
+            Assert.Contains("test-instance-123", logMessages[0]);
+            Assert.Contains("invocation-456", logMessages[0]);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void ClientOperationReceived_DoesNotLogWhenInvocationIdNull()
+        {
+            // Arrange
+            var logMessages = new List<string>();
+            var testLogger = new TestLogger(logMessages);
+            var traceHelper = new EndToEndTraceHelper(
+                logger: testLogger,
+                traceReplayEvents: false);
+
+            // Act
+            traceHelper.ClientOperationReceived(
+                hubName: "TestHub",
+                operationType: "StartOrchestration",
+                instanceId: "test-instance-123",
+                functionInvocationId: null);
+
+            // Assert - should not log when invocation ID is null
+            Assert.Empty(logMessages);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void ClientOperationReceived_DoesNotLogWhenInvocationIdEmpty()
+        {
+            // Arrange
+            var logMessages = new List<string>();
+            var testLogger = new TestLogger(logMessages);
+            var traceHelper = new EndToEndTraceHelper(
+                logger: testLogger,
+                traceReplayEvents: false);
+
+            // Act
+            traceHelper.ClientOperationReceived(
+                hubName: "TestHub",
+                operationType: "Terminate",
+                instanceId: "test-instance-123",
+                functionInvocationId: string.Empty);
+
+            // Assert - should not log when invocation ID is empty
+            Assert.Empty(logMessages);
+        }
+
+        /// <summary>
+        /// Simple test logger that captures log messages.
+        /// </summary>
+        private class TestLogger : ILogger
+        {
+            private readonly List<string> messages;
+
+            public TestLogger(List<string> messages)
+            {
+                this.messages = messages;
+            }
+
+            public IDisposable? BeginScope<TState>(TState state)
+                where TState : notnull => null;
+
+            public bool IsEnabled(LogLevel logLevel) => true;
+
+            public void Log<TState>(
+                LogLevel logLevel,
+                EventId eventId,
+                TState state,
+                Exception? exception,
+                Func<TState, Exception?, string> formatter)
+            {
+                this.messages.Add(formatter(state, exception));
             }
         }
     }
