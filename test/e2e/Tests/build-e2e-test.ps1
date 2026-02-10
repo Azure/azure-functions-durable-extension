@@ -27,7 +27,11 @@ param(
     $SkipBuild,
 
     [string]
-    $E2EAppName = ""
+    $E2EAppName = "",
+
+    # Target framework to build (e.g., net8.0, net10.0). If not specified, builds all TFMs.
+    [string]
+    $TargetFramework = ""
 )
 
 if ($PSVersionTable.PSEdition -ne 'Core') {
@@ -183,7 +187,11 @@ function InstallExtensionAndBuildTestApp($testAppDir) {
     if (Test-Path ".\app.csproj") {
       Write-Host "Building app project"
       dotnet clean app.csproj
-      dotnet build app.csproj
+      if ($TargetFramework) {
+        dotnet build app.csproj -f $TargetFramework
+      } else {
+        dotnet build app.csproj
+      }
     }
 }
 
@@ -191,15 +199,15 @@ if (!$SkipBuild)
 {
   Write-Host "Building WebJobs extension project"
   
-  $BuildOutputLocation = Join-Path $WebJobsExtensionProjectDirectory 'out'
-  if (!(Test-Path $BuildOutputLocation)) {
-    New-Item -Path $BuildOutputLocation -ItemType Directory -ErrorAction SilentlyContinue
-  }
-  $BuildOutputLocation = Resolve-Path $BuildOutputLocation
-  Get-ChildItem -Path $BuildOutputLocation -Include * -File -Recurse | ForEach-Object { $_.Delete()}
-  dotnet build -c Debug "$WebJobsExtensionProjectDirectory\WebJobs.Extensions.DurableTask.csproj" --output $BuildOutputLocation
+  # Do NOT use --output with multi-targeted projects to avoid race conditions
+  # when multiple TFMs try to write to the same output directory (MSB4018).
+  dotnet build -c Debug "$WebJobsExtensionProjectDirectory\WebJobs.Extensions.DurableTask.csproj"
 
   if ($LASTEXITCODE -ne 0) { Set-Location $PSScriptRoot; throw "WebJobs Extension build failed" }
+
+  # The nupkg is generated in bin/Debug/ by GeneratePackageOnBuild
+  $BuildOutputLocation = Join-Path $WebJobsExtensionProjectDirectory 'bin' 'Debug'
+  $BuildOutputLocation = Resolve-Path $BuildOutputLocation
 
   if ($E2EAppName)
   {

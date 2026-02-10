@@ -20,20 +20,25 @@ on:
 jobs:
   e2e-azurestorage-linux:
     runs-on: ubuntu-latest
+    name: e2e-azurestorage-linux (${{ matrix.targetFramework }})
+    strategy:
+      fail-fast: false
+      matrix:
+        targetFramework: [net8.0, net10.0]
     env:
       E2E_TEST_DURABLE_BACKEND: 'AzureStorage'
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup .NET Core
-        uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: 6.0.x
-
-      - name: Setup .NET Core
+      - name: Setup .NET 8
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: 8.0.x
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 10.0.x
 
       - name: Set up Node.js (needed for Azurite)
         uses: actions/setup-node@v3
@@ -55,11 +60,11 @@ jobs:
       - name: Setup E2E tests
         shell: pwsh
         run: |
-          .\test\e2e\Tests\build-e2e-test.ps1
+          .\test\e2e\Tests\build-e2e-test.ps1 -TargetFramework ${{ matrix.targetFramework }}
 
       - name: Build Test Project
         working-directory: test/e2e/Tests
-        run: dotnet build
+        run: dotnet build -f ${{ matrix.targetFramework }}
 
       - name: Setup Environment for dotnet
         shell: pwsh
@@ -69,7 +74,7 @@ jobs:
 
       - name: Run E2E tests (dotnet-isolated)
         working-directory: test/e2e/Tests
-        run: dotnet test --filter 'AzureStorage!=Skip&Dotnet!=Skip&Dotnet-AzureStorage!=Skip'
+        run: dotnet test -f ${{ matrix.targetFramework }} --filter 'AzureStorage!=Skip&Dotnet!=Skip&Dotnet-AzureStorage!=Skip'
 
       - name: Setup Environment for PowerShell
         shell: pwsh
@@ -79,7 +84,7 @@ jobs:
 
       - name: Run E2E tests (PowerShell)
         working-directory: test/e2e/Tests
-        run: dotnet test --filter 'AzureStorage!=Skip&PowerShell!=Skip&PowerShell-AzureStorage!=Skip'
+        run: dotnet test -f ${{ matrix.targetFramework }} --filter 'AzureStorage!=Skip&PowerShell!=Skip&PowerShell-AzureStorage!=Skip'
 
       - name: Setup Environment for Python
         shell: pwsh
@@ -89,7 +94,7 @@ jobs:
 
       - name: Run E2E tests (Python)
         working-directory: test/e2e/Tests
-        run: dotnet test --filter 'AzureStorage!=Skip&Python!=Skip&Python-AzureStorage!=Skip'
+        run: dotnet test -f ${{ matrix.targetFramework }} --filter 'AzureStorage!=Skip&Python!=Skip&Python-AzureStorage!=Skip'
 
       - name: Setup Environment for Node
         shell: pwsh
@@ -99,7 +104,7 @@ jobs:
 
       - name: Run E2E tests (Node)
         working-directory: test/e2e/Tests
-        run: dotnet test --filter 'AzureStorage!=Skip&Node!=Skip&Node-AzureStorage!=Skip'
+        run: dotnet test -f ${{ matrix.targetFramework }} --filter 'AzureStorage!=Skip&Node!=Skip&Node-AzureStorage!=Skip'
 
       - name: Setup Environment for Java
         shell: pwsh
@@ -109,24 +114,29 @@ jobs:
 
       - name: Run E2E tests (Java)
         working-directory: test/e2e/Tests
-        run: dotnet test --filter 'AzureStorage!=Skip&Java!=Skip&Java-AzureStorage!=Skip'
+        run: dotnet test -f ${{ matrix.targetFramework }} --filter 'AzureStorage!=Skip&Java!=Skip&Java-AzureStorage!=Skip'
 
   e2e-azurestorage-windows:
     runs-on: windows-latest
+    name: e2e-azurestorage-windows (${{ matrix.targetFramework }})
+    strategy:
+      fail-fast: false
+      matrix:
+        targetFramework: [net8.0, net10.0]
     env:
       E2E_TEST_DURABLE_BACKEND: 'AzureStorage'
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup .NET Core
-        uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: 6.0.x
-
-      - name: Setup .NET Core
+      - name: Setup .NET 8
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: 8.0.x
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 10.0.x
 
       - name: Set up Node.js (needed for Azurite)
         uses: actions/setup-node@v3
@@ -148,11 +158,11 @@ jobs:
       - name: Setup E2E tests
         shell: pwsh
         run: |
-          .\test\e2e\Tests\build-e2e-test.ps1
+          .\test\e2e\Tests\build-e2e-test.ps1 -TargetFramework ${{ matrix.targetFramework }}
 
       - name: Build Test Project
         working-directory: test/e2e/Tests
-        run: dotnet build
+        run: dotnet build -f ${{ matrix.targetFramework }}
 
       - name: Setup Environment for dotnet
         shell: pwsh
@@ -162,7 +172,7 @@ jobs:
 
       - name: Run E2E tests (dotnet-isolated)
         working-directory: test/e2e/Tests
-        run: dotnet test --filter 'AzureStorage!=Skip&Dotnet!=Skip&Dotnet-AzureStorage!=Skip'
+        run: dotnet test -f ${{ matrix.targetFramework }} --filter 'AzureStorage!=Skip&Dotnet!=Skip&Dotnet-AzureStorage!=Skip'
 
       - name: Setup Environment for PowerShell
         shell: pwsh
@@ -172,7 +182,7 @@ jobs:
 
       - name: Run E2E tests (PowerShell)
         working-directory: test/e2e/Tests
-        run: dotnet test --filter 'AzureStorage!=Skip&PowerShell!=Skip&PowerShell-AzureStorage!=Skip'
+        run: dotnet test -f ${{ matrix.targetFramework }} --filter 'AzureStorage!=Skip&PowerShell!=Skip&PowerShell-AzureStorage!=Skip'
 
       - name: Setup Environment for Python
         shell: pwsh
@@ -182,7 +192,7 @@ jobs:
 
       - name: Run E2E tests (Python)
         working-directory: test/e2e/Tests
-        run: dotnet test --filter 'AzureStorage!=Skip&Python!=Skip&Python-AzureStorage!=Skip'
+        run: dotnet test -f ${{ matrix.targetFramework }} --filter 'AzureStorage!=Skip&Python!=Skip&Python-AzureStorage!=Skip'
 
       - name: Setup Environment for Node
         shell: pwsh
@@ -192,7 +202,7 @@ jobs:
 
       - name: Run E2E tests (Node)
         working-directory: test/e2e/Tests
-        run: dotnet test --filter 'AzureStorage!=Skip&Node!=Skip&Node-AzureStorage!=Skip'
+        run: dotnet test -f ${{ matrix.targetFramework }} --filter 'AzureStorage!=Skip&Node!=Skip&Node-AzureStorage!=Skip'
 
       - name: Setup Environment for Java
         shell: pwsh
@@ -202,24 +212,29 @@ jobs:
 
       - name: Run E2E tests (Java)
         working-directory: test/e2e/Tests
-        run: dotnet test --filter 'AzureStorage!=Skip&Java!=Skip&Java-AzureStorage!=Skip'
+        run: dotnet test -f ${{ matrix.targetFramework }} --filter 'AzureStorage!=Skip&Java!=Skip&Java-AzureStorage!=Skip'
 
   e2e-mssql:
     runs-on: ubuntu-latest
+    name: e2e-mssql (${{ matrix.targetFramework }})
+    strategy:
+      fail-fast: false
+      matrix:
+        targetFramework: [net8.0, net10.0]
     env:
       E2E_TEST_DURABLE_BACKEND: "MSSQL"
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup .NET Core
-        uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: 6.0.x
-
-      - name: Setup .NET Core
+      - name: Setup .NET 8
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: 8.0.x
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 10.0.x
 
       - name: Set up Node.js (needed for Azurite)
         uses: actions/setup-node@v3
@@ -245,11 +260,11 @@ jobs:
       - name: Setup E2E tests
         shell: pwsh
         run: |
-          .\test\e2e\Tests\build-e2e-test.ps1 -StartMSSqlContainer
+          .\test\e2e\Tests\build-e2e-test.ps1 -StartMSSqlContainer -TargetFramework ${{ matrix.targetFramework }}
 
       - name: Build Test Project
         working-directory: test/e2e/Tests
-        run: dotnet build
+        run: dotnet build -f ${{ matrix.targetFramework }}
 
       - name: Setup Environment for dotnet
         shell: pwsh
@@ -259,7 +274,7 @@ jobs:
 
       - name: Run E2E tests (dotnet-isolated)
         working-directory: test/e2e/Tests
-        run: dotnet test --filter 'MSSQL!=Skip&Dotnet!=Skip&Dotnet-MSSQL!=Skip'
+        run: dotnet test -f ${{ matrix.targetFramework }} --filter 'MSSQL!=Skip&Dotnet!=Skip&Dotnet-MSSQL!=Skip'
 
       - name: Setup Environment for PowerShell
         shell: pwsh
@@ -269,7 +284,7 @@ jobs:
 
       - name: Run E2E tests (PowerShell)
         working-directory: test/e2e/Tests
-        run: dotnet test --filter 'MSSQL!=Skip&PowerShell!=Skip&PowerShell-MSSQL!=Skip'
+        run: dotnet test -f ${{ matrix.targetFramework }} --filter 'MSSQL!=Skip&PowerShell!=Skip&PowerShell-MSSQL!=Skip'
 
       - name: Setup Environment for Python
         shell: pwsh
@@ -279,7 +294,7 @@ jobs:
 
       - name: Run E2E tests (Python)
         working-directory: test/e2e/Tests
-        run: dotnet test --filter 'MSSQL!=Skip&Python!=Skip&Python-MSSQL!=Skip'
+        run: dotnet test -f ${{ matrix.targetFramework }} --filter 'MSSQL!=Skip&Python!=Skip&Python-MSSQL!=Skip'
 
       - name: Setup Environment for Node
         shell: pwsh
@@ -289,7 +304,7 @@ jobs:
 
       - name: Run E2E tests (Node)
         working-directory: test/e2e/Tests
-        run: dotnet test --filter 'MSSQL!=Skip&Node!=Skip&Node-MSSQL!=Skip'
+        run: dotnet test -f ${{ matrix.targetFramework }} --filter 'MSSQL!=Skip&Node!=Skip&Node-MSSQL!=Skip'
 
       - name: Setup Environment for Java
         shell: pwsh
@@ -299,24 +314,29 @@ jobs:
 
       - name: Run E2E tests (Java)
         working-directory: test/e2e/Tests
-        run: dotnet test --filter 'MSSQL!=Skip&Java!=Skip&Java-MSSQL!=Skip'
+        run: dotnet test -f ${{ matrix.targetFramework }} --filter 'MSSQL!=Skip&Java!=Skip&Java-MSSQL!=Skip'
 
   e2e-dts:
     runs-on: ubuntu-latest
+    name: e2e-dts (${{ matrix.targetFramework }})
+    strategy:
+      fail-fast: false
+      matrix:
+        targetFramework: [net8.0, net10.0]
     env:
       E2E_TEST_DURABLE_BACKEND: "azureManaged"
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup .NET Core
-        uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: 6.0.x
-
-      - name: Setup .NET Core
+      - name: Setup .NET 8
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: 8.0.x
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 10.0.x
 
       - name: Set up Node.js (needed for Azurite)
         uses: actions/setup-node@v3
@@ -338,11 +358,11 @@ jobs:
       - name: Setup E2E tests
         shell: pwsh
         run: |
-          .\test\e2e\Tests\build-e2e-test.ps1 -StartDTSContainer
+          .\test\e2e\Tests\build-e2e-test.ps1 -StartDTSContainer -TargetFramework ${{ matrix.targetFramework }}
 
       - name: Build Test Project
         working-directory: test/e2e/Tests
-        run: dotnet build
+        run: dotnet build -f ${{ matrix.targetFramework }}
 
       - name: Setup Environment for dotnet
         shell: pwsh
@@ -352,7 +372,7 @@ jobs:
 
       - name: Run E2E tests (dotnet-isolated)
         working-directory: test/e2e/Tests
-        run: dotnet test --filter 'DTS!=Skip&Dotnet!=Skip&Dotnet-DTS!=Skip'
+        run: dotnet test -f ${{ matrix.targetFramework }} --filter 'DTS!=Skip&Dotnet!=Skip&Dotnet-DTS!=Skip'
 
       - name: Setup Environment for PowerShell
         shell: pwsh
@@ -362,7 +382,7 @@ jobs:
 
       - name: Run E2E tests (PowerShell)
         working-directory: test/e2e/Tests
-        run: dotnet test --filter 'DTS!=Skip&PowerShell!=Skip&PowerShell-DTS!=Skip'
+        run: dotnet test -f ${{ matrix.targetFramework }} --filter 'DTS!=Skip&PowerShell!=Skip&PowerShell-DTS!=Skip'
 
       - name: Setup Environment for Python
         shell: pwsh
@@ -372,7 +392,7 @@ jobs:
 
       - name: Run E2E tests (Python)
         working-directory: test/e2e/Tests
-        run: dotnet test --filter 'DTS!=Skip&Python!=Skip&Python-DTS!=Skip'
+        run: dotnet test -f ${{ matrix.targetFramework }} --filter 'DTS!=Skip&Python!=Skip&Python-DTS!=Skip'
 
       - name: Setup Environment for Node
         shell: pwsh
@@ -382,7 +402,7 @@ jobs:
 
       - name: Run E2E tests (Node)
         working-directory: test/e2e/Tests
-        run: dotnet test --filter 'DTS!=Skip&Node!=Skip&Node-DTS!=Skip'
+        run: dotnet test -f ${{ matrix.targetFramework }} --filter 'DTS!=Skip&Node!=Skip&Node-DTS!=Skip'
 
       - name: Setup Environment for Java
         shell: pwsh
@@ -392,4 +412,4 @@ jobs:
 
       - name: Run E2E tests (Java)
         working-directory: test/e2e/Tests
-        run: dotnet test --filter 'DTS!=Skip&Java!=Skip&Java-DTS!=Skip'
+        run: dotnet test -f ${{ matrix.targetFramework }} --filter 'DTS!=Skip&Java!=Skip&Java-DTS!=Skip'
