@@ -12,11 +12,17 @@ ARG TARGET_FRAMEWORK
 # Step 1: Build the WebJobs extension and publish it as a local NuGet package
 COPY . /root
 RUN cd /root/src/WebJobs.Extensions.DurableTask && \
+    mkdir -p /out && \
+    mkdir -p /out/$TARGET_FRAMEWORK && \
     mkdir -p /packages && \
     dotnet restore WebJobs.Extensions.DurableTask.csproj && \
-    dotnet build -c Release WebJobs.Extensions.DurableTask.csproj --no-restore && \
-    dotnet nuget push bin/Release/Microsoft.Azure.WebJobs.Extensions.DurableTask.*.nupkg --source /packages && \
+    dotnet build -c Release WebJobs.Extensions.DurableTask.csproj --no-restore --output /out && \
+    dotnet nuget push /out/Microsoft.Azure.WebJobs.Extensions.DurableTask.*.nupkg --source /packages && \
     dotnet nuget add source /packages
+
+# Step 1b: Build the WebJobs extension for the specific target framework
+RUN cd /root/src/WebJobs.Extensions.DurableTask && \
+    dotnet build -c Release -f $TARGET_FRAMEWORK WebJobs.Extensions.DurableTask.csproj --no-restore --output /out/$TARGET_FRAMEWORK
 
 # Step 2: Build the sample app, which references the locally built extension from Step 1
 #         IMPORTANT: restore seems to need to be done separately to ensure the correct
@@ -28,7 +34,7 @@ RUN cd /root/test/SmokeTests/OOProcSmokeTests/DotNetIsolated && \
     dotnet restore DotNetIsolated.csproj --verbosity normal -p:TargetFramework=$TARGET_FRAMEWORK && \
     dotnet build DotNetIsolated.csproj -c Release -f $TARGET_FRAMEWORK && \
     dotnet publish DotNetIsolated.csproj -c Release -f $TARGET_FRAMEWORK --no-build --output /home/site/wwwroot && \
-    cp /root/src/WebJobs.Extensions.DurableTask/bin/Release/$TARGET_FRAMEWORK/Microsoft.Azure.WebJobs.Extensions.DurableTask.dll /home/site/wwwroot/.azurefunctions/ && \
+    cp /out/$TARGET_FRAMEWORK/Microsoft.Azure.WebJobs.Extensions.DurableTask.dll /home/site/wwwroot/.azurefunctions/ && \
     ls -aR /home/site/wwwroot && \
     cat /home/site/wwwroot/extensions.json # debugging
 
