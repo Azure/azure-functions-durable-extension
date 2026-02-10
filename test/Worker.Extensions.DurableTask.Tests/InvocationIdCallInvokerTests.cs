@@ -14,6 +14,16 @@ public class InvocationIdCallInvokerTests
 {
     private const string InvocationIdMetadataKey = "x-azure-functions-invocationid";
 
+    private static AsyncUnaryCall<string> CreateAsyncUnaryCallResponse(string response = "response")
+    {
+        return new AsyncUnaryCall<string>(
+            Task.FromResult(response),
+            Task.FromResult(new Metadata()),
+            () => Status.DefaultSuccess,
+            () => new Metadata(),
+            () => { });
+    }
+
     [Fact]
     public void SetCurrentInvocationId_SetsValueInAsyncLocal()
     {
@@ -287,12 +297,7 @@ public class InvocationIdCallInvokerTests
                 It.IsAny<CallOptions>(),
                 It.IsAny<string>()))
             .Callback<Method<string, string>, string, CallOptions, string>((m, h, o, r) => capturedOptions = o)
-            .Returns(new AsyncUnaryCall<string>(
-                Task.FromResult("response"),
-                Task.FromResult(new Metadata()),
-                () => Status.DefaultSuccess,
-                () => new Metadata(),
-                () => { }));
+            .Returns(CreateAsyncUnaryCallResponse());
 
         var invoker = new InvocationIdCallInvoker(mockInner.Object);
         var method = new Method<string, string>(MethodType.Unary, "TestService", "TestMethod", Marshallers.StringMarshaller, Marshallers.StringMarshaller);
@@ -302,7 +307,7 @@ public class InvocationIdCallInvokerTests
         try
         {
             // Act
-            invoker.AsyncUnaryCall(method, null, new CallOptions(), "request");
+            using var call = invoker.AsyncUnaryCall(method, null, new CallOptions(), "request");
 
             // Assert
             Assert.NotNull(capturedOptions.Headers);
@@ -333,12 +338,7 @@ public class InvocationIdCallInvokerTests
                 It.IsAny<CallOptions>(),
                 It.IsAny<string>()))
             .Callback<Method<string, string>, string, CallOptions, string>((m, h, o, r) => capturedOptions = o)
-            .Returns(new AsyncUnaryCall<string>(
-                Task.FromResult("response"),
-                Task.FromResult(new Metadata()),
-                () => Status.DefaultSuccess,
-                () => new Metadata(),
-                () => { }));
+            .Returns(CreateAsyncUnaryCallResponse());
 
         var invoker = new InvocationIdCallInvoker(mockInner.Object);
         var method = new Method<string, string>(MethodType.Unary, "TestService", "TestMethod", Marshallers.StringMarshaller, Marshallers.StringMarshaller);
@@ -349,7 +349,7 @@ public class InvocationIdCallInvokerTests
         try
         {
             // Act
-            invoker.AsyncUnaryCall(method, null, new CallOptions(headers: originalHeaders), "request");
+            using var call = invoker.AsyncUnaryCall(method, null, new CallOptions(headers: originalHeaders), "request");
 
             // Assert
             Assert.NotNull(capturedOptions.Headers);
@@ -385,12 +385,7 @@ public class InvocationIdCallInvokerTests
                 It.IsAny<CallOptions>(),
                 It.IsAny<string>()))
             .Callback<Method<string, string>, string, CallOptions, string>((m, h, o, r) => capturedOptions = o)
-            .Returns(new AsyncUnaryCall<string>(
-                Task.FromResult("response"),
-                Task.FromResult(new Metadata()),
-                () => Status.DefaultSuccess,
-                () => new Metadata(),
-                () => { }));
+            .Returns(CreateAsyncUnaryCallResponse());
 
         var invoker = new InvocationIdCallInvoker(mockInner.Object);
         var method = new Method<string, string>(MethodType.Unary, "TestService", "TestMethod", Marshallers.StringMarshaller, Marshallers.StringMarshaller);
@@ -402,7 +397,7 @@ public class InvocationIdCallInvokerTests
         try
         {
             // Act
-            invoker.AsyncUnaryCall(method, null, new CallOptions(headers: originalHeaders), "request");
+            using var call = invoker.AsyncUnaryCall(method, null, new CallOptions(headers: originalHeaders), "request");
 
             // Assert - original headers should not be mutated
             Assert.Equal(originalCount, originalHeaders.Count);
@@ -428,12 +423,7 @@ public class InvocationIdCallInvokerTests
                 It.IsAny<CallOptions>(),
                 It.IsAny<string>()))
             .Callback<Method<string, string>, string, CallOptions, string>((m, h, o, r) => capturedOptions = o)
-            .Returns(new AsyncUnaryCall<string>(
-                Task.FromResult("response"),
-                Task.FromResult(new Metadata()),
-                () => Status.DefaultSuccess,
-                () => new Metadata(),
-                () => { }));
+            .Returns(CreateAsyncUnaryCallResponse());
 
         var invoker = new InvocationIdCallInvoker(mockInner.Object);
         var method = new Method<string, string>(MethodType.Unary, "TestService", "TestMethod", Marshallers.StringMarshaller, Marshallers.StringMarshaller);
@@ -441,7 +431,7 @@ public class InvocationIdCallInvokerTests
         InvocationIdCallInvoker.SetCurrentInvocationId(null);
 
         // Act
-        invoker.AsyncUnaryCall(method, null, new CallOptions(), "request");
+        using var call = invoker.AsyncUnaryCall(method, null, new CallOptions(), "request");
 
         // Assert - no headers should be added when invocation ID is null
         Assert.Null(capturedOptions.Headers);
@@ -463,12 +453,7 @@ public class InvocationIdCallInvokerTests
                 It.IsAny<CallOptions>(),
                 It.IsAny<string>()))
             .Callback<Method<string, string>, string, CallOptions, string>((m, h, o, r) => capturedOptions = o)
-            .Returns(new AsyncUnaryCall<string>(
-                Task.FromResult("response"),
-                Task.FromResult(new Metadata()),
-                () => Status.DefaultSuccess,
-                () => new Metadata(),
-                () => { }));
+            .Returns(CreateAsyncUnaryCallResponse());
 
         var invoker = new InvocationIdCallInvoker(mockInner.Object);
         var method = new Method<string, string>(MethodType.Unary, "TestService", "TestMethod", Marshallers.StringMarshaller, Marshallers.StringMarshaller);
@@ -479,7 +464,7 @@ public class InvocationIdCallInvokerTests
         try
         {
             // Act
-            invoker.AsyncUnaryCall(method, null, new CallOptions(headers: originalHeaders), "request");
+            using var call = invoker.AsyncUnaryCall(method, null, new CallOptions(headers: originalHeaders), "request");
 
             // Assert - should have exactly one invocation ID header with the new value
             Assert.NotNull(capturedOptions.Headers);
