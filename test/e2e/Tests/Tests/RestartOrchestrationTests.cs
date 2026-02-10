@@ -87,6 +87,7 @@ public class RestartOrchestrationTests
         // Verify that restarted orchestration instance contains tags.
         Assert.Equal(HttpStatusCode.OK, result.StatusCode);
         var content = await result.Content.ReadAsStringAsync();
+        // Content: { "output": "...", "tags": { "testtag": "true" } }
         Assert.Contains("output", content);
         Assert.Contains("testtag", content);
     }
