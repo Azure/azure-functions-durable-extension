@@ -42,11 +42,13 @@ public class TerminateOrchestratorTests
         ClientOperationLogHelpers.AssertClientOperationLogExists(
             () => this.fixture.TestLogs.CoreToolsLogs,
             "StartOrchestration",
-            instanceId);
+            instanceId,
+            this.fixture.functionLanguageLocalizer.GetLanguageType());
         ClientOperationLogHelpers.AssertClientOperationLogExists(
             () => this.fixture.TestLogs.CoreToolsLogs,
             "Terminate",
-            instanceId);
+            instanceId,
+            this.fixture.functionLanguageLocalizer.GetLanguageType());
     }
 
 

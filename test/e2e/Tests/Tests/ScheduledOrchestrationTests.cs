@@ -82,7 +82,8 @@ public class ScheduledOrchestrationTests
         ClientOperationLogHelpers.AssertClientOperationLogExists(
             () => this.fixture.TestLogs.CoreToolsLogs,
             "StartOrchestration",
-            instanceId);
+            instanceId,
+            this.fixture.functionLanguageLocalizer.GetLanguageType());
     }
 
     [Theory]
@@ -138,6 +139,7 @@ public class ScheduledOrchestrationTests
         ClientOperationLogHelpers.AssertClientOperationLogExists(
             () => this.fixture.TestLogs.CoreToolsLogs,
             "StartOrchestration",
-            instanceId);
+            instanceId,
+            this.fixture.functionLanguageLocalizer.GetLanguageType());
     }
 }

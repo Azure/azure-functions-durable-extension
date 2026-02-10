@@ -119,6 +119,7 @@ public class DistributedTracingEntitiesTests
         ClientOperationLogHelpers.AssertClientOperationLogExists(
             () => _fixture.TestLogs.CoreToolsLogs,
             "SignalEntity",
-            "@ActivityRecorderEntity@mainEntity");
+            "@ActivityRecorderEntity@mainEntity",
+            _fixture.functionLanguageLocalizer.GetLanguageType());
     }
 }

@@ -71,7 +71,8 @@ public class RewindOrchestratorTests
         ClientOperationLogHelpers.AssertClientOperationLogExists(
             () => this.fixture.TestLogs.CoreToolsLogs,
             "StartOrchestration",
-            instanceId);
+            instanceId,
+            this.fixture.functionLanguageLocalizer.GetLanguageType());
         // Should have numFailures rewind operations logged for this instance (if SDK supports the header)
         int rewindLogCount = ClientOperationLogHelpers.GetClientOperationLogCount(
             this.fixture.TestLogs.CoreToolsLogs,

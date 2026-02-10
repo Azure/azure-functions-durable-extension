@@ -39,6 +39,7 @@ public class HttpEndToEndTests
         ClientOperationLogHelpers.AssertClientOperationLogExists(
             () => this.fixture.TestLogs.CoreToolsLogs,
             "StartOrchestration",
-            instanceId);
+            instanceId,
+            this.fixture.functionLanguageLocalizer.GetLanguageType());
     }
 }

@@ -47,15 +47,18 @@ public class SuspendResumeTests
             ClientOperationLogHelpers.AssertClientOperationLogExists(
                 () => this.fixture.TestLogs.CoreToolsLogs,
                 "StartOrchestration",
-                instanceId);
+                instanceId,
+                this.fixture.functionLanguageLocalizer.GetLanguageType());
             ClientOperationLogHelpers.AssertClientOperationLogExists(
                 () => this.fixture.TestLogs.CoreToolsLogs,
                 "Suspend",
-                instanceId);
+                instanceId,
+                this.fixture.functionLanguageLocalizer.GetLanguageType());
             ClientOperationLogHelpers.AssertClientOperationLogExists(
                 () => this.fixture.TestLogs.CoreToolsLogs,
                 "Resume",
-                instanceId);
+                instanceId,
+                this.fixture.functionLanguageLocalizer.GetLanguageType());
         }
         finally
         {

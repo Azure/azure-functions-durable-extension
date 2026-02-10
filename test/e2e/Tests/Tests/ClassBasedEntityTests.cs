@@ -48,6 +48,7 @@ public class ClassBasedEntityTests
         ClientOperationLogHelpers.AssertClientOperationLogExists(
             () => this.fixture.TestLogs.CoreToolsLogs,
             "StartOrchestration",
-            instanceId);
+            instanceId,
+            this.fixture.functionLanguageLocalizer.GetLanguageType());
     }
 }

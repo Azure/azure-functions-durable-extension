@@ -43,11 +43,13 @@ public class ExternalEventTests
         ClientOperationLogHelpers.AssertClientOperationLogExists(
             () => this.fixture.TestLogs.CoreToolsLogs,
             "StartOrchestration",
-            instanceId);
+            instanceId,
+            this.fixture.functionLanguageLocalizer.GetLanguageType());
         ClientOperationLogHelpers.AssertClientOperationLogExists(
             () => this.fixture.TestLogs.CoreToolsLogs,
             "RaiseEvent",
-            instanceId);
+            instanceId,
+            this.fixture.functionLanguageLocalizer.GetLanguageType());
 
         // Send external event again to the completed orchestrator, which we will get a exception back.
         HttpResponseMessage resendEventResponse = await HttpHelpers.InvokeHttpTriggerWithBody("SendExternalEvent_HttpStart", jsonContent, "application/json");

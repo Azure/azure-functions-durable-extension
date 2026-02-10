@@ -203,11 +203,13 @@ public class GetOrchestrationHistoryTests
         ClientOperationLogHelpers.AssertClientOperationLogExists(
             () => this.fixture.TestLogs.CoreToolsLogs,
             "StartOrchestration",
-            instanceId);
+            instanceId,
+            this.fixture.functionLanguageLocalizer.GetLanguageType());
         ClientOperationLogHelpers.AssertClientOperationLogExists(
             () => this.fixture.TestLogs.CoreToolsLogs,
             "StreamInstanceHistory",
-            instanceId);
+            instanceId,
+            this.fixture.functionLanguageLocalizer.GetLanguageType());
     }
 
     [Fact]
@@ -291,11 +293,13 @@ public class GetOrchestrationHistoryTests
         ClientOperationLogHelpers.AssertClientOperationLogExists(
             () => this.fixture.TestLogs.CoreToolsLogs,
             "StartOrchestration",
-            instanceId);
+            instanceId,
+            this.fixture.functionLanguageLocalizer.GetLanguageType());
         ClientOperationLogHelpers.AssertClientOperationLogExists(
             () => this.fixture.TestLogs.CoreToolsLogs,
             "StreamInstanceHistory",
-            instanceId);
+            instanceId,
+            this.fixture.functionLanguageLocalizer.GetLanguageType());
 
         // The suborchestration calls Activities/entities with large outputs, so it should force multiple history chunks in the streaming process
         using HttpResponseMessage getSubOrchestrationHistoryResponse = await HttpHelpers.InvokeHttpTrigger("GetInstanceHistory", $"?instanceId={subOrchestrationInstanceId}");

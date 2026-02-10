@@ -22,13 +22,23 @@ internal static class ClientOperationLogHelpers
     /// <param name="getLogs">A function that returns the current collection of Core Tools logs (re-evaluated on each poll).</param>
     /// <param name="operationType">The expected operation type (e.g., "StartOrchestration", "Terminate").</param>
     /// <param name="instanceId">The expected instance ID.</param>
+    /// <param name="languageType">The language type of the function app under test. Non-DotnetIsolated languages skip polling.</param>
     /// <param name="maxWaitSeconds">Maximum time to wait for the log to appear (default: 5 seconds).</param>
     public static void AssertClientOperationLogExists(
         Func<IEnumerable<string>> getLogs,
         string operationType,
         string instanceId,
+        LanguageType languageType,
         int maxWaitSeconds = 5)
     {
+        // Only the .NET isolated worker SDK currently emits the FunctionInvocationId header.
+        // Skip entirely for other languages to avoid unnecessary test delays.
+        // Tracking issue: https://github.com/Azure/azure-functions-durable-extension/issues/3327
+        if (languageType != LanguageType.DotnetIsolated)
+        {
+            return;
+        }
+
         // Poll for the log to appear, giving Core Tools time to flush logs.
         // Re-fetch logs on each iteration since CoreToolsLogs returns a snapshot.
         bool hasClientOperationLog = WaitForCondition(
@@ -37,17 +47,15 @@ internal static class ClientOperationLogHelpers
                 log.Contains($"for instance '{instanceId}'")),
             maxWaitSeconds);
 
-        // TODO: Remove this conditional check once all SDKs are released with FunctionInvocationId support.
-        // Tracking issue: https://github.com/Azure/azure-functions-durable-extension/issues/3327
-        if (hasClientOperationLog)
-        {
-            // Verify the log has a valid FunctionInvocationId (not empty)
-            Assert.Contains(getLogs(), log =>
-                log.Contains($"Client operation '{operationType}' received") &&
-                log.Contains($"for instance '{instanceId}'") &&
-                log.Contains("FunctionInvocationId:") &&
-                !log.Contains("FunctionInvocationId: ."));  // Ensure the FunctionInvocationId is not empty
-        }
+        Assert.True(hasClientOperationLog,
+            $"Expected ClientOperationReceived log for '{operationType}' on instance '{instanceId}' was not found.");
+
+        // Verify the log has a valid FunctionInvocationId (not empty)
+        Assert.Contains(getLogs(), log =>
+            log.Contains($"Client operation '{operationType}' received") &&
+            log.Contains($"for instance '{instanceId}'") &&
+            log.Contains("FunctionInvocationId:") &&
+            !log.Contains("FunctionInvocationId: ."));  // Ensure the FunctionInvocationId is not empty
 
         // For StartOrchestration operations, also verify a function log exists for correlation
         // Note: gRPC clients emit 'started' logs (FunctionStarting), HTTP clients emit 'scheduled' logs (FunctionScheduled)
