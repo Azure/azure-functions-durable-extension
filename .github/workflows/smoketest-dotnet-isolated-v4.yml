@@ -65,7 +65,7 @@ jobs:
     - name: Build and pack WebJobs extension
       run: cd ./src/WebJobs.Extensions.DurableTask &&
         mkdir ./out &&
-        dotnet build -c Release WebJobs.Extensions.DurableTask.csproj --output ./out &&
+        dotnet pack -c Release WebJobs.Extensions.DurableTask.csproj --output ./out &&
         mkdir ~/packages &&
         dotnet nuget push ./out/Microsoft.Azure.WebJobs.Extensions.DurableTask.*.nupkg --source ~/packages &&
         dotnet nuget add source ~/packages
