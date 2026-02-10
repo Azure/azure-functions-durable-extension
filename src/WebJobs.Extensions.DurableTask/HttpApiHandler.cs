@@ -458,6 +458,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private async Task<HttpResponseMessage> HandleGetStatusRequestAsync(
             HttpRequestMessage request)
         {
+            this.LogClientOperationReceived(request, "QueryInstances", string.Empty);
+
             IDurableOrchestrationClient client = this.GetClient(request);
             var queryNameValuePairs = request.GetQueryNameValuePairs();
 
@@ -519,6 +521,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private async Task<HttpResponseMessage> HandleListEntitiesRequestAsync(
             HttpRequestMessage request, string entityName)
         {
+            this.LogClientOperationReceived(request, "QueryEntities", string.Empty);
+
             IDurableEntityClient client = this.GetClient(request);
             NameValueCollection queryNameValuePairs = request.GetQueryNameValuePairs();
 
@@ -600,6 +604,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private async Task<HttpResponseMessage> HandleDeleteHistoryWithFiltersRequestAsync(HttpRequestMessage request)
         {
+            this.LogClientOperationReceived(request, "PurgeInstances", "(filter)");
+
             IDurableOrchestrationClient client = this.GetClient(request);
             var queryNameValuePairs = request.GetQueryNameValuePairs();
             if (!TryGetDateTimeQueryParameterValue(queryNameValuePairs, CreatedTimeFromParameter, out DateTime createdTimeFrom))
@@ -633,6 +639,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             bool? returnInternalServerErrorOnFailure = null,
             IDurableOrchestrationClient existingClient = null)
         {
+            this.LogClientOperationReceived(request, "GetInstance", instanceId);
+
             IDurableOrchestrationClient client = existingClient ?? this.GetClient(request);
             var queryNameValuePairs = request.GetQueryNameValuePairs();
 
@@ -1001,6 +1009,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private void LogClientOperationReceived(HttpRequestMessage request, string operationType, string instanceId)
         {
             string functionInvocationId = GetHeaderValueFromHeaders(FunctionInvocationIdHeader, request.Headers);
+
+            // Validate the header value since it comes from an HTTP request that may be from an external client.
+            // Only accept well-formed GUID values to prevent log injection or oversized log entries.
+            if (!string.IsNullOrEmpty(functionInvocationId) && !Guid.TryParse(functionInvocationId, out _))
+            {
+                functionInvocationId = null;
+            }
+
             this.traceHelper.ClientOperationReceived(
                 this.durableTaskOptions.HubName,
                 operationType,
@@ -1012,6 +1028,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             HttpRequestMessage request,
             string instanceId)
         {
+            this.LogClientOperationReceived(request, "Restart", instanceId);
+
             try
             {
                 IDurableOrchestrationClient client = this.GetClient(request);
@@ -1147,6 +1165,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             HttpRequestMessage request,
             EntityId entityId)
         {
+            this.LogClientOperationReceived(request, "GetEntity", entityId.ToString());
+
             IDurableEntityClient client = this.GetClient(request);
 
             // This input for entity key parameter means that entity key is an empty string.

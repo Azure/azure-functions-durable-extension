@@ -164,6 +164,10 @@ public class PurgeInstancesTests
             () => this.fixture.TestLogs.CoreToolsLogs,
             "StartOrchestration",
             completedInstanceId);
+        ClientOperationLogHelpers.AssertClientOperationLogExists(
+            () => this.fixture.TestLogs.CoreToolsLogs,
+            "PurgeInstances",
+            completedInstanceId);
 
         // Terminated orchestration, should succeed
         if (this.fixture.functionLanguageLocalizer.GetLanguageType() != LanguageType.Java

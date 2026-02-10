@@ -34,8 +34,7 @@ public class InvocationIdCallInvokerTests
     [Fact]
     public void GetCurrentInvocationId_ReturnsNullByDefault()
     {
-        // Arrange - ensure clean state
-        InvocationIdCallInvoker.SetCurrentInvocationId(null);
+        // Arrange - nothing to do
 
         // Act
         var actualId = InvocationIdCallInvoker.GetCurrentInvocationId();

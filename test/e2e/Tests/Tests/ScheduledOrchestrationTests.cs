@@ -46,6 +46,7 @@ public class ScheduledOrchestrationTests
 
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger(functionName, urlQueryString);
 
+        string instanceId = await DurableHelpers.ParseInstanceIdAsync(response);
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
 
         Assert.Equal(expectedStatusCode, response.StatusCode);
@@ -77,6 +78,12 @@ public class ScheduledOrchestrationTests
         var finalOrchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
         WriteOutput($"Last updated at {finalOrchestrationDetails.LastUpdatedTime}, scheduled to complete at {scheduledStartTime}");
         Assert.True(finalOrchestrationDetails.LastUpdatedTime + TimeSpan.FromSeconds(2) >= scheduledStartTime);
+
+        // Verify that the ClientOperationReceived log was emitted with a FunctionInvocationId
+        ClientOperationLogHelpers.AssertClientOperationLogExists(
+            () => this.fixture.TestLogs.CoreToolsLogs,
+            "StartOrchestration",
+            instanceId);
     }
 
     [Theory]
@@ -95,6 +102,7 @@ public class ScheduledOrchestrationTests
 
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger(functionName, urlQueryString);
 
+        string instanceId = await DurableHelpers.ParseInstanceIdAsync(response);
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
 
         Assert.Equal(expectedStatusCode, response.StatusCode);
@@ -126,5 +134,11 @@ public class ScheduledOrchestrationTests
         var subOrchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(subOrchestratorStatusQueryGetUri);
         Assert.True(subOrchestrationDetails.LastUpdatedTime + TimeSpan.FromSeconds(2) >= scheduledStartTime);
         Assert.Equal("Success", subOrchestrationDetails.Output);
+
+        // Verify that the ClientOperationReceived log was emitted with a FunctionInvocationId
+        ClientOperationLogHelpers.AssertClientOperationLogExists(
+            () => this.fixture.TestLogs.CoreToolsLogs,
+            "StartOrchestration",
+            instanceId);
     }
 }

@@ -209,6 +209,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public async override Task<P.GetEntityResponse> GetEntity(P.GetEntityRequest request, ServerCallContext context)
         {
+            this.LogClientOperationReceived(context, "GetEntity", request.InstanceId);
             this.CheckEntitySupport(context, out var durabilityProvider, out var entityOrchestrationService);
 
             EntityBackendQueries.EntityMetadata? metaData = await entityOrchestrationService.EntityBackendQueries!.GetEntityAsync(
@@ -226,6 +227,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public async override Task<P.QueryEntitiesResponse> QueryEntities(P.QueryEntitiesRequest request, ServerCallContext context)
         {
+            this.LogClientOperationReceived(context, "QueryEntities", string.Empty);
             this.CheckEntitySupport(context, out var durabilityProvider, out var entityOrchestrationService);
 
             P.EntityQuery query = request.Query;
@@ -257,6 +259,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public async override Task<P.CleanEntityStorageResponse> CleanEntityStorage(P.CleanEntityStorageRequest request, ServerCallContext context)
         {
+            this.LogClientOperationReceived(context, "CleanEntityStorage", string.Empty);
             this.CheckEntitySupport(context, out var durabilityProvider, out var entityOrchestrationService);
 
             EntityBackendQueries.CleanEntityStorageResult result = await entityOrchestrationService.EntityBackendQueries!.CleanEntityStorageAsync(
@@ -363,6 +366,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public async override Task<P.GetInstanceResponse> GetInstance(P.GetInstanceRequest request, ServerCallContext context)
         {
+            this.LogClientOperationReceived(context, "GetInstance", request.InstanceId);
+
             OrchestrationState state = await this.GetDurabilityProvider(context)
                 .GetOrchestrationStateAsync(request.InstanceId, executionId: null);
             if (state == null)
@@ -375,6 +380,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public async override Task<P.QueryInstancesResponse> QueryInstances(P.QueryInstancesRequest request, ServerCallContext context)
         {
+            this.LogClientOperationReceived(context, "QueryInstances", string.Empty);
+
             var query = ProtobufUtils.ToOrchestrationQuery(request);
             var queryClient = (IOrchestrationServiceQueryClient)this.GetDurabilityProvider(context);
             OrchestrationQueryResult result = await queryClient.GetOrchestrationWithQueryAsync(query, context.CancellationToken);
@@ -462,6 +469,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public async override Task<P.GetInstanceResponse> WaitForInstanceStart(P.GetInstanceRequest request, ServerCallContext context)
         {
+            this.LogClientOperationReceived(context, "WaitForInstanceStart", request.InstanceId);
+
             int retryCount = 0;
             while (true)
             {
@@ -484,6 +493,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public async override Task<P.GetInstanceResponse> WaitForInstanceCompletion(P.GetInstanceRequest request, ServerCallContext context)
         {
+            this.LogClientOperationReceived(context, "WaitForInstanceCompletion", request.InstanceId);
+
             OrchestrationState state = await this.GetDurabilityProvider(context).WaitForOrchestrationAsync(
                 request.InstanceId,
                 executionId: null,
@@ -500,6 +511,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public override async Task<P.RestartInstanceResponse> RestartInstance(P.RestartInstanceRequest request, ServerCallContext context)
         {
+            this.LogClientOperationReceived(context, "Restart", request.InstanceId);
+
             try
             {
                 string newInstanceId = await this.GetClient(context).RestartAsync(request.InstanceId, request.RestartWithNewInstanceId);
@@ -553,6 +566,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             IServerStreamWriter<P.HistoryChunk> responseStream,
             ServerCallContext context)
         {
+            this.LogClientOperationReceived(context, "StreamInstanceHistory", request.InstanceId);
+
             if (await this.GetClient(context).GetStatusAsync(request.InstanceId, showInput: false) is null)
             {
                 throw new RpcException(new Status(StatusCode.NotFound, $"Orchestration instance with ID {request.InstanceId} was not found."));
@@ -673,6 +688,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private void LogClientOperationReceived(ServerCallContext context, string operationType, string instanceId)
         {
             string? functionInvocationId = GetFunctionInvocationId(context);
+
+            // Validate the metadata value to prevent malformed or oversized values from creating noisy logs.
+            if (!string.IsNullOrEmpty(functionInvocationId) && !Guid.TryParse(functionInvocationId, out _))
+            {
+                functionInvocationId = null;
+            }
+
             this.extension.TraceHelper.ClientOperationReceived(
                 this.extension.Options.HubName,
                 operationType,
