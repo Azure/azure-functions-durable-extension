@@ -45,11 +45,10 @@ public class ScheduledOrchestrationTests
         string urlQueryString = $"?ScheduledStartTime={scheduledStartTime.ToString("o")}";
 
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger(functionName, urlQueryString);
+        Assert.Equal(expectedStatusCode, response.StatusCode);
 
         string instanceId = await DurableHelpers.ParseInstanceIdAsync(response);
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
-
-        Assert.Equal(expectedStatusCode, response.StatusCode);
 
         if (scheduledStartTime > DateTime.UtcNow + TimeSpan.FromSeconds(1))
         {
@@ -101,11 +100,11 @@ public class ScheduledOrchestrationTests
         string urlQueryString = $"?scheduledStartDelaySeconds={startDelaySeconds}";
 
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger(functionName, urlQueryString);
+        Assert.Equal(expectedStatusCode, response.StatusCode);
 
         string instanceId = await DurableHelpers.ParseInstanceIdAsync(response);
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
 
-        Assert.Equal(expectedStatusCode, response.StatusCode);
         await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", Math.Max(startDelaySeconds, 0) + 30);
         var schedulerOrchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
         string subOrchestratorInstanceId = schedulerOrchestrationDetails.Output;
