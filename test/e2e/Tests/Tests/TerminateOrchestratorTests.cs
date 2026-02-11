@@ -37,6 +37,18 @@ public class TerminateOrchestratorTests
         await AssertTerminateRequestSucceedsAsync(terminateResponse);
 
         await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Terminated", 30);
+
+        // Verify that the ClientOperationReceived logs were emitted with a FunctionInvocationId
+        ClientOperationLogHelpers.AssertClientOperationLogExists(
+            () => this.fixture.TestLogs.CoreToolsLogs,
+            "StartOrchestration",
+            instanceId,
+            this.fixture.functionLanguageLocalizer.GetLanguageType());
+        ClientOperationLogHelpers.AssertClientOperationLogExists(
+            () => this.fixture.TestLogs.CoreToolsLogs,
+            "Terminate",
+            instanceId,
+            this.fixture.functionLanguageLocalizer.GetLanguageType());
     }
 
 

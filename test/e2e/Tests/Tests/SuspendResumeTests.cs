@@ -41,7 +41,22 @@ public class SuspendResumeTests
             using HttpResponseMessage resumeResponse = await HttpHelpers.InvokeHttpTrigger("ResumeInstance", $"?instanceId={instanceId}");
             await AssertRequestSucceedsAsync(resumeResponse);
 
-            await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Running", 15);
+            // Verify that the ClientOperationReceived logs were emitted with a FunctionInvocationId
+            ClientOperationLogHelpers.AssertClientOperationLogExists(
+                () => this.fixture.TestLogs.CoreToolsLogs,
+                "StartOrchestration",
+                instanceId,
+                this.fixture.functionLanguageLocalizer.GetLanguageType());
+            ClientOperationLogHelpers.AssertClientOperationLogExists(
+                () => this.fixture.TestLogs.CoreToolsLogs,
+                "Suspend",
+                instanceId,
+                this.fixture.functionLanguageLocalizer.GetLanguageType());
+            ClientOperationLogHelpers.AssertClientOperationLogExists(
+                () => this.fixture.TestLogs.CoreToolsLogs,
+                "Resume",
+                instanceId,
+                this.fixture.functionLanguageLocalizer.GetLanguageType());
         }
         finally
         {
@@ -92,6 +107,7 @@ public class SuspendResumeTests
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
 
         await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Running", 15);
+
         try
         {
             using HttpResponseMessage resumeResponse = await HttpHelpers.InvokeHttpTrigger("ResumeInstance", $"?instanceId={instanceId}");
@@ -121,7 +137,9 @@ public class SuspendResumeTests
         string instanceId = await DurableHelpers.ParseInstanceIdAsync(response);
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
 
+
         await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", 15);
+
         try
         {
             using HttpResponseMessage suspendResponse = await HttpHelpers.InvokeHttpTrigger("SuspendInstance", $"?instanceId={instanceId}");
