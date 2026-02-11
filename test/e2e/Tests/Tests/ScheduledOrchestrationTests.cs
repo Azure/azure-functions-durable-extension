@@ -45,10 +45,10 @@ public class ScheduledOrchestrationTests
         string urlQueryString = $"?ScheduledStartTime={scheduledStartTime.ToString("o")}";
 
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger(functionName, urlQueryString);
-
-        string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
-
         Assert.Equal(expectedStatusCode, response.StatusCode);
+
+        string instanceId = await DurableHelpers.ParseInstanceIdAsync(response);
+        string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
 
         if (scheduledStartTime > DateTime.UtcNow + TimeSpan.FromSeconds(1))
         {
@@ -77,6 +77,13 @@ public class ScheduledOrchestrationTests
         var finalOrchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
         WriteOutput($"Last updated at {finalOrchestrationDetails.LastUpdatedTime}, scheduled to complete at {scheduledStartTime}");
         Assert.True(finalOrchestrationDetails.LastUpdatedTime + TimeSpan.FromSeconds(2) >= scheduledStartTime);
+
+        // Verify that the ClientOperationReceived log was emitted with a FunctionInvocationId
+        ClientOperationLogHelpers.AssertClientOperationLogExists(
+            () => this.fixture.TestLogs.CoreToolsLogs,
+            "StartOrchestration",
+            instanceId,
+            this.fixture.functionLanguageLocalizer.GetLanguageType());
     }
 
     [Theory]
@@ -94,10 +101,11 @@ public class ScheduledOrchestrationTests
         string urlQueryString = $"?scheduledStartDelaySeconds={startDelaySeconds}";
 
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger(functionName, urlQueryString);
+        Assert.Equal(expectedStatusCode, response.StatusCode);
 
+        string instanceId = await DurableHelpers.ParseInstanceIdAsync(response);
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
 
-        Assert.Equal(expectedStatusCode, response.StatusCode);
         await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", Math.Max(startDelaySeconds, 0) + 30);
         var schedulerOrchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
         string subOrchestratorInstanceId = schedulerOrchestrationDetails.Output;
@@ -126,5 +134,12 @@ public class ScheduledOrchestrationTests
         var subOrchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(subOrchestratorStatusQueryGetUri);
         Assert.True(subOrchestrationDetails.LastUpdatedTime + TimeSpan.FromSeconds(2) >= scheduledStartTime);
         Assert.Equal("Success", subOrchestrationDetails.Output);
+
+        // Verify that the ClientOperationReceived log was emitted with a FunctionInvocationId
+        ClientOperationLogHelpers.AssertClientOperationLogExists(
+            () => this.fixture.TestLogs.CoreToolsLogs,
+            "StartOrchestration",
+            instanceId,
+            this.fixture.functionLanguageLocalizer.GetLanguageType());
     }
 }

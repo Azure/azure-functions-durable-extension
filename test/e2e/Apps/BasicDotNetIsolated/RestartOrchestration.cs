@@ -1,13 +1,13 @@
 // Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
-using Grpc.Core;
+using System.Net;
+using System.Text.Json;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.DurableTask;
 using Microsoft.DurableTask.Client;
 using Microsoft.Extensions.Logging;
-using System.Net;
 
 namespace Microsoft.Azure.Durable.Tests.E2E;
 
@@ -50,8 +50,16 @@ public static class RestartOrchestration
     {
         ILogger logger = executionContext.GetLogger("Function1_HttpStart");
 
+        var options = new StartOrchestrationOptions
+        {
+            Tags = new Dictionary<string, string>
+                {
+                    { "testtag", "true" }
+                }
+        };
+
         string instanceId = await client.ScheduleNewOrchestrationInstanceAsync(
-            orchestratorName);
+            orchestratorName, options: options, CancellationToken.None);
 
         logger.LogInformation("Started orchestration with ID = '{instanceId}'.", instanceId);
         return await client.CreateCheckStatusResponseAsync(req, instanceId);
@@ -105,5 +113,32 @@ public static class RestartOrchestration
             await response.WriteStringAsync(message);
             return response;
         }
+    }
+
+    [Function("RestartOrchestrator_Query_Tags")]
+    public static async Task<HttpResponseData> RestartQueryTag(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestData req,
+        [DurableClient] DurableTaskClient client,
+        string id)
+    {
+        OrchestrationMetadata? metadata = await client.GetInstancesAsync(instanceId: id, getInputsAndOutputs: true);
+
+        HttpResponseData response;
+        if (metadata == null)
+        {
+            response = req.CreateResponse(HttpStatusCode.NotFound);
+            await response.WriteStringAsync("Orchestration metadata not found.");
+            return response; // Return a 404 response if metadata is null
+        }
+
+        // SimpleOrchestrator returns a string, not JsonArray - use ReadOutputAs<string>() to avoid deserialization exception
+        string? output = metadata.ReadOutputAs<string>();
+        string tagsJson = metadata.Tags != null ? JsonSerializer.Serialize(metadata.Tags) : "{}";
+        string payload = $"{{\"output\":{JsonSerializer.Serialize(output ?? string.Empty)},\"tags\":{tagsJson}}}";
+
+        response = req.CreateResponse(HttpStatusCode.OK);
+        response.Headers.Add("Content-Type", "application/json");
+        await response.WriteStringAsync(payload);
+        return response;
     }
 }

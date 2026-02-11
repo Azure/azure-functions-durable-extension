@@ -4740,8 +4740,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                         await client.InnerClient.RestartAsync(nonExistentId);
                     });
 
-                Assert.Equal(
-                    $"An orchestrastion with the instanceId {nonExistentId} was not found.",
+                Assert.Contains(
+                    $"No instance with ID '{nonExistentId}' was found.",
                     exception.Message);
             }
         }

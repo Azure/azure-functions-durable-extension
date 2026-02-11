@@ -68,6 +68,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private const string EmptyEntityKeySymbol = "$";
 
+        // HTTP Header for correlating client operations with function invocations
+        private const string FunctionInvocationIdHeader = "X-Azure-Functions-InvocationId";
+
         // API Routes
         private static readonly TemplateMatcher StartOrchestrationRoute = GetStartOrchestrationRoute();
         private static readonly TemplateMatcher EntityRoute = GetEntityRoute();
@@ -457,6 +460,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private async Task<HttpResponseMessage> HandleGetStatusRequestAsync(
             HttpRequestMessage request)
         {
+            this.LogClientOperationReceived(request, "QueryInstances", string.Empty);
+
             IDurableOrchestrationClient client = this.GetClient(request);
             var queryNameValuePairs = request.GetQueryNameValuePairs();
 
@@ -518,6 +523,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private async Task<HttpResponseMessage> HandleListEntitiesRequestAsync(
             HttpRequestMessage request, string entityName)
         {
+            this.LogClientOperationReceived(request, "QueryEntities", string.Empty);
+
             IDurableEntityClient client = this.GetClient(request);
             NameValueCollection queryNameValuePairs = request.GetQueryNameValuePairs();
 
@@ -569,6 +576,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     "Instance ID provided to the purge instance history request must not be null or empty.");
             }
 
+            // Log correlation information for client operations
+            this.LogClientOperationReceived(request, "PurgeInstances", instanceId);
+
             // We need to confirm that the instance is an orchestration before checking that it has a terminal runtime status,
             // since entities can also be purged and have runtime status "Running". All entities have instance IDs that start with
             // '@', but orchestrations can also have such instance IDs. This runtime status check will therefore not necessarily be
@@ -596,6 +606,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private async Task<HttpResponseMessage> HandleDeleteHistoryWithFiltersRequestAsync(HttpRequestMessage request)
         {
+            this.LogClientOperationReceived(request, "PurgeInstances", "(filter)");
+
             IDurableOrchestrationClient client = this.GetClient(request);
             var queryNameValuePairs = request.GetQueryNameValuePairs();
             if (!TryGetDateTimeQueryParameterValue(queryNameValuePairs, CreatedTimeFromParameter, out DateTime createdTimeFrom))
@@ -629,6 +641,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             bool? returnInternalServerErrorOnFailure = null,
             IDurableOrchestrationClient existingClient = null)
         {
+            this.LogClientOperationReceived(request, "GetInstance", instanceId);
+
             IDurableOrchestrationClient client = existingClient ?? this.GetClient(request);
             var queryNameValuePairs = request.GetQueryNameValuePairs();
 
@@ -816,6 +830,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             IDurableOrchestrationClient client = this.GetClient(request);
 
+            // Log correlation information for client operations
+            this.LogClientOperationReceived(request, "Terminate", instanceId);
+
             DurableOrchestrationStatus status = await client.GetStatusAsync(instanceId);
             if (status == null)
             {
@@ -840,6 +857,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             IDurableOrchestrationClient client = this.GetClient(request);
 
+            // Log correlation information for client operations
+            this.LogClientOperationReceived(request, "Suspend", instanceId);
+
             DurableOrchestrationStatus status = await client.GetStatusAsync(instanceId);
             if (status == null)
             {
@@ -863,6 +883,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string instanceId)
         {
             IDurableOrchestrationClient client = this.GetClient(request);
+
+            // Log correlation information for client operations
+            this.LogClientOperationReceived(request, "Resume", instanceId);
 
             DurableOrchestrationStatus status = await client.GetStatusAsync(instanceId);
             if (status == null)
@@ -904,6 +927,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
 
                 string id = string.IsNullOrEmpty(instanceId) ? Guid.NewGuid().ToString("N") : instanceId;
+
+                // Log correlation information for client operations
+                this.LogClientOperationReceived(request, "StartOrchestration", id);
 
                 if (client is DurableClient durableClient)
                 {
@@ -992,10 +1018,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return null;
         }
 
+        private void LogClientOperationReceived(HttpRequestMessage request, string operationType, string instanceId)
+        {
+            string functionInvocationId = GetHeaderValueFromHeaders(FunctionInvocationIdHeader, request.Headers);
+
+            // Validate the header value since it comes from an HTTP request that may be from an external client.
+            // Only accept well-formed GUID values to prevent log injection or oversized log entries.
+            if (!string.IsNullOrEmpty(functionInvocationId) && !Guid.TryParse(functionInvocationId, out _))
+            {
+                functionInvocationId = null;
+            }
+
+            this.traceHelper.ClientOperationReceived(
+                this.durableTaskOptions.HubName,
+                operationType,
+                instanceId,
+                functionInvocationId);
+        }
+
         private async Task<HttpResponseMessage> HandleRestartInstanceRequestAsync(
             HttpRequestMessage request,
             string instanceId)
         {
+            this.LogClientOperationReceived(request, "Restart", instanceId);
+
             try
             {
                 IDurableOrchestrationClient client = this.GetClient(request);
@@ -1050,6 +1096,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             IDurableOrchestrationClient client = this.GetClient(request);
 
+            // Log correlation information for client operations
+            this.LogClientOperationReceived(request, "Rewind", instanceId);
+
             DurableOrchestrationStatus status = await client.GetStatusAsync(instanceId);
             if (status == null)
             {
@@ -1087,6 +1136,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string eventName)
         {
             IDurableOrchestrationClient client = this.GetClient(request);
+
+            // Log correlation information for client operations
+            this.LogClientOperationReceived(request, "RaiseEvent", instanceId);
 
             DurableOrchestrationStatus status = await client.GetStatusAsync(instanceId);
             if (status == null)
@@ -1129,6 +1181,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             HttpRequestMessage request,
             EntityId entityId)
         {
+            this.LogClientOperationReceived(request, "GetEntity", entityId.ToString());
+
             IDurableEntityClient client = this.GetClient(request);
 
             // This input for entity key parameter means that entity key is an empty string.
@@ -1154,6 +1208,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             EntityId entityId)
         {
             IDurableEntityClient client = this.GetClient(request);
+
+            // Log correlation information for client operations
+            this.LogClientOperationReceived(request, "SignalEntity", entityId.ToString());
 
             string operationName;
 

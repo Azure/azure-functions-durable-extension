@@ -553,6 +553,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.WriteEvent(234, TaskHub, AppName, SlotName, FunctionName, InstanceId, TraceFlags, Details, FunctionType, ExtensionVersion);
         }
 
+        [Event(235, Level = EventLevel.Informational, Version = 1)]
+        public void ClientOperationReceived(
+            string TaskHub,
+            string AppName,
+            string SlotName,
+            string OperationType,
+            string InstanceId,
+            string FunctionInvocationId,
+            string ExtensionVersion)
+        {
+            this.WriteEvent(235, TaskHub, AppName, SlotName, OperationType, InstanceId, FunctionInvocationId, ExtensionVersion);
+        }
+
 #pragma warning restore SA1313 // Parameter names should begin with lower-case letter
     }
 }

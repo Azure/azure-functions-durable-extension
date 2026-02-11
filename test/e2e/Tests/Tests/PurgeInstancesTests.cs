@@ -159,6 +159,18 @@ public class PurgeInstancesTests
         Assert.Equal(HttpStatusCode.OK, purgeCompleted.StatusCode);
         await AssertPurgeCount(purgeCompleted, 1);
 
+        // Verify that the ClientOperationReceived logs were emitted with a FunctionInvocationId
+        ClientOperationLogHelpers.AssertClientOperationLogExists(
+            () => this.fixture.TestLogs.CoreToolsLogs,
+            "StartOrchestration",
+            completedInstanceId,
+            this.fixture.functionLanguageLocalizer.GetLanguageType());
+        ClientOperationLogHelpers.AssertClientOperationLogExists(
+            () => this.fixture.TestLogs.CoreToolsLogs,
+            "PurgeInstances",
+            completedInstanceId,
+            this.fixture.functionLanguageLocalizer.GetLanguageType());
+
         // Terminated orchestration, should succeed
         if (this.fixture.functionLanguageLocalizer.GetLanguageType() != LanguageType.Java
             || this.fixture.GetDurabilityProvider() != FunctionAppFixture.ConfiguredDurabilityProviderType.MSSQL) // Bug: https://github.com/microsoft/durabletask-java/issues/237
