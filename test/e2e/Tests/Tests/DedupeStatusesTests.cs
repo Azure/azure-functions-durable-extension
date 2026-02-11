@@ -1,7 +1,6 @@
 ﻿using System.Net;
 using System.Text.Json;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
-using Microsoft.DurableTask.Protobuf;
 using Xunit;
 using Xunit.Abstractions;
 
