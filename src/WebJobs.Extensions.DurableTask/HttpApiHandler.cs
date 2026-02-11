@@ -14,6 +14,7 @@ using System.Threading.Tasks;
 using DurableTask.Core;
 using DurableTask.Core.Exceptions;
 using DurableTask.Core.History;
+using Grpc.Core;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Routing.Template;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
@@ -974,6 +975,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             catch (OrchestrationAlreadyExistsException e)
             {
                 return request.CreateErrorResponse(HttpStatusCode.Conflict, e.Message);
+            }
+            catch (ArgumentException e)
+            {
+                return request.CreateErrorResponse(HttpStatusCode.BadRequest, e.Message);
             }
         }
 

@@ -120,6 +120,13 @@ public static class HelloCities
         catch (OrchestrationAlreadyExistsException ex)
         {
             // Tests expect BadRequest for orchestration dedupe scenarios.
+            HttpResponseData response = req.CreateResponse(HttpStatusCode.Conflict);
+            await response.WriteStringAsync(ex.Message);
+            return response;
+        }
+        catch (ArgumentException ex)
+        {
+            // Tests expect BadRequest for orchestration dedupe scenarios.
             HttpResponseData response = req.CreateResponse(HttpStatusCode.BadRequest);
             await response.WriteStringAsync(ex.Message);
             return response;

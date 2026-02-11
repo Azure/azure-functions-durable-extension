@@ -118,6 +118,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 throw new RpcException(new Status(StatusCode.AlreadyExists, $"An Orchestration instance with the ID {request.InstanceId} already exists."));
             }
+            catch (ArgumentException ex)
+            {
+                throw new RpcException(new Status(StatusCode.InvalidArgument, $"Invalid argument for start instance request for instance ID {request.InstanceId}: {ex.Message}"));
+            }
             catch (Exception ex)
             {
                 this.extension.TraceHelper.ExtensionWarningEvent(
