@@ -543,21 +543,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private static P.GetInstanceResponse CreateGetInstanceResponse(OrchestrationState state, P.GetInstanceRequest request)
         {
+            var orchestrationState = new P.OrchestrationState
+            {
+                InstanceId = state.OrchestrationInstance.InstanceId,
+                Name = state.Name,
+                OrchestrationStatus = (P.OrchestrationStatus)state.OrchestrationStatus,
+                CreatedTimestamp = Timestamp.FromDateTime(state.CreatedTime),
+                LastUpdatedTimestamp = Timestamp.FromDateTime(state.LastUpdatedTime),
+                Input = request.GetInputsAndOutputs ? state.Input : null,
+                Output = request.GetInputsAndOutputs ? state.Output : null,
+                CustomStatus = request.GetInputsAndOutputs ? state.Status : null,
+                FailureDetails = request.GetInputsAndOutputs ? GetFailureDetails(state.FailureDetails) : null,
+            };
+
+            if (state.Tags != null)
+            {
+                foreach (var tag in state.Tags)
+                {
+                    orchestrationState.Tags[tag.Key] = tag.Value;
+                }
+            }
+
             return new P.GetInstanceResponse
             {
                 Exists = true,
-                OrchestrationState = new P.OrchestrationState
-                {
-                    InstanceId = state.OrchestrationInstance.InstanceId,
-                    Name = state.Name,
-                    OrchestrationStatus = (P.OrchestrationStatus)state.OrchestrationStatus,
-                    CreatedTimestamp = Timestamp.FromDateTime(state.CreatedTime),
-                    LastUpdatedTimestamp = Timestamp.FromDateTime(state.LastUpdatedTime),
-                    Input = request.GetInputsAndOutputs ? state.Input : null,
-                    Output = request.GetInputsAndOutputs ? state.Output : null,
-                    CustomStatus = request.GetInputsAndOutputs ? state.Status : null,
-                    FailureDetails = request.GetInputsAndOutputs ? GetFailureDetails(state.FailureDetails) : null,
-                },
+                OrchestrationState = orchestrationState,
             };
         }
 
