@@ -19,5 +19,5 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Run V4 Python 3.11 Smoke Test
-      run: test/SmokeTests/e2e-test.ps1 -DockerfilePath test/SmokeTests/OOProcSmokeTests/durablePy/Dockerfile -HttpStartPath api/DurableFunctionsHttpStart -TargetFramework net10.0 -DotnetSdkTag 10.0 -ContainerName pyApp -TestWithCustomInstanceId
+      run: test/SmokeTests/e2e-test.ps1 -DockerfilePath test/SmokeTests/OOProcSmokeTests/durablePy/Dockerfile -HttpStartPath api/DurableFunctionsHttpStart -TargetFramework net8.0 -DotnetSdkTag 10.0 -ContainerName pyApp -TestWithCustomInstanceId
       shell: pwsh

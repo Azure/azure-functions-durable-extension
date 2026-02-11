@@ -64,15 +64,14 @@ jobs:
 
     - name: Build and pack WebJobs extension
       run: cd ./src/WebJobs.Extensions.DurableTask &&
-        mkdir ./out &&
-        dotnet build -c Release WebJobs.Extensions.DurableTask.csproj --output ./out &&
+        dotnet build -c Release WebJobs.Extensions.DurableTask.csproj &&
         mkdir ~/packages &&
-        dotnet nuget push ./out/Microsoft.Azure.WebJobs.Extensions.DurableTask.*.nupkg --source ~/packages &&
+        dotnet nuget push ./bin/Release/Microsoft.Azure.WebJobs.Extensions.DurableTask.*.nupkg --source ~/packages &&
         dotnet nuget add source ~/packages
 
     - name: Build .NET Isolated Smoke Test
       run: cd ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated &&
-        dotnet restore --verbosity normal -f ${{ matrix.targetFramework }} &&
+        dotnet restore --verbosity normal -p:TargetFramework=${{ matrix.targetFramework }} &&
         dotnet build -c Release -f ${{ matrix.targetFramework }}
 
     - name: Install core tools
@@ -85,43 +84,44 @@ jobs:
 
     - name: Run smoke tests (Hello Cities (Typed))
       shell: pwsh
-      run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
-        cd ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated && func host start --port 7071 &
+      run: |
+        azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
         ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated/run-smoke-tests.ps1 -HttpStartPath api/StartHelloCitiesTyped
         
     - name: Run smoke tests (Hello Cities (Untyped))
       shell: pwsh
-      run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
-        cd ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated && func host start --port 7071 &
+      run: |
+        azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
         ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated/run-smoke-tests.ps1 -HttpStartPath api/StartHelloCitiesUntyped
 
     - name: Run smoke tests (Hello Cities) with provided Instance Id
       shell: pwsh
-      run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
-        cd ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated && func host start --port 7071 &
+      run: |
+        azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
         ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated/run-smoke-tests.ps1 -HttpStartPath api/StartHelloCitiesUntyped -TestWithCustomInstanceId
 
     - name: Run smoke tests (Process Exit)
       shell: pwsh
-      run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
+      run: |
+        azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
         ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated/run-smoke-tests.ps1 -HttpStartPath api/durable_HttpStartProcessExitOrchestrator
 
     - name: Run smoke tests (Timeout)
       shell: pwsh
-      run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
-        cd ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated && func host start --port 7071 &
+      run: |
+        azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
         ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated/run-smoke-tests.ps1 -HttpStartPath api/durable_HttpStartTimeoutOrchestrator
 
     - name: Run smoke tests (OOM)
       shell: pwsh
-      run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
-        cd ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated && func host start --port 7071 &
+      run: |
+        azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
         ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated/run-smoke-tests.ps1 -HttpStartPath api/durable_HttpStartOOMOrchestrator
 
     - name: Run smoke tests (Entity Counting (Typed))
       shell: pwsh
-      run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
-        cd ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated && func host start --port 7071 &
+      run: |
+        azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
         ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated/run-smoke-tests.ps1 -HttpStartPath api/StartEntityOrchestration
 
   docker-net10:
