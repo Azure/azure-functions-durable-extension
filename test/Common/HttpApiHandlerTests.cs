@@ -1174,7 +1174,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(HttpStatusCode.BadRequest, actualResponse.StatusCode);
             var content = await actualResponse.Content.ReadAsStringAsync();
             var error = JsonConvert.DeserializeObject<JObject>(content);
-            Assert.Equal("A non-terminal instance with this intance ID already exists.", error["Message"].ToString());
+            Assert.Equal("A non-terminal instance with this instance ID already exists.", error["Message"].ToString());
         }
 
         [Theory]
