@@ -40,6 +40,13 @@ public class RestartOrchestrationTests
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
         string instanceId = await DurableHelpers.ParseInstanceIdAsync(response);
 
+        // Verify that the ClientOperationReceived log was emitted with a FunctionInvocationId
+        ClientOperationLogHelpers.AssertClientOperationLogExists(
+            () => this.fixture.TestLogs.CoreToolsLogs,
+            "StartOrchestration",
+            instanceId,
+            this.fixture.functionLanguageLocalizer.GetLanguageType());
+
         await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", 30);
         var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
         string output1 = orchestrationDetails.Output;
@@ -61,6 +68,13 @@ public class RestartOrchestrationTests
         Assert.Equal(HttpStatusCode.Accepted, restartResponse.StatusCode);
         string restartStatusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(restartResponse);
         string restartInstanceId = await DurableHelpers.ParseInstanceIdAsync(restartResponse);
+
+        // Verify that the ClientOperationReceived log was emitted with a FunctionInvocationId
+        ClientOperationLogHelpers.AssertClientOperationLogExists(
+            () => this.fixture.TestLogs.CoreToolsLogs,
+            "Restart",
+            instanceId,
+            this.fixture.functionLanguageLocalizer.GetLanguageType());
 
         await DurableHelpers.WaitForOrchestrationStateAsync(restartStatusQueryGetUri, "Completed", 30);
         var restartOrchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(restartStatusQueryGetUri);
@@ -132,9 +146,16 @@ public class RestartOrchestrationTests
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         string instanceId = await DurableHelpers.ParseInstanceIdAsync(response);
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
-        DurableHelpers.OrchestrationStatusDetails orchestrationDetails 
+        DurableHelpers.OrchestrationStatusDetails orchestrationDetails
             = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
         DateTime createdTime1 = orchestrationDetails.CreatedTime;
+
+        // Verify that the ClientOperationReceived log was emitted with a FunctionInvocationId
+        ClientOperationLogHelpers.AssertClientOperationLogExists(
+            () => this.fixture.TestLogs.CoreToolsLogs,
+            "StartOrchestration",
+            instanceId,
+            this.fixture.functionLanguageLocalizer.GetLanguageType());
 
         // Wait for the orchestration to be running
         await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Running", 30);
@@ -156,8 +177,15 @@ public class RestartOrchestrationTests
         string restartStatusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(restartResponse);
         string restartInstanceId = await DurableHelpers.ParseInstanceIdAsync(restartResponse);
 
+        // Verify that the ClientOperationReceived log was emitted with a FunctionInvocationId
+        ClientOperationLogHelpers.AssertClientOperationLogExists(
+            () => this.fixture.TestLogs.CoreToolsLogs,
+            "Restart",
+            instanceId,
+            this.fixture.functionLanguageLocalizer.GetLanguageType());
+
         await DurableHelpers.WaitForOrchestrationStateAsync(restartStatusQueryGetUri, "Running", 30);
-        DurableHelpers.OrchestrationStatusDetails restartOrchestrationDetails 
+        DurableHelpers.OrchestrationStatusDetails restartOrchestrationDetails
             = await DurableHelpers.GetRunningOrchestrationDetailsAsync(restartStatusQueryGetUri);
         DateTime createdTime2 = restartOrchestrationDetails.CreatedTime;
 

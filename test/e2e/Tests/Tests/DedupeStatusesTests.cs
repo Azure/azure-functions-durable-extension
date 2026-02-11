@@ -206,7 +206,7 @@ public class DedupeStatusesTests
             "HelloCities", Guid.NewGuid().ToString(), expectedState: string.Empty, dedupeStatuses, expectedCode: HttpStatusCode.BadRequest);
     }
 
-    private static async Task<HttpResponseMessage> StartAndWaitForState(
+    private async Task<HttpResponseMessage> StartAndWaitForState(
         string orchestrationName,
         string instanceId,
         string expectedState,
@@ -225,10 +225,20 @@ public class DedupeStatusesTests
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
         await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, expectedState, 60);
+
+        if (expectedState != "Pending")
+        {
+            ClientOperationLogHelpers.AssertClientOperationLogExists(
+            () => this.fixture.TestLogs.CoreToolsLogs,
+            "StartOrchestration",
+            instanceId,
+            this.fixture.functionLanguageLocalizer.GetLanguageType());
+        }
+
         return response;
     }
 
-    private static async Task<HttpResponseMessage> StartAndWaitForStateWithDedupeStatuses(
+    private async Task<HttpResponseMessage> StartAndWaitForStateWithDedupeStatuses(
         string orchestrationName,
         string instanceId,
         string expectedState,
@@ -252,22 +262,44 @@ public class DedupeStatusesTests
         }
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
         await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, expectedState, 60);
+
+        if (expectedState != "Pending")
+        {
+            ClientOperationLogHelpers.AssertClientOperationLogExists(
+                () => this.fixture.TestLogs.CoreToolsLogs,
+                "StartOrchestration",
+                instanceId,
+                this.fixture.functionLanguageLocalizer.GetLanguageType());
+        }
+
         return response;
     }
 
-    private static async Task TerminateAndWaitForState(string instanceId, HttpResponseMessage startOrchestrationResponse)
+    private async Task TerminateAndWaitForState(string instanceId, HttpResponseMessage startOrchestrationResponse)
     {
         using HttpResponseMessage terminateResponse = await HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={instanceId}");
         Assert.Equal(HttpStatusCode.OK, terminateResponse.StatusCode);
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(startOrchestrationResponse);
         await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Terminated", 60);
+
+        ClientOperationLogHelpers.AssertClientOperationLogExists(
+            () => this.fixture.TestLogs.CoreToolsLogs,
+            "Terminate",
+            instanceId,
+            this.fixture.functionLanguageLocalizer.GetLanguageType());
     }
 
-    private static async Task SuspendAndWaitForState(string instanceId, HttpResponseMessage startOrchestrationResponse)
+    private async Task SuspendAndWaitForState(string instanceId, HttpResponseMessage startOrchestrationResponse)
     {
         using HttpResponseMessage suspendResponse = await HttpHelpers.InvokeHttpTrigger("SuspendInstance", $"?instanceId={instanceId}");
         Assert.Equal(HttpStatusCode.OK, suspendResponse.StatusCode);
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(startOrchestrationResponse);
         await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Suspended", 60);
+
+        ClientOperationLogHelpers.AssertClientOperationLogExists(
+            () => this.fixture.TestLogs.CoreToolsLogs,
+            "Suspend",
+            instanceId,
+            this.fixture.functionLanguageLocalizer.GetLanguageType());
     }
 }

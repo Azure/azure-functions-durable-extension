@@ -119,14 +119,14 @@ public static class HelloCities
         }
         catch (OrchestrationAlreadyExistsException ex)
         {
-            // Tests expect BadRequest for orchestration dedupe scenarios.
+            // Tests expect Conflict (409) for orchestration dedupe scenarios.
             HttpResponseData response = req.CreateResponse(HttpStatusCode.Conflict);
             await response.WriteStringAsync(ex.Message);
             return response;
         }
         catch (ArgumentException ex)
         {
-            // Tests expect BadRequest for orchestration dedupe scenarios.
+            // Tests expect BadRequest for invalid dedupe statuses
             HttpResponseData response = req.CreateResponse(HttpStatusCode.BadRequest);
             await response.WriteStringAsync(ex.Message);
             return response;
