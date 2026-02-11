@@ -3,7 +3,6 @@
 
 using System.Net;
 using System.Text.Json;
-using Microsoft.VisualStudio.TestPlatform.Utilities;
 using Xunit;
 using Xunit.Abstractions;
 
