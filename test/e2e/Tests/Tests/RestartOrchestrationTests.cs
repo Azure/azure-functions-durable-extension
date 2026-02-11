@@ -3,6 +3,7 @@
 
 using System.Net;
 using System.Text.Json;
+using Microsoft.VisualStudio.TestPlatform.Utilities;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -115,15 +116,16 @@ public class RestartOrchestrationTests
     [Trait("Java", "Skip")] // RestartAsync not yet implemented in Java
     [Trait("Python", "Skip")] // RestartAsync not supported in Python
     [Trait("Node", "Skip")] // RestartAsync not supported in Node
-    // Test that if we restart a instance that doesn't reach to completed state,
-    // If RestartWithNewInstanceId is set to false, a InvalidOperationException error will be thrown.
-    public async Task RestartOrchestration_NotCompletedOrchestrationWithRestartFalse_ShouldReturnFailedPrecondition()
+    public async Task RestartOrchestration_NotCompletedOrchestrationWithRestartFalse_ShouldSucceed()
     {
         // Start a long-running orchestration
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("RestarttOrchestration_HttpStart/LongOrchestrator");
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         string instanceId = await DurableHelpers.ParseInstanceIdAsync(response);
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
+        DurableHelpers.OrchestrationStatusDetails orchestrationDetails 
+            = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
+        DateTime createdTime1 = orchestrationDetails.CreatedTime;
 
         // Wait for the orchestration to be running
         await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Running", 30);
@@ -137,15 +139,22 @@ public class RestartOrchestrationTests
 
         string jsonBody = JsonSerializer.Serialize(restartPayload);
 
+        // Restart the orchestrator with the same instance id)
         using HttpResponseMessage restartResponse = await HttpHelpers.InvokeHttpTriggerWithBody(
-            "RestartOrchestration_HttpRestartWithErrorHandling", jsonBody, "application/json");
+            "RestartOrchestration_HttpRestart", jsonBody, "application/json");
+        Assert.Equal(HttpStatusCode.Accepted, restartResponse.StatusCode);
 
-        Assert.Equal(HttpStatusCode.BadRequest, restartResponse.StatusCode);
-        
-        string responseContent = await restartResponse.Content.ReadAsStringAsync();
-        
-        // Verify the returned exception contains the correct information. 
-        Assert.Contains(fixture.functionLanguageLocalizer.GetLocalizedStringValue("RestartRunningInstance.ErrorMessage", instanceId), responseContent);
+        string restartStatusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(restartResponse);
+        string restartInstanceId = await DurableHelpers.ParseInstanceIdAsync(restartResponse);
+
+        await DurableHelpers.WaitForOrchestrationStateAsync(restartStatusQueryGetUri, "Running", 30);
+        DurableHelpers.OrchestrationStatusDetails restartOrchestrationDetails 
+            = await DurableHelpers.GetRunningOrchestrationDetailsAsync(restartStatusQueryGetUri);
+        DateTime createdTime2 = restartOrchestrationDetails.CreatedTime;
+
+        // Created time should be different.
+        Assert.NotEqual(createdTime1, createdTime2);
+        Assert.Equal(instanceId, restartInstanceId);
 
         // Clean up: terminate the long-running orchestration
         using HttpResponseMessage terminateResponse = await HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={instanceId}");

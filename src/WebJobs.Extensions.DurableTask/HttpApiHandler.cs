@@ -1034,6 +1034,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 return request.CreateErrorResponse(HttpStatusCode.BadRequest, "InstanceId does not match a valid orchestration instance.", e);
             }
+            catch (OrchestrationAlreadyExistsException e)
+            {
+                return request.CreateErrorResponse(HttpStatusCode.BadRequest, "A non-terminal instance with this intance ID already exists.", e);
+            }
             catch (JsonReaderException e)
             {
                 return request.CreateErrorResponse(HttpStatusCode.BadRequest, "Invalid JSON content", e);

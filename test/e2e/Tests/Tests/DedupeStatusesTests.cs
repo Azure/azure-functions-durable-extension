@@ -1,5 +1,7 @@
 ﻿using System.Net;
 using System.Text.Json;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
+using Microsoft.DurableTask.Protobuf;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -19,8 +21,10 @@ public class DedupeStatusesTests
     }
 
     [Fact]
-    public async Task CanStartOrchestrationWithSameIdForAllStatusesForEmptyDedupeStatuses()
+    public async Task CanStartOrchestration_WithSameId_ForAllStatuses_ForEmptyDedupeStatuses()
     {
+        HttpResponseMessage terminateResponse;
+
         // Completed
         string completedInstanceId = Guid.NewGuid().ToString();
         using HttpResponseMessage startCompletedResponseFirstAttempt = await StartAndWaitForState(
@@ -47,6 +51,10 @@ public class DedupeStatusesTests
             await TerminateAndWaitForState(terminatedInstanceId, startTerminatedResponseFirstAttempt);
             using HttpResponseMessage startTerminatedResponseSecondAttempt = await StartAndWaitForState(
                 "LongRunningOrchestrator", terminatedInstanceId, "Running");
+            // Clean-up
+            terminateResponse = await HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={terminatedInstanceId}");
+            Assert.Equal(HttpStatusCode.OK, terminateResponse.StatusCode);
+            terminateResponse.Dispose();
         }
 
         // Pending
@@ -69,6 +77,10 @@ public class DedupeStatusesTests
             "LongRunningOrchestrator", runningInstanceId, "Running");
         using HttpResponseMessage startRunningResponseSecondAttempt = await StartAndWaitForState(
             "LongRunningOrchestrator", runningInstanceId, "Running");
+        // Clean-up
+        terminateResponse = await HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={runningInstanceId}");
+        Assert.Equal(HttpStatusCode.OK, terminateResponse.StatusCode);
+        terminateResponse.Dispose();
 
         // Suspended
         string suspendedInstanceId = Guid.NewGuid().ToString();
@@ -77,23 +89,33 @@ public class DedupeStatusesTests
         await SuspendAndWaitForState(suspendedInstanceId, startSuspendedResponseFirstAttempt);
         using HttpResponseMessage startSuspendedResponseSecondAttempt = await StartAndWaitForState(
             "LongRunningOrchestrator", suspendedInstanceId, "Running");
+        // Clean-up
+        terminateResponse = await HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={suspendedInstanceId}");
+        Assert.Equal(HttpStatusCode.OK, terminateResponse.StatusCode);
+        terminateResponse.Dispose();
     }
 
-    [Fact]
+    [Theory]
     [Trait("PowerShell", "Skip")] // Dedupe statuses not implemented in PowerShell
     [Trait("Python", "Skip")] // Dedupe statuses not implemented in Python
     [Trait("Node", "Skip")] // Dedupe statuses not implemented in Node
     [Trait("Java", "Skip")] // Dedupe statuses not implemented in Java
-    public async Task StartOrchestrationWithSameIdFailsForDedupeStatuses()
+    [InlineData([])]
+    [InlineData("Pending", "Failed")]
+    public async Task StartOrchestration_WithSameId_FailsIfExistingStatus_InDedupeStatuses(params string[] dedupeStatuses)
     {
-        List<string> dedupeStatuses = ["Running", "Failed"];
+        HttpResponseMessage terminateResponse;
 
-        // Completed, should succeed
+        // Completed
         string completedInstanceId = Guid.NewGuid().ToString();
         using HttpResponseMessage startCompletedResponseFirstAttempt = await StartAndWaitForStateWithDedupeStatuses(
             "HelloCities", completedInstanceId, "Completed", dedupeStatuses);
         using HttpResponseMessage startCompletedResponseSecondAttempt = await StartAndWaitForStateWithDedupeStatuses(
-            "HelloCities", completedInstanceId, "Completed", dedupeStatuses);
+            "HelloCities",
+            completedInstanceId,
+            "Completed",
+            dedupeStatuses,
+            expectedCode: dedupeStatuses.Contains("Completed") ? HttpStatusCode.Conflict : HttpStatusCode.Accepted);
 
         // Terminated
         string terminatedInstanceId = Guid.NewGuid().ToString();
@@ -101,7 +123,29 @@ public class DedupeStatusesTests
             "LongRunningOrchestrator", terminatedInstanceId, "Running", dedupeStatuses);
         await TerminateAndWaitForState(terminatedInstanceId, startTerminatedResponseFirstAttempt);
         using HttpResponseMessage startTerminatedResponseSecondAttempt = await StartAndWaitForStateWithDedupeStatuses(
-            "LongRunningOrchestrator", terminatedInstanceId, "Running", dedupeStatuses);
+            "LongRunningOrchestrator",
+            terminatedInstanceId,
+            "Running",
+            dedupeStatuses,
+            expectedCode: dedupeStatuses.Contains("Terminated") ? HttpStatusCode.Conflict : HttpStatusCode.Accepted);
+        // Clean-up
+        if (!dedupeStatuses.Contains("Terminated"))
+        {
+            terminateResponse = await HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={terminatedInstanceId}");
+            Assert.Equal(HttpStatusCode.OK, terminateResponse.StatusCode);
+            terminateResponse.Dispose();
+        }
+
+        // Failed
+        string failedInstanceId = Guid.NewGuid().ToString();
+        using HttpResponseMessage startFailedResponseFirstAttempt = await StartAndWaitForStateWithDedupeStatuses(
+            "RethrowActivityException", failedInstanceId, "Failed", dedupeStatuses);
+        using HttpResponseMessage startFailedResponseSecondAttempt = await StartAndWaitForStateWithDedupeStatuses(
+            "RethrowActivityException",
+            failedInstanceId,
+            "Completed",
+            dedupeStatuses,
+            expectedCode: dedupeStatuses.Contains("Failed") ? HttpStatusCode.Conflict : HttpStatusCode.Accepted);
 
         // Pending
         string pendingInstanceId = Guid.NewGuid().ToString();
@@ -109,7 +153,26 @@ public class DedupeStatusesTests
         using HttpResponseMessage startPendingResponseFirstAttempt = await StartAndWaitForStateWithDedupeStatuses(
             "HelloCities", pendingInstanceId, "Pending", dedupeStatuses, scheduledStartTime: scheduledStartTime);
         using HttpResponseMessage startPendingResponseSecondAttempt = await StartAndWaitForStateWithDedupeStatuses(
-            "HelloCities", pendingInstanceId, "Completed", dedupeStatuses);
+            "HelloCities",
+            pendingInstanceId,
+            "Completed",
+            dedupeStatuses,
+            expectedCode: dedupeStatuses.Contains("Pending") ? HttpStatusCode.Conflict : HttpStatusCode.Accepted);
+
+        // Running
+        string runningInstanceId = Guid.NewGuid().ToString();
+        using HttpResponseMessage startRunningResponseFirstAttempt = await StartAndWaitForStateWithDedupeStatuses(
+            "LongRunningOrchestrator", runningInstanceId, "Running", dedupeStatuses);
+        using HttpResponseMessage startRunningResponseSecondAttempt = await StartAndWaitForStateWithDedupeStatuses(
+            "LongRunningOrchestrator",
+            runningInstanceId,
+            expectedState: "Running",
+            dedupeStatuses,
+            expectedCode: dedupeStatuses.Contains("Running") ? HttpStatusCode.Conflict : HttpStatusCode.Accepted);
+        // Clean-up
+        terminateResponse = await HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={runningInstanceId}");
+        Assert.Equal(HttpStatusCode.OK, terminateResponse.StatusCode);
+        terminateResponse.Dispose();
 
         // Suspended
         string suspendedInstanceId = Guid.NewGuid().ToString();
@@ -117,35 +180,28 @@ public class DedupeStatusesTests
             "LongRunningOrchestrator", suspendedInstanceId, "Running", dedupeStatuses);
         await SuspendAndWaitForState(suspendedInstanceId, startSuspendedResponseFirstAttempt);
         using HttpResponseMessage startSuspendedResponseSecondAttempt = await StartAndWaitForStateWithDedupeStatuses(
-            "LongRunningOrchestrator", suspendedInstanceId, "Running", dedupeStatuses);
-
-        // Failed, should fail
-        string failedInstanceId = Guid.NewGuid().ToString();
-        using HttpResponseMessage startFailedResponseFirstAttempt = await StartAndWaitForStateWithDedupeStatuses(
-            "RethrowActivityException", failedInstanceId, "Failed", dedupeStatuses);
-        // We do not provide an expected state since we expect the request to fail
-        using HttpResponseMessage startFailedResponseSecondAttempt = await StartAndWaitForStateWithDedupeStatuses(
-            "RethrowActivityException", failedInstanceId, expectedState: string.Empty, dedupeStatuses, expectedCode: HttpStatusCode.Conflict);
-
-        // Running, should fail
-        string runningInstanceId = Guid.NewGuid().ToString();
-        using HttpResponseMessage startRunningResponseFirstAttempt = await StartAndWaitForStateWithDedupeStatuses(
-            "LongRunningOrchestrator", runningInstanceId, "Running", dedupeStatuses);
-        // We do not provide an expected state since we expect the request to fail
-        using HttpResponseMessage startRunningResponseSecondAttempt = await StartAndWaitForStateWithDedupeStatuses(
-            "LongRunningOrchestrator", runningInstanceId, expectedState: string.Empty, dedupeStatuses, expectedCode: HttpStatusCode.Conflict);
+            "LongRunningOrchestrator",
+            suspendedInstanceId,
+            "Running",
+            dedupeStatuses,
+            expectedCode: dedupeStatuses.Contains("Suspended") ? HttpStatusCode.Conflict : HttpStatusCode.Accepted);
+        // Clean-up
+        terminateResponse = await HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={suspendedInstanceId}");
+        Assert.Equal(HttpStatusCode.OK, terminateResponse.StatusCode);
+        terminateResponse.Dispose();
     }
 
-    [Fact]
+    [Theory]
     [Trait("PowerShell", "Skip")] // Dedupe statuses not implemented in PowerShell
     [Trait("Python", "Skip")] // Dedupe statuses not implemented in Python
     [Trait("Node", "Skip")] // Dedupe statuses not implemented in Node
     [Trait("Java", "Skip")] // Dedupe statuses not implemented in Java
-    public async Task StartOrchestrationWithInvalidDedupeStatusesFails()
+    [InlineData("Pending", "Failed", "Terminated")]
+    [InlineData("Running", "Failed", "Terminated")]
+    [InlineData("Suspended", "Failed", "Terminated")]
+    public async Task StartOrchestration_WithInvalidDedupeStatuses_ThrowsArgumentException(params string[] dedupeStatuses)
     {
-        // Dedupe statuses cannot have both "Terminated" and a running status (in this case "Pending")
-        List<string> dedupeStatuses = ["Pending", "Failed", "Terminated"];
-
+        // Dedupe statuses cannot have both "Terminated" and a running status
         // We do not provide an expected state since we expect the request to fail
         using HttpResponseMessage failedRequest = await StartAndWaitForStateWithDedupeStatuses(
             "HelloCities", Guid.NewGuid().ToString(), expectedState: string.Empty, dedupeStatuses, expectedCode: HttpStatusCode.BadRequest);
@@ -177,7 +233,7 @@ public class DedupeStatusesTests
         string orchestrationName,
         string instanceId,
         string expectedState,
-        List<string> dedupeStatuses,
+        string[] dedupeStatuses,
         DateTime? scheduledStartTime = null,
         HttpStatusCode expectedCode = HttpStatusCode.Accepted)
     {

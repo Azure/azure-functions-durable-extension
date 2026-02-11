@@ -494,9 +494,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 // Thrown when th instanceId is not found.
                 throw new RpcException(new Status(StatusCode.NotFound, $"ArgumentException: {ex.Message}"));
             }
-            catch (InvalidOperationException ex)
+            catch (OrchestrationAlreadyExistsException ex)
             {
-                throw new RpcException(new Status(StatusCode.FailedPrecondition, $"InvalidOperationException: {ex.Message}"));
+                throw new RpcException(new Status(StatusCode.FailedPrecondition, $"Non-terminal instance with this instance ID already exists: {ex.Message}"));
             }
             catch (Exception ex)
             {
