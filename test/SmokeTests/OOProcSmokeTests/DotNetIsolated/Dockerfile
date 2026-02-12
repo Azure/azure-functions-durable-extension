@@ -9,20 +9,17 @@ ARG DOTNET_ISOLATED_TAG=4-dotnet-isolated8.0
 FROM mcr.microsoft.com/dotnet/sdk:${DOTNET_SDK_TAG} AS build-env
 ARG TARGET_FRAMEWORK
 
-# Step 1: Build the WebJobs extension and publish it as a local NuGet package
+# Step 1: Build the WebJobs extension for the specific TFM and publish it as a
+#         local NuGet package. We build a single TFM (-f $TARGET_FRAMEWORK) to
+#         avoid output collisions that occur when multi-target builds use --output.
+#         GeneratePackageOnBuild=true in the csproj produces the nupkg automatically.
 COPY . /root
 RUN cd /root/src/WebJobs.Extensions.DurableTask && \
-    mkdir -p /out && \
-    mkdir -p /out/$TARGET_FRAMEWORK && \
     mkdir -p /packages && \
     dotnet restore WebJobs.Extensions.DurableTask.csproj && \
-    dotnet build -c Release WebJobs.Extensions.DurableTask.csproj --no-restore --output /out && \
-    dotnet nuget push /out/Microsoft.Azure.WebJobs.Extensions.DurableTask.*.nupkg --source /packages && \
+    dotnet build -c Release -f $TARGET_FRAMEWORK WebJobs.Extensions.DurableTask.csproj --no-restore && \
+    dotnet nuget push bin/Release/Microsoft.Azure.WebJobs.Extensions.DurableTask.*.nupkg --source /packages && \
     dotnet nuget add source /packages
-
-# Step 1b: Build the WebJobs extension for the specific target framework
-RUN cd /root/src/WebJobs.Extensions.DurableTask && \
-    dotnet build -c Release -f $TARGET_FRAMEWORK WebJobs.Extensions.DurableTask.csproj --no-restore --output /out/$TARGET_FRAMEWORK
 
 # Step 2: Build the sample app, which references the locally built extension from Step 1
 #         IMPORTANT: restore seems to need to be done separately to ensure the correct
@@ -34,7 +31,7 @@ RUN cd /root/test/SmokeTests/OOProcSmokeTests/DotNetIsolated && \
     dotnet restore DotNetIsolated.csproj --verbosity normal -p:TargetFramework=$TARGET_FRAMEWORK && \
     dotnet build DotNetIsolated.csproj -c Release -f $TARGET_FRAMEWORK && \
     dotnet publish DotNetIsolated.csproj -c Release -f $TARGET_FRAMEWORK --no-build --output /home/site/wwwroot && \
-    cp /out/$TARGET_FRAMEWORK/Microsoft.Azure.WebJobs.Extensions.DurableTask.dll /home/site/wwwroot/.azurefunctions/ && \
+    cp /root/src/WebJobs.Extensions.DurableTask/bin/Release/$TARGET_FRAMEWORK/Microsoft.Azure.WebJobs.Extensions.DurableTask.dll /home/site/wwwroot/.azurefunctions/ && \
     ls -aR /home/site/wwwroot && \
     cat /home/site/wwwroot/extensions.json # debugging
 

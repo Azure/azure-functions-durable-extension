@@ -41,6 +41,8 @@ public class SuspendResumeTests
             using HttpResponseMessage resumeResponse = await HttpHelpers.InvokeHttpTrigger("ResumeInstance", $"?instanceId={instanceId}");
             await AssertRequestSucceedsAsync(resumeResponse);
 
+            await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Running", 30);
+
             // Verify that the ClientOperationReceived logs were emitted with a FunctionInvocationId
             ClientOperationLogHelpers.AssertClientOperationLogExists(
                 () => this.fixture.TestLogs.CoreToolsLogs,

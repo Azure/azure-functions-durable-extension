@@ -128,6 +128,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
                 catch (IOException)
                 {
+                    // Dispose the host that failed to start so we don't leak resources across retries.
+#if NET10_0_OR_GREATER
+                    this.localHost?.Dispose();
+                    this.localHost = new NoOpHost();
+#else
+                    this.localWebHost?.Dispose();
+                    this.localWebHost = new NoOpWebHost();
+#endif
                     this.traceHelper.ExtensionWarningEvent(
                         this.durableTaskOptions.HubName,
                         functionName: string.Empty,
