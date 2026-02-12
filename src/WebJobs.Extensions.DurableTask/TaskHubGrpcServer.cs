@@ -26,6 +26,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     internal class TaskHubGrpcServer : P.TaskHubSidecarService.TaskHubSidecarServiceBase
     {
         private const int MaxHistoryChunkSizeInBytes = 2 * 1024 * 1024; // 2 MB
+
+        // gRPC metadata key for correlating client operations with function invocations
+        private const string FunctionInvocationIdMetadataKey = "x-azure-functions-invocationid";
+
         private readonly DurableTaskExtension extension;
 
         public TaskHubGrpcServer(DurableTaskExtension extension)
@@ -60,6 +64,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     InstanceId = string.IsNullOrEmpty(request.InstanceId) ? Guid.NewGuid().ToString("N") : request.InstanceId,
                     ExecutionId = Guid.NewGuid().ToString(),
                 };
+
+                // Log correlation information for client operations
+                this.LogClientOperationReceived(context, "StartOrchestration", instance.InstanceId);
 
                 // Create the ExecutionStartedEvent
                 ExecutionStartedEvent executionStartedEvent = new ExecutionStartedEvent(-1, request.Input)
@@ -122,6 +129,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             bool throwStatusExceptionsOnRaiseEvent = this.extension.Options.ThrowStatusExceptionsOnRaiseEvent ?? this.extension.DefaultDurabilityProvider.CheckStatusBeforeRaiseEvent;
 
+            // Log correlation information for client operations
+            this.LogClientOperationReceived(context, "RaiseEvent", request.InstanceId);
+
             try
             {
                 await this.GetClient(context).RaiseEventAsync(request.InstanceId, request.Name, Raw(request.Input));
@@ -160,6 +170,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             this.CheckEntitySupport(context, out var durabilityProvider, out var entityOrchestrationService);
 
+            // Log correlation information for client operations
+            this.LogClientOperationReceived(context, "SignalEntity", request.InstanceId);
+
             Activity? signalEntityActivity = null;
 
             // We only want to create a trace activity for signaling the entity in the case that we can successfully parse the trace context of the signal entity request.
@@ -196,6 +209,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public async override Task<P.GetEntityResponse> GetEntity(P.GetEntityRequest request, ServerCallContext context)
         {
+            this.LogClientOperationReceived(context, "GetEntity", request.InstanceId);
             this.CheckEntitySupport(context, out var durabilityProvider, out var entityOrchestrationService);
 
             EntityBackendQueries.EntityMetadata? metaData = await entityOrchestrationService.EntityBackendQueries!.GetEntityAsync(
@@ -213,6 +227,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public async override Task<P.QueryEntitiesResponse> QueryEntities(P.QueryEntitiesRequest request, ServerCallContext context)
         {
+            this.LogClientOperationReceived(context, "QueryEntities", string.Empty);
             this.CheckEntitySupport(context, out var durabilityProvider, out var entityOrchestrationService);
 
             P.EntityQuery query = request.Query;
@@ -244,6 +259,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public async override Task<P.CleanEntityStorageResponse> CleanEntityStorage(P.CleanEntityStorageRequest request, ServerCallContext context)
         {
+            this.LogClientOperationReceived(context, "CleanEntityStorage", string.Empty);
             this.CheckEntitySupport(context, out var durabilityProvider, out var entityOrchestrationService);
 
             EntityBackendQueries.CleanEntityStorageResult result = await entityOrchestrationService.EntityBackendQueries!.CleanEntityStorageAsync(
@@ -265,6 +281,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public async override Task<P.TerminateResponse> TerminateInstance(P.TerminateRequest request, ServerCallContext context)
         {
+            // Log correlation information for client operations
+            this.LogClientOperationReceived(context, "Terminate", request.InstanceId);
+
             try
             {
                 await this.GetClient(context).TerminateAsync(request.InstanceId, request.Output);
@@ -294,18 +313,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public async override Task<P.SuspendResponse> SuspendInstance(P.SuspendRequest request, ServerCallContext context)
         {
+            // Log correlation information for client operations
+            this.LogClientOperationReceived(context, "Suspend", request.InstanceId);
+
             await this.GetClient(context).SuspendAsync(request.InstanceId, request.Reason);
             return new P.SuspendResponse();
         }
 
         public async override Task<P.ResumeResponse> ResumeInstance(P.ResumeRequest request, ServerCallContext context)
         {
+            // Log correlation information for client operations
+            this.LogClientOperationReceived(context, "Resume", request.InstanceId);
+
             await this.GetClient(context).ResumeAsync(request.InstanceId, request.Reason);
             return new P.ResumeResponse();
         }
 
         public async override Task<P.RewindInstanceResponse> RewindInstance(P.RewindInstanceRequest request, ServerCallContext context)
         {
+            // Log correlation information for client operations
+            this.LogClientOperationReceived(context, "Rewind", request.InstanceId);
+
             try
             {
 #pragma warning disable CS0618 // Type or member is obsolete
@@ -338,6 +366,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public async override Task<P.GetInstanceResponse> GetInstance(P.GetInstanceRequest request, ServerCallContext context)
         {
+            this.LogClientOperationReceived(context, "GetInstance", request.InstanceId);
+
             OrchestrationState state = await this.GetDurabilityProvider(context)
                 .GetOrchestrationStateAsync(request.InstanceId, executionId: null);
             if (state == null)
@@ -350,6 +380,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public async override Task<P.QueryInstancesResponse> QueryInstances(P.QueryInstancesRequest request, ServerCallContext context)
         {
+            this.LogClientOperationReceived(context, "QueryInstances", string.Empty);
+
             var query = ProtobufUtils.ToOrchestrationQuery(request);
             var queryClient = (IOrchestrationServiceQueryClient)this.GetDurabilityProvider(context);
             OrchestrationQueryResult result = await queryClient.GetOrchestrationWithQueryAsync(query, context.CancellationToken);
@@ -359,6 +391,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public async override Task<P.PurgeInstancesResponse> PurgeInstances(P.PurgeInstancesRequest request, ServerCallContext context)
         {
             var purgeClient = (IOrchestrationServicePurgeClient)this.GetDurabilityProvider(context);
+
+            // Log correlation information for client operations
+            string instanceId = request.RequestCase == P.PurgeInstancesRequest.RequestOneofCase.InstanceId
+                ? request.InstanceId
+                : "(filter)";
+            this.LogClientOperationReceived(context, "PurgeInstances", instanceId);
 
             PurgeResult result;
             try
@@ -431,6 +469,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public async override Task<P.GetInstanceResponse> WaitForInstanceStart(P.GetInstanceRequest request, ServerCallContext context)
         {
+            this.LogClientOperationReceived(context, "WaitForInstanceStart", request.InstanceId);
+
             int retryCount = 0;
             while (true)
             {
@@ -453,6 +493,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public async override Task<P.GetInstanceResponse> WaitForInstanceCompletion(P.GetInstanceRequest request, ServerCallContext context)
         {
+            this.LogClientOperationReceived(context, "WaitForInstanceCompletion", request.InstanceId);
+
             OrchestrationState state = await this.GetDurabilityProvider(context).WaitForOrchestrationAsync(
                 request.InstanceId,
                 executionId: null,
@@ -469,6 +511,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public override async Task<P.RestartInstanceResponse> RestartInstance(P.RestartInstanceRequest request, ServerCallContext context)
         {
+            this.LogClientOperationReceived(context, "Restart", request.InstanceId);
+
             try
             {
                 string newInstanceId = await this.GetClient(context).RestartAsync(request.InstanceId, request.RestartWithNewInstanceId);
@@ -499,21 +543,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private static P.GetInstanceResponse CreateGetInstanceResponse(OrchestrationState state, P.GetInstanceRequest request)
         {
+            var orchestrationState = new P.OrchestrationState
+            {
+                InstanceId = state.OrchestrationInstance.InstanceId,
+                Name = state.Name,
+                OrchestrationStatus = (P.OrchestrationStatus)state.OrchestrationStatus,
+                CreatedTimestamp = Timestamp.FromDateTime(state.CreatedTime),
+                LastUpdatedTimestamp = Timestamp.FromDateTime(state.LastUpdatedTime),
+                Input = request.GetInputsAndOutputs ? state.Input : null,
+                Output = request.GetInputsAndOutputs ? state.Output : null,
+                CustomStatus = request.GetInputsAndOutputs ? state.Status : null,
+                FailureDetails = request.GetInputsAndOutputs ? GetFailureDetails(state.FailureDetails) : null,
+            };
+
+            if (state.Tags != null)
+            {
+                foreach (var tag in state.Tags)
+                {
+                    orchestrationState.Tags[tag.Key] = tag.Value;
+                }
+            }
+
             return new P.GetInstanceResponse
             {
                 Exists = true,
-                OrchestrationState = new P.OrchestrationState
-                {
-                    InstanceId = state.OrchestrationInstance.InstanceId,
-                    Name = state.Name,
-                    OrchestrationStatus = (P.OrchestrationStatus)state.OrchestrationStatus,
-                    CreatedTimestamp = Timestamp.FromDateTime(state.CreatedTime),
-                    LastUpdatedTimestamp = Timestamp.FromDateTime(state.LastUpdatedTime),
-                    Input = request.GetInputsAndOutputs ? state.Input : null,
-                    Output = request.GetInputsAndOutputs ? state.Output : null,
-                    CustomStatus = request.GetInputsAndOutputs ? state.Status : null,
-                    FailureDetails = request.GetInputsAndOutputs ? GetFailureDetails(state.FailureDetails) : null,
-                },
+                OrchestrationState = orchestrationState,
             };
         }
 
@@ -522,6 +576,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             IServerStreamWriter<P.HistoryChunk> responseStream,
             ServerCallContext context)
         {
+            this.LogClientOperationReceived(context, "StreamInstanceHistory", request.InstanceId);
+
             if (await this.GetClient(context).GetStatusAsync(request.InstanceId, showInput: false) is null)
             {
                 throw new RpcException(new Status(StatusCode.NotFound, $"Orchestration instance with ID {request.InstanceId} was not found."));
@@ -630,6 +686,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private IDurableClient GetClient(ServerCallContext context)
         {
             return this.extension.GetClient(this.GetAttribute(context));
+        }
+
+        private static string? GetFunctionInvocationId(ServerCallContext context)
+        {
+            Metadata.Entry? entry = context.RequestHeaders.FirstOrDefault(
+                e => string.Equals(e.Key, FunctionInvocationIdMetadataKey, StringComparison.OrdinalIgnoreCase));
+            return entry?.Value;
+        }
+
+        private void LogClientOperationReceived(ServerCallContext context, string operationType, string instanceId)
+        {
+            string? functionInvocationId = GetFunctionInvocationId(context);
+
+            // Validate the metadata value to prevent malformed or oversized values from creating noisy logs.
+            if (!string.IsNullOrEmpty(functionInvocationId) && !Guid.TryParse(functionInvocationId, out _))
+            {
+                functionInvocationId = null;
+            }
+
+            this.extension.TraceHelper.ClientOperationReceived(
+                this.extension.Options.HubName,
+                operationType,
+                instanceId,
+                functionInvocationId);
         }
 
         private void CheckEntitySupport(ServerCallContext context, out DurabilityProvider durabilityProvider, out IEntityOrchestrationService entityOrchestrationService)
