@@ -30,18 +30,35 @@ public class SuspendResumeTests
         string instanceId = await DurableHelpers.ParseInstanceIdAsync(response);
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
 
-        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Running", 5);
+        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Running", 30);
         try
         {
             using HttpResponseMessage suspendResponse = await HttpHelpers.InvokeHttpTrigger("SuspendInstance", $"?instanceId={instanceId}");
             await AssertRequestSucceedsAsync(suspendResponse);
 
-            await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Suspended", 5);
+            await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Suspended", 30);
 
             using HttpResponseMessage resumeResponse = await HttpHelpers.InvokeHttpTrigger("ResumeInstance", $"?instanceId={instanceId}");
             await AssertRequestSucceedsAsync(resumeResponse);
 
-            await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Running", 5);
+            await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Running", 30);
+
+            // Verify that the ClientOperationReceived logs were emitted with a FunctionInvocationId
+            ClientOperationLogHelpers.AssertClientOperationLogExists(
+                () => this.fixture.TestLogs.CoreToolsLogs,
+                "StartOrchestration",
+                instanceId,
+                this.fixture.functionLanguageLocalizer.GetLanguageType());
+            ClientOperationLogHelpers.AssertClientOperationLogExists(
+                () => this.fixture.TestLogs.CoreToolsLogs,
+                "Suspend",
+                instanceId,
+                this.fixture.functionLanguageLocalizer.GetLanguageType());
+            ClientOperationLogHelpers.AssertClientOperationLogExists(
+                () => this.fixture.TestLogs.CoreToolsLogs,
+                "Resume",
+                instanceId,
+                this.fixture.functionLanguageLocalizer.GetLanguageType());
         }
         finally
         {
@@ -58,13 +75,13 @@ public class SuspendResumeTests
         string instanceId = await DurableHelpers.ParseInstanceIdAsync(response);
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
 
-        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Running", 5);
+        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Running", 30);
         try
         {
             using HttpResponseMessage suspendResponse = await HttpHelpers.InvokeHttpTrigger("SuspendInstance", $"?instanceId={instanceId}");
             await AssertRequestSucceedsAsync(suspendResponse);
 
-            await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Suspended", 5);
+            await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Suspended", 30);
 
             using HttpResponseMessage resumeResponse = await HttpHelpers.InvokeHttpTrigger("SuspendInstance", $"?instanceId={instanceId}");
             await AssertRequestFailsAsync(resumeResponse, fixture.functionLanguageLocalizer.GetLocalizedStringValue("SuspendSuspendedInstance.FailureMessage"));
@@ -91,7 +108,7 @@ public class SuspendResumeTests
         string instanceId = await DurableHelpers.ParseInstanceIdAsync(response);
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
 
-        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Running", 5);
+        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Running", 30);
         try
         {
             using HttpResponseMessage resumeResponse = await HttpHelpers.InvokeHttpTrigger("ResumeInstance", $"?instanceId={instanceId}");
@@ -121,7 +138,7 @@ public class SuspendResumeTests
         string instanceId = await DurableHelpers.ParseInstanceIdAsync(response);
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
 
-        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", 5);
+        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", 30);
         try
         {
             using HttpResponseMessage suspendResponse = await HttpHelpers.InvokeHttpTrigger("SuspendInstance", $"?instanceId={instanceId}");

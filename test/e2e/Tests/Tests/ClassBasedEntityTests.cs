@@ -32,6 +32,7 @@ public class ClassBasedEntityTests
             queryString: "?orchestrationName=ClassBasedEntityOrchestration");
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
 
+        string instanceId = await DurableHelpers.ParseInstanceIdAsync(response);
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
         await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", 30);
 
@@ -42,5 +43,12 @@ public class ClassBasedEntityTests
 
         string expectedOutput = "IConfiguration: yes, MyInjectedService: yes, BlobContainerClient: yes, Number: 42";
         Assert.Equal(expectedOutput, orchestrationDetails.Output);
+
+        // Verify that the ClientOperationReceived log was emitted with a FunctionInvocationId
+        ClientOperationLogHelpers.AssertClientOperationLogExists(
+            () => this.fixture.TestLogs.CoreToolsLogs,
+            "StartOrchestration",
+            instanceId,
+            this.fixture.functionLanguageLocalizer.GetLanguageType());
     }
 }

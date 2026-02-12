@@ -342,7 +342,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// <param name="predicate">Predicate to wait until it returns true.</param>
         /// <param name="timeout">Time to wait until predicate is true.</param>
         /// <param name="retryInterval">How frequently to test predicate. Defaults to 100 ms.</param>
-        public static async Task WaitUntilTrue(Func<bool> predicate, string conditionDescription, TimeSpan timeout, TimeSpan? retryInterval = null)
+        public static async Task WaitUntilTrue(Func<bool> predicate, string conditionDescription, TimeSpan timeout, TimeSpan? retryInterval = null, ITestOutputHelper output = null)
         {
             if (retryInterval == null)
             {
@@ -353,9 +353,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             do
             {
-                if (predicate())
+                try
                 {
-                    return;
+                    if (predicate())
+                    {
+                        return;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // This method now catches and logs exceptions thrown by the predicate.
+                    // This is to prevent tests from failing due to transient errors in the predicate evaluation,
+                    // specifically a newly-exposed race condition in RemovesNewlinesFromExceptions where the LinuxAppServiceLogger
+                    // was still buffering the log output when the predicate tried to read it, causing the equivalent of a
+                    // FileNotFound error.
+                    // Predicates that fail consistently will still fail tests, though the thrown exception type becomes TimeoutException.
+                    if (output is not null)
+                    {
+                        output.WriteLine($"Exception thrown while evaluating predicate: {ex}");
+                    }
                 }
 
                 await Task.Delay(retryInterval.Value);
