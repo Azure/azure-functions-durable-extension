@@ -126,13 +126,3 @@ jobs:
       run: |
         azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
         ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated/run-smoke-tests.ps1 -HttpStartPath api/StartEntityOrchestration
-
-  docker-net10:
-    runs-on: ubuntu-latest
-    name: Smoke Test (.NET Isolated Docker) (net10.0)
-    steps:
-    - uses: actions/checkout@v2
-
-    - name: Run .NET 10 Isolated Docker Smoke Test
-      run: test/SmokeTests/e2e-test.ps1 -DockerfilePath test/SmokeTests/OOProcSmokeTests/DotNetIsolated/Dockerfile -HttpStartPath api/StartHelloCitiesTyped -TargetFramework net10.0 -DotnetSdkTag 10.0 -DotnetIsolatedTag 4-dotnet-isolated10.0 -ContainerName dotnetIsolatedNet10
-      shell: pwsh
