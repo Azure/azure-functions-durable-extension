@@ -166,6 +166,8 @@ PublishProfiles/
 **/packages/*
 # except build/, which is used as an MSBuild target.
 !**/packages/build/
+# except .gitkeep, which ensures the directory exists for CI
+!**/packages/.gitkeep
 # Uncomment if necessary however generally it will be regenerated when needed
 #!**/packages/repositories.config
 # NuGet v3's project.json files produces more ignorable files
