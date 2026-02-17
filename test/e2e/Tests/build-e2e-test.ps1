@@ -162,6 +162,11 @@ function InstallExtensionAndBuildTestApp($testAppDir) {
 
 if (!$SkipBuild)
 {
+  Write-Host "Building WebJobs extension project"
+  dotnet build -c Debug "$WebJobsExtensionProjectDirectory\WebJobs.Extensions.DurableTask.csproj"
+
+  if ($LASTEXITCODE -ne 0) { Set-Location $PSScriptRoot; throw "WebJobs Extension build failed" }
+
   if ($E2EAppName)
   {
     InstallExtensionAndBuildTestApp (Join-Path $E2EAppParentDirectory $E2EAppName)
