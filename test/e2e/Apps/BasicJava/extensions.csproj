@@ -4,7 +4,6 @@
     <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
 	<WarningsAsErrors></WarningsAsErrors>
 	<DefaultItemExcludes>**</DefaultItemExcludes>
-	<RestoreSources>$(RestoreSources);$(MSBuildProjectDirectory)\packages;https://api.nuget.org/v3/index.json</RestoreSources>
   </PropertyGroup>
   <Target Name="PreBuild" BeforeTargets="Build;BeforeResolveReferences">
     <!-- Build and pack the source project -->
