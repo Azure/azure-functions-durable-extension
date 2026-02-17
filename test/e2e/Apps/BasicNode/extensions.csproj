@@ -10,14 +10,15 @@
     <!-- Get version from source project -->
     <MSBuild Projects="$(MSBuildProjectDirectory)/../../../../src/WebJobs.Extensions.DurableTask/WebJobs.Extensions.DurableTask.csproj" 
              Targets="GetVersion" 
-             Properties="Configuration=Release">
+             Properties="Configuration=$(Configuration)">
       <Output TaskParameter="TargetOutputs" PropertyName="DurableTaskVersion" />
     </MSBuild>
     
     <!-- Build and pack the source project -->
-    <Exec Command="dotnet build &quot;$(MSBuildProjectDirectory)/../../../../src/WebJobs.Extensions.DurableTask/WebJobs.Extensions.DurableTask.csproj&quot; --configuration Release" />
-    <Exec Command="dotnet pack &quot;$(MSBuildProjectDirectory)/../../../../src/WebJobs.Extensions.DurableTask/WebJobs.Extensions.DurableTask.csproj&quot; --configuration Release --no-build --output &quot;$(MSBuildProjectDirectory)/packages&quot;" />
-    
+    <MSBuild Projects="$(MSBuildProjectDirectory)/../../../../src/WebJobs.Extensions.DurableTask/WebJobs.Extensions.DurableTask.csproj"
+             Targets="Build;Pack"
+             Properties="Configuration=$(Configuration);PackageOutputPath=$(MSBuildProjectDirectory)/packages" />
+
     <!-- Update PackageReference version dynamically -->
     <ItemGroup>
       <PackageReference Update="Microsoft.Azure.WebJobs.Extensions.DurableTask" Version="$(DurableTaskVersion)" />
