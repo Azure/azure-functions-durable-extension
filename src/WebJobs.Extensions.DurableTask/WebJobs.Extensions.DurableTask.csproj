@@ -89,4 +89,10 @@
     </Content>
   </ItemGroup>
 
+  <Target Name="GetVersion" Returns="$(Version)">
+    <PropertyGroup>
+      <VersionOutput>$(Version)</VersionOutput>
+    </PropertyGroup>
+  </Target>
+
 </Project>
