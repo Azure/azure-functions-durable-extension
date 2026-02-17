@@ -8,8 +8,8 @@
     <RootNamespace>Microsoft.Azure.Durable.Tests.E2E</RootNamespace>
   </PropertyGroup>
     <!--For dotnet-isolated, we don't reference the WebJobs package directly so no need to update the version, just make sure the nupkg is available-->
-    <Exec Command="dotnet build &quot;$(MSBuildProjectDirectory)\..\..\..\..\src\WebJobs.Extensions.DurableTask\WebJobs.Extensions.DurableTask.csproj&quot; --configuration Release" />
-    <Exec Command="dotnet pack &quot;$(MSBuildProjectDirectory)\..\..\..\..\src\WebJobs.Extensions.DurableTask\WebJobs.Extensions.DurableTask.csproj&quot; --configuration Release --no-build --output &quot;$(MSBuildProjectDirectory)\packages&quot;" />
+    <Exec Command="dotnet build &quot;$(MSBuildProjectDirectory)/../../../../src/WebJobs.Extensions.DurableTask/WebJobs.Extensions.DurableTask.csproj&quot; --configuration Release" />
+    <Exec Command="dotnet pack &quot;$(MSBuildProjectDirectory)/../../../../src/WebJobs.Extensions.DurableTask/WebJobs.Extensions.DurableTask.csproj&quot; --configuration Release --no-build --output &quot;$(MSBuildProjectDirectory)/packages&quot;" />
   </Target>
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
