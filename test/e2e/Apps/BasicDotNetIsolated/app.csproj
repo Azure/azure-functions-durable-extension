@@ -7,7 +7,7 @@
     <Nullable>enable</Nullable>
     <RootNamespace>Microsoft.Azure.Durable.Tests.E2E</RootNamespace>
   </PropertyGroup>
-  <Target>
+  <Target Name="PreBuild" BeforeTargets="Build;BeforeResolveReferences">
     <!--For dotnet-isolated, we don't reference the WebJobs package directly so no need to update the version, just make sure the nupkg is available-->
     <MSBuild Projects="$(MSBuildProjectDirectory)/../../../../src/WebJobs.Extensions.DurableTask/WebJobs.Extensions.DurableTask.csproj"
              Targets="Build;Pack"
