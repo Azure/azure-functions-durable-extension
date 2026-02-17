@@ -7,22 +7,10 @@
 	<RestoreSources>$(RestoreSources);$(MSBuildProjectDirectory)\packages;https://api.nuget.org/v3/index.json</RestoreSources>
   </PropertyGroup>
   <Target Name="PreBuild" BeforeTargets="Build;BeforeResolveReferences">
-    <!-- Get version from source project -->
-    <MSBuild Projects="$(MSBuildProjectDirectory)/../../../../src/WebJobs.Extensions.DurableTask/WebJobs.Extensions.DurableTask.csproj" 
-             Targets="GetVersion" 
-             Properties="Configuration=$(Configuration)">
-      <Output TaskParameter="TargetOutputs" PropertyName="DurableTaskVersion" />
-    </MSBuild>
-    
     <!-- Build and pack the source project -->
     <MSBuild Projects="$(MSBuildProjectDirectory)/../../../../src/WebJobs.Extensions.DurableTask/WebJobs.Extensions.DurableTask.csproj"
              Targets="Build;Pack"
              Properties="Configuration=$(Configuration);PackageOutputPath=$(MSBuildProjectDirectory)/packages" />
-
-    <!-- Update PackageReference version dynamically -->
-    <ItemGroup>
-      <PackageReference Update="Microsoft.Azure.WebJobs.Extensions.DurableTask" Version="$(DurableTaskVersion)" />
-    </ItemGroup>
   </Target>
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
     <Move SourceFiles="$(OutDir)/extensions.deps.json" DestinationFiles="$(OutDir)/function.deps.json" />
@@ -30,10 +18,11 @@
   <ItemGroup>
     <!-- This reference will be dynamically updated by build-e2e-tests.ps1 as part of test setup. -->
     <!-- Do not commit changes to this line unless necessary -->
-    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask" Version="3.4.1" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Script.ExtensionsMetadataGenerator" Version="1.1.3" />
     <PackageReference Include="Microsoft.DurableTask.SqlServer.AzureFunctions" Version="1.5.1" />
     <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.2" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureManaged" Version="0.4.2-alpha" />
+
+    <ProjectReference Include="..\..\..\..\src\WebJobs.Extensions.DurableTask\WebJobs.Extensions.DurableTask.csproj" />
   </ItemGroup>
 </Project>

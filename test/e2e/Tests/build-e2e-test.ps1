@@ -117,67 +117,40 @@ else
 }
 
 function InstallExtensionAndBuildTestApp($testAppDir) {
-    Write-Host "Removing old packages from test app $testAppDir"
-
-    $AppPackageLocation = Join-Path $testAppDir 'packages'
-    if (!(Test-Path $AppPackageLocation)) {
-      New-Item -Path $AppPackageLocation -ItemType Directory -ErrorAction SilentlyContinue
-    }
-    $AppPackageLocation = Resolve-Path $AppPackageLocation
-    Get-ChildItem -Path $AppPackageLocation -Include * -File -Recurse | ForEach-Object { $_.Delete()}
-    
-    Write-Host "Moving nupkg from WebJobs extension to $AppPackageLocation"
-    Set-Location $BuildOutputLocation
-    dotnet nuget push *.nupkg --source $AppPackageLocation
-    
-    Write-Host "Updating app .csproj to reference built package versions"
+    Write-Host "Building test app $testAppDir"
     Set-Location $testAppDir
-    $files = Get-ChildItem -Path ./packages -Include * -File -Recurse
-    $files | ForEach-Object {
-      if ($_.Name -match 'Microsoft.Azure.WebJobs.Extensions.DurableTask')
-      {
-        $webJobsExtensionVersion = $_.Name -replace 'Microsoft.Azure.WebJobs.Extensions.DurableTask\.|\.nupkg'
-    
-        Write-Host "Removing cached version $webJobsExtensionVersion of WebJobs extension from nuget cache, if exists"
-        $cachedVersionFolders = Get-ChildItem -Path (Join-Path $LocalNugetCacheDirectory "microsoft.azure.webjobs.extensions.durabletask") -Directory -ErrorAction Continue
-        $cachedVersionFolders | ForEach-Object {
-          if ($_.Name -eq $webJobsExtensionVersion)
-          {
-            Write-Host "Removing cached version $webJobsExtensionVersion from nuget cache"
-            Remove-Item -Recurse -Force $_.FullName -ErrorAction Stop
-          }
-        }
 
-        if (!(Test-Path ".\app.csproj")) {
-          Write-Host "Updating extensions.csproj to reference WebJobs extension version $webJobsExtensionVersion"
-          
-          dotnet add 'extensions.csproj' package 'Microsoft.Azure.WebJobs.Extensions.DurableTask' --version $webJobsExtensionVersion --source ".\packages" --no-restore
+    Write-Host "Removing cached WebJobs extension versions from nuget cache, if exists"
+    $cachedVersionFolders = Get-ChildItem -Path (Join-Path $LocalNugetCacheDirectory "microsoft.azure.webjobs.extensions.durabletask") -Directory -ErrorAction Continue
+    $cachedVersionFolders | ForEach-Object {
+      Write-Host "Removing cached version $($_.Name) from nuget cache"
+      Remove-Item -Recurse -Force $_.FullName -ErrorAction Stop
+    }
 
-          Write-Host "Syncing extensions"
-          if ((Test-Path (Join-Path $FUNC_CLI_DIRECTORY "func")) -or (Test-Path (Join-Path $FUNC_CLI_DIRECTORY "func.exe"))) {
-            .(Join-Path $FUNC_CLI_DIRECTORY "func") extensions sync
-          }
-          else {
-            Write-Warning "func command not found. Skipping extensions sync."
-          }
-        }
-
-        if (Test-Path ".\requirements.txt") {
-          python -m pip install -r requirements.txt
-        }
-
-        if (Test-Path ".\package-lock.json") {
-          Write-Host "Installing npm packages"
-          npm install
-          npm run clean
-          npm run build
-        }
-
-        if (Test-Path ".\pom.xml") {
-          Write-Host "Building Java project"
-          mvn clean package -q
-        }
+    if (!(Test-Path ".\app.csproj")) {
+      Write-Host "Syncing extensions"
+      if ((Test-Path (Join-Path $FUNC_CLI_DIRECTORY "func")) -or (Test-Path (Join-Path $FUNC_CLI_DIRECTORY "func.exe"))) {
+        .(Join-Path $FUNC_CLI_DIRECTORY "func") extensions sync
       }
+      else {
+        Write-Warning "func command not found. Skipping extensions sync."
+      }
+    }
+
+    if (Test-Path ".\requirements.txt") {
+      python -m pip install -r requirements.txt
+    }
+
+    if (Test-Path ".\package-lock.json") {
+      Write-Host "Installing npm packages"
+      npm install
+      npm run clean
+      npm run build
+    }
+
+    if (Test-Path ".\pom.xml") {
+      Write-Host "Building Java project"
+      mvn clean package -q
     }
     
     if (Test-Path ".\app.csproj") {
@@ -190,14 +163,7 @@ function InstallExtensionAndBuildTestApp($testAppDir) {
 if (!$SkipBuild)
 {
   Write-Host "Building WebJobs extension project"
-  
-  $BuildOutputLocation = Join-Path $WebJobsExtensionProjectDirectory 'out'
-  if (!(Test-Path $BuildOutputLocation)) {
-    New-Item -Path $BuildOutputLocation -ItemType Directory -ErrorAction SilentlyContinue
-  }
-  $BuildOutputLocation = Resolve-Path $BuildOutputLocation
-  Get-ChildItem -Path $BuildOutputLocation -Include * -File -Recurse | ForEach-Object { $_.Delete()}
-  dotnet build -c Debug "$WebJobsExtensionProjectDirectory\WebJobs.Extensions.DurableTask.csproj" --output $BuildOutputLocation
+  dotnet build -c Debug "$WebJobsExtensionProjectDirectory\WebJobs.Extensions.DurableTask.csproj"
 
   if ($LASTEXITCODE -ne 0) { Set-Location $PSScriptRoot; throw "WebJobs Extension build failed" }
 
