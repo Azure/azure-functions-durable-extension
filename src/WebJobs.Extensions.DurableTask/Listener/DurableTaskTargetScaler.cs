@@ -53,10 +53,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 double activityWorkers = Math.Ceiling(workItemQueueLength / (double)this.MaxConcurrentActivities);
 
                 var serializedControlQueueLengths = metrics.ControlQueueLengths;
-                var controlQueueLengths = JsonConvert.DeserializeObject<IReadOnlyList<int>>(serializedControlQueueLengths);
+                IReadOnlyList<int>? controlQueueLengths = null;
+                if (!string.IsNullOrEmpty(serializedControlQueueLengths))
+                {
+                    controlQueueLengths = JsonConvert.DeserializeObject<IReadOnlyList<int>>(serializedControlQueueLengths);
+                }
 
-                var controlQueueMessages = controlQueueLengths!.Sum();
-                var activeControlQueues = controlQueueLengths!.Count(x => x > 0);
+                var controlQueueMessages = controlQueueLengths?.Sum() ?? 0;
+                var activeControlQueues = controlQueueLengths?.Count(x => x > 0) ?? 0;
 
                 // compute orchestratorWorkers: the number of workers we need to process all orchestrator messages.
                 // We bound this result to be no larger than the partition count
