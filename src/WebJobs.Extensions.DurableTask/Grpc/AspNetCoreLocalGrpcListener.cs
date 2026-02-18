@@ -22,6 +22,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Grpc
     {
         private const string HostName = "127.0.0.1";
         private readonly DurableTaskExtension extension;
+        private readonly SemaphoreSlim startLock = new SemaphoreSlim(1, 1);
         private IHost? host;
 
         public AspNetCoreLocalGrpcListener(DurableTaskExtension extension)
@@ -33,12 +34,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Grpc
 
         public async Task StartAsync(CancellationToken cancellationToken)
         {
-            // Prevent double-start: if already started, return immediately
+            // Fast check: if already started, return immediately
             if (this.host != null)
             {
                 return;
             }
 
+            await this.startLock.WaitAsync(cancellationToken);
+            try
+            {
+                // Double-check after acquiring the lock
+                if (this.host != null)
+                {
+                    return;
+                }
+
+                await this.StartInternalAsync(cancellationToken);
+            }
+            finally
+            {
+                this.startLock.Release();
+            }
+        }
+
+        private async Task StartInternalAsync(CancellationToken cancellationToken)
+        {
             int port = GetFreeTcpPort();
             this.host = new HostBuilder().ConfigureWebHost(
                 builder =>
