@@ -7,6 +7,12 @@
     <Nullable>enable</Nullable>
     <RootNamespace>Microsoft.Azure.Durable.Tests.E2E</RootNamespace>
   </PropertyGroup>
+  <Target Name="PreBuild" BeforeTargets="Build;BeforeResolveReferences">
+    <!-- Build and pack the source project -->
+    <MSBuild Projects="$(MSBuildProjectDirectory)/../../../../src/WebJobs.Extensions.DurableTask/WebJobs.Extensions.DurableTask.csproj"
+             Targets="Build;Pack"
+             Properties="Configuration=$(Configuration);PackageOutputPath=$(MSBuildProjectDirectory)/packages" />
+  </Target>
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker" />
