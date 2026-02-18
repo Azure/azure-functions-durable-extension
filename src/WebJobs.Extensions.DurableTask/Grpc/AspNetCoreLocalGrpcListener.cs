@@ -33,6 +33,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Grpc
 
         public async Task StartAsync(CancellationToken cancellationToken)
         {
+            // Prevent double-start: if already started, return immediately
+            if (this.host != null)
+            {
+                return;
+            }
+
             int port = GetFreeTcpPort();
             this.host = new HostBuilder().ConfigureWebHost(
                 builder =>
