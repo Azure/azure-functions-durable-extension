@@ -27,8 +27,6 @@ namespace TodoApi
 
             services.AddControllers();
 
-            services.AddEndpointsApiExplorer();
-
             services.AddDbContext<TodoContext>(options => options.UseInMemoryDatabase("TodoList"));
         }
 
