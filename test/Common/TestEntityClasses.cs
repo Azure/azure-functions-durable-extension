@@ -566,7 +566,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             // Use the entity key to avoid blob name collisions when tests run in parallel
             // (e.g. multi-targeted net8.0 and net10.0 test runs against the same Azurite instance).
-            private static string BlobName => $"counter-{Entity.Current.EntityKey}";
+            private static string BlobName => $"counter-{Entity.Current.EntityKey ?? throw new InvalidOperationException("EntityKey is not available in the current context.")}";
 
             [JsonProperty("value")]
             public int Value { get; set; }
