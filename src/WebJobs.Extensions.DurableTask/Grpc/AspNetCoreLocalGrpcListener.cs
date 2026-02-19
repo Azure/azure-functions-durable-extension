@@ -44,12 +44,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Grpc
             try
             {
                 // Double-check after acquiring the lock
-                if (this.host != null)
+                if (this.host == null)
                 {
-                    return;
+                    await this.StartInternalAsync(cancellationToken);
                 }
-
-                await this.StartInternalAsync(cancellationToken);
             }
             finally
             {
