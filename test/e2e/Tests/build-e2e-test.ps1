@@ -179,10 +179,6 @@ if (!$SkipBuild)
 
   if ($LASTEXITCODE -ne 0) { Set-Location $PSScriptRoot; throw "WebJobs Extension build failed" }
 
-  # The nupkg is generated in bin/Debug/ by GeneratePackageOnBuild
-  $BuildOutputLocation = Join-Path $WebJobsExtensionProjectDirectory 'bin' 'Debug'
-  $BuildOutputLocation = Resolve-Path $BuildOutputLocation
-
   if ($E2EAppName)
   {
     InstallExtensionAndBuildTestApp (Join-Path $E2EAppParentDirectory $E2EAppName)
