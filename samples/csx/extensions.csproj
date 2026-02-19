@@ -12,6 +12,6 @@
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.Storage" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.Twilio" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Script.ExtensionsMetadataGenerator" />
-    <PackageReference Include="System.IdentityModel.Tokens.Jwt" VersionOverride="5.7.0" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="5.7.0" />
   </ItemGroup>
 </Project>
