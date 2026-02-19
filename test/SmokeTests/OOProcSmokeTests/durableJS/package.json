@@ -11,5 +11,8 @@
     "durable-functions": "^3.3.0"
   },
   "main": "src/{index.js,functions/*.js}",
-  "devDependencies": {}
+  "devDependencies": {},
+  "overrides": {
+    "lodash": "4.17.23"
+  }
 }
