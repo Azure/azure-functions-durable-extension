@@ -1,6 +1,8 @@
 // Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+#nullable enable
+
 using System;
 using System.Collections.Concurrent;
 using System.Linq;
@@ -63,16 +65,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             int taskCount = 10;
 
             // Act
+            var listenAddresses = new ConcurrentBag<string?>();
             var tasks = Enumerable.Range(0, taskCount)
-                .Select(_ => listener.StartAsync(default))
+                .Select(async _ =>
+                {
+                    await listener.StartAsync(default);
+
+                    // Each caller should see a valid ListenAddress after StartAsync returns
+                    listenAddresses.Add(listener.ListenAddress);
+                })
                 .ToArray();
 
             await Task.WhenAll(tasks);
 
-            // Assert
-            Assert.NotNull(listener.ListenAddress);
-            Assert.True(Uri.TryCreate(listener.ListenAddress, UriKind.Absolute, out Uri uri));
-            Assert.True(uri.IsLoopback);
+            // Assert: every concurrent caller observed a valid address after StartAsync returned
+            Assert.Equal(taskCount, listenAddresses.Count);
+            Assert.All(listenAddresses, addr =>
+            {
+                Assert.NotNull(addr);
+                Assert.True(Uri.TryCreate(addr, UriKind.Absolute, out Uri? uri));
+                Assert.True(uri!.IsLoopback);
+            });
 
             // Cleanup
             await listener.StopAsync(default);

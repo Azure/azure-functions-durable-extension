@@ -58,7 +58,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Grpc
         private async Task StartInternalAsync(CancellationToken cancellationToken)
         {
             int port = GetFreeTcpPort();
-            this.host = new HostBuilder().ConfigureWebHost(
+            IHost newHost = new HostBuilder().ConfigureWebHost(
                 builder =>
                 {
                     builder.UseKestrel(o => o.Listen(
@@ -92,10 +92,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Grpc
                 })
                 .Build();
 
-            await this.host.StartAsync(cancellationToken);
+            await newHost.StartAsync(cancellationToken);
 
             // Get the actual address we've started on.
-            IServer? server = this.host.Services.GetService<IServer>();
+            IServer? server = newHost.Services.GetService<IServer>();
             IServerAddressesFeature? addressFeature = server?.Features.Get<IServerAddressesFeature>();
             this.ListenAddress = addressFeature?.Addresses.SingleOrDefault();
 
@@ -115,6 +115,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Grpc
                 functionName: string.Empty,
                 message: $"Opened local gRPC endpoint: {this.ListenAddress} (Mode=AspNetCore)",
                 writeToUserLogs: true);
+
+            // Assign only after fully started so the fast-path check in StartAsync
+            // doesn't let concurrent callers return before initialization is complete.
+            this.host = newHost;
         }
 
         public Task StopAsync(CancellationToken cancellationToken)
