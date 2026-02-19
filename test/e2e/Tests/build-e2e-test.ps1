@@ -139,17 +139,6 @@ function InstallExtensionAndBuildTestApp($testAppDir) {
       else {
         Write-Warning "func command not found. Skipping extensions sync."
       }
-
-      # Update extensions.csproj target framework AFTER sync (sync may regenerate the file)
-      # Then explicitly build to ensure the extension is compiled for the correct TFM
-      if ($TargetFramework -and (Test-Path ".\extensions.csproj")) {
-        Write-Host "Updating extensions.csproj to target $TargetFramework"
-        $content = Get-Content ".\extensions.csproj" -Raw
-        $content = $content -replace '<TargetFramework>[^<]+</TargetFramework>', "<TargetFramework>$TargetFramework</TargetFramework>"
-        Set-Content ".\extensions.csproj" -Value $content
-        Write-Host "Building extensions.csproj for $TargetFramework"
-        dotnet build extensions.csproj
-      }
     }
 
     if (Test-Path ".\requirements.txt") {
