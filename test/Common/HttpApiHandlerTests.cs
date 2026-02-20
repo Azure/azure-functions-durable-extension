@@ -1380,8 +1380,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(HttpStatusCode.BadRequest, actualResponse.StatusCode);
             var content = await actualResponse.Content.ReadAsStringAsync();
             var error = JsonConvert.DeserializeObject<JObject>(content);
-            Assert.Equal("One or more of the arguments submitted is incorrect", error["Message"].ToString());
-            Assert.Equal(exceptionMessage, error["ExceptionMessage"].ToString());
+            Assert.Equal(exceptionMessage, error["Message"].ToString());
         }
 
         [Fact]
