@@ -557,14 +557,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [JsonObject(MemberSerialization = MemberSerialization.OptIn)]
         public class StorageBackedCounter : IAsyncCounter
         {
-            private const string BlobName = "counter";
-
             private readonly BlobContainerClient blobContainer;
 
             public StorageBackedCounter(BlobContainerClient blobContainer)
             {
                 this.blobContainer = blobContainer;
             }
+
+            // Use the entity key to avoid blob name collisions when tests run in parallel
+            // (e.g. multi-targeted net8.0 and net10.0 test runs against the same Azurite instance).
+            private static string BlobName => $"counter-{Entity.Current.EntityKey ?? throw new InvalidOperationException("EntityKey is not available in the current context.")}";
 
             [JsonProperty("value")]
             public int Value { get; set; }
