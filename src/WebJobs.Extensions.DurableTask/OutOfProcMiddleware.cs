@@ -20,6 +20,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     internal class OutOfProcMiddleware
     {
+        private const string NoProcessAssociatedMessage = "No process is associated";
+
         private readonly DurableTaskExtension extension;
 
         public OutOfProcMiddleware(DurableTaskExtension extension)
@@ -181,7 +183,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 // - a worker process exit
                 if (functionResult.Exception is Host.FunctionTimeoutException
                     || functionResult.Exception?.InnerException is SessionAbortedException // see RemoteOrchestrationContext.TrySetResultInternal for details on OOM-handling
-                    || (functionResult.Exception?.InnerException?.GetType().ToString().Contains("WorkerProcessExitException") ?? false))
+                    || (functionResult.Exception?.InnerException?.GetType().ToString().Contains("WorkerProcessExitException") ?? false)
+                    || (functionResult.Exception?.InnerException is InvalidOperationException ioe
+                        && ioe.Message.Contains(NoProcessAssociatedMessage)))
                 {
                     // TODO: the `WorkerProcessExitException` type is not exposed in our dependencies, it's part of WebJobs.Host.Script.
                     // Should we add that dependency or should it be exposed in WebJobs.Host?
@@ -411,6 +415,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     // Shutdown can surface as a completed invocation in a failed state.
                     // Re-throw so we can abort this invocation.
                     this.HostLifetimeService.OnStopping.ThrowIfCancellationRequested();
+                }
+
+                // we abort the invocation on "platform level errors" such as:
+                // - a timeout
+                // - an out of memory exception
+                // - a worker process exit
+                if (functionResult.Exception is Host.FunctionTimeoutException
+                    || functionResult.Exception?.InnerException is SessionAbortedException
+                    || (functionResult.Exception?.InnerException?.GetType().ToString().Contains("WorkerProcessExitException") ?? false)
+                    || (functionResult.Exception?.InnerException is InvalidOperationException ioe
+                        && ioe.Message.Contains(NoProcessAssociatedMessage)))
+                {
+                    throw functionResult.Exception;
                 }
             }
             catch (Exception hostRuntimeException)
