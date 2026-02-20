@@ -3,7 +3,6 @@
 
 ARG DOTNET_SDK_TAG=10.0
 ARG TARGET_FRAMEWORK=net8.0
-ARG DOTNET_INPROC_TAG=4-dotnet8.0
 FROM mcr.microsoft.com/dotnet/sdk:${DOTNET_SDK_TAG} AS build-env
 ARG TARGET_FRAMEWORK
 
@@ -14,7 +13,7 @@ RUN cd /root/test/SmokeTests/BackendSmokeTests/MSSQL && \
     dotnet publish -c Release -f $TARGET_FRAMEWORK --output /home/site/wwwroot
 
 # Deploy the app
-FROM mcr.microsoft.com/azure-functions/dotnet:${DOTNET_INPROC_TAG}
+FROM mcr.microsoft.com/azure-functions/dotnet:4-dotnet8
 ENV AzureWebJobsScriptRoot=/home/site/wwwroot \
     AzureFunctionsJobHost__Logging__Console__IsEnabled=true
 COPY --from=build-env ["/home/site/wwwroot", "/home/site/wwwroot"]
