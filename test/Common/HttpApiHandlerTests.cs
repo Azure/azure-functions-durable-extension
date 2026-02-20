@@ -1150,7 +1150,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task RestartInstance_Returns_HTTP_400_On_Invalid_Existing_Instance()
+        public async Task RestartInstance_Returns_HTTP_409_On_Invalid_Existing_Instance()
         {
             string testBadInstanceId = Guid.NewGuid().ToString("N");
 
@@ -1171,7 +1171,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);
             var actualResponse = await httpApiHandler.HandleRequestAsync(testRequest, CancellationToken.None);
 
-            Assert.Equal(HttpStatusCode.BadRequest, actualResponse.StatusCode);
+            Assert.Equal(HttpStatusCode.Conflict, actualResponse.StatusCode);
             var content = await actualResponse.Content.ReadAsStringAsync();
             var error = JsonConvert.DeserializeObject<JObject>(content);
             Assert.Equal("A non-terminal instance with this instance ID already exists.", error["Message"].ToString());

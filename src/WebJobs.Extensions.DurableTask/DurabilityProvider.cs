@@ -11,7 +11,6 @@ using DurableTask.Core.Entities;
 using DurableTask.Core.Exceptions;
 using DurableTask.Core.History;
 using DurableTask.Core.Query;
-using Grpc.Core;
 using Microsoft.Azure.WebJobs.Host.Scale;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
