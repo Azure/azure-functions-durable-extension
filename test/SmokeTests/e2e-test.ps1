@@ -7,6 +7,7 @@ param(
 	[string]$TargetFramework=$null,
 	[string]$DotnetSdkTag=$null,
 	[string]$DotnetIsolatedTag=$null,
+	[string]$DotnetInprocTag=$null,
 	[string]$ImageName="dfapp",
 	[string]$ContainerName="app",
 	[switch]$NoSetup=$false,
@@ -90,6 +91,10 @@ if ($NoSetup -eq $false) {
 	if ($DotnetIsolatedTag) {
 		$buildArgs += "--build-arg"
 		$buildArgs += "DOTNET_ISOLATED_TAG=$DotnetIsolatedTag"
+	}
+	if ($DotnetInprocTag) {
+		$buildArgs += "--build-arg"
+		$buildArgs += "DOTNET_INPROC_TAG=$DotnetInprocTag"
 	}
 	docker build --pull -f $DockerfilePath -t $ImageName --progress plain @buildArgs $PSScriptRoot/../../
 	Exit-OnError
