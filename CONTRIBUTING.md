@@ -7,13 +7,16 @@
 ## Pre-reqs
 
  - OS
-    - Windows 10 (suggested)
+    - Windows 10 or later (suggested)
  - Language runtimes
-    - .NET Core 2.0
+    - [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) (version **10.0.102** or later, as specified in [`global.json`](./global.json))
+    - The .NET 10 SDK is required because the project multi-targets `net8.0` and `net10.0`. The .NET 10 SDK can build for all earlier target frameworks, but the .NET 8 SDK cannot build `net10.0` targets.
+    - The `rollForward` policy in `global.json` is set to `latestFeature`, so any 10.0.1xx SDK version will work
+    - You can verify your installed SDK version by running `dotnet --version`
  - Editor
-    - Visual Studio 2017 (recommended)
+    - Visual Studio 2022 (recommended) or Visual Studio Code
  - Misc tools (suggested)
-    - [Azure Storage Emulator](https://docs.microsoft.com/azure/storage/storage-use-emulator) or real Azure Storage Account
+    - [Azurite](https://learn.microsoft.com/azure/storage/common/storage-use-azurite) or real Azure Storage Account
 
 
 ## Change flow
