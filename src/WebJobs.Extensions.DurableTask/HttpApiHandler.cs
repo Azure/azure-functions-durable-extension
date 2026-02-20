@@ -1081,7 +1081,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             catch (OrchestrationAlreadyExistsException e)
             {
-                return request.CreateErrorResponse(HttpStatusCode.BadRequest, "A non-terminal instance with this instance ID already exists.", e);
+                return request.CreateErrorResponse(HttpStatusCode.Conflict, "A non-terminal instance with this instance ID already exists.", e);
             }
             catch (JsonReaderException e)
             {

@@ -11,6 +11,7 @@ using DurableTask.Core.Entities;
 using DurableTask.Core.Exceptions;
 using DurableTask.Core.History;
 using DurableTask.Core.Query;
+using Grpc.Core;
 using Microsoft.Azure.WebJobs.Host.Scale;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -430,10 +431,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// to be reusable. In this case, an existing orchestration with that running status would be terminated, but the creation of the new orchestration
         /// would immediately fail due to the existing orchestration now having status <see cref="OrchestrationStatus.Terminated"/>.
         /// </exception>
-        public Task CreateTaskOrchestrationAsync(TaskMessage creationMessage, OrchestrationStatus[] dedupeStatuses)
+        public async Task CreateTaskOrchestrationAsync(TaskMessage creationMessage, OrchestrationStatus[] dedupeStatuses)
         {
             using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(this.orchestrationCreationRequestTimeoutInSeconds));
-            return this.CreateTaskOrchestrationAsync(creationMessage, dedupeStatuses, timeoutCts.Token);
+            await this.CreateTaskOrchestrationAsync(creationMessage, dedupeStatuses, timeoutCts.Token);
         }
 
         /// <summary>
@@ -732,12 +733,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         // Check for cancellation before attempting to terminate the orchestration
                         cancellationToken.ThrowIfCancellationRequested();
 
-                        await this.ForceTerminateTaskOrchestrationAsync(
-                            instanceId,
-                            $"A new instance creation request has been issued for instance {instanceId} which currently has status " +
-                            $"{orchestrationState.OrchestrationStatus}. Since the dedupe statuses of the creation request, " +
-                            $"{(dedupeStatuses == null ? "[]" : string.Join(", ", dedupeStatuses))}, do not contain the orchestration's " +
-                            $"status, the orchestration has been terminated and a new instance with the same instance ID will be created.");
+                        string dedupeStatusesDescription = dedupeStatuses == null
+                            ? "null (all statuses reusable)"
+                            : dedupeStatuses.Length == 0
+                                ? "[] (all statuses reusable)"
+                                : $"[{string.Join(", ", dedupeStatuses)}]";
+
+                        string terminationReason = $"A new instance creation request has been issued for instance {instanceId} which " +
+                            $"currently has status {orchestrationState.OrchestrationStatus}. Since the dedupe statuses of the creation request, " +
+                            $"{dedupeStatusesDescription}, do not contain the orchestration's status, the orchestration has been terminated " +
+                            $"and a new instance with the same instance ID will be created.";
+
+                        await this.ForceTerminateTaskOrchestrationAsync(instanceId, terminationReason);
 
                         await this.WaitForOrchestrationAsync(
                             instanceId,

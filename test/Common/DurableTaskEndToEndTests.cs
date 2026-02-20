@@ -6169,7 +6169,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 TestDurableClient client;
                 client = await host.StartOrchestratorAsync(
-                    terminalStatus == OrchestrationRuntimeStatus.Failed 
+                    terminalStatus == OrchestrationRuntimeStatus.Failed
                         ? nameof(TestOrchestrations.ThrowOrchestrator) : nameof(TestOrchestrations.Counter),
                     terminalStatus == OrchestrationRuntimeStatus.Failed ? string.Empty : initialValue,
                     this.output,
