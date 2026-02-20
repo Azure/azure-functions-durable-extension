@@ -79,6 +79,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.NotNull(result);
         }
 
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task CallEntityAsync_DifferentInvalidOperationException_DoesNotThrowSessionAbortedException()
+        {
+            // Arrange: a different InvalidOperationException message should NOT trigger the retry path
+            var innerException = new InvalidOperationException("The internal function invoker returned a task that does not support return values!");
+            var outerException = new Exception("Function invocation failed.", innerException);
+
+            var (middleware, dispatchContext) = this.SetupEntityTest(outerException);
+
+            // Act: should NOT throw SessionAbortedException — instead the entity should be marked as failed
+            await middleware.CallEntityAsync(dispatchContext, () => Task.CompletedTask);
+
+            // Assert: the middleware should have set a failure result on the dispatch context
+            var result = dispatchContext.GetProperty<EntityBatchResult>();
+            Assert.NotNull(result);
+        }
+
         private (OutOfProcMiddleware middleware, DispatchMiddlewareContext context) SetupOrchestratorTest(Exception executorException)
         {
             var (middleware, dispatchContext) = this.CreateMiddleware(executorException, "TestOrchestrator", isEntity: false);
