@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
     <AzureFunctionsVersion>v4</AzureFunctionsVersion>
   </PropertyGroup>
 
@@ -12,7 +12,7 @@
     <PackageReference Include="Microsoft.NET.Sdk.Functions" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.Twilio" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.Storage" />
-    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="5.7.0" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" />
   </ItemGroup>
 
   <ItemGroup>
