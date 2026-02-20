@@ -18,19 +18,11 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Moq;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
     public class OutOfProcMiddlewareTests
     {
-        private readonly ITestOutputHelper output;
-
-        public OutOfProcMiddlewareTests(ITestOutputHelper output)
-        {
-            this.output = output;
-        }
-
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task CallOrchestratorAsync_WorkerProcessGone_ThrowsSessionAbortedException()
@@ -189,6 +181,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 binder: null,
                 new[] { typeof(bool), typeof(bool) },
                 modifiers: null);
+            Assert.NotNull(ctor);
             return (WorkItemMetadata)ctor.Invoke(new object[] { isExtendedSession, includeState });
         }
     }
