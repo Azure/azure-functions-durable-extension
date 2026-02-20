@@ -17,7 +17,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - name: Run V4 Python 3.11 Smoke Test
       run: test/SmokeTests/e2e-test.ps1 -DockerfilePath test/SmokeTests/OOProcSmokeTests/durablePy/Dockerfile -HttpStartPath api/DurableFunctionsHttpStart -TargetFramework net8.0 -DotnetSdkTag 10.0 -ContainerName pyApp -TestWithCustomInstanceId
       shell: pwsh

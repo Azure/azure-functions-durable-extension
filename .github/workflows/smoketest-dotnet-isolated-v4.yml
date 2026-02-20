@@ -25,7 +25,7 @@ jobs:
       matrix:
         targetFramework: [net8.0, net10.0]
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
 
     # Install .NET versions
     - name: Set up .NET Core 3.1
