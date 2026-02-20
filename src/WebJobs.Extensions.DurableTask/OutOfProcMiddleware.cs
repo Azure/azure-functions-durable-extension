@@ -477,7 +477,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         errorType: "FunctionInvocationFailed",
                         errorMessage: $"Invocation of function '{functionName}' failed with an exception.",
                         stackTrace: null,
-                        innerFailure: new FailureDetails(functionResult.Exception),
+                        innerFailure: functionResult.Exception != null ? new FailureDetails(functionResult.Exception) : null,
                         isNonRetriable: true));
                 }
 
