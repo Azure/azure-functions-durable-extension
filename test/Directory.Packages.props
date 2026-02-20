@@ -10,10 +10,10 @@
     <PackageVersion Include="coverlet.collector" Version="6.0.0" />
     <PackageVersion Include="FluentAssertions" Version="4.19.4" />
     <PackageVersion Include="Microsoft.Azure.WebJobs.Logging.ApplicationInsights" Version="3.0.41" />
-    <PackageVersion Include="Microsoft.Build" Version="17.3.2" />
-    <PackageVersion Include="Microsoft.Build.Framework" Version="17.3.2" />
+    <PackageVersion Include="Microsoft.Build" Version="17.8.29" />
+    <PackageVersion Include="Microsoft.Build.Framework" Version="17.8.29" />
     <PackageVersion Include="Microsoft.Build.Locator" Version="1.4.1" />
-    <PackageVersion Include="Microsoft.Build.Tasks.Core" Version="17.3.2" />
+    <PackageVersion Include="Microsoft.Build.Tasks.Core" Version="17.8.29" />
     <PackageVersion Include="Microsoft.CodeAnalysis" Version="3.9.0" />
     <PackageVersion Include="Microsoft.CodeAnalysis.Workspaces.MSBuild" Version="3.9.0" />
     <PackageVersion Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="2.0.65" />
@@ -32,7 +32,8 @@
     <PackageVersion Update="Azure.Identity" Version="1.17.1" />
     <PackageVersion Update="Microsoft.Bcl.AsyncInterfaces" Version="10.0.1"/>
     <PackageVersion Update="Microsoft.Extensions.Azure" Version="1.10.0" />
-    <PackageVersion Update="System.Drawing.Common" Version="6.0.0" />
+    <PackageVersion Update="System.Drawing.Common" Version="7.0.0" />
+    <PackageVersion Update="System.Formats.Asn1" Version="8.0.1" />
     <PackageVersion Update="System.Text.Json" Version="10.0.0" />
   </ItemGroup>
 
