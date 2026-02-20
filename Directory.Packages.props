@@ -52,7 +52,7 @@
 
   <!-- Dependencies used by both tests and samples -->
   <ItemGroup>
-    <PackageVersion Include="Microsoft.ApplicationInsights.WorkerService" Version="2.22.0" />
+    <PackageVersion Include="Microsoft.ApplicationInsights.WorkerService" Version="2.23.0" />
     <PackageVersion Include="Microsoft.Azure.DurableTask.Emulator" Version="2.5.4" />
     <PackageVersion Include="Microsoft.Azure.DurableTask.Netherite.AzureFunctions" Version="3.1.0" />
     <PackageVersion Include="Microsoft.Azure.DurableTask.Redis" Version="0.1.9-alpha" />
