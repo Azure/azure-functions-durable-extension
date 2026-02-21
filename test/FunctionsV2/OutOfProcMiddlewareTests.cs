@@ -89,9 +89,43 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.NotNull(result);
         }
 
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task CallActivityAsync_WorkerProcessGone_ThrowsSessionAbortedException()
+        {
+            // Arrange: simulate "No process is associated with this object" as the InnerException
+            var innerException = new InvalidOperationException("No process is associated with this object.");
+            var outerException = new Exception("Function invocation failed.", innerException);
+
+            var (middleware, dispatchContext) = this.SetupActivityTest(outerException);
+
+            // Act & Assert
+            await Assert.ThrowsAsync<SessionAbortedException>(
+                () => middleware.CallActivityAsync(dispatchContext, () => Task.CompletedTask));
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task CallActivityAsync_DifferentInvalidOperationException_DoesNotThrowSessionAbortedException()
+        {
+            // Arrange: a different InvalidOperationException message should NOT trigger the retry path
+            var innerException = new InvalidOperationException("The internal function invoker returned a task that does not support return values!");
+            var outerException = new Exception("Function invocation failed.", innerException);
+
+            var (middleware, dispatchContext) = this.SetupActivityTest(outerException);
+
+            // Act: should NOT throw SessionAbortedException — instead the activity should be marked as failed
+            await middleware.CallActivityAsync(dispatchContext, () => Task.CompletedTask);
+
+            // Assert: the middleware should have set a failure result on the dispatch context
+            var result = dispatchContext.GetProperty<ActivityExecutionResult>();
+            Assert.NotNull(result);
+            Assert.IsType<TaskFailedEvent>(result.ResponseEvent);
+        }
+
         private (OutOfProcMiddleware middleware, DispatchMiddlewareContext context) SetupOrchestratorTest(Exception executorException)
         {
-            var (middleware, dispatchContext) = this.CreateMiddleware(executorException, "TestOrchestrator", isEntity: false);
+            var (middleware, dispatchContext) = this.CreateMiddleware(executorException, "TestOrchestrator", FunctionType.Orchestrator);
 
             var orchestrationState = new OrchestrationRuntimeState(
                 new List<HistoryEvent>
@@ -107,7 +141,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         private (OutOfProcMiddleware middleware, DispatchMiddlewareContext context) SetupEntityTest(Exception executorException)
         {
-            var (middleware, dispatchContext) = this.CreateMiddleware(executorException, "TestEntity", isEntity: true);
+            var (middleware, dispatchContext) = this.CreateMiddleware(executorException, "TestEntity", FunctionType.Entity);
 
             dispatchContext.SetProperty(new EntityBatchRequest
             {
@@ -119,8 +153,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return (middleware, dispatchContext);
         }
 
+        private (OutOfProcMiddleware middleware, DispatchMiddlewareContext context) SetupActivityTest(Exception executorException)
+        {
+            var (middleware, dispatchContext) = this.CreateMiddleware(executorException, "TestActivity", FunctionType.Activity);
+
+            dispatchContext.SetProperty(new TaskScheduledEvent(-1) { Name = "TestActivity" });
+            dispatchContext.SetProperty(new OrchestrationInstance { InstanceId = "test-instance-id" });
+
+            return (middleware, dispatchContext);
+        }
+
         private (OutOfProcMiddleware middleware, DispatchMiddlewareContext context) CreateMiddleware(
-            Exception executorException, string functionName, bool isEntity)
+            Exception executorException, string functionName, FunctionType functionType)
         {
             var extension = CreateDurableTaskExtension();
 
@@ -130,19 +174,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 .ReturnsAsync(new FunctionResult(false, executorException));
 
             var name = new FunctionName(functionName);
-            var info = new RegisteredFunctionInfo(mockExecutor.Object, isOutOfProc: true);
 
-            if (isEntity)
+            switch (functionType)
             {
-                extension.RegisterEntity(name, info);
-            }
-            else
-            {
-                extension.RegisterOrchestrator(name, info);
+                case FunctionType.Activity:
+                    extension.RegisterActivity(name, mockExecutor.Object);
+                    break;
+                case FunctionType.Entity:
+                    extension.RegisterEntity(name, new RegisteredFunctionInfo(mockExecutor.Object, isOutOfProc: true));
+                    break;
+                default:
+                    extension.RegisterOrchestrator(name, new RegisteredFunctionInfo(mockExecutor.Object, isOutOfProc: true));
+                    break;
             }
 
             var dispatchContext = new DispatchMiddlewareContext();
-            dispatchContext.SetProperty(CreateWorkItemMetadata(isExtendedSession: false, includeState: false));
+
+            // Orchestrators and entities require WorkItemMetadata; activities do not.
+            if (functionType != FunctionType.Activity)
+            {
+                dispatchContext.SetProperty(CreateWorkItemMetadata(isExtendedSession: false, includeState: false));
+            }
 
             return (new OutOfProcMiddleware(extension), dispatchContext);
         }

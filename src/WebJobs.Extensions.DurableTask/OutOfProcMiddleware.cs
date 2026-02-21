@@ -181,14 +181,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 // - a timeout
                 // - an out of memory exception
                 // - a worker process exit
-                if (functionResult.Exception is Host.FunctionTimeoutException
-                    || functionResult.Exception?.InnerException is SessionAbortedException // see RemoteOrchestrationContext.TrySetResultInternal for details on OOM-handling
-                    || (functionResult.Exception?.InnerException?.GetType().ToString().Contains("WorkerProcessExitException") ?? false)
-                    || (functionResult.Exception?.InnerException is InvalidOperationException ioe
-                        && ioe.Message.Contains(NoProcessAssociatedMessage)))
+                if (IsPlatformLevelException(functionResult.Exception))
                 {
-                    // TODO: the `WorkerProcessExitException` type is not exposed in our dependencies, it's part of WebJobs.Host.Script.
-                    // Should we add that dependency or should it be exposed in WebJobs.Host?
                     throw functionResult.Exception;
                 }
             }
@@ -421,11 +415,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 // - a timeout
                 // - an out of memory exception
                 // - a worker process exit
-                if (functionResult.Exception is Host.FunctionTimeoutException
-                    || functionResult.Exception?.InnerException is SessionAbortedException
-                    || (functionResult.Exception?.InnerException?.GetType().ToString().Contains("WorkerProcessExitException") ?? false)
-                    || (functionResult.Exception?.InnerException is InvalidOperationException ioe
-                        && ioe.Message.Contains(NoProcessAssociatedMessage)))
+                if (IsPlatformLevelException(functionResult.Exception))
                 {
                     throw functionResult.Exception;
                 }
@@ -578,6 +568,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     // Re-throw so we can abort this invocation.
                     this.HostLifetimeService.OnStopping.ThrowIfCancellationRequested();
                 }
+
+                // we abort the invocation on "platform level errors" such as:
+                // - a timeout
+                // - an out of memory exception
+                // - a worker process exit
+                if (IsPlatformLevelException(result.Exception))
+                {
+                    throw result.Exception;
+                }
             }
             catch (Exception hostRuntimeException)
             {
@@ -654,6 +653,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // Send the result of the activity function to the DTFx dispatch pipeline.
             // This allows us to bypass the default, in-process execution and process the given results immediately.
             dispatchContext.SetProperty(activityResult);
+        }
+
+        /// <summary>
+        /// Checks whether the given exception represents a platform-level error that should
+        /// abort the current dispatch and trigger a durable retry. This is shared across
+        /// orchestrator, entity, and activity invocations to ensure consistent behavior.
+        /// </summary>
+        private static bool IsPlatformLevelException(Exception? exception)
+        {
+            // TODO: the `WorkerProcessExitException` type is not exposed in our dependencies, it's part of WebJobs.Host.Script.
+            // Should we add that dependency or should it be exposed in WebJobs.Host?
+            return exception is Host.FunctionTimeoutException
+                || exception?.InnerException is SessionAbortedException // see RemoteOrchestrationContext.TrySetResultInternal for details on OOM-handling
+                || (exception?.InnerException?.GetType().ToString().Contains("WorkerProcessExitException") ?? false)
+                || (exception?.InnerException is InvalidOperationException ioe
+                    && ioe.Message.Contains(NoProcessAssociatedMessage));
         }
 
         private static FailureDetails GetFailureDetails(Exception e, out bool fromSerializedException)
