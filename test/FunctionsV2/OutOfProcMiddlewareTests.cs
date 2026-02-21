@@ -123,6 +123,84 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.IsType<TaskFailedEvent>(result.ResponseEvent);
         }
 
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [MemberData(nameof(PlatformLevelExceptions))]
+        public async Task CallOrchestratorAsync_PlatformLevelException_ThrowsSessionAbortedException(Exception exception, string description)
+        {
+            var (middleware, dispatchContext) = this.SetupOrchestratorTest(exception);
+
+            await Assert.ThrowsAsync<SessionAbortedException>(
+                () => middleware.CallOrchestratorAsync(dispatchContext, () => Task.CompletedTask));
+        }
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [MemberData(nameof(PlatformLevelExceptions))]
+        public async Task CallEntityAsync_PlatformLevelException_ThrowsSessionAbortedException(Exception exception, string description)
+        {
+            var (middleware, dispatchContext) = this.SetupEntityTest(exception);
+
+            await Assert.ThrowsAsync<SessionAbortedException>(
+                () => middleware.CallEntityAsync(dispatchContext, () => Task.CompletedTask));
+        }
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [MemberData(nameof(PlatformLevelExceptions))]
+        public async Task CallActivityAsync_PlatformLevelException_ThrowsSessionAbortedException(Exception exception, string description)
+        {
+            var (middleware, dispatchContext) = this.SetupActivityTest(exception);
+
+            await Assert.ThrowsAsync<SessionAbortedException>(
+                () => middleware.CallActivityAsync(dispatchContext, () => Task.CompletedTask));
+        }
+
+        public static IEnumerable<object[]> PlatformLevelExceptions()
+        {
+            // FunctionTimeoutException (top-level)
+            yield return new object[]
+            {
+                new Host.FunctionTimeoutException("Function timed out."),
+                "FunctionTimeoutException",
+            };
+
+            // SessionAbortedException as InnerException (e.g. out-of-memory handling)
+            yield return new object[]
+            {
+                new Exception("Function invocation failed.", new SessionAbortedException("Out of memory")),
+                "SessionAbortedException as InnerException",
+            };
+
+            // WorkerProcessExitException as InnerException (matched by type name)
+            yield return new object[]
+            {
+                new Exception("Function invocation failed.", new WorkerProcessExitExceptionStub("Worker process exited.")),
+                "WorkerProcessExitException as InnerException",
+            };
+
+            // InvalidOperationException with "No process is associated" as InnerException
+            yield return new object[]
+            {
+                new Exception("Function invocation failed.", new InvalidOperationException("No process is associated with this object.")),
+                "InvalidOperationException with No-process-associated message",
+            };
+        }
+
+        /// <summary>
+        /// Stub exception whose type name contains "WorkerProcessExitException" to match the
+        /// string-based check in <see cref="OutOfProcMiddleware"/>. The real
+        /// <c>WorkerProcessExitException</c> lives in <c>Microsoft.Azure.WebJobs.Script</c>
+        /// (the Functions host runtime), which is too heavy to reference as a test dependency.
+        /// </summary>
+        private class WorkerProcessExitExceptionStub : Exception
+        {
+            public WorkerProcessExitExceptionStub(string message)
+                : base(message)
+            {
+            }
+        }
+
         private (OutOfProcMiddleware middleware, DispatchMiddlewareContext context) SetupOrchestratorTest(Exception executorException)
         {
             var (middleware, dispatchContext) = this.CreateMiddleware(executorException, "TestOrchestrator", FunctionType.Orchestrator);
