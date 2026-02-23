@@ -183,7 +183,7 @@ def is_replaying_counter(context: df.DurableOrchestrationContext):
 
 # ---------------------------------------------------------------------------
 # 5. IsReplayingFanOutFanIn
-#    Demonstrates is_replaying behaviour with fan-out/fan-in (parallel).
+#    Demonstrates is_replaying behavior with fan-out/fan-in (parallel).
 #    All tasks are scheduled before any of them complete, so the replay
 #    characteristics differ from sequential calls.
 #

@@ -108,27 +108,9 @@ public class IsReplayingTests
         Assert.Equal(1, outputJson["live_log_count"]!.GetValue<int>());
         Assert.Equal("logged", outputJson["activity_result"]!.GetValue<string>());
 
-        // .NET Isolated uses CreateReplaySafeLogger which automatically suppresses
-        // logs during replay. Verify that REPLAY markers do NOT appear in the host
-        // logs for .NET Isolated, since the replay-safe logger filters them out.
-        if (this.fixture.functionLanguageLocalizer?.GetLanguageType() == LanguageType.DotnetIsolated)
-        {
-            await Task.Delay(2000); // allow logs to flush
-            string logs = string.Join(Environment.NewLine, this.fixture.TestLogs.CoreToolsLogs);
-            Assert.DoesNotContain("IsReplayingConditionalLog: REPLAY before activity", logs);
-            Assert.DoesNotContain("IsReplayingConditionalLog: REPLAY after activity", logs);
-        }
-
-        // For non-.NET languages, the REPLAY log markers are expected to appear
-        // because standard loggers (logging.info, console.log, Write-Host, etc.)
-        // do not suppress replay output. Verify a LIVE marker is present.
-        if (this.fixture.functionLanguageLocalizer?.GetLanguageType() is LanguageType.Python
-            or LanguageType.Node or LanguageType.PowerShell or LanguageType.Java)
-        {
-            await Task.Delay(2000);
-            string logs = string.Join(Environment.NewLine, this.fixture.TestLogs.CoreToolsLogs);
-            Assert.Contains("IsReplayingConditionalLog: LIVE after activity", logs);
-        }
+        await Task.Delay(2000);
+        string logs = string.Join(Environment.NewLine, this.fixture.TestLogs.CoreToolsLogs);
+        Assert.Contains("IsReplayingConditionalLog: LIVE after activity", logs);
     }
 
     [Fact]
