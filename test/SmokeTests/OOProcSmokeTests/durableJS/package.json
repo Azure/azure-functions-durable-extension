@@ -7,9 +7,12 @@
     "test": "echo \"No tests yet...\""
   },
   "dependencies": {
-    "@azure/functions": "^4.0.0",
+    "@azure/functions": "^4.11.2",
     "durable-functions": "^3.3.0"
   },
   "main": "src/{index.js,functions/*.js}",
-  "devDependencies": {}
+  "devDependencies": {},
+  "overrides": {
+    "lodash": "4.17.23"
+  }
 }

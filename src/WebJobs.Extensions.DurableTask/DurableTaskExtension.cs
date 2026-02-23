@@ -62,6 +62,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private readonly AsyncLock taskHubLock = new AsyncLock();
         private readonly object protocolLockObject = new ();
+        private readonly object taskHubWorkerInitLock = new ();
 #pragma warning disable CS0169
         private readonly ITelemetryActivator telemetryActivator;
 #pragma warning restore CS0169
@@ -346,7 +347,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         // us time to call ConfigureForGrpcProtocol() in case the function metadata explicitly requests it.
         internal TaskHubWorker EnsureTaskHubWorker()
         {
-            return this.taskHubWorker ??= this.InitializeTaskHubWorker();
+            if (this.taskHubWorker != null)
+            {
+                return this.taskHubWorker;
+            }
+
+            lock (this.taskHubWorkerInitLock)
+            {
+                return this.taskHubWorker ??= this.InitializeTaskHubWorker();
+            }
         }
 
         // All calls to EnsureTaskHubWorker are guaranteed to happen after indexing. Every other call should use this method

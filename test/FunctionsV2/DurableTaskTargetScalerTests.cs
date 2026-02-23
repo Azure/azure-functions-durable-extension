@@ -78,6 +78,9 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         [InlineData(1, 10, 0, "[9999, 0, 0, 1]", 2)]
         [InlineData(10, 10, 10, "[2, 2, 3, 3 ]", 1)]
         [InlineData(10, 10, 30, "[10, 10, 10, 1]", 4)]
+        [InlineData(1, 10, 0, null, 0)]
+        [InlineData(1, 10, 0, "", 0)]
+        [InlineData(1, 10, 5, null, 5)]
         public async Task TestTargetScaler(int maxConcurrentActivities, int maxConcurrentOrchestrators, int workItemQueueLength, string controlQueueLengths, int expectedWorkerCount)
         {
             this.orchestrationServiceMock.SetupGet(m => m.MaxConcurrentTaskActivityWorkItems).Returns(maxConcurrentActivities);
