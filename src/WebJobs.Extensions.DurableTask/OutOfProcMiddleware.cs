@@ -639,8 +639,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         /// <summary>
         /// Checks whether the given exception represents a platform-level error that should
-        /// abort the current dispatch and trigger a durable retry. This is shared across
-        /// orchestrator, entity, and activity invocations to ensure consistent behavior.
+        /// abort the current dispatch and trigger a durable retry.
         /// </summary>
         private static bool IsPlatformLevelException(Exception? exception)
         {
@@ -648,9 +647,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // Should we add that dependency or should it be exposed in WebJobs.Host?
             return exception is Host.FunctionTimeoutException
                 || exception?.InnerException is SessionAbortedException // see RemoteOrchestrationContext.TrySetResultInternal for details on OOM-handling
-                || (exception?.InnerException?.GetType().ToString().Contains("WorkerProcessExitException") ?? false)
+                || (exception?.InnerException?.GetType().ToString().Contains("WorkerProcessExitException", StringComparison.Ordinal) ?? false)
                 || (exception?.InnerException is InvalidOperationException ioe
-                    && ioe.Message.Contains(NoProcessAssociatedMessage));
+                    && ioe.Message.Contains(NoProcessAssociatedMessage, StringComparison.Ordinal));
         }
 
         private static FailureDetails GetFailureDetails(Exception e, out bool fromSerializedException)
