@@ -22,6 +22,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Grpc
     {
         private const string HostName = "127.0.0.1";
         private readonly DurableTaskExtension extension;
+        private readonly SemaphoreSlim startLock = new SemaphoreSlim(1, 1);
         private IHost? host;
 
         public AspNetCoreLocalGrpcListener(DurableTaskExtension extension)
@@ -33,8 +34,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Grpc
 
         public async Task StartAsync(CancellationToken cancellationToken)
         {
+            // Fast check: if already started, return immediately
+            if (this.host != null)
+            {
+                return;
+            }
+
+            await this.startLock.WaitAsync(cancellationToken);
+            try
+            {
+                // Double-check after acquiring the lock
+                if (this.host == null)
+                {
+                    await this.StartInternalAsync(cancellationToken);
+                }
+            }
+            finally
+            {
+                this.startLock.Release();
+            }
+        }
+
+        private async Task StartInternalAsync(CancellationToken cancellationToken)
+        {
             int port = GetFreeTcpPort();
-            this.host = new HostBuilder().ConfigureWebHost(
+            IHost newHost = new HostBuilder().ConfigureWebHost(
                 builder =>
                 {
                     builder.UseKestrel(o => o.Listen(
@@ -68,10 +92,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Grpc
                 })
                 .Build();
 
-            await this.host.StartAsync(cancellationToken);
+            await newHost.StartAsync(cancellationToken);
 
             // Get the actual address we've started on.
-            IServer? server = this.host.Services.GetService<IServer>();
+            IServer? server = newHost.Services.GetService<IServer>();
             IServerAddressesFeature? addressFeature = server?.Features.Get<IServerAddressesFeature>();
             this.ListenAddress = addressFeature?.Addresses.SingleOrDefault();
 
@@ -91,6 +115,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Grpc
                 functionName: string.Empty,
                 message: $"Opened local gRPC endpoint: {this.ListenAddress} (Mode=AspNetCore)",
                 writeToUserLogs: true);
+
+            // Assign only after fully started so the fast-path check in StartAsync
+            // doesn't let concurrent callers return before initialization is complete.
+            this.host = newHost;
         }
 
         public Task StopAsync(CancellationToken cancellationToken)

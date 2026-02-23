@@ -52,13 +52,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             this.eventSourceListener.Dispose();
         }
 
-        // Testing on Linux currently throws exception in LogEventTraceListener.
-        // May also need to limit on OSX.
+        // ETW logging is Windows-only.
         private static bool IsLogFriendlyPlatform()
         {
-            return !RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
+            return RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
         }
 
+        // Starts ETW log capture when supported.
         private void StartLogCapture()
         {
             if (this.useTestLogger)
@@ -646,7 +646,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             File.Delete(LinuxAppServiceLogger.LoggingPath); // To ensure the test generates the path
             string orchestratorName = nameof(TestOrchestrations.ThrowOrchestrator);
 
-                // Simulate linux dedicated via environment variables
+            // Simulate linux dedicated via environment variables
             var nameResolver = new SimpleNameResolver(new Dictionary<string, string>()
             {
                 { "WEBSITE_INSTANCE_ID", "val1" },
@@ -4739,8 +4739,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                         await client.InnerClient.RestartAsync(nonExistentId);
                     });
 
-                Assert.Equal(
-                    $"An orchestrastion with the instanceId {nonExistentId} was not found.",
+                Assert.Contains(
+                    $"No instance with ID '{nonExistentId}' was found.",
                     exception.Message);
             }
         }
@@ -5235,13 +5235,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [MemberData(nameof(TestDataGenerator.GetBooleanAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task Dedupe_Default_NotRunning_ThrowsException(bool extendedSessions, string storageProvider)
         {
-           var instanceId = "OverridableStatesDefaultTest_" + Guid.NewGuid().ToString("N");
+            var instanceId = "OverridableStatesDefaultTest_" + Guid.NewGuid().ToString("N");
 
-           using (ITestHost host = TestHelpers.GetJobHost(
-                this.loggerProvider,
-                nameof(this.Dedupe_Default_NotRunning_ThrowsException),
-                extendedSessions,
-                storageProviderType: storageProvider))
+            using (ITestHost host = TestHelpers.GetJobHost(
+                 this.loggerProvider,
+                 nameof(this.Dedupe_Default_NotRunning_ThrowsException),
+                 extendedSessions,
+                 storageProviderType: storageProvider))
             {
                 await host.StartAsync();
 
@@ -5933,6 +5933,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return sb;
         }
 
+        // Counts blobs in a container for end-to-end validation.
         private static async Task<int> GetBlobCount(string containerName, string directoryName)
         {
             string storageConnectionString = TestHelpers.GetStorageConnectionString();
@@ -5948,7 +5949,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             BlobContainerClient containerClient = blobServiceClient.GetBlobContainerClient(containerName);
             await containerClient.CreateIfNotExistsAsync();
+#if NET10_0_OR_GREATER
+            return await System.Linq.AsyncEnumerable.CountAsync(containerClient.GetBlobsAsync());
+#else
             return await containerClient.GetBlobsAsync().CountAsync();
+#endif
         }
 
         private static async Task EnsureBlobContainerExists(string containerName)

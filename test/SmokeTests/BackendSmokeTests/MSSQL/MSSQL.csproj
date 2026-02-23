@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
     <AzureFunctionsVersion>v4</AzureFunctionsVersion>
     <!-- CPM seems to be broken for .net8 inproc apps when WebJobs.Extensions.DurableTask.csproj is targeting net6.0 -->
     <!-- If enabled, func complains about "Could not load file or assembly 'Microsoft.Extensions.Logging.Abstractions, Version=9.0.0.0" -->
@@ -13,6 +13,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="4.6.0" />
     <PackageReference Include="Microsoft.DurableTask.SqlServer.AzureFunctions" Version="1.5.1" />
+    <PackageReference Include="System.Drawing.Common" Version="7.0.0" />
   </ItemGroup>
   <ItemGroup>
     <None Update="host.json">

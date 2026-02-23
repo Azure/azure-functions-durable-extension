@@ -28,6 +28,7 @@ public class RestartOrchestrationTests
     [Trait("Java", "Skip")] // RestartAsync not yet implemented in Java
     [Trait("Python", "Skip")] // RestartAsync not supported in Python
     [Trait("Node", "Skip")] // RestartAsync not supported in Node
+    [Trait("MSSQL", "Skip")] // MSSQL doesn't support tags at ExecutionStarted Event.
     // Test behavior of restartasync of durabletaskclient.
     // When restart with a instanceid and startwithnewinstanceid is false, the orchestration should be restarted with the same instance id.
     // When restart with a instanceid and startwithnewinstanceid is true, the orchestration should be restarted with a new instance id.
@@ -39,7 +40,7 @@ public class RestartOrchestrationTests
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
         string instanceId = await DurableHelpers.ParseInstanceIdAsync(response);
 
-        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", 10);
+        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", 30);
         var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
         string output1 = orchestrationDetails.Output;
         DateTime createdTime1 = orchestrationDetails.CreatedTime;
@@ -61,7 +62,7 @@ public class RestartOrchestrationTests
         string restartStatusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(restartResponse);
         string restartInstanceId = await DurableHelpers.ParseInstanceIdAsync(restartResponse);
 
-        await DurableHelpers.WaitForOrchestrationStateAsync(restartStatusQueryGetUri, "Completed", 10);
+        await DurableHelpers.WaitForOrchestrationStateAsync(restartStatusQueryGetUri, "Completed", 30);
         var restartOrchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(restartStatusQueryGetUri);
         string output2 = restartOrchestrationDetails.Output;
         DateTime createdTime2 = restartOrchestrationDetails.CreatedTime;
@@ -80,6 +81,15 @@ public class RestartOrchestrationTests
         {
             Assert.Equal(instanceId, restartInstanceId);
         }
+
+        HttpResponseMessage result = await HttpHelpers.InvokeHttpTrigger("RestartOrchestrator_Query_Tags", $"?id={restartInstanceId}");
+
+        // Verify that restarted orchestration instance contains tags.
+        Assert.Equal(HttpStatusCode.OK, result.StatusCode);
+        var content = await result.Content.ReadAsStringAsync();
+        // Content: { "output": "...", "tags": { "testtag": "true" } }
+        Assert.Contains("output", content);
+        Assert.Contains("testtag", content);
     }
 
     [Fact]

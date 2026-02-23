@@ -71,11 +71,16 @@ public static class FixtureHelpers
         {
             try
             {
-                process.Kill();
+                process.Kill(entireProcessTree: true);
+                process.WaitForExit(5000);
             }
             catch
             {
                 // Best effort
+            }
+            finally
+            {
+                process.Dispose();
             }
         }
     }
