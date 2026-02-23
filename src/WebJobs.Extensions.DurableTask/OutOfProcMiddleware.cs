@@ -410,7 +410,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     // Re-throw so we can abort this invocation.
                     this.HostLifetimeService.OnStopping.ThrowIfCancellationRequested();
                 }
-
             }
             catch (Exception hostRuntimeException)
             {
