@@ -19,7 +19,9 @@ public class IsReplayingChecks {
             @DurableActivityTrigger(name = "value") String value,
             final ExecutionContext context) {
         // Bug: https://github.com/microsoft/durabletask-java/issues/235
-        value = value == null ? null : value.substring(1, value.length() - 1);
+        if (value != null && value.length() >= 2 && value.startsWith("\"") && value.endsWith("\"")) {
+            value = value.substring(1, value.length() - 1);
+        }
         return value;
     }
 
