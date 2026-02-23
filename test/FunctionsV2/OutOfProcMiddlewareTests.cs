@@ -25,36 +25,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     {
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task CallOrchestratorAsync_WorkerProcessGone_ThrowsSessionAbortedException()
-        {
-            // Arrange: simulate "No process is associated with this object" as the InnerException
-            var innerException = new InvalidOperationException("No process is associated with this object.");
-            var outerException = new Exception("Function invocation failed.", innerException);
-
-            var (middleware, dispatchContext) = this.SetupOrchestratorTest(outerException);
-
-            // Act & Assert
-            await Assert.ThrowsAsync<SessionAbortedException>(
-                () => middleware.CallOrchestratorAsync(dispatchContext, () => Task.CompletedTask));
-        }
-
-        [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task CallEntityAsync_WorkerProcessGone_ThrowsSessionAbortedException()
-        {
-            // Arrange: simulate "No process is associated with this object" as the InnerException
-            var innerException = new InvalidOperationException("No process is associated with this object.");
-            var outerException = new Exception("Function invocation failed.", innerException);
-
-            var (middleware, dispatchContext) = this.SetupEntityTest(outerException);
-
-            // Act & Assert
-            await Assert.ThrowsAsync<SessionAbortedException>(
-                () => middleware.CallEntityAsync(dispatchContext, () => Task.CompletedTask));
-        }
-
-        [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task CallOrchestratorAsync_DifferentInvalidOperationException_DoesNotThrowSessionAbortedException()
         {
             // Arrange: a different InvalidOperationException message should NOT trigger the retry path
@@ -91,21 +61,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task CallActivityAsync_WorkerProcessGone_ThrowsSessionAbortedException()
-        {
-            // Arrange: simulate "No process is associated with this object" as the InnerException
-            var innerException = new InvalidOperationException("No process is associated with this object.");
-            var outerException = new Exception("Function invocation failed.", innerException);
-
-            var (middleware, dispatchContext) = this.SetupActivityTest(outerException);
-
-            // Act & Assert
-            await Assert.ThrowsAsync<SessionAbortedException>(
-                () => middleware.CallActivityAsync(dispatchContext, () => Task.CompletedTask));
-        }
-
-        [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task CallActivityAsync_DifferentInvalidOperationException_DoesNotThrowSessionAbortedException()
         {
             // Arrange: a different InvalidOperationException message should NOT trigger the retry path
@@ -126,7 +81,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [MemberData(nameof(PlatformLevelExceptions))]
-        public async Task CallOrchestratorAsync_PlatformLevelException_ThrowsSessionAbortedException(Exception exception, string description)
+        public async Task CallOrchestratorAsync_PlatformLevelException_ThrowsSessionAbortedException(Exception exception, string _description)
         {
             var (middleware, dispatchContext) = this.SetupOrchestratorTest(exception);
 
@@ -137,7 +92,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [MemberData(nameof(PlatformLevelExceptions))]
-        public async Task CallEntityAsync_PlatformLevelException_ThrowsSessionAbortedException(Exception exception, string description)
+        public async Task CallEntityAsync_PlatformLevelException_ThrowsSessionAbortedException(Exception exception, string _description)
         {
             var (middleware, dispatchContext) = this.SetupEntityTest(exception);
 
@@ -148,7 +103,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [MemberData(nameof(PlatformLevelExceptions))]
-        public async Task CallActivityAsync_PlatformLevelException_ThrowsSessionAbortedException(Exception exception, string description)
+        public async Task CallActivityAsync_PlatformLevelException_ThrowsSessionAbortedException(Exception exception, string _description)
         {
             var (middleware, dispatchContext) = this.SetupActivityTest(exception);
 
