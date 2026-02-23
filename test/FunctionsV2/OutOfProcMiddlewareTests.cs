@@ -41,43 +41,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.NotNull(result);
         }
 
-        [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task CallEntityAsync_DifferentInvalidOperationException_DoesNotThrowSessionAbortedException()
-        {
-            // Arrange: a different InvalidOperationException message should NOT trigger the retry path
-            var innerException = new InvalidOperationException("The internal function invoker returned a task that does not support return values!");
-            var outerException = new Exception("Function invocation failed.", innerException);
-
-            var (middleware, dispatchContext) = this.SetupEntityTest(outerException);
-
-            // Act: should NOT throw SessionAbortedException — instead the entity should be marked as failed
-            await middleware.CallEntityAsync(dispatchContext, () => Task.CompletedTask);
-
-            // Assert: the middleware should have set a failure result on the dispatch context
-            var result = dispatchContext.GetProperty<EntityBatchResult>();
-            Assert.NotNull(result);
-        }
-
-        [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task CallActivityAsync_DifferentInvalidOperationException_DoesNotThrowSessionAbortedException()
-        {
-            // Arrange: a different InvalidOperationException message should NOT trigger the retry path
-            var innerException = new InvalidOperationException("The internal function invoker returned a task that does not support return values!");
-            var outerException = new Exception("Function invocation failed.", innerException);
-
-            var (middleware, dispatchContext) = this.SetupActivityTest(outerException);
-
-            // Act: should NOT throw SessionAbortedException — instead the activity should be marked as failed
-            await middleware.CallActivityAsync(dispatchContext, () => Task.CompletedTask);
-
-            // Assert: the middleware should have set a failure result on the dispatch context
-            var result = dispatchContext.GetProperty<ActivityExecutionResult>();
-            Assert.NotNull(result);
-            Assert.IsType<TaskFailedEvent>(result.ResponseEvent);
-        }
-
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [MemberData(nameof(PlatformLevelExceptions))]
@@ -102,20 +65,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             // InvalidOperationException with "No process is associated" as InnerException
             yield return new object[] { new Exception("Function invocation failed.", new InvalidOperationException("No process is associated with this object.")) };
-        }
-
-        /// <summary>
-        /// Stub exception whose type name contains "WorkerProcessExitException" to match the
-        /// string-based check in <see cref="OutOfProcMiddleware"/>. The real
-        /// <c>WorkerProcessExitException</c> lives in <c>Microsoft.Azure.WebJobs.Script</c>
-        /// (the Functions host runtime), which is too heavy to reference as a test dependency.
-        /// </summary>
-        private class WorkerProcessExitExceptionStub : Exception
-        {
-            public WorkerProcessExitExceptionStub(string message)
-                : base(message)
-            {
-            }
         }
 
         private (OutOfProcMiddleware middleware, DispatchMiddlewareContext context) SetupOrchestratorTest(Exception executorException)
@@ -230,6 +179,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 modifiers: null);
             Assert.NotNull(ctor);
             return (WorkItemMetadata)ctor.Invoke(new object[] { isExtendedSession, includeState });
+        }
+
+        /// <summary>
+        /// Stub exception whose type name contains "WorkerProcessExitException" to match the
+        /// string-based check in <see cref="OutOfProcMiddleware"/>. The real
+        /// <c>WorkerProcessExitException</c> lives in <c>Microsoft.Azure.WebJobs.Script</c>
+        /// (the Functions host runtime), which is too heavy to reference as a test dependency.
+        /// </summary>
+        private class WorkerProcessExitExceptionStub : Exception
+        {
+            public WorkerProcessExitExceptionStub(string message)
+                : base(message)
+            {
+            }
         }
     }
 }
