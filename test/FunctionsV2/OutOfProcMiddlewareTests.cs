@@ -81,7 +81,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [MemberData(nameof(PlatformLevelExceptions))]
-        public async Task CallOrchestratorAsync_PlatformLevelException_ThrowsSessionAbortedException(Exception exception, string _description)
+        public async Task CallOrchestratorAsync_PlatformLevelException_ThrowsSessionAbortedException(Exception exception)
         {
             var (middleware, dispatchContext) = this.SetupOrchestratorTest(exception);
 
@@ -89,57 +89,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 () => middleware.CallOrchestratorAsync(dispatchContext, () => Task.CompletedTask));
         }
 
-        [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [MemberData(nameof(PlatformLevelExceptions))]
-        public async Task CallEntityAsync_PlatformLevelException_ThrowsSessionAbortedException(Exception exception, string _description)
-        {
-            var (middleware, dispatchContext) = this.SetupEntityTest(exception);
-
-            await Assert.ThrowsAsync<SessionAbortedException>(
-                () => middleware.CallEntityAsync(dispatchContext, () => Task.CompletedTask));
-        }
-
-        [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [MemberData(nameof(PlatformLevelExceptions))]
-        public async Task CallActivityAsync_PlatformLevelException_ThrowsSessionAbortedException(Exception exception, string _description)
-        {
-            var (middleware, dispatchContext) = this.SetupActivityTest(exception);
-
-            await Assert.ThrowsAsync<SessionAbortedException>(
-                () => middleware.CallActivityAsync(dispatchContext, () => Task.CompletedTask));
-        }
-
         public static IEnumerable<object[]> PlatformLevelExceptions()
         {
             // FunctionTimeoutException (top-level)
-            yield return new object[]
-            {
-                new Host.FunctionTimeoutException("Function timed out."),
-                "FunctionTimeoutException",
-            };
+            // FunctionTimeoutException (top-level)
+            yield return new object[] { new Host.FunctionTimeoutException("Function timed out.") };
 
             // SessionAbortedException as InnerException (e.g. out-of-memory handling)
-            yield return new object[]
-            {
-                new Exception("Function invocation failed.", new SessionAbortedException("Out of memory")),
-                "SessionAbortedException as InnerException",
-            };
+            yield return new object[] { new Exception("Function invocation failed.", new SessionAbortedException("Out of memory")) };
 
             // WorkerProcessExitException as InnerException (matched by type name)
-            yield return new object[]
-            {
-                new Exception("Function invocation failed.", new WorkerProcessExitExceptionStub("Worker process exited.")),
-                "WorkerProcessExitException as InnerException",
-            };
+            yield return new object[] { new Exception("Function invocation failed.", new WorkerProcessExitExceptionStub("Worker process exited.")) };
 
             // InvalidOperationException with "No process is associated" as InnerException
-            yield return new object[]
-            {
-                new Exception("Function invocation failed.", new InvalidOperationException("No process is associated with this object.")),
-                "InvalidOperationException with No-process-associated message",
-            };
+            yield return new object[] { new Exception("Function invocation failed.", new InvalidOperationException("No process is associated with this object.")) };
         }
 
         /// <summary>

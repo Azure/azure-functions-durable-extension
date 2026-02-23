@@ -411,14 +411,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.HostLifetimeService.OnStopping.ThrowIfCancellationRequested();
                 }
 
-                // we abort the invocation on "platform level errors" such as:
-                // - a timeout
-                // - an out of memory exception
-                // - a worker process exit
-                if (IsPlatformLevelException(functionResult.Exception))
-                {
-                    throw functionResult.Exception;
-                }
             }
             catch (Exception hostRuntimeException)
             {
@@ -569,14 +561,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.HostLifetimeService.OnStopping.ThrowIfCancellationRequested();
                 }
 
-                // we abort the invocation on "platform level errors" such as:
-                // - a timeout
-                // - an out of memory exception
-                // - a worker process exit
-                if (IsPlatformLevelException(result.Exception))
-                {
-                    throw result.Exception;
-                }
             }
             catch (Exception hostRuntimeException)
             {
