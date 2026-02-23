@@ -22,7 +22,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.AzureSto
         private DurableTaskMetricsProvider singletonDurableTaskMetricsProvider;
 
         /// <summary>
-        /// Initializes a new <see cref="AzureStorageScalabilityProvider"/> instance for scaling using Azure Storage.
+        /// Initializes a new instance of the <see cref="AzureStorageScalabilityProvider"/> class.
         /// </summary>
         /// <param name="storageAccountClientProvider">
         /// Provides Azure Storage clients using resolved configuration, including
@@ -41,17 +41,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.AzureSto
         }
 
         /// <summary>
-        /// The app setting containing the Azure Storage connection string.
+        /// Gets the app setting containing the Azure Storage connection string.
         /// </summary>
         public override string ConnectionName => this.connectionName;
-
-        internal DurableTaskMetricsProvider GetMetricsProvider(
-            string hubName,
-            StorageAccountClientProvider clientProvider,
-            ILogger metricsLogger)
-        {
-            return new DurableTaskMetricsProvider(hubName, metricsLogger, performanceMonitor: null, clientProvider);
-        }
 
         /// <inheritdoc/>
         /// Note: ScaleMonitor is not used in prod. Can be cleaned in future.
@@ -98,6 +90,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.AzureSto
                 targetScaler = new DurableTaskTargetScaler(functionId, this.singletonDurableTaskMetricsProvider, this, this.logger);
                 return true;
             }
+        }
+
+        internal DurableTaskMetricsProvider GetMetricsProvider(
+            string hubName,
+            StorageAccountClientProvider clientProvider,
+            ILogger metricsLogger)
+        {
+            return new DurableTaskMetricsProvider(hubName, metricsLogger, performanceMonitor: null, clientProvider);
         }
     }
 }

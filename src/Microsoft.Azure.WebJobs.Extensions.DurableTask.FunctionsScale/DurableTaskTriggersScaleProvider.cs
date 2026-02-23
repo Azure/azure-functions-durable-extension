@@ -74,7 +74,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale
             ScalabilityProvider defaultscalabilityProvider = scalabilityProviderFactory.GetScalabilityProvider(metadata, triggerMetadata);
 
             // Get connection name from metadata.StorageProvider
-            string? connectionName = GetConnectionNameFromOptions(metadata.StorageProvider) ?? scalabilityProviderFactory.DefaultConnectionName;
+            string? connectionName = TriggerMetadataExtensions.ResolveConnectionName(metadata.StorageProvider) ?? scalabilityProviderFactory.DefaultConnectionName;
 
             logger.LogInformation(
                 "Creating DurableTaskTriggersScaleProvider for function {FunctionName}: connectionName = '{ConnectionName}'",
@@ -94,28 +94,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale
                 functionName,
                 connectionName,
                 metadata.TaskHubName);
-        }
-
-        private static string? GetConnectionNameFromOptions(IDictionary<string, object>? storageProvider)
-        {
-            if (storageProvider == null)
-            {
-                return null;
-            }
-
-            // Try connectionName first
-            if (storageProvider.TryGetValue(DefaultConnectionName, out object? value1) && value1 is string s1 && !string.IsNullOrWhiteSpace(s1))
-            {
-                return s1;
-            }
-
-            // Try connectionStringName
-            if (storageProvider.TryGetValue(ConnectionNameOverride, out object? value2) && value2 is string s2 && !string.IsNullOrWhiteSpace(s2))
-            {
-                return s2;
-            }
-
-            return null;
         }
 
         /// <summary>

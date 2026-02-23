@@ -13,8 +13,9 @@ using Newtonsoft.Json;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.AzureStorage
 {
-    //TODO: This class can be removed in future. As Scale Controller v3 doesn't use Scale Monitor.
+    // TODO: This class can be removed in future. As Scale Controller v3 doesn't use Scale Monitor.
     // Keep it for now for backwards compatibility.
+    // Note: This file should remain partially aligned with Microsoft.Azure.WebJobs.Extensions.DurableTask/Listener/DurableTaskScaleMonitor.
     internal sealed class DurableTaskScaleMonitor : IScaleMonitor<DurableTaskTriggerMetrics>
     {
         private readonly string hubName;

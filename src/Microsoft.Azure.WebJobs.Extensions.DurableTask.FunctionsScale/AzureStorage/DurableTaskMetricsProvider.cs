@@ -39,6 +39,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.AzureSto
         /// <param name="storageAccountClientProvider">
         /// Provides Azure Storage clients required to access task hub resources.
         /// </param>
+        /// Note: This file should remain partially aligned with Microsoft.Azure.WebJobs.Extensions.DurableTask/Listener/DurableTaskMetricsProvider.
         public DurableTaskMetricsProvider(
             string hubName,
             ILogger logger,

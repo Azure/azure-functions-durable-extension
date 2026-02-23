@@ -10,7 +10,7 @@ using Microsoft.Extensions.Logging;
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale
 {
     /// <summary>
-    /// Factory for creating azure storage client providers.
+    /// Factory for creating Azure Storage client providers for authenticating with the Azure Storage backend.
     /// </summary>
     public class StorageServiceClientProviderFactory : IStorageServiceClientProviderFactory
     {

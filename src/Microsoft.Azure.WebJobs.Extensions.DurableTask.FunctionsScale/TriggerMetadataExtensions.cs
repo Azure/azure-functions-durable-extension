@@ -13,7 +13,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale
     internal static class TriggerMetadataExtensions
     {
         /// <summary>
-        /// Extracts DurableTaskMetadata from trigger metadata sent by the Scale Controller.
+        /// For testing. Extracts DurableTaskMetadata from trigger metadata sent by the Scale Controller.
         /// </summary>
         /// <param name="triggerMetadata">The trigger metadata containing configuration from the Scale Controller.</param>
         /// <returns>The parsed metadata, or null if metadata is not available.</returns>

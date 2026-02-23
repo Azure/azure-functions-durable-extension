@@ -14,6 +14,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.AzureSto
 {
     /// <summary>
     /// Target scaler that computes the desired worker count based on scale metrics from the Azure Storage backend.
+    /// Note: This file should remain partially aligned with Microsoft.Azure.WebJobs.Extensions.DurableTask/Listener/DurableTaskTargetScaler.
     /// </summary>
     public class DurableTaskTargetScaler : ITargetScaler
     {
@@ -24,7 +25,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.AzureSto
         private readonly string scaler;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="DurableTaskTargetScaler"/>.
+        /// Initializes a new instance of the <see cref="DurableTaskTargetScaler"/> class.
         /// </summary>
         /// <param name="scalerId">
         /// The unique identifier for this target scaler.

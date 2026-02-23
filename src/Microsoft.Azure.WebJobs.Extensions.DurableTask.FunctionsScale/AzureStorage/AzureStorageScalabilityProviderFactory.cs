@@ -15,8 +15,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.AzureSto
     /// </summary>
     public class AzureStorageScalabilityProviderFactory : IScalabilityProviderFactory
     {
-        private const string LoggerName = "Triggers.DurableTask.AzureStorage";
         internal const string ProviderName = "AzureStorage";
+        private const string LoggerName = "Triggers.DurableTask.AzureStorage";
 
         private readonly IStorageServiceClientProviderFactory clientProviderFactory;
         private readonly IConfiguration configuration;
@@ -49,12 +49,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.AzureSto
         }
 
         /// <summary>
-        /// Name of this provider service.
+        /// Gets name of this provider service.
         /// </summary>
         public virtual string Name => ProviderName;
 
         /// <summary>
-        /// Default connection name of this provider service.
+        /// Gets default connection name of this provider service.
         /// </summary>
         public string DefaultConnectionName { get; }
 

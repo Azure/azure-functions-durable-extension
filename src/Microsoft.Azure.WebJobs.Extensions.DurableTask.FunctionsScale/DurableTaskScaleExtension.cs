@@ -30,18 +30,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale
         }
 
         /// <summary>
-        /// Initializes the extension. Called by the WebJobs framework during host startup.
-        /// </summary>
-        /// <param name="context">The extension configuration context.</param>
-        public void Initialize(ExtensionConfigContext context)
-        {
-            // The actual scaling work is done by DurableTaskTriggersScaleProvider.
-            // This extension just needs to exist for the WebJobs framework to properly
-            // initialize the host lifecycle.
-            this.logger.LogInformation("DurableTaskScaleExtension.Initialize called.");
-        }
-
-        /// <summary>
         /// Determines the scalability provider factory based on the given metadata.
         /// If no storage provider type is configured, defaults to AzureStorage.
         /// </summary>
@@ -82,6 +70,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale
                 IList<string> factoryNames = scalabilityProviderFactories.Select(f => f.Name).ToList();
                 throw new InvalidOperationException($"Storage provider type ({storageType?.ToString() ?? "null"}) was not found. Available storage providers: {string.Join(", ", factoryNames)}.", e);
             }
+        }
+
+        /// <summary>
+        /// Initializes the extension. Called by the WebJobs framework during host startup.
+        /// </summary>
+        /// <param name="context">The extension configuration context.</param>
+        public void Initialize(ExtensionConfigContext context)
+        {
+            // The actual scaling work is done by DurableTaskTriggersScaleProvider.
+            // This extension just needs to exist for the WebJobs framework to properly
+            // initialize the host lifecycle.
+            this.logger.LogInformation("DurableTaskScaleExtension.Initialize called.");
         }
     }
 }
