@@ -18,7 +18,9 @@ df.app.activity('IsReplayingEcho', { handler: IsReplayingEcho });
 // ---------------------------------------------------------------------------
 
 const IsReplayingBasic: OrchestrationHandler = function* (context: OrchestrationContext) {
-    const before: boolean = context.df.isReplaying;
+    // Workaround: context.df.isReplaying is undefined before the first yield.
+    // See https://github.com/Azure/azure-functions-durable-js/issues/564
+    const before: boolean = context.df.isReplaying ?? true;
     const result: string = yield context.df.callActivity('IsReplayingEcho', 'hello');
     const after: boolean = context.df.isReplaying;
     return {
@@ -34,9 +36,11 @@ df.app.orchestration('IsReplayingBasic', IsReplayingBasic);
 // ---------------------------------------------------------------------------
 
 const IsReplayingMultiActivity: OrchestrationHandler = function* (context: OrchestrationContext) {
+    // Workaround: context.df.isReplaying is undefined before the first yield.
+    // See https://github.com/Azure/azure-functions-durable-js/issues/564
     const snapshots: object[] = [];
 
-    snapshots.push({ step: 0, label: 'start', is_replaying: context.df.isReplaying });
+    snapshots.push({ step: 0, label: 'start', is_replaying: context.df.isReplaying ?? true });
 
     const r1: string = yield context.df.callActivity('IsReplayingEcho', 'one');
     snapshots.push({ step: 1, label: 'after_first', is_replaying: context.df.isReplaying });
@@ -59,9 +63,11 @@ df.app.orchestration('IsReplayingMultiActivity', IsReplayingMultiActivity);
 // ---------------------------------------------------------------------------
 
 const IsReplayingConditionalLog: OrchestrationHandler = function* (context: OrchestrationContext) {
+    // Workaround: context.df.isReplaying is undefined before the first yield.
+    // See https://github.com/Azure/azure-functions-durable-js/issues/564
     let liveLogCount = 0;
 
-    if (!context.df.isReplaying) {
+    if (!(context.df.isReplaying ?? true)) {
         console.log('IsReplayingConditionalLog: LIVE before activity');
         liveLogCount++;
     } else {
@@ -89,10 +95,12 @@ df.app.orchestration('IsReplayingConditionalLog', IsReplayingConditionalLog);
 // ---------------------------------------------------------------------------
 
 const IsReplayingCounter: OrchestrationHandler = function* (context: OrchestrationContext) {
+    // Workaround: context.df.isReplaying is undefined before the first yield.
+    // See https://github.com/Azure/azure-functions-durable-js/issues/564
     let nonReplayCount = 0;
     let replayCount = 0;
 
-    if (context.df.isReplaying) { replayCount++; } else { nonReplayCount++; }
+    if (context.df.isReplaying ?? true) { replayCount++; } else { nonReplayCount++; }
 
     const r1: string = yield context.df.callActivity('IsReplayingEcho', 'a');
     if (context.df.isReplaying) { replayCount++; } else { nonReplayCount++; }
@@ -117,7 +125,9 @@ df.app.orchestration('IsReplayingCounter', IsReplayingCounter);
 // ---------------------------------------------------------------------------
 
 const IsReplayingFanOutFanIn: OrchestrationHandler = function* (context: OrchestrationContext) {
-    const before: boolean = context.df.isReplaying;
+    // Workaround: context.df.isReplaying is undefined before the first yield.
+    // See https://github.com/Azure/azure-functions-durable-js/issues/564
+    const before: boolean = context.df.isReplaying ?? true;
 
     const tasks = [
         context.df.callActivity('IsReplayingEcho', 'alpha'),

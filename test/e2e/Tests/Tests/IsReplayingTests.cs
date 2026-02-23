@@ -24,6 +24,7 @@ public class IsReplayingTests
     [Fact]
     [Trait("Dotnet", "Skip")] // Replay behavior in dotnet ensures that orchestrator code only runs once per execution
     [Trait("Python-DTS", "Skip")] // Bug: https://github.com/Azure/azure-functions-durable-python/issues/595
+    [Trait("Node-DTS", "Skip")] // Bug: https://github.com/Azure/azure-functions-durable-js/issues/677
     public async Task IsReplayingBasic_CompletesWithExpectedReplayFlags()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger(
@@ -48,6 +49,7 @@ public class IsReplayingTests
     [Fact]
     [Trait("Dotnet", "Skip")] // Replay behavior in dotnet ensures that orchestrator code only runs once per execution
     [Trait("Python-DTS", "Skip")] // Bug: https://github.com/Azure/azure-functions-durable-python/issues/595
+    [Trait("Node-DTS", "Skip")] // Bug: https://github.com/Azure/azure-functions-durable-js/issues/677
     public async Task IsReplayingMultiActivity_SnapshotsShowReplayProgression()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger(
@@ -85,6 +87,7 @@ public class IsReplayingTests
     [Fact]
     [Trait("Dotnet", "Skip")] // Replay behavior in dotnet ensures that orchestrator code only runs once per execution
     [Trait("Python-DTS", "Skip")] // Bug: https://github.com/Azure/azure-functions-durable-python/issues/595
+    [Trait("Node-DTS", "Skip")] // Bug: https://github.com/Azure/azure-functions-durable-js/issues/677
     public async Task IsReplayingConditionalLog_OnlyCountsLiveExecutionPaths()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger(
@@ -128,6 +131,7 @@ public class IsReplayingTests
     [Fact]
     [Trait("Dotnet", "Skip")] // Replay behavior in dotnet ensures that orchestrator code only runs once per execution
     [Trait("Python-DTS", "Skip")] // Bug: https://github.com/Azure/azure-functions-durable-python/issues/595
+    [Trait("Node-DTS", "Skip")] // Bug: https://github.com/Azure/azure-functions-durable-js/issues/677
     public async Task IsReplayingCounter_TracksReplayAndLiveCheckpoints()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger(
@@ -157,6 +161,7 @@ public class IsReplayingTests
     [Fact]
     [Trait("Dotnet", "Skip")] // Replay behavior in dotnet ensures that orchestrator code only runs once per execution
     [Trait("Python-DTS", "Skip")] // Bug: https://github.com/Azure/azure-functions-durable-python/issues/595
+    [Trait("Node-DTS", "Skip")] // Bug: https://github.com/Azure/azure-functions-durable-js/issues/677
     public async Task IsReplayingFanOutFanIn_ReportsReplayStateAroundParallelTasks()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger(
