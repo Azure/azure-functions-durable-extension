@@ -83,30 +83,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return (middleware, dispatchContext);
         }
 
-        private (OutOfProcMiddleware middleware, DispatchMiddlewareContext context) SetupEntityTest(Exception executorException)
-        {
-            var (middleware, dispatchContext) = this.CreateMiddleware(executorException, "TestEntity", FunctionType.Entity);
-
-            dispatchContext.SetProperty(new EntityBatchRequest
-            {
-                InstanceId = "@TestEntity@test-key",
-                EntityState = null,
-                Operations = new List<OperationRequest>(),
-            });
-
-            return (middleware, dispatchContext);
-        }
-
-        private (OutOfProcMiddleware middleware, DispatchMiddlewareContext context) SetupActivityTest(Exception executorException)
-        {
-            var (middleware, dispatchContext) = this.CreateMiddleware(executorException, "TestActivity", FunctionType.Activity);
-
-            dispatchContext.SetProperty(new TaskScheduledEvent(-1) { Name = "TestActivity" });
-            dispatchContext.SetProperty(new OrchestrationInstance { InstanceId = "test-instance-id" });
-
-            return (middleware, dispatchContext);
-        }
-
         private (OutOfProcMiddleware middleware, DispatchMiddlewareContext context) CreateMiddleware(
             Exception executorException, string functionName, FunctionType functionType)
         {
