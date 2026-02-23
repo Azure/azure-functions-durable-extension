@@ -18,9 +18,9 @@
             <E2E_TEST_DURABLE_BACKEND>AzureStorage</E2E_TEST_DURABLE_BACKEND>
 
             <!-- Valid E2E_TEST_FUNCTIONS_LANGUAGE settings: dotnet-isolated, powershell, python, node, java-->
-            <E2E_TEST_FUNCTIONS_LANGUAGE>dotnet-isolated</E2E_TEST_FUNCTIONS_LANGUAGE>
+            <E2E_TEST_FUNCTIONS_LANGUAGE>powershell</E2E_TEST_FUNCTIONS_LANGUAGE>
             <!-- Use the folder name in /test/e2e/apps that corresponds to the language selected above -->
-            <TEST_APP_NAME>BasicDotNetIsolated</TEST_APP_NAME>
+            <TEST_APP_NAME>BasicPowerShell</TEST_APP_NAME>
 
         </EnvironmentVariables>
     </RunConfiguration>
