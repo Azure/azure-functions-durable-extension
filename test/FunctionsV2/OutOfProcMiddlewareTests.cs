@@ -92,7 +92,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public static IEnumerable<object[]> PlatformLevelExceptions()
         {
             // FunctionTimeoutException (top-level)
-            // FunctionTimeoutException (top-level)
             yield return new object[] { new Host.FunctionTimeoutException("Function timed out.") };
 
             // SessionAbortedException as InnerException (e.g. out-of-memory handling)
