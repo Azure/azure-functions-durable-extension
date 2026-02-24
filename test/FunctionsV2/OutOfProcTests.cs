@@ -364,15 +364,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 await host.StartAsync();
 
-#pragma warning disable SYSLIB0014 // Type or member is obsolete
-                using (var client = new WebClient())
+                // Retry loop to wait for the local RPC endpoint to be ready
+                using (var client = new HttpClient())
                 {
-                    string jsonString = client.DownloadString("http://localhost:17071/durabletask/instances");
+                    string jsonString = null;
+                    for (int i = 0; i < 10; i++)
+                    {
+                        try
+                        {
+                            jsonString = await client.GetStringAsync("http://localhost:17071/durabletask/instances");
+                            break;
+                        }
+                        catch (HttpRequestException)
+                        {
+                            await Task.Delay(TimeSpan.FromMilliseconds(500));
+                        }
+                    }
+
+                    Assert.NotNull(jsonString);
 
                     // The result is expected to be an empty array
                     JArray array = JArray.Parse(jsonString);
+                    Assert.Empty(array);
                 }
-#pragma warning restore SYSLIB0014 // Type or member is obsolete
 
                 await host.StopAsync();
             }
