@@ -132,22 +132,12 @@ function InstallExtensionAndBuildTestApp($testAppDir) {
     }
 
     if (!(Test-Path ".\app.csproj")) {
-      if (Test-Path ".\extensions.csproj") {
-        Write-Host "Building extensions project"
-        dotnet clean extensions.csproj
-        if ($TargetFramework) {
-          dotnet build extensions.csproj -p:TargetFramework=$TargetFramework
-        } else {
-          dotnet build extensions.csproj
-        }
-      } else {
-        Write-Host "Syncing extensions"
-        if ((Test-Path (Join-Path $FUNC_CLI_DIRECTORY "func")) -or (Test-Path (Join-Path $FUNC_CLI_DIRECTORY "func.exe"))) {
-          .(Join-Path $FUNC_CLI_DIRECTORY "func") extensions sync
-        }
-        else {
-          Write-Warning "func command not found. Skipping extensions sync."
-        }
+      Write-Host "Syncing extensions"
+      if ((Test-Path (Join-Path $FUNC_CLI_DIRECTORY "func")) -or (Test-Path (Join-Path $FUNC_CLI_DIRECTORY "func.exe"))) {
+        .(Join-Path $FUNC_CLI_DIRECTORY "func") extensions sync
+      }
+      else {
+        Write-Warning "func command not found. Skipping extensions sync."
       }
     }
 
