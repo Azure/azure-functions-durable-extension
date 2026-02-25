@@ -18,8 +18,8 @@ param(
     [Switch]
     $StartDTSContainer,
 
-    # Skip downloading Core Tools (assumes they are already available on disk or on PATH).
-    # This does NOT prevent Core Tools from being added to PATH if the directory exists.
+    # Skip downloading Core Tools (assumes they are already installed in the temp directory).
+    # This does NOT prevent Core Tools from being added to PATH if the temp directory exists.
     [Switch]
     $SkipCoreTools,
 
