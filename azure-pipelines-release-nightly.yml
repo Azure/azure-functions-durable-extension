@@ -164,12 +164,22 @@ steps:
 
 # zip .NET in-proc perf tests
 - task: DotNetCoreCLI@2
-  displayName: 'Zip .NET in-proc perf tests'
+  displayName: 'Zip .NET in-proc perf tests (net8.0)'
   inputs:
     command: 'publish'
     publishWebProjects: false
     projects: '$(System.DefaultWorkingDirectory)/test/PerfTests/DFPerfTests/**/*.csproj'
-    arguments: '-o $(System.DefaultWorkingDirectory)/test/PerfTests/DFPerfTests/Output'
+    arguments: '-f net8.0 -o $(System.DefaultWorkingDirectory)/test/PerfTests/DFPerfTests/Output/net8.0'
+    zipAfterPublish: true
+    modifyOutputPath: true
+
+- task: DotNetCoreCLI@2
+  displayName: 'Zip .NET in-proc perf tests (net10.0)'
+  inputs:
+    command: 'publish'
+    publishWebProjects: false
+    projects: '$(System.DefaultWorkingDirectory)/test/PerfTests/DFPerfTests/**/*.csproj'
+    arguments: '-f net10.0 -o $(System.DefaultWorkingDirectory)/test/PerfTests/DFPerfTests/Output/net10.0'
     zipAfterPublish: true
     modifyOutputPath: true
 
