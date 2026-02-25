@@ -49,7 +49,7 @@ if ($PSVersionTable.PSEdition -ne 'Core') {
 
 $ErrorActionPreference = "Stop"
 
-$CORE_TOOLS_VERSION = '4.6.0'
+$CORE_TOOLS_VERSION = '4.7.0'
 
 $ProjectBaseDirectory = "$PSScriptRoot\..\..\..\"
 $ProjectTemporaryPath = Join-Path ([System.IO.Path]::GetTempPath()) "DurableTaskExtensionE2ETests"
@@ -162,8 +162,20 @@ function InstallExtensionAndBuildTestApp($testAppDir) {
     }
 
     if (Test-Path ".\requirements.txt") {
-      python -m pip install -r requirements.txt
+      Write-Host "Creating Python virtual environment in $testAppDir\.venv"
+      python -m venv .venv
       StopOnFailedExecution
+
+      if ($IsWindows) {
+        .  .\.venv\Scripts\Activate.ps1
+      } else {
+        .  ./.venv/bin/Activate.ps1
+      }
+
+      python -m pip install --force-reinstall -r requirements.txt
+      StopOnFailedExecution
+
+      deactivate
     }
 
     if (Test-Path ".\package-lock.json") {

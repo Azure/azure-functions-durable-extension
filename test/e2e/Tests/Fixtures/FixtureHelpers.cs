@@ -1,10 +1,7 @@
 // Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
-using System;
 using System.Diagnostics;
-using System.IO;
-using System.Linq;
 using System.Runtime.InteropServices;
 using Microsoft.Extensions.Logging;
 
@@ -12,7 +9,7 @@ namespace Microsoft.Azure.Durable.Tests.DotnetIsolatedE2E;
 
 public static class FixtureHelpers
 {
-    public static Process GetFuncHostProcess(string appPath, bool enableAuth = false)
+    internal static Process GetFuncHostProcess(string appPath, LanguageType language, bool enableAuth = false)
     {
         var cliPath = Path.Combine(Path.GetTempPath(), @"DurableTaskExtensionE2ETests/Azure.Functions.Cli/func");
 
@@ -33,14 +30,44 @@ public static class FixtureHelpers
         funcProcess.StartInfo.RedirectStandardOutput = true;
         funcProcess.StartInfo.CreateNoWindow = true;
         funcProcess.StartInfo.WorkingDirectory = appPath;
-        funcProcess.StartInfo.FileName = cliPath;
-        funcProcess.StartInfo.ArgumentList.Add("host");
-        funcProcess.StartInfo.ArgumentList.Add("start");
-        funcProcess.StartInfo.ArgumentList.Add("--verbose");
 
-        if (enableAuth)
+        // For Python apps, if a virtual environment exists in the app folder, launch
+        // func through a shell that sources the activate script first. This ensures
+        // full venv activation (PATH, VIRTUAL_ENV, and any other env vars the activate
+        // script sets) rather than manually replicating its behavior.
+        string venvDir = Path.Combine(appPath, ".venv");
+        if (language == LanguageType.Python && Directory.Exists(venvDir))
         {
-            funcProcess.StartInfo.ArgumentList.Add("--enableAuth");
+            string funcArgs = "--verbose";
+            if (enableAuth)
+            {
+                funcArgs += " --enableAuth";
+            }
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                string activateBat = Path.Combine(venvDir, "Scripts", "activate.bat");
+                funcProcess.StartInfo.FileName = "cmd.exe";
+                funcProcess.StartInfo.Arguments = $"/c \"\"{activateBat}\" && \"{cliPath}\" host start {funcArgs}\"";
+            }
+            else
+            {
+                string activateSh = Path.Combine(venvDir, "bin", "activate");
+                funcProcess.StartInfo.FileName = "bash";
+                funcProcess.StartInfo.Arguments = $"-c \"source '{activateSh}' && '{cliPath}' host start {funcArgs}\"";
+            }
+        }
+        else
+        {
+            funcProcess.StartInfo.FileName = cliPath;
+            funcProcess.StartInfo.ArgumentList.Add("host");
+            funcProcess.StartInfo.ArgumentList.Add("start");
+            funcProcess.StartInfo.ArgumentList.Add("--verbose");
+
+            if (enableAuth)
+            {
+                funcProcess.StartInfo.ArgumentList.Add("--enableAuth");
+            }
         }
 
         return funcProcess;
