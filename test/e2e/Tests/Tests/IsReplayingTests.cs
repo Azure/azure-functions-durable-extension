@@ -28,6 +28,10 @@ public class IsReplayingTests
     [Trait("PowerShell-DTS", "Skip")] // Bug: https://github.com/Azure/azure-functions-durable-powershell/issues/106
     public async Task IsReplayingBasic_CompletesWithExpectedReplayFlags()
     {
+        /**
+        Verifies a single-activity orchestrator reports is_replaying True before the activity 
+        (during replay) and false after the activity (fresh execution).
+        **/
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger(
             "StartOrchestration", "?orchestrationName=IsReplayingBasic");
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
@@ -54,6 +58,10 @@ public class IsReplayingTests
     [Trait("PowerShell-DTS", "Skip")] // Bug: https://github.com/Azure/azure-functions-durable-powershell/issues/106
     public async Task IsReplayingMultiActivity_SnapshotsShowReplayProgression()
     {
+        /**
+        Verifies that a multi-activity orchestrator correctly reports is_replaying throughout execution, 
+        showing the progression of replaying through multiple activities.
+        **/
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger(
             "StartOrchestration", "?orchestrationName=IsReplayingMultiActivity");
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
@@ -93,6 +101,10 @@ public class IsReplayingTests
     [Trait("PowerShell-DTS", "Skip")] // Bug: https://github.com/Azure/azure-functions-durable-powershell/issues/106
     public async Task IsReplayingConditionalLog_OnlyCountsLiveExecutionPaths()
     {
+        /**
+        Verifies code in an if-else statement only runs during live execution (not replay) 
+        only runs once, using logging statements. 
+        **/
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger(
             "StartOrchestration", "?orchestrationName=IsReplayingConditionalLog");
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
@@ -120,6 +132,9 @@ public class IsReplayingTests
     [Trait("PowerShell-DTS", "Skip")] // Bug: https://github.com/Azure/azure-functions-durable-powershell/issues/106
     public async Task IsReplayingCounter_TracksReplayAndLiveCheckpoints()
     {
+        /**
+        Validates is_replaying using both if/else and replay counts with a multi-activity orchestrator.
+        **/
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger(
             "StartOrchestration", "?orchestrationName=IsReplayingCounter");
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
@@ -152,6 +167,9 @@ public class IsReplayingTests
     [Trait("PowerShell-DTS", "Skip")] // Bug: https://github.com/Azure/azure-functions-durable-powershell/issues/106
     public async Task IsReplayingFanOutFanIn_ReportsReplayStateAroundParallelTasks()
     {
+        /**
+        Validates is_replaying before/after a compound task (WhenAll)
+        **/
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger(
             "StartOrchestration", "?orchestrationName=IsReplayingFanOutFanIn");
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
