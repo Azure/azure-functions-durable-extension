@@ -2,9 +2,6 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System.Collections.Concurrent;
-using Microsoft.Extensions.Logging;
-using Xunit.Abstractions;
-using Xunit.Sdk;
 
 namespace Microsoft.Azure.Durable.Tests.DotnetIsolatedE2E;
 
@@ -20,6 +17,29 @@ public class TestLoggerProvider : ILoggerProvider, ILogger
     }
 
     public IEnumerable<string> CoreToolsLogs => this.logs.ToArray();
+
+    /// <summary>
+    /// Polls <see cref="CoreToolsLogs"/> until a log line matching <paramref name="predicate"/>
+    /// appears, or the <paramref name="maxWaitSeconds"/> timeout elapses. Throws an xUnit
+    /// assertion failure if the log is not found. Prefer this over a fixed <c>Task.Delay</c>
+    /// to avoid flaky timing issues.
+    /// </summary>
+    public async Task AssertLogExistsAsync(Func<string, bool> predicate, string? failureMessage = null, int maxWaitSeconds = 10)
+    {
+        DateTime deadline = DateTime.UtcNow.AddSeconds(maxWaitSeconds);
+        while (DateTime.UtcNow < deadline)
+        {
+            if (this.logs.Any(predicate))
+            {
+                return;
+            }
+
+            await Task.Delay(250);
+        }
+
+        // Final check after deadline.
+        Assert.True(this.logs.Any(predicate), failureMessage ?? $"Expected log was not found within {maxWaitSeconds}s timeout.");
+    }
 
     // This needs to be created/disposed per-test so we can associate logs
     // with the specific running test.

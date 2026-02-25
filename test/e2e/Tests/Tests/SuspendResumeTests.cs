@@ -86,11 +86,9 @@ public class SuspendResumeTests
             using HttpResponseMessage resumeResponse = await HttpHelpers.InvokeHttpTrigger("SuspendInstance", $"?instanceId={instanceId}");
             await AssertRequestFailsAsync(resumeResponse, fixture.functionLanguageLocalizer.GetLocalizedStringValue("SuspendSuspendedInstance.FailureMessage"));
 
-            // Give some time for Core Tools to write logs out
-            Thread.Sleep(500);
-
-            Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains("Cannot suspend orchestration instance in the Suspended state.") &&
-                                                                x.Contains(instanceId));
+            await this.fixture.TestLogs.AssertLogExistsAsync(
+                x => x.Contains("Cannot suspend orchestration instance in the Suspended state.") && x.Contains(instanceId),
+                $"Expected 'Cannot suspend orchestration instance in the Suspended state.' log for instance '{instanceId}' was not found.");
         }
         finally
         {
@@ -115,11 +113,9 @@ public class SuspendResumeTests
             using HttpResponseMessage resumeResponse = await HttpHelpers.InvokeHttpTrigger("ResumeInstance", $"?instanceId={instanceId}");
             await this.AssertRequestFailsAsync(resumeResponse, fixture.functionLanguageLocalizer.GetLocalizedStringValue("ResumeRunningInstance.FailureMessage"));
 
-            // Give some time for Core Tools to write logs out
-            Thread.Sleep(500);
-
-            Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains("Cannot resume orchestration instance in the Running state.") &&
-                                                                x.Contains(instanceId));
+            await this.fixture.TestLogs.AssertLogExistsAsync(
+                x => x.Contains("Cannot resume orchestration instance in the Running state.") && x.Contains(instanceId),
+                $"Expected 'Cannot resume orchestration instance in the Running state.' log for instance '{instanceId}' was not found.");
         }
         finally
         {
@@ -165,17 +161,17 @@ public class SuspendResumeTests
                 await this.AssertRequestFailsAsync(resumeResponse, fixture.functionLanguageLocalizer.GetLocalizedStringValue("ResumeCompletedInstance.FailureMessage"));
             }
 
-            // Give some time for Core Tools to write logs out
-            Thread.Sleep(500);
-
             // PowerShell, Python, Node all use the HTTP suspend/resume APIs, which return 410 (Gone) and do not log
             // when the instance is completed
             if (languageType != LanguageType.PowerShell && languageType != LanguageType.Python && languageType != LanguageType.Node)
             {
-                Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains("Cannot suspend orchestration instance in the Completed state.") &&
-                                                                        x.Contains(instanceId));
-                Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains("Cannot resume orchestration instance in the Completed state.") &&
-                                                                        x.Contains(instanceId));
+                await this.fixture.TestLogs.AssertLogExistsAsync(
+                    x => x.Contains("Cannot suspend orchestration instance in the Completed state.") && x.Contains(instanceId),
+                    $"Expected 'Cannot suspend orchestration instance in the Completed state.' log for instance '{instanceId}' was not found.");
+
+                await this.fixture.TestLogs.AssertLogExistsAsync(
+                    x => x.Contains("Cannot resume orchestration instance in the Completed state.") && x.Contains(instanceId),
+                    $"Expected 'Cannot resume orchestration instance in the Completed state.' log for instance '{instanceId}' was not found.");
             }
         }
         finally

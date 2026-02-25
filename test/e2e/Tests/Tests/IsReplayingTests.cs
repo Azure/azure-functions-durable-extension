@@ -162,14 +162,16 @@ public class IsReplayingTests
         Assert.Equal(1, outputJson["live_log_count"]!.GetValue<int>());
         Assert.Equal("logged", outputJson["activity_result"]!.GetValue<string>());
 
-        await Task.Delay(2000);
-        string logs = string.Join(Environment.NewLine, this.fixture.TestLogs.CoreToolsLogs);
-        Assert.Contains("IsReplayingConditionalLog: LIVE after activity", logs);
+        // Poll for the expected log line.
+        const string liveAfterLog = "IsReplayingConditionalLog: LIVE after activity";
+        const string liveBeforeLog = "IsReplayingConditionalLog: LIVE before activity";
+
+        await this.fixture.TestLogs.AssertLogExistsAsync(l => l.Contains(liveAfterLog), $"Expected log line '{liveAfterLog}' was not found within the timeout.");
 
         // "LIVE before activity" is emitted on the first (non-replay) pass but NOT on the
         // final replay pass (where is_replaying is true), so it should appear exactly once.
         int liveBeforeCount = this.fixture.TestLogs.CoreToolsLogs
-            .Count(l => l.Contains("IsReplayingConditionalLog: LIVE before activity"));
+            .Count(l => l.Contains(liveBeforeLog));
         Assert.Equal(1, liveBeforeCount);
     }
 
