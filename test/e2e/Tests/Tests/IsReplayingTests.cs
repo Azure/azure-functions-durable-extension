@@ -29,8 +29,19 @@ public class IsReplayingTests
     public async Task IsReplayingBasic_CompletesWithExpectedReplayFlags()
     {
         /**
-        Verifies a single-activity orchestrator reports is_replaying True before the activity 
-        (during replay) and false after the activity (fresh execution).
+        The IsReplayingBasic orchestrator captures is_replaying before and after a single
+        activity call ("is_replaying_echo" with input "hello").
+
+        On the final replay pass the code before the yield has already been seen, so
+        is_replaying is true; the code after the yield is executing for the first time,
+        so is_replaying is false.
+
+        Expected output:
+        {
+            "before_activity": true,
+            "after_activity":  false,
+            "activity_result": "hello"
+        }
         **/
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger(
             "StartOrchestration", "?orchestrationName=IsReplayingBasic");
@@ -59,8 +70,24 @@ public class IsReplayingTests
     public async Task IsReplayingMultiActivity_SnapshotsShowReplayProgression()
     {
         /**
-        Verifies that a multi-activity orchestrator correctly reports is_replaying throughout execution, 
-        showing the progression of replaying through multiple activities.
+        The IsReplayingMultiActivity orchestrator calls three sequential activities
+        ("one", "two", "three") and records an is_replaying snapshot at four checkpoints:
+        before the first activity, and after each of the three activities.
+
+        On the final replay pass the first three checkpoints (start, after_first,
+        after_second) are replaying because their corresponding activities have already
+        completed. Only the last checkpoint (after_third) is fresh execution.
+
+        Expected output:
+        {
+            "snapshots": [
+                { "step": 0, "label": "start",        "is_replaying": true  },
+                { "step": 1, "label": "after_first",  "is_replaying": true  },
+                { "step": 2, "label": "after_second", "is_replaying": true  },
+                { "step": 3, "label": "after_third",  "is_replaying": false }
+            ],
+            "activities": ["one", "two", "three"]
+        }
         **/
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger(
             "StartOrchestration", "?orchestrationName=IsReplayingMultiActivity");
@@ -102,8 +129,23 @@ public class IsReplayingTests
     public async Task IsReplayingConditionalLog_OnlyCountsLiveExecutionPaths()
     {
         /**
-        Verifies code in an if-else statement only runs during live execution (not replay) 
-        only runs once, using logging statements. 
+        The IsReplayingConditionalLog orchestrator uses is_replaying to guard logging.
+        Before and after a single activity call ("is_replaying_echo" with input "logged"),
+        it checks is_replaying and only increments a live_log_count counter (and emits a
+        log line) when is_replaying is false.
+
+        On the final replay pass the pre-activity check is replaying (no increment), and
+        the post-activity check is live (increments once). A log line
+        "IsReplayingConditionalLog: LIVE after activity" is also emitted.
+
+        Across all passes, "LIVE before activity" is emitted exactly once (on the first
+        non-replay pass) and must not reappear on subsequent replay passes.
+
+        Expected output:
+        {
+            "live_log_count":  1,
+            "activity_result": "logged"
+        }
         **/
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger(
             "StartOrchestration", "?orchestrationName=IsReplayingConditionalLog");
@@ -123,6 +165,12 @@ public class IsReplayingTests
         await Task.Delay(2000);
         string logs = string.Join(Environment.NewLine, this.fixture.TestLogs.CoreToolsLogs);
         Assert.Contains("IsReplayingConditionalLog: LIVE after activity", logs);
+
+        // "LIVE before activity" is emitted on the first (non-replay) pass but NOT on the
+        // final replay pass (where is_replaying is true), so it should appear exactly once.
+        int liveBeforeCount = this.fixture.TestLogs.CoreToolsLogs
+            .Count(l => l.Contains("IsReplayingConditionalLog: LIVE before activity"));
+        Assert.Equal(1, liveBeforeCount);
     }
 
     [Fact]
@@ -133,7 +181,21 @@ public class IsReplayingTests
     public async Task IsReplayingCounter_TracksReplayAndLiveCheckpoints()
     {
         /**
-        Validates is_replaying using both if/else and replay counts with a multi-activity orchestrator.
+        The IsReplayingCounter orchestrator calls three sequential activities ("a", "b", "c")
+        and tallies replay vs. non-replay checkpoint counts at four points: before the first
+        activity, and after each of the three activities.
+
+        On the final replay pass the first three checkpoints are replaying (replay_count = 3)
+        and only the last checkpoint (after "c") is live (non_replay_count = 1),
+        for a total of 4 checkpoints.
+
+        Expected output:
+        {
+            "non_replay_count":  1,
+            "replay_count":      3,
+            "total_checkpoints": 4,
+            "activities":        ["a", "b", "c"]
+        }
         **/
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger(
             "StartOrchestration", "?orchestrationName=IsReplayingCounter");
@@ -168,7 +230,20 @@ public class IsReplayingTests
     public async Task IsReplayingFanOutFanIn_ReportsReplayStateAroundParallelTasks()
     {
         /**
-        Validates is_replaying before/after a compound task (WhenAll)
+        The IsReplayingFanOutFanIn orchestrator captures is_replaying before scheduling
+        three parallel activities ("alpha", "beta", "gamma") and again after awaiting
+        the fan-in (WhenAll / task_all).
+
+        On the final replay pass the code before the fan-out is replaying (true) and
+        the code after the fan-in is live (false). Activity results may appear in any
+        order since they run in parallel.
+
+        Expected output:
+        {
+            "before_fan_out": true,
+            "after_fan_in":   false,
+            "activities":     ["alpha", "beta", "gamma"]   // order may vary
+        }
         **/
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger(
             "StartOrchestration", "?orchestrationName=IsReplayingFanOutFanIn");
