@@ -145,7 +145,8 @@ internal class FunctionAppProcess
             {
                 try
                 {
-                    this.funcProcess.Kill();
+                    this.funcProcess.Kill(entireProcessTree: true);
+                    this.funcProcess.WaitForExit(5000);
                     this.funcProcess.Dispose();
                 }
                 catch

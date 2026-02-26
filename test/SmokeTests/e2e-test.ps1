@@ -4,6 +4,9 @@ param(
 	[string]$DockerfilePath,
 	[Parameter(Mandatory=$true)]
 	[string]$HttpStartPath,
+	[string]$TargetFramework=$null,
+	[string]$DotnetSdkTag=$null,
+	[string]$DotnetIsolatedTag=$null,
 	[string]$ImageName="dfapp",
 	[string]$ContainerName="app",
 	[switch]$NoSetup=$false,
@@ -75,7 +78,20 @@ $AzuriteVersion = "3.34.0"
 if ($NoSetup -eq $false) {
 	# Build the docker image first, since that's the most critical step
 	Write-Host "Building sample app Docker container from '$DockerfilePath'..." -ForegroundColor Yellow
-	docker build --pull -f $DockerfilePath -t $ImageName --progress plain $PSScriptRoot/../../
+	$buildArgs = @()
+	if ($TargetFramework) {
+		$buildArgs += "--build-arg"
+		$buildArgs += "TARGET_FRAMEWORK=$TargetFramework"
+	}
+	if ($DotnetSdkTag) {
+		$buildArgs += "--build-arg"
+		$buildArgs += "DOTNET_SDK_TAG=$DotnetSdkTag"
+	}
+	if ($DotnetIsolatedTag) {
+		$buildArgs += "--build-arg"
+		$buildArgs += "DOTNET_ISOLATED_TAG=$DotnetIsolatedTag"
+	}
+	docker build --pull -f $DockerfilePath -t $ImageName --progress plain @buildArgs $PSScriptRoot/../../
 	Exit-OnError
 
 	# Next, download and start the Azurite emulator Docker image
