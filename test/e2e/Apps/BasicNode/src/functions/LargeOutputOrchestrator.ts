@@ -13,6 +13,9 @@ function generateLargeString(sizeInKB: number): string {
 // Orchestration
 const LargeOutputOrchestrator: OrchestrationHandler = function* (context: OrchestrationContext) {
     const sizeInKB = context.df.getInput<number>();
+    if (sizeInKB <= 0) {
+        throw new Error('sizeInKB must be a positive integer.');
+    }
     context.log('Saying hello.');
     const outputs: any[] = [];
     const r_1 = yield context.df.callActivity('large_output_say_hello', 'Tokyo');

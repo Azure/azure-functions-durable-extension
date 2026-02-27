@@ -32,13 +32,12 @@ public class DedupeStatusesTests
             "HelloCities", completedInstanceId, "Completed");
 
         // Failed
+        // This invocation will fail because the "LargeOutputOrchestrator" expects a non-zero input, but we provide none
         string failedInstanceId = Guid.NewGuid().ToString();
         using HttpResponseMessage startFailedResponseFirstAttempt = await StartAndWaitForState(
-            "RethrowActivityException", failedInstanceId, "Failed");
-        // Invoking this same orchestration with the same instance ID will cause it to complete successfully on the second attempt,
-        // hence we look for a "Completed" status instead
+            "LargeOutputOrchestrator", failedInstanceId, "Failed");
         using HttpResponseMessage startFailedResponseSecondAttempt = await StartAndWaitForState(
-            "RethrowActivityException", failedInstanceId, "Completed");
+            "LargeOutputOrchestrator", failedInstanceId, "Failed");
 
         // Terminated
         if (this.fixture.functionLanguageLocalizer.GetLanguageType() != LanguageType.Java
@@ -136,13 +135,14 @@ public class DedupeStatusesTests
         }
 
         // Failed
+        // This invocation will fail because the "LargeOutputOrchestrator" expects a non-zero input, but we provide none
         string failedInstanceId = Guid.NewGuid().ToString();
         using HttpResponseMessage startFailedResponseFirstAttempt = await StartAndWaitForStateWithDedupeStatuses(
-            "RethrowActivityException", failedInstanceId, "Failed", dedupeStatuses);
+            "LargeOutputOrchestrator", failedInstanceId, "Failed", dedupeStatuses);
         using HttpResponseMessage startFailedResponseSecondAttempt = await StartAndWaitForStateWithDedupeStatuses(
-            "RethrowActivityException",
+            "LargeOutputOrchestrator",
             failedInstanceId,
-            "Completed",
+            "Failed",
             dedupeStatuses,
             expectedCode: dedupeStatuses.Contains("Failed") ? HttpStatusCode.Conflict : HttpStatusCode.Accepted);
 

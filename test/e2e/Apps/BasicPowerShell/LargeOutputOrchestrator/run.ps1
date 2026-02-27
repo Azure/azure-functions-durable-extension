@@ -7,6 +7,10 @@ param($Context)
 
 $sizeInKB = [int]$Context.Input
 
+if ($sizeInKB -le 0) {
+    [System.ArgumentOutOfRangeException]::new("sizeInKB")
+}
+
 Write-Information "Saying hello."
 $outputs = @()
 

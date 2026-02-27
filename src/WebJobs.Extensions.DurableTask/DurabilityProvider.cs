@@ -446,7 +446,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// If the array contains all of the running statuses (<see cref="OrchestrationStatus.Pending"/>, <see cref="OrchestrationStatus.Running"/>,
         /// and <see cref="OrchestrationStatus.Suspended"/>), then only terminal statuses can be reused.
         /// If at least one of these statuses is not included in the array, then if an instance with that status is found, it will first be terminated
-        /// before a new orchestration is created.</param>
+        /// before a new orchestration is created. This method will wait for the instance to reach a terminal status for a maximum of one hour or
+        /// until the <paramref name="cancellationToken"/> is invoked, whichever occurs first.</param>
         /// <param name="cancellationToken">The cancellation token used to cancel waiting for an existing instance to terminate in the case that a
         /// non-terminal instance is found whose runtime status is not included in <paramref name="dedupeStatuses"/>.</param>
         /// <returns>A task that completes when the creation message for the task orchestration instance is enqueued.</returns>
@@ -748,7 +749,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         await this.WaitForOrchestrationAsync(
                             instanceId,
                             orchestrationState.OrchestrationInstance.ExecutionId,
-                            TimeSpan.MaxValue,
+                            TimeSpan.FromHours(1),
                             cancellationToken);
                     }
                 }
