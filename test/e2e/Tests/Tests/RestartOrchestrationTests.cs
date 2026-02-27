@@ -171,7 +171,10 @@ public class RestartOrchestrationTests
 
         string jsonBody = JsonSerializer.Serialize(restartPayload);
 
-        // Restart the orchestrator with the same instance id)
+        // Restart the orchestrator with the same instance id
+        // This is necessary to ensure that the created times for the two orchestration instances are different.
+        // The created time returned by the orchestration status API has a resolution only up to seconds, not milliseconds.
+        Thread.Sleep(TimeSpan.FromSeconds(1));
         using HttpResponseMessage restartResponse = await HttpHelpers.InvokeHttpTriggerWithBody(
             "RestartOrchestration_HttpRestart", jsonBody, "application/json");
         Assert.Equal(HttpStatusCode.Accepted, restartResponse.StatusCode);

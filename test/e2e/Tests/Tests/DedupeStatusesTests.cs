@@ -62,7 +62,7 @@ public class DedupeStatusesTests
             || this.fixture.functionLanguageLocalizer.GetLanguageType() == LanguageType.Java)
         {
             string pendingInstanceId = Guid.NewGuid().ToString();
-            DateTime scheduledStartTime = DateTime.UtcNow.AddMinutes(2);
+            DateTime scheduledStartTime = DateTime.UtcNow.AddMinutes(10);
             using HttpResponseMessage startPendingResponseFirstAttempt = await StartAndWaitForState(
                 "HelloCities", pendingInstanceId, "Pending", scheduledStartTime: scheduledStartTime);
             using HttpResponseMessage startPendingResponseSecondAttempt = await StartAndWaitForState(
