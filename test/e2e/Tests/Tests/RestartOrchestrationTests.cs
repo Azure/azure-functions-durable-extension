@@ -179,7 +179,19 @@ public class RestartOrchestrationTests
         string restartStatusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(restartResponse);
         string restartInstanceId = await DurableHelpers.ParseInstanceIdAsync(restartResponse);
 
-        await DurableHelpers.WaitForOrchestrationStateAsync(restartStatusQueryGetUri, "Running", 30);
+        // Wait for the "created time" to change to verify that the orchestration was restarted
+        DurableHelpers.OrchestrationStatusDetails restartOrchestrationDetails
+            = await DurableHelpers.GetRunningOrchestrationDetailsAsync(restartStatusQueryGetUri);
+        DateTime createdTime2 = restartOrchestrationDetails.CreatedTime;
+        var waitForRestartTimeout = TimeSpan.FromSeconds(30);
+        using CancellationTokenSource cts = new(waitForRestartTimeout);
+        while (!cts.IsCancellationRequested && createdTime2 == createdTime1)
+        {
+            restartOrchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(restartStatusQueryGetUri);
+            createdTime2 = restartOrchestrationDetails.CreatedTime;
+        }
+        Assert.NotEqual(createdTime1, createdTime2);
+        Assert.Equal(instanceId, restartInstanceId);
 
         // Verify that the ClientOperationReceived log was emitted with a FunctionInvocationId
         ClientOperationLogHelpers.AssertClientOperationLogExists(
@@ -187,14 +199,6 @@ public class RestartOrchestrationTests
             "Restart",
             instanceId,
             this.fixture.functionLanguageLocalizer.GetLanguageType());
-
-        DurableHelpers.OrchestrationStatusDetails restartOrchestrationDetails
-            = await DurableHelpers.GetRunningOrchestrationDetailsAsync(restartStatusQueryGetUri);
-        DateTime createdTime2 = restartOrchestrationDetails.CreatedTime;
-
-        // Created time should be different.
-        Assert.NotEqual(createdTime1, createdTime2);
-        Assert.Equal(instanceId, restartInstanceId);
 
         // Clean up: terminate the long-running orchestration
         using HttpResponseMessage terminateResponse = await HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={instanceId}");
