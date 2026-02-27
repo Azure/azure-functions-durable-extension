@@ -13,7 +13,7 @@ function generateLargeString(sizeInKB: number): string {
 // Orchestration
 const LargeOutputOrchestrator: OrchestrationHandler = function* (context: OrchestrationContext) {
     const sizeInKB = context.df.getInput<number>();
-    if (sizeInKB <= 0) {
+    if (sizeInKB == null || sizeInKB <= 0) {
         throw new Error('sizeInKB must be a positive integer.');
     }
     context.log('Saying hello.');
