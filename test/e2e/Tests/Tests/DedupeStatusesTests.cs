@@ -154,7 +154,7 @@ public class DedupeStatusesTests
 
         // Pending
         string pendingInstanceId = Guid.NewGuid().ToString();
-        DateTime scheduledStartTime = DateTime.UtcNow.AddMinutes(2);
+        DateTime scheduledStartTime = DateTime.UtcNow.AddMinutes(10);
         using HttpResponseMessage startPendingResponseFirstAttempt = await StartAndWaitForStateWithDedupeStatuses(
             "HelloCities", pendingInstanceId, "Pending", dedupeStatuses, scheduledStartTime: scheduledStartTime);
         using HttpResponseMessage startPendingResponseSecondAttempt = await StartAndWaitForStateWithDedupeStatuses(
