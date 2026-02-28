@@ -229,7 +229,7 @@ public class DedupeStatusesTests
 
         if (scheduledStartTime is not null)
         {
-            queryString += $"&scheduledStartTime={scheduledStartTime:o}";
+            queryString += $"&ScheduledStartTime={scheduledStartTime:o}";
             functionName = "HelloCities_HttpStart_Scheduled";
         }
 
