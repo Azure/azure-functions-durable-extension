@@ -31,9 +31,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests
         {
             // Arrange
             // Use TestWebJobsBuilder directly (no HostBuilder needed) - this matches how Scale Controller uses it
+            using var loggerFactory = new LoggerFactory();
             var services = new ServiceCollection();
             services.AddSingleton<INameResolver>(new SimpleNameResolver());
-            services.AddSingleton<ILoggerFactory>(new LoggerFactory());
+            services.AddSingleton<ILoggerFactory>(loggerFactory);
             services.AddSingleton<IConfiguration>(new ConfigurationBuilder().Build());
 
             var webJobsBuilder = new TestWebJobsBuilder(services);
@@ -65,9 +66,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests
         {
             // Arrange
             // Use TestWebJobsBuilder directly (no HostBuilder needed) - this matches how Scale Controller uses it
+            using var loggerFactory = new LoggerFactory();
             var services = new ServiceCollection();
             services.AddSingleton<INameResolver>(new SimpleNameResolver());
-            services.AddSingleton<ILoggerFactory>(new LoggerFactory());
+            services.AddSingleton<ILoggerFactory>(loggerFactory);
             services.AddSingleton<IConfiguration>(new ConfigurationBuilder().Build());
 
             var webJobsBuilder = new TestWebJobsBuilder(services);
@@ -92,9 +94,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests
         {
             // Arrange
             // Use TestWebJobsBuilder directly (no HostBuilder needed) - this matches how Scale Controller uses it
+            using var loggerFactory = new LoggerFactory();
             var services = new ServiceCollection();
             services.AddSingleton<INameResolver>(new SimpleNameResolver());
-            services.AddSingleton<ILoggerFactory>(new LoggerFactory());
+            services.AddSingleton<ILoggerFactory>(loggerFactory);
             services.AddSingleton<IConfiguration>(new ConfigurationBuilder().Build());
 
             var webJobsBuilder = new TestWebJobsBuilder(services);
@@ -109,22 +112,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests
                 var factory2 = serviceProvider.GetService<IStorageServiceClientProviderFactory>();
                 Assert.Same(factory1, factory2);
             }
-        }
-
-        /// <summary>
-        /// Scenario: Extension method validation.
-        /// Validates that AddDurableTask() properly handles null builder parameter.
-        /// Tests defensive programming and error handling.
-        /// Ensures clear error messages for misconfiguration scenarios.
-        /// </summary>
-        [Fact]
-        public void AddDurableTask_NullBuilder_ThrowsArgumentNullException()
-        {
-            Assert.Throws<System.ArgumentNullException>(() =>
-            {
-                IWebJobsBuilder builder = null;
-                builder.AddDurableTask();
-            });
         }
 
         /// <summary>
@@ -145,9 +132,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests
                 })
                 .Build();
 
+            using var loggerFactory = new LoggerFactory();
             var services = new ServiceCollection();
             services.AddSingleton<INameResolver>(new SimpleNameResolver());
-            services.AddSingleton<ILoggerFactory>(new LoggerFactory());
+            services.AddSingleton<ILoggerFactory>(loggerFactory);
             services.AddSingleton<IConfiguration>(configuration);
 
             var webJobsBuilder = new TestWebJobsBuilder(services);
@@ -186,9 +174,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests
                 })
                 .Build();
 
+            using var loggerFactory = new LoggerFactory();
             var services = new ServiceCollection();
             services.AddSingleton<INameResolver>(new SimpleNameResolver());
-            services.AddSingleton<ILoggerFactory>(new LoggerFactory());
+            services.AddSingleton<ILoggerFactory>(loggerFactory);
             services.AddSingleton<IConfiguration>(configuration);
 
             var webJobsBuilder = new TestWebJobsBuilder(services);

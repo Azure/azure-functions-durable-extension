@@ -52,7 +52,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale
         /// <exception cref="ArgumentNullException">
         /// Thrown when <paramref name="connectionName"/> is <see langword="null"/> or empty.
         /// </exception>
-        public StorageAccountClientProvider GetClientProvider(string connectionName, TokenCredential tokenCredential = null)
+        public StorageAccountClientProvider GetClientProvider(string connectionName, TokenCredential? tokenCredential = null)
         {
             if (string.IsNullOrEmpty(connectionName))
             {

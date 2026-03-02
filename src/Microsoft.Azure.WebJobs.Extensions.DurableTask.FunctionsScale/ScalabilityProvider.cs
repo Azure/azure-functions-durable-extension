@@ -68,7 +68,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale
             string functionId,
             string functionName,
             string hubName,
-            string connectionName,
+            string targetConnectionName,
             out IScaleMonitor scaleMonitor)
         {
             scaleMonitor = null;
@@ -88,7 +88,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale
             string functionId,
             string functionName,
             string hubName,
-            string connectionName,
+            string targetConnectionName,
             out ITargetScaler targetScaler)
         {
             targetScaler = null;

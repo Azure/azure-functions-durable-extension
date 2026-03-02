@@ -11,6 +11,9 @@ on:
       - '*'
     paths-ignore: [ '**.md' ]
 
+permissions:
+  contents: read
+
 env:
   solution: WebJobs.Extensions.DurableTask.sln
   config: Release
@@ -25,10 +28,8 @@ jobs:
       with:
         submodules: true
 
-    - name: Setup .NET 8.0
-        uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: 8.0.x
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
 
     - name: Restore dependencies
       run: dotnet restore $solution
