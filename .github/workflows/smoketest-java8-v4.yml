@@ -1,5 +1,8 @@
 name: Smoke Test - Java 8 on Functions V4
 
+permissions:
+  contents: read
+
 on:
   workflow_dispatch:
   push:

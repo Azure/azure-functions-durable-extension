@@ -4,6 +4,9 @@
 
 name: "CodeQL"
 
+permissions:
+  contents: read
+
 on:
   push:
     branches: [ "main", "*" ] # TODO: remove development branch after approval
