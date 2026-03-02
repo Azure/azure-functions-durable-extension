@@ -1,4 +1,4 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
@@ -27,7 +27,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         IOrchestrationServiceClient,
         IOrchestrationServiceQueryClient,
         IOrchestrationServicePurgeClient,
-        IEntityOrchestrationService
+        IEntityOrchestrationService,
+        IDisposable
     {
         internal const string NoConnectionDetails = "default";
 
@@ -618,6 +619,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public virtual void SetUseSeparateQueueForEntityWorkItems(bool newValue)
         {
             throw this.GetNotImplementedException(nameof(this.SetUseSeparateQueueForEntityWorkItems));
+        }
+
+        /// <summary>
+        /// Disposes resources held by this provider, including the underlying
+        /// <see cref="IOrchestrationService"/> if it implements <see cref="IDisposable"/>.
+        /// Subclasses that own additional disposable resources should override this method,
+        /// dispose their own resources, and call <c>base.Dispose()</c>.
+        /// </summary>
+        public virtual void Dispose()
+        {
+            (this.innerService as IDisposable)?.Dispose();
+
+            // Avoid double-disposing when the same object serves both roles
+            // (e.g., AzureManagedOrchestrationService is both IOrchestrationService and IOrchestrationServiceClient).
+            if (!object.ReferenceEquals(this.innerService, this.innerServiceClient))
+            {
+                (this.innerServiceClient as IDisposable)?.Dispose();
+            }
         }
     }
 }
