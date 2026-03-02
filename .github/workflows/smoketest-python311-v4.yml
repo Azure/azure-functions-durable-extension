@@ -1,5 +1,8 @@
 name: Smoke Test - Python 3.11 on Functions V4
 
+permissions:
+  contents: read
+
 on:
   workflow_dispatch:
   push:

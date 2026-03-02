@@ -1,5 +1,8 @@
 name: Validate Build (E2E tests)
 
+permissions:
+  contents: read
+
 on:
   push:
     branches:
