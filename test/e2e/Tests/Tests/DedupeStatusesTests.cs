@@ -81,22 +81,16 @@ public class DedupeStatusesTests
         terminateResponse.Dispose();
 
         // Suspended
-        // Bug: https://github.com/microsoft/durabletask-mssql/issues/300
-        // Since it is not possible to terminate a suspended orchestration in MSSQL, the start orchestration request 
-        // will timeout waiting for the existing orchestration to terminate before creating the new one
-        if (this.fixture.GetDurabilityProvider() != FunctionAppFixture.ConfiguredDurabilityProviderType.MSSQL)
-        {
-            string suspendedInstanceId = Guid.NewGuid().ToString();
-            using HttpResponseMessage startSuspendedResponseFirstAttempt = await StartAndWaitForState(
-                "LongRunningOrchestrator", suspendedInstanceId, "Running");
-            await SuspendAndWaitForState(suspendedInstanceId, startSuspendedResponseFirstAttempt);
-            using HttpResponseMessage startSuspendedResponseSecondAttempt = await StartAndWaitForState(
-                "LongRunningOrchestrator", suspendedInstanceId, "Running");
-            // Clean-up
-            terminateResponse = await HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={suspendedInstanceId}");
-            Assert.Equal(HttpStatusCode.OK, terminateResponse.StatusCode);
-            terminateResponse.Dispose();
-        }
+        string suspendedInstanceId = Guid.NewGuid().ToString();
+        using HttpResponseMessage startSuspendedResponseFirstAttempt = await StartAndWaitForState(
+            "LongRunningOrchestrator", suspendedInstanceId, "Running");
+        await SuspendAndWaitForState(suspendedInstanceId, startSuspendedResponseFirstAttempt);
+        using HttpResponseMessage startSuspendedResponseSecondAttempt = await StartAndWaitForState(
+            "LongRunningOrchestrator", suspendedInstanceId, "Running");
+        // Clean-up
+        terminateResponse = await HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={suspendedInstanceId}");
+        Assert.Equal(HttpStatusCode.OK, terminateResponse.StatusCode);
+        terminateResponse.Dispose();
     }
 
     [Theory]
@@ -180,26 +174,20 @@ public class DedupeStatusesTests
         terminateResponse.Dispose();
 
         // Suspended
-        // Bug: https://github.com/microsoft/durabletask-mssql/issues/300
-        // Since it is not possible to terminate a suspended orchestration in MSSQL, the start orchestration request 
-        // will timeout waiting for the existing orchestration to terminate before creating the new one
-        if (this.fixture.GetDurabilityProvider() != FunctionAppFixture.ConfiguredDurabilityProviderType.MSSQL)
-        {
-            string suspendedInstanceId = Guid.NewGuid().ToString();
-            using HttpResponseMessage startSuspendedResponseFirstAttempt = await StartAndWaitForStateWithDedupeStatuses(
-                "LongRunningOrchestrator", suspendedInstanceId, "Running", dedupeStatuses);
-            await SuspendAndWaitForState(suspendedInstanceId, startSuspendedResponseFirstAttempt);
-            using HttpResponseMessage startSuspendedResponseSecondAttempt = await StartAndWaitForStateWithDedupeStatuses(
-                "LongRunningOrchestrator",
-                suspendedInstanceId,
-                "Running",
-                dedupeStatuses,
-                expectedCode: dedupeStatuses.Contains("Suspended") ? HttpStatusCode.Conflict : HttpStatusCode.Accepted);
-            // Clean-up
-            terminateResponse = await HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={suspendedInstanceId}");
-            Assert.Equal(HttpStatusCode.OK, terminateResponse.StatusCode);
-            terminateResponse.Dispose();
-        }
+        string suspendedInstanceId = Guid.NewGuid().ToString();
+        using HttpResponseMessage startSuspendedResponseFirstAttempt = await StartAndWaitForStateWithDedupeStatuses(
+            "LongRunningOrchestrator", suspendedInstanceId, "Running", dedupeStatuses);
+        await SuspendAndWaitForState(suspendedInstanceId, startSuspendedResponseFirstAttempt);
+        using HttpResponseMessage startSuspendedResponseSecondAttempt = await StartAndWaitForStateWithDedupeStatuses(
+            "LongRunningOrchestrator",
+            suspendedInstanceId,
+            "Running",
+            dedupeStatuses,
+            expectedCode: dedupeStatuses.Contains("Suspended") ? HttpStatusCode.Conflict : HttpStatusCode.Accepted);
+        // Clean-up
+        terminateResponse = await HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={suspendedInstanceId}");
+        Assert.Equal(HttpStatusCode.OK, terminateResponse.StatusCode);
+        terminateResponse.Dispose();
     }
 
     [Theory]
