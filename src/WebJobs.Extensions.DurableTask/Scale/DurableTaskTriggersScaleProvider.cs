@@ -140,7 +140,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
 
         public void Dispose()
         {
-            this.durabilityProvider?.Dispose();
+            (this.durabilityProvider as IDisposable)?.Dispose();
         }
 
         /// <summary>
