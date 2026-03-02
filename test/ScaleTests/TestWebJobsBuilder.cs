@@ -19,7 +19,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests
 
         public IServiceCollection Services { get; }
 
-        public IWebJobsBuilder AddExtension<TExtension>() where TExtension : class, IExtensionConfigProvider
+        public IWebJobsBuilder AddExtension<TExtension>()
+            where TExtension : class, IExtensionConfigProvider
         {
             this.Services.AddSingleton<IExtensionConfigProvider, TExtension>();
             return this;

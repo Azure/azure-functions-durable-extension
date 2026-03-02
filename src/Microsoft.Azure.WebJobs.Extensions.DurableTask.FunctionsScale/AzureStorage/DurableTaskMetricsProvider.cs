@@ -65,12 +65,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.AzureSto
             // Durable stores its own metrics, so we just collect them here
             try
             {
-                DisconnectedPerformanceMonitor performanceMonitor = this.GetPerformanceMonitor();
+                DisconnectedPerformanceMonitor currentPerformanceMonitor = this.GetPerformanceMonitor();
 
                 // We only want to call PulseAsync every 5 seconds
                 if (this.heartbeat == null || DateTime.UtcNow > this.heartbeatTimeStamp.AddSeconds(5))
                 {
-                    this.heartbeat = await performanceMonitor.PulseAsync();
+                    this.heartbeat = await currentPerformanceMonitor.PulseAsync();
                     this.heartbeatTimeStamp = DateTime.UtcNow;
                 }
             }

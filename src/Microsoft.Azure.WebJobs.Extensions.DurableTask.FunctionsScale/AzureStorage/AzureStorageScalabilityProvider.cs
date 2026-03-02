@@ -51,7 +51,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.AzureSto
             string functionId,
             string functionName,
             string hubName,
-            string connectionName,
+            string targetConnectionName,
             out IScaleMonitor scaleMonitor)
         {
             lock (this.initLock)
@@ -74,7 +74,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.AzureSto
             string functionId,
             string functionName,
             string hubName,
-            string connectionName,
+            string targetConnectionName,
             out ITargetScaler targetScaler)
         {
             lock (this.initLock)

@@ -1,0 +1,48 @@
+name: Functions Scale Tests Azure Storage 
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+    paths-ignore: [ '**.md' ]
+  pull_request:
+    branches:
+      - '*'
+    paths-ignore: [ '**.md' ]
+
+env:
+  solution: WebJobs.Extensions.DurableTask.sln
+  config: Release
+  AzureWebJobsStorage: UseDevelopmentStorage=true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: true
+
+    - name: Setup .NET 8.0
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 8.0.x
+
+    - name: Restore dependencies
+      run: dotnet restore $solution
+
+    - name: Build
+      run: dotnet build $solution
+
+    - name: Set up Node.js (needed for Azurite)
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18.x'
+
+    - name: Install Azurite
+      run: npm install -g azurite
+
+    - name: Run Scale tests
+      run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 & dotnet test ./test/ScaleTests/Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests.csproj --no-build --verbosity normal

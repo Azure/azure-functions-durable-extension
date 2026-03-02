@@ -20,7 +20,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests
     /// Ensures accurate scaling decisions for both orchestrators and activities.
     /// This is the primary scaling approach used by Azure Functions Scale Controller.
     /// </summary>
-    public class DurableTaskTargetScalerTests
+    public class DurableTaskTargetScalerTests : System.IDisposable
     {
         private readonly DurableTaskTargetScaler targetScaler;
         private readonly TargetScalerContext scalerContext;
@@ -29,15 +29,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests
         private readonly Mock<ScalabilityProvider> scalabilityProviderMock;
         private readonly TestLoggerProvider loggerProvider;
         private readonly ITestOutputHelper output;
+        private readonly LoggerFactory loggerFactory;
 
         public DurableTaskTargetScalerTests(ITestOutputHelper output)
         {
             this.scalerContext = new TargetScalerContext();
             this.output = output;
-            var loggerFactory = new LoggerFactory();
+            this.loggerFactory = new LoggerFactory();
             this.loggerProvider = new TestLoggerProvider(this.output);
-            loggerFactory.AddProvider(this.loggerProvider);
-            ILogger logger = loggerFactory.CreateLogger<DurableTaskTargetScaler>();
+            this.loggerFactory.AddProvider(this.loggerProvider);
+            ILogger logger = this.loggerFactory.CreateLogger<DurableTaskTargetScaler>();
 
             DisconnectedPerformanceMonitor nullPerformanceMonitorMock = null;
             StorageAccountClientProvider storageAccountClientProvider = null;
@@ -58,6 +59,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests
                 this.metricsProviderMock.Object,
                 this.scalabilityProviderMock.Object,
                 logger);
+        }
+
+        public void Dispose()
+        {
+            this.loggerFactory?.Dispose();
         }
 
         [Theory]

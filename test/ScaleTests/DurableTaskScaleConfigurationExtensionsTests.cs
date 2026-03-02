@@ -41,16 +41,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests
             webJobsBuilder.AddDurableTask();
 
             // Build service provider to resolve services
-            var serviceProvider = services.BuildServiceProvider();
+            using (var serviceProvider = services.BuildServiceProvider())
+            {
+                // Verify IStorageServiceClientProviderFactory is registered
+                var clientProviderFactory = serviceProvider.GetService<IStorageServiceClientProviderFactory>();
+                Assert.NotNull(clientProviderFactory);
 
-            // Verify IStorageServiceClientProviderFactory is registered
-            var clientProviderFactory = serviceProvider.GetService<IStorageServiceClientProviderFactory>();
-            Assert.NotNull(clientProviderFactory);
-
-            // Verify IScalabilityProviderFactory is registered
-            var scalabilityProviderFactories = serviceProvider.GetServices<IScalabilityProviderFactory>().ToList();
-            Assert.NotEmpty(scalabilityProviderFactories);
-            Assert.Contains(scalabilityProviderFactories, f => f is AzureStorageScalabilityProviderFactory);
+                // Verify IScalabilityProviderFactory is registered
+                var scalabilityProviderFactories = serviceProvider.GetServices<IScalabilityProviderFactory>().ToList();
+                Assert.NotEmpty(scalabilityProviderFactories);
+                Assert.Contains(scalabilityProviderFactories, f => f is AzureStorageScalabilityProviderFactory);
+            }
         }
 
         /// <summary>
@@ -101,12 +102,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests
             webJobsBuilder.AddDurableTask();
 
             // Build service provider to resolve services
-            var serviceProvider = services.BuildServiceProvider();
-
-            // Verify the same instance is returned (singleton)
-            var factory1 = serviceProvider.GetService<IStorageServiceClientProviderFactory>();
-            var factory2 = serviceProvider.GetService<IStorageServiceClientProviderFactory>();
-            Assert.Same(factory1, factory2);
+            using (var serviceProvider = services.BuildServiceProvider())
+            {
+                // Verify the same instance is returned (singleton)
+                var factory1 = serviceProvider.GetService<IStorageServiceClientProviderFactory>();
+                var factory2 = serviceProvider.GetService<IStorageServiceClientProviderFactory>();
+                Assert.Same(factory1, factory2);
+            }
         }
 
         /// <summary>
@@ -152,15 +154,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests
 
             webJobsBuilder.AddDurableTask();
 
-            var serviceProvider = services.BuildServiceProvider();
+            using (var serviceProvider = services.BuildServiceProvider())
+            {
+                // Verify AzureStorageScalabilityProviderFactory is registered as the default
+                var scalabilityProviderFactories = serviceProvider.GetServices<IScalabilityProviderFactory>().ToList();
+                Assert.NotEmpty(scalabilityProviderFactories);
 
-            // Verify AzureStorageScalabilityProviderFactory is registered as the default
-            var scalabilityProviderFactories = serviceProvider.GetServices<IScalabilityProviderFactory>().ToList();
-            Assert.NotEmpty(scalabilityProviderFactories);
-
-            var azureStorageFactory = scalabilityProviderFactories.OfType<AzureStorageScalabilityProviderFactory>().FirstOrDefault();
-            Assert.NotNull(azureStorageFactory);
-            Assert.Equal("AzureStorage", azureStorageFactory.Name);
+                var azureStorageFactory = scalabilityProviderFactories.OfType<AzureStorageScalabilityProviderFactory>().FirstOrDefault();
+                Assert.NotNull(azureStorageFactory);
+                Assert.Equal("AzureStorage", azureStorageFactory.Name);
+            }
         }
 
         /// <summary>
@@ -192,18 +195,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests
             webJobsBuilder.AddDurableTask();
 
             // Build service provider to resolve services
-            var serviceProvider = services.BuildServiceProvider();
-
-            // Verify we can create client providers for different connections
-            var clientProviderFactory = serviceProvider.GetService<IStorageServiceClientProviderFactory>();
-            Assert.NotNull(clientProviderFactory);
-
-            // Test that we can get client providers for all connections
-            var connections = new[] { "AzureWebJobsStorage", "Connection1", "Connection2" };
-            foreach (var connectionName in connections)
+            using (var serviceProvider = services.BuildServiceProvider())
             {
-                var clientProvider = clientProviderFactory.GetClientProvider(connectionName, null);
-                Assert.NotNull(clientProvider);
+                // Verify we can create client providers for different connections
+                var clientProviderFactory = serviceProvider.GetService<IStorageServiceClientProviderFactory>();
+                Assert.NotNull(clientProviderFactory);
+
+                // Test that we can get client providers for all connections
+                var connections = new[] { "AzureWebJobsStorage", "Connection1", "Connection2" };
+                foreach (var connectionName in connections)
+                {
+                    var clientProvider = clientProviderFactory.GetClientProvider(connectionName, null);
+                    Assert.NotNull(clientProvider);
+                }
             }
         }
     }
