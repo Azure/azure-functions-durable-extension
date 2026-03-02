@@ -20,6 +20,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     internal class OutOfProcMiddleware
     {
+        private const string NoProcessAssociatedMessage = "No process is associated";
+
         private readonly DurableTaskExtension extension;
 
         public OutOfProcMiddleware(DurableTaskExtension extension)
@@ -179,12 +181,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 // - a timeout
                 // - an out of memory exception
                 // - a worker process exit
-                if (functionResult.Exception is Host.FunctionTimeoutException
-                    || functionResult.Exception?.InnerException is SessionAbortedException // see RemoteOrchestrationContext.TrySetResultInternal for details on OOM-handling
-                    || (functionResult.Exception?.InnerException?.GetType().ToString().Contains("WorkerProcessExitException") ?? false))
+                if (IsPlatformLevelException(functionResult.Exception))
                 {
-                    // TODO: the `WorkerProcessExitException` type is not exposed in our dependencies, it's part of WebJobs.Host.Script.
-                    // Should we add that dependency or should it be exposed in WebJobs.Host?
                     throw functionResult.Exception;
                 }
             }
@@ -460,7 +458,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         errorType: "FunctionInvocationFailed",
                         errorMessage: $"Invocation of function '{functionName}' failed with an exception.",
                         stackTrace: null,
-                        innerFailure: new FailureDetails(functionResult.Exception),
+                        innerFailure: functionResult.Exception != null ? new FailureDetails(functionResult.Exception) : null,
                         isNonRetriable: true));
                 }
 
@@ -637,6 +635,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // Send the result of the activity function to the DTFx dispatch pipeline.
             // This allows us to bypass the default, in-process execution and process the given results immediately.
             dispatchContext.SetProperty(activityResult);
+        }
+
+        /// <summary>
+        /// Checks whether the given exception represents a platform-level error that should
+        /// abort the current dispatch and trigger a durable retry.
+        /// </summary>
+        private static bool IsPlatformLevelException(Exception? exception)
+        {
+            // TODO: the `WorkerProcessExitException` type is not exposed in our dependencies, it's part of WebJobs.Host.Script.
+            // Should we add that dependency or should it be exposed in WebJobs.Host?
+            return exception is Host.FunctionTimeoutException
+                || exception?.InnerException is SessionAbortedException // see RemoteOrchestrationContext.TrySetResultInternal for details on OOM-handling
+                || (exception?.InnerException?.GetType().ToString().Contains("WorkerProcessExitException", StringComparison.Ordinal) ?? false)
+                || (exception?.InnerException is InvalidOperationException ioe
+                    && ioe.Message.Contains(NoProcessAssociatedMessage, StringComparison.Ordinal));
         }
 
         private static FailureDetails GetFailureDetails(Exception e, out bool fromSerializedException)
