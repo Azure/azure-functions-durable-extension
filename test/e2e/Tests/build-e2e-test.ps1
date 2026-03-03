@@ -162,7 +162,7 @@ function InstallExtensionAndBuildTestApp($testAppDir) {
     }
 
     if (Test-Path ".\requirements.txt") {
-      Write-Host "Creating Python virtual environment in $testAppDir\.venv"
+      Write-Host "Creating Python virtual environment in $(Join-Path $testAppDir '.venv')"
       python -m venv .venv
       StopOnFailedExecution
 
@@ -172,7 +172,7 @@ function InstallExtensionAndBuildTestApp($testAppDir) {
         .  ./.venv/bin/Activate.ps1
       }
 
-      python -m pip install --force-reinstall -r requirements.txt
+      python -m pip install --upgrade -r requirements.txt
       StopOnFailedExecution
 
       deactivate
