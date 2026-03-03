@@ -48,8 +48,10 @@ public static class FixtureHelpers
             {
                 string activateBat = Path.Combine(venvDir, "Scripts", "activate.bat");
                 funcProcess.StartInfo.FileName = "cmd.exe";
-                funcProcess.StartInfo.ArgumentList.Add("/c");
-                funcProcess.StartInfo.ArgumentList.Add($"\"{activateBat}\" && \"{cliPath}\" host start {funcArgs}");
+                // Use Arguments (not ArgumentList) because ArgumentList escapes
+                // quotes with backslashes which cmd.exe does not understand.
+                // The outer pair of double-quotes is stripped by cmd.exe's /c rule.
+                funcProcess.StartInfo.Arguments = $"/c \"\"{activateBat}\" && \"{cliPath}\" host start {funcArgs}\"";
             }
             else
             {
