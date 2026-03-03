@@ -48,13 +48,15 @@ public static class FixtureHelpers
             {
                 string activateBat = Path.Combine(venvDir, "Scripts", "activate.bat");
                 funcProcess.StartInfo.FileName = "cmd.exe";
-                funcProcess.StartInfo.Arguments = $"/c \"\"{activateBat}\" && \"{cliPath}\" host start {funcArgs}\"";
+                funcProcess.StartInfo.ArgumentList.Add("/c");
+                funcProcess.StartInfo.ArgumentList.Add($"\"{activateBat}\" && \"{cliPath}\" host start {funcArgs}");
             }
             else
             {
                 string activateSh = Path.Combine(venvDir, "bin", "activate");
                 funcProcess.StartInfo.FileName = "bash";
-                funcProcess.StartInfo.Arguments = $"-c \"source '{activateSh}' && '{cliPath}' host start {funcArgs}\"";
+                funcProcess.StartInfo.ArgumentList.Add("-c");
+                funcProcess.StartInfo.ArgumentList.Add($"source '{activateSh}' && '{cliPath}' host start {funcArgs}");
             }
         }
         else
