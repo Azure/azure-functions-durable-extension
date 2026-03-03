@@ -44,8 +44,6 @@ public class GetOrchestrationHistoryTests
     public async Task GetOrchestrationHistory_FailedOrchestration()
     {
         bool isNotMSSQL = this.fixture.GetDurabilityProvider() != FunctionAppFixture.ConfiguredDurabilityProviderType.MSSQL;
-        // The other backends currently do not serialize tags when sending the history, or the failure details of an ExecutionCompletedEvent
-        bool checkTagsAndFailureDetails = this.fixture.GetDurabilityProvider() == FunctionAppFixture.ConfiguredDurabilityProviderType.AzureStorage;
         string subOrchestrationInstanceId = Guid.NewGuid().ToString();
 
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger(
@@ -79,7 +77,8 @@ public class GetOrchestrationHistoryTests
         Assert.Equal("ParentOrchestration", parentExecutionStartedEvent.Name);
         Assert.Equal(new ComplexInput("fail", subOrchestrationInstanceId, OutputSize, isNotMSSQL, this.tags),
             JsonConvert.DeserializeObject<ComplexInput>(parentExecutionStartedEvent.Input));
-        if (checkTagsAndFailureDetails)
+        // MSSQL does not include tags in history events
+        if (isNotMSSQL)
         {
             Assert.NotNull(parentExecutionStartedEvent.Tags);
             Assert.Contains(TagsKey, parentExecutionStartedEvent.Tags.Keys);
@@ -114,17 +113,14 @@ public class GetOrchestrationHistoryTests
         Assert.Equal("System.Exception", subOrchestrationFailureDetails.InnerFailure.ErrorType);
         Assert.Equal("Failure!", subOrchestrationFailureDetails.InnerFailure.ErrorMessage);
 
-        if (checkTagsAndFailureDetails)
-        {
-            Assert.NotNull(parentFailureDetails);
-            Assert.Equal("Microsoft.DurableTask.TaskFailedException", parentFailureDetails.ErrorType);
-            Assert.NotNull(parentFailureDetails.InnerFailure);
-            Assert.Equal("Microsoft.DurableTask.TaskFailedException", parentFailureDetails.InnerFailure.ErrorType);
-            Assert.Equal(subOrchestrationFailureDetails.ErrorMessage, parentFailureDetails.InnerFailure.ErrorMessage);
-            // Finally, the doubly nested inner failure of the execution completed event will correspond to the Activity failing
-            Assert.NotNull(parentFailureDetails.InnerFailure.InnerFailure);
-            Assert.Equal("Failure!", parentFailureDetails.InnerFailure.InnerFailure.ErrorMessage);
-        }
+        Assert.NotNull(parentFailureDetails);
+        Assert.Equal("Microsoft.DurableTask.TaskFailedException", parentFailureDetails.ErrorType);
+        Assert.NotNull(parentFailureDetails.InnerFailure);
+        Assert.Equal("Microsoft.DurableTask.TaskFailedException", parentFailureDetails.InnerFailure.ErrorType);
+        Assert.Equal(subOrchestrationFailureDetails.ErrorMessage, parentFailureDetails.InnerFailure.ErrorMessage);
+        // Finally, the doubly nested inner failure of the execution completed event will correspond to the Activity failing
+        Assert.NotNull(parentFailureDetails.InnerFailure.InnerFailure);
+        Assert.Equal("Failure!", parentFailureDetails.InnerFailure.InnerFailure.ErrorMessage);
 
         using HttpResponseMessage getSubOrchestrationHistoryResponse = await HttpHelpers.InvokeHttpTrigger("GetInstanceHistory", $"?instanceId={subOrchestrationInstanceId}");
         Assert.Equal(HttpStatusCode.OK, getSubOrchestrationHistoryResponse.StatusCode);
@@ -156,7 +152,8 @@ public class GetOrchestrationHistoryTests
             Assert.Equal("ParentOrchestration", subOrchestrationExecutionStartedEvent.ParentInstance.Name);
             Assert.Equal(parentExecutionStartedEvent.OrchestrationInstance.ExecutionId, subOrchestrationExecutionStartedEvent.ParentInstance.OrchestrationInstance.ExecutionId);
         }
-        if (checkTagsAndFailureDetails)
+        // MSSQL does not include tags in history events
+        if (isNotMSSQL)
         {
             Assert.NotNull(subOrchestrationExecutionStartedEvent.Tags);
             Assert.Contains(TagsKey, subOrchestrationExecutionStartedEvent.Tags.Keys);
@@ -165,7 +162,8 @@ public class GetOrchestrationHistoryTests
         Assert.Equal(EventType.TaskScheduled, subOrchestrationHistoryEvents[2].EventType);
         var taskScheduledEvent = (TaskScheduledEvent)subOrchestrationHistoryEvents[2];
         Assert.Equal("ThrowExceptionActivity", taskScheduledEvent.Name);
-        if (checkTagsAndFailureDetails)
+        // MSSQL does not include tags in history events
+        if (isNotMSSQL)
         {
             Assert.NotNull(taskScheduledEvent.Tags);
             Assert.Contains(TagsKey, taskScheduledEvent.Tags.Keys);
@@ -189,15 +187,12 @@ public class GetOrchestrationHistoryTests
         Assert.Equal("System.Exception", taskFailureDetails.ErrorType);
         Assert.Equal("Failure!", taskFailureDetails.ErrorMessage);
 
-        if (checkTagsAndFailureDetails)
-        {
-            Assert.NotNull(subOrchestrationFailureDetails);
-            Assert.Equal("Microsoft.DurableTask.TaskFailedException", subOrchestrationFailureDetails.ErrorType);
-            Assert.NotNull(subOrchestrationFailureDetails.InnerFailure);
-            // The inner failure for the suborchestration failed event will be the actual exception thrown by the Activity
-            Assert.Equal(taskFailureDetails.ErrorType, subOrchestrationFailureDetails.InnerFailure.ErrorType);
-            Assert.Equal(taskFailureDetails.ErrorMessage, subOrchestrationFailureDetails.InnerFailure.ErrorMessage);
-        }
+        Assert.NotNull(subOrchestrationFailureDetails);
+        Assert.Equal("Microsoft.DurableTask.TaskFailedException", subOrchestrationFailureDetails.ErrorType);
+        Assert.NotNull(subOrchestrationFailureDetails.InnerFailure);
+        // The inner failure for the suborchestration failed event will be the actual exception thrown by the Activity
+        Assert.Equal(taskFailureDetails.ErrorType, subOrchestrationFailureDetails.InnerFailure.ErrorType);
+        Assert.Equal(taskFailureDetails.ErrorMessage, subOrchestrationFailureDetails.InnerFailure.ErrorMessage);
 
         // Verify that the ClientOperationReceived logs were emitted with a FunctionInvocationId
         ClientOperationLogHelpers.AssertClientOperationLogExists(
@@ -222,8 +217,6 @@ public class GetOrchestrationHistoryTests
     public async Task GetOrchestrationHistory_LargeHistory()
     {
         bool isNotMSSQL = this.fixture.GetDurabilityProvider() != FunctionAppFixture.ConfiguredDurabilityProviderType.MSSQL;
-        // The other backends currently do not serialize tags when sending the history, or the failure details of an ExecutionCompletedEvent
-        bool checkTagsAndFailureDetails = this.fixture.GetDurabilityProvider() == FunctionAppFixture.ConfiguredDurabilityProviderType.AzureStorage;
         string subOrchestrationInstanceId = Guid.NewGuid().ToString();
 
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger(
@@ -257,7 +250,8 @@ public class GetOrchestrationHistoryTests
         Assert.Equal("ParentOrchestration", parentExecutionStartedEvent.Name);
         Assert.Equal(new ComplexInput("succeed", subOrchestrationInstanceId, OutputSize, isNotMSSQL, this.tags),
             JsonConvert.DeserializeObject<ComplexInput>(parentExecutionStartedEvent.Input));
-        if (checkTagsAndFailureDetails)
+        // MSSQL does not include tags in history events
+        if (isNotMSSQL)
         {
             Assert.NotNull(parentExecutionStartedEvent.Tags);
             Assert.Contains(TagsKey, parentExecutionStartedEvent.Tags.Keys);

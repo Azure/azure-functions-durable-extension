@@ -19,6 +19,10 @@
     <PackageReference Include="Microsoft.Build.Framework" ExcludeAssets="runtime" />
     <PackageReference Include="Microsoft.Build.Locator" />
     <PackageReference Include="Microsoft.Build.Tasks.Core" ExcludeAssets="runtime" />
+    <!-- Microsoft.Build 17.8.43 transitively requires System.Drawing.Common >= 7.0.0,
+         which conflicts with the central pin of 4.7.3. Override here since this test
+         project does not ship to customers. -->
+    <PackageReference Include="System.Drawing.Common" VersionOverride="7.0.0" />
     <PackageReference Include="Microsoft.CodeAnalysis" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" />
     <PackageReference Include="Microsoft.CodeAnalysis.Workspaces.Common" />

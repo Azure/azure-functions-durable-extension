@@ -12,6 +12,7 @@ using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
+using DurableTask.Core.Exceptions;
 using DurableTask.Core.History;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Routing.Template;
@@ -285,7 +286,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        public async Task<HttpResponseMessage> HandleRequestAsync(HttpRequestMessage request)
+        public async Task<HttpResponseMessage> HandleRequestAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             try
             {
@@ -309,7 +310,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     string instanceId = (string)routeValues[InstanceIdRouteParameter];
                     if (request.Method == HttpMethod.Post)
                     {
-                        return await this.HandleStartOrchestratorRequestAsync(request, functionName, instanceId);
+                        return await this.HandleStartOrchestratorRequestAsync(request, functionName, instanceId, cancellationToken);
                     }
                     else
                     {
@@ -906,7 +907,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private async Task<HttpResponseMessage> HandleStartOrchestratorRequestAsync(
             HttpRequestMessage request,
             string functionName,
-            string instanceId)
+            string instanceId,
+            CancellationToken cancellationToken)
         {
             try
             {
@@ -965,7 +967,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             Event = executionStartedEvent,
                             OrchestrationInstance = instance,
                         },
-                        this.config.Options.OverridableExistingInstanceStates.ToDedupeStatuses());
+                        this.config.Options.OverridableExistingInstanceStates.ToDedupeStatuses(),
+                        cancellationToken);
                 }
                 else
                 {
@@ -993,6 +996,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             catch (JsonReaderException e)
             {
                 return request.CreateErrorResponse(HttpStatusCode.BadRequest, "Invalid JSON content", e);
+            }
+            catch (OrchestrationAlreadyExistsException e)
+            {
+                return request.CreateErrorResponse(HttpStatusCode.Conflict, e.Message);
+            }
+            catch (ArgumentException e)
+            {
+                return request.CreateErrorResponse(HttpStatusCode.BadRequest, e.Message);
             }
         }
 
@@ -1067,6 +1078,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             catch (ArgumentException e)
             {
                 return request.CreateErrorResponse(HttpStatusCode.BadRequest, "InstanceId does not match a valid orchestration instance.", e);
+            }
+            catch (OrchestrationAlreadyExistsException e)
+            {
+                return request.CreateErrorResponse(HttpStatusCode.Conflict, "A non-terminal instance with this instance ID already exists.", e);
             }
             catch (JsonReaderException e)
             {

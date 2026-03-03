@@ -19,6 +19,10 @@ public static class LargeOutputOrchestrator
     {
         ILogger logger = context.CreateReplaySafeLogger(nameof(LargeOutputOrchestrator));
         int sizeInKB = context.GetInput<int>();
+        if (sizeInKB <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(sizeInKB));
+        }
 
         logger.LogInformation("Saying hello.");
         var outputs = new List<string>();
