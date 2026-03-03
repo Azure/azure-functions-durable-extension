@@ -2,7 +2,8 @@
   "version": "2.0",
   "extensions": {
     "durableTask": {
-      "hubName": "PowerShellE2ETaskHub"
+      "hubName": "PowerShellE2ETaskHub",
+      "overridableExistingInstanceStates": "AnyState"
     }
   },
   "managedDependency": {

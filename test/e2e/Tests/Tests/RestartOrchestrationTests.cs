@@ -41,6 +41,14 @@ public class RestartOrchestrationTests
         string instanceId = await DurableHelpers.ParseInstanceIdAsync(response);
 
         await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", 30);
+
+        // Verify that the ClientOperationReceived log was emitted with a FunctionInvocationId
+        ClientOperationLogHelpers.AssertClientOperationLogExists(
+            () => this.fixture.TestLogs.CoreToolsLogs,
+            "StartOrchestration",
+            instanceId,
+            this.fixture.functionLanguageLocalizer.GetLanguageType());
+
         var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
         string output1 = orchestrationDetails.Output;
         DateTime createdTime1 = orchestrationDetails.CreatedTime;
@@ -63,6 +71,14 @@ public class RestartOrchestrationTests
         string restartInstanceId = await DurableHelpers.ParseInstanceIdAsync(restartResponse);
 
         await DurableHelpers.WaitForOrchestrationStateAsync(restartStatusQueryGetUri, "Completed", 30);
+
+        // Verify that the ClientOperationReceived log was emitted with a FunctionInvocationId
+        ClientOperationLogHelpers.AssertClientOperationLogExists(
+            () => this.fixture.TestLogs.CoreToolsLogs,
+            "Restart",
+            instanceId,
+            this.fixture.functionLanguageLocalizer.GetLanguageType());
+
         var restartOrchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(restartStatusQueryGetUri);
         string output2 = restartOrchestrationDetails.Output;
         DateTime createdTime2 = restartOrchestrationDetails.CreatedTime;
@@ -125,18 +141,26 @@ public class RestartOrchestrationTests
     [Trait("Java", "Skip")] // RestartAsync not yet implemented in Java
     [Trait("Python", "Skip")] // RestartAsync not supported in Python
     [Trait("Node", "Skip")] // RestartAsync not supported in Node
-    // Test that if we restart a instance that doesn't reach to completed state,
-    // If RestartWithNewInstanceId is set to false, a InvalidOperationException error will be thrown.
-    public async Task RestartOrchestration_NotCompletedOrchestrationWithRestartFalse_ShouldReturnFailedPrecondition()
+    public async Task RestartOrchestration_NotCompletedOrchestrationWithRestartWithNewInstanceIdFalse_ShouldSucceed()
     {
         // Start a long-running orchestration
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("RestarttOrchestration_HttpStart/LongOrchestrator");
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         string instanceId = await DurableHelpers.ParseInstanceIdAsync(response);
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
+        DurableHelpers.OrchestrationStatusDetails orchestrationDetails
+            = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
+        DateTime createdTime1 = orchestrationDetails.CreatedTime;
 
         // Wait for the orchestration to be running
         await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Running", 30);
+
+        // Verify that the ClientOperationReceived log was emitted with a FunctionInvocationId
+        ClientOperationLogHelpers.AssertClientOperationLogExists(
+            () => this.fixture.TestLogs.CoreToolsLogs,
+            "StartOrchestration",
+            instanceId,
+            this.fixture.functionLanguageLocalizer.GetLanguageType());
 
         // Try to restart the running orchestration with restartWithNewInstanceId = false
         var restartPayload = new
@@ -147,15 +171,37 @@ public class RestartOrchestrationTests
 
         string jsonBody = JsonSerializer.Serialize(restartPayload);
 
+        // Restart the orchestrator with the same instance id
+        // This is necessary to ensure that the created times for the two orchestration instances are different.
+        // The created time returned by the orchestration status API has a resolution only up to seconds, not milliseconds.
+        Thread.Sleep(TimeSpan.FromSeconds(1));
         using HttpResponseMessage restartResponse = await HttpHelpers.InvokeHttpTriggerWithBody(
-            "RestartOrchestration_HttpRestartWithErrorHandling", jsonBody, "application/json");
+            "RestartOrchestration_HttpRestart", jsonBody, "application/json");
+        Assert.Equal(HttpStatusCode.Accepted, restartResponse.StatusCode);
 
-        Assert.Equal(HttpStatusCode.BadRequest, restartResponse.StatusCode);
-        
-        string responseContent = await restartResponse.Content.ReadAsStringAsync();
-        
-        // Verify the returned exception contains the correct information. 
-        Assert.Contains(fixture.functionLanguageLocalizer.GetLocalizedStringValue("RestartRunningInstance.ErrorMessage", instanceId), responseContent);
+        string restartStatusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(restartResponse);
+        string restartInstanceId = await DurableHelpers.ParseInstanceIdAsync(restartResponse);
+
+        // Wait for the "created time" to change to verify that the orchestration was restarted
+        DurableHelpers.OrchestrationStatusDetails restartOrchestrationDetails
+            = await DurableHelpers.GetRunningOrchestrationDetailsAsync(restartStatusQueryGetUri);
+        DateTime createdTime2 = restartOrchestrationDetails.CreatedTime;
+        var waitForRestartTimeout = TimeSpan.FromSeconds(30);
+        using CancellationTokenSource cts = new(waitForRestartTimeout);
+        while (!cts.IsCancellationRequested && createdTime2 == createdTime1)
+        {
+            restartOrchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(restartStatusQueryGetUri);
+            createdTime2 = restartOrchestrationDetails.CreatedTime;
+        }
+        Assert.NotEqual(createdTime1, createdTime2);
+        Assert.Equal(instanceId, restartInstanceId);
+
+        // Verify that the ClientOperationReceived log was emitted with a FunctionInvocationId
+        ClientOperationLogHelpers.AssertClientOperationLogExists(
+            () => this.fixture.TestLogs.CoreToolsLogs,
+            "Restart",
+            instanceId,
+            this.fixture.functionLanguageLocalizer.GetLanguageType());
 
         // Clean up: terminate the long-running orchestration
         using HttpResponseMessage terminateResponse = await HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={instanceId}");

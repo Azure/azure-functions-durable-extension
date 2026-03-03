@@ -15,7 +15,7 @@ bp = df.Blueprint()
 @bp.route(route="StartOrchestration")
 @bp.durable_client_input(client_name="client")
 async def http_start(req: func.HttpRequest, client):
-    instance_id = await client.start_new(req.params.get('orchestrationName'))
+    instance_id = await client.start_new(req.params.get('orchestrationName'), req.params.get('instanceId'))
 
     logging.info(f"Started orchestration with ID = '{instance_id}'.")
     return client.create_check_status_response(req, instance_id)

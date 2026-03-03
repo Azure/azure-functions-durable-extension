@@ -6,7 +6,8 @@
       "tracing": {
         "DistributedTracingEnabled": true,
         "Version": "V2"
-      }
+      },
+      "overridableExistingInstanceStates": "AnyState"
     }
   }
 }
