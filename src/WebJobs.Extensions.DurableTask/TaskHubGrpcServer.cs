@@ -58,6 +58,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             try
             {
+                List<OrchestrationStatus> allStatuses = System.Enum
+                    .GetValues<OrchestrationStatus>()
+                    .ToList();
+
+                // Not all clients are necessarily configured to set the OrchestrationIdReusePolicy field of the request.
+                // If it is null, we assume that they do not support per-request-dedupe statuses, and default to using just
+                // the OverridableExistingInstanceStates setting instead.
+                List<OrchestrationStatus> reusableStatuses = request.OrchestrationIdReusePolicy is null
+                    ? allStatuses
+                    : request.OrchestrationIdReusePolicy.ReplaceableStatus.Select(status => (OrchestrationStatus)status).ToList();
+
+                OrchestrationStatus[] dedupeStatuses = allStatuses
+                    .Except(reusableStatuses)
+                    .Union(this.extension.Options.OverridableExistingInstanceStates.ToDedupeStatuses())
+                    .ToArray();
+
                 // Create the orchestration instance
                 var instance = new OrchestrationInstance
                 {
@@ -93,7 +109,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         Event = executionStartedEvent,
                         OrchestrationInstance = instance,
                     },
-                    this.GetStatusesNotToOverride());
+                    dedupeStatuses,
+                    context.CancellationToken);
 
                 return new P.CreateInstanceResponse
                 {
@@ -108,6 +125,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 throw new RpcException(new Status(StatusCode.AlreadyExists, $"An Orchestration instance with the ID {request.InstanceId} already exists."));
             }
+            catch (ArgumentException ex)
+            {
+                throw new RpcException(new Status(StatusCode.InvalidArgument, $"Invalid argument for start instance request for instance ID {request.InstanceId}: {ex.Message}"));
+            }
             catch (Exception ex)
             {
                 this.extension.TraceHelper.ExtensionWarningEvent(
@@ -117,12 +138,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     message: $"Failed to start instanceId {request.InstanceId} due to internal exception.\n Exception trace: {ex}.");
                 throw new RpcException(new Status(StatusCode.Internal, $"Failed to start instance with ID {request.InstanceId}.\nInner Exception message: {ex.Message}."));
             }
-        }
-
-        private OrchestrationStatus[] GetStatusesNotToOverride()
-        {
-            OverridableStates overridableStates = this.extension.Options.OverridableExistingInstanceStates;
-            return overridableStates.ToDedupeStatuses();
         }
 
         public async override Task<P.RaiseEventResponse> RaiseEvent(P.RaiseEventRequest request, ServerCallContext context)
@@ -523,9 +538,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 // Thrown when th instanceId is not found.
                 throw new RpcException(new Status(StatusCode.NotFound, $"ArgumentException: {ex.Message}"));
             }
-            catch (InvalidOperationException ex)
+            catch (OrchestrationAlreadyExistsException ex)
             {
-                throw new RpcException(new Status(StatusCode.FailedPrecondition, $"InvalidOperationException: {ex.Message}"));
+                throw new RpcException(new Status(StatusCode.FailedPrecondition, $"Non-terminal instance with this instance ID already exists: {ex.Message}"));
             }
             catch (Exception ex)
             {

@@ -1140,16 +1140,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // GetOrchestrationInstanceStateAsync will throw ArgumentException if the provided instanceid is not found.
             OrchestrationState state = await this.GetOrchestrationInstanceStateAsync(instanceId);
 
-            bool isInstanceNotCompleted = state.OrchestrationStatus == OrchestrationStatus.Running ||
-                                        state.OrchestrationStatus == OrchestrationStatus.Pending ||
-                                        state.OrchestrationStatus == OrchestrationStatus.Suspended;
-
-            if (isInstanceNotCompleted && !restartWithNewInstanceId)
-            {
-                throw new InvalidOperationException($"Instance '{instanceId}' cannot be restarted while it is in state '{state.OrchestrationStatus}'. " +
-                    "Wait until it has completed, or restart with a new instance ID.");
-            }
-
             JToken input = ParseToJToken(state.Input);
 
             string newInstanceId = null;

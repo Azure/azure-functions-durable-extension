@@ -15,6 +15,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Azure.Storage.Blobs;
 using DurableTask.Core;
+using DurableTask.Core.Exceptions;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.Azure.WebJobs.Host;
@@ -4747,6 +4748,38 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [MemberData(nameof(GetBooleanAndFullFeaturedStorageProviderOptionsWithOverridableStatesAndSuspend))]
+        public async Task OverridableStates_RunningStatusesCorrectlyDeduped_ForRestart(
+            bool extendedSessions,
+            string storageProvider,
+            bool anyStateOverridable,
+            bool suspend)
+        {
+            await this.OverridableStates_RunningStatusesCorrectlyDeduped(
+                extendedSessions,
+                storageProvider,
+                anyStateOverridable,
+                suspend,
+                restart: true);
+        }
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [MemberData(nameof(GetBooleanAndFullFeaturedStorageProviderOptionsWithOverridableStates))]
+        public async Task OverridableStates_TerminalStatusesAlwaysReusable_ForRestart(
+            bool extendedSessions,
+            string storageProvider,
+            bool anyStateOverridable)
+        {
+            await this.OverridableStates_TerminalStatusesAlwaysReusable(
+                extendedSessions,
+                storageProvider,
+                anyStateOverridable,
+                restart: true);
+        }
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [MemberData(nameof(TestDataGenerator.GetBooleanAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task GetStatus_WithCondition(bool extendedSessions, string storageProvider)
         {
@@ -5278,48 +5311,55 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
+        // This method returns an array of [bool extendedSessions, string storageProvider, bool anyStateOverridable, bool suspend]
+        // It combines the GetBooleanAndFullFeaturedStorageProviderOptionsWithOverridableStates with both true and false for suspend.
+        public static IEnumerable<object[]> GetBooleanAndFullFeaturedStorageProviderOptionsWithOverridableStatesAndSuspend()
+        {
+            foreach (object[] data in GetBooleanAndFullFeaturedStorageProviderOptionsWithOverridableStates())
+            {
+                yield return new object[] { data[0], data[1], data[2], true };
+                yield return new object[] { data[0], data[1], data[2], false };
+            }
+        }
+
+        // This method returns an array of [bool extendedSessions, string storageProvider, bool anyStateOverridable]
+        // It combines the TestDataGenerator.GetBooleanAndFullFeaturedStorageProviderOptions with both true and false for anyStateOverridable.
+        public static IEnumerable<object[]> GetBooleanAndFullFeaturedStorageProviderOptionsWithOverridableStates()
+        {
+            foreach (object[] data in TestDataGenerator.GetBooleanAndFullFeaturedStorageProviderOptions())
+            {
+                yield return new object[] { data[0], data[1], true };
+                yield return new object[] { data[0], data[1], false };
+            }
+        }
+
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [MemberData(nameof(TestDataGenerator.GetBooleanAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
-        public async Task DedupeStates_AnyState(bool extendedSessions, string storageProvider)
+        [MemberData(nameof(GetBooleanAndFullFeaturedStorageProviderOptionsWithOverridableStatesAndSuspend))]
+        public async Task OverridableStates_RunningStatusesCorrectlyDeduped_ForStartNew(
+            bool extendedSessions,
+            string storageProvider,
+            bool anyStateOverridable,
+            bool suspend)
         {
-            DurableTaskOptions options = new DurableTaskOptions();
-            options.OverridableExistingInstanceStates = OverridableStates.AnyState;
-
-            var instanceId = "OverridableStatesAnyStateTest_" + Guid.NewGuid().ToString("N");
-
-            using (ITestHost host = TestHelpers.GetJobHost(
-                this.loggerProvider,
-                nameof(this.DedupeStates_AnyState),
+            await this.OverridableStates_RunningStatusesCorrectlyDeduped(
                 extendedSessions,
-                storageProviderType: storageProvider,
-                options: options))
-            {
-                await host.StartAsync();
+                storageProvider,
+                anyStateOverridable,
+                suspend,
+                restart: false);
+        }
 
-                int initialValue = 0;
-
-                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.Counter), initialValue, this.output, instanceId: instanceId);
-
-                // Wait for the instance to go into the Running state. This is necessary to ensure log validation consistency.
-                await client.WaitForStartupAsync(this.output);
-
-                TimeSpan waitTimeout = TimeSpan.FromSeconds(Debugger.IsAttached ? 300 : 10);
-
-                // Perform some operations
-                await client.RaiseEventAsync("operation", "incr", this.output);
-                await client.WaitForCustomStatusAsync(waitTimeout, this.output, 1);
-
-                // Make sure it's still running and didn't complete early (or fail).
-                var status = await client.GetStatusAsync();
-                Assert.True(
-                    status?.RuntimeStatus == OrchestrationRuntimeStatus.Running ||
-                    status?.RuntimeStatus == OrchestrationRuntimeStatus.ContinuedAsNew);
-
-                await host.StartOrchestratorAsync(nameof(TestOrchestrations.Counter), initialValue, this.output, instanceId: instanceId);
-
-                await host.StopAsync();
-            }
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [MemberData(nameof(GetBooleanAndFullFeaturedStorageProviderOptionsWithOverridableStates))]
+        public async Task OverridableStates_TerminalStatusesAlwaysReusable_ForStartNew(bool extendedSessions, string storageProvider, bool anyStateOverridable)
+        {
+            await this.OverridableStates_TerminalStatusesAlwaysReusable(
+                extendedSessions,
+                storageProvider,
+                anyStateOverridable,
+                restart: false);
         }
 
         [Fact]
@@ -5999,6 +6039,180 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(
                 $"{notificationUrl}/instances/{instanceId}/restart?taskHub={taskHubName}&connection=AzureWebJobsStorage&code=mykey",
                 httpManagementPayload.RestartPostUri);
+        }
+
+        private async Task OverridableStates_RunningStatusesCorrectlyDeduped(
+            bool extendedSessions,
+            string storageProvider,
+            bool anyStateOverridable,
+            bool suspend,
+            bool restart)
+        {
+            DurableTaskOptions options = new ()
+            {
+                OverridableExistingInstanceStates = anyStateOverridable ? OverridableStates.AnyState : OverridableStates.NonRunningStates,
+            };
+
+            string instanceId = Guid.NewGuid().ToString("N");
+
+            using ITestHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                restart ? nameof(this.OverridableStates_RunningStatusesCorrectlyDeduped_ForRestart)
+                    : nameof(this.OverridableStates_RunningStatusesCorrectlyDeduped_ForStartNew),
+                extendedSessions,
+                storageProviderType: storageProvider,
+                options: options);
+
+            await host.StartAsync();
+
+            int initialValue = 0;
+
+            TestDurableClient client = await host.StartOrchestratorAsync(
+                nameof(TestOrchestrations.Counter),
+                initialValue,
+                this.output,
+                instanceId: instanceId);
+
+            // Wait for the instance to go into the Running state. This is necessary to ensure log validation consistency.
+            await client.WaitForStartupAsync(this.output);
+
+            var waitTimeout = TimeSpan.FromSeconds(Debugger.IsAttached ? 300 : 10);
+
+            // Perform some operations
+            await client.RaiseEventAsync("operation", "incr", this.output);
+            await client.WaitForCustomStatusAsync(waitTimeout, this.output, 1);
+
+            // Make sure it's still running and didn't complete early (or fail).
+            DurableOrchestrationStatus status = await client.GetStatusAsync();
+            Assert.Equal(OrchestrationRuntimeStatus.Running, status?.RuntimeStatus);
+
+            if (suspend)
+            {
+                await client.SuspendAsync("suspend for test");
+                DurableOrchestrationStatus suspendedStatus = await client.WaitForStatusChange(this.output, OrchestrationRuntimeStatus.Suspended);
+                Assert.Equal(OrchestrationRuntimeStatus.Suspended, suspendedStatus?.RuntimeStatus);
+            }
+
+            Exception exception = null;
+            try
+            {
+                if (restart)
+                {
+                    await client.InnerClient.RestartAsync(instanceId, restartWithNewInstanceId: false);
+                }
+                else
+                {
+                    await host.StartOrchestratorAsync(nameof(TestOrchestrations.Counter), initialValue, this.output, instanceId: instanceId);
+                }
+            }
+            catch (Exception caughtException)
+            {
+                exception = caughtException;
+            }
+
+            await host.StopAsync();
+
+            // If any state is reusable, confirm that there is evidence the existing orchestration was terminated before the new one was created
+            if (anyStateOverridable && this.useTestLogger)
+            {
+                IReadOnlyCollection<LogMessage> durableTaskCoreLogs =
+                    this.loggerProvider.CreatedLoggers.Single(l => l.Category == "DurableTask.Core").LogMessages;
+                Assert.Contains(durableTaskCoreLogs, log => log.ToString().StartsWith($"{instanceId}: Orchestration completed with a 'Terminated' status"));
+            }
+
+            // Otherwise confirm that an exception was thrown when trying to create a new orchestration when one with a nonterminal status already exists
+            else if (!anyStateOverridable)
+            {
+                Assert.NotNull(exception);
+                if (restart)
+                {
+                    Assert.IsType<OrchestrationAlreadyExistsException>(exception);
+                }
+                else
+                {
+                    Assert.IsType<FunctionInvocationException>(exception);
+                    var functionInvocationException = (FunctionInvocationException)exception;
+                    Assert.NotNull(functionInvocationException.InnerException);
+                    Assert.IsType<OrchestrationAlreadyExistsException>(functionInvocationException.InnerException);
+                }
+            }
+        }
+
+        private async Task OverridableStates_TerminalStatusesAlwaysReusable(
+            bool extendedSessions,
+            string storageProvider,
+            bool anyStateOverridable,
+            bool restart)
+        {
+            DurableTaskOptions options = new ()
+            {
+                OverridableExistingInstanceStates = anyStateOverridable ? OverridableStates.AnyState : OverridableStates.NonRunningStates,
+            };
+
+            string instanceIdBase = Guid.NewGuid().ToString("N");
+
+            using ITestHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                restart ? nameof(this.OverridableStates_TerminalStatusesAlwaysReusable_ForRestart)
+                    : nameof(this.OverridableStates_TerminalStatusesAlwaysReusable_ForStartNew),
+                extendedSessions,
+                storageProviderType: storageProvider,
+                options: options);
+            await host.StartAsync();
+
+            int initialValue = 0;
+
+            // Test for all terminal statuses: Completed, Failed, Terminated
+            foreach (OrchestrationRuntimeStatus terminalStatus in new[]
+            {
+                OrchestrationRuntimeStatus.Completed,
+                OrchestrationRuntimeStatus.Failed,
+                OrchestrationRuntimeStatus.Terminated,
+            })
+            {
+                string instanceId = instanceIdBase + "_" + terminalStatus;
+
+                TestDurableClient client;
+                client = await host.StartOrchestratorAsync(
+                    terminalStatus == OrchestrationRuntimeStatus.Failed
+                        ? nameof(TestOrchestrations.ThrowOrchestrator) : nameof(TestOrchestrations.Counter),
+                    terminalStatus == OrchestrationRuntimeStatus.Failed ? string.Empty : initialValue,
+                    this.output,
+                    instanceId: instanceId);
+
+                await client.WaitForStartupAsync(this.output);
+                DurableOrchestrationStatus status = null;
+
+                if (terminalStatus == OrchestrationRuntimeStatus.Completed)
+                {
+                    await client.RaiseEventAsync("operation", "end", this.output);
+                }
+                else if (terminalStatus == OrchestrationRuntimeStatus.Terminated)
+                {
+                    await client.TerminateAsync("test terminate");
+                }
+
+                status = await client.WaitForCompletionAsync(this.output);
+                Assert.NotNull(status);
+                Assert.Equal(terminalStatus, status.RuntimeStatus);
+
+                // Should always be able to start a new orchestration with the same instanceId
+                if (restart)
+                {
+                    await client.InnerClient.RestartAsync(instanceId, restartWithNewInstanceId: false);
+                }
+                else
+                {
+                    await host.StartOrchestratorAsync(
+                        terminalStatus == OrchestrationRuntimeStatus.Failed
+                            ? nameof(TestOrchestrations.ThrowOrchestrator) : nameof(TestOrchestrations.Counter),
+                        terminalStatus == OrchestrationRuntimeStatus.Failed ? string.Empty : initialValue,
+                        this.output,
+                        instanceId: instanceId);
+                }
+            }
+
+            await host.StopAsync();
         }
 
         [DataContract]

@@ -52,7 +52,9 @@ public class HelloCities {
             final ExecutionContext context) {
         DurableTaskClient client = durableContext.getClient();
         String orchestrationName = request.getQueryParameters().get("orchestrationName");
-        String instanceId = client.scheduleNewOrchestrationInstance(orchestrationName);
+        NewOrchestrationInstanceOptions startOptions = new NewOrchestrationInstanceOptions();
+        startOptions.setInstanceId(request.getQueryParameters().get("instanceId"));
+        String instanceId = client.scheduleNewOrchestrationInstance(orchestrationName, startOptions);
         context.getLogger().info("Started orchestration with ID = '" + instanceId + "'.");
         return durableContext.createCheckStatusResponse(request, instanceId);
     }
@@ -75,6 +77,7 @@ public class HelloCities {
         }
         NewOrchestrationInstanceOptions startOptions = new NewOrchestrationInstanceOptions();
         startOptions.setStartTime(scheduledStartTime);
+        startOptions.setInstanceId(request.getQueryParameters().get("instanceId"));
         String instanceId = client.scheduleNewOrchestrationInstance("HelloCities", startOptions);
         context.getLogger().info("Started orchestration with ID = '" + instanceId + "'.");
         return durableContext.createCheckStatusResponse(request, instanceId);
