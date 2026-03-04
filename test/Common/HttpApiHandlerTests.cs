@@ -11,6 +11,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
+using DurableTask.Core.Exceptions;
 using DurableTask.Core.History;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -490,7 +491,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 {
                     Method = HttpMethod.Get,
                     RequestUri = getStatusRequestUriBuilder.Uri,
-                });
+                },
+                CancellationToken.None);
 
             Assert.Equal(statusCode, responseMessage.StatusCode);
         }
@@ -532,7 +534,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 {
                     Method = HttpMethod.Get,
                     RequestUri = getStatusRequestUriBuilder.Uri,
-                });
+                },
+                CancellationToken.None);
             Assert.Equal(HttpStatusCode.OK, responseMessage.StatusCode);
             Assert.Equal(string.Empty, responseMessage.Headers.GetValues("x-ms-continuation-token").FirstOrDefault());
             var actual = JsonConvert.DeserializeObject<IList<StatusResponsePayload>>(await responseMessage.Content.ReadAsStringAsync());
@@ -596,7 +599,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 {
                     Method = HttpMethod.Get,
                     RequestUri = getStatusRequestUriBuilder.Uri,
-                });
+                },
+                CancellationToken.None);
             Assert.Equal(HttpStatusCode.OK, responseMessage.StatusCode);
             var actual = JsonConvert.DeserializeObject<IList<StatusResponsePayload>>(await responseMessage.Content.ReadAsStringAsync());
             clientMock.Verify(x => x.ListInstancesAsync(It.IsAny<OrchestrationStatusQueryCondition>(), It.IsAny<CancellationToken>()));
@@ -672,7 +676,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             };
             requestMessage.Headers.Add("x-ms-continuation-token", "XXXX-XXXXXXXX-XXXXXXXXXXXX");
 
-            var responseMessage = await httpApiHandler.HandleRequestAsync(requestMessage);
+            var responseMessage = await httpApiHandler.HandleRequestAsync(requestMessage, CancellationToken.None);
             Assert.Equal(HttpStatusCode.OK, responseMessage.StatusCode);
             Assert.Equal("YYYY-YYYYYYYY-YYYYYYYYYYYY", responseMessage.Headers.GetValues("x-ms-continuation-token").FirstOrDefault());
             var actual = JsonConvert.DeserializeObject<IList<StatusResponsePayload>>(await responseMessage.Content.ReadAsStringAsync());
@@ -738,7 +742,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 {
                     Method = HttpMethod.Get,
                     RequestUri = getStatusRequestUriBuilder.Uri,
-                });
+                },
+                CancellationToken.None);
             Assert.Equal(HttpStatusCode.OK, responseMessage.StatusCode);
             var actual = JsonConvert.DeserializeObject<IList<StatusResponsePayload>>(await responseMessage.Content.ReadAsStringAsync());
             clientMock.Verify(x => x.ListInstancesAsync(It.IsAny<OrchestrationStatusQueryCondition>(), It.IsAny<CancellationToken>()));
@@ -796,7 +801,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 {
                     Method = HttpMethod.Get,
                     RequestUri = getStatusRequestUriBuilder.Uri,
-                });
+                },
+                CancellationToken.None);
             Assert.Equal(HttpStatusCode.OK, responseMessage.StatusCode);
             var actual = JsonConvert.DeserializeObject<IList<StatusResponsePayload>>(await responseMessage.Content.ReadAsStringAsync());
             clientMock.Verify(x => x.ListInstancesAsync(It.IsAny<OrchestrationStatusQueryCondition>(), It.IsAny<CancellationToken>()));
@@ -837,7 +843,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 {
                     Method = HttpMethod.Get,
                     RequestUri = getStatusRequestUriBuilder.Uri,
-                });
+                },
+                CancellationToken.None);
 
             var actual = JsonConvert.DeserializeObject<StatusResponsePayload>(await responseMessage.Content.ReadAsStringAsync());
             Assert.Equal(HttpStatusCode.OK, responseMessage.StatusCode);
@@ -883,7 +890,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 {
                     Method = HttpMethod.Post,
                     RequestUri = terminateRequestUriBuilder.Uri,
-                });
+                },
+                CancellationToken.None);
 
             Assert.Equal(testInstanceId, actualInstanceId);
             Assert.Equal(testReason, actualReason);
@@ -928,7 +936,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 {
                     Method = HttpMethod.Post,
                     RequestUri = suspendRequestUriBuilder.Uri,
-                });
+                },
+                CancellationToken.None);
 
             Assert.Equal(testInstanceId, actualInstanceId);
             Assert.Equal(testReason, actualReason);
@@ -973,7 +982,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 {
                     Method = HttpMethod.Post,
                     RequestUri = resumeRequestUriBuilder.Uri,
-                });
+                },
+                CancellationToken.None);
 
             Assert.Equal(testInstanceId, actualInstanceId);
             Assert.Equal(testReason, actualReason);
@@ -1029,7 +1039,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 .Returns(testResponse);
 
             var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);
-            var actualResponse = await httpApiHandler.HandleRequestAsync(testRequest);
+            var actualResponse = await httpApiHandler.HandleRequestAsync(testRequest, CancellationToken.None);
 
             Assert.Equal(HttpStatusCode.Accepted, actualResponse.StatusCode);
             var content = await actualResponse.Content.ReadAsStringAsync();
@@ -1094,7 +1104,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 .Returns(Task.FromResult(testResponse));
 
             var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);
-            var actualResponse = await httpApiHandler.HandleRequestAsync(testRequest);
+            var actualResponse = await httpApiHandler.HandleRequestAsync(testRequest, CancellationToken.None);
 
             Assert.Equal(HttpStatusCode.Accepted, actualResponse.StatusCode);
             var content = await actualResponse.Content.ReadAsStringAsync();
@@ -1130,12 +1140,41 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 .Throws(new ArgumentException());
 
             var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);
-            var actualResponse = await httpApiHandler.HandleRequestAsync(testRequest);
+            var actualResponse = await httpApiHandler.HandleRequestAsync(testRequest, CancellationToken.None);
 
             Assert.Equal(HttpStatusCode.BadRequest, actualResponse.StatusCode);
             var content = await actualResponse.Content.ReadAsStringAsync();
             var error = JsonConvert.DeserializeObject<JObject>(content);
             Assert.Equal("InstanceId does not match a valid orchestration instance.", error["Message"].ToString());
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task RestartInstance_Returns_HTTP_409_On_Invalid_Existing_Instance()
+        {
+            string testBadInstanceId = Guid.NewGuid().ToString("N");
+
+            var startRequestUriBuilder = new UriBuilder(TestConstants.NotificationUrl);
+            startRequestUriBuilder.Path += $"/Instances/{testBadInstanceId}/restart";
+
+            var testRequest = new HttpRequestMessage
+            {
+                Method = HttpMethod.Post,
+                RequestUri = startRequestUriBuilder.Uri,
+            };
+
+            var clientMock = new Mock<IDurableClient>();
+            clientMock
+                .Setup(x => x.RestartAsync(It.IsAny<string>(), It.IsAny<bool>()))
+                .Throws(new OrchestrationAlreadyExistsException());
+
+            var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);
+            var actualResponse = await httpApiHandler.HandleRequestAsync(testRequest, CancellationToken.None);
+
+            Assert.Equal(HttpStatusCode.Conflict, actualResponse.StatusCode);
+            var content = await actualResponse.Content.ReadAsStringAsync();
+            var error = JsonConvert.DeserializeObject<JObject>(content);
+            Assert.Equal("A non-terminal instance with this instance ID already exists.", error["Message"].ToString());
         }
 
         [Theory]
@@ -1192,7 +1231,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 .Returns(testResponse);
 
             var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);
-            var actualResponse = await httpApiHandler.HandleRequestAsync(testRequest);
+            var actualResponse = await httpApiHandler.HandleRequestAsync(testRequest, CancellationToken.None);
 
             Assert.Equal(HttpStatusCode.Accepted, actualResponse.StatusCode);
             var content = await actualResponse.Content.ReadAsStringAsync();
@@ -1262,7 +1301,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 .Returns(Task.FromResult(testResponse));
 
             var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);
-            var actualResponse = await httpApiHandler.HandleRequestAsync(testRequest);
+            var actualResponse = await httpApiHandler.HandleRequestAsync(testRequest, CancellationToken.None);
 
             Assert.Equal(HttpStatusCode.Accepted, actualResponse.StatusCode);
             var content = await actualResponse.Content.ReadAsStringAsync();
@@ -1304,7 +1343,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 .Throws(new JsonReaderException());
 
             var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);
-            var actualResponse = await httpApiHandler.HandleRequestAsync(testRequest);
+            var actualResponse = await httpApiHandler.HandleRequestAsync(testRequest, CancellationToken.None);
 
             Assert.Equal(HttpStatusCode.BadRequest, actualResponse.StatusCode);
             var content = await actualResponse.Content.ReadAsStringAsync();
@@ -1336,13 +1375,45 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 .Throws(new ArgumentException(exceptionMessage));
 
             var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);
-            var actualResponse = await httpApiHandler.HandleRequestAsync(testRequest);
+            var actualResponse = await httpApiHandler.HandleRequestAsync(testRequest, CancellationToken.None);
 
             Assert.Equal(HttpStatusCode.BadRequest, actualResponse.StatusCode);
             var content = await actualResponse.Content.ReadAsStringAsync();
             var error = JsonConvert.DeserializeObject<JObject>(content);
-            Assert.Equal("One or more of the arguments submitted is incorrect", error["Message"].ToString());
-            Assert.Equal(exceptionMessage, error["ExceptionMessage"].ToString());
+            Assert.Equal(exceptionMessage, error["Message"].ToString());
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task StartNewInstance_Returns_HTTP_409_On_Existing_Orchestration()
+        {
+            string testInstanceId = Guid.NewGuid().ToString("N");
+            string testFunctionName = "TestOrchestrator";
+
+            var startRequestUriBuilder = new UriBuilder(TestConstants.NotificationUrl);
+            startRequestUriBuilder.Path += $"/Orchestrators/{testFunctionName}";
+
+            var testRequest = new HttpRequestMessage
+            {
+                Method = HttpMethod.Post,
+                RequestUri = startRequestUriBuilder.Uri,
+                Content = new StringContent("\"TestContent\"", Encoding.UTF8, "application/json"),
+            };
+
+            string exceptionMessage = $"An orchestration with instance ID '{testInstanceId}' and status " +
+                            $"'{OrchestrationStatus.Running}' already exists";
+            var clientMock = new Mock<IDurableClient>();
+            clientMock
+                .Setup(x => x.StartNewAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<object>()))
+                .Throws(new OrchestrationAlreadyExistsException(exceptionMessage));
+
+            var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);
+            var actualResponse = await httpApiHandler.HandleRequestAsync(testRequest, CancellationToken.None);
+
+            Assert.Equal(HttpStatusCode.Conflict, actualResponse.StatusCode);
+            var content = await actualResponse.Content.ReadAsStringAsync();
+            var error = JsonConvert.DeserializeObject<JObject>(content);
+            Assert.Equal(exceptionMessage, error["Message"].ToString());
         }
 
         [Theory]
@@ -1379,7 +1450,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     .Returns(Task.FromResult(result));
 
             var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);
-            var actualResponse = await httpApiHandler.HandleRequestAsync(testRequest);
+            var actualResponse = await httpApiHandler.HandleRequestAsync(testRequest, CancellationToken.None);
 
             if (exists)
             {
@@ -1483,7 +1554,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             // Test HttpApiHandler response
             var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);
-            HttpResponseMessage responseMessage = await httpApiHandler.HandleRequestAsync(requestMessage);
+            HttpResponseMessage responseMessage = await httpApiHandler.HandleRequestAsync(requestMessage, CancellationToken.None);
             Assert.Equal(HttpStatusCode.OK, responseMessage.StatusCode);
             clientMock.Verify(x => x.ListEntitiesAsync(It.IsAny<EntityQuery>(), It.IsAny<CancellationToken>()));
 
@@ -1588,7 +1659,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
 
             var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);
-            var actualResponse = await httpApiHandler.HandleRequestAsync(testRequest);
+            var actualResponse = await httpApiHandler.HandleRequestAsync(testRequest, CancellationToken.None);
 
             Assert.Equal(HttpStatusCode.Accepted, actualResponse.StatusCode);
         }
@@ -1723,7 +1794,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var handler = new HttpApiHandler(customExtension, NullLogger.Instance);
             var request = new HttpRequestMessage(HttpMethod.Post, requestUri);
 
-            var response = await handler.HandleRequestAsync(request);
+            var response = await handler.HandleRequestAsync(request, CancellationToken.None);
 
             // Verify mock interactions
             orchestrationServiceClientMock.Verify(

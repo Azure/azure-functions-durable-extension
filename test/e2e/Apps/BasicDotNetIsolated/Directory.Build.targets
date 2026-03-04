@@ -1,0 +1,19 @@
+<Project>
+  <!--
+    The Azure Functions Worker SDK auto-generates a WorkerExtensions.csproj under obj/ with hardcoded
+    PackageReference versions. This conflicts with Central Package Management (CPM), causing NU1008
+    errors and preventing the transitive pin of System.Drawing.Common (in test/Directory.Packages.props)
+    from taking effect. As a result, the vulnerable transitive version 4.7.0 from
+    Microsoft.DurableTask.SqlServer.AzureFunctions remains unpatched (CVE-2021-24112).
+
+    This targets file disables CPM for the generated project and injects a direct PackageReference
+    to override the vulnerable transitive dependency.
+  -->
+  <PropertyGroup Condition="'$(AssemblyName)' == 'Microsoft.Azure.Functions.Worker.Extensions'">
+    <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(AssemblyName)' == 'Microsoft.Azure.Functions.Worker.Extensions'">
+    <PackageReference Include="System.Drawing.Common" Version="4.7.3" />
+  </ItemGroup>
+</Project>

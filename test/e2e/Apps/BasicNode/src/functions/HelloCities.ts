@@ -32,6 +32,7 @@ df.app.activity(activityName, { handler: HelloCitiesActivity });
 const HelloCitiesHttpStartScheduled: HttpHandler = async (request: HttpRequest, context: InvocationContext): Promise<HttpResponse> => {
     const client = df.getClient(context);
     const body: unknown = await request.text();
+
     const instanceId: string = await client.startNew("HelloCities", { input: request.params.ScheduledStartTime });
 
     context.log(`Started orchestration with ID = '${instanceId}'.`);
@@ -48,7 +49,8 @@ app.http('HelloCities_HttpStart_Scheduled', {
 
 const StartOrchestration: HttpHandler = async (request: HttpRequest, context: InvocationContext): Promise<HttpResponse> => {
     const client = df.getClient(context);
-    const instanceId: string = await client.startNew(request.params.orchestrationName);
+
+    const instanceId = await client.startNew(request.params.orchestrationName, { instanceId: request.params.instanceId });
 
     context.log(`Started orchestration with ID = '${instanceId}'.`);
 

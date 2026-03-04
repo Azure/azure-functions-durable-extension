@@ -8,7 +8,8 @@ using namespace System.Net
 param($Request, $TriggerMetadata)
 
 $orchestrationName = $Request.Query.orchestrationName
-$InstanceId = Start-DurableOrchestration -FunctionName $orchestrationName
+$InstanceId = $Request.Query.instanceId
+$InstanceId = Start-DurableOrchestration -FunctionName $orchestrationName -InstanceId $InstanceId
 Write-Host "Started orchestration with ID = '$InstanceId'"
 
 $Response = New-DurableOrchestrationCheckStatusResponse -Request $Request -InstanceId $InstanceId

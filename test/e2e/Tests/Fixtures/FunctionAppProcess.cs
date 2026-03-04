@@ -84,7 +84,7 @@ internal class FunctionAppProcess
                 throw new InvalidOperationException($"Could not resolve app path for app name {this.appName}.");
             }
 
-            this.funcProcess = FixtureHelpers.GetFuncHostProcess(e2eAppPath);
+            this.funcProcess = FixtureHelpers.GetFuncHostProcess(e2eAppPath, this.testLanguage);
             string workingDir = this.funcProcess.StartInfo.WorkingDirectory;
             this.logger.LogInformation($"  Working dir: '${workingDir}' Exists: '{Directory.Exists(workingDir)}'");
             string fileName = this.funcProcess.StartInfo.FileName;

@@ -1,5 +1,8 @@
 name: Smoke Test - .NET in-proc w/ MSSQL on Functions V4
 
+permissions:
+  contents: read
+
 on:
   workflow_dispatch:
   push:
