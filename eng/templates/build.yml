@@ -56,19 +56,6 @@ jobs:
             projects: '**/**/*.csproj'
             feedsToUse: config
             nugetConfigPath: 'nuget.config'
-            
-      - task: UsePythonVersion@0
-        inputs:
-          versionSpec: '3.11.x'
-          addToPath: true
-          architecture: 'x64'
-
-      - task: PowerShell@2
-        displayName: 'Build E2E test apps'
-        inputs:
-          filePath: 'test/e2e/tests/build-e2e-test.ps1'
-          arguments: '-TargetFramework net8.0 -SkipStorageEmulator -SkipCoreTools'
-          pwsh: true
 
       # Build durable-extension
       - task: VSBuild@1
