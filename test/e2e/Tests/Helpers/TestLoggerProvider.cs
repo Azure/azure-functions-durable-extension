@@ -2,6 +2,10 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System.Collections.Concurrent;
+using Microsoft.Extensions.Logging;
+using Xunit;
+using Xunit.Abstractions;
+using Xunit.Sdk;
 
 namespace Microsoft.Azure.Durable.Tests.DotnetIsolatedE2E;
 
