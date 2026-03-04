@@ -1,6 +1,6 @@
 <Project>
   <!--
-    Pin System.Drawing.Common 4.7.2 for WorkerExtensions to override
+    Pin System.Drawing.Common 4.7.3 for WorkerExtensions to override
     the vulnerable transitive 4.7.0 from Microsoft.DurableTask.SqlServer (CVE-2021-24112).
     CPM is disabled for WorkerExtensions via the local Directory.Packages.props.
     Import-blocking is removed via the _FunctionsExtensionCommonProps override

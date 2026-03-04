@@ -7,7 +7,7 @@
     NuGet walks upward from the project file looking for the nearest Directory.Packages.props.
     This file is found before test/Directory.Packages.props, giving us the chance to:
       - Disable CPM for WorkerExtensions (so its hardcoded versions + our System.Drawing.Common
-        4.7.2 override from Directory.Build.props are accepted).
+        4.7.3 override from Directory.Build.props are accepted).
       - Import the parent Directory.Packages.props for app.csproj and all other normal projects.
   -->
 
