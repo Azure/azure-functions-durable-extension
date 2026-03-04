@@ -18,14 +18,21 @@ param(
     [Switch]
     $StartDTSContainer,
 
+    # Skip downloading Core Tools (assumes they are already installed in the temp directory).
+    # This does NOT prevent Core Tools from being added to PATH if the temp directory exists.
     [Switch]
     $SkipCoreTools,
+
+    # Force re-download of Core Tools even if they already exist on disk. Ignored when -SkipCoreTools is set.
+    [Switch]
+    $UpdateCoreTools,
 
     # This param can be used during local runs of the build script to deliberately skip the build and run only the azurite/mssql logic
     # For instance, the command ./build-e2e-test.ps1 -SkipBuild -StartMSSqlContainer will start azurite and the MSSQL docker container only. 
     [Switch]
     $SkipBuild,
 
+    # Target a specific test app to build. Ignored if -SkipBuild is set. If not specified, all test apps will be built.
     [string]
     $E2EAppName = "",
 
@@ -42,7 +49,7 @@ if ($PSVersionTable.PSEdition -ne 'Core') {
 
 $ErrorActionPreference = "Stop"
 
-$CORE_TOOLS_VERSION = '4.0.7317'
+$CORE_TOOLS_VERSION = '4.7.0'
 
 $ProjectBaseDirectory = "$PSScriptRoot\..\..\..\"
 $ProjectTemporaryPath = Join-Path ([System.IO.Path]::GetTempPath()) "DurableTaskExtensionE2ETests"
@@ -66,9 +73,13 @@ function StopOnFailedExecution {
 }
 
 $FUNC_CLI_DIRECTORY = Join-Path $ProjectTemporaryPath 'Azure.Functions.Cli'
-if($SkipCoreTools -or (Test-Path $FUNC_CLI_DIRECTORY))
+if ($SkipCoreTools)
 {
-  Write-Host "---Skipping Core Tools download---"  
+  Write-Host "---Skipping Core Tools download (-SkipCoreTools)---"
+}
+elseif ((Test-Path $FUNC_CLI_DIRECTORY) -and -not $UpdateCoreTools)
+{
+  Write-Host "---Skipping Core Tools download (already exists; use -UpdateCoreTools to force)---"
 }
 else
 {
@@ -105,12 +116,8 @@ else
   Write-Host 'Extracting Functions Core Tools...'
   Expand-Archive $output -DestinationPath $FUNC_CLI_DIRECTORY
 
-  Write-Host "Adding Functions Core Tools to PATH..."
-  if ($IsWindows) {
-      $env:PATH = $env:PATH + ";$FUNC_CLI_DIRECTORY"
-  } else {
-      $env:PATH = $env:PATH + ":$FUNC_CLI_DIRECTORY"
-  }
+  Write-Host 'Cleaning up downloaded zip...'
+  Remove-Item -Force $output -ErrorAction SilentlyContinue
 
   if ($IsMacOS -or $IsLinux)
   {
@@ -120,12 +127,24 @@ else
   Write-Host "------"
 }
 
+# Ensure Core Tools are on PATH regardless of whether the download was skipped.
+# -SkipCoreTools only skips the download; if the directory exists, we still need it on PATH.
+if (Test-Path $FUNC_CLI_DIRECTORY) {
+  Write-Host "Adding Functions Core Tools to PATH..."
+  if ($IsWindows) {
+      $env:PATH = $env:PATH + ";$FUNC_CLI_DIRECTORY"
+  } else {
+      $env:PATH = $env:PATH + ":$FUNC_CLI_DIRECTORY"
+  }
+}
+
 function InstallExtensionAndBuildTestApp($testAppDir) {
     Write-Host "Building test app $testAppDir"
-    Set-Location $testAppDir
+    Push-Location $testAppDir
+    try {
 
     Write-Host "Removing cached WebJobs extension versions from nuget cache, if exists"
-    $cachedVersionFolders = Get-ChildItem -Path (Join-Path $LocalNugetCacheDirectory "microsoft.azure.webjobs.extensions.durabletask") -Directory -ErrorAction Continue
+    $cachedVersionFolders = Get-ChildItem -Path (Join-Path $LocalNugetCacheDirectory "microsoft.azure.webjobs.extensions.durabletask") -Directory -ErrorAction SilentlyContinue
     $cachedVersionFolders | ForEach-Object {
       Write-Host "Removing cached version $($_.Name) from nuget cache"
       Remove-Item -Recurse -Force $_.FullName -ErrorAction Stop
@@ -135,6 +154,7 @@ function InstallExtensionAndBuildTestApp($testAppDir) {
       Write-Host "Syncing extensions"
       if ((Test-Path (Join-Path $FUNC_CLI_DIRECTORY "func")) -or (Test-Path (Join-Path $FUNC_CLI_DIRECTORY "func.exe"))) {
         .(Join-Path $FUNC_CLI_DIRECTORY "func") extensions sync
+        StopOnFailedExecution
       }
       else {
         Write-Warning "func command not found. Skipping extensions sync."
@@ -142,29 +162,54 @@ function InstallExtensionAndBuildTestApp($testAppDir) {
     }
 
     if (Test-Path ".\requirements.txt") {
-      python -m pip install -r requirements.txt
+      Write-Host "Creating Python virtual environment in $(Join-Path $testAppDir '.venv')"
+      python -m venv .venv
+      StopOnFailedExecution
+
+      if ($IsWindows) {
+        .  .\.venv\Scripts\Activate.ps1
+      } else {
+        .  ./.venv/bin/Activate.ps1
+      }
+
+      python -m pip install --upgrade -r requirements.txt
+      StopOnFailedExecution
+
+      deactivate
     }
 
     if (Test-Path ".\package-lock.json") {
       Write-Host "Installing npm packages"
       npm install
+      StopOnFailedExecution
       npm run clean
+      StopOnFailedExecution
       npm run build
+      StopOnFailedExecution
     }
 
     if (Test-Path ".\pom.xml") {
       Write-Host "Building Java project"
       mvn clean package -q
+      StopOnFailedExecution
     }
     
     if (Test-Path ".\app.csproj") {
       Write-Host "Building app project"
-      dotnet clean app.csproj
       if ($TargetFramework) {
+        dotnet clean app.csproj -f $TargetFramework
+        StopOnFailedExecution
         dotnet build app.csproj -f $TargetFramework
       } else {
+        dotnet clean app.csproj
+        StopOnFailedExecution
         dotnet build app.csproj
       }
+      StopOnFailedExecution
+    }
+
+    } finally {
+      Pop-Location
     }
 }
 
@@ -257,7 +302,9 @@ if ($StartMSSqlContainer)
       Write-Warning "No MSSQL_SA_PASSWORD environment variable found! Skipping SQL Server container startup."
     }
   }
-  StartMSSQLContainer $MSSQLpwd
+  if ($MSSQLpwd) {
+    StartMSSQLContainer $MSSQLpwd
+  }
 }
 
 if ($StartDTSContainer)

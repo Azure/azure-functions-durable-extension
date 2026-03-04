@@ -19,6 +19,8 @@ def generate_large_string(size_in_kb: int) -> str:
 @bp.orchestration_trigger(context_name="context", orchestration="LargeOutputOrchestrator")
 def large_output_orchestrator(context: df.DurableOrchestrationContext):
     size_in_kb = context.get_input()
+    if (size_in_kb is None or size_in_kb<= 0):
+        raise ValueError("size_in_kb must be a positive integer.")
     logging.info("Saying hello.")
     outputs = []
     r_1 = yield context.call_activity("large_output_say_hello", "Tokyo")

@@ -1,5 +1,8 @@
 name: Validate Build (analyzer)
 
+permissions:
+  contents: read
+
 on:
   push:
     branches:

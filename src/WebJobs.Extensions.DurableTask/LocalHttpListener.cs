@@ -32,7 +32,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private const int MinPort = 30000;
         private const int MaxPort = 31000;
 
-        private readonly Func<HttpRequestMessage, Task<HttpResponseMessage>> handler;
+        private readonly Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> handler;
         private readonly EndToEndTraceHelper traceHelper;
         private readonly DurableTaskOptions durableTaskOptions;
         private readonly Random portGenerator;
@@ -47,7 +47,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public LocalHttpListener(
             EndToEndTraceHelper traceHelper,
             DurableTaskOptions durableTaskOptions,
-            Func<HttpRequestMessage, Task<HttpResponseMessage>> handler)
+            Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> handler)
         {
             this.traceHelper = traceHelper ?? throw new ArgumentNullException(nameof(traceHelper));
             this.handler = handler ?? throw new ArgumentNullException(nameof(handler));
@@ -182,7 +182,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             try
             {
                 HttpRequestMessage request = GetRequest(context);
-                HttpResponseMessage response = await this.handler(request);
+                HttpResponseMessage response = await this.handler(request, context.RequestAborted);
                 await SetResponseAsync(context, response);
             }
             catch (Exception e)

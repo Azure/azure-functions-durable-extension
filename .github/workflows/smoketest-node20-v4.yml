@@ -1,5 +1,8 @@
 name: Smoke Test - Node 20 on Functions V4
 
+permissions:
+  contents: read
+
 on:
   workflow_dispatch:
   push:
