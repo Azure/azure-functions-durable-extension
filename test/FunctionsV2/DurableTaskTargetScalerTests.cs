@@ -1,8 +1,10 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
 using System.Linq;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using DurableTask.AzureStorage;
 using DurableTask.AzureStorage.Monitoring;
@@ -175,6 +177,40 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
 
                 bool containsExpectedLog = this.loggerProvider.GetAllLogMessages().Select(p => p.FormattedMessage ?? "").Any(p => p.Contains(expectedSubString));
                 Assert.True(containsExpectedLog);
+            }
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void Dispose_DelegatesToDurabilityProvider_WhenProviderImplementsIDisposable()
+        {
+            var scaleProvider = (DurableTaskTriggersScaleProvider)RuntimeHelpers.GetUninitializedObject(typeof(DurableTaskTriggersScaleProvider));
+            var disposableDurabilityProvider = new DisposableTestDurabilityProvider();
+            FieldInfo field = typeof(DurableTaskTriggersScaleProvider).GetField("durabilityProvider", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(field);
+            field.SetValue(scaleProvider, disposableDurabilityProvider);
+
+            scaleProvider.Dispose();
+
+            Assert.True(disposableDurabilityProvider.IsDisposed);
+        }
+
+        private sealed class DisposableTestDurabilityProvider : DurabilityProvider, IDisposable
+        {
+            public DisposableTestDurabilityProvider()
+                : base(
+                    "TestProvider",
+                    new Mock<IOrchestrationService>(MockBehavior.Strict).Object,
+                    new Mock<IOrchestrationServiceClient>(MockBehavior.Strict).Object,
+                    "connectionName")
+            {
+            }
+
+            public bool IsDisposed { get; private set; }
+
+            public void Dispose()
+            {
+                this.IsDisposed = true;
             }
         }
     }
