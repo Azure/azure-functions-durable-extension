@@ -219,8 +219,11 @@ if (!$SkipBuild)
   
   # Do NOT use --output with multi-targeted projects to avoid race conditions
   # when multiple TFMs try to write to the same output directory (MSB4018).
+  # Disable GeneratePackageOnBuild to prevent parallel TFM builds from racing
+  # to write the same .nuspec file. The E2E test apps produce their own local
+  # .nupkg via MSBuild PreBuild targets, so the package is not needed here.
 
-  dotnet build -c Debug "$WebJobsExtensionProjectDirectory\WebJobs.Extensions.DurableTask.csproj"
+  dotnet build -c Debug /p:GeneratePackageOnBuild=false "$WebJobsExtensionProjectDirectory\WebJobs.Extensions.DurableTask.csproj"
 
   if ($LASTEXITCODE -ne 0) { Set-Location $PSScriptRoot; throw "WebJobs Extension build failed" }
 
