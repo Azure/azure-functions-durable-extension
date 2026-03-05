@@ -123,6 +123,7 @@ public class IsReplayingTests
 
     [Fact]
     [Trait("Dotnet", "Skip")] // Replay behavior in dotnet ensures that orchestrator code only runs once per execution
+    [Trait("Node", "Skip")] // Bug: https://github.com/Azure/azure-functions-durable-js/issues/564
     [Trait("Python-DTS", "Skip")] // Bug: https://github.com/Azure/azure-functions-durable-python/issues/595
     [Trait("Node-DTS", "Skip")] // Bug: https://github.com/Azure/azure-functions-durable-js/issues/677
     [Trait("PowerShell-DTS", "Skip")] // Bug: https://github.com/Azure/azure-functions-durable-powershell/issues/106
