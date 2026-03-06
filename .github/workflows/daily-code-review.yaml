@@ -1,0 +1,233 @@
+name: 🔍 Daily Code Review Agent
+
+on:
+  # Run every day at 08:00 UTC
+  schedule:
+    - cron: "0 8 * * *"
+  # Allow manual trigger for testing
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  daily-code-review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    env:
+      DOTNET_VER: "8.0.x"
+
+    steps:
+      - name: 📥 Checkout code (full history for better analysis)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: ⚙️ Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VER }}
+
+      - name: 📦 Restore dependencies
+        run: dotnet restore WebJobs.Extensions.DurableTask.sln
+
+      - name: 🔨 Build solution
+        run: dotnet build WebJobs.Extensions.DurableTask.sln --no-restore
+
+      - name: 🔍 Collect existing work to avoid duplicates
+        id: dedup
+        run: |
+          echo "Fetching open PRs and issues with copilot-finds label..."
+
+          # Get open PRs with copilot-finds label
+          OPEN_PRS=$(gh pr list \
+            --label "copilot-finds" \
+            --state open \
+            --limit 200 \
+            --json title,url,headRefName,files \
+            --jq '[.[] | {title: .title, url: .url, branch: .headRefName, files: [.files[].path]}]' \
+            2>/dev/null || echo "[]")
+
+          # Get open issues with copilot-finds label
+          OPEN_ISSUES=$(gh issue list \
+            --label "copilot-finds" \
+            --state open \
+            --limit 200 \
+            --json title,url,body \
+            --jq '[.[] | {title: .title, url: .url}]' \
+            2>/dev/null || echo "[]")
+
+          # Get recently merged PRs (last 14 days) with copilot-finds label
+          RECENT_MERGED=$(gh pr list \
+            --label "copilot-finds" \
+            --state merged \
+            --limit 200 \
+            --json title,url,mergedAt,files \
+            --jq '[.[] | select((.mergedAt | fromdateiso8601) > (now - 14*86400)) | {title: .title, url: .url, files: [.files[].path]}]' \
+            2>/dev/null || echo "[]")
+
+          # Get all open PRs by bots
+          BOT_PRS=$(gh pr list \
+            --author "app/github-actions" \
+            --state open \
+            --limit 200 \
+            --json title,url,headRefName \
+            --jq '[.[] | {title: .title, url: .url, branch: .headRefName}]' \
+            2>/dev/null || echo "[]")
+
+          # Combine into exclusion context
+          EXCLUSION_CONTEXT=$(cat <<DEDUP_EOF
+          === EXISTING WORK (DO NOT DUPLICATE) ===
+
+          ## Open PRs with copilot-finds label:
+          $OPEN_PRS
+
+          ## Open issues with copilot-finds label:
+          $OPEN_ISSUES
+
+          ## Recently merged copilot-finds PRs (last 14 days):
+          $RECENT_MERGED
+
+          ## Open PRs by bots:
+          $BOT_PRS
+
+          === END EXISTING WORK ===
+          DEDUP_EOF
+          )
+
+          # Write to file for the agent to read
+          echo "$EXCLUSION_CONTEXT" > /tmp/exclusion-context.txt
+
+          echo "Dedup context collected:"
+          echo "- Open copilot-finds PRs: $(echo "$OPEN_PRS" | jq 'length')"
+          echo "- Open copilot-finds issues: $(echo "$OPEN_ISSUES" | jq 'length')"
+          echo "- Recently merged: $(echo "$RECENT_MERGED" | jq 'length')"
+          echo "- Bot PRs: $(echo "$BOT_PRS" | jq 'length')"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+
+      - name: ✅ Verify tests pass before analysis
+        run: |
+          dotnet test ./test/FunctionsV2/WebJobs.Extensions.DurableTask.Tests.V2.csproj \
+            --no-build --filter "FullyQualifiedName!~DurableTaskEndToEndTests" \
+            || echo "::warning::Some pre-existing unit test failures detected"
+
+      - name: 🏷️ Ensure copilot-finds label exists
+        run: |
+          gh label create "copilot-finds" \
+            --description "Findings from daily automated code review agent" \
+            --color "7057ff" \
+            --force
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+
+      - name: 🤖 Install GitHub Copilot CLI
+        run: npm install -g @github/copilot
+        env:
+          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
+
+      - name: 🔍 Run Daily Code Review Agent
+        run: |
+          EXCLUSION_CONTEXT=$(cat /tmp/exclusion-context.txt)
+          AGENT_PROMPT=$(cat .github/agents/daily-code-review.agent.md)
+
+          FULL_PROMPT=$(cat <<PROMPT_EOF
+          $AGENT_PROMPT
+
+          ---
+
+          ## Pre-loaded Deduplication Context
+
+          The following items are already tracked. DO NOT create PRs that overlap with any of these:
+
+          $EXCLUSION_CONTEXT
+
+          ---
+
+          ## Execution Instructions
+
+          You are running in CI. Today's date is $(date +%Y-%m-%d).
+          Repository: ${{ github.repository }}
+
+          Execute the full workflow described above:
+          1. Review the deduplication context above
+          2. Analyze the codebase for bugs, missing tests, and improvements
+          3. Select the single highest-impact finding
+          4. Create a branch, make the fix, add tests, verify tests pass, open a PR
+          5. Label each PR with "copilot-finds"
+
+          Remember:
+          - Only open PRs for findings you are confident about
+          - Every PR must include new tests
+          - Run "dotnet build" and "dotnet test" before opening each PR
+          - If tests fail due to your changes, fix them or skip the finding
+          - PRs must target the "dev" branch
+          - Maximum 1 PR total
+          PROMPT_EOF
+          )
+
+          EXIT_CODE=0
+          timeout --foreground --signal=TERM --kill-after=30s 1200s \
+            copilot \
+              --prompt "$FULL_PROMPT" \
+              --model "claude-opus-4.6" \
+              --allow-all-tools \
+              --allow-all-paths \
+              < /dev/null 2>&1 || EXIT_CODE=$?
+
+          if [ $EXIT_CODE -eq 124 ]; then
+            echo "::warning::Agent timed out after 20 minutes"
+          elif [ $EXIT_CODE -ne 0 ]; then
+            echo "::warning::Agent exited with code $EXIT_CODE"
+          fi
+
+          echo "Daily code review agent completed."
+        env:
+          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
+          CI: "true"
+          NO_COLOR: "1"
+          TERM: "dumb"
+
+      - name: 📊 Summary
+        if: always()
+        run: |
+          echo "## Daily Code Review Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Date:** $(date +%Y-%m-%d)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Count PRs created in this run
+          CUTOFF_EPOCH=$(date -d '1 hour ago' +%s)
+          PR_COUNT=$(gh pr list \
+            --label "copilot-finds" \
+            --state open \
+            --limit 200 \
+            --json createdAt \
+            --jq "[.[] | select((.createdAt | fromdateiso8601) > $CUTOFF_EPOCH)] | length" \
+            2>/dev/null || echo "0")
+
+          echo "**PRs opened this run:** $PR_COUNT" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "$PR_COUNT" -gt 0 ]; then
+            echo "### New PRs:" >> $GITHUB_STEP_SUMMARY
+            gh pr list \
+              --label "copilot-finds" \
+              --state open \
+              --limit 200 \
+              --json title,url,createdAt \
+              --jq ".[] | select((.createdAt | fromdateiso8601) > $CUTOFF_EPOCH) | \"- [\(.title)](\(.url))\"" \
+              2>/dev/null >> $GITHUB_STEP_SUMMARY || true
+          else
+            echo "_No new findings today — codebase looking good! 🎉_" >> $GITHUB_STEP_SUMMARY
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}

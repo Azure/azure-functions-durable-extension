@@ -1,0 +1,128 @@
+name: 🔎 PR Verification Agent
+
+# Security: This workflow has write permissions to contents, issues, and PRs, so
+# it must NOT use the `pull_request` trigger (which checks out untrusted PR code
+# and could exfiltrate the job token). Instead, it runs on schedule/manual
+# dispatch only. The agent fetches each PR's branch itself before building and
+# verifying. The contents:write permission is needed to push verification test
+# code to verification/pr-<N> branches.
+on:
+  # Run periodically to pick up PRs labeled pending-verification
+  schedule:
+    - cron: "0 */6 * * *" # Every 6 hours
+
+  # Allow manual trigger for testing
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  verify-prs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    # Prevent overlapping runs from racing on label updates / comment posts
+    concurrency:
+      group: pr-verification
+      cancel-in-progress: false
+
+    env:
+      DOTNET_VER: "8.0.x"
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: ⚙️ Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VER }}
+
+      - name: 🐳 Start Azurite (Azure Storage Emulator)
+        run: |
+          docker run --name azurite -d --rm \
+            -p 10000:10000 -p 10001:10001 -p 10002:10002 \
+            mcr.microsoft.com/azure-storage/azurite
+
+          echo "Waiting for Azurite to be ready..."
+          for i in $(seq 1 30); do
+            if nc -z localhost 10000 2>/dev/null; then
+              echo "Azurite is ready!"
+              break
+            fi
+            if [ "$i" -eq 30 ]; then
+              echo "Azurite failed to start within 30 seconds"
+              exit 1
+            fi
+            sleep 1
+          done
+
+      - name: 🤖 Install GitHub Copilot CLI
+        run: npm install -g @github/copilot
+        env:
+          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
+
+      - name: 🔎 Run PR Verification Agent
+        run: |
+          AGENT_PROMPT=$(cat .github/agents/pr-verification.agent.md)
+
+          FULL_PROMPT=$(cat <<PROMPT_EOF
+          $AGENT_PROMPT
+
+          ---
+
+          ## Execution Context
+
+          You are running in CI. Today's date is $(date +%Y-%m-%d).
+          Repository: ${{ github.repository }}
+
+          Environment variables available:
+          - AzureWebJobsStorage=UseDevelopmentStorage=true
+
+          Execute the full workflow described above:
+          1. Find PRs labeled pending-verification
+          2. For each PR: understand the fix, extract the scenario, checkout the PR branch, build, create and run verification tests
+          3. Post verification results to the linked issue
+          4. Update PR labels accordingly
+
+          Remember:
+          - Process PRs one at a time
+          - Always checkout the PR branch and rebuild before verifying
+          - If a verification test fails, retry up to 2 times before reporting failure
+          - Maximum timeout per PR: 5 minutes
+          PROMPT_EOF
+          )
+
+          EXIT_CODE=0
+          timeout --foreground --signal=TERM --kill-after=30s 1200s \
+            copilot \
+              --prompt "$FULL_PROMPT" \
+              --model "claude-opus-4.6" \
+              --allow-all-tools \
+              --allow-all-paths \
+              < /dev/null 2>&1 || EXIT_CODE=$?
+
+          if [ $EXIT_CODE -eq 124 ]; then
+            echo "::warning::Agent timed out after 20 minutes"
+          elif [ $EXIT_CODE -ne 0 ]; then
+            echo "::warning::Agent exited with code $EXIT_CODE"
+          fi
+
+          echo "PR verification agent completed."
+        env:
+          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
+          AzureWebJobsStorage: "UseDevelopmentStorage=true"
+          CI: "true"
+          NO_COLOR: "1"
+          TERM: "dumb"
+
+      - name: 🧹 Stop Azurite
+        if: always()
+        run: docker stop azurite 2>/dev/null || true
