@@ -12,13 +12,11 @@ namespace Microsoft.Azure.Durable.Tests.DotnetIsolatedE2E;
 public class IsReplayingTests
 {
     private readonly FunctionAppFixture fixture;
-    private readonly ITestOutputHelper output;
 
     public IsReplayingTests(FunctionAppFixture fixture, ITestOutputHelper testOutputHelper)
     {
         this.fixture = fixture;
         this.fixture.TestLogs.UseTestLogger(testOutputHelper);
-        this.output = testOutputHelper;
     }
 
     [Fact]
@@ -30,7 +28,7 @@ public class IsReplayingTests
     {
         /**
         The IsReplayingBasic orchestrator captures is_replaying before and after a single
-        activity call ("is_replaying_echo" with input "hello").
+        activity call (an echo activity with input "hello").
 
         On the final replay pass the code before the yield has already been seen, so
         is_replaying is true; the code after the yield is executing for the first time,
@@ -131,7 +129,7 @@ public class IsReplayingTests
     {
         /**
         The IsReplayingConditionalLog orchestrator uses is_replaying to guard logging.
-        Before and after a single activity call ("is_replaying_echo" with input "logged"),
+        Before and after a single activity call (an echo activity with input "logged"),
         it checks is_replaying and only increments a live_log_count counter (and emits a
         log line) when is_replaying is false.
 
