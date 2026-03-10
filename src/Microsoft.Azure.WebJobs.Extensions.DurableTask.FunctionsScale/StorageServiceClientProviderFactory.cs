@@ -7,6 +7,7 @@ using DurableTask.AzureStorage;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
+#nullable enable
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale
 {
     /// <summary>
