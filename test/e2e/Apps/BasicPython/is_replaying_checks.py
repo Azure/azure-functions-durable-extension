@@ -22,12 +22,9 @@ def is_replaying_echo(value: str) -> str:
 
 # ---------------------------------------------------------------------------
 # 1. IsReplayingBasic
-#    Records ctx.is_replaying before and after a single activity call.
-#    Expected result: { "before_activity": true|false, "after_activity": false,
-#                       "activity_result": "<value>" }
-#    On first (non-replay) execution:  before_activity = False
-#    After replay for the activity:     before_activity = True (replayed),
-#                                       after_activity  = False (new code path)
+#    Records is_replaying before and after a single activity call.
+#    Result: { "before_activity": true, "after_activity": false,
+#              "activity_result": "hello" }
 # ---------------------------------------------------------------------------
 
 @bp.orchestration_trigger(context_name="context", orchestration="IsReplayingBasic")
@@ -44,10 +41,8 @@ def is_replaying_basic(context: df.DurableOrchestrationContext):
 
 # ---------------------------------------------------------------------------
 # 2. IsReplayingMultiActivity
-#    Records is_replaying at each step across three sequential activities.
-#    The result contains a list of snapshots taken at each stage.
-#    Tests can verify that after the final activity call, is_replaying is
-#    False, while earlier checkpoints are True during replay.
+#    Snapshots is_replaying at four checkpoints across three sequential
+#    activities. First three are replaying; only the last is live.
 # ---------------------------------------------------------------------------
 
 @bp.orchestration_trigger(context_name="context", orchestration="IsReplayingMultiActivity")
@@ -80,21 +75,15 @@ def is_replaying_multi_activity(context: df.DurableOrchestrationContext):
 
 # ---------------------------------------------------------------------------
 # 3. IsReplayingConditionalLog
-#    Uses is_replaying to emit a log message ONLY on the live (non-replay)
-#    execution path. Tests can search the Function Host logs for these
-#    specific markers to confirm the guard works correctly.
+#    Guards log emission with is_replaying. Emits "LIVE" markers only on
+#    non-replay paths and "REPLAY" markers otherwise.
 #
-#    Log markers:
-#      "IsReplayingConditionalLog: LIVE before activity"
-#      "IsReplayingConditionalLog: LIVE after activity"
-#    These should each appear exactly ONCE in the logs – the "before" marker
-#    is emitted only during the very first execution (before any replay),
-#    and the "after" marker is emitted after the activity completes on the
-#    live (non-replay) pass.
-#    
-#    A REPLAY marker is logged when is_replaying is True, which should only
-#    appear during replay passes:
-#      "IsReplayingConditionalLog: REPLAY before activity"
+#    Expected logs (each exactly once):
+#      "IsReplayingConditionalLog: LIVE before activity"   – first execution
+#      "IsReplayingConditionalLog: LIVE after activity"    – final pass
+#      "IsReplayingConditionalLog: REPLAY before activity" – final replay pass
+#
+#    Result: { "live_log_count": 1, "activity_result": "logged" }
 # ---------------------------------------------------------------------------
 
 @bp.orchestration_trigger(context_name="context", orchestration="IsReplayingConditionalLog")
@@ -123,19 +112,11 @@ def is_replaying_conditional_log(context: df.DurableOrchestrationContext):
 
 # ---------------------------------------------------------------------------
 # 4. IsReplayingCounter
-#    Counts how many times code is reached on a non-replay pass across
-#    multiple activities. On a completed orchestration:
-#      - non_replay_count should equal the number of activities + 1
-#        (start + after each activity on the final replay pass)
-#        Actually, the final pass replays through all previous yields
-#        (is_replaying=True) and only the code after the last yield is
-#        non-replay. So the expected non_replay_count is 1 per complete
-#        execution from start-to-finish where the code path after the
-#        last yield runs with is_replaying=False.
-#
-#    Result:
-#      { "non_replay_count": <int>, "replay_count": <int>,
-#        "total_checkpoints": <int>, "activities": [...] }
+#    Tallies replay vs. live checkpoints across three sequential activities.
+#    On the final pass, the first three checkpoints are replaying and only
+#    the last (after the final yield) is live.
+#    Result: { "non_replay_count": 1, "replay_count": 3,
+#              "total_checkpoints": 4, "activities": ["a","b","c"] }
 # ---------------------------------------------------------------------------
 
 @bp.orchestration_trigger(context_name="context", orchestration="IsReplayingCounter")
@@ -183,13 +164,10 @@ def is_replaying_counter(context: df.DurableOrchestrationContext):
 
 # ---------------------------------------------------------------------------
 # 5. IsReplayingFanOutFanIn
-#    Demonstrates is_replaying behavior with fan-out/fan-in (parallel).
-#    All tasks are scheduled before any of them complete, so the replay
-#    characteristics differ from sequential calls.
-#
-#    Result:
-#      { "before_fan_out": <bool>, "after_fan_in": <bool>,
-#        "activities": [...] }
+#    Records is_replaying before fan-out and after fan-in of three parallel
+#    activities. Before is replaying; after is live.
+#    Result: { "before_fan_out": true, "after_fan_in": false,
+#              "activities": ["alpha","beta","gamma"] }
 # ---------------------------------------------------------------------------
 
 @bp.orchestration_trigger(context_name="context", orchestration="IsReplayingFanOutFanIn")
