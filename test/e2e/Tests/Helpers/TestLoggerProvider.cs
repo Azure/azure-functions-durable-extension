@@ -1,7 +1,6 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
-using System.Collections.Concurrent;
 using Microsoft.Extensions.Logging;
 using Xunit;
 using Xunit.Abstractions;
@@ -13,14 +12,24 @@ public class TestLoggerProvider : ILoggerProvider, ILogger
 {
     private readonly IMessageSink messageSink;
     private ITestOutputHelper? currentTestOutput;
-    private ConcurrentBag<string> logs = new ConcurrentBag<string>();
+    private readonly List<string> logsList = new List<string>();
+    private readonly object logsLock = new object();
 
     public TestLoggerProvider(IMessageSink messageSink)
     {
         this.messageSink = messageSink;
     }
 
-    public IEnumerable<string> CoreToolsLogs => this.logs.ToArray();
+    public IEnumerable<string> CoreToolsLogs
+    {
+        get
+        {
+            lock (this.logsLock)
+            {
+                return this.logsList.ToArray();
+            }
+        }
+    }
 
     /// <summary>
     /// Polls <see cref="CoreToolsLogs"/> until a log line matching <paramref name="predicate"/>
@@ -33,24 +42,36 @@ public class TestLoggerProvider : ILoggerProvider, ILogger
         DateTime deadline = DateTime.UtcNow.AddSeconds(maxWaitSeconds);
         while (DateTime.UtcNow < deadline)
         {
-            if (this.logs.Any(predicate))
+            lock (this.logsLock)
             {
-                return;
+                if (this.logsList.Any(predicate))
+                {
+                    return;
+                }
             }
 
             await Task.Delay(250);
         }
 
         // Final check after deadline.
-        Assert.True(this.logs.Any(predicate), failureMessage ?? $"Expected log was not found within {maxWaitSeconds}s timeout.");
+        lock (this.logsLock)
+        {
+            Assert.True(this.logsList.Any(predicate), failureMessage ?? $"Expected log was not found within {maxWaitSeconds}s timeout.");
+        }
     }
 
     // This needs to be created/disposed per-test so we can associate logs
-    // with the specific running test.
+    // with the specific running test. Tests within the same xUnit collection
+    // share a single TestLoggerProvider but run sequentially, so clearing
+    // the log list here is safe and ensures each test only sees its own logs.
     public IDisposable UseTestLogger(ITestOutputHelper testOutput)
     {
-        // reset these every test
         this.currentTestOutput = testOutput;
+        lock (this.logsLock)
+        {
+            this.logsList.Clear();
+        }
+
         return new DisposableOutput(this);
     }
 
@@ -77,7 +98,11 @@ public class TestLoggerProvider : ILoggerProvider, ILogger
     {
         string formattedString = formatter(state, exception);
         this.messageSink.OnMessage(new DiagnosticMessage(formattedString));
-        this.logs.Add(formattedString);
+        lock (this.logsLock)
+        {
+            this.logsList.Add(formattedString);
+        }
+
         if (this.currentTestOutput is null)
         {
             Console.WriteLine(formattedString);
