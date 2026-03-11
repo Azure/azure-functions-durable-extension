@@ -19,6 +19,7 @@ from suspend_resume_orchestration import bp as suspend_resume_orchestration_bp
 from timeout_orchestration import bp as timeout_orchestration_bp
 from purge_orchestration_history import bp as purge_orchestration_history_bp
 from class_based_entities import bp as class_based_entities_bp
+from is_replaying_checks import bp as is_replaying_checks_bp
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 
@@ -57,3 +58,4 @@ app.register_blueprint(suspend_resume_orchestration_bp)
 app.register_blueprint(timeout_orchestration_bp)
 app.register_blueprint(purge_orchestration_history_bp)
 app.register_blueprint(class_based_entities_bp)
+app.register_blueprint(is_replaying_checks_bp)
