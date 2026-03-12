@@ -63,7 +63,7 @@ jobs:
         inputs:
             command: build
             projects: '**/WebJobs.Extensions.DurableTask.sln'
-            arguments: '--configuration Release /p:FileVersionRevision=$(Build.BuildId) /p:ContinuousIntegrationBuild=true' # these flags make package build deterministic
+            arguments: '--configuration Release --no-restore -m:1 /p:FileVersionRevision=$(Build.BuildId) /p:ContinuousIntegrationBuild=true' # these flags make package build deterministic
     
       - template: ci/sign-files.yml@eng
         parameters:
