@@ -39,23 +39,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale
 
             IServiceCollection serviceCollection = builder.Services;
 
-            // Register StorageServiceClientProviderFactory using factory function to ensure proper construction
-            serviceCollection.TryAddSingleton<IStorageServiceClientProviderFactory>(serviceProvider =>
-            {
-                return new StorageServiceClientProviderFactory(
-                    serviceProvider.GetRequiredService<IConfiguration>(),
-                    serviceProvider.GetRequiredService<ILoggerFactory>());
-            });
+            serviceCollection.TryAddSingleton<IStorageServiceClientProviderFactory, StorageServiceClientProviderFactory>();
 
-            // Register all scalability provider factories
-            serviceCollection.AddSingleton<IScalabilityProviderFactory>(serviceProvider =>
-            {
-                return new AzureStorageScalabilityProviderFactory(
-                    serviceProvider.GetRequiredService<IStorageServiceClientProviderFactory>(),
-                    serviceProvider.GetRequiredService<IConfiguration>(),
-                    serviceProvider.GetRequiredService<INameResolver>(),
-                    serviceProvider.GetRequiredService<ILoggerFactory>());
-            });
+            serviceCollection.AddSingleton<IScalabilityProviderFactory, AzureStorageScalabilityProviderFactory>();
 
             return builder;
         }
@@ -119,7 +105,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale
                 }
             });
 
-            // builder.Services.AddSingleton<IScaleMonitorProvider>(serviceProvider => serviceProvider.GetServices<DurableTaskTriggersScaleProvider>().Single(x => x == provider));
+            builder.Services.AddSingleton<IScaleMonitorProvider>(serviceProvider => serviceProvider.GetServices<DurableTaskTriggersScaleProvider>().Single(x => x == provider));
             builder.Services.AddSingleton<ITargetScalerProvider>(serviceProvider =>
             {
                 // Get the DurableTaskTriggersScaleProvider instance - it should have been created by now

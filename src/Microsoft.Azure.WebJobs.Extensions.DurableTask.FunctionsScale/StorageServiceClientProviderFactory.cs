@@ -16,7 +16,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale
     public class StorageServiceClientProviderFactory : IStorageServiceClientProviderFactory
     {
         private readonly IConfiguration configuration;
-        private readonly ILoggerFactory loggerFactory;
         private readonly ILogger logger;
 
         /// <summary>
@@ -33,7 +32,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale
             ILoggerFactory loggerFactory)
         {
             this.configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
-            this.loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
             this.logger = loggerFactory.CreateLogger<StorageServiceClientProviderFactory>();
         }
 

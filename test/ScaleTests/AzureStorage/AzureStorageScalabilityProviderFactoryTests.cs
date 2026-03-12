@@ -54,8 +54,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests
             // Act
             var factory = new AzureStorageScalabilityProviderFactory(
                 this.clientProviderFactory,
-                this.configuration,
-                this.nameResolver,
                 this.loggerFactory);
 
             // Assert
@@ -77,8 +75,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests
             Assert.Throws<ArgumentNullException>(() =>
                 new AzureStorageScalabilityProviderFactory(
                     null,
-                    this.configuration,
-                    this.nameResolver,
                     this.loggerFactory));
         }
 
@@ -96,8 +92,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests
             // Options no longer used - removed CreateOptions call
             var factory = new AzureStorageScalabilityProviderFactory(
                 this.clientProviderFactory,
-                this.configuration,
-                this.nameResolver,
                 this.loggerFactory);
 
             var triggerMetadata = CreateTriggerMetadata("testHub", 15, 25, "TestConnection");
@@ -128,8 +122,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests
             // Arrange - MaxConcurrentOrchestratorFunctions is 0 (invalid)
             var factory = new AzureStorageScalabilityProviderFactory(
                 this.clientProviderFactory,
-                this.configuration,
-                this.nameResolver,
                 this.loggerFactory);
 
             var triggerMetadata = CreateTriggerMetadata("testHub", 0, 20, "TestConnection"); // 0 is invalid
@@ -164,8 +156,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests
                 // Options no longer used - removed CreateOptions call
                 var factory = new AzureStorageScalabilityProviderFactory(
                     clientFactory,
-                    config,
-                    this.nameResolver,
                     this.loggerFactory);
 
                 // Pass connection name via trigger metadata (Scale Controller behavior)

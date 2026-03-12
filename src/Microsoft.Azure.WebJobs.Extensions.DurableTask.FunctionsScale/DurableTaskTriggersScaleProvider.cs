@@ -15,9 +15,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale
     /// </summary>
     public class DurableTaskTriggersScaleProvider : IScaleMonitorProvider, ITargetScalerProvider
     {
-        private const string DefaultConnectionName = "connectionName";
-        private const string ConnectionNameOverride = "connectionStringName";
-
         private readonly IScaleMonitor monitor;
         private readonly ITargetScaler targetScaler;
 
@@ -59,7 +56,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale
                 throw new InvalidOperationException($"Expected `taskHubName` property in SyncTriggers payload but found none.");
             }
 
-            // Resolve app settings (e.g., %MyConnectionString% -> actual value)
             DurableTaskMetadata.ResolveAppSettingOptions(metadata, nameResolver);
 
             var logger = loggerFactory.CreateLogger<DurableTaskTriggersScaleProvider>();

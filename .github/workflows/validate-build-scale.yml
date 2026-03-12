@@ -1,4 +1,6 @@
 name: Functions Scale Tests Azure Storage 
+permissions:
+  contents: read
 
 on:
   push:
@@ -35,7 +37,7 @@ jobs:
       run: dotnet restore $solution
 
     - name: Build
-      run: dotnet build $solution
+      run: dotnet build $solution -c $config
 
     - name: Set up Node.js (needed for Azurite)
       uses: actions/setup-node@v3
@@ -46,4 +48,18 @@ jobs:
       run: npm install -g azurite
 
     - name: Run Scale tests
-      run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 & dotnet test ./test/ScaleTests/Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests.csproj --no-build --verbosity normal
+      run : |
+        azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002
+
+        # Wait for Azurite to be ready
+        for i in {1..30}; do
+          if nc -z 127.0.0.1 10000; then
+            echo "Azurite is ready"
+            break
+          fi
+          echo "Azurite is not ready, waiting ($1/30)"
+          sleep 1
+        done
+
+        # Run tests
+        dotnet test ./test/ScaleTests/Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests.csproj -c $config --no-build --verbosity normal

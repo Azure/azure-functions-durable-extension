@@ -4,8 +4,8 @@
 
 using System;
 using System.Linq;
+using System.Reflection;
 using Microsoft.Azure.WebJobs.Host.Scale;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.AzureStorage
@@ -19,8 +19,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.AzureSto
         private const string LoggerName = "Triggers.DurableTask.AzureStorage";
 
         private readonly IStorageServiceClientProviderFactory clientProviderFactory;
-        private readonly IConfiguration configuration;
-        private readonly INameResolver nameResolver;
         private readonly ILoggerFactory loggerFactory;
         private readonly ILogger logger;
 
@@ -28,19 +26,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.AzureSto
         /// Initializes a new instance of the <see cref="AzureStorageScalabilityProviderFactory"/> class.
         /// </summary>
         /// <param name="clientProviderFactory">The storage client provider factory.</param>
-        /// <param name="configuration">The configuration for reading connection strings.</param>
-        /// <param name="nameResolver">The name resolver for connection strings.</param>
         /// <param name="loggerFactory">The logger factory.</param>
         /// <exception cref="ArgumentNullException">Thrown when required parameters are null.</exception>
         public AzureStorageScalabilityProviderFactory(
             IStorageServiceClientProviderFactory clientProviderFactory,
-            IConfiguration configuration,
-            INameResolver nameResolver,
             ILoggerFactory loggerFactory)
         {
             this.clientProviderFactory = clientProviderFactory ?? throw new ArgumentNullException(nameof(clientProviderFactory));
-            this.configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
-            this.nameResolver = nameResolver ?? throw new ArgumentNullException(nameof(nameResolver));
             this.loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
             this.logger = this.loggerFactory.CreateLogger(LoggerName);
 
@@ -59,13 +51,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.AzureSto
         public string DefaultConnectionName { get; }
 
         /// <summary>
-        /// Creates and caches a default <see cref="ScalabilityProvider"/> instance using Azure Storage as the backend using
-        /// the provided pre-deserialized metadata and trigger metadata for accessing Properties.
+        /// Creates and caches a default <see cref="ScalabilityProvider"/> instance using Azure Storage as the backend,
+        /// using the provided pre-deserialized metadata and trigger metadata for accessing properties.
         /// </summary>
         /// <param name="metadata">The pre-deserialized Durable Task metadata.</param>
-        /// <param name="triggerMetadata">Trigger metadata used to access Properties like token credentials.</param>
+        /// <param name="triggerMetadata">Trigger metadata used to access properties like token credentials.</param>
         /// <returns>
-        /// A singleton instance of <see cref="AzureStorageScalabilityProvider"/>.
+        /// An singleton instance of <see cref="AzureStorageScalabilityProvider"/>.
         /// </returns>
         public ScalabilityProvider GetScalabilityProvider(DurableTaskMetadata metadata, TriggerMetadata? triggerMetadata)
         {
@@ -114,22 +106,33 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.AzureSto
                 // Call it using reflection to get the TokenCredential
                 var factoryType = componentFactoryObj.GetType();
                 var method = factoryType.GetMethod("CreateTokenCredential");
-                if (method != null)
+
+                if (method == null)
                 {
-                    try
+                    logger?.LogWarning(
+                        "CreateTokenCredential method not found on the AzureComponentFactory instance provided by the scale controller. " +
+                        "Identity-based authentication cannot be used in this case.");
+                    return null;
+                }
+
+                try
+                {
+                    // Call CreateTokenCredential(null) to get the TokenCredential from the wrapper
+                    var credential = method.Invoke(componentFactoryObj, new object?[] { null });
+                    if (credential is global::Azure.Core.TokenCredential tokenCredential)
                     {
-                        // Call CreateTokenCredential(null) to get the TokenCredential from the wrapper
-                        var credential = method.Invoke(componentFactoryObj, new object?[] { null });
-                        if (credential is global::Azure.Core.TokenCredential tokenCredential)
-                        {
-                            return tokenCredential;
-                        }
+                         return tokenCredential;
                     }
-                    catch (Exception ex)
-                    {
-                        logger?.LogWarning(ex, "Failed to extract TokenCredential from AzureComponentFactory. Using null credential instead.");
-                        return null;
-                    }
+                }
+                catch (TargetInvocationException ex)
+                {
+                    logger?.LogWarning(ex, "Failed to extract TokenCredential from AzureComponentFactory. Using null credential instead.");
+                    return null;
+                }
+                catch (TargetException ex)
+                {
+                    logger?.LogWarning(ex, "Failed to extract TokenCredential from AzureComponentFactory. Using null credential instead.");
+                    return null;
                 }
             }
 

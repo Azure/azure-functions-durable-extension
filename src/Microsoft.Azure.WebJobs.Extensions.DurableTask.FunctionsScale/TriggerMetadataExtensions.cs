@@ -12,6 +12,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale
     /// </summary>
     internal static class TriggerMetadataExtensions
     {
+        private const string DefaultConnectionName = "connectionName";
+        private const string ConnectionNameOverride = "connectionStringName";
+
         /// <summary>
         /// For testing. Extracts DurableTaskMetadata from trigger metadata sent by the Scale Controller.
         /// </summary>
@@ -40,12 +43,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale
                 return null;
             }
 
-            if (storageProvider.TryGetValue("connectionName", out object? v1) && v1 is string s1 && !string.IsNullOrWhiteSpace(s1))
+            if (storageProvider.TryGetValue(DefaultConnectionName, out object? v1) && v1 is string s1 && !string.IsNullOrWhiteSpace(s1))
             {
                 return s1;
             }
 
-            if (storageProvider.TryGetValue("connectionStringName", out object? v2) && v2 is string s2 && !string.IsNullOrWhiteSpace(s2))
+            if (storageProvider.TryGetValue(ConnectionNameOverride, out object? v2) && v2 is string s2 && !string.IsNullOrWhiteSpace(s2))
             {
                 return s2;
             }

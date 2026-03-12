@@ -19,7 +19,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.AzureSto
     public class DurableTaskTargetScaler : ITargetScaler
     {
         private readonly DurableTaskMetricsProvider metricsProvider;
-        private readonly TargetScalerResult scaleResult;
         private readonly ScalabilityProvider scalabilityProvider;
         private readonly ILogger logger;
         private readonly string scaler;
@@ -47,7 +46,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.AzureSto
         {
             this.scaler = scalerId;
             this.metricsProvider = metricsProvider;
-            this.scaleResult = new TargetScalerResult();
             this.TargetScalerDescriptor = new TargetScalerDescriptor(this.scaler);
             this.scalabilityProvider = scalabilityProvider;
             this.logger = logger;
@@ -103,7 +101,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.AzureSto
                 var orchestratorWorkers = Math.Min(activeControlQueues, upperBoundControlWorkers);
 
                 int numWorkersToRequest = (int)Math.Max(activityWorkers, orchestratorWorkers);
-                this.scaleResult.TargetWorkerCount = numWorkersToRequest;
 
                 // When running on ScaleController V3, ILogger logs are forwarded to the ScaleController's Kusto table.
                 // This works because this code does not execute in the Functions Host process, but in the ScaleController process,
@@ -120,7 +117,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.AzureSto
                 }
 
                 this.logger.LogInformation(scaleControllerLog);
-                return this.scaleResult;
+                return new TargetScalerResult { TargetWorkerCount = numWorkersToRequest };
             }
             catch (Exception ex)
             {

@@ -13,6 +13,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale
     /// </summary>
     public class DurableTaskMetadata
     {
+        private const string DefaultConnectionName = "connectionName";
+        private const string ConnectionNameOverride = "connectionStringName";
+
         /// <summary>
         /// Gets or sets the name of the Durable Task Hub. This identifies the taskhub being monitored or scaled.
         /// </summary>
@@ -47,11 +50,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale
         /// <param name="nameResolver">The name resolver used to resolve app setting placeholders.</param>
         public static void ResolveAppSettingOptions(DurableTaskMetadata metadata, INameResolver nameResolver)
         {
-            if (metadata.StorageProvider != null &&
-                metadata.StorageProvider.TryGetValue("connectionName", out object? connectionNameObj) &&
-                connectionNameObj is string connectionName)
+            if (metadata.StorageProvider == null)
             {
-                metadata.StorageProvider["connectionName"] = nameResolver.Resolve(connectionName) ?? string.Empty;
+                return;
+            }
+
+            // Resolve both "connectionName" and "connectionStringName" keys for compatibility.
+            ResolveStorageProviderSetting(metadata.StorageProvider, DefaultConnectionName, nameResolver);
+            ResolveStorageProviderSetting(metadata.StorageProvider, ConnectionNameOverride, nameResolver);
+        }
+
+        private static void ResolveStorageProviderSetting(IDictionary<string, object> storageProvider, string key, INameResolver nameResolver)
+        {
+            if (storageProvider.TryGetValue(key, out object? value) && value is string name && !string.IsNullOrWhiteSpace(name))
+            {
+                storageProvider[key] = nameResolver.Resolve(name) ?? string.Empty;
             }
         }
     }
