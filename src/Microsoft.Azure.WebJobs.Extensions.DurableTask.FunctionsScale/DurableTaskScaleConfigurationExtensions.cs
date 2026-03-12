@@ -68,7 +68,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale
                     serviceProvider.GetRequiredService<ILoggerFactory>());
             });
 
-            // this segment adheres to the followings pattern: https://github.com/Azure/azure-sdk-for-net/pull/38756
+            // this segment adheres to the following pattern: https://github.com/Azure/azure-sdk-for-net/pull/38756
             DurableTaskTriggersScaleProvider provider = null;
             builder.Services.AddSingleton(serviceProvider =>
             {
@@ -87,8 +87,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale
                 try
                 {
                     provider = new DurableTaskTriggersScaleProvider(
-                        serviceProvider.GetService<INameResolver>(),
-                        serviceProvider.GetService<ILoggerFactory>(),
+                        serviceProvider.GetRequiredService<INameResolver>(),
+                        serviceProvider.GetRequiredService<ILoggerFactory>(),
                         scalabilityProviderFactories,
                         triggerMetadata);
                     return provider;

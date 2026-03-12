@@ -51,13 +51,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.AzureSto
         public string DefaultConnectionName { get; }
 
         /// <summary>
-        /// Creates and caches a default <see cref="ScalabilityProvider"/> instance using Azure Storage as the backend,
+        /// Creates a default <see cref="ScalabilityProvider"/> instance using Azure Storage as the backend,
         /// using the provided pre-deserialized metadata and trigger metadata for accessing properties.
         /// </summary>
         /// <param name="metadata">The pre-deserialized Durable Task metadata.</param>
         /// <param name="triggerMetadata">Trigger metadata used to access properties like token credentials.</param>
         /// <returns>
-        /// An singleton instance of <see cref="AzureStorageScalabilityProvider"/>.
+        /// A newly created instance of <see cref="AzureStorageScalabilityProvider"/>.
         /// </returns>
         public ScalabilityProvider GetScalabilityProvider(DurableTaskMetadata metadata, TriggerMetadata? triggerMetadata)
         {
@@ -90,7 +90,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.AzureSto
             return provider;
         }
 
-        // Scale Controller will return a AzureComponentWrapper which might contain a token crednetial to use.
+        // Scale Controller will return a AzureComponentWrapper which might contain a token credential to use.
         private static global::Azure.Core.TokenCredential? ExtractTokenCredential(TriggerMetadata? triggerMetadata, ILogger? logger)
         {
             if (triggerMetadata?.Properties == null)

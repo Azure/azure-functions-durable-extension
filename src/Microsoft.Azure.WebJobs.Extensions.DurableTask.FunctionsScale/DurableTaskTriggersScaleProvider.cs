@@ -38,7 +38,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale
         /// Thrown when required trigger metadata is missing or cannot be deserialized.
         /// </exception>
         public DurableTaskTriggersScaleProvider(
-            INameResolver nameResolver,
+            Microsoft.Azure.WebJobs.INameResolver nameResolver,
             ILoggerFactory loggerFactory,
             IEnumerable<IScalabilityProviderFactory> scalabilityProviderFactories,
             TriggerMetadata triggerMetadata)

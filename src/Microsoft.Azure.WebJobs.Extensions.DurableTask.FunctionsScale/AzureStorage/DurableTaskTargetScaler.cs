@@ -125,7 +125,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.AzureSto
                 var metricsLog = $"Metrics: workItemQueueLength={metrics?.WorkItemQueueLength}. controlQueueLengths={metrics?.ControlQueueLengths}. " +
                     $"maxConcurrentOrchestrators={this.MaxConcurrentOrchestrators}. maxConcurrentActivities={this.MaxConcurrentActivities}";
                 var errorLog = $"Error: target worker count for '{this.scaler}' resulted in exception. " + metricsLog;
-                throw new Exception(errorLog, ex);
+
+                // Log the enriched error message with the original exception, then rethrow to preserve exception type.
+                this.logger.LogError(ex, errorLog);
+
+                throw;
             }
         }
     }

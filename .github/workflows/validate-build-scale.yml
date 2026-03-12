@@ -32,6 +32,8 @@ jobs:
 
     - name: Setup .NET
       uses: actions/setup-dotnet@v3
+      with:
+        global-json-file: global.json
 
     - name: Restore dependencies
       run: dotnet restore $solution
@@ -49,7 +51,9 @@ jobs:
 
     - name: Run Scale tests
       run : |
-        azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002
+        azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
+        AZURITE_PID=$!
+        trap "kill $AZURITE_PID || true" EXIT
 
         # Wait for Azurite to be ready
         for i in {1..30}; do
@@ -57,7 +61,7 @@ jobs:
             echo "Azurite is ready"
             break
           fi
-          echo "Azurite is not ready, waiting ($1/30)"
+          echo "Azurite is not ready, waiting ($i/30)"
           sleep 1
         done
 

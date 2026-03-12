@@ -32,6 +32,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale
             ILoggerFactory loggerFactory)
         {
             this.configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+
+            if (loggerFactory is null)
+            {
+                throw new ArgumentNullException(nameof(loggerFactory));
+            }
+
             this.logger = loggerFactory.CreateLogger<StorageServiceClientProviderFactory>();
         }
 
