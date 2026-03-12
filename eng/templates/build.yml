@@ -58,13 +58,12 @@ jobs:
             nugetConfigPath: 'nuget.config'
 
       # Build durable-extension
-      - task: VSBuild@1
+      - task: DotNetCoreCLI@2
         displayName: 'Build Durable Extension'
         inputs:
-            solution: '**/WebJobs.Extensions.DurableTask.sln'
-            vsVersion: "16.0"
-            configuration: Release
-            msbuildArgs: /p:FileVersionRevision=$(Build.BuildId) /p:ContinuousIntegrationBuild=true # these flags make package build deterministic
+            command: build
+            projects: '**/WebJobs.Extensions.DurableTask.sln'
+            arguments: '--configuration Release /p:FileVersionRevision=$(Build.BuildId) /p:ContinuousIntegrationBuild=true' # these flags make package build deterministic
     
       - template: ci/sign-files.yml@eng
         parameters:
