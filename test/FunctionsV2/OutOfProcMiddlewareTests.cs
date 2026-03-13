@@ -52,6 +52,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task CallEntityAsync_FunctionTimeoutAbortException_ThrowsSessionAbortedException()
         {
             var exception = new FunctionTimeoutAbortException("Activity A timed out! Worker channel closing");
@@ -63,6 +64,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task CallActivityAsync_FunctionTimeoutAbortException_ThrowsSessionAbortedException()
         {
             var exception = new FunctionTimeoutAbortException("Activity A timed out! Worker channel closing");
