@@ -406,6 +406,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 if (!functionResult.Succeeded)
                 {
+                    if (functionResult.Exception is Host.FunctionTimeoutAbortException)
+                    {
+                        throw functionResult.Exception;
+                    }
+
                     // Shutdown can surface as a completed invocation in a failed state.
                     // Re-throw so we can abort this invocation.
                     this.HostLifetimeService.OnStopping.ThrowIfCancellationRequested();
