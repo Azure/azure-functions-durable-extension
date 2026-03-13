@@ -93,13 +93,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         private (OutOfProcMiddleware middleware, DispatchMiddlewareContext context) SetupOrchestratorTest(Exception executorException)
         {
-            var (middleware, dispatchContext) = this.CreateMiddleware(executorException, "TestOrchestrator", FunctionType.Orchestrator);
+            (OutOfProcMiddleware middleware, DispatchMiddlewareContext dispatchContext)
+                = this.CreateMiddleware(executorException, "TestOrchestrator", FunctionType.Orchestrator);
 
             var orchestrationState = new OrchestrationRuntimeState(
-                new List<HistoryEvent>
-                {
+                [
                     new ExecutionStartedEvent(-1, null) { Name = "TestOrchestrator" },
-                });
+                ]);
 
             dispatchContext.SetProperty(orchestrationState);
             dispatchContext.SetProperty(new OrchestrationInstance { InstanceId = "test-instance-id" });
@@ -109,7 +109,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         private (OutOfProcMiddleware middleware, DispatchMiddlewareContext context) SetupEntityTest(Exception executorException)
         {
-            var (middleware, dispatchContext) = this.CreateMiddleware(executorException, "TestEntity", FunctionType.Entity);
+            (OutOfProcMiddleware middleware, DispatchMiddlewareContext dispatchContext)
+                = this.CreateMiddleware(executorException, "TestEntity", FunctionType.Entity);
 
             dispatchContext.SetProperty(new EntityBatchRequest
             {
@@ -123,7 +124,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         private (OutOfProcMiddleware middleware, DispatchMiddlewareContext context) SetupActivityTest(Exception executorException)
         {
-            var (middleware, dispatchContext) = this.CreateMiddleware(executorException, "TestActivity", FunctionType.Activity);
+            (OutOfProcMiddleware middleware, DispatchMiddlewareContext dispatchContext)
+                = this.CreateMiddleware(executorException, "TestActivity", FunctionType.Activity);
 
             dispatchContext.SetProperty(new TaskScheduledEvent(-1) { Name = "TestActivity" });
             dispatchContext.SetProperty(new OrchestrationInstance { InstanceId = "test-instance-id" });
@@ -134,7 +136,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         private (OutOfProcMiddleware middleware, DispatchMiddlewareContext context) CreateMiddleware(
             Exception executorException, string functionName, FunctionType functionType)
         {
-            var extension = CreateDurableTaskExtension();
+            DurableTaskExtension extension = CreateDurableTaskExtension();
 
             var mockExecutor = new Mock<ITriggeredFunctionExecutor>();
             mockExecutor
@@ -179,15 +181,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 new OptionsWrapper<DurableTaskOptions>(options),
                 NullLoggerFactory.Instance,
                 TestHelpers.GetTestNameResolver(),
-                new[]
-                {
+                [
                     new AzureStorageDurabilityProviderFactory(
                         new OptionsWrapper<DurableTaskOptions>(options),
                         new TestStorageServiceClientProviderFactory(),
                         TestHelpers.GetTestNameResolver(),
                         NullLoggerFactory.Instance,
                         TestHelpers.GetMockPlatformInformationService()),
-                },
+                ],
                 new TestHostShutdownNotificationService(),
                 new DurableHttpMessageHandlerFactory(),
                 platformInformationService: TestHelpers.GetMockPlatformInformationService());
@@ -196,13 +197,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         private static WorkItemMetadata CreateWorkItemMetadata(bool isExtendedSession, bool includeState)
         {
             // WorkItemMetadata has an internal constructor, so we use reflection to create it.
-            var ctor = typeof(WorkItemMetadata).GetConstructor(
+            ConstructorInfo ctor = typeof(WorkItemMetadata).GetConstructor(
                 BindingFlags.Instance | BindingFlags.NonPublic,
                 binder: null,
-                new[] { typeof(bool), typeof(bool) },
+                [typeof(bool), typeof(bool)],
                 modifiers: null);
             Assert.NotNull(ctor);
-            return (WorkItemMetadata)ctor.Invoke(new object[] { isExtendedSession, includeState });
+            return (WorkItemMetadata)ctor.Invoke([isExtendedSession, includeState]);
         }
 
         /// <summary>
@@ -211,12 +212,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// <c>WorkerProcessExitException</c> lives in <c>Microsoft.Azure.WebJobs.Script</c>
         /// (the Functions host runtime), which is too heavy to reference as a test dependency.
         /// </summary>
-        private class WorkerProcessExitExceptionStub : Exception
+        private class WorkerProcessExitExceptionStub(string message) : Exception(message)
         {
-            public WorkerProcessExitExceptionStub(string message)
-                : base(message)
-            {
-            }
         }
     }
 }
