@@ -57,6 +57,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             // FunctionTimeoutException (top-level)
             yield return new object[] { new Host.FunctionTimeoutException("Function timed out.") };
 
+            // FunctionTimeoutAbortException (top-level)
+            yield return new object[] { new Host.FunctionTimeoutAbortException("Function timed out.") };
+
             // SessionAbortedException as InnerException (e.g. out-of-memory handling)
             yield return new object[] { new Exception("Function invocation failed.", new SessionAbortedException("Out of memory")) };
 

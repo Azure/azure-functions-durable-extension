@@ -555,6 +555,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     cancellationToken: this.HostLifetimeService.OnStopping);
                 if (!result.Succeeded)
                 {
+                    if (result.Exception is Host.FunctionTimeoutAbortException)
+                    {
+                        throw result.Exception;
+                    }
+
                     // Shutdown can surface as a completed invocation in a failed state.
                     // Re-throw so we can abort this invocation.
                     this.HostLifetimeService.OnStopping.ThrowIfCancellationRequested();
@@ -646,6 +651,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // TODO: the `WorkerProcessExitException` type is not exposed in our dependencies, it's part of WebJobs.Host.Script.
             // Should we add that dependency or should it be exposed in WebJobs.Host?
             return exception is Host.FunctionTimeoutException
+                || exception is Host.FunctionTimeoutAbortException
                 || exception?.InnerException is SessionAbortedException // see RemoteOrchestrationContext.TrySetResultInternal for details on OOM-handling
                 || (exception?.InnerException?.GetType().ToString().Contains("WorkerProcessExitException", StringComparison.Ordinal) ?? false)
                 || (exception?.InnerException is InvalidOperationException ioe
