@@ -6,7 +6,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests
     /// <summary>
     /// Simple INameResolver implementation for tests that returns the input as-is.
     /// </summary>
-    internal class SimpleNameResolver : INameResolver
+    internal class SimpleNameResolver : Microsoft.Azure.WebJobs.INameResolver
     {
         public string Resolve(string name)
         {

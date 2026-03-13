@@ -26,7 +26,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale
         /// <exception cref="ArgumentNullException">
         /// Thrown if the provided <paramref name="builder"/> is <see langword="null"/>.
         /// </exception>
-        public static IWebJobsBuilder AddDurableTask(this IWebJobsBuilder builder)
+        public static Microsoft.Azure.WebJobs.IWebJobsBuilder AddDurableTask(this IWebJobsBuilder builder)
         {
             if (builder == null)
             {
@@ -87,7 +87,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale
                 try
                 {
                     provider = new DurableTaskTriggersScaleProvider(
-                        serviceProvider.GetRequiredService<INameResolver>(),
+                        serviceProvider.GetRequiredService<Microsoft.Azure.WebJobs.INameResolver>(),
                         serviceProvider.GetRequiredService<ILoggerFactory>(),
                         scalabilityProviderFactories,
                         triggerMetadata);
@@ -105,22 +105,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale
                 }
             });
 
-            builder.Services.AddSingleton<IScaleMonitorProvider>(serviceProvider => serviceProvider.GetServices<DurableTaskTriggersScaleProvider>().Single(x => x == provider));
-            builder.Services.AddSingleton<ITargetScalerProvider>(serviceProvider =>
-            {
-                // Get the DurableTaskTriggersScaleProvider instance - it should have been created by now
-                var providers = serviceProvider.GetServices<DurableTaskTriggersScaleProvider>();
-                if (providers == null || !providers.Any())
-                {
-                    throw new InvalidOperationException(
-                        $"DurableTaskTriggersScaleProvider was not registered for function {triggerMetadata.FunctionName}. " +
-                        "This may indicate that AddDurableScaleForTrigger() failed during registration.");
-                }
-
-                // Use SingleOrDefault to get the provider, or throw if there are multiple
-                var targetProvider = providers.SingleOrDefault(x => x == provider) ?? providers.Single();
-                return targetProvider;
-            });
+            // Not registering IScaleMonitorProvider because the scale controller uses target-based scaling (TBS) by default.
+            // This is consistent with the behavior in DurableTaskJobHostConfigurationExtensions.cs at WebJobs.Extensions.DurableTask.
+            // The scale monitor code is intentionally kept in case a regression requires re-enabling it.
+            builder.Services.AddSingleton<ITargetScalerProvider>(serviceProvider => serviceProvider.GetServices<DurableTaskTriggersScaleProvider>().Single(x => x == provider));
             return builder;
         }
     }

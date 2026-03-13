@@ -19,7 +19,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests
         private readonly TestLoggerProvider loggerProvider;
         private readonly ILoggerFactory loggerFactory;
         private readonly IStorageServiceClientProviderFactory clientProviderFactory;
-        private readonly INameResolver nameResolver;
         private readonly IConfiguration configuration;
 
         public AzureStorageScalabilityProviderFactoryTests(ITestOutputHelper output)
@@ -40,7 +39,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests
 
             // Use real factory instead of mocking
             this.clientProviderFactory = new StorageServiceClientProviderFactory(this.configuration, this.loggerFactory);
-            this.nameResolver = new SimpleNameResolver();
         }
 
         /// <summary>
@@ -195,11 +193,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests
                 },
             };
             return new TriggerMetadata(metadata);
-        }
-
-        private class SimpleNameResolver : INameResolver
-        {
-            public string Resolve(string name) => name;
         }
     }
 }

@@ -48,7 +48,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale
         /// </summary>
         /// <param name="metadata">The scale options instance containing configuration values to resolve.</param>
         /// <param name="nameResolver">The name resolver used to resolve app setting placeholders.</param>
-        public static void ResolveAppSettingOptions(DurableTaskMetadata metadata, INameResolver nameResolver)
+        public static void ResolveAppSettingOptions(DurableTaskMetadata metadata, Microsoft.Azure.WebJobs.INameResolver nameResolver)
         {
             if (metadata.StorageProvider == null)
             {

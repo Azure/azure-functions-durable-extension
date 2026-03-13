@@ -33,7 +33,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests
             // Use TestWebJobsBuilder directly (no HostBuilder needed) - this matches how Scale Controller uses it
             using var loggerFactory = new LoggerFactory();
             var services = new ServiceCollection();
-            services.AddSingleton<INameResolver>(new SimpleNameResolver());
+            services.AddSingleton<Microsoft.Azure.WebJobs.INameResolver>(new SimpleNameResolver());
             services.AddSingleton<ILoggerFactory>(loggerFactory);
             services.AddSingleton<IConfiguration>(new ConfigurationBuilder().Build());
 

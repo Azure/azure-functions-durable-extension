@@ -47,7 +47,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale
                     functionId,
                     functionName.Name,
                     hubName,
-                    connectionName,
+                    connectionName ?? string.Empty,
                     out IScaleMonitor scaleMonitor)
                 ? scaleMonitor
                 : new NoOpScaleMonitor(
@@ -121,7 +121,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale
                 functionId,
                 functionName.Name,
                 hubName,
-                connectionName,
+                connectionName ?? string.Empty,
                 out ITargetScaler targetScaler)
             ? targetScaler
             : new NoOpTargetScaler(functionId);
