@@ -406,6 +406,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 if (!functionResult.Succeeded)
                 {
+                    // This exception is thrown when another Function on the worker exceeded the Function timeout.
+                    // In this case we want to make sure to retry this entity's execution rather than marking it as failed.
                     if (functionResult.Exception is Host.FunctionTimeoutAbortException)
                     {
                         throw functionResult.Exception;
@@ -560,6 +562,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     cancellationToken: this.HostLifetimeService.OnStopping);
                 if (!result.Succeeded)
                 {
+                    // This exception is thrown when another Function on the worker exceeded the Function timeout.
+                    // In this case we want to make sure to retry this Activity's execution rather than marking it as failed.
                     if (result.Exception is Host.FunctionTimeoutAbortException)
                     {
                         throw result.Exception;
