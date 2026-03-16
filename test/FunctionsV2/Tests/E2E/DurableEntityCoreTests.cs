@@ -882,7 +882,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], entityId, this.output);
 
-                var status = await client.WaitForCompletionAsync(this.output);
+                await client.WaitForCompletionAsync(this.output);
 
                 IDurableEntityClient durableOrchestrationClient = client.InnerClient;
 
