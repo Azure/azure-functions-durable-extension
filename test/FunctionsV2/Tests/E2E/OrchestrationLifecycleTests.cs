@@ -31,7 +31,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [MemberData(nameof(TestDataGenerator.GetBooleanAndFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task ActorOrchestration(bool extendedSessions, string storageProvider)
         {
-            string instanceId;
             using (ITestHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
                 nameof(this.ActorOrchestration),
@@ -42,7 +41,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 int initialValue = 0;
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.Counter), initialValue, this.output);
-                instanceId = client.InstanceId;
 
                 // Wait for the instance to go into the Running state. This is necessary to ensure log validation consistency.
                 await client.WaitForStartupAsync(this.output);
