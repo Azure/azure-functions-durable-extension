@@ -759,9 +759,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     await host.StartOrchestratorAsync(nameof(TestOrchestrations.Counter), initialValue, this.output, instanceId: instanceId);
                 }
             }
-            catch (Exception caughtException)
+            catch (OrchestrationAlreadyExistsException caughtException)
             {
                 exception = caughtException;
+            }
+            catch (Exception unexpectedException)
+            {
+                // Unexpected exception type: fail the test with details instead of silently swallowing it.
+                Assert.True(false, $"Unexpected exception type was thrown: {unexpectedException.GetType().FullName}. Message: {unexpectedException.Message}");
             }
 
             await host.StopAsync();
