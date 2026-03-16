@@ -557,7 +557,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 TestEntityClient client = await host.GetEntityClientAsync(entityId, this.output);
                 var timeout = Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(10);
-                var state = await client.WaitForEntityState<List<string>>(this.output, timeout, curstate => curstate.Count == 3 ? null : "expect 3 calls");
+                await client.WaitForEntityState<List<string>>(this.output, timeout, curstate => curstate.Count == 3 ? null : "expect 3 calls");
 
                 var status = await orchestratorClient.WaitForCompletionAsync(this.output);
                 Assert.NotNull(status);
