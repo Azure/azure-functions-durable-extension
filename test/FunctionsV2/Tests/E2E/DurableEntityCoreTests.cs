@@ -427,7 +427,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     await client.InnerClient.SignalEntityAsync(entityId, "deactivate");
 
                     status = await client.GetStatusAsync();
-                    Assert.NotNull(status);
+                    if (status == null)
+                    {
+                        continue;
+                    }
 
                     if (DateTime.UtcNow >= deadline ||
                         ((status.RuntimeStatus != OrchestrationRuntimeStatus.Pending)

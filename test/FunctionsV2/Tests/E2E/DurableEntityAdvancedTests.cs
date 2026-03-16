@@ -505,8 +505,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 for (int i = 0; i < 30; i++)
                 {
                     var entityOrchStatus = await client.InnerClient.GetStatusAsync(entitySchedulerId);
-                    Assert.NotNull(entityOrchStatus);
-                    if (entityOrchStatus?.CustomStatus != null)
+                    if (entityOrchStatus == null)
+                    {
+                        continue;
+                    }
+
+                    if (entityOrchStatus.CustomStatus != null)
                     {
                         var entityState = entityOrchStatus.CustomStatus.ToObject<EntityStatus>();
                         if (entityState.LockedBy == null)

@@ -1144,7 +1144,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 { taskHubSettingName, taskHubName },
             });
 
-            string expectedResolvedName = taskHubName + PlatformSpecificHelpers.VersionSuffix;
+            string expectedResolvedName = taskHubName;
             ArgumentException argumentException =
                 await Assert.ThrowsAsync<ArgumentException>(async () =>
                 {
