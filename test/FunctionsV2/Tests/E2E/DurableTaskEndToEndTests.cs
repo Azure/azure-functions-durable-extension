@@ -398,15 +398,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 // Validate that the JSON has some minimal expected fields
                 string[] lines = consoleOutput.Split('\n');
                 var jsonStr = "";
-                foreach (string line in lines)
+                foreach (string line in lines.Where(line => line.StartsWith(prefix)))
                 {
-                    if (line.StartsWith(prefix))
-                    {
-                        jsonStr = line.Replace(prefix, "");
-                        JObject json = JObject.Parse(jsonStr);
+                    jsonStr = line.Replace(prefix, "");
+                    JObject json = JObject.Parse(jsonStr);
 
-                        TestHelpers.IsValidJSONLog(json);
-                    }
+                    TestHelpers.IsValidJSONLog(json);
                 }
             }
         }
