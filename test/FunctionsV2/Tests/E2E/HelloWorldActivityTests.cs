@@ -266,7 +266,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                         && (status == null || status.RuntimeStatus != OrchestrationRuntimeStatus.Completed));
 
                 Assert.NotNull(status);
-                Assert.Equal("Hello, Heloise!", (string)status.Output);
+                Assert.Equal("Hello, Heloise!", (string)status!.Output);
                 await host.StopAsync();
             }
         }
