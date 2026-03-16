@@ -566,21 +566,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 string[] lines = consoleOutput.Split('\n');
                 var jsonStr = "";
                 var foundVerboseLog = false;
-                foreach (string line in lines)
+                foreach (string line in lines.Where(line => line.StartsWith(prefix)))
                 {
-                    if (line.StartsWith(prefix))
+                    jsonStr = line.Replace(prefix, "");
+                    JObject json = JObject.Parse(jsonStr);
+
+                    TestHelpers.IsValidJSONLog(json);
+
+                    // Ensuring DurableTask-Core Verbose logs are found
+                    if (((int)json["Level"] == (int)EventLevel.Verbose)
+                        && string.Equals((string)json["ProviderName"], "DurableTask-Core"))
                     {
-                        jsonStr = line.Replace(prefix, "");
-                        JObject json = JObject.Parse(jsonStr);
-
-                        TestHelpers.IsValidJSONLog(json);
-
-                        // Ensuring DurableTask-Core Verbose logs are found
-                        if (((int)json["Level"] == (int)EventLevel.Verbose)
-                            && string.Equals((string)json["ProviderName"], "DurableTask-Core"))
-                        {
-                            foundVerboseLog = true;
-                        }
+                        foundVerboseLog = true;
                     }
                 }
 
