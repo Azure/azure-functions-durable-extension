@@ -214,7 +214,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// <c>WorkerProcessExitException</c> lives in <c>Microsoft.Azure.WebJobs.Script</c>
         /// (the Functions host runtime), which is too heavy to reference as a test dependency.
         /// </summary>
-        private class WorkerProcessExitExceptionStub(string message) : Exception(message)
+        private class WorkerProcessExitExceptionStub(string message)
+            : Exception(message)
         {
         }
     }
