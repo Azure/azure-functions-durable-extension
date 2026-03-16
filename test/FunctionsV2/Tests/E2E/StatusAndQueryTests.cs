@@ -588,8 +588,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await client.RaiseEventAsync("UpdateStatus", newCustomStatus, this.output);
                 orchestrationStatus = await client.WaitForCompletionAsync(this.output);
                 Assert.NotNull(orchestrationStatus);
-                Assert.Equal(newCustomStatus.Foo, (string)orchestrationStatus.CustomStatus["Foo"]);
-                Assert.Equal(newCustomStatus.Count, (int)orchestrationStatus.CustomStatus["Count"]);
+                Assert.Equal(newCustomStatus.Foo, (string)orchestrationStatus?.CustomStatus["Foo"]);
+                Assert.Equal(newCustomStatus.Count, (int)orchestrationStatus?.CustomStatus["Count"]);
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, orchestrationStatus?.RuntimeStatus);
 
                 await host.StopAsync();
