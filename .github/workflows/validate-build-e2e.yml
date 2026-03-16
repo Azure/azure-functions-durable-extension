@@ -22,6 +22,12 @@ env:
 jobs:
   build:
     runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        framework: [net8.0, net10.0]
+
+    name: E2E (${{ matrix.framework }})
 
     steps:
     - uses: actions/checkout@v3
@@ -46,11 +52,18 @@ jobs:
       with:
         dotnet-version: '6.0.x'
 
+    - name: Cache NuGet packages
+      uses: actions/cache@v3
+      with:
+        path: ~/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', '**/Directory.Packages.props') }}
+        restore-keys: ${{ runner.os }}-nuget-
+
     - name: Restore dependencies
       run: dotnet restore $solution
 
     - name: Build
-      run: dotnet build $solution
+      run: dotnet build $solution --no-restore
 
     # Install Azurite
     - name: Set up Node.js (needed for Azurite)
@@ -61,12 +74,6 @@ jobs:
     - name: Install Azurite
       run: npm install -g azurite
 
-    # Run tests
-    - name: Run FunctionsV2 tests (only DurableEntity_CleanEntityStorage test, which is flaky) - net8.0
-      run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 & dotnet test ./test/FunctionsV2/WebJobs.Extensions.DurableTask.Tests.V2.csproj --framework net8.0 --filter "FullyQualifiedName~Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests.DurableTaskEndToEndTests.DurableEntity_CleanEntityStorage"
-
-    - name: Run FunctionsV2 tests (only DurableEntity_CleanEntityStorage test, which is flaky) - net10.0
-      run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 & dotnet test ./test/FunctionsV2/WebJobs.Extensions.DurableTask.Tests.V2.csproj --framework net10.0 --filter "FullyQualifiedName~Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests.DurableTaskEndToEndTests.DurableEntity_CleanEntityStorage"
-
-    - name: Run FunctionsV2 tests (all other E2E tests)
-      run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 & dotnet test ./test/FunctionsV2/WebJobs.Extensions.DurableTask.Tests.V2.csproj  --filter "FullyQualifiedName~Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests.DurableTaskEndToEndTests&FullyQualifiedName!~Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests.DurableTaskEndToEndTests.DurableEntity_CleanEntityStorage"
+    # Run tests - xUnit parallelizes across 8 test classes automatically
+    - name: Run FunctionsV2 E2E tests - ${{ matrix.framework }}
+      run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 & dotnet test ./test/FunctionsV2/WebJobs.Extensions.DurableTask.Tests.V2.csproj --framework ${{ matrix.framework }} --no-build --filter "TestType=E2E"

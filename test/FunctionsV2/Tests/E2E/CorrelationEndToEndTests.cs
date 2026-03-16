@@ -19,6 +19,7 @@ using Xunit.Abstractions;
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
     [Collection("Non-Parallel Collection")]
+    [Trait("TestType", "E2E")]
     public class CorrelationEndToEndTests
     {
         private const string TestSiteName = "TestSite";

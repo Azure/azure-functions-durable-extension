@@ -25,6 +25,7 @@ using static Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests.PlatformSpecif
 
 namespace WebJobs.Extensions.DurableTask.Tests.V2
 {
+    [Trait("TestType", "E2E")]
     public class DurableTaskTargetScalerTests
     {
         private readonly DurableTaskTargetScaler targetScaler;

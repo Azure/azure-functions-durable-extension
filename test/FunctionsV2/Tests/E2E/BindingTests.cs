@@ -15,6 +15,7 @@ using Xunit.Abstractions;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
+    [Trait("TestType", "E2E")]
     public class BindingTests
     {
         private readonly ITestOutputHelper output;

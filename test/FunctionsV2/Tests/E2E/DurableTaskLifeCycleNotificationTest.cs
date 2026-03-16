@@ -20,6 +20,7 @@ using Xunit.Abstractions;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
+    [Trait("TestType", "E2E")]
     public class DurableTaskLifeCycleNotificationTest
     {
         private readonly ITestOutputHelper output;
@@ -993,7 +994,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var notificationHandler = new EventGridLifeCycleNotificationHelper.HttpRetryMessageHandler(
                 httpHandlerMock.Object,
                 5,
-                TimeSpan.FromMilliseconds(1000),
+                TimeSpan.FromMilliseconds(50),
                 Array.Empty<HttpStatusCode>());
 
             using (ITestHost host = TestHelpers.GetJobHost(
@@ -1072,7 +1073,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var notificationHandler = new EventGridLifeCycleNotificationHelper.HttpRetryMessageHandler(
                 httpHandlerMock.Object,
                 5,
-                TimeSpan.FromMilliseconds(1000),
+                TimeSpan.FromMilliseconds(50),
                 Array.Empty<HttpStatusCode>());
 
             using (ITestHost host = TestHelpers.GetJobHost(
@@ -1142,7 +1143,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var notificationHandler = new EventGridLifeCycleNotificationHelper.HttpRetryMessageHandler(
                 httpHandlerMock.Object,
                 retryCount,
-                TimeSpan.FromMilliseconds(1000),
+                TimeSpan.FromMilliseconds(50),
                 Array.Empty<HttpStatusCode>());
 
             using (ITestHost host = TestHelpers.GetJobHost(
@@ -1212,7 +1213,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var notificationHandler = new EventGridLifeCycleNotificationHelper.HttpRetryMessageHandler(
                 httpHandlerMock.Object,
                 5,
-                TimeSpan.FromMilliseconds(1000),
+                TimeSpan.FromMilliseconds(50),
                 Array.Empty<HttpStatusCode>());
 
             using (ITestHost host = TestHelpers.GetJobHost(
@@ -1306,7 +1307,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var notificationHandler = new EventGridLifeCycleNotificationHelper.HttpRetryMessageHandler(
                 httpHandlerMock.Object,
                 5,
-                TimeSpan.FromMilliseconds(1000),
+                TimeSpan.FromMilliseconds(50),
                 new[] { (HttpStatusCode)400, (HttpStatusCode)401, (HttpStatusCode)404 });
 
             using (ITestHost host = TestHelpers.GetJobHost(

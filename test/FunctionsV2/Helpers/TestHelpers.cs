@@ -69,7 +69,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             string exactTaskHubName = null,
             bool addDurableClientFactory = false,
             Action<ScaleOptions> configureScaleOptions = null,
-            Type[] types = null)
+            Type[] types = null,
+            int extendedSessionIdleTimeoutInSeconds = 1)
         {
             switch (storageProviderType)
             {
@@ -110,6 +111,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             };
             options.WebhookUriProviderOverride = () => notificationUrl;
             options.ExtendedSessionsEnabled = enableExtendedSessions;
+
+            // Use a short idle timeout to avoid slow shutdown (default is 30s which blocks
+            // StopAsync due to DTFx not propagating cancellation to session wait handles).
+            options.ExtendedSessionIdleTimeoutInSeconds = extendedSessionIdleTimeoutInSeconds;
             options.MaxConcurrentOrchestratorFunctions = 200;
             options.MaxConcurrentActivityFunctions = 200;
             options.NotificationHandler = eventGridNotificationHandler;
@@ -452,6 +457,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 timeStamp);
             var actualLogMessages = logMessages.Select(m => m.FormattedMessage).ToList();
 
+            if (filterOutReplayLogs)
+            {
+                // When extended sessions are enabled, the idle timeout may cause session
+                // eviction and replay, producing additional "IsReplay: True" log messages.
+                // Filter these from actual messages to match the filtered expected messages.
+                actualLogMessages.RemoveAll(str => str.Contains("IsReplay: True"));
+            }
+
             AssertLogMessages(expectedLogMessages, actualLogMessages, testOutput);
         }
 
@@ -566,7 +579,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 case "RewindOrchestration":
                     messages = GetLogs_Rewind_Orchestration(instanceIds[0], orchestratorFunctionNames, activityFunctionName);
                     break;
-                case nameof(DurableTaskEndToEndTests.ActorOrchestration):
+                case nameof(OrchestrationLifecycleTests.ActorOrchestration):
                     messages = GetLogs_ActorOrchestration(instanceIds[0]).ToList();
                     break;
                 default:

@@ -125,6 +125,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 timeout = Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(30);
             }
 
+            int delayMs = 50;
             Stopwatch sw = Stopwatch.StartNew();
             do
             {
@@ -137,7 +138,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     return status;
                 }
 
-                await Task.Delay(TimeSpan.FromMilliseconds(200));
+                await Task.Delay(delayMs);
+                delayMs = Math.Min(delayMs * 2, 500);
             }
             while (sw.Elapsed < timeout);
 
@@ -157,6 +159,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 timeout = Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(30);
             }
 
+            int delayMs = 50;
             Stopwatch sw = Stopwatch.StartNew();
             do
             {
@@ -167,7 +170,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     return status;
                 }
 
-                await Task.Delay(TimeSpan.FromMilliseconds(200));
+                await Task.Delay(delayMs);
+                delayMs = Math.Min(delayMs * 2, 500);
             }
             while (sw.Elapsed < timeout);
 
@@ -185,6 +189,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 timeout = Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromMinutes(1);
             }
 
+            int delayMs = 50;
             Stopwatch sw = Stopwatch.StartNew();
             do
             {
@@ -199,7 +204,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     return status;
                 }
 
-                await Task.Delay(TimeSpan.FromMilliseconds(200));
+                await Task.Delay(delayMs);
+                delayMs = Math.Min(delayMs * 2, 500);
             }
             while (sw.Elapsed < timeout);
 
@@ -229,7 +235,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     return status;
                 }
 
-                await Task.Delay(TimeSpan.FromSeconds(1));
+                await Task.Delay(TimeSpan.FromMilliseconds(250));
             }
             while (sw.Elapsed < timeout);
 
