@@ -515,7 +515,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 taskHubName1 = client1.TaskHubName;
                 taskHubName2 = client2.TaskHubName;
-                var instanceId = client1.InstanceId;
 
                 var yesterday = DateTime.UtcNow.Subtract(TimeSpan.FromDays(1));
                 var tomorrow = DateTime.UtcNow.Add(TimeSpan.FromDays(1));
