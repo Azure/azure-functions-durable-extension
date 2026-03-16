@@ -75,9 +75,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                                 {
                                     kvp.Value(data);
                                 }
-                                catch
+                                catch (Exception ex)
                                 {
-                                    // Individual subscriber failures must not kill the shared session.
+                                    // Individual subscriber failures must not kill the shared session,
+                                    // but we still log them for diagnosability.
+                                    Console.Error.WriteLine(
+                                        $"SharedTraceSession subscriber {kvp.Key} threw exception: {ex}");
                                 }
                             }
                         };
