@@ -930,7 +930,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 }
                 catch (Exception ex)
                 {
-                    Assert.Fail("Could not start up two hosts on the same device in parallel. Exception: {0}", ex);
+                    Assert.Fail($"Could not start up two hosts on the same device in parallel. Exception: {ex}");
                 }
                 finally
                 {
