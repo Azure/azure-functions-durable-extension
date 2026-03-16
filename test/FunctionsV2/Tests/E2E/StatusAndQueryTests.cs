@@ -95,7 +95,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     await clientHost.StartAsync();
                     await orchestrationHost.StartAsync();
 
-                    IDurableClientFactory durableClientFactory = clientHost.Services.GetService(typeof(IDurableClientFactory)) as DurableClientFactory;
+                    IDurableClientFactory durableClientFactory = clientHost.Services.GetRequiredService<IDurableClientFactory>();
                     IDurableClient durableClient = durableClientFactory.CreateClient(durableClientOptions);
 
                     string instanceId = await durableClient.StartNewAsync("NonexistentOrchestrator");
@@ -114,8 +114,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                         await Task.Delay(200);
                     }
 
-                    Assert.NotNull(status);
-                    Assert.Equal(OrchestrationRuntimeStatus.Failed, status.RuntimeStatus);
+                    Assert.Equal(OrchestrationRuntimeStatus.Failed, status?.RuntimeStatus);
 
                     await orchestrationHost.StopAsync();
                     await clientHost.StopAsync();
@@ -203,7 +202,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                         await Task.Delay(200);
                     }
 
-                    Assert.Equal(OrchestrationRuntimeStatus.Failed, newStatus?.RuntimeStatus);
+                    Assert.NotNull(newStatus);
+                    Assert.Equal(OrchestrationRuntimeStatus.Failed, newStatus.RuntimeStatus);
                     Assert.Contains("Non-Deterministic workflow detected", newStatus.Output.ToString());
                     await clientHost.StopAsync();
                 }
@@ -581,6 +581,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var newCustomStatus = new { Foo = "Bar", Count = 2, };
                 await client.RaiseEventAsync("UpdateStatus", newCustomStatus, this.output);
                 orchestrationStatus = await client.WaitForCompletionAsync(this.output);
+                Assert.NotNull(orchestrationStatus);
                 Assert.Equal(newCustomStatus.Foo, (string)orchestrationStatus.CustomStatus["Foo"]);
                 Assert.Equal(newCustomStatus.Count, (int)orchestrationStatus.CustomStatus["Count"]);
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, orchestrationStatus?.RuntimeStatus);

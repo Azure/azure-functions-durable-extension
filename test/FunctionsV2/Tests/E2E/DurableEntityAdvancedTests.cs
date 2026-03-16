@@ -437,7 +437,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 // create an empty entity
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.CreateEmptyEntities), new EntityId[] { emptyEntityId }, this.output);
-                var status = await client.WaitForCompletionAsync(this.output);
+                await client.WaitForCompletionAsync(this.output);
 
                 if (storageProvider == TestHelpers.AzureStorageProviderType)
                 {
@@ -468,7 +468,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 // run an orchestration A that leaves an orphaned lock
                 TestDurableClient clientA = await host.StartOrchestratorAsync(nameof(TestOrchestrations.LockThenFailReplay), (orphanedEntityId, true), this.output, orchestrationA);
-                status = await clientA.WaitForCompletionAsync(this.output);
+                await clientA.WaitForCompletionAsync(this.output);
 
                 // run an orchestration B that queues behind A for the lock (and thus gets stuck)
                 TestDurableClient clientB = await host.StartOrchestratorAsync(nameof(TestOrchestrations.LockThenFailReplay), (orphanedEntityId, false), this.output, orchestrationB);
@@ -496,7 +496,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Assert.Equal(0, response.NumberOfEmptyEntitiesRemoved);
 
                 // wait for orchestration B to complete, now that the lock has been released
-                status = await clientB.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(300));
+                var status = await clientB.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(300));
                 Assert.True(status.RuntimeStatus == OrchestrationRuntimeStatus.Completed);
 
                 // Wait for the entity to process B's release message so its LockedBy is cleared.
@@ -553,7 +553,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 // create the empty entities
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.CreateEmptyEntities), entityIds, this.output);
-                var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(120));
+                await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(120));
 
                 if (storageProvider == TestHelpers.AzureStorageProviderType)
                 {
@@ -588,10 +588,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     EntityId id = entitiyIds[i];
                     string orchestrationName = orchestrations == null ? nameof(TestOrchestrations.EntityId_SignalAndCallStringStore) : orchestrations[i];
                     client = await host.StartOrchestratorAsync(orchestrationName, id, this.output);
-                    Assert.NotNull(client);
 
                     await client.WaitForCompletionAsync(this.output);
                 }
+                Assert.NotNull(client);
 
                 if (storageProvider == TestHelpers.AzureStorageProviderType)
                 {

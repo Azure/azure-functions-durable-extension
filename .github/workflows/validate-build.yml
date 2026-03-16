@@ -52,9 +52,13 @@ jobs:
         dotnet build ./test/Worker.Extensions.DurableTask.Tests/Worker.Extensions.DurableTask.Tests.csproj --no-restore
 
     # Azurite is pre-installed on GitHub-hosted runners
+    - name: Start Azurite
+      shell: pwsh
+      run: Start-Process azurite -ArgumentList '--silent','--blobPort','10000','--queuePort','10001','--tablePort','10002'
+
     - name: Run FunctionsV2 tests (except E2E tests)
-      run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 & dotnet test ./test/FunctionsV2/WebJobs.Extensions.DurableTask.Tests.V2.csproj --no-build --filter "TestType!=E2E"
+      run: dotnet test ./test/FunctionsV2/WebJobs.Extensions.DurableTask.Tests.V2.csproj --no-build --filter "TestType!=E2E"
 
     - name: Run Worker Extension tests
-      run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 & dotnet test ./test/Worker.Extensions.DurableTask.Tests/Worker.Extensions.DurableTask.Tests.csproj --no-build
+      run: dotnet test ./test/Worker.Extensions.DurableTask.Tests/Worker.Extensions.DurableTask.Tests.csproj --no-build
 

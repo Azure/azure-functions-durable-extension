@@ -48,6 +48,10 @@ jobs:
       run: dotnet build ./test/WebJobs.Extensions.DurableTask.Analyzers.Test/WebJobs.Extensions.DurableTask.Analyzers.Test.csproj --no-restore
 
     # Azurite is pre-installed on GitHub-hosted runners
+    - name: Start Azurite
+      shell: pwsh
+      run: Start-Process azurite -ArgumentList '--silent','--blobPort','10000','--queuePort','10001','--tablePort','10002'
+
     - name: Run Analyzer tests
-      run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 & dotnet test ./test/WebJobs.Extensions.DurableTask.Analyzers.Test/WebJobs.Extensions.DurableTask.Analyzers.Test.csproj --no-build
+      run: dotnet test ./test/WebJobs.Extensions.DurableTask.Analyzers.Test/WebJobs.Extensions.DurableTask.Analyzers.Test.csproj --no-build
 
