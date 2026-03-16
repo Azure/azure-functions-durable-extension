@@ -1,4 +1,4 @@
-name: Functions Scale Tests Azure Storage 
+name: Functions Scale Tests
 permissions:
   contents: read
 
@@ -19,7 +19,8 @@ env:
   AzureWebJobsStorage: UseDevelopmentStorage=true
 
 jobs:
-  build:
+  azure-storage:
+    name: Functions Scale Tests - Azure Storage
     runs-on: ubuntu-latest
 
     steps:
@@ -64,3 +65,55 @@ jobs:
 
         # Run tests
         dotnet test ./test/ScaleTests/Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests.csproj -c $config --no-build --verbosity normal
+
+  dts:
+    name: Functions Scale Tests - DTS
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Setup .NET 8.0
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Set up Node.js (needed for Azurite)
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18.x'
+
+      - name: Install Azurite
+        run: npm install -g azurite
+
+      - name: Start Azurite
+        run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
+
+      - name: Pull DTS Emulator Docker Image
+        run: docker pull mcr.microsoft.com/dts/dts-emulator:latest
+
+      - name: Start DTS Container
+        run: |
+          docker run -i \
+            -p 8080:8080 \
+            -p 8082:8082 \
+            -d mcr.microsoft.com/dts/dts-emulator:latest
+
+      - name: Wait for DTS to be ready
+        run: |
+          echo "Waiting for DTS to be ready..."
+          sleep 30
+          docker ps
+
+      - name: Restore and Build Scale Tests
+        working-directory: test/ScaleTests
+        run: dotnet build --configuration Release
+
+      - name: Run Azure Managed Scale Tests
+        working-directory: test/ScaleTests
+        env:
+          AzureWebJobsStorage: UseDevelopmentStorage=true
+          DURABLE_TASK_SCHEDULER_CONNECTION_STRING: "Endpoint=http://localhost:8080;Authentication=None"
+        run: dotnet test --configuration Release --no-build --verbosity normal --filter "FullyQualifiedName~AzureManaged&FullyQualifiedName!~Sql&FullyQualifiedName!~DurableTaskTriggersScaleProviderSqlServer"
