@@ -591,6 +591,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                     await client.WaitForCompletionAsync(this.output);
                 }
+
                 Assert.NotNull(client);
 
                 if (storageProvider == TestHelpers.AzureStorageProviderType)
