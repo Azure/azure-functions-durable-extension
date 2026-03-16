@@ -34,7 +34,7 @@
     <PackageVersion Include="Microsoft.DurableTask.Worker.Grpc" Version="1.22.0" />
     <PackageVersion Include="Microsoft.DurableTask.Abstractions" Version="1.22.0" />
     <PackageVersion Include="Microsoft.DurableTask.Analyzers" Version="0.2.0" />
-    <PackageVersion Include="Microsoft.Extensions.Azure" Version="1.7.0" />
+    <PackageVersion Include="Microsoft.Extensions.Azure" Version="1.13.1" />
     <PackageVersion Include="Microsoft.Extensions.Caching.Memory" Version="10.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Http" Version="10.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Options" Version="10.0.0" />
