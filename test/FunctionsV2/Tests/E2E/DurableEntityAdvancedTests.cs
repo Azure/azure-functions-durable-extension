@@ -593,6 +593,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 }
 
                 Assert.NotNull(client);
+                TestDurableClient nonNullClient = client;
 
                 if (storageProvider == TestHelpers.AzureStorageProviderType)
                 {
@@ -604,7 +605,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 do
                 {
-                    var result = await client.InnerClient.ListEntitiesAsync(query, CancellationToken.None);
+                    var result = await nonNullClient.InnerClient.ListEntitiesAsync(query, CancellationToken.None);
 
                     // The result may return fewer records than the page size, but never more
                     Assert.True(result.Entities.Count() <= query.PageSize);
