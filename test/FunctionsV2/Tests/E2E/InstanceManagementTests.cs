@@ -181,8 +181,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 var instanceIdList = new List<string> { firstInstanceId, secondInstanceId, thirdInstanceId };
 
-                IList<DurableOrchestrationStatus> statusList = new List<DurableOrchestrationStatus>();
-                statusList = await client1.InnerClient.GetStatusAsync(instanceIdList, showHistory: false, showHistoryOutput: false, showInput: true);
+                IList<DurableOrchestrationStatus> statusList = await client1.InnerClient.GetStatusAsync(
+                    instanceIdList,
+                    showHistory: false,
+                    showHistoryOutput: false,
+                    showInput: true);
                 Assert.Equal("1", statusList[0].Input.ToString());
                 Assert.Equal("2", statusList[1].Input.ToString());
                 Assert.Null(statusList[2]);
