@@ -277,7 +277,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var client = await host.StartOrchestratorAsync(functionName, testRequest, this.output);
                 var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(30));
 
-                var output = status?.Output;
+                Assert.NotNull(status);
+                var output = status.Output;
+                Assert.NotNull(output);
                 DurableHttpResponse response = output.ToObject<DurableHttpResponse>();
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -353,7 +355,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var client = await host.StartOrchestratorAsync(functionName, testRequest, this.output);
                 var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(30));
 
-                var output = status?.Output;
+                Assert.NotNull(status);
+                var output = status.Output;
+                Assert.NotNull(output);
                 DurableHttpResponse response = output.ToObject<DurableHttpResponse>();
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -393,7 +397,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var client = await host.StartOrchestratorAsync(functionName, testRequest, this.output);
                 var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(30));
 
-                var output = status?.Output;
+                Assert.NotNull(status);
+                var output = status.Output;
+                Assert.NotNull(output);
                 Assert.Contains("Orchestrator function 'CallHttpAsyncOrchestrator' failed: The operation was canceled. Reached user specified timeout: 00:00:01", output.ToString());
                 Assert.Equal(OrchestrationRuntimeStatus.Failed, status?.RuntimeStatus);
 
@@ -438,7 +444,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var client = await host.StartOrchestratorAsync(functionName, testRequest, this.output);
                 var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(30));
 
-                var output = status?.Output;
+                Assert.NotNull(status);
+                var output = status.Output;
+                Assert.NotNull(output);
                 Assert.Equal(3, mockSynchronousHttpMessageHandlerCount);
                 Assert.Contains("No such host is known.", output.ToString());
                 Assert.Equal(OrchestrationRuntimeStatus.Failed, status?.RuntimeStatus);
@@ -484,7 +492,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var client = await host.StartOrchestratorAsync(functionName, testRequest, this.output);
                 var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(30));
 
-                var output = status?.Output;
+                Assert.NotNull(status);
+                var output = status.Output;
+                Assert.NotNull(output);
                 Assert.Equal(3, mockSynchronousHttpMessageHandlerCount);
                 Assert.Equal(OrchestrationRuntimeStatus.Failed, status?.RuntimeStatus);
 
@@ -529,7 +539,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var client = await host.StartOrchestratorAsync(functionName, testRequest, this.output);
                 var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(30));
 
-                var output = status?.Output;
+                Assert.NotNull(status);
+                var output = status.Output;
+                Assert.NotNull(output);
                 Assert.Equal(3, mockSynchronousHttpMessageHandlerCount);
                 Assert.Equal(OrchestrationRuntimeStatus.Failed, status?.RuntimeStatus);
 
@@ -576,7 +588,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 Assert.Equal(1, mockSynchronousHttpMessageHandlerCount);
 
-                var output = status?.Output;
+                Assert.NotNull(status);
+                var output = status.Output;
+                Assert.NotNull(output);
                 DurableHttpResponse response = output.ToObject<DurableHttpResponse>();
                 Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
 
@@ -614,7 +628,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var client = await host.StartOrchestratorAsync(functionName, testRequest, this.output);
                 var status = await client.WaitForCompletionAsync(this.output);
 
-                var output = status?.Output;
+                Assert.NotNull(status);
+                var output = status.Output;
+                Assert.NotNull(output);
                 Assert.Equal(1, mockSynchronousHttpMessageHandlerCount);
                 Assert.Contains("No such host is known.", output.ToString());
                 Assert.Equal(OrchestrationRuntimeStatus.Failed, status?.RuntimeStatus);
@@ -652,7 +668,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var client = await host.StartOrchestratorAsync(functionName, testRequest, this.output);
                 var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(30));
 
-                var output = status?.Output;
+                Assert.NotNull(status);
+                var output = status.Output;
+                Assert.NotNull(output);
                 DurableHttpResponse response = output.ToObject<DurableHttpResponse>();
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -689,7 +707,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var client = await host.StartOrchestratorAsync(functionName, testRequest, this.output);
                 var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(90));
 
-                var output = status?.Output;
+                Assert.NotNull(status);
+                var output = status.Output;
+                Assert.NotNull(output);
                 DurableHttpResponse response = output.ToObject<DurableHttpResponse>();
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -729,7 +749,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var client = await host.StartOrchestratorAsync(functionName, testRequest, this.output);
                 var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(30));
 
-                var output = status?.Output;
+                Assert.NotNull(status);
+                var output = status.Output;
+                Assert.NotNull(output);
                 DurableHttpResponse response = output.ToObject<DurableHttpResponse>();
                 Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
 
@@ -767,7 +789,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var client = await host.StartOrchestratorAsync(functionName, testRequest, this.output);
                 var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(40));
 
-                var output = status?.Output;
+                Assert.NotNull(status);
+                var output = status.Output;
+                Assert.NotNull(output);
                 DurableHttpResponse response = output.ToObject<DurableHttpResponse>();
                 Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
 
@@ -821,7 +845,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.CallHttpAsyncOrchestrator), testRequest, this.output);
                 var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(Debugger.IsAttached ? 3000 : 90));
 
-                var output = status?.Output;
+                Assert.NotNull(status);
+                var output = status.Output;
+                Assert.NotNull(output);
 
                 DurableHttpResponse response = output.ToObject<DurableHttpResponse>();
 
@@ -887,7 +913,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.CallHttpAsyncOrchestrator), testRequest, this.output);
                 var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(Debugger.IsAttached ? 3000 : 90));
 
-                var output = status?.Output;
+                Assert.NotNull(status);
+                var output = status.Output;
+                Assert.NotNull(output);
 
                 DurableHttpResponse response = output.ToObject<DurableHttpResponse>();
 
@@ -965,7 +993,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.CallHttpAsyncOrchestrator), testRequest, this.output);
                 var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(Debugger.IsAttached ? 3000 : 90));
 
-                var output = status?.Output;
+                Assert.NotNull(status);
+                var output = status.Output;
+                Assert.NotNull(output);
 
                 DurableHttpResponse response = output.ToObject<DurableHttpResponse>();
 
@@ -1017,7 +1047,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var client = await host.StartOrchestratorAsync(functionName, testRequest, this.output);
                 var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(240));
 
-                var output = status?.Output;
+                Assert.NotNull(status);
+                var output = status.Output;
+                Assert.NotNull(output);
                 DurableHttpResponse response = output.ToObject<DurableHttpResponse>();
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -1062,7 +1094,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var client = await host.StartOrchestratorAsync(functionName, testRequest, this.output);
                 var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(Debugger.IsAttached ? 3000 : 90));
 
-                var output = status?.Output;
+                Assert.NotNull(status);
+                var output = status.Output;
+                Assert.NotNull(output);
                 DurableHttpResponse response = output.ToObject<DurableHttpResponse>();
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -1103,7 +1137,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var client = await host.StartOrchestratorAsync(functionName, testRequest, this.output);
                 var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(Debugger.IsAttached ? 3000 : 90));
 
-                var output = status?.Output;
+                Assert.NotNull(status);
+                var output = status.Output;
+                Assert.NotNull(output);
                 DurableHttpResponse response = output.ToObject<DurableHttpResponse>();
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -1144,7 +1180,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var client = await host.StartOrchestratorAsync(functionName, testRequest, this.output);
                 var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(Debugger.IsAttached ? 3000 : 90));
 
-                var output = status?.Output;
+                Assert.NotNull(status);
+                var output = status.Output;
+                Assert.NotNull(output);
                 DurableHttpResponse response = output.ToObject<DurableHttpResponse>();
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -1189,7 +1227,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var client = await host.StartOrchestratorAsync(functionName, testRequest, this.output);
                 var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(Debugger.IsAttached ? 3000 : 90));
 
-                var output = status?.Output;
+                Assert.NotNull(status);
+                var output = status.Output;
+                Assert.NotNull(output);
                 DurableHttpResponse response = output.ToObject<DurableHttpResponse>();
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -1234,7 +1274,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var client = await host.StartOrchestratorAsync(functionName, testRequest, this.output);
                 var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(40000));
 
-                var output = status?.Output;
+                Assert.NotNull(status);
+                var output = status.Output;
+                Assert.NotNull(output);
                 DurableHttpResponse response = output.ToObject<DurableHttpResponse>();
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -1384,7 +1426,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.CallHttpAsyncOrchestrator), testRequest, this.output);
                 var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(Debugger.IsAttached ? 3000 : 90));
-                var output = status?.Output;
+                Assert.NotNull(status);
+                var output = status.Output;
+                Assert.NotNull(output);
                 DurableHttpResponse response = output.ToObject<DurableHttpResponse>();
 
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -1429,7 +1473,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.CallHttpAsyncOrchestrator), testRequest, this.output);
                 var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(Debugger.IsAttached ? 3000 : 90));
-                var output = status?.Output;
+                Assert.NotNull(status);
+                var output = status.Output;
+                Assert.NotNull(output);
                 DurableHttpResponse response = output.ToObject<DurableHttpResponse>();
 
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -1475,7 +1521,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.CallHttpAsyncOrchestrator), testRequest, this.output);
                 var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(Debugger.IsAttached ? 3000 : 90));
-                var output = status?.Output;
+                Assert.NotNull(status);
+                var output = status.Output;
+                Assert.NotNull(output);
                 DurableHttpResponse response = output.ToObject<DurableHttpResponse>();
 
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -1517,7 +1565,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.CallHttpAsyncOrchestrator), testRequest, this.output);
                 var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(Debugger.IsAttached ? 3000 : 90));
-                var output = status?.Output;
+                Assert.NotNull(status);
+                var output = status.Output;
+                Assert.NotNull(output);
                 DurableHttpResponse response = output.ToObject<DurableHttpResponse>();
 
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -1583,7 +1633,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.CallHttpAsyncOrchestrator), testRequest, this.output);
                 var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(Debugger.IsAttached ? 3000 : 90));
-                var output = status?.Output;
+                Assert.NotNull(status);
+                var output = status.Output;
+                Assert.NotNull(output);
 
                 DurableHttpResponse response = output.ToObject<DurableHttpResponse>();
 

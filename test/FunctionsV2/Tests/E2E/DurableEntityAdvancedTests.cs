@@ -572,6 +572,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 await host.StartAsync();
 
+                Assert.NotEmpty(entitiyIds);
                 TestDurableClient client = null;
 
                 for (int i = 0; i < entitiyIds.Count; i++)

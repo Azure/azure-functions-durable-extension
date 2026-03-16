@@ -67,9 +67,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], "World", this.output);
                 var status = await client.WaitForCompletionAsync(this.output);
 
-                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
-                Assert.Equal("World", status?.Input);
-                Assert.Equal("Hello, World!", status?.Output);
+                Assert.NotNull(status);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
+                Assert.Equal("World", status.Input);
+                Assert.Equal("Hello, World!", status.Output);
 
                 await host.StopAsync();
 
@@ -128,9 +129,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     useTaskHubFromAppSettings: false);
                 var status = await client.WaitForCompletionAsync(this.output);
 
-                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
-                Assert.Equal("World", status?.Input);
-                Assert.Equal("Hello, World!", status?.Output);
+                Assert.NotNull(status);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
+                Assert.Equal("World", status.Input);
+                Assert.Equal("Hello, World!", status.Output);
 
                 // Next, start an orchestration from the client host and verify that it completes on the orchestration host.
                 client = await clientHost.StartOrchestratorAsync(
@@ -140,9 +142,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     useTaskHubFromAppSettings: true);
                 status = await client.WaitForCompletionAsync(this.output);
 
-                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
-                Assert.Equal("World", status?.Input);
-                Assert.Equal("Hello, World!", status?.Output);
+                Assert.NotNull(status);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
+                Assert.Equal("World", status.Input);
+                Assert.Equal("Hello, World!", status.Output);
 
                 await orchestrationHost.StopAsync();
                 await clientHost.StopAsync();
@@ -205,7 +208,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             using (IHost clientHost = TestHelpers.GetJobHostExternalEnvironment(clientProviderFactory))
             {
                 await clientHost.StartAsync();
-                IDurableClientFactory durableClientFactory = clientHost.Services.GetService(typeof(IDurableClientFactory)) as DurableClientFactory;
+                IDurableClientFactory durableClientFactory = clientHost.Services.GetRequiredService<IDurableClientFactory>();
                 IDurableClient durableClient = durableClientFactory.CreateClient(durableClientOptions);
                 Assert.Equal(taskHubName, durableClient.TaskHubName);
                 await clientHost.StopAsync();
@@ -236,7 +239,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], null, this.output);
                 var status = await client.WaitForCompletionAsync(this.output);
 
-                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.NotNull(status);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
                 Assert.Equal("", status.Output.ToString());
 
                 await host.StopAsync();
@@ -510,7 +514,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                         // Ensuring no DurableTask-Core Verbose logs are found
                         if ((int)json["Level"] == (int)EventLevel.Verbose)
                         {
-                            Assert.False(json["ProviderName"].Equals("DurableTask-Core"));
+                            Assert.False(string.Equals((string)json["ProviderName"], "DurableTask-Core", StringComparison.Ordinal));
                         }
                     }
                 }
@@ -831,9 +835,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], inputWithEscapedChars, this.output);
                 var status = await client.WaitForCompletionAsync(this.output);
 
-                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
-                Assert.Equal(inputWithEscapedChars, status?.Input);
-                Assert.Equal($"Hello, {inputWithEscapedChars}!", status?.Output);
+                Assert.NotNull(status);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
+                Assert.Equal(inputWithEscapedChars, status.Input);
+                Assert.Equal($"Hello, {inputWithEscapedChars}!", status.Output);
 
                 await host.StopAsync();
             }
@@ -1299,9 +1304,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], "World", this.output);
                 var status = await client.WaitForCompletionAsync(this.output);
 
-                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
-                Assert.Equal("World", (string)status?.Input);
-                Assert.Equal("Hello, World!", (string)status?.Output);
+                Assert.NotNull(status);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
+                Assert.Equal("World", (string)status.Input);
+                Assert.Equal("Hello, World!", (string)status.Output);
 
                 await host.StopAsync();
             }
@@ -1395,7 +1401,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], "World", this.output);
                 var status = await client.WaitForCompletionAsync(this.output);
 
-                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.NotNull(status);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
                 var logger = this.loggerProvider.CreatedLoggers.FirstOrDefault(l => l.Category.Equals("Function.ReplaySafeLogger_OneLogMessage.User"));
                 var logMessages = logger.LogMessages.Where(
                     msg => msg.FormattedMessage.Contains("ReplaySafeLogger Test: About to say Hello")).ToList();

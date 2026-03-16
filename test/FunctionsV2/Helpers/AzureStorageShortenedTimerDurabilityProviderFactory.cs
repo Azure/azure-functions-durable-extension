@@ -26,7 +26,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         public override DurabilityProvider GetDurabilityProvider(DurableClientAttribute attribute)
         {
-            AzureStorageDurabilityProvider provider = base.GetDurabilityProvider(attribute) as AzureStorageDurabilityProvider;
+            // Direct cast is intentional: throws InvalidCastException if the base returns an unexpected type.
+            var provider = (AzureStorageDurabilityProvider)base.GetDurabilityProvider(attribute);
             provider.MaximumDelayTime = TimeSpan.FromSeconds(3);
             provider.LongRunningTimerIntervalLength = TimeSpan.FromSeconds(1);
             return provider;
@@ -34,7 +35,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         public override DurabilityProvider GetDurabilityProvider()
         {
-            AzureStorageDurabilityProvider provider = base.GetDurabilityProvider() as AzureStorageDurabilityProvider;
+            // Direct cast is intentional: throws InvalidCastException if the base returns an unexpected type.
+            var provider = (AzureStorageDurabilityProvider)base.GetDurabilityProvider();
             provider.MaximumDelayTime = TimeSpan.FromSeconds(3);
             provider.LongRunningTimerIntervalLength = TimeSpan.FromSeconds(1);
             return provider;

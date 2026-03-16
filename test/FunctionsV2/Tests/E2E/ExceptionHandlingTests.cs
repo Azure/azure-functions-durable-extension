@@ -46,8 +46,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.TryCatchLoop), 5, this.output);
                 var status = await client.WaitForCompletionAsync(this.output);
 
-                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
-                Assert.Equal(5, status?.Output);
+                Assert.NotNull(status);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
+                Assert.Equal(5, status.Output);
 
                 await host.StopAsync();
             }
@@ -75,7 +76,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     this.output);
                 var status = await client.WaitForCompletionAsync(this.output);
 
-                Assert.Equal(OrchestrationRuntimeStatus.Failed, status?.RuntimeStatus);
+                Assert.NotNull(status);
+                Assert.Equal(OrchestrationRuntimeStatus.Failed, status.RuntimeStatus);
                 Assert.Contains(message, (string)status.Output);
 
                 await host.StopAsync();
@@ -107,7 +109,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], null, this.output);
                 var status = await client.WaitForCompletionAsync(this.output);
 
-                Assert.Equal(OrchestrationRuntimeStatus.Failed, status?.RuntimeStatus);
+                Assert.NotNull(status);
+                Assert.Equal(OrchestrationRuntimeStatus.Failed, status.RuntimeStatus);
 
                 string output = status.Output.ToString();
                 this.output.WriteLine($"Orchestration output string: {output}");
@@ -158,7 +161,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Assert.NotNull(status);
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
                 Assert.Equal(client.InstanceId, status.InstanceId);
-                Assert.Equal(orchestratorFunctionNames[0], status?.Name);
+                Assert.Equal(orchestratorFunctionNames[0], status.Name);
 
                 await host.StopAsync();
 
@@ -301,7 +304,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], null, this.output);
                 var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(50));
 
-                Assert.Equal(OrchestrationRuntimeStatus.Failed, status?.RuntimeStatus);
+                Assert.NotNull(status);
+                Assert.Equal(OrchestrationRuntimeStatus.Failed, status.RuntimeStatus);
 
                 // Strip '\r' characters to make Windows and Unix output identical.
                 string output = status.Output.ToString().Replace("\r", string.Empty);
@@ -351,7 +355,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], null, this.output);
                 var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(50));
 
-                Assert.Equal(OrchestrationRuntimeStatus.Failed, status?.RuntimeStatus);
+                Assert.NotNull(status);
+                Assert.Equal(OrchestrationRuntimeStatus.Failed, status.RuntimeStatus);
 
                 string output = status.Output.ToString().Replace(Environment.NewLine, " ");
                 this.output.WriteLine($"Orchestration output string: {output}");
@@ -393,9 +398,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], message, this.output);
                 var status = await client.WaitForCompletionAsync(this.output);
 
-                Assert.Equal(OrchestrationRuntimeStatus.Failed, status?.RuntimeStatus);
+                Assert.NotNull(status);
+                Assert.Equal(OrchestrationRuntimeStatus.Failed, status.RuntimeStatus);
 
-                string output = (string)status?.Output;
+                string output = (string)status.Output;
                 this.output.WriteLine($"Orchestration output string: {output}");
                 Assert.StartsWith(
                     $"Orchestrator function '{orchestratorFunctionNames[0]}' failed: The activity function '{activityFunctionName}' failed: \"{message}\"",
@@ -447,9 +453,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     this.output);
                 var status = await client.WaitForCompletionAsync(this.output);
 
-                Assert.Equal(OrchestrationRuntimeStatus.Failed, status?.RuntimeStatus);
+                Assert.NotNull(status);
+                Assert.Equal(OrchestrationRuntimeStatus.Failed, status.RuntimeStatus);
 
-                string output = (string)status?.Output;
+                string output = (string)status.Output;
                 this.output.WriteLine($"Orchestration output string: {output}");
                 Assert.StartsWith(
                     string.Format(
@@ -491,9 +498,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], message, this.output);
                 var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(40));
 
-                Assert.Equal(OrchestrationRuntimeStatus.Failed, status?.RuntimeStatus);
+                Assert.NotNull(status);
+                Assert.Equal(OrchestrationRuntimeStatus.Failed, status.RuntimeStatus);
 
-                string output = (string)status?.Output;
+                string output = (string)status.Output;
                 this.output.WriteLine($"Orchestration output string: {output}");
                 Assert.StartsWith(
                     $"Orchestrator function '{orchestratorFunctionNames[0]}' failed: The activity function '{activityFunctionName}' failed: \"{message}\"",
@@ -536,9 +544,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionName, message, this.output);
                 var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(40));
 
-                Assert.Equal(OrchestrationRuntimeStatus.Failed, status?.RuntimeStatus);
+                Assert.NotNull(status);
+                Assert.Equal(OrchestrationRuntimeStatus.Failed, status.RuntimeStatus);
 
-                string output = (string)status?.Output;
+                string output = (string)status.Output;
                 this.output.WriteLine($"Orchestration output string: {output}");
                 Assert.Contains(orchestratorFunctionName, output);
                 Assert.Contains("Value cannot be null.", output);
@@ -575,9 +584,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(60));
 
-                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.NotNull(status);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
 
-                int output = (int)status?.Output;
+                int output = (int)status.Output;
                 this.output.WriteLine($"Orchestration output string: {output}");
                 Assert.Equal(26, output);
 
