@@ -763,9 +763,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 exception = caughtException;
             }
-            catch (DurableTaskException unexpectedException)
+            catch (Exception unexpectedException)
             {
-                // Unexpected durable task exception type: fail the test with details instead of silently swallowing it.
+                // Unexpected exception type: fail the test with details instead of silently swallowing it.
                 Assert.Fail($"Unexpected exception type was thrown: {unexpectedException.GetType().FullName}. Message: {unexpectedException.Message}");
             }
 
