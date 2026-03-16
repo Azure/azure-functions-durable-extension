@@ -263,8 +263,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     await Task.Delay(50);
                 }
                 while (DateTime.UtcNow <= deadline
-                        && status.RuntimeStatus != OrchestrationRuntimeStatus.Completed);
+                        && (status == null || status.RuntimeStatus != OrchestrationRuntimeStatus.Completed));
 
+                Assert.NotNull(status);
                 Assert.Equal("Hello, Heloise!", (string)status.Output);
                 await host.StopAsync();
             }
