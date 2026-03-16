@@ -89,7 +89,7 @@ jobs:
       run: |
         New-Item -ItemType Directory -Path .azurite -Force
         Set-Location .azurite
-        npm init -y --init-name azurite-local
+        '{"name":"azurite-local","private":true}' | Set-Content package.json
         npm install azurite
 
     - name: Start Azurite

@@ -56,7 +56,7 @@ jobs:
       run: |
         mkdir -p .azurite
         cd .azurite
-        npm init -y --init-name azurite-local
+        echo '{"name":"azurite-local","private":true}' > package.json
         npm install azurite
 
     - name: Run Scale tests
