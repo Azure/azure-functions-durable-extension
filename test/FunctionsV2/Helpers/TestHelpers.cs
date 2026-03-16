@@ -457,14 +457,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 timeStamp);
             var actualLogMessages = logMessages.Select(m => m.FormattedMessage).ToList();
 
-            if (filterOutReplayLogs)
-            {
-                // When extended sessions are enabled, the idle timeout may cause session
-                // eviction and replay, producing additional "IsReplay: True" log messages.
-                // Filter these from actual messages to match the filtered expected messages.
-                actualLogMessages.RemoveAll(str => str.Contains("IsReplay: True"));
-            }
-
             AssertLogMessages(expectedLogMessages, actualLogMessages, testOutput);
         }
 
