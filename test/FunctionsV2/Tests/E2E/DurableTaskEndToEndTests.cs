@@ -658,7 +658,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public async Task OutputsValidJSONLogs()
         {
             // Set a different logging path, since the CI is Windows-based instead of linux.
-            LinuxAppServiceLogger.LoggingPath = Path.Combine(Directory.GetCurrentDirectory(), "logfile.log");
+            LinuxAppServiceLogger.LoggingPath = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + "logfile.log";
             File.Delete(LinuxAppServiceLogger.LoggingPath); // To ensure the test generates the path
             string orchestratorName = nameof(TestOrchestrations.ThrowOrchestrator);
 
