@@ -36,21 +36,10 @@ jobs:
 
     - name: Setup .NET
       uses: actions/setup-dotnet@v3
-
-    - name: Set up .NET Core 3.1
-      uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: '3.1.x'
-
-    - name: Set up .NET Core 2.1
-      uses: actions/setup-dotnet@v3
-      with:
-        dotnet-version: '2.1.x'
-
-    - name: Set up .NET 6.0
-      uses: actions/setup-dotnet@v3
-      with:
-        dotnet-version: '6.0.x'
+        dotnet-version: |
+          8.0.x
+        global-json-file: global.json
 
     - name: Cache NuGet packages
       uses: actions/cache@v3
