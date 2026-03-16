@@ -928,9 +928,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                     await Task.WhenAll(hosts.Select(host => host.StartAsync()));
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-                    Assert.Fail("Could not start up two hosts on the same device in parallel");
+                    Assert.Fail("Could not start up two hosts on the same device in parallel. Exception: {0}", ex);
                 }
                 finally
                 {
