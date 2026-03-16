@@ -29,6 +29,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public async Task EmptyStorageProviderUsesAzureStorageDefaults()
         {
             string testName = nameof(this.EmptyStorageProviderUsesAzureStorageDefaults).ToLowerInvariant();
+            string hubName = testName + PlatformSpecificHelpers.VersionSuffix;
 
             string[] orchestratorFunctionNames =
             {
@@ -39,7 +40,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 this.loggerProvider,
                 testName,
                 false,
-                storageProviderType: "empty_storage_provider"))
+                storageProviderType: "empty_storage_provider",
+                exactTaskHubName: hubName))
             {
                 await host.StartAsync();
 
@@ -55,7 +57,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
 
             // Ensure blobs touched in the last 30 seconds
-            await AssertTestUsedAzureStorageAsync(testName);
+            await AssertTestUsedAzureStorageAsync(hubName);
         }
 
         [Fact]
@@ -63,6 +65,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public async Task NullStorageProviderUsesAzureStorageDefaults()
         {
             string testName = nameof(this.NullStorageProviderUsesAzureStorageDefaults).ToLowerInvariant();
+            string hubName = testName + PlatformSpecificHelpers.VersionSuffix;
 
             string[] orchestratorFunctionNames =
             {
@@ -73,7 +76,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 this.loggerProvider,
                 testName,
                 false,
-                storageProviderType: null))
+                storageProviderType: null,
+                exactTaskHubName: hubName))
             {
                 await host.StartAsync();
 
@@ -88,17 +92,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StopAsync();
             }
 
-            await AssertTestUsedAzureStorageAsync(testName);
+            await AssertTestUsedAzureStorageAsync(hubName);
         }
 
-        private static async Task AssertTestUsedAzureStorageAsync(string testName)
+        private static async Task AssertTestUsedAzureStorageAsync(string hubName)
         {
             // Ensure blobs touched in the last 30 seconds
             string defaultConnectionString = TestHelpers.GetStorageConnectionString();
-            string blobLeaseContainerName = $"{testName}{PlatformSpecificHelpers.VersionSuffix.ToLower()}-leases";
+            string hubNameLower = hubName.ToLowerInvariant();
+            string blobLeaseContainerName = $"{hubNameLower}-leases";
             var blobServiceClient = new BlobServiceClient(defaultConnectionString);
             BlobContainerClient containerClient = blobServiceClient.GetBlobContainerClient(blobLeaseContainerName);
-            BlockBlobClient blobClient = containerClient.GetBlockBlobClient($"default/{testName}{PlatformSpecificHelpers.VersionSuffix.ToLower()}-control-00");
+            BlockBlobClient blobClient = containerClient.GetBlockBlobClient($"default/{hubNameLower}-control-00");
             BlobProperties properties = await blobClient.GetPropertiesAsync();
             DateTimeOffset lastModified = properties.LastModified;
             DateTimeOffset expectedLastModifiedTimeThreshold = DateTimeOffset.UtcNow.AddSeconds(-30);

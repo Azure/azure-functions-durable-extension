@@ -205,7 +205,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                     if (newStatus == null)
                     {
-                        Assert.True(false, "Orchestration status did not become available or fail within the expected time window.");
+                        Assert.Fail("Orchestration status did not become available or fail within the expected time window.");
                         return;
                     }
 
