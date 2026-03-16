@@ -507,14 +507,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                         expected.Remove(s);
                     }
 
-                    if (expected.Count == 0)
-                    {
-                        return null;
-                    }
-                    else
-                    {
-                        return string.Join(",", expected);
-                    }
+                    return expected.Count == 0 ? null : string.Join(",", expected);
                 }
 
                 var timeout = Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(30);
