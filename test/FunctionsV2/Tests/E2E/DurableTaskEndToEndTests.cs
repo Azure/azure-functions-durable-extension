@@ -559,7 +559,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 {
                     await host.StartAsync();
                     var client = await host.StartOrchestratorAsync(orchestratorName, input: "World", this.output);
-                    client.WaitForCompletionAsync(this.output);
+                    await client.WaitForCompletionAsync(this.output);
                     await host.StopAsync();
                 }
 
