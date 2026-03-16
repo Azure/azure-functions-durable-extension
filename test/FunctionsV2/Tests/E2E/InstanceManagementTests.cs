@@ -104,7 +104,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var client1 = await host1.StartOrchestratorAsync(nameof(TestOrchestrations.Counter2), null, this.output);
                 var client2 = await host2.StartOrchestratorAsync(nameof(TestOrchestrations.SayHelloWithActivity), "World", this.output);
                 taskHubName1 = client1.TaskHubName;
-                taskHubName2 = client2.TaskHubName;
                 var instanceId = client1.InstanceId;
 
                 // Perform some operations
