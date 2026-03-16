@@ -414,7 +414,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Assert.NotNull(status);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Failed, status.RuntimeStatus);
-                Assert.True(status.Output.ToString().Contains(errorMessage));
+                Assert.Contains(errorMessage, status.Output.ToString());
 
                 await host.StopAsync();
 

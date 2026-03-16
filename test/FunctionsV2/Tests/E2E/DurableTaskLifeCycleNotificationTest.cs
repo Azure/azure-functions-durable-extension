@@ -195,7 +195,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Assert.NotNull(status);
 
                 Assert.Equal(OrchestrationRuntimeStatus.Failed, status.RuntimeStatus);
-                Assert.True(status.Output.ToString().Contains("Value cannot be null"));
+                Assert.Contains("Value cannot be null", status.Output.ToString());
 
                 // There should be one validator for each Event Grid request.
                 // Each validator is a delegate with several Assert statements.
