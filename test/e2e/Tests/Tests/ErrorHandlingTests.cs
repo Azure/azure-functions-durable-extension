@@ -148,11 +148,10 @@ public class ErrorHandlingTests
         var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
         Assert.Equal("Success", orchestrationDetails.Output);
 
-        // Give some time for Core Tools to write logs out
-        Thread.Sleep(500);
-
-        Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains(nameof(InvalidOperationException)) &&
-                                                              x.Contains("This activity failed"));
+        // Poll for the expected log line to appear
+        await this.fixture.TestLogs.AssertLogExistsAsync(
+            x => x.Contains(nameof(InvalidOperationException)) && x.Contains("This activity failed"),
+            "Expected log containing 'InvalidOperationException' and 'This activity failed' was not found.");
     }
 
     [Fact]
@@ -173,25 +172,24 @@ public class ErrorHandlingTests
         var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
         Assert.Equal("Success", orchestrationDetails.Output);
 
-        // Give some time for Core Tools to write logs out
-        Thread.Sleep(500);
-
         if (this.fixture.functionLanguageLocalizer.GetLanguageType() == LanguageType.Python ||
             this.fixture.functionLanguageLocalizer.GetLanguageType() == LanguageType.Node)
         {
             // In the ooproc langagues that use the OOProc shim (old method), we redact exception details for entities.
             // For some reason, this includes redacting these details in Core Tools logs - likely a bug (?)
             // Relevant code: EndToEndTraceHelper.cs ~#545
-            Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains("Function 'counter (Entity)' failed 'get' operation") &&
-                                                                      (x.Contains("(Redacted 58 characters)") ||  // Python 
-                                                                       x.Contains("(Redacted 34 characters)")));  // Node
+            await this.fixture.TestLogs.AssertLogExistsAsync(
+                x => x.Contains("Function 'counter (Entity)' failed 'get' operation") &&
+                     (x.Contains("(Redacted 58 characters)") || x.Contains("(Redacted 34 characters)")),
+                "Expected redacted entity failure log was not found.");
         }
         else
         {
             // For entities, these logs are not emitted as one continuous log, but each line of the exception .ToString() is
             // logged individually.
-            Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains(nameof(InvalidOperationException)) &&
-                                                                    x.Contains("This entity failed"));
+            await this.fixture.TestLogs.AssertLogExistsAsync(
+                x => x.Contains(nameof(InvalidOperationException)) && x.Contains("This entity failed"),
+                "Expected log containing 'InvalidOperationException' and 'This entity failed' was not found.");
             Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains("More information about the failure"));
             Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains(nameof(OverflowException)) &&
                                                                   x.Contains("Inner exception message"));
@@ -213,12 +211,11 @@ public class ErrorHandlingTests
         var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
         Assert.Equal("Success", orchestrationDetails.Output);
 
-        // Give some time for Core Tools to write logs out
-        Thread.Sleep(500);
-
-        // We want to ensure that multiline exception messages and inner exceptions are preserved
-        Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains(nameof(InvalidOperationException)) &&
-                                                              x.Contains("This activity failed"));
+        // We want to ensure that multiline exception messages and inner exceptions are preserved.
+        // Poll for the first expected log line to appear instead of using a fixed delay.
+        await this.fixture.TestLogs.AssertLogExistsAsync(
+            x => x.Contains(nameof(InvalidOperationException)) && x.Contains("This activity failed"),
+            "Expected log containing 'InvalidOperationException' and 'This activity failed' was not found.");
         Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains("More information about the failure"));
         Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains(nameof(OverflowException)) &&
                                                               x.Contains("Inner exception message"));
