@@ -743,7 +743,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 await client.SuspendAsync("suspend for test");
                 DurableOrchestrationStatus suspendedStatus = await client.WaitForStatusChange(this.output, OrchestrationRuntimeStatus.Suspended);
-                Assert.Equal(OrchestrationRuntimeStatus.Suspended, suspendedstatus.RuntimeStatus);
+                Assert.Equal(OrchestrationRuntimeStatus.Suspended, suspendedStatus.RuntimeStatus);
             }
 
             Exception exception = null;
