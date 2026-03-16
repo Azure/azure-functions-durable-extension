@@ -231,7 +231,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     break;
                 }
 
-                if (status.CustomStatus.Equals(expectedStatus))
+                if (status.CustomStatus != null && status.CustomStatus.Equals(expectedStatus))
                 {
                     output.WriteLine($"{status.Name} ({status.InstanceId}) now shows a status of '{status.CustomStatus}'.");
                     return status;
@@ -242,7 +242,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             while (sw.Elapsed < timeout);
 
             output.WriteLine($"Timeout expired. {status.Name} ({status.InstanceId}) currently shows a status of '{status.CustomStatus}'.");
-            Assert.Equal(expectedStatus.ToString(), status.CustomStatus.ToString());
+            Assert.Equal(expectedStatus.ToString(), status.CustomStatus?.ToString());
             return status;
         }
     }
