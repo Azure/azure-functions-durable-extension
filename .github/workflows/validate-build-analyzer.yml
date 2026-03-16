@@ -47,7 +47,9 @@ jobs:
     - name: Build
       run: dotnet build ./test/WebJobs.Extensions.DurableTask.Analyzers.Test/WebJobs.Extensions.DurableTask.Analyzers.Test.csproj --no-restore
 
-    # Azurite is pre-installed on GitHub-hosted runners
+    - name: Install Azurite
+      run: npm install -g azurite
+
     - name: Start Azurite
       shell: pwsh
       run: Start-Process azurite -ArgumentList '--silent','--blobPort','10000','--queuePort','10001','--tablePort','10002'

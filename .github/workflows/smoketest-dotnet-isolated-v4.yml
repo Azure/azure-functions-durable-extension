@@ -76,7 +76,9 @@ jobs:
     # when building the smoke test app in docker, causing the build to fail. This is a temporary workaround until the
     # root cause is identified and fixed.
 
-    # Azurite is pre-installed on GitHub-hosted runners
+    - name: Install Azurite
+      run: npm install -g azurite
+
     - name: Start Azurite
       shell: pwsh
       run: Start-Process azurite -ArgumentList '--silent','--blobPort','10000','--queuePort','10001','--tablePort','10002'
