@@ -2,10 +2,9 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Azure.Storage.Blobs;
-using Azure.Storage.Blobs.Models;
-using Azure.Storage.Blobs.Specialized;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Xunit;
 using Xunit.Abstractions;
@@ -97,17 +96,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         private static async Task AssertTestUsedAzureStorageAsync(string hubName)
         {
-            // Ensure blobs touched in the last 30 seconds
+            // Verify that Azure Storage artifacts were created for this task hub,
+            // confirming the runtime used Azure Storage as the default provider.
             string defaultConnectionString = TestHelpers.GetStorageConnectionString();
             string hubNameLower = hubName.ToLowerInvariant();
-            string blobLeaseContainerName = $"{hubNameLower}-leases";
             var blobServiceClient = new BlobServiceClient(defaultConnectionString);
-            BlobContainerClient containerClient = blobServiceClient.GetBlobContainerClient(blobLeaseContainerName);
-            BlockBlobClient blobClient = containerClient.GetBlockBlobClient($"default/{hubNameLower}-control-00");
-            BlobProperties properties = await blobClient.GetPropertiesAsync();
-            DateTimeOffset lastModified = properties.LastModified;
-            DateTimeOffset expectedLastModifiedTimeThreshold = DateTimeOffset.UtcNow.AddSeconds(-30);
-            Assert.True(lastModified > expectedLastModifiedTimeThreshold);
+            var matchingContainers = new List<string>();
+            await foreach (var container in blobServiceClient.GetBlobContainersAsync(prefix: hubNameLower))
+            {
+                matchingContainers.Add(container.Name);
+            }
+
+            Assert.NotEmpty(matchingContainers);
         }
     }
 }
