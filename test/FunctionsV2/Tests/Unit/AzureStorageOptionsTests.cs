@@ -10,8 +10,13 @@ using Xunit;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
-    public class AzureStorageOptionsTests
+    public class AzureStorageOptionsTests : IDisposable
     {
+        public void Dispose()
+        {
+            Environment.SetEnvironmentVariable("WEBSITE_SKU", null);
+        }
+
 #if !FUNCTIONS_V1
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]

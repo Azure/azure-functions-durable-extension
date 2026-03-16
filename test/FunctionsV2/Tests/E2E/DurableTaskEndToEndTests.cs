@@ -386,7 +386,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 {
                     await host.StartAsync();
                     var client = await host.StartOrchestratorAsync(orchestratorName, input: "World", this.output);
-                    var status = await client.WaitForCompletionAsync(this.output);
+                    await client.WaitForCompletionAsync(this.output);
                     await host.StopAsync();
                 }
 
@@ -444,7 +444,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 await host.StartAsync();
                 var client = await host.StartOrchestratorAsync(orchestratorName, input: "World", this.output);
-                var status = await client.WaitForCompletionAsync(this.output);
+                await client.WaitForCompletionAsync(this.output);
                 await host.StopAsync();
             }
 
@@ -491,7 +491,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 {
                     await host.StartAsync();
                     var client = await host.StartOrchestratorAsync(orchestratorName, input: "World", this.output);
-                    var status = await client.WaitForCompletionAsync(this.output);
+                    await client.WaitForCompletionAsync(this.output);
                     await host.StopAsync();
                 }
 
@@ -559,7 +559,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 {
                     await host.StartAsync();
                     var client = await host.StartOrchestratorAsync(orchestratorName, input: "World", this.output);
-                    var status = await client.WaitForCompletionAsync(this.output);
+                    client.WaitForCompletionAsync(this.output);
                     await host.StopAsync();
                 }
 
@@ -689,7 +689,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 // This orchestrator should error out on null inputs
                 var client = await host.StartOrchestratorAsync(orchestratorName, input: null, this.output);
-                var status = await client.WaitForCompletionAsync(this.output);
+                await client.WaitForCompletionAsync(this.output);
                 await host.StopAsync();
             }
 
@@ -1016,7 +1016,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     options.HubName = customHubName;
                 }
 
-                using (var host = TestHelpers.GetJobHostWithOptions(this.loggerProvider, options))
+                using (TestHelpers.GetJobHostWithOptions(this.loggerProvider, options))
                 {
                     Assert.Equal(expectedHubName, options.HubName);
                 }
@@ -1145,15 +1145,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 { taskHubSettingName, taskHubName },
             });
 
-            taskHubName += PlatformSpecificHelpers.VersionSuffix;
+            string expectedResolvedName = taskHubName + PlatformSpecificHelpers.VersionSuffix;
             ArgumentException argumentException =
                 await Assert.ThrowsAsync<ArgumentException>(async () =>
                 {
-                    using (var host = TestHelpers.GetJobHost(
+                    using (var host = TestHelpers.GetJobHostWithOptions(
                         this.loggerProvider,
-                        nameof(this.TaskHubName_Throws_ArgumentException),
-                        false,
-                        exactTaskHubName: taskHubName))
+                        durableTaskOptions,
+                        nameResolver: nameResolver))
                     {
                         await host.StartAsync();
                         await host.StopAsync();
@@ -1162,7 +1161,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             Assert.NotNull(argumentException);
             Assert.Equal(
-                $"Task hub name '{taskHubName}' should contain only alphanumeric characters, start with a letter, and have length between 3 and 45.",
+                $"Task hub name '{expectedResolvedName}' should contain only alphanumeric characters, start with a letter, and have length between 3 and 45.",
                 argumentException.Message);
         }
 
