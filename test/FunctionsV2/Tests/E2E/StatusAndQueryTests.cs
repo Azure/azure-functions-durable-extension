@@ -203,7 +203,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                         await Task.Delay(200);
                     }
 
-                    Assert.NotNull(newStatus);
+                    if (newStatus == null)
+                    {
+                        Assert.True(false, "Orchestration status did not become available or fail within the expected time window.");
+                        return;
+                    }
+
                     Assert.Equal(OrchestrationRuntimeStatus.Failed, newStatus.RuntimeStatus);
                     Assert.Contains("Non-Deterministic workflow detected", newStatus.Output.ToString());
                     await clientHost.StopAsync();
