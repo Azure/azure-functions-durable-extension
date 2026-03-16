@@ -15,7 +15,6 @@ on:
     paths-ignore: [ '**.md' ]
 
 env:
-  solution: WebJobs.Extensions.DurableTask.sln
   config: Release
   AzureWebJobsStorage: UseDevelopmentStorage=true
 
@@ -30,27 +29,23 @@ jobs:
 
     - name: Setup .NET
       uses: actions/setup-dotnet@v3
-
-    - name: Set up .NET Core 3.1
-      uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: '3.1.x'
+        dotnet-version: |
+          8.0.x
+        global-json-file: global.json
 
-    - name: Set up .NET Core 2.1
-      uses: actions/setup-dotnet@v3
+    - name: Cache NuGet packages
+      uses: actions/cache@v3
       with:
-        dotnet-version: '2.1.x'
-
-    - name: Set up .NET 6.0
-      uses: actions/setup-dotnet@v3
-      with:
-        dotnet-version: '6.0.x'
+        path: ~/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', '**/Directory.Packages.props') }}
+        restore-keys: ${{ runner.os }}-nuget-
 
     - name: Restore dependencies
-      run: dotnet restore $solution
+      run: dotnet restore ./test/WebJobs.Extensions.DurableTask.Analyzers.Test/WebJobs.Extensions.DurableTask.Analyzers.Test.csproj
 
     - name: Build
-      run: dotnet build $solution
+      run: dotnet build ./test/WebJobs.Extensions.DurableTask.Analyzers.Test/WebJobs.Extensions.DurableTask.Analyzers.Test.csproj --no-restore
 
     # Install Azurite
     - name: Set up Node.js (needed for Azurite)
@@ -63,5 +58,5 @@ jobs:
 
     # Run tests
     - name: Run Analyzer tests
-      run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 & dotnet test ./test/WebJobs.Extensions.DurableTask.Analyzers.Test/WebJobs.Extensions.DurableTask.Analyzers.Test.csproj
+      run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 & dotnet test ./test/WebJobs.Extensions.DurableTask.Analyzers.Test/WebJobs.Extensions.DurableTask.Analyzers.Test.csproj --no-build
 

@@ -7,11 +7,13 @@
     <Nullable>enable</Nullable>
     <RootNamespace>Microsoft.Azure.Durable.Tests.E2E</RootNamespace>
   </PropertyGroup>
-  <Target Name="PreBuild" BeforeTargets="Build;BeforeResolveReferences">
-    <!-- Build and pack the source project -->
+  <Target Name="PreBuild" BeforeTargets="Build;BeforeResolveReferences" Condition="'$(TargetFramework)' == 'net8.0'">
+    <!-- Build and pack the source project. Only run for net8.0 to avoid parallel
+         pack conflicts when multi-targeting net8.0;net10.0. Pin TargetFramework
+         to net8.0 to avoid MSB3277 assembly conflicts. -->
     <MSBuild Projects="$(MSBuildProjectDirectory)/../../../../src/WebJobs.Extensions.DurableTask/WebJobs.Extensions.DurableTask.csproj"
              Targets="Build;Pack"
-             Properties="Configuration=$(Configuration);PackageOutputPath=$(MSBuildProjectDirectory)/packages" />
+             Properties="Configuration=$(Configuration);PackageOutputPath=$(MSBuildProjectDirectory)/packages;TargetFramework=net8.0" />
   </Target>
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />

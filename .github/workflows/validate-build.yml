@@ -15,7 +15,6 @@ on:
     paths-ignore: [ '**.md' ]
 
 env:
-  solution: WebJobs.Extensions.DurableTask.sln
   config: Release
   AzureWebJobsStorage: UseDevelopmentStorage=true
 
@@ -35,11 +34,22 @@ jobs:
           8.0.x
         global-json-file: global.json
 
+    - name: Cache NuGet packages
+      uses: actions/cache@v3
+      with:
+        path: ~/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', '**/Directory.Packages.props') }}
+        restore-keys: ${{ runner.os }}-nuget-
+
     - name: Restore dependencies
-      run: dotnet restore $solution
+      run: |
+        dotnet restore ./test/FunctionsV2/WebJobs.Extensions.DurableTask.Tests.V2.csproj
+        dotnet restore ./test/Worker.Extensions.DurableTask.Tests/Worker.Extensions.DurableTask.Tests.csproj
 
     - name: Build
-      run: dotnet build $solution
+      run: |
+        dotnet build ./test/FunctionsV2/WebJobs.Extensions.DurableTask.Tests.V2.csproj --no-restore
+        dotnet build ./test/Worker.Extensions.DurableTask.Tests/Worker.Extensions.DurableTask.Tests.csproj --no-restore
 
     # Install Azurite
     - name: Set up Node.js (needed for Azurite)
@@ -52,8 +62,8 @@ jobs:
 
     # Run tests
     - name: Run FunctionsV2 tests (except E2E tests)
-      run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 & dotnet test ./test/FunctionsV2/WebJobs.Extensions.DurableTask.Tests.V2.csproj --filter "TestType!=E2E"
+      run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 & dotnet test ./test/FunctionsV2/WebJobs.Extensions.DurableTask.Tests.V2.csproj --no-build --filter "TestType!=E2E"
 
     - name: Run Worker Extension tests
-      run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 & dotnet test ./test/Worker.Extensions.DurableTask.Tests/Worker.Extensions.DurableTask.Tests.csproj
+      run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 & dotnet test ./test/Worker.Extensions.DurableTask.Tests/Worker.Extensions.DurableTask.Tests.csproj --no-build
 

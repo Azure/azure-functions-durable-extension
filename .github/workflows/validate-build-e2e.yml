@@ -15,7 +15,6 @@ on:
     paths-ignore: [ '**.md' ]
 
 env:
-  solution: WebJobs.Extensions.DurableTask.sln
   config: Release
   AzureWebJobsStorage: UseDevelopmentStorage=true
 
@@ -49,10 +48,10 @@ jobs:
         restore-keys: ${{ runner.os }}-nuget-
 
     - name: Restore dependencies
-      run: dotnet restore $solution
+      run: dotnet restore ./test/FunctionsV2/WebJobs.Extensions.DurableTask.Tests.V2.csproj
 
     - name: Build
-      run: dotnet build $solution --no-restore
+      run: dotnet build ./test/FunctionsV2/WebJobs.Extensions.DurableTask.Tests.V2.csproj --no-restore
 
     # Install Azurite
     - name: Set up Node.js (needed for Azurite)
