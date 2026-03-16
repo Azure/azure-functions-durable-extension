@@ -659,7 +659,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 await host.StartAsync();
 
-                string instanceId = Guid.NewGuid().ToString();
                 DurableOrchestrationStatus input = new DurableOrchestrationStatus();
                 var client = await host.StartOrchestratorAsync(
                     nameof(TestOrchestrations.GetDurableOrchestrationStatus),
