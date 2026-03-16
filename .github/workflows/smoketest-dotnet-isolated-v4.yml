@@ -76,12 +76,25 @@ jobs:
     # when building the smoke test app in docker, causing the build to fail. This is a temporary workaround until the
     # root cause is identified and fixed.
 
+    - name: Cache Azurite
+      id: cache-azurite
+      uses: actions/cache@v3
+      with:
+        path: .azurite
+        key: ${{ runner.os }}-azurite-v1
+
     - name: Install Azurite
-      run: npm install -g azurite
+      if: steps.cache-azurite.outputs.cache-hit != 'true'
+      shell: pwsh
+      run: |
+        New-Item -ItemType Directory -Path .azurite -Force
+        Set-Location .azurite
+        npm init -y
+        npm install azurite
 
     - name: Start Azurite
       shell: pwsh
-      run: Start-Process azurite -ArgumentList '--silent','--blobPort','10000','--queuePort','10001','--tablePort','10002'
+      run: Start-Process (Resolve-Path '.azurite\node_modules\.bin\azurite.cmd') -ArgumentList '--silent','--blobPort','10000','--queuePort','10001','--tablePort','10002'
 
     - name: Run smoke tests (Hello Cities (Typed))
       shell: pwsh

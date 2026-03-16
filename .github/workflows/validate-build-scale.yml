@@ -44,12 +44,24 @@ jobs:
     - name: Build
       run: dotnet build ./test/ScaleTests/Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests.csproj -c $config --no-restore
 
+    - name: Cache Azurite
+      id: cache-azurite
+      uses: actions/cache@v3
+      with:
+        path: .azurite
+        key: ${{ runner.os }}-azurite-v1
+
     - name: Install Azurite
-      run: npm install -g azurite
+      if: steps.cache-azurite.outputs.cache-hit != 'true'
+      run: |
+        mkdir -p .azurite
+        cd .azurite
+        npm init -y
+        npm install azurite
 
     - name: Run Scale tests
       run : |
-        azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
+        ./.azurite/node_modules/.bin/azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
         AZURITE_PID=$!
         trap "kill $AZURITE_PID || true" EXIT
 
