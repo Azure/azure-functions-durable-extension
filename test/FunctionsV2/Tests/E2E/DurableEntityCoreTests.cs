@@ -845,11 +845,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     throw new XunitException("Entity encountered an error: " + error);
                 }
 
-                Assert.True(state.ContainsKey("https://www.microsoft.com"));
-                Assert.Equal("200", state["https://www.microsoft.com"]);
+                Assert.True(state.TryGetValue("https://www.microsoft.com", out string microsoftStatus));
+                Assert.Equal("200", microsoftStatus);
 
-                Assert.True(state.ContainsKey("https://bing.com"));
-                Assert.Equal("200", state["https://bing.com"]);
+                Assert.True(state.TryGetValue("https://bing.com", out string bingStatus));
+                Assert.Equal("200", bingStatus);
 
                 Assert.Equal(2, state.Count);
 

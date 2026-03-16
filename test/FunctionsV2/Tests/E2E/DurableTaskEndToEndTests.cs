@@ -398,15 +398,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 // Validate that the JSON has some minimal expected fields
                 string[] lines = consoleOutput.Split('\n');
                 var jsonStr = "";
-                foreach (string line in lines)
+                foreach (string line in lines.Where(line => line.StartsWith(prefix)))
                 {
-                    if (line.StartsWith(prefix))
-                    {
-                        jsonStr = line.Replace(prefix, "");
-                        JObject json = JObject.Parse(jsonStr);
+                    jsonStr = line.Replace(prefix, "");
+                    JObject json = JObject.Parse(jsonStr);
 
-                        TestHelpers.IsValidJSONLog(json);
-                    }
+                    TestHelpers.IsValidJSONLog(json);
                 }
             }
         }
@@ -503,20 +500,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 // Validate that the JSON has some minimal expected fields
                 string[] lines = consoleOutput.Split('\n');
                 var jsonStr = "";
-                foreach (string line in lines)
+                foreach (string line in lines.Where(line => line.StartsWith(prefix)))
                 {
-                    if (line.StartsWith(prefix))
+                    jsonStr = line.Replace(prefix, "");
+                    JObject json = JObject.Parse(jsonStr);
+
+                    TestHelpers.IsValidJSONLog(json);
+
+                    // Ensuring no DurableTask-Core Verbose logs are found
+                    if ((int)json["Level"] == (int)EventLevel.Verbose)
                     {
-                        jsonStr = line.Replace(prefix, "");
-                        JObject json = JObject.Parse(jsonStr);
-
-                        TestHelpers.IsValidJSONLog(json);
-
-                        // Ensuring no DurableTask-Core Verbose logs are found
-                        if ((int)json["Level"] == (int)EventLevel.Verbose)
-                        {
-                            Assert.False(string.Equals((string)json["ProviderName"], "DurableTask-Core", StringComparison.Ordinal));
-                        }
+                        Assert.False(string.Equals((string)json["ProviderName"], "DurableTask-Core", StringComparison.Ordinal));
                     }
                 }
             }
@@ -572,21 +566,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 string[] lines = consoleOutput.Split('\n');
                 var jsonStr = "";
                 var foundVerboseLog = false;
-                foreach (string line in lines)
+                foreach (string line in lines.Where(line => line.StartsWith(prefix)))
                 {
-                    if (line.StartsWith(prefix))
+                    jsonStr = line.Replace(prefix, "");
+                    JObject json = JObject.Parse(jsonStr);
+
+                    TestHelpers.IsValidJSONLog(json);
+
+                    // Ensuring DurableTask-Core Verbose logs are found
+                    if (((int)json["Level"] == (int)EventLevel.Verbose)
+                        && string.Equals((string)json["ProviderName"], "DurableTask-Core"))
                     {
-                        jsonStr = line.Replace(prefix, "");
-                        JObject json = JObject.Parse(jsonStr);
-
-                        TestHelpers.IsValidJSONLog(json);
-
-                        // Ensuring DurableTask-Core Verbose logs are found
-                        if (((int)json["Level"] == (int)EventLevel.Verbose)
-                            && string.Equals((string)json["ProviderName"], "DurableTask-Core"))
-                        {
-                            foundVerboseLog = true;
-                        }
+                        foundVerboseLog = true;
                     }
                 }
 
@@ -604,7 +595,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public async Task RemovesNewlinesFromExceptions()
         {
             // Set a different logging path, since the CI is Windows-based instead of linux.
-            LinuxAppServiceLogger.LoggingPath = Path.Combine(Directory.GetCurrentDirectory(), "logfile_RemovesNewlinesFromExceptions.log");
+            const string LogFileName = "logfile_RemovesNewlinesFromExceptions.log";
+            LinuxAppServiceLogger.LoggingPath = Path.Combine(Directory.GetCurrentDirectory(), LogFileName);
             File.Delete(LinuxAppServiceLogger.LoggingPath); // To ensure the test generates the path
             string orchestratorName = nameof(TestOrchestrations.ThrowOrchestrator);
 
