@@ -736,7 +736,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     if (jsons.Any(json =>
                         {
                             var eventType = (string)json.GetValue("EventType");
-                            var val = !string.IsNullOrEmpty(eventType) && eventType.All(char.IsDigit);
                             return !string.IsNullOrEmpty(eventType) && eventType.All(char.IsDigit);
                         }))
                     {
