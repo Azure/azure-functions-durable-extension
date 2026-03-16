@@ -604,7 +604,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public async Task RemovesNewlinesFromExceptions()
         {
             // Set a different logging path, since the CI is Windows-based instead of linux.
-            LinuxAppServiceLogger.LoggingPath = Path.Combine(Directory.GetCurrentDirectory(), "logfile_RemovesNewlinesFromExceptions.log");
+            const string LogFileName = "logfile_RemovesNewlinesFromExceptions.log";
+            LinuxAppServiceLogger.LoggingPath = Path.Combine(Directory.GetCurrentDirectory(), LogFileName);
             File.Delete(LinuxAppServiceLogger.LoggingPath); // To ensure the test generates the path
             string orchestratorName = nameof(TestOrchestrations.ThrowOrchestrator);
 
