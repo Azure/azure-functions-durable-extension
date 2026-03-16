@@ -121,9 +121,10 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
                 var fireAt = TimeSpan.FromSeconds(5);
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.ApprovalWithTimeout), (fireAt, "throw"), this.output);
                 var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(30));
+                Assert.NotNull(status);
 
-                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
-                Assert.Equal("TimeoutException", status?.Output);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
+                Assert.Equal("TimeoutException", status.Output);
 
                 await host.StopAsync();
             }

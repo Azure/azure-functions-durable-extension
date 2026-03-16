@@ -401,7 +401,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var output = status.Output;
                 Assert.NotNull(output);
                 Assert.Contains("Orchestrator function 'CallHttpAsyncOrchestrator' failed: The operation was canceled. Reached user specified timeout: 00:00:01", output.ToString());
-                Assert.Equal(OrchestrationRuntimeStatus.Failed, status?.RuntimeStatus);
+                Assert.Equal(OrchestrationRuntimeStatus.Failed, status.RuntimeStatus);
 
                 await host.StopAsync();
             }
@@ -449,7 +449,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Assert.NotNull(output);
                 Assert.Equal(3, mockSynchronousHttpMessageHandlerCount);
                 Assert.Contains("No such host is known.", output.ToString());
-                Assert.Equal(OrchestrationRuntimeStatus.Failed, status?.RuntimeStatus);
+                Assert.Equal(OrchestrationRuntimeStatus.Failed, status.RuntimeStatus);
 
                 await host.StopAsync();
             }
@@ -496,7 +496,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var output = status.Output;
                 Assert.NotNull(output);
                 Assert.Equal(3, mockSynchronousHttpMessageHandlerCount);
-                Assert.Equal(OrchestrationRuntimeStatus.Failed, status?.RuntimeStatus);
+                Assert.Equal(OrchestrationRuntimeStatus.Failed, status.RuntimeStatus);
 
                 await host.StopAsync();
             }
@@ -543,7 +543,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var output = status.Output;
                 Assert.NotNull(output);
                 Assert.Equal(3, mockSynchronousHttpMessageHandlerCount);
-                Assert.Equal(OrchestrationRuntimeStatus.Failed, status?.RuntimeStatus);
+                Assert.Equal(OrchestrationRuntimeStatus.Failed, status.RuntimeStatus);
 
                 await host.StopAsync();
             }
@@ -633,7 +633,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Assert.NotNull(output);
                 Assert.Equal(1, mockSynchronousHttpMessageHandlerCount);
                 Assert.Contains("No such host is known.", output.ToString());
-                Assert.Equal(OrchestrationRuntimeStatus.Failed, status?.RuntimeStatus);
+                Assert.Equal(OrchestrationRuntimeStatus.Failed, status.RuntimeStatus);
 
                 await host.StopAsync();
             }

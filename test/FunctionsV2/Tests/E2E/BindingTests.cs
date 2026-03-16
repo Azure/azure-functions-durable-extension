@@ -142,11 +142,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.CallActivity), startArgs, this.output);
                 var status = await client.WaitForCompletionAsync(this.output);
+                Assert.NotNull(status);
 
                 // The function checks to see if there is a property called "Foo" which is set to a value
                 // called "Bar" and returns true if this is the case. Otherwise returns false.
-                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
-                Assert.True((bool)status?.Output);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
+                Assert.True((bool)status.Output);
 
                 await host.StopAsync();
             }
@@ -170,10 +171,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.CallActivity), startArgs, this.output);
                 var status = await client.WaitForCompletionAsync(this.output);
+                Assert.NotNull(status);
 
                 // The function echos back the 'Foo' input property value
-                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
-                Assert.Equal(input.Foo, status?.Output);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
+                Assert.Equal(input.Foo, status.Output);
 
                 await host.StopAsync();
             }
@@ -195,10 +197,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.CallActivity), startArgs, this.output);
                 var status = await client.WaitForCompletionAsync(this.output);
+                Assert.NotNull(status);
 
                 // The function echos back the input value
-                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
-                Assert.Equal((double)startArgs.Input, status?.Output);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
+                Assert.Equal((double)startArgs.Input, status.Output);
 
                 await host.StopAsync();
             }
@@ -244,8 +247,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.CallActivity), startArgs, this.output);
                 var status = await client.WaitForCompletionAsync(this.output);
+                Assert.NotNull(status);
 
-                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
 
                 BlockBlobClient newBlob = containerClient.GetBlockBlobClient(UpdatedBlobName);
                 BlobDownloadResult result = await newBlob.DownloadContentAsync();
@@ -305,8 +309,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.CallActivity), startArgs, this.output);
                 var status = await client.WaitForCompletionAsync(this.output);
+                Assert.NotNull(status);
 
-                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
 
                 this.output.WriteLine($"Searching for blob named {outputBlobName}...");
                 BlockBlobClient newBlob = containerClient.GetBlockBlobClient(outputBlobName);

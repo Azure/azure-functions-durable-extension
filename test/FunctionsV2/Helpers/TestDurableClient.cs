@@ -196,9 +196,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 output.WriteLine($"Waiting for instance {this.instanceId} to complete.");
 
                 DurableOrchestrationStatus status = await this.GetStatusAsync(showHistory, showHistoryOutput);
-                if (status?.RuntimeStatus == OrchestrationRuntimeStatus.Completed ||
-                    status?.RuntimeStatus == OrchestrationRuntimeStatus.Failed ||
-                    status?.RuntimeStatus == OrchestrationRuntimeStatus.Terminated)
+                Assert.NotNull(status);
+                if (status.RuntimeStatus == OrchestrationRuntimeStatus.Completed ||
+                    status.RuntimeStatus == OrchestrationRuntimeStatus.Failed ||
+                    status.RuntimeStatus == OrchestrationRuntimeStatus.Terminated)
                 {
                     output.WriteLine($"{status.Name} (ID = {status.InstanceId}) completed after ~{sw.ElapsedMilliseconds}ms. Status = {status.RuntimeStatus}. Output = {status.Output}.");
                     return status;
@@ -221,9 +222,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 output.WriteLine($"Waiting for {this.functionName} ({this.instanceId}) to have a custom status of {expectedStatus}.");
 
                 status = await this.GetStatusAsync(showInput: false);
-                if (status?.RuntimeStatus == OrchestrationRuntimeStatus.Completed ||
-                    status?.RuntimeStatus == OrchestrationRuntimeStatus.Failed ||
-                    status?.RuntimeStatus == OrchestrationRuntimeStatus.Terminated)
+                Assert.NotNull(status);
+                if (status.RuntimeStatus == OrchestrationRuntimeStatus.Completed ||
+                    status.RuntimeStatus == OrchestrationRuntimeStatus.Failed ||
+                    status.RuntimeStatus == OrchestrationRuntimeStatus.Terminated)
                 {
                     output.WriteLine($"{status.Name} (ID = {status.InstanceId}) completed after ~{sw.ElapsedMilliseconds}ms. Status = {status.RuntimeStatus}. Output = {status.Output}.");
                     break;
@@ -240,7 +242,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             while (sw.Elapsed < timeout);
 
             output.WriteLine($"Timeout expired. {status.Name} ({status.InstanceId}) currently shows a status of '{status.CustomStatus}'.");
-            Assert.Equal(expectedStatus.ToString(), status.CustomStatus?.ToString());
+            Assert.Equal(expectedStatus.ToString(), status.Customstatus.ToString());
             return status;
         }
     }

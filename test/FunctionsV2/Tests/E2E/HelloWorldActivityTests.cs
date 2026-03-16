@@ -251,8 +251,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 // Wait for it to complete
                 var status = await client.WaitForCompletionAsync(this.output);
-                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
-                string subOrchestrationInstanceId = (string)status?.Output;
+                Assert.NotNull(status);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
+                string subOrchestrationInstanceId = (string)status.Output;
 
                 var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(10);
 
@@ -262,9 +263,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     await Task.Delay(50);
                 }
                 while (DateTime.UtcNow <= deadline
-                        && status?.RuntimeStatus != OrchestrationRuntimeStatus.Completed);
+                        && status.RuntimeStatus != OrchestrationRuntimeStatus.Completed);
 
-                Assert.Equal("Hello, Heloise!", (string)status?.Output);
+                Assert.Equal("Hello, Heloise!", (string)status.Output);
                 await host.StopAsync();
             }
         }
@@ -291,10 +292,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 instanceId = client.InstanceId;
 
                 var status = await client.WaitForCompletionAsync(this.output);
+                Assert.NotNull(status);
 
-                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
-                Assert.Equal(10, status?.Input);
-                Assert.Equal(3628800, status?.Output);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
+                Assert.Equal(10, status.Input);
+                Assert.Equal(3628800, status.Output);
 
                 await host.StopAsync();
             }
@@ -331,10 +333,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.DiskUsage), Environment.CurrentDirectory, this.output);
                 var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(90));
+                Assert.NotNull(status);
 
-                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
-                Assert.Equal(Environment.CurrentDirectory, status?.Input);
-                Assert.True((long?)status?.Output > 0L);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
+                Assert.Equal(Environment.CurrentDirectory, status.Input);
+                Assert.True((long?)status.Output > 0L);
 
                 await host.StopAsync();
             }

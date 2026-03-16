@@ -61,7 +61,5 @@ jobs:
 
     - name: Install Azurite
       run: npm install -g azurite
-
-    # Run tests - xUnit parallelizes across 8 test classes automatically
     - name: Run FunctionsV2 E2E tests - ${{ matrix.framework }}
       run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 & dotnet test ./test/FunctionsV2/WebJobs.Extensions.DurableTask.Tests.V2.csproj --framework ${{ matrix.framework }} --no-build --filter "TestType=E2E" -- xunit.maxParallelThreads=1

@@ -164,9 +164,10 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
                 IScaleStatusProvider scaleManager = host.InnerHost.Services.GetService<IScaleStatusProvider>();
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.FanOutFanIn), 50, this.output);
                 var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(400));
+                Assert.NotNull(status);
                 var scaleStatus = await scaleManager.GetScaleStatusAsync(new ScaleStatusContext());
                 await host.StopAsync();
-                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
 
                 // We inspect the Host's logs for evidence that the Host is correctly sampling our scaling requests.
                 // the expected logs depend on whether TBS is enabled or not

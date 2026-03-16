@@ -50,9 +50,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], chatroom, this.output);
 
                 var status = await client.WaitForCompletionAsync(this.output);
+                Assert.NotNull(status);
 
-                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
-                Assert.Equal("a,b,c", status?.Output.ToString());
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
+                Assert.Equal("a,b,c", status.Output.ToString());
 
                 await host.StopAsync();
             }
@@ -83,9 +84,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], counter, this.output);
 
                 var status = await client.WaitForCompletionAsync(this.output);
+                Assert.NotNull(status);
 
-                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
-                Assert.Equal(true, status?.Output);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
+                Assert.Equal(true, status.Output);
 
                 await host.StopAsync();
             }
@@ -116,9 +118,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], counter, this.output);
 
                 var status = await client.WaitForCompletionAsync(this.output);
+                Assert.NotNull(status);
 
-                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
-                Assert.Equal(true, status?.Output);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
+                Assert.Equal(true, status.Output);
 
                 await host.StopAsync();
             }
@@ -155,9 +158,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], counter, this.output);
 
                 var status = await client.WaitForCompletionAsync(this.output);
+                Assert.NotNull(status);
 
-                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
-                Assert.Equal(true, status?.Output);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
+                Assert.Equal(true, status.Output);
 
                 await host.StopAsync();
             }
@@ -188,9 +192,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], entityKey, this.output);
 
                 var status = await client.WaitForCompletionAsync(this.output);
+                Assert.NotNull(status);
 
-                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
-                Assert.Equal(true, status?.Output);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
+                Assert.Equal(true, status.Output);
 
                 await host.StopAsync();
             }
@@ -223,9 +228,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], entityKey, this.output);
 
                 var status = await client.WaitForCompletionAsync(this.output);
+                Assert.NotNull(status);
 
-                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
-                Assert.Equal("ok", status?.Output.ToString());
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
+                Assert.Equal("ok", status.Output.ToString());
 
                 await host.StopAsync();
             }
@@ -445,6 +451,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     EntityName = emptyEntityId.EntityName,
                     IncludeDeleted = true,
                 };
+                Assert.NotNull(client);
                 var result = await client.InnerClient.ListEntitiesAsync(query, CancellationToken.None);
                 Assert.Contains(result.Entities, s => s.EntityId.Equals(emptyEntityId));
 
@@ -498,6 +505,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 for (int i = 0; i < 30; i++)
                 {
                     var entityOrchStatus = await client.InnerClient.GetStatusAsync(entitySchedulerId);
+                    Assert.NotNull(entityOrchStatus);
                     if (entityOrchStatus?.CustomStatus != null)
                     {
                         var entityState = entityOrchStatus.CustomStatus.ToObject<EntityStatus>();
@@ -580,6 +588,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     EntityId id = entitiyIds[i];
                     string orchestrationName = orchestrations == null ? nameof(TestOrchestrations.EntityId_SignalAndCallStringStore) : orchestrations[i];
                     client = await host.StartOrchestratorAsync(orchestrationName, id, this.output);
+                    Assert.NotNull(client);
 
                     await client.WaitForCompletionAsync(this.output);
                 }

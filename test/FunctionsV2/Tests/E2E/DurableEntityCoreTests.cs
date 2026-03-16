@@ -51,9 +51,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], guid, this.output);
                 var status = await client.WaitForCompletionAsync(this.output);
+                Assert.NotNull(status);
 
-                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
-                Assert.Equal("ok", (string)status?.Output);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
+                Assert.Equal("ok", (string)status.Output);
 
                 // try to read the state of the entity directly from the client
                 var response = await client.InnerClient.ReadEntityStateAsync<string>(new EntityId("StringStore2", guid.ToString()));
@@ -87,10 +88,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], "start", this.output);
                 var status = await client.WaitForCompletionAsync(this.output);
+                Assert.NotNull(status);
 
-                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
-                Assert.Equal("start", status?.Input);
-                Assert.Equal("ok", status?.Output);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
+                Assert.Equal("start", status.Input);
+                Assert.Equal("ok", status.Output);
 
                 await host.StopAsync();
             }
@@ -181,9 +183,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], null, this.output);
                 var status = await client.WaitForCompletionAsync(this.output);
+                Assert.NotNull(status);
 
-                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
-                Assert.Equal("ok", status?.Output);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
+                Assert.Equal("ok", status.Output);
 
                 await host.StopAsync();
             }
@@ -221,9 +224,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], (entityId, rollbackOnExceptions), this.output);
                 var status = await client.WaitForCompletionAsync(this.output);
+                Assert.NotNull(status);
 
-                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
-                Assert.Equal("ok", status?.Output);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
+                Assert.Equal("ok", status.Output);
 
                 await host.StopAsync();
             }
@@ -253,9 +257,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.RollbackSignalsOnExceptions), entityId, this.output);
                 var status = await client.WaitForCompletionAsync(this.output);
+                Assert.NotNull(status);
 
-                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
-                Assert.Equal("ok", status?.Output);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
+                Assert.Equal("ok", status.Output);
 
                 var receiverEntityId = new EntityId(nameof(TestEntities.SchedulerEntity), entityKey);
                 TestEntityClient receiverClient = await host.GetEntityClientAsync(receiverEntityId, this.output);
@@ -297,9 +302,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await client.InnerClient.SignalEntityAsync(relayEntityId, "", (counterEntityId, "increment"));
 
                 var status = await client.WaitForCompletionAsync(this.output);
+                Assert.NotNull(status);
 
-                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
-                Assert.Equal("ok", status?.Output);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
+                Assert.Equal("ok", status.Output);
 
                 await host.StopAsync();
             }
@@ -327,9 +333,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     this.output);
 
                 var status = await client.WaitForCompletionAsync(this.output);
-                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.NotNull(status);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
 
-                var instanceId = (string)status?.Output;
+                var instanceId = (string)status.Output;
                 Assert.NotNull(instanceId);
                 var launchedStatus = await client.InnerClient.GetStatusAsync(instanceId, false, false, false);
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, launchedStatus.RuntimeStatus);
@@ -365,9 +372,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], entityId, this.output);
 
                 var status = await client.WaitForCompletionAsync(this.output);
+                Assert.NotNull(status);
 
-                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
-                Assert.Equal("ok", status?.Output);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
+                Assert.Equal("ok", status.Output);
 
                 var response = await client.InnerClient.ReadEntityStateAsync<string>(entityId);
                 Assert.True(response.EntityExists);
@@ -419,17 +427,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     await client.InnerClient.SignalEntityAsync(entityId, "deactivate");
 
                     status = await client.GetStatusAsync();
+                    Assert.NotNull(status);
 
                     if (DateTime.UtcNow >= deadline ||
-                        ((status?.RuntimeStatus != OrchestrationRuntimeStatus.Pending)
-                         && (status?.RuntimeStatus != OrchestrationRuntimeStatus.Running)))
+                        ((status.RuntimeStatus != OrchestrationRuntimeStatus.Pending)
+                         && (status.RuntimeStatus != OrchestrationRuntimeStatus.Running)))
                     {
                         break;
                     }
                 }
 
-                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
-                Assert.Equal("ok", (string)status?.Output);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
+                Assert.Equal("ok", (string)status.Output);
 
                 await host.StopAsync();
             }
@@ -551,9 +560,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var state = await client.WaitForEntityState<List<string>>(this.output, timeout, curstate => curstate.Count == 3 ? null : "expect 3 calls");
 
                 var status = await orchestratorClient.WaitForCompletionAsync(this.output);
-                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.NotNull(status);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
 
-                Assert.Equal("ok", (string)status?.Output);
+                Assert.Equal("ok", (string)status.Output);
 
                 await host.StopAsync();
             }
@@ -706,8 +716,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     this.output);
 
                 var status = await client.WaitForCompletionAsync(this.output);
+                Assert.NotNull(status);
 
-                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
 
                 // validate the state of the counters
                 var response1 = await client.InnerClient.ReadEntityStateAsync<int>(counter1);
