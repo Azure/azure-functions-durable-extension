@@ -58,15 +58,13 @@ jobs:
       with:
         node-version: '20.x'
 
-    - name: Cache Azurite
-      id: cache-azurite
-      uses: actions/cache@v3
+    - name: Cache npm packages
+      uses: actions/cache@v4
       with:
-        path: .azurite
-        key: ${{ runner.os }}-azurite-v1
+        path: ~/.npm
+        key: ${{ runner.os }}-npm-azurite
 
     - name: Install Azurite
-      if: steps.cache-azurite.outputs.cache-hit != 'true'
       shell: pwsh
       run: |
         New-Item -ItemType Directory -Path .azurite -Force
