@@ -20,15 +20,36 @@ on:
       - 'Directory.Packages.props'
 
 jobs:
-  e2e-azurestorage-linux:
-    runs-on: ubuntu-latest
-    name: e2e-azurestorage-linux (${{ matrix.targetFramework }})
+  e2e:
+    runs-on: ${{ matrix.config.os }}
+    name: e2e-${{ matrix.config.name }} (${{ matrix.targetFramework }})
     strategy:
       fail-fast: false
       matrix:
         targetFramework: [net8.0, net10.0]
+        config:
+          - name: azurestorage-linux
+            os: ubuntu-latest
+            backend: AzureStorage
+            filterTag: AzureStorage
+            buildFlags: ''
+          - name: azurestorage-windows
+            os: windows-latest
+            backend: AzureStorage
+            filterTag: AzureStorage
+            buildFlags: ''
+          - name: mssql
+            os: ubuntu-latest
+            backend: MSSQL
+            filterTag: MSSQL
+            buildFlags: '-StartMSSqlContainer'
+          - name: dts
+            os: ubuntu-latest
+            backend: azureManaged
+            filterTag: DTS
+            buildFlags: '-StartDTSContainer'
     env:
-      E2E_TEST_DURABLE_BACKEND: 'AzureStorage'
+      E2E_TEST_DURABLE_BACKEND: ${{ matrix.config.backend }}
     steps:
       - uses: actions/checkout@v4
 
@@ -59,10 +80,47 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/Directory.Packages.props') }}
+          restore-keys: |
+            nuget-${{ runner.os }}-
+
+      - name: Resolve Core Tools cache path
+        id: core-tools
+        shell: pwsh
+        run: |
+          $dir = Join-Path ([System.IO.Path]::GetTempPath()) "DurableTaskExtensionE2ETests/Azure.Functions.Cli"
+          "dir=$dir" >> $env:GITHUB_OUTPUT
+
+      - name: Cache Core Tools
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.core-tools.outputs.dir }}
+          key: core-tools-${{ runner.os }}-${{ hashFiles('test/e2e/Tests/build-e2e-test.ps1') }}
+
+      - name: Cache npm packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: npm-azurite-${{ runner.os }}
+
+      - name: Install and start Azurite
+        shell: bash
+        run: |
+          npm install -g azurite
+          bash test/e2e/Tests/restart-azurite.sh
+
+      - name: Initialize MSSQL password
+        if: matrix.config.backend == 'MSSQL'
+        run: echo "MSSQL_SA_PASSWORD=TEST12_$(echo $RANDOM)!" >> $GITHUB_ENV
+
       - name: Setup E2E tests
         shell: pwsh
         run: |
-          .\test\e2e\Tests\build-e2e-test.ps1 -TargetFramework ${{ matrix.targetFramework }}
+          .\test\e2e\Tests\build-e2e-test.ps1 -SkipStorageEmulator ${{ matrix.config.buildFlags }} -TargetFramework ${{ matrix.targetFramework }}
 
       - name: Build Test Project
         working-directory: test/e2e/Tests
@@ -76,7 +134,11 @@ jobs:
 
       - name: Run E2E tests (dotnet-isolated)
         working-directory: test/e2e/Tests
-        run: dotnet test -f ${{ matrix.targetFramework }} --filter 'AzureStorage!=Skip&Dotnet!=Skip&Dotnet-AzureStorage!=Skip'
+        run: dotnet test -f ${{ matrix.targetFramework }} --filter '${{ matrix.config.filterTag }}!=Skip&Dotnet!=Skip&Dotnet-${{ matrix.config.filterTag }}!=Skip'
+
+      - name: Restart Azurite
+        shell: bash
+        run: bash test/e2e/Tests/restart-azurite.sh
 
       - name: Setup Environment for PowerShell
         shell: pwsh
@@ -86,7 +148,11 @@ jobs:
 
       - name: Run E2E tests (PowerShell)
         working-directory: test/e2e/Tests
-        run: dotnet test -f ${{ matrix.targetFramework }} --filter 'AzureStorage!=Skip&PowerShell!=Skip&PowerShell-AzureStorage!=Skip'
+        run: dotnet test -f ${{ matrix.targetFramework }} --filter '${{ matrix.config.filterTag }}!=Skip&PowerShell!=Skip&PowerShell-${{ matrix.config.filterTag }}!=Skip'
+
+      - name: Restart Azurite
+        shell: bash
+        run: bash test/e2e/Tests/restart-azurite.sh
 
       - name: Setup Environment for Python
         shell: pwsh
@@ -96,7 +162,11 @@ jobs:
 
       - name: Run E2E tests (Python)
         working-directory: test/e2e/Tests
-        run: dotnet test -f ${{ matrix.targetFramework }} --filter 'AzureStorage!=Skip&Python!=Skip&Python-AzureStorage!=Skip'
+        run: dotnet test -f ${{ matrix.targetFramework }} --filter '${{ matrix.config.filterTag }}!=Skip&Python!=Skip&Python-${{ matrix.config.filterTag }}!=Skip'
+
+      - name: Restart Azurite
+        shell: bash
+        run: bash test/e2e/Tests/restart-azurite.sh
 
       - name: Setup Environment for Node
         shell: pwsh
@@ -106,7 +176,11 @@ jobs:
 
       - name: Run E2E tests (Node)
         working-directory: test/e2e/Tests
-        run: dotnet test -f ${{ matrix.targetFramework }} --filter 'AzureStorage!=Skip&Node!=Skip&Node-AzureStorage!=Skip'
+        run: dotnet test -f ${{ matrix.targetFramework }} --filter '${{ matrix.config.filterTag }}!=Skip&Node!=Skip&Node-${{ matrix.config.filterTag }}!=Skip'
+
+      - name: Restart Azurite
+        shell: bash
+        run: bash test/e2e/Tests/restart-azurite.sh
 
       - name: Setup Environment for Java
         shell: pwsh
@@ -116,302 +190,4 @@ jobs:
 
       - name: Run E2E tests (Java)
         working-directory: test/e2e/Tests
-        run: dotnet test -f ${{ matrix.targetFramework }} --filter 'AzureStorage!=Skip&Java!=Skip&Java-AzureStorage!=Skip'
-
-  e2e-azurestorage-windows:
-    runs-on: windows-latest
-    name: e2e-azurestorage-windows (${{ matrix.targetFramework }})
-    strategy:
-      fail-fast: false
-      matrix:
-        targetFramework: [net8.0, net10.0]
-    env:
-      E2E_TEST_DURABLE_BACKEND: 'AzureStorage'
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup .NET 8
-        uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: 8.0.x
-
-      - name: Setup .NET 10
-        uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: 10.0.x
-
-      - name: Set up Node.js (needed for Azurite)
-        uses: actions/setup-node@v3
-        with:
-          node-version: '20.x'
-          
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: 3.13
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-          cache: maven
-
-      - name: Setup E2E tests
-        shell: pwsh
-        run: |
-          .\test\e2e\Tests\build-e2e-test.ps1 -TargetFramework ${{ matrix.targetFramework }}
-
-      - name: Build Test Project
-        working-directory: test/e2e/Tests
-        run: dotnet build -f ${{ matrix.targetFramework }}
-
-      - name: Setup Environment for dotnet
-        shell: pwsh
-        run: |
-          Add-Content -Path $env:GITHUB_ENV -Value "E2E_TEST_FUNCTIONS_LANGUAGE=dotnet-isolated"
-          Add-Content -Path $env:GITHUB_ENV -Value "TEST_APP_NAME=BasicDotNetIsolated"
-
-      - name: Run E2E tests (dotnet-isolated)
-        working-directory: test/e2e/Tests
-        run: dotnet test -f ${{ matrix.targetFramework }} --filter 'AzureStorage!=Skip&Dotnet!=Skip&Dotnet-AzureStorage!=Skip'
-
-      - name: Setup Environment for PowerShell
-        shell: pwsh
-        run: |
-          Add-Content -Path $env:GITHUB_ENV -Value "E2E_TEST_FUNCTIONS_LANGUAGE=powershell"
-          Add-Content -Path $env:GITHUB_ENV -Value "TEST_APP_NAME=BasicPowerShell"
-
-      - name: Run E2E tests (PowerShell)
-        working-directory: test/e2e/Tests
-        run: dotnet test -f ${{ matrix.targetFramework }} --filter 'AzureStorage!=Skip&PowerShell!=Skip&PowerShell-AzureStorage!=Skip'
-
-      - name: Setup Environment for Python
-        shell: pwsh
-        run: |
-          Add-Content -Path $env:GITHUB_ENV -Value "E2E_TEST_FUNCTIONS_LANGUAGE=python"
-          Add-Content -Path $env:GITHUB_ENV -Value "TEST_APP_NAME=BasicPython"
-
-      - name: Run E2E tests (Python)
-        working-directory: test/e2e/Tests
-        run: dotnet test -f ${{ matrix.targetFramework }} --filter 'AzureStorage!=Skip&Python!=Skip&Python-AzureStorage!=Skip'
-
-      - name: Setup Environment for Node
-        shell: pwsh
-        run: |
-          Add-Content -Path $env:GITHUB_ENV -Value "E2E_TEST_FUNCTIONS_LANGUAGE=node"
-          Add-Content -Path $env:GITHUB_ENV -Value "TEST_APP_NAME=BasicNode"
-
-      - name: Run E2E tests (Node)
-        working-directory: test/e2e/Tests
-        run: dotnet test -f ${{ matrix.targetFramework }} --filter 'AzureStorage!=Skip&Node!=Skip&Node-AzureStorage!=Skip'
-
-      - name: Setup Environment for Java
-        shell: pwsh
-        run: |
-          Add-Content -Path $env:GITHUB_ENV -Value "E2E_TEST_FUNCTIONS_LANGUAGE=java"
-          Add-Content -Path $env:GITHUB_ENV -Value "TEST_APP_NAME=BasicJava"
-
-      - name: Run E2E tests (Java)
-        working-directory: test/e2e/Tests
-        run: dotnet test -f ${{ matrix.targetFramework }} --filter 'AzureStorage!=Skip&Java!=Skip&Java-AzureStorage!=Skip'
-
-  e2e-mssql:
-    runs-on: ubuntu-latest
-    name: e2e-mssql (${{ matrix.targetFramework }})
-    strategy:
-      fail-fast: false
-      matrix:
-        targetFramework: [net8.0, net10.0]
-    env:
-      E2E_TEST_DURABLE_BACKEND: "MSSQL"
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup .NET 8
-        uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: 8.0.x
-
-      - name: Setup .NET 10
-        uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: 10.0.x
-
-      - name: Set up Node.js (needed for Azurite)
-        uses: actions/setup-node@v3
-        with:
-          node-version: '20.x'
-          
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: 3.13
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-          cache: maven
-
-      - name: Initialize Environment Variables
-        run: | 
-          echo "MSSQL_SA_PASSWORD=TEST12_$(echo $RANDOM)!" >> $GITHUB_ENV
-
-      - name: Setup E2E tests
-        shell: pwsh
-        run: |
-          .\test\e2e\Tests\build-e2e-test.ps1 -StartMSSqlContainer -TargetFramework ${{ matrix.targetFramework }}
-
-      - name: Build Test Project
-        working-directory: test/e2e/Tests
-        run: dotnet build -f ${{ matrix.targetFramework }}
-
-      - name: Setup Environment for dotnet
-        shell: pwsh
-        run: |
-          Add-Content -Path $env:GITHUB_ENV -Value "E2E_TEST_FUNCTIONS_LANGUAGE=dotnet-isolated"
-          Add-Content -Path $env:GITHUB_ENV -Value "TEST_APP_NAME=BasicDotNetIsolated"
-
-      - name: Run E2E tests (dotnet-isolated)
-        working-directory: test/e2e/Tests
-        run: dotnet test -f ${{ matrix.targetFramework }} --filter 'MSSQL!=Skip&Dotnet!=Skip&Dotnet-MSSQL!=Skip'
-
-      - name: Setup Environment for PowerShell
-        shell: pwsh
-        run: |
-          Add-Content -Path $env:GITHUB_ENV -Value "E2E_TEST_FUNCTIONS_LANGUAGE=powershell"
-          Add-Content -Path $env:GITHUB_ENV -Value "TEST_APP_NAME=BasicPowerShell"
-
-      - name: Run E2E tests (PowerShell)
-        working-directory: test/e2e/Tests
-        run: dotnet test -f ${{ matrix.targetFramework }} --filter 'MSSQL!=Skip&PowerShell!=Skip&PowerShell-MSSQL!=Skip'
-
-      - name: Setup Environment for Python
-        shell: pwsh
-        run: |
-          Add-Content -Path $env:GITHUB_ENV -Value "E2E_TEST_FUNCTIONS_LANGUAGE=python"
-          Add-Content -Path $env:GITHUB_ENV -Value "TEST_APP_NAME=BasicPython"
-
-      - name: Run E2E tests (Python)
-        working-directory: test/e2e/Tests
-        run: dotnet test -f ${{ matrix.targetFramework }} --filter 'MSSQL!=Skip&Python!=Skip&Python-MSSQL!=Skip'
-
-      - name: Setup Environment for Node
-        shell: pwsh
-        run: |
-          Add-Content -Path $env:GITHUB_ENV -Value "E2E_TEST_FUNCTIONS_LANGUAGE=node"
-          Add-Content -Path $env:GITHUB_ENV -Value "TEST_APP_NAME=BasicNode"
-
-      - name: Run E2E tests (Node)
-        working-directory: test/e2e/Tests
-        run: dotnet test -f ${{ matrix.targetFramework }} --filter 'MSSQL!=Skip&Node!=Skip&Node-MSSQL!=Skip'
-
-      - name: Setup Environment for Java
-        shell: pwsh
-        run: |
-          Add-Content -Path $env:GITHUB_ENV -Value "E2E_TEST_FUNCTIONS_LANGUAGE=java"
-          Add-Content -Path $env:GITHUB_ENV -Value "TEST_APP_NAME=BasicJava"
-
-      - name: Run E2E tests (Java)
-        working-directory: test/e2e/Tests
-        run: dotnet test -f ${{ matrix.targetFramework }} --filter 'MSSQL!=Skip&Java!=Skip&Java-MSSQL!=Skip'
-
-  e2e-dts:
-    runs-on: ubuntu-latest
-    name: e2e-dts (${{ matrix.targetFramework }})
-    strategy:
-      fail-fast: false
-      matrix:
-        targetFramework: [net8.0, net10.0]
-    env:
-      E2E_TEST_DURABLE_BACKEND: "azureManaged"
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup .NET 8
-        uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: 8.0.x
-
-      - name: Setup .NET 10
-        uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: 10.0.x
-
-      - name: Set up Node.js (needed for Azurite)
-        uses: actions/setup-node@v3
-        with:
-          node-version: '20.x'
-          
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: 3.13
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-          cache: maven
-
-      - name: Setup E2E tests
-        shell: pwsh
-        run: |
-          .\test\e2e\Tests\build-e2e-test.ps1 -StartDTSContainer -TargetFramework ${{ matrix.targetFramework }}
-
-      - name: Build Test Project
-        working-directory: test/e2e/Tests
-        run: dotnet build -f ${{ matrix.targetFramework }}
-
-      - name: Setup Environment for dotnet
-        shell: pwsh
-        run: |
-          Add-Content -Path $env:GITHUB_ENV -Value "E2E_TEST_FUNCTIONS_LANGUAGE=dotnet-isolated"
-          Add-Content -Path $env:GITHUB_ENV -Value "TEST_APP_NAME=BasicDotNetIsolated"
-
-      - name: Run E2E tests (dotnet-isolated)
-        working-directory: test/e2e/Tests
-        run: dotnet test -f ${{ matrix.targetFramework }} --filter 'DTS!=Skip&Dotnet!=Skip&Dotnet-DTS!=Skip'
-
-      - name: Setup Environment for PowerShell
-        shell: pwsh
-        run: |
-          Add-Content -Path $env:GITHUB_ENV -Value "E2E_TEST_FUNCTIONS_LANGUAGE=powershell"
-          Add-Content -Path $env:GITHUB_ENV -Value "TEST_APP_NAME=BasicPowerShell"
-
-      - name: Run E2E tests (PowerShell)
-        working-directory: test/e2e/Tests
-        run: dotnet test -f ${{ matrix.targetFramework }} --filter 'DTS!=Skip&PowerShell!=Skip&PowerShell-DTS!=Skip'
-
-      - name: Setup Environment for Python
-        shell: pwsh
-        run: |
-          Add-Content -Path $env:GITHUB_ENV -Value "E2E_TEST_FUNCTIONS_LANGUAGE=python"
-          Add-Content -Path $env:GITHUB_ENV -Value "TEST_APP_NAME=BasicPython"
-
-      - name: Run E2E tests (Python)
-        working-directory: test/e2e/Tests
-        run: dotnet test -f ${{ matrix.targetFramework }} --filter 'DTS!=Skip&Python!=Skip&Python-DTS!=Skip'
-
-      - name: Setup Environment for Node
-        shell: pwsh
-        run: |
-          Add-Content -Path $env:GITHUB_ENV -Value "E2E_TEST_FUNCTIONS_LANGUAGE=node"
-          Add-Content -Path $env:GITHUB_ENV -Value "TEST_APP_NAME=BasicNode"
-
-      - name: Run E2E tests (Node)
-        working-directory: test/e2e/Tests
-        run: dotnet test -f ${{ matrix.targetFramework }} --filter 'DTS!=Skip&Node!=Skip&Node-DTS!=Skip'
-
-      - name: Setup Environment for Java
-        shell: pwsh
-        run: |
-          Add-Content -Path $env:GITHUB_ENV -Value "E2E_TEST_FUNCTIONS_LANGUAGE=java"
-          Add-Content -Path $env:GITHUB_ENV -Value "TEST_APP_NAME=BasicJava"
-
-      - name: Run E2E tests (Java)
-        working-directory: test/e2e/Tests
-        run: dotnet test -f ${{ matrix.targetFramework }} --filter 'DTS!=Skip&Java!=Skip&Java-DTS!=Skip'
+        run: dotnet test -f ${{ matrix.targetFramework }} --filter '${{ matrix.config.filterTag }}!=Skip&Java!=Skip&Java-${{ matrix.config.filterTag }}!=Skip'
