@@ -564,7 +564,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     // This exception is thrown when another Function on the worker exceeded the Function timeout.
                     // In this case we want to make sure to retry this Activity's execution rather than marking it as failed.
-                    if (IsPlatformLevelException(result.Exception))
+                    if (result.Exception is Host.FunctionTimeoutAbortException)
                     {
                         throw result.Exception;
                     }
