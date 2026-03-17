@@ -39,6 +39,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 throw new ArgumentNullException(nameof(providers));
             }
 
+            if (this.subscriberId >= 0)
+            {
+                throw new InvalidOperationException("CaptureLogs has already been called. Call Stop() before calling CaptureLogs again.");
+            }
+
             this.subscriberId = SharedTraceSession.Subscribe(
                 data => this.HandleTraceEvent(data),
                 providers,
