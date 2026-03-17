@@ -30,6 +30,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         private static int refCount;
         private static int nextSubscriberId;
 
+        // Tracks providers already enabled on the shared session so subsequent
+        // subscribers can add new ones without duplicates.
+        private static readonly Dictionary<string, TraceEventLevel> enabledProviders
+            = new Dictionary<string, TraceEventLevel>(StringComparer.OrdinalIgnoreCase);
+
         private sealed class SubscriberInfo
         {
             public Action<TraceEvent> Callback { get; set; }
@@ -57,10 +62,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 {
                     string sessionName = "DTFxTrace" + Guid.NewGuid().ToString("N");
                     session = new TraceEventSession(sessionName);
-                    foreach (KeyValuePair<string, TraceEventLevel> provider in providers)
-                    {
-                        session.EnableProvider(provider.Key, provider.Value);
-                    }
+                    EnableNewProviders(providers);
 
                     backgroundThread = new Thread(_ =>
                     {
@@ -102,6 +104,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     backgroundThread.IsBackground = true;
                     backgroundThread.Start();
                 }
+                else
+                {
+                    // Session already exists — enable any providers not yet enabled.
+                    EnableNewProviders(providers);
+                }
 
                 return id;
             }
@@ -130,6 +137,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     session = null;
                     backgroundThread = null;
                     refCount = 0;
+                    enabledProviders.Clear();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Enables providers on the shared session that haven't been enabled yet,
+        /// upgrading the trace level if a higher level is requested.
+        /// Must be called under <see cref="SyncLock"/>.
+        /// </summary>
+        private static void EnableNewProviders(IDictionary<string, TraceEventLevel> providers)
+        {
+            foreach (KeyValuePair<string, TraceEventLevel> provider in providers)
+            {
+                if (!enabledProviders.TryGetValue(provider.Key, out TraceEventLevel currentLevel)
+                    || provider.Value > currentLevel)
+                {
+                    session.EnableProvider(provider.Key, provider.Value);
+                    enabledProviders[provider.Key] = provider.Value;
                 }
             }
         }
