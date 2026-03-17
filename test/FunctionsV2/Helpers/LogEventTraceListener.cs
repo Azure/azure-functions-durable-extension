@@ -31,18 +31,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public event EventHandler<TraceLogEventArgs> OnTraceLog;
 
         public void CaptureLogs(
-            string sessionName,
             IDictionary<string, TraceEventLevel> providers,
             IDictionary<string, IEnumerable<int>> eventIdFilters = null)
         {
-            if (string.IsNullOrEmpty(sessionName))
-            {
-                throw new ArgumentException(nameof(sessionName));
-            }
-
             if (providers == null)
             {
-                throw new ArgumentException(nameof(providers));
+                throw new ArgumentNullException(nameof(providers));
             }
 
             this.subscriberId = SharedTraceSession.Subscribe(
