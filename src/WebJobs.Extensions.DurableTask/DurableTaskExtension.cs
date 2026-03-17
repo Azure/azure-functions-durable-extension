@@ -511,7 +511,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
 #nullable enable
-        internal string GetLocalRpcAddress()
+        internal string? GetLocalRpcAddress()
         {
             if (this.OutOfProcProtocol == OutOfProcOrchestrationProtocol.MiddlewarePassthrough)
             {
@@ -543,7 +543,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     }
                 }
 
-                return address!;
+                return address;
             }
 
             return this.HttpApiHandler.GetBaseUrl();

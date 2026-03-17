@@ -23,7 +23,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Grpc
         private const string HostName = "127.0.0.1";
         private readonly DurableTaskExtension extension;
         private readonly SemaphoreSlim startLock = new SemaphoreSlim(1, 1);
-        private readonly TaskCompletionSource<string> addressReady = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+        private TaskCompletionSource<string> addressReady = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
         private IHost? host;
 
         public AspNetCoreLocalGrpcListener(DurableTaskExtension extension)
@@ -71,7 +71,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Grpc
                 // Double-check after acquiring the lock
                 if (this.host == null || !this.IsHealthy)
                 {
-                    await this.StopInternalAsync();
+                    await this.StopInternalAsync(cancellationToken);
                     await this.StartInternalAsync(cancellationToken);
                 }
             }
@@ -206,7 +206,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Grpc
             await this.startLock.WaitAsync(cancellationToken);
             try
             {
-                await this.StopInternalAsync();
+                await this.StopInternalAsync(cancellationToken);
             }
             finally
             {
@@ -214,13 +214,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Grpc
             }
         }
 
-        private async Task StopInternalAsync()
+        private async Task StopInternalAsync(CancellationToken cancellationToken = default)
         {
             if (this.host is { } previousHost)
             {
                 try
                 {
-                    await previousHost.StopAsync(default);
+                    await previousHost.StopAsync(cancellationToken);
                 }
                 catch (Exception ex)
                 {
@@ -231,9 +231,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Grpc
                         message: $"Error stopping local gRPC endpoint: {ex.Message}");
                 }
 
-                // Reset state so StartAsync can re-initialize
+                // Reset state so StartAsync can re-initialize.
+                // Re-create the TCS so that WaitForListenAddressAsync callers
+                // don't receive a stale address from a previous start cycle.
                 this.host = null;
                 this.ListenAddress = null;
+                this.addressReady = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
             }
         }
 

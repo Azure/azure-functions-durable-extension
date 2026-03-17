@@ -480,8 +480,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void TestBindingHelper_ThrowsTimeoutException_WhenGrpcAddressUnavailable()
         {
-            // Create an extension configured for gRPC but WITHOUT starting the gRPC listener.
-            // We use a very short timeout to avoid waiting 30s in a test.
+            // Create an extension configured for gRPC but with no localGrpcListener instance.
+            // Because localGrpcListener is null, GetLocalRpcAddress() skips the
+            // EnsureStartedAsync/WaitForListenAddressAsync path entirely and returns null
+            // immediately, so this test completes without any 30s wait.
             using DurableTaskExtension extension = this.CreateExtensionWithNullGrpcListener("BindingHelperTimeout");
 
             var bindingHelper = new BindingHelper(extension);
