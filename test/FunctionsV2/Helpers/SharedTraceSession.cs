@@ -47,12 +47,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             IDictionary<string, TraceEventLevel> providers,
             IDictionary<string, IEnumerable<int>> eventIdFilters = null)
         {
-            int id = Interlocked.Increment(ref nextSubscriberId);
-            Subscribers[id] = new SubscriberInfo { Callback = callback, EventIdFilters = eventIdFilters };
-
             lock (SyncLock)
             {
+                int id = ++nextSubscriberId;
+                Subscribers[id] = new SubscriberInfo { Callback = callback, EventIdFilters = eventIdFilters };
                 refCount++;
+
                 if (session == null)
                 {
                     string sessionName = "DTFxTrace" + Guid.NewGuid().ToString("N");
@@ -102,9 +102,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     backgroundThread.IsBackground = true;
                     backgroundThread.Start();
                 }
-            }
 
-            return id;
+                return id;
+            }
         }
 
         /// <summary>
@@ -113,14 +113,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// </summary>
         public static void Unsubscribe(int subscriberId)
         {
-            if (!Subscribers.TryRemove(subscriberId, out _))
-            {
-                // Already unsubscribed or never subscribed — nothing to do.
-                return;
-            }
-
             lock (SyncLock)
             {
+                if (!Subscribers.TryRemove(subscriberId, out _))
+                {
+                    // Already unsubscribed or never subscribed — nothing to do.
+                    return;
+                }
+
                 refCount--;
                 if (refCount <= 0 && session != null)
                 {
