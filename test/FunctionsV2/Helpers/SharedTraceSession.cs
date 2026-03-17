@@ -149,15 +149,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// </summary>
         private static void EnableNewProviders(IDictionary<string, TraceEventLevel> providers)
         {
-            foreach (KeyValuePair<string, TraceEventLevel> provider in providers)
-            {
-                if (!enabledProviders.TryGetValue(provider.Key, out TraceEventLevel currentLevel)
-                    || provider.Value > currentLevel)
+            providers
+                .Where(p =>
+                    !enabledProviders.TryGetValue(p.Key, out TraceEventLevel currentLevel)
+                    || p.Value > currentLevel)
+                .Select(p =>
                 {
-                    session.EnableProvider(provider.Key, provider.Value);
-                    enabledProviders[provider.Key] = provider.Value;
-                }
-            }
+                    session.EnableProvider(p.Key, p.Value);
+                    enabledProviders[p.Key] = p.Value;
+                    return p;
+                })
+                .ToList(); // Force immediate execution of the LINQ query to enable providers within the lock.
         }
 
         private static bool IsNoiseEvent(TraceEvent traceEvent)
