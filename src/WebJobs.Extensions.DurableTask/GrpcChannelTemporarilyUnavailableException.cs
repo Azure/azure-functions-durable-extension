@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Runtime.Serialization;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
@@ -43,5 +44,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             : base(message, innerException)
         {
         }
+
+#pragma warning disable SYSLIB0051 // Type or member is obsolete
+        protected GrpcChannelTemporarilyUnavailableException(SerializationInfo info, StreamingContext context)
+            : base(info, context)
+        {
+        }
+#pragma warning restore SYSLIB0051
     }
 }

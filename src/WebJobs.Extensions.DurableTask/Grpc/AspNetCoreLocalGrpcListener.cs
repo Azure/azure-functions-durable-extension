@@ -108,22 +108,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Grpc
                 return this.ListenAddress;
             }
 
-            // Wait for the TaskCompletionSource to be signaled or timeout
+            // Wait for the TaskCompletionSource to be signaled, with a timeout.
+            // Task.WhenAny does not throw when the delay is canceled, so we check
+            // which task completed to distinguish success from timeout.
             using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             timeoutCts.CancelAfter(timeout);
 
-            try
+            Task<string> addressTask = this.addressReady.Task;
+            Task delayTask = Task.Delay(Timeout.Infinite, timeoutCts.Token);
+            Task completedTask = await Task.WhenAny(addressTask, delayTask);
+
+            if (completedTask == addressTask)
             {
-                Task<string> addressTask = this.addressReady.Task;
-                Task completedTask = await Task.WhenAny(addressTask, Task.Delay(Timeout.Infinite, timeoutCts.Token));
-                if (completedTask == addressTask)
-                {
-                    return await addressTask;
-                }
-            }
-            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
-            {
-                // Timeout expired, not caller cancellation
+                return await addressTask;
             }
 
             return this.ListenAddress;
@@ -195,9 +192,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Grpc
             this.host = newHost;
 
             // Signal any waiters that the address is now available.
+            // If ListenAddress is null (e.g. IServerAddressesFeature returned no addresses),
+            // stop the host to avoid a partially-initialized state that would cause
+            // repeated stop/restart loops from the IsHealthy check.
             if (this.ListenAddress != null)
             {
                 this.addressReady.TrySetResult(this.ListenAddress);
+            }
+            else
+            {
+                this.extension.TraceHelper.ExtensionWarningEvent(
+                    this.extension.Options.HubName,
+                    instanceId: string.Empty,
+                    functionName: string.Empty,
+                    message: "gRPC listener started but ListenAddress is null. Stopping to allow retry.");
+
+                // Roll back: stop the host so the next StartAsync call can try again
+                // rather than leaving the listener in a broken state.
+                await this.StopInternalAsync();
             }
         }
 

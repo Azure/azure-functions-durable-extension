@@ -92,8 +92,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             // InvalidOperationException with "No process is associated" as InnerException
             yield return new object[] { new Exception("Function invocation failed.", new InvalidOperationException("No process is associated with this object.")) };
 
-            // GrpcChannelTemporarilyUnavailableException as InnerException (gRPC sidecar unavailable)
+            // GrpcChannelTemporarilyUnavailableException as InnerException (gRPC sidecar unavailable, wrapped by host)
             yield return new object[] { new Exception("Function invocation failed.", new GrpcChannelTemporarilyUnavailableException("The local gRPC endpoint is not available.")) };
+
+            // GrpcChannelTemporarilyUnavailableException as top-level exception (thrown in-process during binding)
+            yield return new object[] { new GrpcChannelTemporarilyUnavailableException("The local gRPC endpoint is not available.") };
         }
 
         private (OutOfProcMiddleware middleware, DispatchMiddlewareContext context) SetupOrchestratorTest(Exception executorException)

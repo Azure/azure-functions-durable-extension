@@ -472,13 +472,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         /// <summary>
         /// Verifies that BindingHelper.DurableOrchestrationClientToString throws
-        /// TimeoutException (not InvalidOperationException) when the gRPC address is unavailable.
-        /// This is critical for queue-triggered functions: TimeoutException signals a transient
-        /// issue, preventing rapid poison-queue escalation.
+        /// GrpcChannelTemporarilyUnavailableException (not InvalidOperationException)
+        /// when the gRPC address is unavailable.
+        /// This is critical for queue-triggered functions: the platform-level exception
+        /// signals a transient issue, preventing rapid poison-queue escalation.
         /// </summary>
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public void TestBindingHelper_ThrowsTimeoutException_WhenGrpcAddressUnavailable()
+        public void TestBindingHelper_ThrowsGrpcChannelUnavailableException_WhenGrpcAddressUnavailable()
         {
             // Create an extension configured for gRPC but with no localGrpcListener instance.
             // Because localGrpcListener is null, GetLocalRpcAddress() skips the

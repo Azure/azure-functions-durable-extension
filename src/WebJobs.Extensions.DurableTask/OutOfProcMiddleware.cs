@@ -564,7 +564,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     // This exception is thrown when another Function on the worker exceeded the Function timeout.
                     // In this case we want to make sure to retry this Activity's execution rather than marking it as failed.
-                    if (result.Exception is Host.FunctionTimeoutAbortException)
+                    if (IsPlatformLevelException(result.Exception))
                     {
                         throw result.Exception;
                     }
@@ -661,6 +661,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // Should we add that dependency or should it be exposed in WebJobs.Host?
             return exception is Host.FunctionTimeoutException
                 || exception is Host.FunctionTimeoutAbortException
+                || exception is GrpcChannelTemporarilyUnavailableException
                 || exception?.InnerException is SessionAbortedException // see RemoteOrchestrationContext.TrySetResultInternal for details on OOM-handling
                 || exception?.InnerException is GrpcChannelTemporarilyUnavailableException
                 || (exception?.InnerException?.GetType().ToString().Contains("WorkerProcessExitException", StringComparison.Ordinal) ?? false)
