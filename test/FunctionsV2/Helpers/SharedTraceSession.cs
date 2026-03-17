@@ -19,9 +19,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     /// </summary>
     internal static class SharedTraceSession
     {
-        // Thread-safe collection of subscriber callbacks.
-        private static readonly ConcurrentDictionary<int, Action<TraceEvent>> Subscribers
-            = new ConcurrentDictionary<int, Action<TraceEvent>>();
+        // Thread-safe collection of subscriber callbacks and their per-subscriber event filters.
+        private static readonly ConcurrentDictionary<int, SubscriberInfo> Subscribers
+            = new ConcurrentDictionary<int, SubscriberInfo>();
 
         private static readonly object SyncLock = new object();
 
@@ -29,7 +29,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         private static Thread backgroundThread;
         private static int refCount;
         private static int nextSubscriberId;
-        private static IDictionary<string, IEnumerable<int>> currentEventIdFilters;
+
+        private sealed class SubscriberInfo
+        {
+            public Action<TraceEvent> Callback { get; set; }
+
+            public IDictionary<string, IEnumerable<int>> EventIdFilters { get; set; }
+        }
 
         /// <summary>
         /// Subscribes a callback to receive ETW trace events. Creates the shared session
@@ -42,14 +48,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             IDictionary<string, IEnumerable<int>> eventIdFilters = null)
         {
             int id = Interlocked.Increment(ref nextSubscriberId);
-            Subscribers[id] = callback;
+            Subscribers[id] = new SubscriberInfo { Callback = callback, EventIdFilters = eventIdFilters };
 
             lock (SyncLock)
             {
                 refCount++;
                 if (session == null)
                 {
-                    currentEventIdFilters = eventIdFilters;
                     string sessionName = "DTFxTrace" + Guid.NewGuid().ToString("N");
                     session = new TraceEventSession(sessionName);
                     foreach (KeyValuePair<string, TraceEventLevel> provider in providers)
@@ -63,17 +68,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                         session.Source.Dynamic.All += data =>
                         {
-                            if (ShouldExcludeEvent(data, currentEventIdFilters))
+                            if (IsNoiseEvent(data))
                             {
                                 return;
                             }
 
-                            // Fan out to all subscribers.
+                            // Fan out to all subscribers, applying per-subscriber filters.
                             foreach (var kvp in Subscribers)
                             {
                                 try
                                 {
-                                    kvp.Value(data);
+                                    if (ShouldExcludeEvent(data, kvp.Value.EventIdFilters))
+                                    {
+                                        continue;
+                                    }
+
+                                    kvp.Value.Callback(data);
                                 }
                                 catch (Exception ex)
                                 {
@@ -103,7 +113,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// </summary>
         public static void Unsubscribe(int subscriberId)
         {
-            Subscribers.TryRemove(subscriberId, out _);
+            if (!Subscribers.TryRemove(subscriberId, out _))
+            {
+                // Already unsubscribed or never subscribed — nothing to do.
+                return;
+            }
 
             lock (SyncLock)
             {
@@ -120,13 +134,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
+        private static bool IsNoiseEvent(TraceEvent traceEvent)
+        {
+            return traceEvent.EventName == "EventSourceMessage" || traceEvent.EventName == "ManifestData";
+        }
+
         private static bool ShouldExcludeEvent(TraceEvent traceEvent, IDictionary<string, IEnumerable<int>> eventIdFilters)
         {
-            if (traceEvent.EventName == "EventSourceMessage" || traceEvent.EventName == "ManifestData")
-            {
-                return true;
-            }
-
             if (eventIdFilters != null &&
                 eventIdFilters.TryGetValue(traceEvent.ProviderName, out IEnumerable<int> filteredEvents))
             {
