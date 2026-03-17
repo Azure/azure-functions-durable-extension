@@ -662,6 +662,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return exception is Host.FunctionTimeoutException
                 || exception is Host.FunctionTimeoutAbortException
                 || exception?.InnerException is SessionAbortedException // see RemoteOrchestrationContext.TrySetResultInternal for details on OOM-handling
+                || exception?.InnerException is GrpcChannelTemporarilyUnavailableException
                 || (exception?.InnerException?.GetType().ToString().Contains("WorkerProcessExitException", StringComparison.Ordinal) ?? false)
                 || (exception?.InnerException is InvalidOperationException ioe
                     && ioe.Message.Contains(NoProcessAssociatedMessage, StringComparison.Ordinal));

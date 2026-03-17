@@ -34,11 +34,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 string? localRpcAddress = this.config.GetLocalRpcAddress();
                 if (localRpcAddress == null)
                 {
-                    // Throw a timeout exception rather than InvalidOperationException. This gives the
-                    // Functions host a better signal that this is a transient infrastructure issue,
-                    // not a programming error. For queue-triggered functions, this helps avoid
-                    // rapidly poisoning messages due to an unrecoverable-looking exception type.
-                    throw new TimeoutException(
+                    // Throw a platform-level exception so the Functions host and the durable
+                    // middleware both recognize this as a transient infrastructure issue rather
+                    // than an application error. This causes orchestrations/activities to be
+                    // safely aborted and retried by the backend, and prevents queue-triggered
+                    // functions from rapidly poisoning messages.
+                    throw new GrpcChannelTemporarilyUnavailableException(
                         "The local gRPC endpoint for the Durable Task extension is not available. " +
                         "The gRPC sidecar may still be starting or may have stopped unexpectedly. " +
                         "This is typically a transient condition that resolves when the sidecar restarts.");

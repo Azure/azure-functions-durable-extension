@@ -493,8 +493,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var client = new Moq.Mock<IDurableOrchestrationClient>();
             client.Setup(c => c.TaskHubName).Returns("TestHub");
 
-            // The exception should be TimeoutException, NOT InvalidOperationException
-            var ex = Assert.Throws<TimeoutException>(
+            // The exception should be GrpcChannelTemporarilyUnavailableException, NOT InvalidOperationException
+            var ex = Assert.Throws<GrpcChannelTemporarilyUnavailableException>(
                 () => bindingHelper.DurableOrchestrationClientToString(client.Object, attr));
 
             Assert.Contains("gRPC endpoint", ex.Message);
