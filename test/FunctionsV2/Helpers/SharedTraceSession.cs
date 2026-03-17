@@ -25,22 +25,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         private static readonly object SyncLock = new object();
 
+        // Tracks providers already enabled on the shared session so subsequent
+        // subscribers can add new ones without duplicates.
+        private static readonly Dictionary<string, TraceEventLevel> EnabledProviders
+            = new Dictionary<string, TraceEventLevel>(StringComparer.OrdinalIgnoreCase);
+
         private static TraceEventSession session;
         private static Thread backgroundThread;
         private static int refCount;
         private static int nextSubscriberId;
-
-        // Tracks providers already enabled on the shared session so subsequent
-        // subscribers can add new ones without duplicates.
-        private static readonly Dictionary<string, TraceEventLevel> enabledProviders
-            = new Dictionary<string, TraceEventLevel>(StringComparer.OrdinalIgnoreCase);
-
-        private sealed class SubscriberInfo
-        {
-            public Action<TraceEvent> Callback { get; set; }
-
-            public IDictionary<string, IEnumerable<int>> EventIdFilters { get; set; }
-        }
 
         /// <summary>
         /// Subscribes a callback to receive ETW trace events. Creates the shared session
@@ -137,7 +130,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     session = null;
                     backgroundThread = null;
                     refCount = 0;
-                    enabledProviders.Clear();
+                    EnabledProviders.Clear();
                 }
             }
         }
@@ -151,12 +144,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             providers
                 .Where(p =>
-                    !enabledProviders.TryGetValue(p.Key, out TraceEventLevel currentLevel)
+                    !EnabledProviders.TryGetValue(p.Key, out TraceEventLevel currentLevel)
                     || p.Value > currentLevel)
                 .Select(p =>
                 {
                     session.EnableProvider(p.Key, p.Value);
-                    enabledProviders[p.Key] = p.Value;
+                    EnabledProviders[p.Key] = p.Value;
                     return p;
                 })
                 .ToList(); // Force immediate execution of the LINQ query to enable providers within the lock.
@@ -176,6 +169,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
 
             return false;
+        }
+
+        private sealed class SubscriberInfo
+        {
+            public Action<TraceEvent> Callback { get; set; }
+
+            public IDictionary<string, IEnumerable<int>> EventIdFilters { get; set; }
         }
     }
 }
