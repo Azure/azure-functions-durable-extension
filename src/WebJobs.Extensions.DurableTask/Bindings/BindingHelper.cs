@@ -34,7 +34,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 string? localRpcAddress = this.config.GetLocalRpcAddress();
                 if (localRpcAddress == null)
                 {
-                    throw new InvalidOperationException("The local RPC address has not been configured!");
+                    // Throw a timeout exception rather than InvalidOperationException. This gives the
+                    // Functions host a better signal that this is a transient infrastructure issue,
+                    // not a programming error. For queue-triggered functions, this helps avoid
+                    // rapidly poisoning messages due to an unrecoverable-looking exception type.
+                    throw new TimeoutException(
+                        "The local gRPC endpoint for the Durable Task extension is not available. " +
+                        "The gRPC sidecar may still be starting or may have stopped unexpectedly. " +
+                        "This is typically a transient condition that resolves when the sidecar restarts.");
                 }
 
                 return JsonConvert.SerializeObject(new OrchestrationClientInputData

@@ -23,6 +23,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Grpc
         private const string HostName = "127.0.0.1";
         private readonly DurableTaskExtension extension;
         private readonly SemaphoreSlim startLock = new SemaphoreSlim(1, 1);
+        private readonly TaskCompletionSource<string> addressReady = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
         private IHost? host;
 
         public AspNetCoreLocalGrpcListener(DurableTaskExtension extension)
@@ -32,10 +33,34 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Grpc
 
         public string? ListenAddress { get; private set; }
 
+        public bool IsHealthy
+        {
+            get
+            {
+                if (this.host is not { } currentHost)
+                {
+                    return false;
+                }
+
+                // Check if the Kestrel server is still accepting connections by verifying
+                // that the IServer is still reporting addresses.
+                try
+                {
+                    IServer? server = currentHost.Services.GetService<IServer>();
+                    IServerAddressesFeature? addressFeature = server?.Features.Get<IServerAddressesFeature>();
+                    return addressFeature?.Addresses.Count > 0;
+                }
+                catch
+                {
+                    return false;
+                }
+            }
+        }
+
         public async Task StartAsync(CancellationToken cancellationToken)
         {
-            // Fast check: if already started, return immediately
-            if (this.host != null)
+            // Fast check: if already started and healthy, return immediately
+            if (this.host != null && this.IsHealthy)
             {
                 return;
             }
@@ -44,8 +69,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Grpc
             try
             {
                 // Double-check after acquiring the lock
-                if (this.host == null)
+                if (this.host == null || !this.IsHealthy)
                 {
+                    await this.StopInternalAsync();
                     await this.StartInternalAsync(cancellationToken);
                 }
             }
@@ -53,6 +79,54 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Grpc
             {
                 this.startLock.Release();
             }
+        }
+
+        public async Task EnsureStartedAsync(CancellationToken cancellationToken)
+        {
+            if (this.host != null && this.IsHealthy && this.ListenAddress != null)
+            {
+                return;
+            }
+
+            this.extension.TraceHelper.ExtensionWarningEvent(
+                this.extension.Options.HubName,
+                instanceId: string.Empty,
+                functionName: string.Empty,
+                message: $"gRPC listener is not healthy (ListenAddress={this.ListenAddress ?? "null"}, " +
+                         $"host={(this.host != null ? "exists" : "null")}, IsHealthy={this.IsHealthy}). " +
+                         $"Attempting restart.");
+
+            // Delegate to StartAsync which handles locking, health check, and restart
+            await this.StartAsync(cancellationToken);
+        }
+
+        public async Task<string?> WaitForListenAddressAsync(TimeSpan timeout, CancellationToken cancellationToken)
+        {
+            // If already available, return immediately
+            if (this.ListenAddress != null)
+            {
+                return this.ListenAddress;
+            }
+
+            // Wait for the TaskCompletionSource to be signaled or timeout
+            using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            timeoutCts.CancelAfter(timeout);
+
+            try
+            {
+                Task<string> addressTask = this.addressReady.Task;
+                Task completedTask = await Task.WhenAny(addressTask, Task.Delay(Timeout.Infinite, timeoutCts.Token));
+                if (completedTask == addressTask)
+                {
+                    return await addressTask;
+                }
+            }
+            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+            {
+                // Timeout expired, not caller cancellation
+            }
+
+            return this.ListenAddress;
         }
 
         private async Task StartInternalAsync(CancellationToken cancellationToken)
@@ -119,16 +193,48 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Grpc
             // Assign only after fully started so the fast-path check in StartAsync
             // doesn't let concurrent callers return before initialization is complete.
             this.host = newHost;
+
+            // Signal any waiters that the address is now available.
+            if (this.ListenAddress != null)
+            {
+                this.addressReady.TrySetResult(this.ListenAddress);
+            }
         }
 
-        public Task StopAsync(CancellationToken cancellationToken)
+        public async Task StopAsync(CancellationToken cancellationToken)
         {
-            if (this.host is { } host)
+            await this.startLock.WaitAsync(cancellationToken);
+            try
             {
-                return host.StopAsync(cancellationToken);
+                await this.StopInternalAsync();
             }
+            finally
+            {
+                this.startLock.Release();
+            }
+        }
 
-            return Task.CompletedTask;
+        private async Task StopInternalAsync()
+        {
+            if (this.host is { } previousHost)
+            {
+                try
+                {
+                    await previousHost.StopAsync(default);
+                }
+                catch (Exception ex)
+                {
+                    this.extension.TraceHelper.ExtensionWarningEvent(
+                        this.extension.Options.HubName,
+                        instanceId: string.Empty,
+                        functionName: string.Empty,
+                        message: $"Error stopping local gRPC endpoint: {ex.Message}");
+                }
+
+                // Reset state so StartAsync can re-initialize
+                this.host = null;
+                this.ListenAddress = null;
+            }
         }
 
         private static int GetFreeTcpPort()

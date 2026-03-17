@@ -4,12 +4,14 @@
 using System;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Grpc;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using Moq;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -159,6 +161,344 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
+        /// <summary>
+        /// Verifies that IsHealthy returns false before the listener is started.
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void TestGrpcListener_IsHealthy_FalseBeforeStart()
+        {
+            using DurableTaskExtension extension = this.CreateExtension("IsHealthyBeforeStart");
+            ILocalGrpcListener listener = LocalGrpcListener.Create(extension, LocalGrpcListenerMode.AspNetCore);
+
+            Assert.False(listener.IsHealthy);
+            Assert.Null(listener.ListenAddress);
+        }
+
+        /// <summary>
+        /// Verifies that IsHealthy returns true after the listener is started
+        /// and false again after it is stopped.
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task TestGrpcListener_IsHealthy_TrueAfterStart_FalseAfterStop()
+        {
+            using DurableTaskExtension extension = this.CreateExtension("IsHealthyLifecycle");
+            ILocalGrpcListener listener = LocalGrpcListener.Create(extension, LocalGrpcListenerMode.AspNetCore);
+
+            try
+            {
+                await listener.StartAsync(default);
+
+                Assert.True(listener.IsHealthy);
+                Assert.NotNull(listener.ListenAddress);
+
+                await listener.StopAsync(default);
+
+                Assert.False(listener.IsHealthy);
+                Assert.Null(listener.ListenAddress);
+            }
+            catch
+            {
+                await listener.StopAsync(default);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Verifies that StopAsync resets the listener state, allowing StartAsync
+        /// to restart it on a (potentially different) port.
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task TestGrpcListener_CanRestartAfterStop()
+        {
+            using DurableTaskExtension extension = this.CreateExtension("RestartAfterStop");
+            ILocalGrpcListener listener = LocalGrpcListener.Create(extension, LocalGrpcListenerMode.AspNetCore);
+
+            try
+            {
+                // First start
+                await listener.StartAsync(default);
+                string firstAddress = listener.ListenAddress;
+                Assert.NotNull(firstAddress);
+                Assert.True(listener.IsHealthy);
+
+                // Stop — should reset state
+                await listener.StopAsync(default);
+                Assert.Null(listener.ListenAddress);
+                Assert.False(listener.IsHealthy);
+
+                // Restart — should get a new address
+                await listener.StartAsync(default);
+                Assert.NotNull(listener.ListenAddress);
+                Assert.True(listener.IsHealthy);
+            }
+            finally
+            {
+                await listener.StopAsync(default);
+            }
+        }
+
+        /// <summary>
+        /// Verifies that EnsureStartedAsync is a no-op when the listener is already healthy.
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task TestGrpcListener_EnsureStarted_NoOpWhenHealthy()
+        {
+            using DurableTaskExtension extension = this.CreateExtension("EnsureStartedNoOp");
+            ILocalGrpcListener listener = LocalGrpcListener.Create(extension, LocalGrpcListenerMode.AspNetCore);
+
+            try
+            {
+                await listener.StartAsync(default);
+                string originalAddress = listener.ListenAddress;
+
+                // Calling EnsureStartedAsync when healthy should not change the address
+                await listener.EnsureStartedAsync(default);
+                Assert.Equal(originalAddress, listener.ListenAddress);
+                Assert.True(listener.IsHealthy);
+            }
+            finally
+            {
+                await listener.StopAsync(default);
+            }
+        }
+
+        /// <summary>
+        /// Verifies that EnsureStartedAsync restarts the listener when it is not healthy
+        /// (e.g. after being stopped).
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task TestGrpcListener_EnsureStarted_RestartsWhenUnhealthy()
+        {
+            using DurableTaskExtension extension = this.CreateExtension("EnsureStartedRestart");
+            ILocalGrpcListener listener = LocalGrpcListener.Create(extension, LocalGrpcListenerMode.AspNetCore);
+
+            try
+            {
+                await listener.StartAsync(default);
+                Assert.True(listener.IsHealthy);
+
+                // Simulate unhealthy state by stopping
+                await listener.StopAsync(default);
+                Assert.False(listener.IsHealthy);
+                Assert.Null(listener.ListenAddress);
+
+                // EnsureStartedAsync should restart
+                await listener.EnsureStartedAsync(default);
+                Assert.True(listener.IsHealthy);
+                Assert.NotNull(listener.ListenAddress);
+            }
+            finally
+            {
+                await listener.StopAsync(default);
+            }
+        }
+
+        /// <summary>
+        /// Verifies that WaitForListenAddressAsync returns the address immediately
+        /// when the listener is already started.
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task TestGrpcListener_WaitForAddress_ReturnsImmediatelyWhenReady()
+        {
+            using DurableTaskExtension extension = this.CreateExtension("WaitForAddressReady");
+            ILocalGrpcListener listener = LocalGrpcListener.Create(extension, LocalGrpcListenerMode.AspNetCore);
+
+            try
+            {
+                await listener.StartAsync(default);
+                string expected = listener.ListenAddress;
+                Assert.NotNull(expected);
+
+                // Should return immediately since address is already set
+                string result = await listener.WaitForListenAddressAsync(TimeSpan.FromSeconds(5), default);
+                Assert.Equal(expected, result);
+            }
+            finally
+            {
+                await listener.StopAsync(default);
+            }
+        }
+
+        /// <summary>
+        /// Verifies that WaitForListenAddressAsync returns the address when another
+        /// task starts the listener concurrently.
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task TestGrpcListener_WaitForAddress_ReturnsWhenStartedConcurrently()
+        {
+            using DurableTaskExtension extension = this.CreateExtension("WaitForAddressConcurrent");
+            ILocalGrpcListener listener = LocalGrpcListener.Create(extension, LocalGrpcListenerMode.AspNetCore);
+
+            try
+            {
+                // Start waiting before the listener is started
+                Task<string> waitTask = listener.WaitForListenAddressAsync(TimeSpan.FromSeconds(10), default);
+
+                // Give a small delay then start the listener
+                await Task.Delay(100);
+                await listener.StartAsync(default);
+
+                // The wait task should complete with the address
+                string result = await waitTask;
+                Assert.NotNull(result);
+                Assert.Equal(listener.ListenAddress, result);
+            }
+            finally
+            {
+                await listener.StopAsync(default);
+            }
+        }
+
+        /// <summary>
+        /// Verifies that WaitForListenAddressAsync returns null when the timeout expires
+        /// and the listener was never started.
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task TestGrpcListener_WaitForAddress_ReturnsNullOnTimeout()
+        {
+            using DurableTaskExtension extension = this.CreateExtension("WaitForAddressTimeout");
+            ILocalGrpcListener listener = LocalGrpcListener.Create(extension, LocalGrpcListenerMode.AspNetCore);
+
+            // Wait with a very short timeout — listener is never started, so it should time out
+            string result = await listener.WaitForListenAddressAsync(TimeSpan.FromMilliseconds(100), default);
+            Assert.Null(result);
+        }
+
+        /// <summary>
+        /// Verifies that WaitForListenAddressAsync returns null promptly when
+        /// the caller's cancellation token fires.
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task TestGrpcListener_WaitForAddress_ReturnsNullOnCancellation()
+        {
+            using DurableTaskExtension extension = this.CreateExtension("WaitForAddressCancel");
+            ILocalGrpcListener listener = LocalGrpcListener.Create(extension, LocalGrpcListenerMode.AspNetCore);
+
+            using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(100));
+
+            // Should return null when the cancellation token fires, not wait the full timeout
+            string result = await listener.WaitForListenAddressAsync(TimeSpan.FromSeconds(30), cts.Token);
+            Assert.Null(result);
+        }
+
+        /// <summary>
+        /// Verifies that concurrent calls to StartAsync are safe and only one
+        /// initialization occurs.
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task TestGrpcListener_ConcurrentStartAsync_IsSafe()
+        {
+            using DurableTaskExtension extension = this.CreateExtension("ConcurrentStart");
+            ILocalGrpcListener listener = LocalGrpcListener.Create(extension, LocalGrpcListenerMode.AspNetCore);
+
+            try
+            {
+                // Start multiple times concurrently
+                var tasks = new Task[5];
+                for (int i = 0; i < tasks.Length; i++)
+                {
+                    tasks[i] = listener.StartAsync(default);
+                }
+
+                await Task.WhenAll(tasks);
+
+                // All should succeed, and we should have a valid address
+                Assert.NotNull(listener.ListenAddress);
+                Assert.True(listener.IsHealthy);
+            }
+            finally
+            {
+                await listener.StopAsync(default);
+            }
+        }
+
+        /// <summary>
+        /// Verifies that calling StartAsync again (idempotent) when already started
+        /// doesn't change the address.
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task TestGrpcListener_StartAsync_IdempotentWhenHealthy()
+        {
+            using DurableTaskExtension extension = this.CreateExtension("IdempotentStart");
+            ILocalGrpcListener listener = LocalGrpcListener.Create(extension, LocalGrpcListenerMode.AspNetCore);
+
+            try
+            {
+                await listener.StartAsync(default);
+                string firstAddress = listener.ListenAddress;
+
+                // Start again — should be idempotent
+                await listener.StartAsync(default);
+                Assert.Equal(firstAddress, listener.ListenAddress);
+            }
+            finally
+            {
+                await listener.StopAsync(default);
+            }
+        }
+
+        /// <summary>
+        /// Verifies that GetLocalRpcAddress returns the address after the gRPC listener
+        /// is properly started through the extension's EnsureTaskHubWorker path.
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void TestGetLocalRpcAddress_ReturnsAddressWhenGrpcListenerStarted()
+        {
+            using DurableTaskExtension extension = this.CreateExtension("GetLocalRpcAddress");
+
+            // The extension is configured for DotNetIsolated (gRPC protocol).
+            Assert.Equal(OutOfProcOrchestrationProtocol.MiddlewarePassthrough, extension.OutOfProcProtocol);
+
+            // EnsureTaskHubWorker triggers InitializeTaskHubWorker which starts the gRPC listener
+            extension.EnsureTaskHubWorker();
+
+            string address = extension.GetLocalRpcAddress();
+            Assert.NotNull(address);
+            Assert.True(Uri.TryCreate(address, UriKind.Absolute, out Uri uri));
+            Assert.True(uri.IsLoopback);
+        }
+
+        /// <summary>
+        /// Verifies that BindingHelper.DurableOrchestrationClientToString throws
+        /// TimeoutException (not InvalidOperationException) when the gRPC address is unavailable.
+        /// This is critical for queue-triggered functions: TimeoutException signals a transient
+        /// issue, preventing rapid poison-queue escalation.
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void TestBindingHelper_ThrowsTimeoutException_WhenGrpcAddressUnavailable()
+        {
+            // Create an extension configured for gRPC but WITHOUT starting the gRPC listener.
+            // We use a very short timeout to avoid waiting 30s in a test.
+            using DurableTaskExtension extension = this.CreateExtensionWithNullGrpcListener("BindingHelperTimeout");
+
+            var bindingHelper = new BindingHelper(extension);
+
+            // Mock a minimal client
+            var attr = new DurableClientAttribute();
+            var client = new Moq.Mock<IDurableOrchestrationClient>();
+            client.Setup(c => c.TaskHubName).Returns("TestHub");
+
+            // The exception should be TimeoutException, NOT InvalidOperationException
+            var ex = Assert.Throws<TimeoutException>(
+                () => bindingHelper.DurableOrchestrationClientToString(client.Object, attr));
+
+            Assert.Contains("gRPC endpoint", ex.Message);
+            Assert.Contains("transient", ex.Message);
+        }
+
         private DurableTaskExtension CreateExtension(string hubName)
         {
             var options = new DurableTaskOptions { HubName = hubName };
@@ -179,6 +519,40 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 new TestHostShutdownNotificationService(),
                 new DurableHttpMessageHandlerFactory(),
                 platformInformationService: TestHelpers.GetMockPlatformInformationService(language: WorkerRuntimeType.DotNetIsolated));
+        }
+
+        /// <summary>
+        /// Creates an extension configured for gRPC protocol (MiddlewarePassthrough)
+        /// but WITHOUT a gRPC listener, simulating a state where the listener was never
+        /// created or has been lost. This is used to test error handling paths.
+        /// </summary>
+        private DurableTaskExtension CreateExtensionWithNullGrpcListener(string hubName)
+        {
+            var options = new DurableTaskOptions { HubName = hubName };
+            var wrappedOptions = new OptionsWrapper<DurableTaskOptions>(options);
+            var nameResolver = TestHelpers.GetTestNameResolver();
+            var serviceFactory = new AzureStorageDurabilityProviderFactory(
+                wrappedOptions,
+                new TestStorageServiceClientProviderFactory(),
+                nameResolver,
+                NullLoggerFactory.Instance,
+                TestHelpers.GetMockPlatformInformationService(language: WorkerRuntimeType.DotNet));
+
+            // Create extension with DotNet (in-process) runtime so it doesn't auto-configure gRPC,
+            // then manually set the protocol to MiddlewarePassthrough with no listener.
+            var extension = new DurableTaskExtension(
+                wrappedOptions,
+                new LoggerFactory(),
+                nameResolver,
+                new[] { serviceFactory },
+                new TestHostShutdownNotificationService(),
+                new DurableHttpMessageHandlerFactory(),
+                platformInformationService: TestHelpers.GetMockPlatformInformationService(language: WorkerRuntimeType.DotNet));
+
+            // Force gRPC protocol mode without a listener to simulate broken state
+            extension.OutOfProcProtocol = OutOfProcOrchestrationProtocol.MiddlewarePassthrough;
+
+            return extension;
         }
 
         private static bool IsPortInUse(int port)
