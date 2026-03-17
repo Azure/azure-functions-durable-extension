@@ -527,11 +527,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     try
                     {
-                        this.localGrpcListener.EnsureStartedAsync(default).GetAwaiter().GetResult();
+                        // Use the host stopping token so the wait is canceled promptly during shutdown
+                        // rather than blocking for up to 30 seconds with a default token.
+                        CancellationToken stoppingToken = this.HostLifetimeService.OnStopping;
+
+                        this.localGrpcListener.EnsureStartedAsync(stoppingToken).GetAwaiter().GetResult();
 
                         // Wait up to 30 seconds for the listen address to become available.
                         address = this.localGrpcListener.WaitForListenAddressAsync(
-                            TimeSpan.FromSeconds(30), default).GetAwaiter().GetResult();
+                            TimeSpan.FromSeconds(30), stoppingToken).GetAwaiter().GetResult();
                     }
                     catch (Exception ex)
                     {

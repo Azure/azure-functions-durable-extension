@@ -123,7 +123,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Grpc
                 return await addressTask;
             }
 
-            return this.ListenAddress;
+            // Timeout or cancellation — return null rather than reading ListenAddress,
+            // which could be set concurrently and produce unpredictable results.
+            return null;
         }
 
         private async Task StartInternalAsync(CancellationToken cancellationToken)
@@ -241,6 +243,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Grpc
                         instanceId: string.Empty,
                         functionName: string.Empty,
                         message: $"Error stopping local gRPC endpoint: {ex.Message}");
+                }
+                finally
+                {
+                    // Dispose the host to release server, sockets, and DI container resources.
+                    // This prevents resource leaks during repeated stop/start cycles.
+                    if (previousHost is IDisposable disposable)
+                    {
+                        disposable.Dispose();
+                    }
                 }
 
                 // Reset state so StartAsync can re-initialize.
