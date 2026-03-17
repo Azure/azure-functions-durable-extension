@@ -40,12 +40,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
 
             this.subscriberId = SharedTraceSession.Subscribe(
-                data => this.HandleTraceEvent(data, eventIdFilters),
+                data => this.HandleTraceEvent(data),
                 providers,
                 eventIdFilters);
         }
 
-        private void HandleTraceEvent(TraceEvent data, IDictionary<string, IEnumerable<int>> eventIdFilters)
+        private void HandleTraceEvent(TraceEvent data)
         {
             EventHandler<TraceLogEventArgs> handler = this.OnTraceLog;
             if (handler == null)
