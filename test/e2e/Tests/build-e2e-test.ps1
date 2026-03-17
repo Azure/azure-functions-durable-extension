@@ -279,19 +279,46 @@ function StartDTSContainer() {
   Write-Host "Pulling down the mcr.microsoft.com/dts/dts-emulator:latest image..."
   docker pull mcr.microsoft.com/dts/dts-emulator:latest
 
-  # Start the DTS Server docker container with the specified edition
+  # Start the DTS Server docker container.
+  # Resource limits and reduced concurrency settings keep the emulator from
+  # overwhelming CI runners (typically ~7 GB RAM / 2-4 cores shared with
+  # Azurite, the func host, and the test runner).
   Write-Host "Starting DTS docker container on port 8080" -ForegroundColor DarkYellow
-  docker run -i -p 8080:8080 -p 8082:8082 -d mcr.microsoft.com/dts/dts-emulator:latest
+  docker run -d `
+    --cpus 1.5 `
+    --memory 4g `
+    -e "OrchestrationService__MaxConcurrentTaskActivityWorkItems=20" `
+    -e "OrchestrationService__MaxConcurrentTaskOrchestrationWorkItems=20" `
+    -e "Logging__LogLevel__Default=Warning" `
+    -p 8080:8080 -p 8081:8081 -p 8082:8082 `
+    mcr.microsoft.com/dts/dts-emulator:latest
 
   if ($LASTEXITCODE -ne 0) {
       exit $LASTEXITCODE
   }
 
-  # The container needs a bit more time before it can start accepting commands
-  Write-Host "Sleeping for 30 seconds to let the container finish initializing..." -ForegroundColor Yellow
-  Start-Sleep -Seconds 30
+  # Poll the health endpoint instead of sleeping a fixed duration.
+  Write-Host "Waiting for DTS emulator to be ready..." -ForegroundColor Yellow
+  $ready = $false
+  for ($i = 0; $i -lt 30; $i++) {
+    try {
+      $status = (Invoke-WebRequest -Uri "http://localhost:8081" -UseBasicParsing -TimeoutSec 2).StatusCode
+      if ($status -eq 200) {
+        $ready = $true
+        break
+      }
+    } catch {
+      # Container still starting up.
+    }
+    Start-Sleep -Seconds 2
+  }
 
-  # Check to see what containers are running
+  if (-not $ready) {
+    Write-Warning "DTS emulator did not become ready within 60 seconds."
+  } else {
+    Write-Host "DTS emulator is ready."
+  }
+
   docker ps
 }
 

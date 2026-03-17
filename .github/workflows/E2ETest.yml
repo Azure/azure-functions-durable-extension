@@ -26,7 +26,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        targetFramework: [net8.0, net10.0]
         config:
           - name: azurestorage-linux
             os: ubuntu-latest
@@ -48,6 +47,7 @@ jobs:
             backend: azureManaged
             filterTag: DTS
             buildFlags: '-StartDTSContainer'
+        targetFramework: [net8.0, net10.0]
     env:
       E2E_TEST_DURABLE_BACKEND: ${{ matrix.config.backend }}
     steps:
@@ -95,6 +95,8 @@ jobs:
           $dir = Join-Path ([System.IO.Path]::GetTempPath()) "DurableTaskExtensionE2ETests/Azure.Functions.Cli"
           "dir=$dir" >> $env:GITHUB_OUTPUT
 
+      # The Core Tools version is defined in build-e2e-test.ps1, so we
+      # bust the cache whenever that script changes.
       - name: Cache Core Tools
         uses: actions/cache@v4
         with:
