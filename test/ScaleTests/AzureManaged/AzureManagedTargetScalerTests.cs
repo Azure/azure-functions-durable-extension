@@ -49,7 +49,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests
             this.output.WriteLine($"Creating connection to the test DTS TaskHub: {taskHubName}");
 
             var loggerFactory = new LoggerFactory();
-            var service = new AzureManagedOrchestrationService(options, loggerFactory);
+            using var service = new AzureManagedOrchestrationService(options, loggerFactory);
 
             var status = new List<OrchestrationStatus>
             {
@@ -97,7 +97,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests
                 })
                 .Build();
 
-            var nameResolver = new SimpleNameResolver();
             var factory = new AzureManagedScalabilityProviderFactory(
                 configuration,
                 loggerFactory);

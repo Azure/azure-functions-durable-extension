@@ -64,7 +64,7 @@ jobs:
         done
 
         # Run tests
-        dotnet test ./test/ScaleTests/Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests.csproj -c $config --no-build --verbosity normal
+        dotnet test ./test/ScaleTests/Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests.csproj -c $config --no-build --verbosity normal --filter "FullyQualifiedName!~AzureManaged"
 
   dts:
     name: Functions Scale Tests - DTS
@@ -75,10 +75,10 @@ jobs:
         with:
           submodules: true
 
-      - name: Setup .NET 8.0
+      - name: Setup .NET
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: 8.0.x
+          global-json-file: global.json
 
       - name: Set up Node.js (needed for Azurite)
         uses: actions/setup-node@v3
@@ -116,4 +116,4 @@ jobs:
         env:
           AzureWebJobsStorage: UseDevelopmentStorage=true
           DURABLE_TASK_SCHEDULER_CONNECTION_STRING: "Endpoint=http://localhost:8080;Authentication=None"
-        run: dotnet test --configuration Release --no-build --verbosity normal --filter "FullyQualifiedName~AzureManaged&FullyQualifiedName!~Sql&FullyQualifiedName!~DurableTaskTriggersScaleProviderSqlServer"
+        run: dotnet test --configuration Release --no-build --verbosity normal --filter "FullyQualifiedName~AzureManaged"

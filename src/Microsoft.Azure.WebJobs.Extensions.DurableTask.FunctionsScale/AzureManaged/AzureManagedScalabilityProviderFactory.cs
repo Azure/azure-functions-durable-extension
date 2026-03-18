@@ -75,7 +75,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.AzureMan
             // Get connection name from metadata, fallback to default
             string? rawConnectionName = TriggerMetadataExtensions.ResolveConnectionName(metadata?.StorageProvider);
             string connectionName = rawConnectionName ?? this.DefaultConnectionName;
-            this.logger.LogInformation("using connectionName" + connectionName);
+            this.logger.LogInformation("Using connection name '{ConnectionName}'", connectionName);
 
             // Look up connection string from configuration
             string? connectionString =

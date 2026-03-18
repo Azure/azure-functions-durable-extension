@@ -54,7 +54,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.AzureMan
             string functionId,
             string functionName,
             string hubName,
-            string connectionName,
+            string targetConnectionName,
             out IScaleMonitor scaleMonitor)
         {
             // Azure Managed backend does not support the legacy scale monitor infrastructure.
@@ -68,7 +68,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.AzureMan
             string functionId,
             string functionName,
             string hubName,
-            string connectionName,
+            string targetConnectionName,
             out ITargetScaler targetScaler)
         {
             // Create a target scaler that uses the orchestration service's metrics endpoint.
