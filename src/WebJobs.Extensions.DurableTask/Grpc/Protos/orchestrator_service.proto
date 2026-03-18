@@ -517,6 +517,7 @@ message PurgeInstanceFilter {
     google.protobuf.Timestamp createdTimeFrom = 1;
     google.protobuf.Timestamp createdTimeTo = 2;
     repeated OrchestrationStatus runtimeStatus = 3;
+    google.protobuf.Duration timeout = 4;
 }
 
 message PurgeInstancesResponse {

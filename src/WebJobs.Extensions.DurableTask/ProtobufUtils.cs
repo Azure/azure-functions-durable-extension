@@ -553,18 +553,32 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             // This ternary condition is necessary because the protobuf spec __insists__ that CreatedTimeFrom may never be null,
             // but nonetheless if you pass null in function code, the value will be null here
-            return new PurgeInstanceFilter(
+            var filter = new PurgeInstanceFilter(
                 request.PurgeInstanceFilter.CreatedTimeFrom == null ? DateTime.MinValue : request.PurgeInstanceFilter.CreatedTimeFrom.ToDateTime(),
                 request.PurgeInstanceFilter.CreatedTimeTo?.ToDateTime(),
                 statusFilter);
+
+            if (request.PurgeInstanceFilter.Timeout != null)
+            {
+                filter.Timeout = request.PurgeInstanceFilter.Timeout.ToTimeSpan();
+            }
+
+            return filter;
         }
 
         internal static P.PurgeInstancesResponse CreatePurgeInstancesResponse(PurgeResult result)
         {
-            return new P.PurgeInstancesResponse
+            var response = new P.PurgeInstancesResponse
             {
                 DeletedInstanceCount = result.DeletedInstanceCount,
             };
+
+            if (result.IsComplete.HasValue)
+            {
+                response.IsComplete = result.IsComplete.Value;
+            }
+
+            return response;
         }
 
         /// <summary>
