@@ -510,15 +510,49 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        internal string GetLocalRpcAddress()
+#nullable enable
+        internal string? GetLocalRpcAddress()
         {
             if (this.OutOfProcProtocol == OutOfProcOrchestrationProtocol.MiddlewarePassthrough)
             {
-                return this.localGrpcListener.ListenAddress;
+                string? address = this.localGrpcListener?.ListenAddress;
+                if (address != null)
+                {
+                    return address;
+                }
+
+                // The address is not yet available. This can happen if the gRPC server failed to start,
+                // stopped unexpectedly, or hasn't finished initializing. Try to (re)start it.
+                if (this.localGrpcListener != null)
+                {
+                    try
+                    {
+                        // Use the host stopping token so the wait is canceled promptly during shutdown
+                        // rather than blocking for up to 30 seconds with a default token.
+                        CancellationToken stoppingToken = this.HostLifetimeService.OnStopping;
+
+                        this.localGrpcListener.EnsureStartedAsync(stoppingToken).GetAwaiter().GetResult();
+
+                        // Wait up to 30 seconds for the listen address to become available.
+                        address = this.localGrpcListener.WaitForListenAddressAsync(
+                            TimeSpan.FromSeconds(30), stoppingToken).GetAwaiter().GetResult();
+                    }
+                    catch (Exception ex)
+                    {
+                        this.TraceHelper.ExtensionWarningEvent(
+                            this.Options.HubName,
+                            instanceId: string.Empty,
+                            functionName: string.Empty,
+                            message: $"Failed to start/restart local gRPC listener: {ex.Message}");
+                    }
+                }
+
+                return address;
             }
 
             return this.HttpApiHandler.GetBaseUrl();
         }
+#nullable restore
 
         internal DurabilityProvider GetDurabilityProvider(DurableClientAttribute attribute)
         {
