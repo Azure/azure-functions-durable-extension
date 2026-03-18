@@ -11,6 +11,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Sql
     /// <summary>
     /// Metrics provider for SQL Server backend scaling.
     /// Provides recommended replica count based on SQL Server orchestration service metrics.
+    /// Note: This class should be kept in sync with SqlMetricsProvider in DurableTask.SqlServer.AzureFunctions.
     /// </summary>
     public class SqlServerMetricsProvider
     {

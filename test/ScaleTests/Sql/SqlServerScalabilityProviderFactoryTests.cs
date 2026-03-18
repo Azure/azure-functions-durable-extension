@@ -171,36 +171,5 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests
             var sqlMetrics = (SqlServerScaleMetric)metrics;
             Assert.True(sqlMetrics.RecommendedReplicaCount >= 0, "Recommended replica count should be non-negative");
         }
-
-        /// <summary>
-        /// Verifies that Managed Identity configuration keys ({connectionName}__serverName,
-        /// {connectionName}__databaseName) are correctly read from IConfiguration.
-        /// </summary>
-        [Fact]
-        public void CreateSqlOrchestrationService_WithManagedIdentityConfig_ReadsServerNameFromConfig()
-        {
-            var connectionName = "TestConnection";
-            var serverName = "mysqlservertny.database.windows.net";
-            var databaseName = "testsqlscaling";
-
-            var configBuilder = new ConfigurationBuilder();
-            configBuilder.AddInMemoryCollection(new Dictionary<string, string>
-            {
-                { $"{connectionName}__serverName", serverName },
-                { $"{connectionName}__databaseName", databaseName },
-                { connectionName, $"Server={serverName};Database={databaseName};Authentication=Active Directory Default;" },
-            });
-            var testConfiguration = configBuilder.Build();
-
-            var factory = new SqlServerScalabilityProviderFactory(
-                testConfiguration,
-                this.loggerFactory);
-
-            var configServerName = testConfiguration[$"{connectionName}__serverName"];
-            Assert.Equal(serverName, configServerName);
-
-            var configDatabaseName = testConfiguration[$"{connectionName}__databaseName"];
-            Assert.Equal(databaseName, configDatabaseName);
-        }
     }
 }

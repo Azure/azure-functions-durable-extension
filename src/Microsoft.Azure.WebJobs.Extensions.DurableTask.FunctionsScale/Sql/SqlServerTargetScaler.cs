@@ -10,6 +10,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Sql
     /// <summary>
     /// Target-based scaler for SQL Server backend.
     /// Provides target worker count recommendations based on SQL Server orchestration service metrics.
+    /// Note: This class should be kept in sync with SqlTargetScaler in DurableTask.SqlServer.AzureFunctions.
     /// </summary>
     public class SqlServerTargetScaler : ITargetScaler
     {

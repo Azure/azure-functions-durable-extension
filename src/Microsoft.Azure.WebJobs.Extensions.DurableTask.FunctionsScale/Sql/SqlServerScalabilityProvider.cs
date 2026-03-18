@@ -23,7 +23,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Sql
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SqlServerScalabilityProvider"/> class.
-        /// for managing scaling operations using a SQL Server–based orchestration service.
+        /// for managing scaling operations using a SQL Server-based orchestration service.
         /// </summary>
         /// <param name="service">The SQL orchestration service instance.</param>
         /// <param name="connectionName">The name of the SQL connection.</param>
@@ -59,11 +59,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Sql
             {
                 if (this.singletonSqlMetricsProvider == null)
                 {
-                    // This is only called by the ScaleController, it doesn't run in the Functions Host process.
-                    this.singletonSqlMetricsProvider = this.GetMetricsProvider(
-                        hubName,
-                        this.service,
-                        this.logger);
+                    this.singletonSqlMetricsProvider = new SqlServerMetricsProvider(this.service);
                 }
 
                 scaleMonitor = new SqlServerScaleMonitor(functionId, hubName, this.singletonSqlMetricsProvider);
@@ -83,23 +79,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Sql
             {
                 if (this.singletonSqlMetricsProvider == null)
                 {
-                    this.singletonSqlMetricsProvider = this.GetMetricsProvider(
-                        hubName,
-                        this.service,
-                        this.logger);
+                    this.singletonSqlMetricsProvider = new SqlServerMetricsProvider(this.service);
                 }
 
                 targetScaler = new SqlServerTargetScaler(functionId, this.singletonSqlMetricsProvider);
                 return true;
             }
-        }
-
-        internal SqlServerMetricsProvider GetMetricsProvider(
-            string hubName,
-            SqlOrchestrationService sqlOrchestrationService,
-            ILogger logger)
-        {
-            return new SqlServerMetricsProvider(sqlOrchestrationService);
         }
     }
 }

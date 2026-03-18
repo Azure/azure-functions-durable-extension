@@ -8,8 +8,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests
 {
     /// <summary>
     /// Shared fixture for SQL Server tests. Creates the database and schema once
-    /// before any test in the [Collection("SqlServerTests")] collection runs,
-    /// and deletes the database after all tests complete.
+    /// before any test in the [Collection("SqlServerTests")] collection runs.
     /// </summary>
     public class SqlServerTestFixture : IDisposable
     {

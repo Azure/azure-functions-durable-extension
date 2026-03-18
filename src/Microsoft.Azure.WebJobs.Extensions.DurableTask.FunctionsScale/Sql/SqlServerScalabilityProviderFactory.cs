@@ -57,10 +57,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Sql
         public ScalabilityProvider GetScalabilityProvider(DurableTaskMetadata metadata, TriggerMetadata? triggerMetadata)
         {
             // Validate SQL Server specific metadata if present
-            if (metadata != null)
-            {
-                this.ValidateSqlServerMetadata(metadata, this.logger);
-            }
+            this.ValidateSqlServerMetadata(metadata);
 
             // Get connection name from metadata, fallback to default
             // Note: Scale Controller already resolves %xxx% wrapping before calling the extension,
@@ -74,7 +71,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Sql
             var sqlOrchestrationService = this.CreateSqlOrchestrationService(
                 connectionName,
                 taskHubName,
-                this.logger,
                 metadata);
 
             var provider = new SqlServerScalabilityProvider(
@@ -91,11 +87,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Sql
         private SqlOrchestrationService CreateSqlOrchestrationService(
             string connectionName,
             string taskHubName,
-            ILogger logger,
             DurableTaskMetadata? metadata = null)
         {
             // Look up connection string from configuration
-            this.logger.LogInformation("using connectionName" + connectionName);
+            this.logger.LogInformation("Using connection name {ConnectionName}", connectionName);
             string? connectionString =
                 this.configuration.GetConnectionString(connectionName) ??
                 this.configuration[connectionName] ??
@@ -122,14 +117,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Sql
             // Note: When connection string includes "Authentication=Active Directory Default" or
             // "Authentication=Active Directory Managed Identity", SQL Server will automatically use
             // the appropriate Azure identity (managed identity in Azure, or DefaultAzureCredential locally).
-            // So we don't need to exctract token crednetial here from sitemetada.
+            // So we don't need to extract token credential here from site metadata.
             return new SqlOrchestrationService(settings);
         }
 
         /// <summary>
         /// Validates SQL Server specific metadata.
         /// </summary>
-        private void ValidateSqlServerMetadata(DurableTaskMetadata metadata, ILogger logger)
+        private void ValidateSqlServerMetadata(DurableTaskMetadata metadata)
         {
             // Validate hub name (SQL Server has less strict requirements than Azure Storage)
             if (string.IsNullOrWhiteSpace(metadata.TaskHubName))

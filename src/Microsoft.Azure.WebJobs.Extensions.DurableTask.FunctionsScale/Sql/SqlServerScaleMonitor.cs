@@ -13,6 +13,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Sql
     /// <summary>
     /// Azure Functions scale monitor implementation for the Durable Functions SQL Server backend.
     /// Provides metrics-based autoscaling recommendations based on SQL Server metrics.
+    /// Note: This class should be kept in sync with SqlScaleMonitor in DurableTask.SqlServer.AzureFunctions.
     /// </summary>
     public class SqlServerScaleMonitor : IScaleMonitor<SqlServerScaleMetric>
     {

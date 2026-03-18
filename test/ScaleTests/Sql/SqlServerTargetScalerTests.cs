@@ -98,7 +98,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests
             var triggerMetadata = TestHelpers.CreateTriggerMetadata(
                 taskHubName, maxConcurrentOrchestrators, maxConcurrentActivities, connectionName, "mssql");
             var metadata = triggerMetadata.ExtractDurableTaskMetadata();
-            var provider = factory.GetScalabilityProvider(metadata, triggerMetadata) as SqlServerScalabilityProvider;
+            var provider = factory.GetScalabilityProvider(metadata, triggerMetadata);
 
             Assert.NotNull(provider);
 
@@ -119,28 +119,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests
             int expectedWorkerCount = (int)Math.Ceiling((double)orchestrationsToCreate / maxConcurrentOrchestrators);
             this.output.WriteLine($"Target worker count: {scalerResult.TargetWorkerCount}, expected: {expectedWorkerCount}");
             Assert.Equal(expectedWorkerCount, scalerResult.TargetWorkerCount);
-        }
-
-        /// <summary>
-        /// Verifies that the target scaler returns a valid non-negative result
-        /// when constructed directly with SqlOrchestrationService.
-        /// </summary>
-        [Fact]
-        public async Task TargetBasedScaling_DirectConstruction_ReturnsValidResult()
-        {
-            var connectionString = TestHelpers.GetSqlConnectionString();
-            var settings = new SqlOrchestrationServiceSettings(connectionString, "testHub", schemaName: null);
-            var sqlService = new SqlOrchestrationService(settings);
-            var metricsProvider = new SqlServerMetricsProvider(sqlService);
-
-            var targetScaler = new SqlServerTargetScaler(
-                "functionId",
-                metricsProvider);
-
-            TargetScalerResult result = await targetScaler.GetScaleResultAsync(new TargetScalerContext());
-
-            Assert.NotNull(result);
-            Assert.True(result.TargetWorkerCount >= 0, "Target worker count should be non-negative");
         }
     }
 }
