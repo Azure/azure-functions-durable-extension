@@ -940,8 +940,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 {
                     await Task.WhenAll(hosts.Select(async host =>
                     {
-                        await host.StopAsync();
-                        host.Dispose();
+                        using (host)
+                        {
+                            await host.StopAsync();
+                        }
                     }));
                 }
             }
