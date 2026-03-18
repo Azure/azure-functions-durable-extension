@@ -4,6 +4,7 @@
 using System;
 using System.Linq;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.AzureStorage;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Sql;
 using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -42,7 +43,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale
             serviceCollection.TryAddSingleton<IStorageServiceClientProviderFactory, StorageServiceClientProviderFactory>();
 
             serviceCollection.AddSingleton<IScalabilityProviderFactory, AzureStorageScalabilityProviderFactory>();
-
+            serviceCollection.AddSingleton<IScalabilityProviderFactory, SqlServerScalabilityProviderFactory>();
             return builder;
         }
 
