@@ -353,5 +353,116 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.NotNull(startOrchestrationResult.ScheduledStartTime);
             Assert.Equal(scheduledTime, startOrchestrationResult.ScheduledStartTime.Value, TimeSpan.FromSeconds(1));
         }
-    }
+    
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void CreatePurgeInstancesResponse_IsCompleteTrue_MapsCorrectly()
+        {
+            // Arrange
+            var result = new DurableTask.Core.PurgeResult(10, isComplete: true);
+
+            // Act
+            var response = ProtobufUtils.CreatePurgeInstancesResponse(result);
+
+            // Assert
+            Assert.Equal(10, response.DeletedInstanceCount);
+            Assert.True(response.IsComplete);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void CreatePurgeInstancesResponse_IsCompleteFalse_MapsCorrectly()
+        {
+            // Arrange
+            var result = new DurableTask.Core.PurgeResult(5, isComplete: false);
+
+            // Act
+            var response = ProtobufUtils.CreatePurgeInstancesResponse(result);
+
+            // Assert
+            Assert.Equal(5, response.DeletedInstanceCount);
+            Assert.False(response.IsComplete);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void CreatePurgeInstancesResponse_IsCompleteNull_LeavesUnset()
+        {
+            // Arrange
+            var result = new DurableTask.Core.PurgeResult(3);
+
+            // Act
+            var response = ProtobufUtils.CreatePurgeInstancesResponse(result);
+
+            // Assert
+            Assert.Equal(3, response.DeletedInstanceCount);
+            Assert.Null(response.IsComplete);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void ToPurgeInstanceFilter_WithoutTimeout_BasicFieldsMapped()
+        {
+            // Arrange
+            var createdFrom = DateTime.UtcNow.AddDays(-1);
+            var request = new P.PurgeInstancesRequest
+            {
+                PurgeInstanceFilter = new P.PurgeInstanceFilter
+                {
+                    CreatedTimeFrom = Timestamp.FromDateTime(createdFrom),
+                },
+            };
+
+            // Act
+            var filter = ProtobufUtils.ToPurgeInstanceFilter(request);
+
+            // Assert
+            Assert.Equal(createdFrom, filter.CreatedTimeFrom, TimeSpan.FromSeconds(1));
+            Assert.Null(filter.CreatedTimeTo);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void ToPurgeInstanceFilter_WithStatusFilter_MapsStatuses()
+        {
+            // Arrange
+            var request = new P.PurgeInstancesRequest
+            {
+                PurgeInstanceFilter = new P.PurgeInstanceFilter
+                {
+                    CreatedTimeFrom = Timestamp.FromDateTime(DateTime.UtcNow.AddDays(-1)),
+                },
+            };
+            request.PurgeInstanceFilter.RuntimeStatus.Add(P.OrchestrationStatus.OrchestratorCompleted);
+            request.PurgeInstanceFilter.RuntimeStatus.Add(P.OrchestrationStatus.OrchestratorFailed);
+
+            // Act
+            var filter = ProtobufUtils.ToPurgeInstanceFilter(request);
+
+            // Assert
+            Assert.NotNull(filter.RuntimeStatus);
+            Assert.Contains(DurableTask.Core.OrchestrationStatus.Completed, filter.RuntimeStatus);
+            Assert.Contains(DurableTask.Core.OrchestrationStatus.Failed, filter.RuntimeStatus);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void ToPurgeInstanceFilter_EmptyStatusList_MapsToNull()
+        {
+            // Arrange
+            var request = new P.PurgeInstancesRequest
+            {
+                PurgeInstanceFilter = new P.PurgeInstanceFilter
+                {
+                    CreatedTimeFrom = Timestamp.FromDateTime(DateTime.UtcNow.AddDays(-1)),
+                },
+            };
+
+            // Act
+            var filter = ProtobufUtils.ToPurgeInstanceFilter(request);
+
+            // Assert
+            Assert.Null(filter.RuntimeStatus);
+        }
+}
 }
