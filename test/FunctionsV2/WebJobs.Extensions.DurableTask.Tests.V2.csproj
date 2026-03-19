@@ -38,14 +38,7 @@
     <PackageReference Include="System.Linq.Async" ExcludeAssets="compile" PrivateAssets="all" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Compile Include="..\Common\*.cs" />
-  </ItemGroup>
 
-  <ItemGroup>
-    <Compile Remove="..\Common\DurableOptionsConfigurationTests.cs" />
-  </ItemGroup>
-  
   <ItemGroup>
     <ProjectReference Include="..\..\src\WebJobs.Extensions.DurableTask\WebJobs.Extensions.DurableTask.csproj" />
   </ItemGroup>
