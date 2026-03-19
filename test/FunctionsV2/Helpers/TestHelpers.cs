@@ -120,9 +120,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             options.WebhookUriProviderOverride = () => notificationUrl;
             options.ExtendedSessionsEnabled = enableExtendedSessions;
 
-            // Use a short idle timeout to avoid slow shutdown (default is 30s which blocks
-            // StopAsync due to DTFx not propagating cancellation to session wait handles).
-            options.ExtendedSessionIdleTimeoutInSeconds = extendedSessionIdleTimeoutInSeconds;
             options.MaxConcurrentOrchestratorFunctions = 200;
             options.MaxConcurrentActivityFunctions = 200;
             options.NotificationHandler = eventGridNotificationHandler;

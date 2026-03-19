@@ -502,8 +502,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 this.loggerProvider,
                 nameof(this.TimerExpiration),
                 extendedSessions,
-                storageProviderType: storageProvider,
-                extendedSessionIdleTimeoutInSeconds: 5))
+                storageProviderType: storageProvider))
             {
                 await host.StartAsync();
 

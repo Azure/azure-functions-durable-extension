@@ -284,8 +284,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 this.loggerProvider,
                 nameof(this.SequentialOrchestration),
                 extendedSessions,
-                storageProviderType: storageProvider,
-                extendedSessionIdleTimeoutInSeconds: 4))
+                storageProviderType: storageProvider))
             {
                 await host.StartAsync();
 

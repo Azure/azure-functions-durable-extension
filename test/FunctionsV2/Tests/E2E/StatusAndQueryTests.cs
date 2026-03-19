@@ -186,7 +186,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                     // create a new client (external)
                     await clientHost.StartAsync();
-                    IDurableClientFactory durableClientFactory = clientHost.Services.GetService(typeof(IDurableClientFactory)) as DurableClientFactory;
+                    IDurableClientFactory durableClientFactory = clientHost.Services.GetRequiredService<IDurableClientFactory>();
                     IDurableClient durableClient = durableClientFactory.CreateClient(durableClientOptions);
 
                     // Poll for the orchestration to fail rather than using a fixed delay

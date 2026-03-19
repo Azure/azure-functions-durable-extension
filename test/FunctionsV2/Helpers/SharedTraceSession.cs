@@ -25,17 +25,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         private static readonly object SyncLock = new object();
 
+        // Tracks providers already enabled on the shared session so subsequent
+        // subscribers can add new ones without duplicates.
+        private static readonly Dictionary<string, TraceEventLevel> EnabledProviders
+            = new Dictionary<string, TraceEventLevel>(StringComparer.OrdinalIgnoreCase);
+
         private static TraceEventSession session;
         private static Thread backgroundThread;
         private static int refCount;
         private static int nextSubscriberId;
-
-        private sealed class SubscriberInfo
-        {
-            public Action<TraceEvent> Callback { get; set; }
-
-            public IDictionary<string, IEnumerable<int>> EventIdFilters { get; set; }
-        }
 
         /// <summary>
         /// Subscribes a callback to receive ETW trace events. Creates the shared session
@@ -47,20 +45,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             IDictionary<string, TraceEventLevel> providers,
             IDictionary<string, IEnumerable<int>> eventIdFilters = null)
         {
-            int id = Interlocked.Increment(ref nextSubscriberId);
-            Subscribers[id] = new SubscriberInfo { Callback = callback, EventIdFilters = eventIdFilters };
-
             lock (SyncLock)
             {
+                int id = ++nextSubscriberId;
+                Subscribers[id] = new SubscriberInfo { Callback = callback, EventIdFilters = eventIdFilters };
                 refCount++;
+
                 if (session == null)
                 {
                     string sessionName = "DTFxTrace" + Guid.NewGuid().ToString("N");
                     session = new TraceEventSession(sessionName);
-                    foreach (KeyValuePair<string, TraceEventLevel> provider in providers)
-                    {
-                        session.EnableProvider(provider.Key, provider.Value);
-                    }
+                    EnableNewProviders(providers);
 
                     backgroundThread = new Thread(_ =>
                     {
@@ -102,9 +97,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     backgroundThread.IsBackground = true;
                     backgroundThread.Start();
                 }
-            }
+                else
+                {
+                    // Session already exists — enable any providers not yet enabled.
+                    EnableNewProviders(providers);
+                }
 
-            return id;
+                return id;
+            }
         }
 
         /// <summary>
@@ -113,14 +113,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// </summary>
         public static void Unsubscribe(int subscriberId)
         {
-            if (!Subscribers.TryRemove(subscriberId, out _))
-            {
-                // Already unsubscribed or never subscribed — nothing to do.
-                return;
-            }
-
             lock (SyncLock)
             {
+                if (!Subscribers.TryRemove(subscriberId, out _))
+                {
+                    // Already unsubscribed or never subscribed — nothing to do.
+                    return;
+                }
+
                 refCount--;
                 if (refCount <= 0 && session != null)
                 {
@@ -130,8 +130,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     session = null;
                     backgroundThread = null;
                     refCount = 0;
+                    EnabledProviders.Clear();
                 }
             }
+        }
+
+        /// <summary>
+        /// Enables providers on the shared session that haven't been enabled yet,
+        /// upgrading the trace level if a higher level is requested.
+        /// Must be called under <see cref="SyncLock"/>.
+        /// </summary>
+        private static void EnableNewProviders(IDictionary<string, TraceEventLevel> providers)
+        {
+            providers
+                .Where(p =>
+                    !EnabledProviders.TryGetValue(p.Key, out TraceEventLevel currentLevel)
+                    || p.Value > currentLevel)
+                .Select(p =>
+                {
+                    session.EnableProvider(p.Key, p.Value);
+                    EnabledProviders[p.Key] = p.Value;
+                    return p;
+                })
+                .ToList(); // Force immediate execution of the LINQ query to enable providers within the lock.
         }
 
         private static bool IsNoiseEvent(TraceEvent traceEvent)
@@ -148,6 +169,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
 
             return false;
+        }
+
+        private sealed class SubscriberInfo
+        {
+            public Action<TraceEvent> Callback { get; set; }
+
+            public IDictionary<string, IEnumerable<int>> EventIdFilters { get; set; }
         }
     }
 }

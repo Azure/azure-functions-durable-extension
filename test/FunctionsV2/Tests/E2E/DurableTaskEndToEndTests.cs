@@ -335,7 +335,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 {
                     await host.StartAsync();
                     var client = await host.StartOrchestratorAsync(orchestratorName, input: "World", this.output);
-                    await client.WaitForCompletionAsync(this.output);
+                    var status = await client.WaitForCompletionAsync(this.output);
                     await host.StopAsync();
                 }
 
@@ -940,10 +940,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 {
                     await Task.WhenAll(hosts.Select(async host =>
                     {
-                        using (host)
-                        {
-                            await host.StopAsync();
-                        }
+                        await host.StopAsync();
+                        host.Dispose();
                     }));
                 }
             }

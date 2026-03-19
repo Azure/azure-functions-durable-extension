@@ -2,6 +2,9 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 #nullable enable
+using System;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Grpc
@@ -22,6 +25,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Grpc
         /// Gets the address this listener is listening to.
         /// </summary>
         string? ListenAddress { get; }
+
+        /// <summary>
+        /// Gets a value indicating whether the gRPC listener is healthy (started and responsive).
+        /// </summary>
+        bool IsHealthy { get; }
+
+        /// <summary>
+        /// Ensures the gRPC listener is started and healthy, restarting it if necessary.
+        /// </summary>
+        Task EnsureStartedAsync(CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Waits for the <see cref="ListenAddress"/> to become available, with a timeout.
+        /// Returns the listen address, or null if the timeout expires.
+        /// </summary>
+        Task<string?> WaitForListenAddressAsync(TimeSpan timeout, CancellationToken cancellationToken);
     }
 
     internal static class LocalGrpcListener
