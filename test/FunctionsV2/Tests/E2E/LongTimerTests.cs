@@ -11,6 +11,7 @@ using Xunit.Abstractions;
 
 namespace WebJobs.Extensions.DurableTask.Tests.V2
 {
+    [Trait("TestType", "E2E")]
     public class LongTimerTests
     {
         private readonly ITestOutputHelper output;
@@ -37,9 +38,9 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
             {
                 await host.StartAsync();
 
-                var fireAt = DateTime.UtcNow.AddSeconds(30);
+                var fireAt = DateTime.UtcNow.AddSeconds(5);
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.Timer), fireAt, this.output);
-                var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromMinutes(3));
+                var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(30));
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
                 await host.StopAsync();
@@ -61,9 +62,9 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
             {
                 await host.StartAsync();
 
-                var fireAt = DateTime.UtcNow.AddSeconds(5);
+                var fireAt = DateTime.UtcNow.AddSeconds(2);
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.Timer), fireAt, this.output);
-                var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromMinutes(2));
+                var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(30));
 
                 Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
                 await host.StopAsync();
@@ -89,11 +90,11 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
                 TestEntityClient client = await host.GetEntityClientAsync(entityId, this.output);
 
                 var now = DateTime.UtcNow;
-                var fireAt = now.AddSeconds(20);
+                var fireAt = now.AddSeconds(5);
 
                 await client.SignalEntity(this.output, fireAt, "fire", null);
 
-                var timeout = TimeSpan.FromSeconds(30);
+                var timeout = TimeSpan.FromSeconds(15);
                 var state = await client.WaitForEntityState<System.Collections.Generic.List<string>>(
                     this.output,
                     timeout,
@@ -117,12 +118,13 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
             {
                 await host.StartAsync();
 
-                var fireAt = TimeSpan.FromSeconds(30);
+                var fireAt = TimeSpan.FromSeconds(5);
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.ApprovalWithTimeout), (fireAt, "throw"), this.output);
-                var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromMinutes(2));
+                var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(30));
+                Assert.NotNull(status);
 
-                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
-                Assert.Equal("TimeoutException", status?.Output);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
+                Assert.Equal("TimeoutException", status.Output);
 
                 await host.StopAsync();
             }

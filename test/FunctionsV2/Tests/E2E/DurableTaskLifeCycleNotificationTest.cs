@@ -20,6 +20,7 @@ using Xunit.Abstractions;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
+    [Trait("TestType", "E2E")]
     public class DurableTaskLifeCycleNotificationTest
     {
         private readonly ITestOutputHelper output;
@@ -101,10 +102,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     this.output,
                     createdInstanceId);
                 var status = await client.WaitForCompletionAsync(this.output);
+                Assert.NotNull(status);
 
-                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
-                Assert.Equal("World", status?.Input);
-                Assert.Equal("Hello, World!", status?.Output);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
+                Assert.Equal("World", status.Input);
+                Assert.Equal("Hello, World!", status.Output);
 
                 // There should be one validator for each Event Grid request.
                 // Each validator is a delegate with several Assert statements.
@@ -190,9 +192,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     this.output,
                     createdInstanceId);
                 var status = await client.WaitForCompletionAsync(this.output);
+                Assert.NotNull(status);
 
-                Assert.Equal(OrchestrationRuntimeStatus.Failed, status?.RuntimeStatus);
-                Assert.True(status?.Output.ToString().Contains("Value cannot be null"));
+                Assert.Equal(OrchestrationRuntimeStatus.Failed, status.RuntimeStatus);
+                Assert.Contains("Value cannot be null", status.Output.ToString());
 
                 // There should be one validator for each Event Grid request.
                 // Each validator is a delegate with several Assert statements.
@@ -282,9 +285,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await client.TerminateAsync("sayōnara");
 
                 var status = await client.WaitForCompletionAsync(this.output);
+                Assert.NotNull(status);
 
-                Assert.Equal(OrchestrationRuntimeStatus.Terminated, status?.RuntimeStatus);
-                Assert.Equal("sayōnara", status?.Output);
+                Assert.Equal(OrchestrationRuntimeStatus.Terminated, status.RuntimeStatus);
+                Assert.Equal("sayōnara", status.Output);
 
                 // There should be one validator for each Event Grid request.
                 // Each validator is a delegate with several Assert statements.
@@ -618,10 +622,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     this.output,
                     createdInstanceId);
                 var status = await client.WaitForCompletionAsync(this.output);
+                Assert.NotNull(status);
 
-                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
-                Assert.Equal("World", status?.Input);
-                Assert.Equal("Hello, World!", status?.Output);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
+                Assert.Equal("World", status.Input);
+                Assert.Equal("Hello, World!", status.Output);
 
                 // There should be one validator for each Event Grid request.
                 // Each validator is a delegate with several Assert statements.
@@ -993,7 +998,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var notificationHandler = new EventGridLifeCycleNotificationHelper.HttpRetryMessageHandler(
                 httpHandlerMock.Object,
                 5,
-                TimeSpan.FromMilliseconds(1000),
+                TimeSpan.FromMilliseconds(50),
                 Array.Empty<HttpStatusCode>());
 
             using (ITestHost host = TestHelpers.GetJobHost(
@@ -1009,10 +1014,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], "World", this.output);
                 var status = await client.WaitForCompletionAsync(this.output);
+                Assert.NotNull(status);
 
-                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
-                Assert.Equal("World", status?.Input);
-                Assert.Equal("Hello, World!", status?.Output);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
+                Assert.Equal("World", status.Input);
+                Assert.Equal("Hello, World!", status.Output);
                 Assert.Equal(retryCount + 1, callCount);
                 await host.StopAsync();
             }
@@ -1072,7 +1078,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var notificationHandler = new EventGridLifeCycleNotificationHelper.HttpRetryMessageHandler(
                 httpHandlerMock.Object,
                 5,
-                TimeSpan.FromMilliseconds(1000),
+                TimeSpan.FromMilliseconds(50),
                 Array.Empty<HttpStatusCode>());
 
             using (ITestHost host = TestHelpers.GetJobHost(
@@ -1088,10 +1094,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], "World", this.output);
                 var status = await client.WaitForCompletionAsync(this.output);
+                Assert.NotNull(status);
 
-                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
-                Assert.Equal("World", status?.Input);
-                Assert.Equal("Hello, World!", status?.Output);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
+                Assert.Equal("World", status.Input);
+                Assert.Equal("Hello, World!", status.Output);
                 Assert.Equal(retryCount + 1, callCount);
                 await host.StopAsync();
             }
@@ -1142,7 +1149,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var notificationHandler = new EventGridLifeCycleNotificationHelper.HttpRetryMessageHandler(
                 httpHandlerMock.Object,
                 retryCount,
-                TimeSpan.FromMilliseconds(1000),
+                TimeSpan.FromMilliseconds(50),
                 Array.Empty<HttpStatusCode>());
 
             using (ITestHost host = TestHelpers.GetJobHost(
@@ -1158,10 +1165,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], "World", this.output);
                 var status = await client.WaitForCompletionAsync(this.output);
+                Assert.NotNull(status);
 
-                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
-                Assert.Equal("World", status?.Input);
-                Assert.Equal("Hello, World!", status?.Output);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
+                Assert.Equal("World", status.Input);
+                Assert.Equal("Hello, World!", status.Output);
                 Assert.Equal(retryCount + 1, callCount);
                 await host.StopAsync();
             }
@@ -1212,7 +1220,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var notificationHandler = new EventGridLifeCycleNotificationHelper.HttpRetryMessageHandler(
                 httpHandlerMock.Object,
                 5,
-                TimeSpan.FromMilliseconds(1000),
+                TimeSpan.FromMilliseconds(50),
                 Array.Empty<HttpStatusCode>());
 
             using (ITestHost host = TestHelpers.GetJobHost(
@@ -1228,10 +1236,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], "World", this.output);
                 var status = await client.WaitForCompletionAsync(this.output);
+                Assert.NotNull(status);
 
-                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
-                Assert.Equal("World", status?.Input);
-                Assert.Equal("Hello, World!", status?.Output);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
+                Assert.Equal("World", status.Input);
+                Assert.Equal("Hello, World!", status.Output);
                 Assert.Equal(retryCount + 1, callCount);
                 await host.StopAsync();
             }
@@ -1306,7 +1315,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var notificationHandler = new EventGridLifeCycleNotificationHelper.HttpRetryMessageHandler(
                 httpHandlerMock.Object,
                 5,
-                TimeSpan.FromMilliseconds(1000),
+                TimeSpan.FromMilliseconds(50),
                 new[] { (HttpStatusCode)400, (HttpStatusCode)401, (HttpStatusCode)404 });
 
             using (ITestHost host = TestHelpers.GetJobHost(
@@ -1322,10 +1331,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], "World", this.output);
                 var status = await client.WaitForCompletionAsync(this.output);
+                Assert.NotNull(status);
 
-                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
-                Assert.Equal("World", status?.Input);
-                Assert.Equal("Hello, World!", status?.Output);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
+                Assert.Equal("World", status.Input);
+                Assert.Equal("Hello, World!", status.Output);
                 Assert.Equal(5, callCount);
                 await host.StopAsync();
             }
@@ -1478,6 +1488,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await host.StartAsync();
 
                 var status = await host.StartOrchestratorAsync(nameof(TestOrchestrations.SayHelloInline), null, this.output);
+                Assert.NotNull(status);
 
                 await status.WaitForCompletionAsync(this.output);
 

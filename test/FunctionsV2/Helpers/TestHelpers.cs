@@ -76,9 +76,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 case AzureStorageProviderType:
                 case RedisProviderType:
                 case EmulatorProviderType:
+                case null:
                     break;
                 default:
-                    throw new InvalidOperationException($"Storage provider {storageProviderType} is not supported for testing infrastructure.");
+                    // Allow unrecognized providers (e.g. "empty_storage_provider") so
+                    // tests can verify that the runtime defaults to Azure Storage.
+                    if (!storageProviderType.Contains("empty", StringComparison.OrdinalIgnoreCase))
+                    {
+                        throw new InvalidOperationException($"Storage provider {storageProviderType} is not supported for testing infrastructure.");
+                    }
+
+                    break;
             }
 
             if (options == null)
@@ -110,6 +118,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             };
             options.WebhookUriProviderOverride = () => notificationUrl;
             options.ExtendedSessionsEnabled = enableExtendedSessions;
+
             options.MaxConcurrentOrchestratorFunctions = 200;
             options.MaxConcurrentActivityFunctions = 200;
             options.NotificationHandler = eventGridNotificationHandler;
@@ -566,7 +575,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 case "RewindOrchestration":
                     messages = GetLogs_Rewind_Orchestration(instanceIds[0], orchestratorFunctionNames, activityFunctionName);
                     break;
-                case nameof(DurableTaskEndToEndTests.ActorOrchestration):
+                case nameof(OrchestrationLifecycleTests.ActorOrchestration):
                     messages = GetLogs_ActorOrchestration(instanceIds[0]).ToList();
                     break;
                 default:

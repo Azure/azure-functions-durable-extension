@@ -1,6 +1,0 @@
-{
-  "appDomain": "required",
-  "methodDisplay": "method",
-  "longRunningTestSeconds": 300,
-  "parallelizeTestCollections": false
-}
