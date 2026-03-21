@@ -276,12 +276,12 @@ function StartMSSQLContainer($mssqlPwd) {
 }
 
 function StartDTSContainer() {
-  Write-Host "Pulling down the berndverst/dtsemulator:test5-vanilla image..."
-  docker pull berndverst/dtsemulator:test5-vanilla
+  Write-Host "Pulling down the berndverst/dtsemulator:test6 image..."
+  docker pull berndverst/dtsemulator:test6
 
   # Start the DTS Server docker container with the specified edition
   Write-Host "Starting DTS docker container on port 8080" -ForegroundColor DarkYellow
-  docker run -i -p 8080:8080 -p 8082:8082 -d berndverst/dtsemulator:test5-vanilla
+  docker run -i -p 8080:8080 -p 8082:8082 -d berndverst/dtsemulator:test6
 
   if ($LASTEXITCODE -ne 0) {
       exit $LASTEXITCODE
