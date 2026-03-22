@@ -267,9 +267,32 @@ function StartMSSQLContainer($mssqlPwd) {
       exit $LASTEXITCODE
   }
 
-  # The container needs a bit more time before it can start accepting commands
-  Write-Host "Sleeping for 30 seconds to let the container finish initializing..." -ForegroundColor Yellow
-  Start-Sleep -Seconds 30
+  # Wait for SQL Server to be ready by polling with sqlcmd
+  Write-Host "Waiting for SQL Server to become ready..." -ForegroundColor Yellow
+  $maxAttempts = 30
+  for ($i = 1; $i -le $maxAttempts; $i++) {
+      $result = docker exec mssql-server /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$mssqlPwd" -Q "SELECT 1" -C -b 2>&1
+      if ($LASTEXITCODE -eq 0) {
+          Write-Host "SQL Server is ready after $i seconds." -ForegroundColor Green
+          break
+      }
+      if ($i -eq $maxAttempts) {
+          Write-Error "SQL Server did not become ready within $maxAttempts seconds."
+          docker logs mssql-server 2>&1 | Select-Object -Last 20
+          exit 1
+      }
+      Start-Sleep -Seconds 1
+  }
+
+  # Pre-create the DurableDB database so all language runtimes can use it independently.
+  # Without this, non-dotnet languages may fail if they can't auto-create the database.
+  Write-Host "Creating DurableDB database..." -ForegroundColor Yellow
+  docker exec mssql-server /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$mssqlPwd" -Q "IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = 'DurableDB') CREATE DATABASE DurableDB" -C -b
+  if ($LASTEXITCODE -ne 0) {
+      Write-Error "Failed to create DurableDB database."
+      exit 1
+  }
+  Write-Host "DurableDB database created successfully." -ForegroundColor Green
 
   # Check to see what containers are running
   docker ps
