@@ -27,7 +27,9 @@ public class DedupeStatusesTests
         bool testPending = this.fixture.functionLanguageLocalizer.GetLanguageType() == LanguageType.DotnetIsolated
             || this.fixture.functionLanguageLocalizer.GetLanguageType() == LanguageType.Java;
 
-        // HttpLongRunningOrchestrator (timer-based, no activity spam) is only available in dotnet-isolated
+        // HttpLongRunningOrchestrator (timer-based, no activity spam) is only available in dotnet-isolated.
+        // For other languages, LongRunningOrchestrator is used. Its activity load is isolated because
+        // each language runs in its own CI job with a dedicated emulator instance.
         string longRunningOrch = this.fixture.functionLanguageLocalizer.GetLanguageType() == LanguageType.DotnetIsolated
             ? "HttpLongRunningOrchestrator"
             : "LongRunningOrchestrator";

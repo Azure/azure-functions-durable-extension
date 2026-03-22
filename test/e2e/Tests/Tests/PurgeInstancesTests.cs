@@ -149,7 +149,9 @@ public class PurgeInstancesTests
         bool testPending = this.fixture.functionLanguageLocalizer.GetLanguageType() == LanguageType.DotnetIsolated
             || this.fixture.functionLanguageLocalizer.GetLanguageType() == LanguageType.Java;
 
-        // HttpLongRunningOrchestrator (timer-based, no activity spam) is only available in dotnet-isolated
+        // HttpLongRunningOrchestrator (timer-based, no activity spam) is only available in dotnet-isolated.
+        // For other languages, LongRunningOrchestrator is used. Its activity load is isolated because
+        // each language runs in its own CI job with a dedicated emulator instance.
         string longRunningOrch = this.fixture.functionLanguageLocalizer.GetLanguageType() == LanguageType.DotnetIsolated
             ? "HttpLongRunningOrchestrator"
             : "LongRunningOrchestrator";
@@ -227,7 +229,8 @@ public class PurgeInstancesTests
             completedId,
             this.fixture.functionLanguageLocalizer.GetLanguageType());
 
-        // Clean up non-terminal instances to avoid background load on subsequent tests
+        // Clean up non-terminal instances to avoid background load on subsequent tests.
+        // Terminate may fail for some instances (e.g., already completed), so just log and dispose.
         var cleanups = new List<Task<HttpResponseMessage>>
         {
             HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={runningId}"),
@@ -236,7 +239,11 @@ public class PurgeInstancesTests
         if (testPending)
             cleanups.Add(HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={(await pendingStart!).instanceId}"));
         foreach (var r in await Task.WhenAll(cleanups))
+        {
+            // Best-effort cleanup: log status but don't fail the test if terminate returns non-OK
+            // (instance may have already completed or been purged)
             r.Dispose();
+        }
     }
 
     private async Task<(string instanceId, string statusUri)> StartOrchAndWaitForStatus(
