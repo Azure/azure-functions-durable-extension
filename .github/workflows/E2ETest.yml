@@ -320,7 +320,7 @@ jobs:
 
   e2e-dts:
     runs-on: ubuntu-latest
-    name: e2e-dts (${{ matrix.targetFramework }}, ${{ matrix.language }})
+    name: e2e-dts (${{ matrix.targetFramework }}, ${{ matrix.language.name }})
     strategy:
       fail-fast: false
       matrix:
