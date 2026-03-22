@@ -287,19 +287,20 @@ function StartDTSContainer() {
       exit $LASTEXITCODE
   }
 
-  # Poll the health endpoint instead of a fixed sleep
+  # Poll until the gRPC port is accepting connections instead of a fixed sleep
   Write-Host "Waiting for DTS emulator to become ready..." -ForegroundColor Yellow
-  $maxAttempts = 30
+  $maxAttempts = 60
   for ($i = 1; $i -le $maxAttempts; $i++) {
       try {
-          $response = Invoke-WebRequest -Uri "http://localhost:8081" -TimeoutSec 2 -ErrorAction SilentlyContinue
-          if ($response.StatusCode -eq 200) {
-              Write-Host "DTS emulator is ready after $i seconds." -ForegroundColor Green
-              break
-          }
+          $tcp = New-Object System.Net.Sockets.TcpClient
+          $tcp.Connect("localhost", 8080)
+          $tcp.Close()
+          Write-Host "DTS emulator is ready after $i seconds." -ForegroundColor Green
+          break
       } catch { }
       if ($i -eq $maxAttempts) {
           Write-Error "DTS emulator did not become ready within $maxAttempts seconds."
+          docker logs $(docker ps -q --filter "ancestor=mcr.microsoft.com/dts/dts-emulator:latest") 2>&1 | Select-Object -Last 20
           exit 1
       }
       Start-Sleep -Seconds 1
