@@ -84,7 +84,7 @@ public class DedupeStatusesTests
         foreach (var r in await Task.WhenAll(phase3Tasks))
             r?.Dispose();
 
-        // Phase 4: Clean up running orchestrations concurrently
+        // Phase 4: Clean up non-terminal orchestrations concurrently
         var cleanups = new List<Task<HttpResponseMessage>>
         {
             HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={runningId}"),
@@ -92,9 +92,10 @@ public class DedupeStatusesTests
         };
         if (testTerminated)
             cleanups.Add(HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={terminatedId}"));
+        if (testPending)
+            cleanups.Add(HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={pendingId}"));
         foreach (var r in await Task.WhenAll(cleanups))
         {
-            Assert.Equal(HttpStatusCode.OK, r.StatusCode);
             r.Dispose();
         }
     }

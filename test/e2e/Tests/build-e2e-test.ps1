@@ -310,16 +310,19 @@ function StartDTSContainer() {
       exit $LASTEXITCODE
   }
 
-  # Poll until the gRPC port is accepting connections instead of a fixed sleep
+  # Poll until the emulator port is accepting TCP connections instead of a fixed sleep
   Write-Host "Waiting for DTS emulator to become ready..." -ForegroundColor Yellow
   $maxAttempts = 60
   for ($i = 1; $i -le $maxAttempts; $i++) {
       try {
           $tcp = New-Object System.Net.Sockets.TcpClient
-          $tcp.Connect("localhost", 8080)
-          $tcp.Close()
-          Write-Host "DTS emulator is ready after $i seconds." -ForegroundColor Green
-          break
+          try {
+              $tcp.Connect("localhost", 8080)
+              Write-Host "DTS emulator is ready after $i seconds." -ForegroundColor Green
+              break
+          } finally {
+              $tcp.Dispose()
+          }
       } catch { }
       if ($i -eq $maxAttempts) {
           Write-Error "DTS emulator did not become ready within $maxAttempts seconds."
