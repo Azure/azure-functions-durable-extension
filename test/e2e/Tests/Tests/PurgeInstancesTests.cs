@@ -226,6 +226,17 @@ public class PurgeInstancesTests
             "PurgeInstances",
             completedId,
             this.fixture.functionLanguageLocalizer.GetLanguageType());
+
+        // Clean up non-terminal instances to avoid background load on subsequent tests
+        var cleanups = new List<Task<HttpResponseMessage>>
+        {
+            HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={runningId}"),
+            HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={suspId}"),
+        };
+        if (testPending)
+            cleanups.Add(HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={(await pendingStart!).instanceId}"));
+        foreach (var r in await Task.WhenAll(cleanups))
+            r.Dispose();
     }
 
     private async Task<(string instanceId, string statusUri)> StartOrchAndWaitForStatus(

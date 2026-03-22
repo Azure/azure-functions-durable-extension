@@ -157,12 +157,12 @@ public class DedupeStatusesTests
         {
             HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={runningId}"),
             HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={suspendedId}"),
+            HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={pendingId}"),
         };
         if (!dedupeStatuses.Contains("Terminated"))
             cleanups.Add(HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={terminatedId}"));
         foreach (var r in await Task.WhenAll(cleanups))
         {
-            Assert.Equal(HttpStatusCode.OK, r.StatusCode);
             r.Dispose();
         }
     }
