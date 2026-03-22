@@ -149,12 +149,17 @@ public class PurgeInstancesTests
         bool testPending = this.fixture.functionLanguageLocalizer.GetLanguageType() == LanguageType.DotnetIsolated
             || this.fixture.functionLanguageLocalizer.GetLanguageType() == LanguageType.Java;
 
+        // HttpLongRunningOrchestrator (timer-based, no activity spam) is only available in dotnet-isolated
+        string longRunningOrch = this.fixture.functionLanguageLocalizer.GetLanguageType() == LanguageType.DotnetIsolated
+            ? "HttpLongRunningOrchestrator"
+            : "LongRunningOrchestrator";
+
         // Phase 1: Start all orchestrations and wait for initial states concurrently
         var completedStart = StartOrchAndWaitForStatus("HelloCities", "Completed");
         var failedStart = StartOrchAndWaitForStatus("HelloActivityDIFailure", "Failed");
-        var terminatedStart = testTerminated ? StartOrchAndWaitForStatus("HttpLongRunningOrchestrator", "Running") : null;
-        var runningStart = StartOrchAndWaitForStatus("HttpLongRunningOrchestrator", "Running");
-        var suspendedStart = StartOrchAndWaitForStatus("HttpLongRunningOrchestrator", "Running");
+        var terminatedStart = testTerminated ? StartOrchAndWaitForStatus(longRunningOrch, "Running") : null;
+        var runningStart = StartOrchAndWaitForStatus(longRunningOrch, "Running");
+        var suspendedStart = StartOrchAndWaitForStatus(longRunningOrch, "Running");
         Task<(string instanceId, string statusUri)>? pendingStart = testPending
             ? StartOrchAndWaitForStatus("HelloCities", "Pending", scheduledStartTime: DateTime.UtcNow + TimeSpan.FromMinutes(1))
             : null;
@@ -201,8 +206,14 @@ public class PurgeInstancesTests
         };
         if (testPending)
             nonTerminalPurgeTasks.Add(HttpHelpers.InvokeHttpTrigger("PurgeOrchestrationHistory", $"?instanceId={(await pendingStart!).instanceId}"));
-        foreach (var response in await Task.WhenAll(nonTerminalPurgeTasks))
-            AssertFailedPurgeResponseStatusCode(response);
+        var nonTerminalResponses = await Task.WhenAll(nonTerminalPurgeTasks);
+        foreach (var response in nonTerminalResponses)
+        {
+            using (response)
+            {
+                AssertFailedPurgeResponseStatusCode(response);
+            }
+        }
 
         // Verify log assertions for the completed instance
         ClientOperationLogHelpers.AssertClientOperationLogExists(
@@ -225,7 +236,7 @@ public class PurgeInstancesTests
         if (scheduledStartTime is not null)
         {
             functionName = "HelloCities_HttpStart_Scheduled";
-            queryParams = $"?ScheduledStartTime={scheduledStartTime:o}";
+            queryParams = $"?orchestrationName={orchestrationName}&ScheduledStartTime={scheduledStartTime:o}";
         }
 
         using var response = await HttpHelpers.InvokeHttpTrigger(functionName, queryParams);
