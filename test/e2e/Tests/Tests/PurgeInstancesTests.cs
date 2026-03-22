@@ -155,43 +155,21 @@ public class PurgeInstancesTests
         string longRunningOrch = this.fixture.functionLanguageLocalizer.GetLanguageType() == LanguageType.DotnetIsolated
             ? "HttpLongRunningOrchestrator"
             : "LongRunningOrchestrator";
-        bool canParallelize = this.fixture.functionLanguageLocalizer.GetLanguageType() == LanguageType.DotnetIsolated;
 
-        // Phase 1: Start orchestrations and wait for initial states.
-        // Fast orchestrations always run concurrently. Long-running ones are sequential for non-dotnet
-        // to avoid overwhelming the function host with 100K-activity LongRunningOrchestrator instances.
+        // Phase 1: Start all orchestrations and wait for initial states concurrently
         var completedStart = StartOrchAndWaitForStatus("HelloCities", "Completed");
         var failedStart = StartOrchAndWaitForStatus("HelloActivityDIFailure", "Failed");
-
-        Task<(string instanceId, string statusUri)>? terminatedStart, pendingStart;
-        (string instanceId, string statusUri) runningResult, suspendedResult;
-
-        if (canParallelize)
-        {
-            var longTasks = new List<Task<(string, string)>>
-            {
-                StartOrchAndWaitForStatus(longRunningOrch, "Running"),
-                StartOrchAndWaitForStatus(longRunningOrch, "Running"),
-            };
-            terminatedStart = testTerminated ? StartOrchAndWaitForStatus(longRunningOrch, "Running") : null;
-            if (terminatedStart != null) longTasks.Add(terminatedStart);
-            var longResults = await Task.WhenAll(longTasks);
-            runningResult = longResults[0];
-            suspendedResult = longResults[1];
-        }
-        else
-        {
-            runningResult = await StartOrchAndWaitForStatus(longRunningOrch, "Running");
-            suspendedResult = await StartOrchAndWaitForStatus(longRunningOrch, "Running");
-            terminatedStart = testTerminated ? StartOrchAndWaitForStatus(longRunningOrch, "Running") : null;
-            if (terminatedStart != null) await terminatedStart;
-        }
-        pendingStart = testPending
+        var terminatedStart = testTerminated ? StartOrchAndWaitForStatus(longRunningOrch, "Running") : null;
+        var runningStart = StartOrchAndWaitForStatus(longRunningOrch, "Running");
+        var suspendedStart = StartOrchAndWaitForStatus(longRunningOrch, "Running");
+        Task<(string instanceId, string statusUri)>? pendingStart = testPending
             ? StartOrchAndWaitForStatus("HelloCities", "Pending", scheduledStartTime: DateTime.UtcNow + TimeSpan.FromMinutes(1))
             : null;
 
-        // Ensure fast orchestrations are done
-        await Task.WhenAll(new[] { completedStart, failedStart, pendingStart! }.Where(t => t != null));
+        var phase1Tasks = new List<Task> { completedStart, failedStart, runningStart, suspendedStart };
+        if (terminatedStart != null) phase1Tasks.Add(terminatedStart);
+        if (pendingStart != null) phase1Tasks.Add(pendingStart);
+        await Task.WhenAll(phase1Tasks);
 
         // Phase 2: Apply transitions concurrently (terminate, suspend)
         var transitions = new List<Task>();
@@ -200,14 +178,14 @@ public class PurgeInstancesTests
             var (termId, termUri) = await terminatedStart!;
             transitions.Add(TerminateAndWaitForStatus(termId, termUri));
         }
-        var (suspId, suspUri) = suspendedResult;
+        var (suspId, suspUri) = await suspendedStart;
         transitions.Add(SuspendAndWaitForStatus(suspId, suspUri));
         await Task.WhenAll(transitions);
 
         // Phase 3: Test purge behavior — terminal states should succeed, non-terminal should fail
         var (completedId, _) = await completedStart;
         var (failedId, _) = await failedStart;
-        var (runningId, _) = runningResult;
+        var (runningId, _) = await runningStart;
 
         // Terminal state purges (can run concurrently)
         var terminalPurgeTasks = new List<Task>();

@@ -146,21 +146,13 @@ jobs:
 
   e2e-mssql:
     runs-on: ubuntu-latest
-    name: e2e-mssql (${{ matrix.targetFramework }}, ${{ matrix.language.name }})
+    name: e2e-mssql (${{ matrix.targetFramework }})
     strategy:
       fail-fast: false
       matrix:
         targetFramework: [net8.0, net10.0]
-        language:
-          - { name: dotnet-isolated, app: BasicDotNetIsolated, filter: 'MSSQL!=Skip&Dotnet!=Skip&Dotnet-MSSQL!=Skip' }
-          - { name: powershell, app: BasicPowerShell, filter: 'MSSQL!=Skip&PowerShell!=Skip&PowerShell-MSSQL!=Skip' }
-          - { name: python, app: BasicPython, filter: 'MSSQL!=Skip&Python!=Skip&Python-MSSQL!=Skip' }
-          - { name: node, app: BasicNode, filter: 'MSSQL!=Skip&Node!=Skip&Node-MSSQL!=Skip' }
-          - { name: java, app: BasicJava, filter: 'MSSQL!=Skip&Java!=Skip&Java-MSSQL!=Skip' }
     env:
       E2E_TEST_DURABLE_BACKEND: "MSSQL"
-      E2E_TEST_FUNCTIONS_LANGUAGE: ${{ matrix.language.name }}
-      TEST_APP_NAME: ${{ matrix.language.app }}
     steps:
       - uses: actions/checkout@v4
 
@@ -180,13 +172,11 @@ jobs:
           node-version: '20.x'
           
       - name: Set up Python
-        if: matrix.language.name == 'python'
         uses: actions/setup-python@v2
         with:
           python-version: 3.13
 
       - name: Set up JDK 17
-        if: matrix.language.name == 'java'
         uses: actions/setup-java@v4
         with:
           java-version: '17'
@@ -200,15 +190,61 @@ jobs:
       - name: Setup E2E tests
         shell: pwsh
         run: |
-          .\test\e2e\Tests\build-e2e-test.ps1 -StartMSSqlContainer -E2EAppName ${{ matrix.language.app }} -TargetFramework ${{ matrix.targetFramework }}
+          .\test\e2e\Tests\build-e2e-test.ps1 -StartMSSqlContainer -TargetFramework ${{ matrix.targetFramework }}
 
       - name: Build Test Project
         working-directory: test/e2e/Tests
         run: dotnet build -f ${{ matrix.targetFramework }}
 
-      - name: Run E2E tests (${{ matrix.language.name }})
+      - name: Setup Environment for dotnet
+        shell: pwsh
+        run: |
+          Add-Content -Path $env:GITHUB_ENV -Value "E2E_TEST_FUNCTIONS_LANGUAGE=dotnet-isolated"
+          Add-Content -Path $env:GITHUB_ENV -Value "TEST_APP_NAME=BasicDotNetIsolated"
+
+      - name: Run E2E tests (dotnet-isolated)
         working-directory: test/e2e/Tests
-        run: dotnet test -f ${{ matrix.targetFramework }} --filter '${{ matrix.language.filter }}'
+        run: dotnet test -f ${{ matrix.targetFramework }} --filter 'MSSQL!=Skip&Dotnet!=Skip&Dotnet-MSSQL!=Skip'
+
+      - name: Setup Environment for PowerShell
+        shell: pwsh
+        run: |
+          Add-Content -Path $env:GITHUB_ENV -Value "E2E_TEST_FUNCTIONS_LANGUAGE=powershell"
+          Add-Content -Path $env:GITHUB_ENV -Value "TEST_APP_NAME=BasicPowerShell"
+
+      - name: Run E2E tests (PowerShell)
+        working-directory: test/e2e/Tests
+        run: dotnet test -f ${{ matrix.targetFramework }} --filter 'MSSQL!=Skip&PowerShell!=Skip&PowerShell-MSSQL!=Skip'
+
+      - name: Setup Environment for Python
+        shell: pwsh
+        run: |
+          Add-Content -Path $env:GITHUB_ENV -Value "E2E_TEST_FUNCTIONS_LANGUAGE=python"
+          Add-Content -Path $env:GITHUB_ENV -Value "TEST_APP_NAME=BasicPython"
+
+      - name: Run E2E tests (Python)
+        working-directory: test/e2e/Tests
+        run: dotnet test -f ${{ matrix.targetFramework }} --filter 'MSSQL!=Skip&Python!=Skip&Python-MSSQL!=Skip'
+
+      - name: Setup Environment for Node
+        shell: pwsh
+        run: |
+          Add-Content -Path $env:GITHUB_ENV -Value "E2E_TEST_FUNCTIONS_LANGUAGE=node"
+          Add-Content -Path $env:GITHUB_ENV -Value "TEST_APP_NAME=BasicNode"
+
+      - name: Run E2E tests (Node)
+        working-directory: test/e2e/Tests
+        run: dotnet test -f ${{ matrix.targetFramework }} --filter 'MSSQL!=Skip&Node!=Skip&Node-MSSQL!=Skip'
+
+      - name: Setup Environment for Java
+        shell: pwsh
+        run: |
+          Add-Content -Path $env:GITHUB_ENV -Value "E2E_TEST_FUNCTIONS_LANGUAGE=java"
+          Add-Content -Path $env:GITHUB_ENV -Value "TEST_APP_NAME=BasicJava"
+
+      - name: Run E2E tests (Java)
+        working-directory: test/e2e/Tests
+        run: dotnet test -f ${{ matrix.targetFramework }} --filter 'MSSQL!=Skip&Java!=Skip&Java-MSSQL!=Skip'
 
   e2e-dts:
     runs-on: ubuntu-latest
