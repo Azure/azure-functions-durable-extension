@@ -287,9 +287,22 @@ function StartDTSContainer() {
       exit $LASTEXITCODE
   }
 
-  # The container needs a bit more time before it can start accepting commands
-  Write-Host "Sleeping for 30 seconds to let the container finish initializing..." -ForegroundColor Yellow
-  Start-Sleep -Seconds 30
+  # Poll the health endpoint instead of a fixed sleep
+  Write-Host "Waiting for DTS emulator to become ready..." -ForegroundColor Yellow
+  $maxAttempts = 30
+  for ($i = 1; $i -le $maxAttempts; $i++) {
+      try {
+          $response = Invoke-WebRequest -Uri "http://localhost:8081" -TimeoutSec 2 -ErrorAction SilentlyContinue
+          if ($response.StatusCode -eq 200) {
+              Write-Host "DTS emulator is ready after $i seconds." -ForegroundColor Green
+              break
+          }
+      } catch { }
+      if ($i -eq $maxAttempts) {
+          Write-Warning "DTS emulator did not become ready within $maxAttempts seconds. Proceeding anyway."
+      }
+      Start-Sleep -Seconds 1
+  }
 
   # Check to see what containers are running
   docker ps
