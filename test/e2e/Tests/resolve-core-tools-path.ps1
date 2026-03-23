@@ -4,7 +4,7 @@
 # Licensed under the MIT license. See LICENSE file in the project root for full license information.
 #
 # Resolves the Core Tools version and directory path used by the E2E tests.
-# Outputs two variables: $CORE_TOOLS_VERSION and $FUNC_CLI_DIRECTORY.
+# When dot-sourced, sets two variables in the caller's scope: $CORE_TOOLS_VERSION and $FUNC_CLI_DIRECTORY.
 # The version is read from the CORE_TOOLS_VERSION environment variable when set,
 # otherwise it falls back to the default defined here.
 
