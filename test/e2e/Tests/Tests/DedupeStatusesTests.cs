@@ -20,6 +20,7 @@ public class DedupeStatusesTests
     }
 
     [Fact]
+    [Trait("Java", "Skip")] // Bug makes test flaky: https://github.com/microsoft/durabletask-java/issues/237
     public async Task CanStartOrchestration_WithSameId_ForAllStatuses_ForEmptyDedupeStatuses()
     {
         bool testTerminated = this.fixture.functionLanguageLocalizer.GetLanguageType() != LanguageType.Java

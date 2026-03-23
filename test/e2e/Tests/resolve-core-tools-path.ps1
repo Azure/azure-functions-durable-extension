@@ -12,7 +12,7 @@ $CORE_TOOLS_VERSION = if ($env:CORE_TOOLS_VERSION) {
   Write-Host "Using CORE_TOOLS_VERSION from environment: $env:CORE_TOOLS_VERSION"
   $env:CORE_TOOLS_VERSION
 } else {
-  '4.7.0'
+  '4.8.0'
 }
 
 $ProjectTemporaryPath = Join-Path ([System.IO.Path]::GetTempPath()) 'DurableTaskExtensionE2ETests'
