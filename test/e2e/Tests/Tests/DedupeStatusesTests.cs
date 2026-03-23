@@ -22,75 +22,101 @@ public class DedupeStatusesTests
     [Fact]
     public async Task CanStartOrchestration_WithSameId_ForAllStatuses_ForEmptyDedupeStatuses()
     {
-        HttpResponseMessage terminateResponse;
+        bool testTerminated = this.fixture.functionLanguageLocalizer.GetLanguageType() != LanguageType.Java
+            || this.fixture.GetDurabilityProvider() != FunctionAppFixture.ConfiguredDurabilityProviderType.MSSQL;
+        bool testPending = this.fixture.functionLanguageLocalizer.GetLanguageType() == LanguageType.DotnetIsolated
+            || this.fixture.functionLanguageLocalizer.GetLanguageType() == LanguageType.Java;
 
+        // HttpLongRunningOrchestrator (timer-based, no activity spam) is only available in dotnet-isolated.
+        // For other languages, LongRunningOrchestrator is used for this test scenario.
+        string longRunningOrch = this.fixture.functionLanguageLocalizer.GetLanguageType() == LanguageType.DotnetIsolated
+            ? "HttpLongRunningOrchestrator"
+            : "LongRunningOrchestrator";
+
+        string completedId = Guid.NewGuid().ToString();
+        string failedId = Guid.NewGuid().ToString();
+        string terminatedId = Guid.NewGuid().ToString();
+        string runningId = Guid.NewGuid().ToString();
+        string suspendedId = Guid.NewGuid().ToString();
+        string pendingId = Guid.NewGuid().ToString();
+
+        // Phase 1: Start all first-attempt orchestrations and wait for initial states concurrently
         // Completed
-        string completedInstanceId = Guid.NewGuid().ToString();
-        using HttpResponseMessage startCompletedResponseFirstAttempt = await StartAndWaitForState(
-            "HelloCities", completedInstanceId, "Completed");
-        using HttpResponseMessage startCompletedResponseSecondAttempt = await StartAndWaitForState(
-            "HelloCities", completedInstanceId, "Completed");
-
-        // Failed
-        // This invocation will fail because the "LargeOutputOrchestrator" expects a non-zero input, but we provide none
-        string failedInstanceId = Guid.NewGuid().ToString();
-        using HttpResponseMessage startFailedResponseFirstAttempt = await StartAndWaitForState(
-            "LargeOutputOrchestrator", failedInstanceId, "Failed");
-        using HttpResponseMessage startFailedResponseSecondAttempt = await StartAndWaitForState(
-            "LargeOutputOrchestrator", failedInstanceId, "Failed");
-
-        // Terminated
-        if (this.fixture.functionLanguageLocalizer.GetLanguageType() != LanguageType.Java
-            || this.fixture.GetDurabilityProvider() != FunctionAppFixture.ConfiguredDurabilityProviderType.MSSQL) // Bug: https://github.com/microsoft/durabletask-java/issues/237
-        {
-            string terminatedInstanceId = Guid.NewGuid().ToString();
-            using HttpResponseMessage startTerminatedResponseFirstAttempt = await StartAndWaitForState(
-                "LongRunningOrchestrator", terminatedInstanceId, "Running");
-            await TerminateAndWaitForState(terminatedInstanceId, startTerminatedResponseFirstAttempt);
-            using HttpResponseMessage startTerminatedResponseSecondAttempt = await StartAndWaitForState(
-                "LongRunningOrchestrator", terminatedInstanceId, "Running");
-            // Clean-up
-            terminateResponse = await HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={terminatedInstanceId}");
-            Assert.Equal(HttpStatusCode.OK, terminateResponse.StatusCode);
-            terminateResponse.Dispose();
-        }
-
-        // Pending
-        // Scheduled start times are currently only implemented in Java and .NET isolated, which is the only true way
-        // to get an orchestration in a "Pending" state
-        if (this.fixture.functionLanguageLocalizer.GetLanguageType() == LanguageType.DotnetIsolated
-            || this.fixture.functionLanguageLocalizer.GetLanguageType() == LanguageType.Java)
-        {
-            string pendingInstanceId = Guid.NewGuid().ToString();
-            DateTime scheduledStartTime = DateTime.UtcNow.AddMinutes(10);
-            using HttpResponseMessage startPendingResponseFirstAttempt = await StartAndWaitForState(
-                "HelloCities", pendingInstanceId, "Pending", scheduledStartTime: scheduledStartTime);
-            using HttpResponseMessage startPendingResponseSecondAttempt = await StartAndWaitForState(
-                "HelloCities", pendingInstanceId, "Completed");
-        }
-
+        var completedFirst = StartAndWaitForState("HelloCities", completedId, "Completed");
+        // Failed — "LargeOutputOrchestrator" expects a non-zero input, but we provide none
+        var failedFirst = StartAndWaitForState("LargeOutputOrchestrator", failedId, "Failed");
         // Running
-        string runningInstanceId = Guid.NewGuid().ToString();
-        using HttpResponseMessage startRunningResponseFirstAttempt = await StartAndWaitForState(
-            "LongRunningOrchestrator", runningInstanceId, "Running");
-        using HttpResponseMessage startRunningResponseSecondAttempt = await StartAndWaitForState(
-            "LongRunningOrchestrator", runningInstanceId, "Running");
-        // Clean-up
-        terminateResponse = await HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={runningInstanceId}");
-        Assert.Equal(HttpStatusCode.OK, terminateResponse.StatusCode);
-        terminateResponse.Dispose();
+        var runningFirst = StartAndWaitForState(longRunningOrch, runningId, "Running");
+        // Suspended (starts as Running, transitioned in Phase 2)
+        var suspendedFirst = StartAndWaitForState(longRunningOrch, suspendedId, "Running");
+        // Terminated (starts as Running, transitioned in Phase 2)
+        var terminatedFirst = testTerminated
+            ? StartAndWaitForState(longRunningOrch, terminatedId, "Running")
+            : Task.FromResult<HttpResponseMessage>(null!);
+        // Pending — scheduled start times are currently only implemented in Java and .NET isolated,
+        // which is the only true way to get an orchestration in a "Pending" state
+        var pendingFirst = testPending
+            ? StartAndWaitForState("HelloCities", pendingId, "Pending", scheduledStartTime: DateTime.UtcNow.AddMinutes(10))
+            : Task.FromResult<HttpResponseMessage>(null!);
+        await Task.WhenAll(completedFirst, failedFirst, runningFirst, suspendedFirst, terminatedFirst, pendingFirst);
 
-        // Suspended
-        string suspendedInstanceId = Guid.NewGuid().ToString();
-        using HttpResponseMessage startSuspendedResponseFirstAttempt = await StartAndWaitForState(
-            "LongRunningOrchestrator", suspendedInstanceId, "Running");
-        await SuspendAndWaitForState(suspendedInstanceId, startSuspendedResponseFirstAttempt);
-        using HttpResponseMessage startSuspendedResponseSecondAttempt = await StartAndWaitForState(
-            "LongRunningOrchestrator", suspendedInstanceId, "Running");
-        // Clean-up
-        terminateResponse = await HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={suspendedInstanceId}");
-        Assert.Equal(HttpStatusCode.OK, terminateResponse.StatusCode);
-        terminateResponse.Dispose();
+        // Phase 2: Apply state transitions concurrently
+        var transitions = new List<Task>();
+        if (testTerminated)
+            transitions.Add(TerminateAndWaitForState(terminatedId, await terminatedFirst));
+        transitions.Add(SuspendAndWaitForState(suspendedId, await suspendedFirst));
+        await Task.WhenAll(transitions);
+
+        // Dispose Phase 1 responses (no longer needed after extracting statusQueryGetUri)
+        (await completedFirst)?.Dispose();
+        (await failedFirst)?.Dispose();
+        (await runningFirst)?.Dispose();
+        (await suspendedFirst)?.Dispose();
+        (await terminatedFirst)?.Dispose();
+        (await pendingFirst)?.Dispose();
+
+        // Phase 3: Start all second-attempt orchestrations concurrently (verify restart works)
+        var phase3Tasks = new List<Task<HttpResponseMessage>>
+        {
+            // Completed
+            StartAndWaitForState("HelloCities", completedId, "Completed"),
+            // Failed — "LargeOutputOrchestrator" expects a non-zero input, but we provide none
+            StartAndWaitForState("LargeOutputOrchestrator", failedId, "Failed"),
+            // Running
+            StartAndWaitForState(longRunningOrch, runningId, "Running"),
+            // Suspended
+            StartAndWaitForState(longRunningOrch, suspendedId, "Running"),
+        };
+        // Terminated
+        if (testTerminated)
+            phase3Tasks.Add(StartAndWaitForState(longRunningOrch, terminatedId, "Running"));
+        // Pending
+        if (testPending)
+            phase3Tasks.Add(StartAndWaitForState("HelloCities", pendingId, "Completed"));
+        foreach (var r in await Task.WhenAll(phase3Tasks))
+            r?.Dispose();
+
+        // Phase 4: Clean up non-terminal orchestrations concurrently
+        var cleanups = new List<Task<HttpResponseMessage>>
+        {
+            HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={runningId}"),
+            HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={suspendedId}"),
+        };
+        if (testTerminated)
+            cleanups.Add(HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={terminatedId}"));
+        if (testPending)
+            cleanups.Add(HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={pendingId}"));
+        foreach (var r in await Task.WhenAll(cleanups))
+        {
+            using (r)
+            {
+                if (r.StatusCode != HttpStatusCode.OK)
+                {
+                    this.output.WriteLine(
+                        $"TerminateInstance cleanup returned status code {r.StatusCode} for request {r.RequestMessage?.RequestUri}");
+                }
+            }
+        }
     }
 
     [Theory]
@@ -102,92 +128,84 @@ public class DedupeStatusesTests
     [InlineData("Pending", "Failed")]
     public async Task StartOrchestration_WithSameId_FailsIfExistingStatus_InDedupeStatuses(params string[] dedupeStatuses)
     {
-        HttpResponseMessage terminateResponse;
+        // This test is dotnet-isolated only (Java/PowerShell/Python/Node are skipped via traits)
+        string longRunningOrch = "HttpLongRunningOrchestrator";
 
+        string completedId = Guid.NewGuid().ToString();
+        string failedId = Guid.NewGuid().ToString();
+        string terminatedId = Guid.NewGuid().ToString();
+        string runningId = Guid.NewGuid().ToString();
+        string suspendedId = Guid.NewGuid().ToString();
+        string pendingId = Guid.NewGuid().ToString();
+
+        // Phase 1: Start all first-attempt orchestrations concurrently
         // Completed
-        string completedInstanceId = Guid.NewGuid().ToString();
-        using HttpResponseMessage startCompletedResponseFirstAttempt = await StartAndWaitForStateWithDedupeStatuses(
-            "HelloCities", completedInstanceId, "Completed", dedupeStatuses);
-        using HttpResponseMessage startCompletedResponseSecondAttempt = await StartAndWaitForStateWithDedupeStatuses(
-            "HelloCities",
-            completedInstanceId,
-            "Completed",
-            dedupeStatuses,
-            expectedCode: dedupeStatuses.Contains("Completed") ? HttpStatusCode.Conflict : HttpStatusCode.Accepted);
-
-        // Terminated
-        string terminatedInstanceId = Guid.NewGuid().ToString();
-        using HttpResponseMessage startTerminatedResponseFirstAttempt = await StartAndWaitForStateWithDedupeStatuses(
-            "LongRunningOrchestrator", terminatedInstanceId, "Running", dedupeStatuses);
-        await TerminateAndWaitForState(terminatedInstanceId, startTerminatedResponseFirstAttempt);
-        using HttpResponseMessage startTerminatedResponseSecondAttempt = await StartAndWaitForStateWithDedupeStatuses(
-            "LongRunningOrchestrator",
-            terminatedInstanceId,
-            "Running",
-            dedupeStatuses,
-            expectedCode: dedupeStatuses.Contains("Terminated") ? HttpStatusCode.Conflict : HttpStatusCode.Accepted);
-        // Clean-up
-        if (!dedupeStatuses.Contains("Terminated"))
-        {
-            terminateResponse = await HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={terminatedInstanceId}");
-            Assert.Equal(HttpStatusCode.OK, terminateResponse.StatusCode);
-            terminateResponse.Dispose();
-        }
-
-        // Failed
-        // This invocation will fail because the "LargeOutputOrchestrator" expects a non-zero input, but we provide none
-        string failedInstanceId = Guid.NewGuid().ToString();
-        using HttpResponseMessage startFailedResponseFirstAttempt = await StartAndWaitForStateWithDedupeStatuses(
-            "LargeOutputOrchestrator", failedInstanceId, "Failed", dedupeStatuses);
-        using HttpResponseMessage startFailedResponseSecondAttempt = await StartAndWaitForStateWithDedupeStatuses(
-            "LargeOutputOrchestrator",
-            failedInstanceId,
-            "Failed",
-            dedupeStatuses,
-            expectedCode: dedupeStatuses.Contains("Failed") ? HttpStatusCode.Conflict : HttpStatusCode.Accepted);
-
-        // Pending
-        string pendingInstanceId = Guid.NewGuid().ToString();
-        DateTime scheduledStartTime = DateTime.UtcNow.AddMinutes(10);
-        using HttpResponseMessage startPendingResponseFirstAttempt = await StartAndWaitForStateWithDedupeStatuses(
-            "HelloCities", pendingInstanceId, "Pending", dedupeStatuses, scheduledStartTime: scheduledStartTime);
-        using HttpResponseMessage startPendingResponseSecondAttempt = await StartAndWaitForStateWithDedupeStatuses(
-            "HelloCities",
-            pendingInstanceId,
-            "Completed",
-            dedupeStatuses,
-            expectedCode: dedupeStatuses.Contains("Pending") ? HttpStatusCode.Conflict : HttpStatusCode.Accepted);
-
+        var completedFirst = StartAndWaitForStateWithDedupeStatuses("HelloCities", completedId, "Completed", dedupeStatuses);
+        // Failed — "LargeOutputOrchestrator" expects a non-zero input, but we provide none
+        var failedFirst = StartAndWaitForStateWithDedupeStatuses("LargeOutputOrchestrator", failedId, "Failed", dedupeStatuses);
+        // Terminated (starts as Running, transitioned in Phase 2)
+        var terminatedFirst = StartAndWaitForStateWithDedupeStatuses(longRunningOrch, terminatedId, "Running", dedupeStatuses);
         // Running
-        string runningInstanceId = Guid.NewGuid().ToString();
-        using HttpResponseMessage startRunningResponseFirstAttempt = await StartAndWaitForStateWithDedupeStatuses(
-            "LongRunningOrchestrator", runningInstanceId, "Running", dedupeStatuses);
-        using HttpResponseMessage startRunningResponseSecondAttempt = await StartAndWaitForStateWithDedupeStatuses(
-            "LongRunningOrchestrator",
-            runningInstanceId,
-            expectedState: "Running",
-            dedupeStatuses,
-            expectedCode: dedupeStatuses.Contains("Running") ? HttpStatusCode.Conflict : HttpStatusCode.Accepted);
-        // Clean-up
-        terminateResponse = await HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={runningInstanceId}");
-        Assert.Equal(HttpStatusCode.OK, terminateResponse.StatusCode);
-        terminateResponse.Dispose();
+        var runningFirst = StartAndWaitForStateWithDedupeStatuses(longRunningOrch, runningId, "Running", dedupeStatuses);
+        // Suspended (starts as Running, transitioned in Phase 2)
+        var suspendedFirst = StartAndWaitForStateWithDedupeStatuses(longRunningOrch, suspendedId, "Running", dedupeStatuses);
+        // Pending
+        var pendingFirst = StartAndWaitForStateWithDedupeStatuses(
+            "HelloCities", pendingId, "Pending", dedupeStatuses, scheduledStartTime: DateTime.UtcNow.AddMinutes(10));
+        await Task.WhenAll(completedFirst, failedFirst, terminatedFirst, runningFirst, suspendedFirst, pendingFirst);
 
-        // Suspended
-        string suspendedInstanceId = Guid.NewGuid().ToString();
-        using HttpResponseMessage startSuspendedResponseFirstAttempt = await StartAndWaitForStateWithDedupeStatuses(
-            "LongRunningOrchestrator", suspendedInstanceId, "Running", dedupeStatuses);
-        await SuspendAndWaitForState(suspendedInstanceId, startSuspendedResponseFirstAttempt);
-        using HttpResponseMessage startSuspendedResponseSecondAttempt = await StartAndWaitForStateWithDedupeStatuses(
-            "LongRunningOrchestrator",
-            suspendedInstanceId,
-            "Running",
-            dedupeStatuses,
-            expectedCode: dedupeStatuses.Contains("Suspended") ? HttpStatusCode.Conflict : HttpStatusCode.Accepted);
-        // Clean-up
-        terminateResponse = await HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={suspendedInstanceId}");
-        Assert.Equal(HttpStatusCode.OK, terminateResponse.StatusCode);
-        terminateResponse.Dispose();
+        // Phase 2: Apply state transitions concurrently
+        await Task.WhenAll(
+            TerminateAndWaitForState(terminatedId, await terminatedFirst),
+            SuspendAndWaitForState(suspendedId, await suspendedFirst));
+
+        // Dispose Phase 1 responses
+        foreach (var t in new Task<HttpResponseMessage>[] { completedFirst, failedFirst, terminatedFirst, runningFirst, suspendedFirst, pendingFirst })
+            (await t)?.Dispose();
+
+        // Phase 3: Start all second-attempt orchestrations concurrently (check dedupe behavior)
+        var phase3 = await Task.WhenAll(
+            // Completed
+            StartAndWaitForStateWithDedupeStatuses("HelloCities", completedId, "Completed", dedupeStatuses,
+                expectedCode: dedupeStatuses.Contains("Completed") ? HttpStatusCode.Conflict : HttpStatusCode.Accepted),
+            // Failed — "LargeOutputOrchestrator" expects a non-zero input, but we provide none
+            StartAndWaitForStateWithDedupeStatuses("LargeOutputOrchestrator", failedId, "Failed", dedupeStatuses,
+                expectedCode: dedupeStatuses.Contains("Failed") ? HttpStatusCode.Conflict : HttpStatusCode.Accepted),
+            // Terminated
+            StartAndWaitForStateWithDedupeStatuses(longRunningOrch, terminatedId, "Running", dedupeStatuses,
+                expectedCode: dedupeStatuses.Contains("Terminated") ? HttpStatusCode.Conflict : HttpStatusCode.Accepted),
+            // Running
+            StartAndWaitForStateWithDedupeStatuses(longRunningOrch, runningId, "Running", dedupeStatuses,
+                expectedCode: dedupeStatuses.Contains("Running") ? HttpStatusCode.Conflict : HttpStatusCode.Accepted),
+            // Suspended
+            StartAndWaitForStateWithDedupeStatuses(longRunningOrch, suspendedId, "Running", dedupeStatuses,
+                expectedCode: dedupeStatuses.Contains("Suspended") ? HttpStatusCode.Conflict : HttpStatusCode.Accepted),
+            // Pending
+            StartAndWaitForStateWithDedupeStatuses("HelloCities", pendingId, "Completed", dedupeStatuses,
+                expectedCode: dedupeStatuses.Contains("Pending") ? HttpStatusCode.Conflict : HttpStatusCode.Accepted));
+        foreach (var r in phase3)
+            r?.Dispose();
+
+        // Phase 4: Clean up running orchestrations concurrently
+        var cleanups = new List<Task<HttpResponseMessage>>
+        {
+            HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={runningId}"),
+            HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={suspendedId}"),
+            HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={pendingId}"),
+        };
+        if (!dedupeStatuses.Contains("Terminated"))
+            cleanups.Add(HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={terminatedId}"));
+        foreach (var r in await Task.WhenAll(cleanups))
+        {
+            using (r)
+            {
+                if (r.StatusCode != HttpStatusCode.OK)
+                {
+                    this.output.WriteLine(
+                        $"TerminateInstance cleanup returned status code {r.StatusCode} for request {r.RequestMessage?.RequestUri}");
+                }
+            }
+        }
     }
 
     [Theory]

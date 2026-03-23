@@ -267,9 +267,22 @@ function StartMSSQLContainer($mssqlPwd) {
       exit $LASTEXITCODE
   }
 
-  # The container needs a bit more time before it can start accepting commands
-  Write-Host "Sleeping for 30 seconds to let the container finish initializing..." -ForegroundColor Yellow
-  Start-Sleep -Seconds 30
+  # Wait for SQL Server to be ready by polling with sqlcmd
+  Write-Host "Waiting for SQL Server to become ready..." -ForegroundColor Yellow
+  $maxAttempts = 30
+  for ($i = 1; $i -le $maxAttempts; $i++) {
+      $result = docker exec mssql-server /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$mssqlPwd" -Q "SELECT 1" -C -b 2>&1
+      if ($LASTEXITCODE -eq 0) {
+          Write-Host "SQL Server is ready after $i seconds." -ForegroundColor Green
+          break
+      }
+      if ($i -eq $maxAttempts) {
+          Write-Error "SQL Server did not become ready within $maxAttempts seconds."
+          docker logs mssql-server 2>&1 | Select-Object -Last 20
+          exit 1
+      }
+      Start-Sleep -Seconds 1
+  }
 
   # Check to see what containers are running
   docker ps
@@ -281,15 +294,33 @@ function StartDTSContainer() {
 
   # Start the DTS Server docker container with the specified edition
   Write-Host "Starting DTS docker container on port 8080" -ForegroundColor DarkYellow
-  docker run -i -p 8080:8080 -p 8082:8082 -d mcr.microsoft.com/dts/dts-emulator:latest
+  docker run -i --name dts-emulator --rm -p 8080:8080 -p 8081:8081 -p 8082:8082 -d mcr.microsoft.com/dts/dts-emulator:latest
 
   if ($LASTEXITCODE -ne 0) {
       exit $LASTEXITCODE
   }
 
-  # The container needs a bit more time before it can start accepting commands
-  Write-Host "Sleeping for 30 seconds to let the container finish initializing..." -ForegroundColor Yellow
-  Start-Sleep -Seconds 30
+  # Poll until the emulator port is accepting TCP connections instead of a fixed sleep
+  Write-Host "Waiting for DTS emulator to become ready..." -ForegroundColor Yellow
+  $maxAttempts = 60
+  for ($i = 1; $i -le $maxAttempts; $i++) {
+      try {
+          $tcp = New-Object System.Net.Sockets.TcpClient
+          try {
+              $tcp.Connect("localhost", 8080)
+              Write-Host "DTS emulator is ready after $i seconds." -ForegroundColor Green
+              break
+          } finally {
+              $tcp.Dispose()
+          }
+      } catch { }
+      if ($i -eq $maxAttempts) {
+          Write-Error "DTS emulator did not become ready within $maxAttempts seconds."
+          docker logs dts-emulator 2>&1 | Select-Object -Last 20
+          exit 1
+      }
+      Start-Sleep -Seconds 1
+  }
 
   # Check to see what containers are running
   docker ps
