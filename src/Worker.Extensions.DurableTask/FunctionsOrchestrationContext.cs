@@ -127,10 +127,10 @@ internal sealed partial class FunctionsOrchestrationContext : TaskOrchestrationC
         this.innerContext.ContinueAsNew(newInput, preserveUnprocessedEvents);
     }
 
-    public override void ContinueAsNew(ContinueAsNewOptions? options, object? newInput, bool preserveUnprocessedEvents)
+    public override void ContinueAsNew(ContinueAsNewOptions options)
     {
         this.EnsureLegalAccess();
-        this.innerContext.ContinueAsNew(options, newInput, preserveUnprocessedEvents);
+        this.innerContext.ContinueAsNew(options);
     }
 
     public override Task CreateTimer(DateTime fireAt, CancellationToken cancellationToken)
