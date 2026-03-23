@@ -294,7 +294,7 @@ function StartDTSContainer() {
 
   # Start the DTS Server docker container with the specified edition
   Write-Host "Starting DTS docker container on port 8080" -ForegroundColor DarkYellow
-  docker run -i -p 8080:8080 -p 8081:8081 -p 8082:8082 -d mcr.microsoft.com/dts/dts-emulator:latest
+  docker run -i --name dts-emulator --rm -p 8080:8080 -p 8081:8081 -p 8082:8082 -d mcr.microsoft.com/dts/dts-emulator:latest
 
   if ($LASTEXITCODE -ne 0) {
       exit $LASTEXITCODE
@@ -316,7 +316,7 @@ function StartDTSContainer() {
       } catch { }
       if ($i -eq $maxAttempts) {
           Write-Error "DTS emulator did not become ready within $maxAttempts seconds."
-          docker logs $(docker ps -q --filter "ancestor=mcr.microsoft.com/dts/dts-emulator:latest") 2>&1 | Select-Object -Last 20
+          docker logs dts-emulator 2>&1 | Select-Object -Last 20
           exit 1
       }
       Start-Sleep -Seconds 1

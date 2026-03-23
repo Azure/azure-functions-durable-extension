@@ -132,6 +132,9 @@ public class PurgeInstancesTests
     [Trait("PowerShell", "Skip")] // Instance purging not supported in PowerShell
     public async Task PurgeOnlyPurgesTerminalOrchestrations()
     {
+        // For all of the following tests, since non-.NET languages throw a generic error in the case of a failure to purge there is no great way
+        // to return specific status codes, whereas .NET isolated returns specific error types which can be used to return specific status codes.
+        // So, in the non-.NET case, we simply check for the InternalServerError status code.
         void AssertFailedPurgeResponseStatusCode(HttpResponseMessage purgeHttpResponse)
         {
             if (this.fixture.functionLanguageLocalizer.GetLanguageType() == LanguageType.DotnetIsolated)
@@ -150,18 +153,26 @@ public class PurgeInstancesTests
             || this.fixture.functionLanguageLocalizer.GetLanguageType() == LanguageType.Java;
 
         // HttpLongRunningOrchestrator (timer-based, no activity spam) is only available in dotnet-isolated.
-        // For other languages, LongRunningOrchestrator is used. Its activity load is isolated because
-        // each language runs in its own CI job with a dedicated emulator instance.
+        // For other languages, LongRunningOrchestrator is used, which generates activity load against the
+        // configured durability provider.
         string longRunningOrch = this.fixture.functionLanguageLocalizer.GetLanguageType() == LanguageType.DotnetIsolated
             ? "HttpLongRunningOrchestrator"
             : "LongRunningOrchestrator";
 
         // Phase 1: Start all orchestrations and wait for initial states concurrently
+        // Completed orchestration, should succeed purge
         var completedStart = StartOrchAndWaitForStatus("HelloCities", "Completed");
+        // Failed orchestration, should succeed purge
         var failedStart = StartOrchAndWaitForStatus("HelloActivityDIFailure", "Failed");
+        // Terminated orchestration, should succeed purge
         var terminatedStart = testTerminated ? StartOrchAndWaitForStatus(longRunningOrch, "Running") : null;
+        // Running orchestration, should fail purge
         var runningStart = StartOrchAndWaitForStatus(longRunningOrch, "Running");
+        // Suspended orchestration, should fail purge
         var suspendedStart = StartOrchAndWaitForStatus(longRunningOrch, "Running");
+        // Pending orchestration, should fail purge
+        // Scheduled start times are currently only implemented in Java and .NET isolated,
+        // which is the only true way to get an orchestration in a "Pending" state
         Task<(string instanceId, string statusUri)>? pendingStart = testPending
             ? StartOrchAndWaitForStatus("HelloCities", "Pending", scheduledStartTime: DateTime.UtcNow + TimeSpan.FromMinutes(1))
             : null;
@@ -195,7 +206,7 @@ public class PurgeInstancesTests
         terminalPurgeTasks.Add(AssertPurgeSucceeds(failedId));
         await Task.WhenAll(terminalPurgeTasks);
 
-        // Non-existent orchestration
+        // Non-existent orchestration, should succeed and have purge count of 0
         using HttpResponseMessage purgeNonExistent = await HttpHelpers.InvokeHttpTrigger("PurgeOrchestrationHistory", $"?instanceId={Guid.NewGuid()}");
         Assert.Equal(HttpStatusCode.OK, purgeNonExistent.StatusCode);
         await AssertPurgeCount(purgeNonExistent, 0);
@@ -217,7 +228,7 @@ public class PurgeInstancesTests
             }
         }
 
-        // Verify log assertions for the completed instance
+        // Verify that the ClientOperationReceived logs were emitted with a FunctionInvocationId
         ClientOperationLogHelpers.AssertClientOperationLogExists(
             () => this.fixture.TestLogs.CoreToolsLogs,
             "StartOrchestration",
@@ -230,7 +241,7 @@ public class PurgeInstancesTests
             this.fixture.functionLanguageLocalizer.GetLanguageType());
 
         // Best-effort cleanup of non-terminal instances to avoid background load on subsequent tests.
-        // Terminate may return non-OK for already-completed or purged instances; just dispose.
+        // Terminate may return non-OK for already-completed or purged instances; log and dispose.
         var cleanups = new List<Task<HttpResponseMessage>>
         {
             HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={runningId}"),
@@ -239,7 +250,16 @@ public class PurgeInstancesTests
         if (testPending)
             cleanups.Add(HttpHelpers.InvokeHttpTrigger("TerminateInstance", $"?instanceId={(await pendingStart!).instanceId}"));
         foreach (var r in await Task.WhenAll(cleanups))
-            r.Dispose();
+        {
+            using (r)
+            {
+                if (!r.IsSuccessStatusCode)
+                {
+                    this.output.WriteLine(
+                        $"TerminateInstance cleanup returned status {r.StatusCode} for request {r.RequestMessage?.RequestUri}");
+                }
+            }
+        }
     }
 
     private async Task<(string instanceId, string statusUri)> StartOrchAndWaitForStatus(
