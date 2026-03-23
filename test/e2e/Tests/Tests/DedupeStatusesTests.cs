@@ -171,10 +171,10 @@ public class DedupeStatusesTests
     }
 
     [Theory]
-    [Trait("PowerShell", "Skip")]
-    [Trait("Python", "Skip")]
-    [Trait("Node", "Skip")]
-    [Trait("Java", "Skip")]
+    [Trait("PowerShell", "Skip")] // Dedupe statuses not implemented in PowerShell
+    [Trait("Python", "Skip")] // Dedupe statuses not implemented in Python
+    [Trait("Node", "Skip")] // Dedupe statuses not implemented in Node
+    [Trait("Java", "Skip")] // Dedupe statuses not implemented in Java
     [InlineData("Pending", "Failed", "Terminated")]
     [InlineData("Running", "Failed", "Terminated")]
     [InlineData("Suspended", "Failed", "Terminated")]

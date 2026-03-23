@@ -284,16 +284,6 @@ function StartMSSQLContainer($mssqlPwd) {
       Start-Sleep -Seconds 1
   }
 
-  # Pre-create the DurableDB database so all language runtimes can use it independently.
-  # Without this, non-dotnet languages may fail if they can't auto-create the database.
-  Write-Host "Creating DurableDB database..." -ForegroundColor Yellow
-  docker exec mssql-server /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$mssqlPwd" -Q "IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = 'DurableDB') CREATE DATABASE DurableDB" -C -b
-  if ($LASTEXITCODE -ne 0) {
-      Write-Error "Failed to create DurableDB database."
-      exit 1
-  }
-  Write-Host "DurableDB database created successfully." -ForegroundColor Green
-
   # Check to see what containers are running
   docker ps
 }
