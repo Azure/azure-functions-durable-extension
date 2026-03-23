@@ -23,21 +23,25 @@ on:
       - 'Directory.Packages.props'
 
 jobs:
-  e2e-azurestorage-linux:
-    runs-on: ubuntu-latest
-    name: e2e-azurestorage-linux (${{ matrix.targetFramework }}, ${{ matrix.language.name }})
+  e2e:
+    runs-on: ${{ matrix.backend.runner }}
+    name: ${{ matrix.backend.name }} (${{ matrix.targetFramework }}, ${{ matrix.language.name }})
     strategy:
       fail-fast: false
       matrix:
         targetFramework: [net8.0, net10.0]
+        backend:
+          - { name: azurestorage-linux, runner: ubuntu-latest, env: AzureStorage, buildArgs: '', filterTag: AzureStorage }
+          - { name: azurestorage-windows, runner: windows-latest, env: AzureStorage, buildArgs: '', filterTag: AzureStorage }
+          - { name: dts, runner: ubuntu-latest, env: azureManaged, buildArgs: '-StartDTSContainer', filterTag: DTS }
         language:
-          - { name: dotnet-isolated, app: BasicDotNetIsolated, filter: 'AzureStorage!=Skip&Dotnet!=Skip&Dotnet-AzureStorage!=Skip' }
-          - { name: powershell, app: BasicPowerShell, filter: 'AzureStorage!=Skip&PowerShell!=Skip&PowerShell-AzureStorage!=Skip' }
-          - { name: python, app: BasicPython, filter: 'AzureStorage!=Skip&Python!=Skip&Python-AzureStorage!=Skip' }
-          - { name: node, app: BasicNode, filter: 'AzureStorage!=Skip&Node!=Skip&Node-AzureStorage!=Skip' }
-          - { name: java, app: BasicJava, filter: 'AzureStorage!=Skip&Java!=Skip&Java-AzureStorage!=Skip' }
+          - { name: dotnet-isolated, app: BasicDotNetIsolated, filterTag: Dotnet }
+          - { name: powershell, app: BasicPowerShell, filterTag: PowerShell }
+          - { name: python, app: BasicPython, filterTag: Python }
+          - { name: node, app: BasicNode, filterTag: Node }
+          - { name: java, app: BasicJava, filterTag: Java }
     env:
-      E2E_TEST_DURABLE_BACKEND: 'AzureStorage'
+      E2E_TEST_DURABLE_BACKEND: ${{ matrix.backend.env }}
       E2E_TEST_FUNCTIONS_LANGUAGE: ${{ matrix.language.name }}
       TEST_APP_NAME: ${{ matrix.language.app }}
     steps:
@@ -125,7 +129,7 @@ jobs:
       - name: Setup E2E tests
         shell: pwsh
         run: |
-          .\test\e2e\Tests\build-e2e-test.ps1 -SkipStorageEmulator -E2EAppName ${{ matrix.language.app }} -TargetFramework ${{ matrix.targetFramework }}
+          .\test\e2e\Tests\build-e2e-test.ps1 -SkipStorageEmulator ${{ matrix.backend.buildArgs }} -E2EAppName ${{ matrix.language.app }} -TargetFramework ${{ matrix.targetFramework }}
 
       - name: Build Test Project
         working-directory: test/e2e/Tests
@@ -133,123 +137,11 @@ jobs:
 
       - name: Run E2E tests (${{ matrix.language.name }})
         working-directory: test/e2e/Tests
-        run: dotnet test -f ${{ matrix.targetFramework }} --filter '${{ matrix.language.filter }}'
+        run: dotnet test -f ${{ matrix.targetFramework }} --filter '${{ matrix.backend.filterTag }}!=Skip&${{ matrix.language.filterTag }}!=Skip&${{ matrix.language.filterTag }}-${{ matrix.backend.filterTag }}!=Skip'
 
-  e2e-azurestorage-windows:
-    runs-on: windows-latest
-    name: e2e-azurestorage-windows (${{ matrix.targetFramework }}, ${{ matrix.language.name }})
-    strategy:
-      fail-fast: false
-      matrix:
-        targetFramework: [net8.0, net10.0]
-        language:
-          - { name: dotnet-isolated, app: BasicDotNetIsolated, filter: 'AzureStorage!=Skip&Dotnet!=Skip&Dotnet-AzureStorage!=Skip' }
-          - { name: powershell, app: BasicPowerShell, filter: 'AzureStorage!=Skip&PowerShell!=Skip&PowerShell-AzureStorage!=Skip' }
-          - { name: python, app: BasicPython, filter: 'AzureStorage!=Skip&Python!=Skip&Python-AzureStorage!=Skip' }
-          - { name: node, app: BasicNode, filter: 'AzureStorage!=Skip&Node!=Skip&Node-AzureStorage!=Skip' }
-          - { name: java, app: BasicJava, filter: 'AzureStorage!=Skip&Java!=Skip&Java-AzureStorage!=Skip' }
-    env:
-      E2E_TEST_DURABLE_BACKEND: 'AzureStorage'
-      E2E_TEST_FUNCTIONS_LANGUAGE: ${{ matrix.language.name }}
-      TEST_APP_NAME: ${{ matrix.language.app }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup .NET 8
-        uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: 8.0.x
-
-      - name: Setup .NET 10
-        uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: 10.0.x
-
-      - name: Set up Node.js (needed for Azurite)
-        uses: actions/setup-node@v3
-        with:
-          node-version: '20.x'
-          
-      - name: Set up Python
-        if: matrix.language.name == 'python'
-        uses: actions/setup-python@v2
-        with:
-          python-version: 3.13
-
-      - name: Set up JDK 17
-        if: matrix.language.name == 'java'
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-          cache: maven
-
-      - name: Cache npm packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-npm-azurite
-
-      - name: Install Azurite
-        shell: pwsh
-        run: |
-          New-Item -ItemType Directory -Path .azurite -Force
-          Set-Location .azurite
-          '{"name":"azurite-local","private":true}' | Set-Content package.json
-          npm install azurite
-
-      - name: Start Azurite
-        shell: pwsh
-        run: |
-          if ($IsWindows) {
-            $azurite = Resolve-Path '.azurite/node_modules/.bin/azurite.cmd'
-          } else {
-            $azurite = Resolve-Path '.azurite/node_modules/.bin/azurite'
-          }
-          Start-Process $azurite -ArgumentList '--silent','--skipApiVersionCheck','--inMemoryPersistence','--blobPort','10000','--queuePort','10001','--tablePort','10002'
-          $timeout = 30
-          for ($i = 1; $i -le $timeout; $i++) {
-            try {
-              $tcp = [System.Net.Sockets.TcpClient]::new('127.0.0.1', 10000)
-              $tcp.Dispose()
-              Write-Host "Azurite is ready"
-              break
-            } catch {
-              if ($i -eq $timeout) { throw "Azurite did not start within $timeout seconds" }
-              Write-Host "Waiting for Azurite ($i/$timeout)"
-              Start-Sleep -Seconds 1
-            }
-          }
-
-      - name: Resolve Core Tools cache path
-        id: core-tools-path
-        shell: pwsh
-        run: |
-          . ./test/e2e/Tests/resolve-core-tools-path.ps1
-          "path=$FUNC_CLI_DIRECTORY" >> $env:GITHUB_OUTPUT
-
-      - name: Cache Core Tools
-        uses: actions/cache@v4
-        with:
-          path: ${{ steps.core-tools-path.outputs.path }}
-          key: core-tools-${{ runner.os }}-${{ runner.arch }}-${{ env.CORE_TOOLS_VERSION }}
-
-      - name: Setup E2E tests
-        shell: pwsh
-        run: |
-          .\test\e2e\Tests\build-e2e-test.ps1 -SkipStorageEmulator -E2EAppName ${{ matrix.language.app }} -TargetFramework ${{ matrix.targetFramework }}
-
-      - name: Build Test Project
-        working-directory: test/e2e/Tests
-        run: dotnet build -f ${{ matrix.targetFramework }}
-
-      - name: Run E2E tests (${{ matrix.language.name }})
-        working-directory: test/e2e/Tests
-        run: dotnet test -f ${{ matrix.targetFramework }} --filter '${{ matrix.language.filter }}'
-
-  e2e-mssql:
+  mssql:
     runs-on: ubuntu-latest
-    name: e2e-mssql (${{ matrix.targetFramework }})
+    name: mssql (${{ matrix.targetFramework }})
     strategy:
       fail-fast: false
       matrix:
@@ -398,115 +290,3 @@ jobs:
       - name: Run E2E tests (Java)
         working-directory: test/e2e/Tests
         run: dotnet test -f ${{ matrix.targetFramework }} --filter 'MSSQL!=Skip&Java!=Skip&Java-MSSQL!=Skip'
-
-  e2e-dts:
-    runs-on: ubuntu-latest
-    name: e2e-dts (${{ matrix.targetFramework }}, ${{ matrix.language.name }})
-    strategy:
-      fail-fast: false
-      matrix:
-        targetFramework: [net8.0, net10.0]
-        language:
-          - { name: dotnet-isolated, app: BasicDotNetIsolated, filter: 'DTS!=Skip&Dotnet!=Skip&Dotnet-DTS!=Skip' }
-          - { name: powershell, app: BasicPowerShell, filter: 'DTS!=Skip&PowerShell!=Skip&PowerShell-DTS!=Skip' }
-          - { name: python, app: BasicPython, filter: 'DTS!=Skip&Python!=Skip&Python-DTS!=Skip' }
-          - { name: node, app: BasicNode, filter: 'DTS!=Skip&Node!=Skip&Node-DTS!=Skip' }
-          - { name: java, app: BasicJava, filter: 'DTS!=Skip&Java!=Skip&Java-DTS!=Skip' }
-    env:
-      E2E_TEST_DURABLE_BACKEND: "azureManaged"
-      E2E_TEST_FUNCTIONS_LANGUAGE: ${{ matrix.language.name }}
-      TEST_APP_NAME: ${{ matrix.language.app }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup .NET 8
-        uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: 8.0.x
-
-      - name: Setup .NET 10
-        uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: 10.0.x
-
-      - name: Set up Node.js (needed for Azurite)
-        uses: actions/setup-node@v3
-        with:
-          node-version: '20.x'
-          
-      - name: Set up Python
-        if: matrix.language.name == 'python'
-        uses: actions/setup-python@v2
-        with:
-          python-version: 3.13
-
-      - name: Set up JDK 17
-        if: matrix.language.name == 'java'
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-          cache: maven
-
-      - name: Cache npm packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-npm-azurite
-
-      - name: Install Azurite
-        shell: pwsh
-        run: |
-          New-Item -ItemType Directory -Path .azurite -Force
-          Set-Location .azurite
-          '{"name":"azurite-local","private":true}' | Set-Content package.json
-          npm install azurite
-
-      - name: Start Azurite
-        shell: pwsh
-        run: |
-          if ($IsWindows) {
-            $azurite = Resolve-Path '.azurite/node_modules/.bin/azurite.cmd'
-          } else {
-            $azurite = Resolve-Path '.azurite/node_modules/.bin/azurite'
-          }
-          Start-Process $azurite -ArgumentList '--silent','--skipApiVersionCheck','--inMemoryPersistence','--blobPort','10000','--queuePort','10001','--tablePort','10002'
-          $timeout = 30
-          for ($i = 1; $i -le $timeout; $i++) {
-            try {
-              $tcp = [System.Net.Sockets.TcpClient]::new('127.0.0.1', 10000)
-              $tcp.Dispose()
-              Write-Host "Azurite is ready"
-              break
-            } catch {
-              if ($i -eq $timeout) { throw "Azurite did not start within $timeout seconds" }
-              Write-Host "Waiting for Azurite ($i/$timeout)"
-              Start-Sleep -Seconds 1
-            }
-          }
-
-      - name: Resolve Core Tools cache path
-        id: core-tools-path
-        shell: pwsh
-        run: |
-          . ./test/e2e/Tests/resolve-core-tools-path.ps1
-          "path=$FUNC_CLI_DIRECTORY" >> $env:GITHUB_OUTPUT
-
-      - name: Cache Core Tools
-        uses: actions/cache@v4
-        with:
-          path: ${{ steps.core-tools-path.outputs.path }}
-          key: core-tools-${{ runner.os }}-${{ runner.arch }}-${{ env.CORE_TOOLS_VERSION }}
-
-      - name: Setup E2E tests
-        shell: pwsh
-        run: |
-          .\test\e2e\Tests\build-e2e-test.ps1 -SkipStorageEmulator -StartDTSContainer -E2EAppName ${{ matrix.language.app }} -TargetFramework ${{ matrix.targetFramework }}
-
-      - name: Build Test Project
-        working-directory: test/e2e/Tests
-        run: dotnet build -f ${{ matrix.targetFramework }}
-
-      - name: Run E2E tests (${{ matrix.language.name }})
-        working-directory: test/e2e/Tests
-        run: dotnet test -f ${{ matrix.targetFramework }} --filter '${{ matrix.language.filter }}'
