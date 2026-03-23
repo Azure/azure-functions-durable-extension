@@ -1,6 +1,9 @@
-name: End to End Test - .NET Isolated/Func V4
+name: End to End Test
 permissions:
   contents: read
+
+env:
+  CORE_TOOLS_VERSION: '4.8.0'
 
 on:
   workflow_dispatch:
@@ -69,10 +72,60 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
+      - name: Cache npm packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-azurite
+
+      - name: Install Azurite
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path .azurite -Force
+          Set-Location .azurite
+          '{"name":"azurite-local","private":true}' | Set-Content package.json
+          npm install azurite
+
+      - name: Start Azurite
+        shell: pwsh
+        run: |
+          if ($IsWindows) {
+            $azurite = Resolve-Path '.azurite/node_modules/.bin/azurite.cmd'
+          } else {
+            $azurite = Resolve-Path '.azurite/node_modules/.bin/azurite'
+          }
+          Start-Process $azurite -ArgumentList '--silent','--skipApiVersionCheck','--inMemoryPersistence','--blobPort','10000','--queuePort','10001','--tablePort','10002'
+          $timeout = 30
+          for ($i = 1; $i -le $timeout; $i++) {
+            try {
+              $tcp = [System.Net.Sockets.TcpClient]::new('127.0.0.1', 10000)
+              $tcp.Dispose()
+              Write-Host "Azurite is ready"
+              break
+            } catch {
+              if ($i -eq $timeout) { throw "Azurite did not start within $timeout seconds" }
+              Write-Host "Waiting for Azurite ($i/$timeout)"
+              Start-Sleep -Seconds 1
+            }
+          }
+
+      - name: Resolve Core Tools cache path
+        id: core-tools-path
+        shell: pwsh
+        run: |
+          . ./test/e2e/Tests/resolve-core-tools-path.ps1
+          "path=$FUNC_CLI_DIRECTORY" >> $env:GITHUB_OUTPUT
+
+      - name: Cache Core Tools
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.core-tools-path.outputs.path }}
+          key: core-tools-${{ runner.os }}-${{ runner.arch }}-${{ env.CORE_TOOLS_VERSION }}
+
       - name: Setup E2E tests
         shell: pwsh
         run: |
-          .\test\e2e\Tests\build-e2e-test.ps1 -E2EAppName ${{ matrix.language.app }} -TargetFramework ${{ matrix.targetFramework }}
+          .\test\e2e\Tests\build-e2e-test.ps1 -SkipStorageEmulator -E2EAppName ${{ matrix.language.app }} -TargetFramework ${{ matrix.targetFramework }}
 
       - name: Build Test Project
         working-directory: test/e2e/Tests
@@ -131,10 +184,60 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
+      - name: Cache npm packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-azurite
+
+      - name: Install Azurite
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path .azurite -Force
+          Set-Location .azurite
+          '{"name":"azurite-local","private":true}' | Set-Content package.json
+          npm install azurite
+
+      - name: Start Azurite
+        shell: pwsh
+        run: |
+          if ($IsWindows) {
+            $azurite = Resolve-Path '.azurite/node_modules/.bin/azurite.cmd'
+          } else {
+            $azurite = Resolve-Path '.azurite/node_modules/.bin/azurite'
+          }
+          Start-Process $azurite -ArgumentList '--silent','--skipApiVersionCheck','--inMemoryPersistence','--blobPort','10000','--queuePort','10001','--tablePort','10002'
+          $timeout = 30
+          for ($i = 1; $i -le $timeout; $i++) {
+            try {
+              $tcp = [System.Net.Sockets.TcpClient]::new('127.0.0.1', 10000)
+              $tcp.Dispose()
+              Write-Host "Azurite is ready"
+              break
+            } catch {
+              if ($i -eq $timeout) { throw "Azurite did not start within $timeout seconds" }
+              Write-Host "Waiting for Azurite ($i/$timeout)"
+              Start-Sleep -Seconds 1
+            }
+          }
+
+      - name: Resolve Core Tools cache path
+        id: core-tools-path
+        shell: pwsh
+        run: |
+          . ./test/e2e/Tests/resolve-core-tools-path.ps1
+          "path=$FUNC_CLI_DIRECTORY" >> $env:GITHUB_OUTPUT
+
+      - name: Cache Core Tools
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.core-tools-path.outputs.path }}
+          key: core-tools-${{ runner.os }}-${{ runner.arch }}-${{ env.CORE_TOOLS_VERSION }}
+
       - name: Setup E2E tests
         shell: pwsh
         run: |
-          .\test\e2e\Tests\build-e2e-test.ps1 -E2EAppName ${{ matrix.language.app }} -TargetFramework ${{ matrix.targetFramework }}
+          .\test\e2e\Tests\build-e2e-test.ps1 -SkipStorageEmulator -E2EAppName ${{ matrix.language.app }} -TargetFramework ${{ matrix.targetFramework }}
 
       - name: Build Test Project
         working-directory: test/e2e/Tests
@@ -187,10 +290,60 @@ jobs:
         run: | 
           echo "MSSQL_SA_PASSWORD=TEST12_$(echo $RANDOM)!" >> $GITHUB_ENV
 
+      - name: Cache npm packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-azurite
+
+      - name: Install Azurite
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path .azurite -Force
+          Set-Location .azurite
+          '{"name":"azurite-local","private":true}' | Set-Content package.json
+          npm install azurite
+
+      - name: Start Azurite
+        shell: pwsh
+        run: |
+          if ($IsWindows) {
+            $azurite = Resolve-Path '.azurite/node_modules/.bin/azurite.cmd'
+          } else {
+            $azurite = Resolve-Path '.azurite/node_modules/.bin/azurite'
+          }
+          Start-Process $azurite -ArgumentList '--silent','--skipApiVersionCheck','--inMemoryPersistence','--blobPort','10000','--queuePort','10001','--tablePort','10002'
+          $timeout = 30
+          for ($i = 1; $i -le $timeout; $i++) {
+            try {
+              $tcp = [System.Net.Sockets.TcpClient]::new('127.0.0.1', 10000)
+              $tcp.Dispose()
+              Write-Host "Azurite is ready"
+              break
+            } catch {
+              if ($i -eq $timeout) { throw "Azurite did not start within $timeout seconds" }
+              Write-Host "Waiting for Azurite ($i/$timeout)"
+              Start-Sleep -Seconds 1
+            }
+          }
+
+      - name: Resolve Core Tools cache path
+        id: core-tools-path
+        shell: pwsh
+        run: |
+          . ./test/e2e/Tests/resolve-core-tools-path.ps1
+          "path=$FUNC_CLI_DIRECTORY" >> $env:GITHUB_OUTPUT
+
+      - name: Cache Core Tools
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.core-tools-path.outputs.path }}
+          key: core-tools-${{ runner.os }}-${{ runner.arch }}-${{ env.CORE_TOOLS_VERSION }}
+
       - name: Setup E2E tests
         shell: pwsh
         run: |
-          .\test\e2e\Tests\build-e2e-test.ps1 -StartMSSqlContainer -TargetFramework ${{ matrix.targetFramework }}
+          .\test\e2e\Tests\build-e2e-test.ps1 -SkipStorageEmulator -StartMSSqlContainer -TargetFramework ${{ matrix.targetFramework }}
 
       - name: Build Test Project
         working-directory: test/e2e/Tests
@@ -295,10 +448,60 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
+      - name: Cache npm packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-azurite
+
+      - name: Install Azurite
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path .azurite -Force
+          Set-Location .azurite
+          '{"name":"azurite-local","private":true}' | Set-Content package.json
+          npm install azurite
+
+      - name: Start Azurite
+        shell: pwsh
+        run: |
+          if ($IsWindows) {
+            $azurite = Resolve-Path '.azurite/node_modules/.bin/azurite.cmd'
+          } else {
+            $azurite = Resolve-Path '.azurite/node_modules/.bin/azurite'
+          }
+          Start-Process $azurite -ArgumentList '--silent','--skipApiVersionCheck','--inMemoryPersistence','--blobPort','10000','--queuePort','10001','--tablePort','10002'
+          $timeout = 30
+          for ($i = 1; $i -le $timeout; $i++) {
+            try {
+              $tcp = [System.Net.Sockets.TcpClient]::new('127.0.0.1', 10000)
+              $tcp.Dispose()
+              Write-Host "Azurite is ready"
+              break
+            } catch {
+              if ($i -eq $timeout) { throw "Azurite did not start within $timeout seconds" }
+              Write-Host "Waiting for Azurite ($i/$timeout)"
+              Start-Sleep -Seconds 1
+            }
+          }
+
+      - name: Resolve Core Tools cache path
+        id: core-tools-path
+        shell: pwsh
+        run: |
+          . ./test/e2e/Tests/resolve-core-tools-path.ps1
+          "path=$FUNC_CLI_DIRECTORY" >> $env:GITHUB_OUTPUT
+
+      - name: Cache Core Tools
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.core-tools-path.outputs.path }}
+          key: core-tools-${{ runner.os }}-${{ runner.arch }}-${{ env.CORE_TOOLS_VERSION }}
+
       - name: Setup E2E tests
         shell: pwsh
         run: |
-          .\test\e2e\Tests\build-e2e-test.ps1 -StartDTSContainer -E2EAppName ${{ matrix.language.app }} -TargetFramework ${{ matrix.targetFramework }}
+          .\test\e2e\Tests\build-e2e-test.ps1 -SkipStorageEmulator -StartDTSContainer -E2EAppName ${{ matrix.language.app }} -TargetFramework ${{ matrix.targetFramework }}
 
       - name: Build Test Project
         working-directory: test/e2e/Tests

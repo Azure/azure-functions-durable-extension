@@ -49,7 +49,7 @@ if ($PSVersionTable.PSEdition -ne 'Core') {
 
 $ErrorActionPreference = "Stop"
 
-$CORE_TOOLS_VERSION = '4.7.0'
+. "$PSScriptRoot\resolve-core-tools-path.ps1"
 
 $ProjectBaseDirectory = "$PSScriptRoot\..\..\..\"
 $ProjectTemporaryPath = Join-Path ([System.IO.Path]::GetTempPath()) "DurableTaskExtensionE2ETests"
@@ -72,7 +72,6 @@ function StopOnFailedExecution {
   }
 }
 
-$FUNC_CLI_DIRECTORY = Join-Path $ProjectTemporaryPath 'Azure.Functions.Cli'
 if ($SkipCoreTools)
 {
   Write-Host "---Skipping Core Tools download (-SkipCoreTools)---"
