@@ -57,17 +57,17 @@ public class DedupeStatusesTests
         // Phase 2: Apply state transitions concurrently
         var transitions = new List<Task>();
         if (testTerminated)
-            transitions.Add(TerminateAndWaitForState(terminatedId, terminatedFirst.Result));
-        transitions.Add(SuspendAndWaitForState(suspendedId, suspendedFirst.Result));
+            transitions.Add(TerminateAndWaitForState(terminatedId, await terminatedFirst));
+        transitions.Add(SuspendAndWaitForState(suspendedId, await suspendedFirst));
         await Task.WhenAll(transitions);
 
         // Dispose Phase 1 responses (no longer needed after extracting statusQueryGetUri)
-        completedFirst.Result?.Dispose();
-        failedFirst.Result?.Dispose();
-        runningFirst.Result?.Dispose();
-        suspendedFirst.Result?.Dispose();
-        terminatedFirst.Result?.Dispose();
-        pendingFirst.Result?.Dispose();
+        (await completedFirst)?.Dispose();
+        (await failedFirst)?.Dispose();
+        (await runningFirst)?.Dispose();
+        (await suspendedFirst)?.Dispose();
+        (await terminatedFirst)?.Dispose();
+        (await pendingFirst)?.Dispose();
 
         // Phase 3: Start all second-attempt orchestrations concurrently (verify restart works)
         var phase3Tasks = new List<Task<HttpResponseMessage>>
@@ -131,8 +131,8 @@ public class DedupeStatusesTests
 
         // Phase 2: Apply state transitions concurrently
         await Task.WhenAll(
-            TerminateAndWaitForState(terminatedId, terminatedFirst.Result),
-            SuspendAndWaitForState(suspendedId, suspendedFirst.Result));
+            TerminateAndWaitForState(terminatedId, await terminatedFirst),
+            SuspendAndWaitForState(suspendedId, await suspendedFirst));
 
         // Dispose Phase 1 responses
         foreach (var t in new Task<HttpResponseMessage>[] { completedFirst, failedFirst, terminatedFirst, runningFirst, suspendedFirst, pendingFirst })
