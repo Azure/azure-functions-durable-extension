@@ -22,7 +22,7 @@ public class TerminateOrchestratorTests
 
 
     [Fact]
-    [Trait("Java-MSSQL", "Skip")] // Bug: https://github.com/microsoft/durabletask-java/issues/237
+    [Trait("Java", "Skip")] // Bug: https://github.com/microsoft/durabletask-java/issues/237
     public async Task TerminateRunningOrchestration_ShouldSucceed()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=LongRunningOrchestrator");
@@ -75,7 +75,7 @@ public class TerminateOrchestratorTests
 
 
     [Fact]
-    [Trait("Java-MSSQL", "Skip")] // Bug: https://github.com/microsoft/durabletask-java/issues/237
+    [Trait("Java", "Skip")] // Bug: https://github.com/microsoft/durabletask-java/issues/237
     public async Task TerminateTerminatedOrchestration_ShouldFail()
     {
         LanguageType languageType = this.fixture.functionLanguageLocalizer.GetLanguageType();
