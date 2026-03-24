@@ -130,6 +130,7 @@ public class PurgeInstancesTests
 
     [Fact]
     [Trait("PowerShell", "Skip")] // Instance purging not supported in PowerShell
+    [Trait("Java", "Skip")] // Bug: https://github.com/microsoft/durabletask-java/issues/237
     public async Task PurgeOnlyPurgesTerminalOrchestrations()
     {
         // For all of the following tests, since non-.NET languages throw a generic error in the case of a failure to purge there is no great way
