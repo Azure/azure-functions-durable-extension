@@ -4,6 +4,8 @@
 using System;
 using System.Collections.Generic;
 using Azure.Core;
+using Azure.Identity;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.DurableTask.AzureManagedBackend;
 using Microsoft.Extensions.Configuration;
@@ -146,11 +148,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.AzureMan
                                 this.logger.LogInformation("Retrieved token credential from trigger metadata for connection '{Connection}'", connectionName);
                             }
                         }
-                        catch (Exception ex)
+                        catch (OperationCanceledException ex)
                         {
+                            // Expected scenario when the operation is cancelled;
+                            // log and fall back to the connection string credential.
                             this.logger.LogWarning(
                                 ex,
-                                "Failed to get token credential from trigger metadata for connection '{Connection}'",
+                                "Getting token credential from trigger metadata was canceled for connection '{Connection}'",
+                                connectionName);
+                        }
+                        catch (AuthenticationFailedException ex)
+                        {
+                            // Authentication failures are expected in some environments;
+                            // log and fall back to the connection string credential.
+                            this.logger.LogWarning(
+                                ex,
+                                "Authentication failed while getting token credential from trigger metadata for connection '{Connection}'",
+                                connectionName);
+                        }
+                        catch (Exception ex)
+                        {
+                            // Unexpected exception types. Fall back to use connection string.
+                            this.logger.LogWarning(
+                                ex,
+                                "Unexpected error while getting token credential from trigger metadata for connection '{Connection}'",
                                 connectionName);
                         }
                     }
@@ -175,15 +196,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.AzureMan
                 }
 
                 // Set concurrency limits from metadata
-                if (metadata?.MaxConcurrentOrchestratorFunctions.HasValue == true)
-                {
-                    options.MaxConcurrentOrchestrationWorkItems = metadata.MaxConcurrentOrchestratorFunctions.Value;
-                }
+                int defaultConcurrency = Environment.ProcessorCount * 10;
 
-                if (metadata?.MaxConcurrentActivityFunctions.HasValue == true)
-                {
-                    options.MaxConcurrentActivityWorkItems = metadata.MaxConcurrentActivityFunctions.Value;
-                }
+                options.MaxConcurrentOrchestrationWorkItems = metadata?.MaxConcurrentOrchestratorFunctions ?? defaultConcurrency;
+                options.MaxConcurrentActivityWorkItems = metadata?.MaxConcurrentActivityFunctions ?? defaultConcurrency;
 
                 this.logger.LogInformation(
                     "Creating durability provider for connection '{Connection}', task hub '{TaskHub}', and client ID '{ClientId}'...",
@@ -196,12 +212,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.AzureMan
 
                 // Extract max concurrent values from trigger metadata (from Scale Controller payload)
                 // Default: 10 times the number of processors on the current machine
-                provider.MaxConcurrentTaskOrchestrationWorkItems = metadata?.MaxConcurrentOrchestratorFunctions ?? (Environment.ProcessorCount * 10);
-                provider.MaxConcurrentTaskActivityWorkItems = metadata?.MaxConcurrentActivityFunctions ?? (Environment.ProcessorCount * 10);
+                provider.MaxConcurrentTaskOrchestrationWorkItems = metadata?.MaxConcurrentOrchestratorFunctions ?? defaultConcurrency;
+                provider.MaxConcurrentTaskActivityWorkItems = metadata?.MaxConcurrentActivityFunctions ?? defaultConcurrency;
 
                 this.cachedProviders.Add(cacheKey, provider);
                 return provider;
-              }
-          }
-      }
-  }
+            }
+        }
+    }
+}

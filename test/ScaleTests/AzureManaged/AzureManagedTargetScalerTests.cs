@@ -103,9 +103,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests
 
             var triggerMetadata = TestHelpers.CreateTriggerMetadata(taskHubName, 2, 2, "DURABLE_TASK_SCHEDULER_CONNECTION_STRING", "azureManaged");
             var metadata = triggerMetadata.ExtractDurableTaskMetadata();
-            var provider = factory.GetScalabilityProvider(metadata, triggerMetadata) as AzureManagedScalabilityProvider;
 
-            Assert.NotNull(provider);
+            var provider = factory.GetScalabilityProvider(metadata, triggerMetadata);
+            Assert.True(provider is AzureManagedScalabilityProvider, "Expected AzureManagedScalabilityProvider from factory.");
 
             bool targetScalerCreated = provider.TryGetTargetScaler(
                 "functionId",
