@@ -38,7 +38,9 @@ public static class TaskOrchestrationContextExtensionMethods
         }
         ILogger logger = context.CreateReplaySafeLogger("Microsoft.Azure.Functions.Worker.Extensions.DurableTask.CallHttp");
 
+#pragma warning disable DURABLE2003 // BuiltIn::HttpActivity is a reserved framework activity, not user-defined
         DurableHttpResponse response = await context.CallActivityAsync<DurableHttpResponse>(Constants.HttpTaskActivityReservedName, request);
+#pragma warning restore DURABLE2003
         
         while (response.StatusCode == HttpStatusCode.Accepted && request.AsynchronousPatternEnabled )
         {
@@ -82,7 +84,9 @@ public static class TaskOrchestrationContextExtensionMethods
 
             logger.LogInformation($"Polling HTTP status at location: {locationUrl}");
 
+#pragma warning disable DURABLE2003 // BuiltIn::HttpActivity is a reserved framework activity, not user-defined
             response = await context.CallActivityAsync<DurableHttpResponse>(Constants.HttpTaskActivityReservedName, newHttpRequest);
+#pragma warning restore DURABLE2003
         }
 
         return response;
