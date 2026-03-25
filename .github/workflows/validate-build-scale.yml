@@ -91,6 +91,18 @@ jobs:
       - name: Start Azurite
         run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
 
+      - name: Wait for Azurite to be ready
+        run: |
+          echo "Waiting for Azurite to be ready on port 10000..."
+          for i in {1..30}; do
+            if nc -z localhost 10000; then
+              echo "Azurite is ready"
+              break
+            fi
+            echo "Azurite is not ready, waiting ($i/30)"
+            sleep 1
+          done
+
       - name: Initialize Environment Variables
         run: |
           MSSQL_SA_PASSWORD="TEST12_${RANDOM}!"
@@ -112,14 +124,21 @@ jobs:
       - name: Wait for SQL Server to be ready
         run: |
           echo "Waiting for SQL Server to be ready..."
+          SQL_READY=0
           for i in {1..30}; do
             if docker exec mssql-server /opt/mssql-tools*/bin/sqlcmd -S localhost -U sa -P "$MSSQL_SA_PASSWORD" -Q "SELECT 1" > /dev/null 2>&1; then
               echo "SQL Server is ready"
+              SQL_READY=1
               break
             fi
             echo "SQL Server is not ready, waiting ($i/30)"
             sleep 2
           done
+          if [ "$SQL_READY" -ne 1 ]; then
+            echo "ERROR: SQL Server did not become ready within the expected time."
+            docker logs mssql-server || true
+            exit 1
+          fi
           docker ps
 
       - name: Restore and Build Scale Tests
