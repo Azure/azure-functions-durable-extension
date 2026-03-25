@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using Azure.Core;
 using Azure.Identity;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.DurableTask.AzureManagedBackend;
 using Microsoft.Extensions.Configuration;
@@ -74,6 +73,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.AzureMan
         /// </exception>
         public ScalabilityProvider GetScalabilityProvider(DurableTaskMetadata metadata, TriggerMetadata? triggerMetadata)
         {
+            if (metadata != null)
+            {
+                this.ValidateMetadata(metadata);
+            }
+
             // Get connection name from metadata, fallback to default
             string? rawConnectionName = TriggerMetadataExtensions.ResolveConnectionName(metadata?.StorageProvider);
             string connectionName = rawConnectionName ?? this.DefaultConnectionName;
@@ -195,9 +199,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.AzureMan
                     options.TaskHubName = taskHubName;
                 }
 
-                // Set concurrency limits from metadata
-                int defaultConcurrency = Environment.ProcessorCount * 10;
+                int defaultConcurrency = 10;
 
+                // Extract max concurrent values from trigger metadata.
+                // If nothing is provided from TriggerMetadata, we use default value which is 10.
                 options.MaxConcurrentOrchestrationWorkItems = metadata?.MaxConcurrentOrchestratorFunctions ?? defaultConcurrency;
                 options.MaxConcurrentActivityWorkItems = metadata?.MaxConcurrentActivityFunctions ?? defaultConcurrency;
 
@@ -210,13 +215,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.AzureMan
                 AzureManagedOrchestrationService service = new AzureManagedOrchestrationService(options, this.loggerFactory);
                 AzureManagedScalabilityProvider provider = new AzureManagedScalabilityProvider(service, connectionName, this.logger);
 
-                // Extract max concurrent values from trigger metadata (from Scale Controller payload)
-                // Default: 10 times the number of processors on the current machine
+                // Set max concurrent values from trigger metadata for provider.
+                // If nothing is provided, use default value which is 10.
                 provider.MaxConcurrentTaskOrchestrationWorkItems = metadata?.MaxConcurrentOrchestratorFunctions ?? defaultConcurrency;
                 provider.MaxConcurrentTaskActivityWorkItems = metadata?.MaxConcurrentActivityFunctions ?? defaultConcurrency;
 
                 this.cachedProviders.Add(cacheKey, provider);
                 return provider;
+            }
+        }
+
+        private void ValidateMetadata(DurableTaskMetadata metadata)
+        {
+            if (metadata.MaxConcurrentOrchestratorFunctions.HasValue && metadata.MaxConcurrentOrchestratorFunctions.Value <= 0)
+            {
+                throw new InvalidOperationException($"{nameof(metadata.MaxConcurrentOrchestratorFunctions)} must be a positive integer.");
+            }
+
+            if (metadata.MaxConcurrentActivityFunctions.HasValue && metadata.MaxConcurrentActivityFunctions.Value <= 0)
+            {
+                throw new InvalidOperationException($"{nameof(metadata.MaxConcurrentActivityFunctions)} must be a positive integer.");
             }
         }
     }

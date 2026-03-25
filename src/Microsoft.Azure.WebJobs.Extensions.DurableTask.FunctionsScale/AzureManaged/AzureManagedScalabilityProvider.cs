@@ -58,9 +58,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.AzureMan
             out IScaleMonitor scaleMonitor)
         {
             // Azure Managed backend does not support the legacy scale monitor infrastructure.
-            // Return a dummy scale monitor to avoid exceptions.
-            scaleMonitor = new DummyScaleMonitor(functionId, hubName);
-            return true;
+            // Return false so that the scaling utilities can provide a no-op monitor.
+            scaleMonitor = null;
+            return false;
         }
 
         /// <inheritdoc/>
@@ -75,25 +75,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.AzureMan
             // All target scalers share the same AzureManagedOrchestrationService in the same task hub.
             targetScaler = new AzureManagedTargetScaler(this.orchestrationService, functionId, this.logger);
             return true;
-        }
-
-        private class DummyScaleMonitor : IScaleMonitor
-        {
-            private static readonly ScaleMetrics DummyScaleMetrics = new ScaleMetrics();
-            private static readonly ScaleStatus DummyScaleStatus = new ScaleStatus();
-
-            public DummyScaleMonitor(string functionId, string taskHub)
-            {
-                this.Descriptor = new ScaleMonitorDescriptor(
-                    id: $"DurableTask.AzureManaged:{taskHub ?? "default"}",
-                    functionId);
-            }
-
-            public ScaleMonitorDescriptor Descriptor { get; }
-
-            public System.Threading.Tasks.Task<ScaleMetrics> GetMetricsAsync() => System.Threading.Tasks.Task.FromResult(DummyScaleMetrics);
-
-            public ScaleStatus GetScaleStatus(ScaleStatusContext context) => DummyScaleStatus;
         }
     }
 }
