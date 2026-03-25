@@ -16,8 +16,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Sql
     public class SqlServerMetricsProvider
     {
         private readonly SqlOrchestrationService service;
-        private DateTime metricsTimeStamp = DateTime.MinValue;
-        private SqlServerScaleMetric metrics;
+        private readonly SemaphoreSlim refreshLock = new SemaphoreSlim(1, 1);
+        private DateTime cachedMetricsLastRefreshTime = DateTime.MinValue;
+        private SqlServerScaleMetric cachedMetrics;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SqlServerMetricsProvider"/> class that
@@ -43,20 +44,43 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Sql
         /// </returns>
         public virtual async Task<SqlServerScaleMetric> GetMetricsAsync(int? previousWorkerCount = null)
         {
+            var currentTime = DateTime.UtcNow;
+            SqlServerScaleMetric currentMetrics = this.cachedMetrics;
+
             // We only want to query the metrics every 5 seconds to avoid excessive SQL queries.
-            if (this.metrics == null || DateTime.UtcNow >= this.metricsTimeStamp.AddSeconds(5))
+            if (currentMetrics != null && currentTime < this.cachedMetricsLastRefreshTime.AddSeconds(5))
             {
+                return currentMetrics;
+            }
+
+            await this.refreshLock.WaitAsync().ConfigureAwait(false);
+
+            try
+            {
+                // Re-check after acquiring the lock in case another caller refreshed the cache.
+                currentTime = DateTime.UtcNow;
+                currentMetrics = this.cachedMetrics;
+
+                if (currentMetrics != null && currentTime < this.cachedMetricsLastRefreshTime.AddSeconds(5))
+                {
+                    return currentMetrics;
+                }
+
                 // GetRecommendedReplicaCountAsync will write a trace if the recommendation results
                 // in a worker count that is different from the worker count we pass in as an argument.
                 int recommendedReplicaCount = await this.service.GetRecommendedReplicaCountAsync(
                     previousWorkerCount,
-                    CancellationToken.None);
+                    CancellationToken.None).ConfigureAwait(false);
 
-                this.metricsTimeStamp = DateTime.UtcNow;
-                this.metrics = new SqlServerScaleMetric { RecommendedReplicaCount = recommendedReplicaCount };
+                this.cachedMetricsLastRefreshTime = currentTime;
+                currentMetrics = new SqlServerScaleMetric { RecommendedReplicaCount = recommendedReplicaCount };
+                this.cachedMetrics = currentMetrics;
+                return currentMetrics;
             }
-
-            return this.metrics;
+            finally
+            {
+                this.refreshLock.Release();
+            }
         }
     }
 }

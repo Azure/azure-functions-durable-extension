@@ -22,7 +22,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Sql
         private static readonly ScaleStatus ScaleOutVote = new ScaleStatus { Vote = ScaleVote.ScaleOut };
 
         private readonly SqlServerMetricsProvider metricsProvider;
-        private int? previousWorkerCount = -1;
+        private int? previousWorkerCount;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SqlServerScaleMonitor"/> class.
@@ -57,11 +57,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Sql
 
         /// <inheritdoc />
         ScaleStatus IScaleMonitor.GetScaleStatus(ScaleStatusContext context) =>
-            this.GetScaleStatusCore(context.WorkerCount, context.Metrics.Cast<SqlServerScaleMetric>());
+            this.GetScaleStatusCore(
+                context.WorkerCount,
+                (context.Metrics ?? Enumerable.Empty<ScaleMetrics>()).Cast<SqlServerScaleMetric>());
 
         /// <inheritdoc />
         public ScaleStatus GetScaleStatus(ScaleStatusContext<SqlServerScaleMetric> context) =>
-            this.GetScaleStatusCore(context.WorkerCount, context.Metrics);
+            this.GetScaleStatusCore(context.WorkerCount, context.Metrics ?? Enumerable.Empty<SqlServerScaleMetric>());
 
         private ScaleStatus GetScaleStatusCore(int currentWorkerCount, IEnumerable<SqlServerScaleMetric> metrics)
         {

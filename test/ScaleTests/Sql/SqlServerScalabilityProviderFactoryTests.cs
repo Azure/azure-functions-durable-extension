@@ -8,7 +8,6 @@ using Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Sql;
 using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Moq;
 using Newtonsoft.Json.Linq;
 using Xunit;
 using Xunit.Abstractions;

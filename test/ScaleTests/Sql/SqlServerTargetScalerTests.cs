@@ -31,7 +31,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests
         /// target scaler returns exactly 2 workers.
         /// Formula from dt.GetScaleRecommendation:
         ///   CEILING(liveInstances / maxOrchestrations) + CEILING(liveTasks / maxActivities)
-        ///   = CEILING(20 / 10) + CEILING(0 / 20) = 2
+        ///   = CEILING(20 / 10) + CEILING(0 / 20) = 2.
         /// </summary>
         [Fact]
         public async Task TargetBasedScaling_WithPendingOrchestrations_ReturnsExpectedWorkerCount()
@@ -79,8 +79,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests
                         },
                     });
             }
-
-            await Task.Delay(2000);
 
             var configuration = new ConfigurationBuilder()
                 .AddInMemoryCollection(new Dictionary<string, string>
