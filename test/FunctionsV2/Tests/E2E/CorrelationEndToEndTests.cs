@@ -19,6 +19,7 @@ using Xunit.Abstractions;
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
     [Collection("Non-Parallel Collection")]
+    [Trait("TestType", "E2E")]
     public class CorrelationEndToEndTests
     {
         private const string TestSiteName = "TestSite";
@@ -203,7 +204,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 await host.StartAsync();
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], input, this.output);
-                var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(90));
+                await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(90));
                 await host.StopAsync();
             }
 

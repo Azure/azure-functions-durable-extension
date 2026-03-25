@@ -21,6 +21,7 @@ using static Microsoft.Azure.WebJobs.Extensions.DurableTask.TaskOrchestrationShi
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
+    [Trait("TestType", "E2E")]
     public class OutOfProcTests
     {
         private readonly ITestOutputHelper output;

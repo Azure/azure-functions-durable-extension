@@ -12,6 +12,7 @@ using Xunit;
 
 namespace WebJobs.Extensions.DurableTask.Tests.V2
 {
+    [Trait("TestType", "E2E")]
     public class StorageProviderSelectionTests
     {
         public StorageProviderSelectionTests() { }

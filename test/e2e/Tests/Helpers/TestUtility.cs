@@ -28,9 +28,11 @@ public static class TestUtility
     public static async Task RetryAsync(Func<Task<bool>> condition, int timeout = 120 * 1000, int pollingInterval = 2 * 1000, bool throwWhenDebugging = false, Func<string>? userMessageCallback = null)
     {
         DateTime start = DateTime.Now;
+        int currentInterval = Math.Min(Math.Max(500, pollingInterval / 4), pollingInterval);
         while (!await condition())
         {
-            await Task.Delay(pollingInterval);
+            await Task.Delay(currentInterval);
+            currentInterval = Math.Min(currentInterval * 2, pollingInterval);
 
             bool shouldThrow = !Debugger.IsAttached || (Debugger.IsAttached && throwWhenDebugging);
             if (shouldThrow && (DateTime.Now - start).TotalMilliseconds > timeout)

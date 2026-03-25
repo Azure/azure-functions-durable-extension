@@ -11,7 +11,7 @@
     <!-- Build and pack the source project -->
     <MSBuild Projects="$(MSBuildProjectDirectory)/../../../../src/WebJobs.Extensions.DurableTask/WebJobs.Extensions.DurableTask.csproj"
              Targets="Build;Pack"
-             Properties="Configuration=$(Configuration);PackageOutputPath=$(MSBuildProjectDirectory)/packages" />
+             Properties="Configuration=$(Configuration);PackageOutputPath=$(MSBuildProjectDirectory)/packages;TargetFramework=net8.0" />
   </Target>
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />

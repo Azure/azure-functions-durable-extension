@@ -125,6 +125,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 timeout = Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(30);
             }
 
+            int delayMs = 50;
             Stopwatch sw = Stopwatch.StartNew();
             do
             {
@@ -137,7 +138,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     return status;
                 }
 
-                await Task.Delay(TimeSpan.FromMilliseconds(200));
+                await Task.Delay(delayMs);
+                delayMs = Math.Min(delayMs * 2, 500);
             }
             while (sw.Elapsed < timeout);
 
@@ -157,6 +159,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 timeout = Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(30);
             }
 
+            int delayMs = 50;
             Stopwatch sw = Stopwatch.StartNew();
             do
             {
@@ -167,7 +170,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     return status;
                 }
 
-                await Task.Delay(TimeSpan.FromMilliseconds(200));
+                await Task.Delay(delayMs);
+                delayMs = Math.Min(delayMs * 2, 500);
             }
             while (sw.Elapsed < timeout);
 
@@ -185,21 +189,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 timeout = Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromMinutes(1);
             }
 
+            int delayMs = 50;
             Stopwatch sw = Stopwatch.StartNew();
             do
             {
                 output.WriteLine($"Waiting for instance {this.instanceId} to complete.");
 
                 DurableOrchestrationStatus status = await this.GetStatusAsync(showHistory, showHistoryOutput);
-                if (status?.RuntimeStatus == OrchestrationRuntimeStatus.Completed ||
-                    status?.RuntimeStatus == OrchestrationRuntimeStatus.Failed ||
-                    status?.RuntimeStatus == OrchestrationRuntimeStatus.Terminated)
+                Assert.NotNull(status);
+                if (status.RuntimeStatus == OrchestrationRuntimeStatus.Completed ||
+                    status.RuntimeStatus == OrchestrationRuntimeStatus.Failed ||
+                    status.RuntimeStatus == OrchestrationRuntimeStatus.Terminated)
                 {
                     output.WriteLine($"{status.Name} (ID = {status.InstanceId}) completed after ~{sw.ElapsedMilliseconds}ms. Status = {status.RuntimeStatus}. Output = {status.Output}.");
                     return status;
                 }
 
-                await Task.Delay(TimeSpan.FromMilliseconds(200));
+                await Task.Delay(delayMs);
+                delayMs = Math.Min(delayMs * 2, 500);
             }
             while (sw.Elapsed < timeout);
 
@@ -215,21 +222,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 output.WriteLine($"Waiting for {this.functionName} ({this.instanceId}) to have a custom status of {expectedStatus}.");
 
                 status = await this.GetStatusAsync(showInput: false);
-                if (status?.RuntimeStatus == OrchestrationRuntimeStatus.Completed ||
-                    status?.RuntimeStatus == OrchestrationRuntimeStatus.Failed ||
-                    status?.RuntimeStatus == OrchestrationRuntimeStatus.Terminated)
+                Assert.NotNull(status);
+                if (status.RuntimeStatus == OrchestrationRuntimeStatus.Completed ||
+                    status.RuntimeStatus == OrchestrationRuntimeStatus.Failed ||
+                    status.RuntimeStatus == OrchestrationRuntimeStatus.Terminated)
                 {
                     output.WriteLine($"{status.Name} (ID = {status.InstanceId}) completed after ~{sw.ElapsedMilliseconds}ms. Status = {status.RuntimeStatus}. Output = {status.Output}.");
                     break;
                 }
 
-                if (status.CustomStatus.Equals(expectedStatus))
+                if (status.CustomStatus != null && status.CustomStatus.Equals(expectedStatus))
                 {
                     output.WriteLine($"{status.Name} ({status.InstanceId}) now shows a status of '{status.CustomStatus}'.");
                     return status;
                 }
 
-                await Task.Delay(TimeSpan.FromSeconds(1));
+                await Task.Delay(TimeSpan.FromMilliseconds(250));
             }
             while (sw.Elapsed < timeout);
 

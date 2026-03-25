@@ -258,10 +258,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 .ReturnsAsync(GetInstanceState(OrchestrationStatus.Completed));
             var storageProvider = new DurabilityProvider("test", new Mock<IOrchestrationService>().Object, orchestrationServiceClientMock.Object, "test");
             var durableExtension = GetDurableTaskConfig();
-            var durableOrchestrationClient = (IDurableClient)new DurableClient(storageProvider, durableExtension, durableExtension.HttpApiHandler, new DurableClientAttribute { });
-            var httpHandler = new ExtendedHttpApiHandler(new Mock<IDurableClient>(MockBehavior.Strict).Object);
 
-            // This is super hacky, but required due to the circular dependency of ExtendedHttpApiHandler requiring IDurableClient and DurableClient requiring ExtendedHttpApiHandler
+            // Use ExtendedHttpApiHandler so that GetClient() returns our mock-backed client
+            // instead of creating a new one via DurableTaskExtension (which would bypass the mock).
+            var httpHandler = new ExtendedHttpApiHandler(new Mock<IDurableClient>(MockBehavior.Strict).Object);
+            var durableOrchestrationClient = (IDurableClient)new DurableClient(storageProvider, durableExtension, httpHandler, new DurableClientAttribute { });
             httpHandler.InnerClient = durableOrchestrationClient;
 
             string sampleUrl = "https://samplesite.azurewebsites.net";
