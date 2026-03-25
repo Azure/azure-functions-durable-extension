@@ -16,7 +16,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Sql
     {
         private readonly SqlOrchestrationService service;
         private readonly string connectionName;
-        private readonly ILogger logger;
 
         private readonly object initLock = new object();
         private SqlServerMetricsProvider singletonSqlMetricsProvider;
@@ -27,19 +26,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Sql
         /// </summary>
         /// <param name="service">The SQL orchestration service instance.</param>
         /// <param name="connectionName">The name of the SQL connection.</param>
-        /// <param name="logger">The logger used for diagnostic output.</param>
         /// <exception cref="ArgumentNullException">
         /// Thrown if <paramref name="service"/> is null.
         /// </exception>
         public SqlServerScalabilityProvider(
             SqlOrchestrationService service,
-            string connectionName,
-            ILogger logger)
+            string connectionName)
             : base("mssql", connectionName)
         {
             this.service = service ?? throw new ArgumentNullException(nameof(service));
             this.connectionName = connectionName;
-            this.logger = logger;
         }
 
         /// <summary>

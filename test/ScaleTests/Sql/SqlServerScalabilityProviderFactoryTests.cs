@@ -17,14 +17,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests
     [Collection("SqlServerTests")]
     public class SqlServerScalabilityProviderFactoryTests
     {
-        private readonly ITestOutputHelper output;
         private readonly TestLoggerProvider loggerProvider;
         private readonly ILoggerFactory loggerFactory;
         private readonly IConfiguration configuration;
 
         public SqlServerScalabilityProviderFactoryTests(ITestOutputHelper output)
         {
-            this.output = output;
             this.loggerFactory = new LoggerFactory();
             this.loggerProvider = new TestLoggerProvider(output);
             this.loggerFactory.AddProvider(this.loggerProvider);

@@ -75,8 +75,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Sql
 
             var provider = new SqlServerScalabilityProvider(
                 sqlOrchestrationService,
-                connectionName,
-                this.logger);
+                connectionName);
 
             return provider;
         }
