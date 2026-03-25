@@ -15,13 +15,18 @@ on:
     paths-ignore: [ '**.md' ]
 
 env:
-  solution: WebJobs.Extensions.DurableTask.sln
   config: Release
   AzureWebJobsStorage: UseDevelopmentStorage=true
 
 jobs:
   build:
     runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        framework: [net8.0, net10.0]
+
+    name: E2E (${{ matrix.framework }})
 
     steps:
     - uses: actions/checkout@v3
@@ -30,43 +35,61 @@ jobs:
 
     - name: Setup .NET
       uses: actions/setup-dotnet@v3
-
-    - name: Set up .NET Core 3.1
-      uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: '3.1.x'
+        dotnet-version: |
+          8.0.x
+          10.0.x
+        global-json-file: global.json
 
-    - name: Set up .NET Core 2.1
-      uses: actions/setup-dotnet@v3
+    - name: Cache NuGet packages
+      uses: actions/cache@v3
       with:
-        dotnet-version: '2.1.x'
-
-    - name: Set up .NET 6.0
-      uses: actions/setup-dotnet@v3
-      with:
-        dotnet-version: '6.0.x'
+        path: ~/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', '**/Directory.Packages.props') }}
+        restore-keys: ${{ runner.os }}-nuget-
 
     - name: Restore dependencies
-      run: dotnet restore $solution
+      run: dotnet restore ./test/FunctionsV2/WebJobs.Extensions.DurableTask.Tests.V2.csproj
 
     - name: Build
-      run: dotnet build $solution
+      run: dotnet build ./test/FunctionsV2/WebJobs.Extensions.DurableTask.Tests.V2.csproj --no-restore
 
-    # Install Azurite
     - name: Set up Node.js (needed for Azurite)
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@v4
       with:
-        node-version: '18.x' # Azurite requires at least Node 18
+        node-version: '20.x'
+
+    - name: Cache npm packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.npm
+        key: ${{ runner.os }}-npm-azurite
 
     - name: Install Azurite
-      run: npm install -g azurite
+      shell: pwsh
+      run: |
+        New-Item -ItemType Directory -Path .azurite -Force
+        Set-Location .azurite
+        '{"name":"azurite-local","private":true}' | Set-Content package.json
+        npm install azurite
 
-    # Run tests
-    - name: Run FunctionsV2 tests (only DurableEntity_CleanEntityStorage test, which is flaky) - net8.0
-      run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 & dotnet test ./test/FunctionsV2/WebJobs.Extensions.DurableTask.Tests.V2.csproj --framework net8.0 --filter "FullyQualifiedName~Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests.DurableTaskEndToEndTests.DurableEntity_CleanEntityStorage"
+    - name: Start Azurite
+      shell: pwsh
+      run: |
+        Start-Process (Resolve-Path '.azurite\node_modules\.bin\azurite.cmd') -ArgumentList '--silent','--skipApiVersionCheck','--blobPort','10000','--queuePort','10001','--tablePort','10002'
+        $timeout = 30
+        for ($i = 1; $i -le $timeout; $i++) {
+          try {
+            $tcp = [System.Net.Sockets.TcpClient]::new('127.0.0.1', 10000)
+            $tcp.Dispose()
+            Write-Host "Azurite is ready"
+            break
+          } catch {
+            if ($i -eq $timeout) { throw "Azurite did not start within $timeout seconds" }
+            Write-Host "Waiting for Azurite ($i/$timeout)"
+            Start-Sleep -Seconds 1
+          }
+        }
 
-    - name: Run FunctionsV2 tests (only DurableEntity_CleanEntityStorage test, which is flaky) - net10.0
-      run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 & dotnet test ./test/FunctionsV2/WebJobs.Extensions.DurableTask.Tests.V2.csproj --framework net10.0 --filter "FullyQualifiedName~Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests.DurableTaskEndToEndTests.DurableEntity_CleanEntityStorage"
-
-    - name: Run FunctionsV2 tests (all other E2E tests)
-      run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 & dotnet test ./test/FunctionsV2/WebJobs.Extensions.DurableTask.Tests.V2.csproj  --filter "FullyQualifiedName~Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests.DurableTaskEndToEndTests&FullyQualifiedName!~Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests.DurableTaskEndToEndTests.DurableEntity_CleanEntityStorage"
+    - name: Run FunctionsV2 E2E tests - ${{ matrix.framework }}
+      run: dotnet test ./test/FunctionsV2/WebJobs.Extensions.DurableTask.Tests.V2.csproj --framework ${{ matrix.framework }} --no-build --filter "TestType=E2E" -- xunit.maxParallelThreads=1

@@ -167,10 +167,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     builder.AddEmulatorDurableTask();
                     break;
                 case TestHelpers.AzureStorageProviderType:
+                case null:
                     // This provider is built into the default AddDurableTask() call below.
                     break;
                 default:
-                    throw new InvalidOperationException($"The DurableTaskOptions of type {options.GetType()} is not supported for tests in Functions V2.");
+                    // Allow unrecognized providers (e.g. "empty_storage_provider") so
+                    // tests can verify that the runtime defaults to Azure Storage.
+                    if (!storageProvider.Contains("empty", StringComparison.OrdinalIgnoreCase))
+                    {
+                        throw new InvalidOperationException($"The DurableTaskOptions of type {options.GetType()} is not supported for tests in Functions V2.");
+                    }
+
+                    break;
             }
 
             builder.AddDurableTask(options);

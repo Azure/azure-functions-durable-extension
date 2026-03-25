@@ -11,6 +11,7 @@ using Xunit.Abstractions;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
+    [Trait("TestType", "E2E")]
     public class EntityDependencyInjectionTests
     {
         private readonly ITestOutputHelper output;
@@ -56,9 +57,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], environment, this.output);
 
                 var status = await client.WaitForCompletionAsync(this.output);
+                Assert.NotNull(status);
 
-                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
-                Assert.Equal(TestEntityWithDependencyInjectionHelpers.DummyEnvironmentVariableValue, status?.Output.ToString());
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
+                Assert.Equal(TestEntityWithDependencyInjectionHelpers.DummyEnvironmentVariableValue, status.Output.ToString());
 
                 await host.StopAsync();
             }
@@ -97,9 +99,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], environment, this.output);
 
                 var status = await client.WaitForCompletionAsync(this.output);
+                Assert.NotNull(status);
 
-                Assert.Equal(OrchestrationRuntimeStatus.Completed, status?.RuntimeStatus);
-                List<string> outputValues = status?.Output?.ToObject<List<string>>();
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
+                List<string> outputValues = status.Output?.ToObject<List<string>>();
                 Assert.NotNull(outputValues);
                 Assert.Equal(TestEntityWithDependencyInjectionHelpers.DummyEnvironmentVariableValue, outputValues[0]);
                 Assert.Equal(TestEntityWithDependencyInjectionHelpers.BlobStoredEnvironmentVariableValue, outputValues[1]);
