@@ -140,25 +140,14 @@ jobs:
       - name: Wait for SQL Server to be ready
         run: |
           echo "Waiting for SQL Server to be ready..."
-          SQL_READY=0
           for i in {1..60}; do
-            if docker exec mssql-server /opt/mssql-tools*/bin/sqlcmd -S localhost -U sa -P "$MSSQL_SA_PASSWORD" -Q "SELECT 1" > /dev/null 2>&1; then
+            if nc -z localhost 1433; then
               echo "SQL Server is ready"
-              SQL_READY=1
               break
             fi
-            if (( i % 10 == 0 )); then
-              echo "SQL Server is not ready, waiting ($i/60)"
-            fi
-            sleep 3
+            echo "SQL Server is not ready, waiting ($i/30)"
+            sleep 2
           done
-          if [ "$SQL_READY" -ne 1 ]; then
-            echo "ERROR: SQL Server did not become ready within the expected time."
-            echo "--- Last 20 lines of SQL Server logs ---"
-            docker logs --tail 20 mssql-server || true
-            exit 1
-          fi
-          docker ps
 
       - name: Restore and Build Scale Tests
         working-directory: test/ScaleTests

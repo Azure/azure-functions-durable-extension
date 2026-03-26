@@ -108,9 +108,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Sql
                 taskHubName)
             {
                 // Set concurrency limits from trigger metadata (from Scale Controller payload)
-                // Default: 10 times the number of processors on the current machine
-                MaxActiveOrchestrations = metadata?.MaxConcurrentOrchestratorFunctions ?? (Environment.ProcessorCount * 10),
-                MaxConcurrentActivities = metadata?.MaxConcurrentActivityFunctions ?? (Environment.ProcessorCount * 10),
+                // Default: 10
+                MaxActiveOrchestrations = metadata?.MaxConcurrentOrchestratorFunctions ?? 10,
+                MaxConcurrentActivities = metadata?.MaxConcurrentActivityFunctions ?? 10,
             };
 
             // Note: When connection string includes "Authentication=Active Directory Default" or
@@ -125,13 +125,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Sql
         /// </summary>
         private void ValidateSqlServerMetadata(DurableTaskMetadata metadata)
         {
-            // Validate hub name (SQL Server has less strict requirements than Azure Storage)
-            if (string.IsNullOrWhiteSpace(metadata.TaskHubName))
-            {
-                // Hub name defaults to "default" for SQL Server, so this is acceptable
-                return;
-            }
-
             // Validate max concurrent orchestrator functions
             if (metadata.MaxConcurrentOrchestratorFunctions.HasValue && metadata.MaxConcurrentOrchestratorFunctions.Value <= 0)
             {
