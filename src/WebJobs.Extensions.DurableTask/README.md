@@ -11,7 +11,7 @@ This is the core extension that **powers Durable Functions** on the Azure Functi
 
 This extension is loaded **into the Azure Functions host process** and is registered via `[WebJobsStartup]`, so the WebJobs SDK discovers and initializes it automatically at host startup.
 
-When used with out-of-process language SDKs, this extension still runs inside the host. It communicates with the language worker via a **local gRPC sidecar** on `127.0.0.1` that the worker SDK connects to. The `.proto` definitions are vendored from [durabletask-protobuf](https://github.com/microsoft/durabletask-protobuf) — see `Grpc/Protos/README.md` for update instructions.
+When used with out-of-process language SDKs, this extension still runs inside the host. It communicates with the language worker via a **local gRPC sidecar** that the worker SDK connects to. The `.proto` definitions are vendored from [durabletask-protobuf](https://github.com/microsoft/durabletask-protobuf) — see `Grpc/Protos/README.md` for update instructions.
 
 ## Bindings
 
@@ -27,7 +27,7 @@ This extension is a **hosting layer on top of the [Durable Task Framework](https
 
 ## Storage Backends
 
-Azure Storage is the default backend. The `DurabilityProvider` abstraction allows plugging in alternative storage backends (e.g., Netherite, MSSQL). The `Scale/` folder provides runtime scaling support, integrated via `DurableTaskListener`.
+Azure Storage is the default backend for Durable Functions. The `DurabilityProvider` abstraction allows plugging in alternative storage backends (e.g., Netherite, MSSQL, DurableTask Scheduler). The `Scale/` folder provides **runtime scaling support**, integrated via `DurableTaskListener`.
 
 ## Extension Bundle Compatibility
 

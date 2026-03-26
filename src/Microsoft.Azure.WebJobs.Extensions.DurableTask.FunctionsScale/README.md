@@ -26,8 +26,8 @@ Based on the `type` in the metadata, the package resolves a backend-specific `Sc
 
 This package supports scaling for all four Durable Functions storage backends:
 
-1. **Azure Storage** — The default backend using Azure Storage queues, tables, and blobs.
-2. **Netherite** — A high-throughput backend built on FASTER and Azure Event Hubs.
-3. **MSSQL** — A backend using Microsoft SQL Server.
-4. **Azure Managed Storage** — The Azure-managed storage provider.
+1. Azure Storage
+2. Netherite
+3. MSSQL
+4. DurableTask Scheduler
 

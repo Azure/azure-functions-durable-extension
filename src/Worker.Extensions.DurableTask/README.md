@@ -1,6 +1,6 @@
 # Microsoft.Azure.Functions.Worker.Extensions.DurableTask
 
-This is the **worker-side SDK for Durable Functions on the .NET isolated worker** (out-of-process) hosting model. It defines worker-specific trigger and binding attributes (`[OrchestrationTrigger]`, `[ActivityTrigger]`, `[EntityTrigger]`, `[DurableClient]`) and a middleware-based execution shim, but all durable state management, replay, and scheduling is handled by the host-side extension (`WebJobs.Extensions.DurableTask`). This package is built on top of the [Durable Task .NET SDK](https://github.com/microsoft/durabletask-dotnet) (`durabletask-dotnet`), which provides the client and worker abstractions used to communicate with the host over a local gRPC channel.
+This is the **Durable Functions extension package for .NET isolated** (out-of-process) customers. It defines worker-specific trigger and binding attributes (`[OrchestrationTrigger]`, `[ActivityTrigger]`, `[EntityTrigger]`, `[DurableClient]`) and a middleware-based execution shim, but all durable state management, replay, and scheduling is handled by the host-side extension (`WebJobs.Extensions.DurableTask`). This package is built on top of the [Durable Task .NET SDK](https://github.com/microsoft/durabletask-dotnet) (`durabletask-dotnet`), which provides the client and worker abstractions used to communicate with the host over a local gRPC channel.
 
 | | |
 |---|---|
@@ -11,7 +11,7 @@ This is the **worker-side SDK for Durable Functions on the .NET isolated worker*
 
 This extension runs **inside the .NET isolated worker process**. It is automatically registered via `[WorkerExtensionStartup]`, which the worker SDK discovers at startup.
 
-At runtime, the extension connects to the **host-side gRPC sidecar** (provided by `WebJobs.Extensions.DurableTask`) over `127.0.0.1` to send and receive orchestration commands, activity results, and entity operations. The host extension manages all durable state; this worker extension is a thin client and execution shim.
+At runtime, the extension uses the [Durable Task .NET SDK](https://github.com/microsoft/durabletask-dotnet) (`durabletask-dotnet`) to connect to the **host-side gRPC sidecar** (provided by `WebJobs.Extensions.DurableTask`) for gRPC communication, orchestration replay, and activity/entity dispatch. Specifically, it uses `Microsoft.DurableTask.Worker.Grpc` for running orchestrator and entity replay in the worker process, and `Microsoft.DurableTask.Client.Grpc` for client operations like starting orchestrations and querying instance status. The host extension manages all durable state and storage backend interaction.
 
 ## Key Dependencies
 
