@@ -17,6 +17,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale
         private readonly string connectionName;
         private int maxConcurrentTaskOrchestrationWorkItems;
         private int maxConcurrentTaskActivityWorkItems;
+        private int maxConcurrentTaskEntityWorkItems;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ScalabilityProvider"/> class.
@@ -29,6 +30,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale
             this.connectionName = connectionName ?? throw new ArgumentNullException(nameof(connectionName));
             this.maxConcurrentTaskOrchestrationWorkItems = 10; // Default value
             this.maxConcurrentTaskActivityWorkItems = 10; // Default value
+            this.maxConcurrentTaskEntityWorkItems = 10; // Default value
         }
 
         /// <summary>
@@ -53,6 +55,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale
         {
             get => this.maxConcurrentTaskActivityWorkItems;
             set => this.maxConcurrentTaskActivityWorkItems = value;
+        }
+
+        /// <summary>
+        /// Gets or sets the maximum number of concurrent entity work items.
+        /// </summary>
+        public virtual int MaxConcurrentTaskEntityWorkItems
+        {
+            get => this.maxConcurrentTaskEntityWorkItems;
+            set => this.maxConcurrentTaskEntityWorkItems = value;
         }
 
         /// <summary>

@@ -86,6 +86,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.AzureSto
             // Extract max concurrent values from metadata
             provider.MaxConcurrentTaskOrchestrationWorkItems = metadata?.MaxConcurrentOrchestratorFunctions ?? 10;
             provider.MaxConcurrentTaskActivityWorkItems = metadata?.MaxConcurrentActivityFunctions ?? 10;
+            provider.MaxConcurrentTaskEntityWorkItems = metadata?.MaxConcurrentEntityFunctions ?? 10;
 
             return provider;
         }
@@ -180,6 +181,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.AzureSto
             if (metadata.MaxConcurrentActivityFunctions.HasValue && metadata.MaxConcurrentActivityFunctions.Value <= 0)
             {
                 throw new System.InvalidOperationException($"{nameof(metadata.MaxConcurrentActivityFunctions)} must be a positive integer.");
+            }
+
+            if (metadata.MaxConcurrentEntityFunctions.HasValue && metadata.MaxConcurrentEntityFunctions.Value <= 0)
+            {
+                throw new System.InvalidOperationException($"{nameof(metadata.MaxConcurrentEntityFunctions)} must be a positive integer.");
             }
         }
     }

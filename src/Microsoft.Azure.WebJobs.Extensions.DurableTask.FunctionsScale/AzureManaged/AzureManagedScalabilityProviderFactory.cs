@@ -219,6 +219,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.AzureMan
                 // If nothing is provided, use default value which is 10.
                 provider.MaxConcurrentTaskOrchestrationWorkItems = metadata?.MaxConcurrentOrchestratorFunctions ?? defaultConcurrency;
                 provider.MaxConcurrentTaskActivityWorkItems = metadata?.MaxConcurrentActivityFunctions ?? defaultConcurrency;
+                provider.MaxConcurrentTaskEntityWorkItems = metadata?.MaxConcurrentEntityFunctions ?? defaultConcurrency;
 
                 this.cachedProviders.Add(cacheKey, provider);
                 return provider;
@@ -235,6 +236,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.AzureMan
             if (metadata.MaxConcurrentActivityFunctions.HasValue && metadata.MaxConcurrentActivityFunctions.Value <= 0)
             {
                 throw new InvalidOperationException($"{nameof(metadata.MaxConcurrentActivityFunctions)} must be a positive integer.");
+            }
+
+            if (metadata.MaxConcurrentEntityFunctions.HasValue && metadata.MaxConcurrentEntityFunctions.Value <= 0)
+            {
+                throw new InvalidOperationException($"{nameof(metadata.MaxConcurrentEntityFunctions)} must be a positive integer.");
             }
         }
     }
