@@ -107,6 +107,22 @@ jobs:
       - name: Start Azurite
         run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
 
+      - name: Wait for Azurite to be ready
+        run: |
+          echo "Waiting for Azurite to be ready on port 10000..."
+          for i in {1..30}; do
+            if nc -z localhost 10000; then
+              echo "Azurite is ready."
+              break
+            fi
+            echo "Azurite not ready yet. Retrying in 1 second..."
+            sleep 1
+          done
+          if ! nc -z localhost 10000; then
+            echo "::error::Azurite did not become ready in time."
+            exit 1
+          fi
+
       - name: Pull DTS Emulator Docker Image
         run: docker pull mcr.microsoft.com/dts/dts-emulator:latest
 
@@ -119,9 +135,18 @@ jobs:
 
       - name: Wait for DTS to be ready
         run: |
-          echo "Waiting for DTS to be ready..."
-          sleep 30
-          docker ps
+          echo "Waiting for emulator to be ready..."
+          for i in $(seq 1 30); do
+            if nc -z localhost 8080 2>/dev/null; then
+              echo "Emulator is ready!"
+              break
+            fi
+            if [ "$i" -eq 30 ]; then
+              echo "Emulator failed to start within 30 seconds"
+              exit 1
+            fi
+            sleep 1
+          done
 
       - name: Restore and Build Scale Tests
         working-directory: test/ScaleTests
