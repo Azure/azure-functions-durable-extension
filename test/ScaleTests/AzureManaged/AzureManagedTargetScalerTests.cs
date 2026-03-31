@@ -45,6 +45,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests
             options.TaskHubName = taskHubName;
             options.MaxConcurrentOrchestrationWorkItems = 2;
             options.MaxConcurrentActivityWorkItems = 2;
+            options.MaxConcurrentEntityWorkItems = 2;
 
             this.output.WriteLine($"Creating connection to the test DTS TaskHub: {taskHubName}");
 

@@ -84,7 +84,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.AzureSto
                 this.logger);
 
             // Extract max concurrent values from metadata
-            // Azure storage backend scaling doesn't need entity concurrency settings. 
+            // Azure storage backend scaling doesn't need entity concurrency settings.
             provider.MaxConcurrentTaskOrchestrationWorkItems = metadata?.MaxConcurrentOrchestratorFunctions ?? 10;
             provider.MaxConcurrentTaskActivityWorkItems = metadata?.MaxConcurrentActivityFunctions ?? 10;
 
