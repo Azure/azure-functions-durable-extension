@@ -273,6 +273,32 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public TimeSpan? GrpcHttpClientTimeout { get; set; } = TimeSpan.FromSeconds(100);
 
         /// <summary>
+        /// Gets or sets a flag indicating whether poison queue storage is enabled.
+        /// </summary>
+        /// <remarks>
+        /// <para>If enabled, orchestration, entity, and activity messages that have been dispatched for processing
+        /// more than <see cref="MaxDispatchCount"/> times will be "failed" and moved to the poison queue storage.
+        /// The specific format of the storage depends on which backend storage provider is being used.</para>
+        /// </remarks>
+        /// <value>
+        /// <c>true</c> to enable poison queue storage; otherwise <c>false</c>.
+        /// </value>
+        public bool IsPoisonQueueStorageEnabled { get; set; }
+
+        /// <summary>
+        /// Gets or sets the amount of times a message is dispatched for processing before it is considered "poisoned"
+        /// and moved to the poison queue storage. The default value is 10.
+        /// </summary>
+        /// <remarks>
+        /// This setting is applicable when <see cref="PoisonQueueStorageEnabled"/> is set to <c>true</c>.
+        /// </remarks>
+        /// <value>
+        /// The maximum amount of times a message is dispatched before it is considered "poisoned" and
+        /// moved to the poison queue storage.
+        /// </value>
+        public int MaxDispatchCount { get; set; } = 10;
+
+        /// <summary>
         /// Gets or sets the local gRPC listener mode, controlling what version of gRPC listener is created.
         /// </summary>
         internal LocalGrpcListenerMode GrpcListenerMode { get; set; }

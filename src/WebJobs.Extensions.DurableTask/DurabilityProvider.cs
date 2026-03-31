@@ -132,6 +132,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <inheritdoc/>
         EntityBackendQueries IEntityOrchestrationService.EntityBackendQueries => this.entityOrchestrationService?.EntityBackendQueries;
 
+        /// <summary>
+        /// The maximum amount of times a message can be dispatched before it is considered "poisoned" and
+        /// moved to poison storage.
+        /// Currently this storage provider does not have poison message handling so this value is set to the
+        /// maximum integer value.
+        /// </summary>
+        public int MaxDispatchCount => int.MaxValue;
+
         /// <inheritdoc/>
         Task<TaskOrchestrationWorkItem> IEntityOrchestrationService.LockNextOrchestrationWorkItemAsync(TimeSpan receiveTimeout, CancellationToken cancellationToken)
             => this.entityOrchestrationService.LockNextOrchestrationWorkItemAsync(receiveTimeout, cancellationToken);
