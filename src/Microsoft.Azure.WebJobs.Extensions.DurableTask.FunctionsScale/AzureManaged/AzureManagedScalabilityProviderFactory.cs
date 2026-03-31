@@ -205,6 +205,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.AzureMan
                 // If nothing is provided from TriggerMetadata, we use default value which is 10.
                 options.MaxConcurrentOrchestrationWorkItems = metadata?.MaxConcurrentOrchestratorFunctions ?? defaultConcurrency;
                 options.MaxConcurrentActivityWorkItems = metadata?.MaxConcurrentActivityFunctions ?? defaultConcurrency;
+                options.MaxConcurrentEntityWorkItems = metadata?.MaxConcurrentEntityFunctions ?? defaultConcurrency;
 
                 this.logger.LogInformation(
                     "Creating durability provider for connection '{Connection}', task hub '{TaskHub}', and client ID '{ClientId}'...",
