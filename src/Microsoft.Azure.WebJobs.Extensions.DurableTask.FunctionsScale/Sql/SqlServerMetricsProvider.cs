@@ -72,7 +72,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Sql
                     previousWorkerCount,
                     CancellationToken.None).ConfigureAwait(false);
 
-                this.cachedMetricsLastRefreshTime = currentTime;
+                this.cachedMetricsLastRefreshTime = DateTime.UtcNow;
                 currentMetrics = new SqlServerScaleMetric { RecommendedReplicaCount = recommendedReplicaCount };
                 this.cachedMetrics = currentMetrics;
                 return currentMetrics;
