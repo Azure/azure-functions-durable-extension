@@ -111,17 +111,39 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.AzureMan
                 cacheKey.Item2 ?? "null",
                 cacheKey.Item3 ?? "null");
 
+            int defaultConcurrency = 10;
+
             lock (this.cachedProviders)
             {
-                // If a provider has already been created for this connection name, task hub, and client ID, return it.
+                int maxConcurrentOrchestrators = metadata?.MaxConcurrentOrchestratorFunctions ?? defaultConcurrency;
+                int maxConcurrentActivities = metadata?.MaxConcurrentActivityFunctions ?? defaultConcurrency;
+                int maxConcurrentEntities = metadata?.MaxConcurrentEntityFunctions ?? defaultConcurrency;
+
+                // If a provider has already been created for this connection name, task hub, and client ID,
+                // return it only if concurrency settings haven't changed. Otherwise evict it and recreate
+                // so the underlying service picks up the new limits.
                 if (this.cachedProviders.TryGetValue(cacheKey, out AzureManagedScalabilityProvider? cachedProvider))
                 {
-                    this.logger.LogDebug(
-                        "Returning cached durability provider for connection '{Connection}', task hub '{TaskHub}', and client ID '{ClientId}'",
+                    bool concurrencyChanged =
+                        cachedProvider.MaxConcurrentTaskOrchestrationWorkItems != maxConcurrentOrchestrators ||
+                        cachedProvider.MaxConcurrentTaskActivityWorkItems != maxConcurrentActivities ||
+                        cachedProvider.MaxConcurrentTaskEntityWorkItems != maxConcurrentEntities;
+
+                    if (!concurrencyChanged)
+                    {
+                        this.logger.LogDebug(
+                            "Returning cached durability provider for connection '{Connection}', task hub '{TaskHub}', and client ID '{ClientId}'",
+                            cacheKey.Item1,
+                            cacheKey.Item2,
+                            cacheKey.Item3 ?? "null");
+                        return cachedProvider;
+                    }
+
+                    this.logger.LogInformation(
+                        "Concurrency settings changed for connection '{Connection}', task hub '{TaskHub}'. Recreating provider.",
                         cacheKey.Item1,
-                        cacheKey.Item2,
-                        cacheKey.Item3 ?? "null");
-                    return cachedProvider;
+                        cacheKey.Item2);
+                    this.cachedProviders.Remove(cacheKey);
                 }
 
                 // Create options from the connection string.
@@ -199,13 +221,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.AzureMan
                     options.TaskHubName = taskHubName;
                 }
 
-                int defaultConcurrency = 10;
-
-                // Extract max concurrent values from trigger metadata.
-                // If nothing is provided from TriggerMetadata, we use default value which is 10.
-                options.MaxConcurrentOrchestrationWorkItems = metadata?.MaxConcurrentOrchestratorFunctions ?? defaultConcurrency;
-                options.MaxConcurrentActivityWorkItems = metadata?.MaxConcurrentActivityFunctions ?? defaultConcurrency;
-                options.MaxConcurrentEntityWorkItems = metadata?.MaxConcurrentEntityFunctions ?? defaultConcurrency;
+                options.MaxConcurrentOrchestrationWorkItems = maxConcurrentOrchestrators;
+                options.MaxConcurrentActivityWorkItems = maxConcurrentActivities;
+                options.MaxConcurrentEntityWorkItems = maxConcurrentEntities;
 
                 this.logger.LogInformation(
                     "Creating durability provider for connection '{Connection}', task hub '{TaskHub}', and client ID '{ClientId}'...",
@@ -216,11 +234,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.AzureMan
                 AzureManagedOrchestrationService service = new AzureManagedOrchestrationService(options, this.loggerFactory);
                 AzureManagedScalabilityProvider provider = new AzureManagedScalabilityProvider(service, connectionName, this.logger);
 
-                // Set max concurrent values from trigger metadata for provider.
-                // If nothing is provided, use default value which is 10.
-                provider.MaxConcurrentTaskOrchestrationWorkItems = metadata?.MaxConcurrentOrchestratorFunctions ?? defaultConcurrency;
-                provider.MaxConcurrentTaskActivityWorkItems = metadata?.MaxConcurrentActivityFunctions ?? defaultConcurrency;
-                provider.MaxConcurrentTaskEntityWorkItems = metadata?.MaxConcurrentEntityFunctions ?? defaultConcurrency;
+                provider.MaxConcurrentTaskOrchestrationWorkItems = maxConcurrentOrchestrators;
+                provider.MaxConcurrentTaskActivityWorkItems = maxConcurrentActivities;
+                provider.MaxConcurrentTaskEntityWorkItems = maxConcurrentEntities;
 
                 this.cachedProviders.Add(cacheKey, provider);
                 return provider;
