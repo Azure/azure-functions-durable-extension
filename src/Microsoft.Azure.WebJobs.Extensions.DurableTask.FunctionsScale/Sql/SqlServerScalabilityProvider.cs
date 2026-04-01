@@ -4,7 +4,6 @@
 using System;
 using DurableTask.SqlServer;
 using Microsoft.Azure.WebJobs.Host.Scale;
-using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Sql
 {
