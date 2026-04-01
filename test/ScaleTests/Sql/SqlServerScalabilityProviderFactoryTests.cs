@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using DurableTask.SqlServer;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Sql;
 using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Extensions.Configuration;
@@ -27,11 +28,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests
             this.loggerProvider = new TestLoggerProvider(output);
             this.loggerFactory.AddProvider(this.loggerProvider);
 
+            string connectionString = TestHelpers.GetSqlConnectionString();
+
+            var settings = new SqlOrchestrationServiceSettings(connectionString, "testHub")
+            {
+                CreateDatabaseIfNotExists = true,
+            };
+
+            var service = new SqlOrchestrationService(settings);
+            service.CreateIfNotExistsAsync().GetAwaiter().GetResult();
+
             var configBuilder = new ConfigurationBuilder();
             configBuilder.AddInMemoryCollection(new Dictionary<string, string>
             {
-                { "SQLDB_Connection", TestHelpers.GetSqlConnectionString() },
-                { "TestConnection", TestHelpers.GetSqlConnectionString() },
+                { "SQLDB_Connection", connectionString },
+                { "TestConnection", connectionString },
             });
             this.configuration = configBuilder.Build();
         }
