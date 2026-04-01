@@ -149,6 +149,12 @@ jobs:
             sleep 2
           done
 
+      - name: Create DurableDB
+        run: |
+          docker exec mssql-server /opt/mssql-tools18/bin/sqlcmd \
+            -S localhost -U sa -P "$MSSQL_SA_PASSWORD" -C \
+            -Q "IF DB_ID(N'DurableDB') IS NULL CREATE DATABASE [DurableDB];"
+
       - name: Restore and Build Scale Tests
         working-directory: test/ScaleTests
         run: dotnet build --configuration Release
