@@ -145,7 +145,7 @@ jobs:
               echo "SQL Server is ready"
               break
             fi
-            echo "SQL Server is not ready, waiting ($i/30)"
+            echo "SQL Server is not ready, waiting ($i/60)"
             sleep 2
           done
 

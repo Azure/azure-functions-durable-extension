@@ -7,12 +7,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests
 {
     /// <summary>
     /// Xunit collection definition that groups all SQL Server scale tests together.
-    /// Tests decorated with [Collection("SqlServerTests")] share a single <see cref="SqlServerTestFixture"/>
-    /// instance, which creates the database/schema once before the first test and shares it across all tests
-    /// in the collection.
+    /// Tests in the [Collection("SqlServerTests")] collection run sequentially
+    /// to avoid concurrent access to the shared SQL Server database.
     /// </summary>
     [CollectionDefinition("SqlServerTests")]
-    public class SqlServerTestCollection : ICollectionFixture<SqlServerTestFixture>
+    public class SqlServerTestCollection
     {
     }
 }
