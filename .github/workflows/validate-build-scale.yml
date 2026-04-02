@@ -158,3 +158,82 @@ jobs:
         env:
           AzureWebJobsStorage: UseDevelopmentStorage=true
         run: dotnet test --configuration Release --no-build --verbosity normal --filter "FullyQualifiedName~SqlServer"
+        # Run tests
+        dotnet test ./test/ScaleTests/Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests.csproj -c $config --no-build --verbosity normal --filter "FullyQualifiedName!~AzureManaged"
+
+  dts:
+    name: Functions Scale Tests - DTS
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          global-json-file: global.json
+
+      - name: Set up Node.js (needed for Azurite)
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18.x'
+
+      - name: Install Azurite
+        run: npm install -g azurite
+
+      - name: Start Azurite
+        run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
+
+      - name: Wait for Azurite to be ready
+        run: |
+          echo "Waiting for Azurite to be ready on port 10000..."
+          for i in {1..30}; do
+            if nc -z localhost 10000; then
+              echo "Azurite is ready."
+              break
+            fi
+            echo "Azurite not ready yet. Retrying in 1 second..."
+            sleep 1
+          done
+          if ! nc -z localhost 10000; then
+            echo "::error::Azurite did not become ready in time."
+            exit 1
+          fi
+
+      - name: Pull DTS Emulator Docker Image
+        run: docker pull mcr.microsoft.com/dts/dts-emulator:latest
+
+      - name: Start DTS Container
+        run: |
+          docker run -i \
+            -p 8080:8080 \
+            -p 8082:8082 \
+            -d mcr.microsoft.com/dts/dts-emulator:latest
+
+      - name: Wait for DTS to be ready
+        run: |
+          echo "Waiting for emulator to be ready..."
+          for i in $(seq 1 30); do
+            if nc -z localhost 8080 2>/dev/null; then
+              echo "Emulator is ready!"
+              break
+            fi
+            if [ "$i" -eq 30 ]; then
+              echo "Emulator failed to start within 30 seconds"
+              exit 1
+            fi
+            sleep 1
+          done
+
+      - name: Restore and Build Scale Tests
+        working-directory: test/ScaleTests
+        run: dotnet build --configuration Release
+
+      - name: Run Azure Managed Scale Tests
+        working-directory: test/ScaleTests
+        env:
+          AzureWebJobsStorage: UseDevelopmentStorage=true
+          DURABLE_TASK_SCHEDULER_CONNECTION_STRING: "Endpoint=http://localhost:8080;Authentication=None"
+        run: dotnet test --configuration Release --no-build --verbosity normal --filter "FullyQualifiedName~AzureManaged"

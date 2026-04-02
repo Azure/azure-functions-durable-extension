@@ -51,6 +51,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Azure.WebJobs" />
     <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" />
+    <PackageReference Include="Microsoft.DurableTask.AzureManagedBackend" />
     <PackageReference Include="Microsoft.DurableTask.SqlServer" />
     <PackageReference Include="Azure.Identity" />
     <PackageReference Include="Microsoft.Extensions.Azure" />

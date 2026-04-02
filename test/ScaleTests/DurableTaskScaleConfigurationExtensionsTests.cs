@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.AzureManaged;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.AzureStorage;
 using Microsoft.Azure.WebJobs.Host.Config;
 using Microsoft.Extensions.Configuration;
@@ -20,10 +21,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests
     public class DurableTaskScaleConfigurationExtensionsTests
     {
         /// <summary>
-        /// Scenario: Core service registration in DI container.
         /// Validates that AddDurableTask() registers IStorageServiceClientProviderFactory.
         /// Validates that AddDurableTask() registers IScalabilityProviderFactory implementations.
-        /// Tests the foundational setup required by Scale Controller integration.
         /// Ensures Scale Controller can resolve storage clients and scalability providers.
         /// </summary>
         [Fact]
@@ -52,6 +51,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests
                 var scalabilityProviderFactories = serviceProvider.GetServices<IScalabilityProviderFactory>().ToList();
                 Assert.NotEmpty(scalabilityProviderFactories);
                 Assert.Contains(scalabilityProviderFactories, f => f is AzureStorageScalabilityProviderFactory);
+                Assert.Contains(scalabilityProviderFactories, f => f is AzureManagedScalabilityProviderFactory);
             }
         }
 
