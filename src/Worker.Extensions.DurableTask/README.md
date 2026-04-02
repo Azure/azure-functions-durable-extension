@@ -18,6 +18,6 @@ At runtime, the extension uses the [Durable Task .NET SDK](https://github.com/mi
 | Package | Details |
 |---|---|
 | [`Microsoft.DurableTask.Client.Grpc`](https://github.com/microsoft/durabletask-dotnet) | The gRPC-based Durable Task client SDK. |
-| [`Microsoft.DurableTask.Worker.Grpc`](https://github.com/microsoft/durabletask-dotnet) | The gRPC-based Durable Task worker SDK that handles orchestration replay. |
+| [`Microsoft.DurableTask.Worker.Grpc`](https://github.com/microsoft/durabletask-dotnet) | The gRPC-based Durable Task worker SDK that handles orchestration replay and entity dispatch. |
 | `Microsoft.Azure.Functions.Worker.Core` | Core abstractions for the .NET isolated worker model. |
 | `Microsoft.Azure.Functions.Worker.Extensions.Abstractions` | Base classes for worker extension attributes. |
