@@ -289,4 +289,4 @@ jobs:
 
       - name: Run E2E tests (Java)
         working-directory: test/e2e/Tests
-        run: dotnet test -f ${{ matrix.targetFramework }} --filter 'MSSQL!=Skip&Java!=Skip&Java-MSSQL!=Skip'
+        run: dotnet test -f ${{ matrix.targetFramework }} --filter 'MSSQL!=Skip&Java!=Skip&Java-MSSQL!=Skip'   

@@ -46,6 +46,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests
                 "Azure Managed connection string not found in environment variables.");
         }
 
+        public static string GetNetheriteEventHubsConnectionString()
+        {
+            string connectionString = Environment.GetEnvironmentVariable("EventHubsConnection");
+
+            if (!string.IsNullOrEmpty(connectionString))
+            {
+                return connectionString;
+            }
+
+            throw new InvalidOperationException(
+                "Event Hubs connection string not found in environment variables. " +
+                "Set the 'EventHubsConnection' environment variable (e.g. to the Event Hubs emulator connection string).");
+        }
+
         /// <summary>
         /// Creates a TriggerMetadata object for testing with the specified storage provider type.
         /// </summary>

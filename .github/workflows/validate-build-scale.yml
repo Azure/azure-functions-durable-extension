@@ -79,8 +79,82 @@ jobs:
           sleep 1
         done
 
-        # Run tests
-        dotnet test ./test/ScaleTests/Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests.csproj -c $config --no-build --verbosity normal --filter "FullyQualifiedName!~AzureManaged"
+        # Run tests (exclude AzureManaged and Netherite which have their own jobs)
+        dotnet test ./test/ScaleTests/Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests.csproj -c $config --no-build --verbosity normal --filter "FullyQualifiedName!~AzureManaged&FullyQualifiedName!~Netherite"
+
+  netherite:
+    name: Functions Scale Tests - Netherite
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          global-json-file: global.json
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', '**/Directory.Packages.props') }}
+          restore-keys: ${{ runner.os }}-nuget-
+
+      - name: Set up Node.js (needed for Azurite)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Install and Start Azurite
+        run: |
+          npm install -g azurite
+          azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
+          for i in {1..30}; do
+            if nc -z 127.0.0.1 10000; then
+              echo "Azurite is ready"
+              break
+            fi
+            echo "Waiting for Azurite ($i/30)..."
+            sleep 1
+          done
+
+      - name: Start Event Hubs Emulator
+        run: |
+          docker run -d \
+            --name eventhubs-emulator \
+            -p 5672:5672 \
+            -e ACCEPT_EULA=Y \
+            -e BLOB_SERVER=host.docker.internal \
+            -e METADATA_SERVER=host.docker.internal \
+            -v ${{ github.workspace }}/test/ScaleTests/Netherite/eventhubs-emulator-config.json:/Emulator/ConfigFiles/Config.json \
+            --add-host host.docker.internal:host-gateway \
+            mcr.microsoft.com/azure-messaging/eventhubs-emulator:latest
+
+          echo "Waiting for Event Hubs emulator to be ready..."
+          for i in $(seq 1 60); do
+            if nc -z localhost 5672 2>/dev/null; then
+              echo "Event Hubs emulator is ready!"
+              break
+            fi
+            if [ "$i" -eq 60 ]; then
+              echo "Event Hubs emulator failed to start within 60 seconds"
+              docker logs eventhubs-emulator
+              exit 1
+            fi
+            sleep 2
+          done
+
+      - name: Restore and Build Scale Tests
+        run: dotnet build ./test/ScaleTests/Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests.csproj -c $config
+
+      - name: Run Netherite Scale Tests
+        env:
+          AzureWebJobsStorage: UseDevelopmentStorage=true
+          EventHubsConnection: "Endpoint=sb://localhost;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true;"
+        run: dotnet test ./test/ScaleTests/Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests.csproj -c $config --no-build --verbosity normal --filter "FullyQualifiedName~Netherite"
 
   dts:
     name: Functions Scale Tests - DTS
