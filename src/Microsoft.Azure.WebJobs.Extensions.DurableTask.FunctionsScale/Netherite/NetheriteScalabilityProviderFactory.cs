@@ -18,12 +18,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Netherit
     public class NetheriteScalabilityProviderFactory : IScalabilityProviderFactory
     {
         internal const string ProviderName = "Netherite";
-
-        /// <summary>
-        /// The key used to retrieve the Event Hubs token credential function pointer from TriggerMetadata.Properties.
-        /// This is used for Scale Controller identity support when the Event Hubs connection uses
-        /// a different identity than the Storage connection.
-        /// </summary>
         internal const string GetNetheriteEventHubsTokenCredential = "GetNetheriteEventHubsTokenCredential";
 
         private const string LoggerName = "Triggers.DurableTask.Netherite";
@@ -122,17 +116,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Netherit
                 cacheKey.Item2 ?? "null");
 
             int defaultConcurrency = 10;
+            int maxConcurrentOrchestrators = metadata?.MaxConcurrentOrchestratorFunctions ?? defaultConcurrency;
+            int maxConcurrentActivities = metadata?.MaxConcurrentActivityFunctions ?? defaultConcurrency;
 
             lock (this.cachedProviders)
             {
-                int maxConcurrentOrchestrators = metadata?.MaxConcurrentOrchestratorFunctions ?? defaultConcurrency;
-                int maxConcurrentActivities = metadata?.MaxConcurrentActivityFunctions ?? defaultConcurrency;
-
                 // If a provider has already been created for this connection name and task hub,
                 // return it only if concurrency settings haven't changed. Otherwise evict and
                 // recreate so the underlying service picks up the new limits.
                 if (this.cachedProviders.TryGetValue(cacheKey, out NetheriteScalabilityProvider? cachedProvider))
                 {
+                    // Netherite provider only needs orchestration and activity functions concurrency.
                     bool concurrencyChanged =
                         cachedProvider.MaxConcurrentTaskOrchestrationWorkItems != maxConcurrentOrchestrators ||
                         cachedProvider.MaxConcurrentTaskActivityWorkItems != maxConcurrentActivities;
@@ -164,10 +158,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Netherit
                     eventHubsTokenCredential,
                     this.logger);
 
-                // HubName is required by Validate (no default).
-                // StorageConnectionName and EventHubsConnectionName must match the user's
-                // configured connection names so the resolver looks up the right config sections.
-                // Concurrency values must be set before Validate because it checks them (> 0).
                 var settings = new NetheriteOrchestrationServiceSettings
                 {
                     HubName = taskHubName,
@@ -182,8 +172,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Netherit
                 // 2. ResolveConnectionInfo(hubName, EventHubsConnectionName, EventHubsNamespace) -> settings.EventHubsConnection
                 // 3. ResolveConnectionInfo(hubName, StorageConnectionName, BlobStorage) -> settings.BlobStorageConnection
                 // 4. ResolveConnectionInfo(hubName, StorageConnectionName, TableStorage) -> settings.TableStorageConnection (if configured)
-                // 5. ResolveConnectionInfo(hubName, StorageConnectionName, PageBlobStorage) -> settings.PageBlobStorageConnection (returns null)
-                // See NetheriteScaleControllerConnectionResolver for full details.
+                // See class NetheriteScaleControllerConnectionResolver for full details.
                 settings.Validate(connectionResolver);
 
                 this.logger.LogInformation(
@@ -226,6 +215,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Netherit
                             connectionName);
                         return credential;
                     }
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
                 }
                 catch (Exception ex)
                 {

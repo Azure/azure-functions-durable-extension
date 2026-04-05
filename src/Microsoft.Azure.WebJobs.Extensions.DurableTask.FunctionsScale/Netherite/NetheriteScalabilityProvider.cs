@@ -26,9 +26,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Netherit
         /// <summary>
         /// Initializes a new instance of the <see cref="NetheriteScalabilityProvider"/> class.
         /// </summary>
-        /// <param name="orchestrationService">
-        /// The <see cref="NetheriteOrchestrationService"/> instance that provides access to backend service for scaling operations.
-        /// </param>
         /// <param name="settings">
         /// The <see cref="NetheriteOrchestrationServiceSettings"/> used to configure the service.
         /// </param>
@@ -39,7 +36,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Netherit
         /// The <see cref="ILogger"/> instance used for logging provider activities and diagnostics.
         /// </param>
         /// <exception cref="ArgumentNullException">
-        /// Thrown if <paramref name="orchestrationService"/> is <see langword="null"/>.
+        /// Thrown if <paramref name="settings"/> is <see langword="null"/>.
         /// </exception>
         public NetheriteScalabilityProvider(
             NetheriteOrchestrationServiceSettings settings,
@@ -62,7 +59,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Netherit
             string functionId,
             string functionName,
             string hubName,
-            string connectionName,
+            string targetConnectionName,
             out IScaleMonitor scaleMonitor)
         {
             // Netherite backend does not support the legacy scale monitor infrastructure.
@@ -76,7 +73,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Netherit
             string functionId,
             string functionName,
             string hubName,
-            string connectionName,
+            string targetConnectionName,
             out ITargetScaler targetScaler)
         {
             lock (this.initLock)

@@ -146,25 +146,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests
                 out ITargetScaler targetScaler);
 
             Assert.True(scalerCreated, "Expected TryGetTargetScaler to return true");
-            Assert.NotNull(targetScaler);
-            Assert.IsType<NetheriteTargetScaler>(targetScaler);
-            this.output.WriteLine("Target scaler created successfully.");
+            try
+            {
+                Assert.NotNull(targetScaler);
+                Assert.IsType<NetheriteTargetScaler>(targetScaler);
+                this.output.WriteLine("Target scaler created successfully.");
 
-            // 6. Get scaling result (reads load info from table + Event Hubs emulator)
-            this.output.WriteLine("Calling GetScaleResultAsync...");
-            TargetScalerResult result = await targetScaler.GetScaleResultAsync(new TargetScalerContext());
+                // 6. Get scaling result (reads load info from table + Event Hubs emulator)
+                this.output.WriteLine("Calling GetScaleResultAsync...");
+                TargetScalerResult result = await targetScaler.GetScaleResultAsync(new TargetScalerContext());
 
-            Assert.NotNull(result);
-            this.output.WriteLine($"Target worker count: {result.TargetWorkerCount}");
+                Assert.NotNull(result);
+                this.output.WriteLine($"Target worker count: {result.TargetWorkerCount}");
 
-            // With 4 partitions each having 500 activities and maxConcurrentActivities=10,
-            // the scaler should recommend multiple workers.
-            Assert.True(result.TargetWorkerCount > 0, "Expected target worker count > 0 for loaded partitions");
-
-            // Cleanup
-            await loadPublisher.DeleteIfExistsAsync(CancellationToken.None);
-            await containerClient.DeleteIfExistsAsync();
-            this.output.WriteLine("Cleaned up table entries and blob container.");
+                // With 4 partitions each having 500 activities and maxConcurrentActivities=10,
+                // the scaler should recommend multiple workers.
+                Assert.True(result.TargetWorkerCount > 0, "Expected target worker count > 0 for loaded partitions");
+            }
+            finally
+            {
+                // Cleanup
+                await loadPublisher.DeleteIfExistsAsync(CancellationToken.None);
+                await containerClient.DeleteIfExistsAsync();
+                this.output.WriteLine("Cleaned up table entries and blob container.");
+            }
         }
 
         private static async Task UploadBlobAsync(BlobContainerClient container, string blobPath, string content)

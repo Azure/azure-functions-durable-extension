@@ -45,13 +45,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Netherit
         /// Dispatches to <c>ResolveStorageConnection</c> or <c>ResolveEventHubsConnection</c>
         /// based on the resource type.
         /// </summary>
-        public override ConnectionInfo ResolveConnectionInfo(string taskHub, string connectionName, ResourceType recourceType)
+        public override ConnectionInfo ResolveConnectionInfo(string taskHub, string connectionName, ResourceType rescourceType)
         {
-            switch (recourceType)
+            switch (rescourceType)
             {
                 case ResourceType.BlobStorage:
                 case ResourceType.TableStorage:
-                    return this.ResolveStorageConnection(connectionName, recourceType);
+                    return this.ResolveStorageConnection(connectionName, rescourceType);
 
                 case ResourceType.PageBlobStorage:
                     // PageBlobStorage is used by FASTER's internal log, not by the scaling path.
@@ -63,7 +63,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Netherit
                     return this.ResolveEventHubsConnection(connectionName);
 
                 default:
-                    throw new NotSupportedException($"Unknown resource type: {recourceType}");
+                    throw new NotSupportedException($"Unknown resource type: {rescourceType}");
             }
         }
 
@@ -82,7 +82,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Netherit
         /// <summary>
         /// Resolves an Azure Storage connection (blob or table) by looking up the configuration
         /// section for <paramref name="connectionName"/>.
-        /// If the section has a plain string value, it is treated as a connection string.</item>
+        /// If the section has a plain string value, it is treated as a connection string.
         /// If the section has sub-keys (accountName, blobServiceUri, tableServiceUri),
         /// the storage token credential is paired with the endpoint.
         /// </summary>
@@ -143,7 +143,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Netherit
         /// <summary>
         /// Resolves an Event Hubs namespace connection by looking up the configuration
         /// section for <paramref name="connectionName"/>.
-        /// If the section has a plain string value, it is treated as a connection string.</item>
+        /// If the section has a plain string value, it is treated as a connection string.
         /// If the section has a fullyQualifiedNamespace sub-key, the Event Hubs token
         /// credential (or storage credential as fallback) is paired with the namespace.
         /// </summary>

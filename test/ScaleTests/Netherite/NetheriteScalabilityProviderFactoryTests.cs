@@ -10,8 +10,6 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using Xunit;
 using Xunit.Abstractions;
-using AzureManaged = Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.AzureManaged;
-using AzureStorage = Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.AzureStorage;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests
 {
@@ -125,10 +123,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests
 
         /// <summary>
         /// Validates that a single (non-comma) connection name is used for both storage
-        /// and Event Hubs lookups.
+        /// and Event Hubs lookups. The storage connection resolves fine, but Validate will
+        /// fail because a storage connection string is not a valid Event Hubs connection
+        /// string. We assert the specific exception type (InvalidOperationException) in this case.
         /// </summary>
         [Fact]
-        public void GetScalabilityProvider_WithSingleConnectionName_UsesItForBoth()
+        public void GetScalabilityProvider_WithSingleConnectionName_ThrowsOnValidation()
         {
             var config = new ConfigurationBuilder()
                 .AddInMemoryCollection(new Dictionary<string, string>
@@ -139,30 +139,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests
 
             var factory = new NetheriteScalabilityProviderFactory(config, this.loggerFactory);
 
-            // Single connection name used for both storage and Event Hubs.
-            // Event Hubs resolution will also look up "MyConnection", which resolves to the
-            // same config value. ConnectionInfo.FromEventHubsConnectionString will fail to
-            // parse a storage connection string, so this test validates the code path up to
-            // the point where the connection is resolved.
             var triggerMetadata = TestHelpers.CreateTriggerMetadata("testHub", 10, 10, "MyConnection", "Netherite");
             var metadata = triggerMetadata.ExtractDurableTaskMetadata();
 
-            // When using a single connection name, the resolver uses it for both storage
-            // and Event Hubs. The storage connection resolves fine, but the Event Hubs parse
-            // of a storage connection string may throw inside Validate. This is expected.
-            try
-            {
-                var provider = factory.GetScalabilityProvider(metadata, triggerMetadata);
-                Assert.NotNull(provider);
-                Assert.Equal("MyConnection", provider.ConnectionName);
-            }
-            catch (Exception)
-            {
-                // Event Hubs parse failure is acceptable here since we're using a storage
-                // connection string for Event Hubs. The important thing is that the single
-                // connection name code path was exercised.
-                this.output.WriteLine("Expected: Validate threw because storage connection string is not valid for Event Hubs.");
-            }
+            Assert.ThrowsAny<InvalidOperationException>(() =>
+                factory.GetScalabilityProvider(metadata, triggerMetadata));
         }
 
         /// <summary>

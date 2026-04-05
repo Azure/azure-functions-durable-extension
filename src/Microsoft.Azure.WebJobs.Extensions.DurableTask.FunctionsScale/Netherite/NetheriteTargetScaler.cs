@@ -30,7 +30,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Netherit
         /// <param name="scalabilityProvider">The scalability provider for concurrency limits.</param>
         /// <param name="logger">The logger for diagnostic output.</param>
         /// <exception cref="ArgumentNullException">
-        /// Thrown if <paramref name="metricsProvider"/> is null.
+        /// Thrown if <paramref name="metricsProvider"/>, <paramref name="scalabilityProvider"/>,
+        /// or <paramref name="logger"/> is null.
         /// </exception>
         public NetheriteTargetScaler(
             string functionId,
@@ -39,8 +40,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Netherit
             ILogger logger)
         {
             this.metricsProvider = metricsProvider ?? throw new ArgumentNullException(nameof(metricsProvider));
-            this.scalabilityProvider = scalabilityProvider;
-            this.logger = logger;
+            this.scalabilityProvider = scalabilityProvider ?? throw new ArgumentNullException(nameof(scalabilityProvider));
+            this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
             // Scalers in Durable Functions are per function IDs. Scalers share the same metricsProvider in the same task hub.
             this.TargetScalerDescriptor = new TargetScalerDescriptor(functionId);

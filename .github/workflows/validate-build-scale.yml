@@ -111,7 +111,7 @@ jobs:
       - name: Install and Start Azurite
         run: |
           npm install -g azurite
-          azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
+          azurite --silent --skipApiVersionCheck --blobPort 10000 --queuePort 10001 --tablePort 10002 &
           for i in {1..30}; do
             if nc -z 127.0.0.1 10000; then
               echo "Azurite is ready"
@@ -179,7 +179,7 @@ jobs:
         run: npm install -g azurite
 
       - name: Start Azurite
-        run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 &
+        run: azurite --silent --skipApiVersionCheck --blobPort 10000 --queuePort 10001 --tablePort 10002 &
 
       - name: Wait for Azurite to be ready
         run: |
