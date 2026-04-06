@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using DurableTask.Netherite;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Netherite;
 using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Extensions.Configuration;
@@ -123,9 +124,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests
 
         /// <summary>
         /// Validates that a single (non-comma) connection name is used for both storage
-        /// and Event Hubs lookups. The storage connection resolves fine, but Validate will
-        /// fail because a storage connection string is not a valid Event Hubs connection
-        /// string. We assert the specific exception type (InvalidOperationException) in this case.
+        /// and Event Hubs lookups. The storage connection string resolves for storage, but
+        /// <see cref="NetheriteOrchestrationServiceSettings.Validate"/> cannot build an Event
+        /// Hubs connection from the same value. Netherite wraps that failure in
+        /// <see cref="NetheriteConfigurationException"/>.
         /// </summary>
         [Fact]
         public void GetScalabilityProvider_WithSingleConnectionName_ThrowsOnValidation()
@@ -142,7 +144,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests
             var triggerMetadata = TestHelpers.CreateTriggerMetadata("testHub", 10, 10, "MyConnection", "Netherite");
             var metadata = triggerMetadata.ExtractDurableTaskMetadata();
 
-            Assert.ThrowsAny<InvalidOperationException>(() =>
+            Assert.ThrowsAny<NetheriteConfigurationException>(() =>
                 factory.GetScalabilityProvider(metadata, triggerMetadata));
         }
 
