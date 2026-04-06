@@ -45,13 +45,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Netherit
         /// Dispatches to <c>ResolveStorageConnection</c> or <c>ResolveEventHubsConnection</c>
         /// based on the resource type.
         /// </summary>
-        public override ConnectionInfo ResolveConnectionInfo(string taskHub, string connectionName, ResourceType rescourceType)
+        public override ConnectionInfo ResolveConnectionInfo(string taskHub, string connectionName, ResourceType resourceType)
         {
-            switch (rescourceType)
+            switch (resourceType)
             {
                 case ResourceType.BlobStorage:
                 case ResourceType.TableStorage:
-                    return this.ResolveStorageConnection(connectionName, rescourceType);
+                    return this.ResolveStorageConnection(connectionName, resourceType);
 
                 case ResourceType.PageBlobStorage:
                     // PageBlobStorage is used by FASTER's internal log, not by the scaling path.
@@ -63,7 +63,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Netherit
                     return this.ResolveEventHubsConnection(connectionName);
 
                 default:
-                    throw new NotSupportedException($"Unknown resource type: {rescourceType}");
+                    throw new NotSupportedException($"Unknown resource type: {resourceType}");
             }
         }
 

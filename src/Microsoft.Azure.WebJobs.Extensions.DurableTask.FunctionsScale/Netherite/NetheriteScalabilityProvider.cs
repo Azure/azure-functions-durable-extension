@@ -7,8 +7,6 @@ using DurableTask.Netherite.Scaling;
 using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Extensions.Logging;
 
-#pragma warning disable SA1649 // File name should match first type name
-
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Netherite
 {
     /// <summary>

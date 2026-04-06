@@ -7,7 +7,7 @@
         "Entities": [
           {
             "Name": "partitions",
-            "PartitionCount": "4",
+            "PartitionCount": 4,
             "ConsumerGroups": [
               { "Name": "$Default" }
             ]
