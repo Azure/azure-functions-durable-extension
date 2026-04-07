@@ -149,7 +149,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Netherit
 
                 // Extract token credentials from TriggerMetadata (Scale Controller path).
                 TokenCredential? storageTokenCredential = TriggerMetadataExtensions.ExtractTokenCredential(triggerMetadata, this.logger);
-                TokenCredential? eventHubsTokenCredential = ExtractEventHubsTokenCredential(triggerMetadata, connectionName, this.logger);
+                TokenCredential? eventHubsTokenCredential = ExtractEventHubsTokenCredential(triggerMetadata, eventHubsConnectionName, this.logger);
 
                 // Build a connection resolver that supports both connection strings and identity-based auth.
                 var connectionResolver = new NetheriteScaleControllerConnectionResolver(

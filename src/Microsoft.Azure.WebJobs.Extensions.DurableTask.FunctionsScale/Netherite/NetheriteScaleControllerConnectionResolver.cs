@@ -137,6 +137,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Netherit
                 }
             }
 
+            this.logger.LogWarning(
+                "Unable to resolve storage connection '{Connection}'. This may indicate a misconfiguration. " +
+                "Ensure the connection is defined as a connection string, or as a section with 'accountName', 'blobServiceUri', or 'tableServiceUri' sub-keys.",
+                connectionName);
             return null!;
         }
 
@@ -171,6 +175,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Netherit
                 }
             }
 
+            this.logger.LogWarning(
+                "Unable to resolve Event Hubs connection '{Connection}'. This may indicate a misconfiguration. " +
+                "Ensure the connection is defined as a connection string, or as a section with a 'fullyQualifiedNamespace' sub-key.",
+                connectionName);
             return null!;
         }
 
