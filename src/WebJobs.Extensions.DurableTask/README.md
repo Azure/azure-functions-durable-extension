@@ -27,7 +27,16 @@ This extension is a **hosting layer on top of the [Durable Task Framework](https
 
 ## Storage Backends
 
-Azure Storage is the default backend for Durable Functions. The `DurabilityProvider` abstraction allows plugging in alternative storage backends (e.g., Netherite, MSSQL, DurableTask Scheduler). The `Scale/` folder provides **runtime scaling support**, integrated via `DurableTaskListener`.
+Azure Storage is the default backend for Durable Functions. The `DurabilityProvider` abstraction allows plugging in alternative storage backends:
+
+| Backend | Repository |
+|---|---|
+| **Azure Storage** (default) | [`Azure/durabletask`](https://github.com/Azure/durabletask) |
+| **Netherite** | [`microsoft/durabletask-netherite`](https://github.com/microsoft/durabletask-netherite) |
+| **MSSQL** | [`microsoft/durabletask-mssql`](https://github.com/microsoft/durabletask-mssql) |
+| **Durable Task Scheduler** | Not open source |
+
+The `Scale/` folder provides **runtime scaling support**, integrated via `DurableTaskListener`.
 
 ## Extension Bundle Compatibility
 

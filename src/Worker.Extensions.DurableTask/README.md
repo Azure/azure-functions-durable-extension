@@ -1,6 +1,6 @@
 # Microsoft.Azure.Functions.Worker.Extensions.DurableTask
 
-This is the **Durable Functions extension package for .NET isolated** (out-of-process) customers. It defines worker-specific trigger and binding attributes (`[OrchestrationTrigger]`, `[ActivityTrigger]`, `[EntityTrigger]`, `[DurableClient]`) and a middleware-based execution shim, but all durable state management, replay, and scheduling is handled by the host-side extension (`WebJobs.Extensions.DurableTask`). This package is built on top of the [Durable Task .NET SDK](https://github.com/microsoft/durabletask-dotnet) (`durabletask-dotnet`), which provides the client and worker abstractions used to communicate with the host over a local gRPC channel.
+This is the **Durable Functions extension package for .NET isolated** (out-of-process) function apps. It defines worker-specific trigger and binding attributes (`[OrchestrationTrigger]`, `[ActivityTrigger]`, `[EntityTrigger]`, `[DurableClient]`) and a middleware-based execution shim, but all durable state management, replay, and scheduling is handled by the host-side extension (`Microsoft.Azure.WebJobs.Extensions.DurableTask`). This package is built on top of the [Durable Task .NET SDK](https://github.com/microsoft/durabletask-dotnet) (`durabletask-dotnet`), which provides the client and worker abstractions used to communicate with the host over a local gRPC channel.
 
 | | |
 |---|---|
@@ -19,5 +19,5 @@ At runtime, the extension uses the [Durable Task .NET SDK](https://github.com/mi
 |---|---|
 | [`Microsoft.DurableTask.Client.Grpc`](https://github.com/microsoft/durabletask-dotnet) | The gRPC-based Durable Task client SDK. |
 | [`Microsoft.DurableTask.Worker.Grpc`](https://github.com/microsoft/durabletask-dotnet) | The gRPC-based Durable Task worker SDK that handles orchestration replay and entity dispatch. |
-| `Microsoft.Azure.Functions.Worker.Core` | Core abstractions for the .NET isolated worker model. |
-| `Microsoft.Azure.Functions.Worker.Extensions.Abstractions` | Base classes for worker extension attributes. |
+| [`Microsoft.Azure.Functions.Worker.Core`](https://github.com/dotnet/azure-functions-dotnet-worker) | Core abstractions for the .NET isolated worker model. |
+| [`Microsoft.Azure.Functions.Worker.Extensions.Abstractions`](https://github.com/dotnet/azure-functions-dotnet-worker) | Base classes for worker extension attributes. |

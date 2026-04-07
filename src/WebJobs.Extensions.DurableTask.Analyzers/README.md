@@ -1,6 +1,8 @@
 # Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
-This is a **Roslyn analyzer** package that provides compile-time diagnostics and code fixes for common issues when writing Durable Functions code. It targets the **.NET in-process** programming model only. Isolated worker (.NET out-of-process) users get a separate set of analyzers from the [`durabletask-dotnet`](https://github.com/microsoft/durabletask-dotnet) SDK instead.
+This is a **Roslyn analyzer** package that provides compile-time diagnostics and code fixes for common issues when writing Durable Functions code. It targets the **.NET in-process** model only. Isolated worker (.NET out-of-process) users get a separate set of analyzers from the [`durabletask-dotnet`](https://github.com/microsoft/durabletask-dotnet) SDK instead.
+
+> **Note:** This package is no longer being actively maintained. It is only relevant to the [.NET in-process model](https://learn.microsoft.com/en-us/azure/azure-functions/functions-dotnet-class-library?tabs=v4%2Ccmd), which is being deprecated in favor of the [.NET isolated worker model](https://learn.microsoft.com/en-us/azure/azure-functions/dotnet-isolated-process-guide).
 
 The analyzer helps developers catch bugs early — particularly violations of the [orchestrator code constraints](https://learn.microsoft.com/azure/azure-functions/durable/durable-functions-code-constraints) that can cause non-deterministic replay failures.
 
