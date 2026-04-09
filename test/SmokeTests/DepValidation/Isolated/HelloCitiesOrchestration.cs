@@ -27,7 +27,7 @@ public static class HelloCitiesOrchestration
     public static HttpResponseData SdkVersionCheck(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get")] HttpRequestData req)
     {
-        string[] extensionAssemblyPrefixes = new[]
+        string[] extensionAssemblyNames = new[]
         {
             "Microsoft.Azure.Functions.Worker.Extensions.DurableTask",
         };
@@ -36,7 +36,7 @@ public static class HelloCitiesOrchestration
         foreach (Assembly asm in AppDomain.CurrentDomain.GetAssemblies())
         {
             AssemblyName name = asm.GetName();
-            if (extensionAssemblyPrefixes.Any(
+            if (extensionAssemblyNames.Any(
                 p => string.Equals(name.Name, p, StringComparison.OrdinalIgnoreCase)))
             {
                 string? infoVersion = asm
