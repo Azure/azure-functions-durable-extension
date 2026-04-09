@@ -10,22 +10,21 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <FunctionsEnableExecutorSourceGen>false</FunctionsEnableExecutorSourceGen>
     <FunctionsEnableWorkerIndexing>false</FunctionsEnableWorkerIndexing>
-    <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
     <!-- Default version for standalone restore (e.g. Dependency Submission workflow).
          The CI pipeline bumps the patch version which only exists in local-packages. -->
     <SmokeTestExtVersion Condition="'$(SmokeTestExtVersion)' == ''">1.16.3</SmokeTestExtVersion>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Azure.Functions.Worker" Version="2.51.0" />
-    <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Http" Version="3.3.0" />
-    <PackageReference Include="Microsoft.Azure.Functions.Worker.Sdk" Version="2.0.5" OutputItemType="Analyzer" />
+    <PackageReference Include="Microsoft.Azure.Functions.Worker" />
+    <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Http" />
+    <PackageReference Include="Microsoft.Azure.Functions.Worker.Sdk" OutputItemType="Analyzer" />
 
     <!--
       Worker extension under test (from local-packages feed).
       Version is injected via -p:SmokeTestExtVersion=... at build time.
     -->
-    <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.DurableTask" Version="$(SmokeTestExtVersion)" />
+    <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.DurableTask" VersionOverride="$(SmokeTestExtVersion)" />
   </ItemGroup>
 
   <ItemGroup>
