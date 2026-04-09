@@ -36,7 +36,7 @@ public static class HelloCitiesOrchestration
         foreach (Assembly asm in AppDomain.CurrentDomain.GetAssemblies())
         {
             AssemblyName name = asm.GetName();
-            foreach (string prefix in extensionAssemblyPrefixes.Where(
+            foreach (string match in extensionAssemblyPrefixes.Where(
                 p => string.Equals(name.Name, p, StringComparison.OrdinalIgnoreCase)))
             {
                 string? infoVersion = asm
