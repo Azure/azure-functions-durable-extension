@@ -117,7 +117,8 @@ jobs:
               V=$(curl -s "http://localhost:$PORT/api/SdkVersionCheck" | python3 -c "import sys,json; d=json.load(sys.stdin); print(list(d.values())[0] if d else '')")
               [ "$V" = "$EXT_VERSION" ] && echo "OK: Assembly version $V" || { echo "FAIL: Expected $EXT_VERSION got $V"; exit 1; }
               echo "PASS: Isolated smoke test"; kill $PID 2>/dev/null; exit 0
-            fi; [ "$S" = "Failed" ] || [ "$S" = "Terminated" ] && { echo "FAIL: $S"; exit 1; }
+            fi
+            if [ "$S" = "Failed" ] || [ "$S" = "Terminated" ]; then echo "FAIL: $S"; exit 1; fi
           done; echo "FAIL: Timeout"; exit 1
 
       - if: failure()
@@ -222,7 +223,8 @@ jobs:
               V=$(curl -s "http://localhost:$PORT/api/SdkVersionCheck" | python3 -c "import sys,json; d=json.load(sys.stdin); print(list(d.values())[0] if d else '')")
               [ "$V" = "$EXT_VERSION" ] && echo "OK: Assembly version $V" || { echo "FAIL: Expected $EXT_VERSION got $V"; exit 1; }
               echo "PASS: In-process smoke test"; kill $PID 2>/dev/null; exit 0
-            fi; [ "$S" = "Failed" ] || [ "$S" = "Terminated" ] && { echo "FAIL: $S"; exit 1; }
+            fi
+            if [ "$S" = "Failed" ] || [ "$S" = "Terminated" ]; then echo "FAIL: $S"; exit 1; fi
           done; echo "FAIL: Timeout"; exit 1
 
       - if: failure()

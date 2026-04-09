@@ -36,7 +36,7 @@ public static class HelloCitiesOrchestration
         foreach (Assembly asm in AppDomain.CurrentDomain.GetAssemblies())
         {
             AssemblyName name = asm.GetName();
-            foreach (string match in extensionAssemblyPrefixes.Where(
+            if (extensionAssemblyPrefixes.Any(
                 p => string.Equals(name.Name, p, StringComparison.OrdinalIgnoreCase)))
             {
                 string? infoVersion = asm
@@ -49,7 +49,7 @@ public static class HelloCitiesOrchestration
                     }
 
                     loadedVersions[name.Name!] = infoVersion ?? name.Version?.ToString() ?? "unknown";
-                }
+            }
         }
 
         HttpResponseData response = req.CreateResponse(HttpStatusCode.OK);
