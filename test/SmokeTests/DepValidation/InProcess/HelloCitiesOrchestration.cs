@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Reflection;
@@ -35,11 +36,10 @@ public static class HelloCitiesOrchestration
         foreach (Assembly asm in AppDomain.CurrentDomain.GetAssemblies())
         {
             AssemblyName name = asm.GetName();
-            foreach (string prefix in extensionAssemblies)
+            foreach (string prefix in extensionAssemblies.Where(
+                p => string.Equals(name.Name, p, StringComparison.OrdinalIgnoreCase)))
             {
-                if (string.Equals(name.Name, prefix, StringComparison.OrdinalIgnoreCase))
-                {
-                    string? infoVersion = asm
+                string? infoVersion = asm
                         .GetCustomAttribute<AssemblyInformationalVersionAttribute>()
                         ?.InformationalVersion;
 
@@ -50,7 +50,6 @@ public static class HelloCitiesOrchestration
 
                     loadedVersions[name.Name!] = infoVersion ?? name.Version?.ToString() ?? "unknown";
                 }
-            }
         }
 
         var response = req.CreateResponse(HttpStatusCode.OK);

@@ -29,6 +29,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - uses: actions/setup-dotnet@v4
         with: { dotnet-version: '8.0.x' }
       - uses: actions/setup-node@v4
         with: { node-version: '18.x' }
@@ -125,6 +128,9 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
       - uses: actions/setup-dotnet@v4
         with: { dotnet-version: '8.0.x' }
       - uses: actions/setup-node@v4

@@ -11,9 +11,10 @@
     <!-- Disable SDK's source generation to allow reflection-based discovery of source-generated functions -->
     <FunctionsEnableExecutorSourceGen>false</FunctionsEnableExecutorSourceGen>
     <FunctionsEnableWorkerIndexing>false</FunctionsEnableWorkerIndexing>
+    <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
     <!-- Default version for standalone restore (e.g. Dependency Submission workflow).
          The CI pipeline bumps the patch version which only exists in local-packages. -->
-    <SmokeTestExtVersion Condition="'$(SmokeTestExtVersion)' == ''">1.1.7</SmokeTestExtVersion>
+    <SmokeTestExtVersion Condition="'$(SmokeTestExtVersion)' == ''">1.16.3</SmokeTestExtVersion>
   </PropertyGroup>
 
   <ItemGroup>
