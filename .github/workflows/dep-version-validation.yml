@@ -1,4 +1,8 @@
-# Validates that dependency version changes do not break the Durable Functions\n# extension NuGet packages. Packs the Worker and WebJobs extensions from source,\n# builds Function Apps using the local packages, runs HelloCities orchestrations,\n# and verifies the output and loaded assembly versions.\nname: Dependency Version Validation
+# Validates that dependency version changes do not break the Durable Functions
+# extension NuGet packages. Packs the Worker and WebJobs extensions from source,
+# builds Function Apps using the local packages, runs HelloCities orchestrations,
+# and verifies the output and loaded assembly versions.
+name: Dependency Version Validation
 
 on:
   push:
