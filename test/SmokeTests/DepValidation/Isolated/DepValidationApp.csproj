@@ -8,7 +8,6 @@
     <IsTestProject>false</IsTestProject>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <!-- Disable SDK's source generation to allow reflection-based discovery of source-generated functions -->
     <FunctionsEnableExecutorSourceGen>false</FunctionsEnableExecutorSourceGen>
     <FunctionsEnableWorkerIndexing>false</FunctionsEnableWorkerIndexing>
     <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>

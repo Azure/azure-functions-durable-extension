@@ -84,7 +84,7 @@ jobs:
         run: |
           set -e
           KEY="Microsoft.Azure.Functions.Worker.Extensions.DurableTask/${{ steps.version.outputs.ext_version }}"
-          grep -q "$KEY" test/SmokeTests/DepValidation/Isolated/obj/project.assets.json && echo "OK: $KEY" || { echo "FAIL: $KEY not found"; exit 1; }
+          grep -qi "$KEY" test/SmokeTests/DepValidation/Isolated/obj/project.assets.json && echo "OK: $KEY" || { echo "FAIL: $KEY not found"; exit 1; }
 
       - name: Start Azurite
         run: |
@@ -196,7 +196,7 @@ jobs:
         run: |
           set -e
           KEY="Microsoft.Azure.WebJobs.Extensions.DurableTask/${{ steps.version.outputs.ext_version }}"
-          grep -q "$KEY" test/SmokeTests/DepValidation/InProcess/obj/project.assets.json && echo "OK: $KEY" || { echo "FAIL: $KEY not found"; exit 1; }
+          grep -qi "$KEY" test/SmokeTests/DepValidation/InProcess/obj/project.assets.json && echo "OK: $KEY" || { echo "FAIL: $KEY not found"; exit 1; }
 
       - name: Start Azurite
         run: |
