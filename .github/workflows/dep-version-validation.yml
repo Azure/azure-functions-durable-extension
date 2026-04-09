@@ -1,0 +1,558 @@
+# ================================================================================================
+# Dependency Version Validation Pipeline
+# ================================================================================================
+# Validates that changes to dependency versions in the Worker extension csproj do not break
+# the Durable Functions extension package at build or runtime.
+#
+# This pipeline:
+#   1. Packs the Worker extension from source into a local NuGet feed
+#   2. Builds a .NET isolated Function App using the local package (via packageSourceMapping)
+#   3. Starts Azurite and runs the Function App with func host start
+#   4. Triggers a HelloCities orchestration and validates output
+#   5. Verifies loaded extension assembly version matches the locally built version
+# ================================================================================================
+
+name: Dependency Version Validation
+
+on:
+  push:
+    branches: [ main, dev ]
+    paths:
+      - 'src/Worker.Extensions.DurableTask/Worker.Extensions.DurableTask.csproj'
+      - 'test/SmokeTests/DepValidation/**'
+  pull_request:
+    branches: [ main, dev ]
+    paths:
+      - 'src/Worker.Extensions.DurableTask/Worker.Extensions.DurableTask.csproj'
+      - 'test/SmokeTests/DepValidation/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dep-validation-smoke-test:
+    name: '.NET Isolated Extension Smoke Test (NuGet Packages)'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      # ---- Checkout & SDK Setup ----
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8.0 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18.x'
+
+      - name: Install Azure Functions Core Tools
+        run: npm install -g azure-functions-core-tools@4 --unsafe-perm true
+
+      # ---- Parse Extension Version ----
+      - name: Parse Worker extension version
+        id: version
+        run: |
+          set -e
+          CSPROJ_FILE="src/Worker.Extensions.DurableTask/Worker.Extensions.DurableTask.csproj"
+          VERSION_PREFIX=$(grep -oP '<VersionPrefix>\K[^<]+' "$CSPROJ_FILE")
+          VERSION_SUFFIX=$(grep -oP '<VersionSuffix>\K[^<]+' "$CSPROJ_FILE" || true)
+
+          # Bump patch version so it differs from any published version
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION_PREFIX"
+          LOCAL_PATCH=$((PATCH + 1))
+          LOCAL_VERSION="${MAJOR}.${MINOR}.${LOCAL_PATCH}"
+          if [ -n "$VERSION_SUFFIX" ]; then
+            LOCAL_VERSION="${LOCAL_VERSION}-${VERSION_SUFFIX}"
+          fi
+
+          sed -i "s|<VersionPrefix>${VERSION_PREFIX}</VersionPrefix>|<VersionPrefix>${MAJOR}.${MINOR}.${LOCAL_PATCH}</VersionPrefix>|" "$CSPROJ_FILE"
+
+          echo "Published version: ${VERSION_PREFIX}"
+          echo "Local version: ${LOCAL_VERSION}"
+          echo "ext_version=${LOCAL_VERSION}" >> "$GITHUB_OUTPUT"
+
+      # ---- Build and Pack Worker Extension ----
+      - name: Build and pack Worker extension
+        run: |
+          set -e
+          LOCAL_PACKAGES="test/SmokeTests/DepValidation/local-packages"
+          mkdir -p "$LOCAL_PACKAGES"
+
+          cd src/Worker.Extensions.DurableTask
+          dotnet build -c Release Worker.Extensions.DurableTask.csproj
+          cp bin/Release/*.nupkg "../../$LOCAL_PACKAGES/"
+
+          echo "Local packages:"
+          ls -la "../../$LOCAL_PACKAGES"
+
+      # ---- Verify Packed Package ----
+      - name: Verify packed package
+        env:
+          EXT_VERSION: ${{ steps.version.outputs.ext_version }}
+        run: |
+          set -e
+          LOCAL_PACKAGES="test/SmokeTests/DepValidation/local-packages"
+          EXPECTED="Microsoft.Azure.Functions.Worker.Extensions.DurableTask.${EXT_VERSION}.nupkg"
+          if [ ! -f "$LOCAL_PACKAGES/$EXPECTED" ]; then
+            echo "FAIL: Missing expected package: $EXPECTED"
+            echo "Available packages:"
+            ls -1 "$LOCAL_PACKAGES"
+            exit 1
+          fi
+          echo "OK: $EXPECTED"
+
+      # ---- Build Smoke Test App ----
+      - name: Build smoke test app
+        env:
+          EXT_VERSION: ${{ steps.version.outputs.ext_version }}
+        run: |
+          set -e
+          cd test/SmokeTests/DepValidation
+          dotnet build -c Release -p:SmokeTestExtVersion=$EXT_VERSION -v normal
+
+      # ---- Verify extension resolved with correct version ----
+      - name: Verify extension package version
+        env:
+          EXT_VERSION: ${{ steps.version.outputs.ext_version }}
+        run: |
+          set -e
+          ASSETS_FILE="test/SmokeTests/DepValidation/obj/project.assets.json"
+          # The bumped version (e.g. 1.1.8) only exists in local-packages,
+          # so finding it in project.assets.json proves it came from there.
+          EXPECTED_KEY="Microsoft.Azure.Functions.Worker.Extensions.DurableTask/${EXT_VERSION}"
+          if grep -q "$EXPECTED_KEY" "$ASSETS_FILE"; then
+            echo "OK: $EXPECTED_KEY found in project.assets.json"
+          else
+            echo "FAIL: $EXPECTED_KEY NOT found in project.assets.json"
+            echo "Resolved versions:"
+            grep -oP "Microsoft\.Azure\.Functions\.Worker\.Extensions\.DurableTask/[^\"]+" "$ASSETS_FILE" || echo "  (none)"
+            exit 1
+          fi
+
+      # ---- Start Azurite ----
+      - name: Start Azurite
+        run: |
+          npm install -g azurite
+          nohup azurite --silent --skipApiVersionCheck \
+            --blobHost 0.0.0.0 --blobPort 10000 \
+            --queueHost 0.0.0.0 --queuePort 10001 \
+            --tableHost 0.0.0.0 --tablePort 10002 > /tmp/azurite.log 2>&1 &
+          for i in $(seq 1 30); do
+            if timeout 1 bash -c "echo > /dev/tcp/127.0.0.1/10000" 2>/dev/null; then
+              echo "Azurite is ready."
+              break
+            fi
+            if [ $i -eq 30 ]; then echo "FAIL: Azurite did not start"; cat /tmp/azurite.log; exit 1; fi
+            sleep 1
+          done
+
+      # ---- Run Smoke Test ----
+      - name: Run smoke test
+        env:
+          EXT_VERSION: ${{ steps.version.outputs.ext_version }}
+        run: |
+          set -e
+          APP_DIR="test/SmokeTests/DepValidation/bin/Release/net8.0"
+          PORT=7071
+          TIMEOUT=120
+
+          export AzureWebJobsStorage="UseDevelopmentStorage=true"
+          export FUNCTIONS_WORKER_RUNTIME="dotnet-isolated"
+
+          cd "$APP_DIR"
+          func host start --port $PORT > /tmp/func-host.log 2>&1 &
+          FUNC_PID=$!
+
+          for i in $(seq 1 45); do
+            if curl -s -o /dev/null -w "%{http_code}" "http://localhost:$PORT/admin/host/ping" | grep -q "200"; then
+              echo "Host is ready!"
+              break
+            fi
+            if ! kill -0 $FUNC_PID 2>/dev/null; then
+              echo "FAIL: Functions host exited unexpectedly."
+              cat /tmp/func-host.log
+              exit 1
+            fi
+            if [ $i -eq 45 ]; then
+              echo "FAIL: Host did not start within 90s"
+              cat /tmp/func-host.log
+              kill $FUNC_PID 2>/dev/null || true
+              exit 1
+            fi
+            sleep 2
+          done
+
+          HTTP_CODE=$(curl -s -o /tmp/start-response.json -w "%{http_code}" -X POST "http://localhost:$PORT/api/HelloCitiesOrchestration_HttpStart")
+          RESPONSE=$(cat /tmp/start-response.json)
+          echo "HTTP $HTTP_CODE"
+          if [ "$HTTP_CODE" != "200" ] && [ "$HTTP_CODE" != "202" ]; then
+            echo "FAIL: Orchestration start returned HTTP $HTTP_CODE"
+            cat /tmp/func-host.log
+            kill $FUNC_PID 2>/dev/null || true
+            exit 1
+          fi
+          STATUS_URL=$(echo "$RESPONSE" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('statusQueryGetUri') or d.get('StatusQueryGetUri'))")
+
+          ELAPSED=0
+          while [ $ELAPSED -lt $TIMEOUT ]; do
+            sleep 2
+            ELAPSED=$((ELAPSED + 2))
+            STATUS_RESPONSE=$(curl -s "$STATUS_URL")
+            RUNTIME_STATUS=$(echo "$STATUS_RESPONSE" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('runtimeStatus') or d.get('RuntimeStatus') or '')")
+            if [ "$RUNTIME_STATUS" = "Completed" ]; then
+              OUTPUT=$(echo "$STATUS_RESPONSE" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('output') or d.get('Output') or '')")
+              echo "Orchestration completed in ${ELAPSED}s. Output: $OUTPUT"
+              if echo "$OUTPUT" | grep -q "Hello, Tokyo!" && echo "$OUTPUT" | grep -q "Hello, London!" && echo "$OUTPUT" | grep -q "Hello, Seattle!"; then
+                echo "PASS: HelloCities orchestration returned expected output."
+
+                VERSION_JSON=$(curl -s "http://localhost:$PORT/api/SdkVersionCheck")
+                echo "Loaded extension versions: $VERSION_JSON"
+                for asm_name in $(echo "$VERSION_JSON" | python3 -c "import sys,json; [print(k) for k in json.load(sys.stdin).keys()]"); do
+                  asm_version=$(echo "$VERSION_JSON" | python3 -c "import sys,json; print(json.load(sys.stdin)['$asm_name'])")
+                  if [ "$asm_version" != "$EXT_VERSION" ]; then
+                    echo "FAIL: $asm_name version $asm_version != expected $EXT_VERSION"
+                    kill $FUNC_PID 2>/dev/null || true
+                    exit 1
+                  fi
+                  echo "  OK: $asm_name = $asm_version"
+                done
+                echo "PASS: Extension assembly version verified."
+
+                kill $FUNC_PID 2>/dev/null || true
+                exit 0
+              else
+                echo "FAIL: Output did not contain expected greetings."
+                kill $FUNC_PID 2>/dev/null || true
+                exit 1
+              fi
+            elif [ "$RUNTIME_STATUS" = "Failed" ] || [ "$RUNTIME_STATUS" = "Terminated" ]; then
+              echo "FAIL: Orchestration $RUNTIME_STATUS"
+              kill $FUNC_PID 2>/dev/null || true
+              exit 1
+            fi
+          done
+
+          echo "FAIL: Orchestration did not complete within ${TIMEOUT}s"
+          kill $FUNC_PID 2>/dev/null || true
+          exit 1
+
+      # ---- Collect Logs on Failure ----
+      - name: Collect logs on failure
+        if: failure()
+        run: |
+          mkdir -p smoke-test-logs
+          cp /tmp/func-host.log smoke-test-logs/ 2>/dev/null || true
+          cp /tmp/azurite.log smoke-test-logs/ 2>/dev/null || true
+          tail -50 /tmp/func-host.log 2>/dev/null || true
+
+      - name: Upload logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dep-validation-smoke-test-logs
+          path: smoke-test-logs/
+          if-no-files-found: ignore
+# ================================================================================================
+# Dependency Version Validation Pipeline
+# ================================================================================================
+# Validates that changes to dependency versions in the extension csproj files do not break
+# the Durable Functions extension packages at build or runtime.
+#
+# This pipeline:
+#   1. Packs both extension packages (WebJobs + Worker) from source into a local NuGet feed
+#   2. Builds an Azure Functions v4 (.NET isolated) app using the local Worker extension package
+#   3. Starts Azurite (Azure Storage emulator)
+#   4. Runs the Function App and triggers a HelloCities orchestration
+#   5. Validates orchestration output and loaded extension assembly versions
+# ================================================================================================
+
+name: Dependency Version Validation
+
+on:
+  push:
+    branches: [ main, dev ]
+    paths:
+      - 'src/Worker.Extensions.DurableTask/Worker.Extensions.DurableTask.csproj'
+      - 'src/WebJobs.Extensions.DurableTask/WebJobs.Extensions.DurableTask.csproj'
+      - 'test/SmokeTests/DepValidation/**'
+  pull_request:
+    branches: [ main, dev ]
+    paths:
+      - 'src/Worker.Extensions.DurableTask/Worker.Extensions.DurableTask.csproj'
+      - 'src/WebJobs.Extensions.DurableTask/WebJobs.Extensions.DurableTask.csproj'
+      - 'test/SmokeTests/DepValidation/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dep-validation-smoke-test:
+    name: '.NET Isolated Extension Smoke Test (NuGet Packages)'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      # ---- Checkout & SDK Setup ----
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8.0 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18.x'
+
+      - name: Install Azure Functions Core Tools
+        run: npm install -g azure-functions-core-tools@4 --unsafe-perm true
+
+      # ---- Parse Extension Version ----
+      - name: Parse Worker extension version
+        id: version
+        run: |
+          set -e
+          CSPROJ_FILE="src/Worker.Extensions.DurableTask/Worker.Extensions.DurableTask.csproj"
+          VERSION_PREFIX=$(grep -oP '<VersionPrefix>\K[^<]+' "$CSPROJ_FILE")
+          VERSION_SUFFIX=$(grep -oP '<VersionSuffix>\K[^<]+' "$CSPROJ_FILE" || true)
+
+          # Bump patch version to distinguish local build from published
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION_PREFIX"
+          LOCAL_PATCH=$((PATCH + 1))
+          LOCAL_VERSION="${MAJOR}.${MINOR}.${LOCAL_PATCH}"
+          if [ -n "$VERSION_SUFFIX" ]; then
+            LOCAL_VERSION="${LOCAL_VERSION}-${VERSION_SUFFIX}"
+          fi
+
+          # Update version in source
+          sed -i "s|<VersionPrefix>${VERSION_PREFIX}</VersionPrefix>|<VersionPrefix>${MAJOR}.${MINOR}.${LOCAL_PATCH}</VersionPrefix>|" "$CSPROJ_FILE"
+
+          echo "Published version: ${VERSION_PREFIX}"
+          echo "Local version: ${LOCAL_VERSION}"
+          echo "ext_version=${LOCAL_VERSION}" >> "$GITHUB_OUTPUT"
+
+      # ---- Build and Pack WebJobs Extension ----
+      - name: Build and pack WebJobs extension
+        run: |
+          set -e
+          LOCAL_PACKAGES="test/SmokeTests/DepValidation/local-packages"
+          mkdir -p "$LOCAL_PACKAGES"
+
+          cd src/WebJobs.Extensions.DurableTask
+          dotnet build -c Release WebJobs.Extensions.DurableTask.csproj
+          cp bin/Release/*.nupkg "../../$LOCAL_PACKAGES/" 2>/dev/null || true
+          echo "WebJobs extension packed."
+
+      # ---- Build and Pack Worker Extension ----
+      - name: Build and pack Worker extension
+        env:
+          EXT_VERSION: ${{ steps.version.outputs.ext_version }}
+        run: |
+          set -e
+          LOCAL_PACKAGES="test/SmokeTests/DepValidation/local-packages"
+
+          cd src/Worker.Extensions.DurableTask
+          dotnet build -c Release Worker.Extensions.DurableTask.csproj
+          cp bin/Release/*.nupkg "../../$LOCAL_PACKAGES/" 2>/dev/null || true
+
+          echo "Worker extension packed."
+          echo "Local packages:"
+          ls -la "../../$LOCAL_PACKAGES"
+
+      # ---- Verify Packed Packages ----
+      - name: Verify packed packages
+        env:
+          EXT_VERSION: ${{ steps.version.outputs.ext_version }}
+        run: |
+          set -e
+          LOCAL_PACKAGES="test/SmokeTests/DepValidation/local-packages"
+          echo "Looking for Worker extension package version $EXT_VERSION..."
+
+          FOUND=0
+          for f in "$LOCAL_PACKAGES"/Microsoft.Azure.Functions.Worker.Extensions.DurableTask.*.nupkg; do
+            echo "  Found: $(basename $f)"
+            FOUND=1
+          done
+
+          if [ $FOUND -eq 0 ]; then
+            echo "FAIL: Worker extension package not found"
+            exit 1
+          fi
+          echo "PASS: Extension packages verified."
+
+      # ---- Build Smoke Test App ----
+      - name: Build smoke test app
+        env:
+          EXT_VERSION: ${{ steps.version.outputs.ext_version }}
+        run: |
+          set -e
+          cd test/SmokeTests/DepValidation
+          dotnet build -c Release -p:SmokeTestExtVersion=$EXT_VERSION -v normal
+
+      # ---- Verify Extension package resolved from local-packages ----
+      - name: Verify extension packages from local source
+        run: |
+          set -e
+          ASSETS_FILE="test/SmokeTests/DepValidation/obj/project.assets.json"
+          if grep -qi "Microsoft.Azure.Functions.Worker.Extensions.DurableTask" "$ASSETS_FILE"; then
+            echo "  OK: Worker.Extensions.DurableTask found in project.assets.json"
+          else
+            echo "  FAIL: Worker.Extensions.DurableTask NOT found"
+            exit 1
+          fi
+          echo "PASS: Extension package verified in build output."
+
+      # ---- Start Azurite ----
+      - name: Start Azurite
+        run: |
+          npm install -g azurite
+          nohup azurite --silent --skipApiVersionCheck \
+            --blobHost 0.0.0.0 --blobPort 10000 \
+            --queueHost 0.0.0.0 --queuePort 10001 \
+            --tableHost 0.0.0.0 --tablePort 10002 > /tmp/azurite.log 2>&1 &
+          echo "Azurite PID: $!"
+          for i in $(seq 1 30); do
+            if timeout 1 bash -c "echo > /dev/tcp/127.0.0.1/10000" 2>/dev/null; then
+              echo "Azurite is ready."
+              break
+            fi
+            if [ $i -eq 30 ]; then echo "FAIL: Azurite did not start"; cat /tmp/azurite.log; exit 1; fi
+            sleep 1
+          done
+
+      # ---- Run Smoke Test ----
+      - name: Run smoke test
+        env:
+          EXT_VERSION: ${{ steps.version.outputs.ext_version }}
+        run: |
+          set -e
+          APP_DIR="test/SmokeTests/DepValidation/bin/Release/net8.0"
+          PORT=7071
+          TIMEOUT=120
+
+          export AzureWebJobsStorage="UseDevelopmentStorage=true"
+          export FUNCTIONS_WORKER_RUNTIME="dotnet-isolated"
+
+          echo "Starting Functions host on port $PORT..."
+          cd "$APP_DIR"
+          func host start --port $PORT > /tmp/func-host.log 2>&1 &
+          FUNC_PID=$!
+          echo "Functions host PID: $FUNC_PID"
+
+          echo "Waiting for Functions host to be ready..."
+          for i in $(seq 1 45); do
+            if curl -s -o /dev/null -w "%{http_code}" "http://localhost:$PORT/admin/host/ping" | grep -q "200"; then
+              echo "Host is ready!"
+              break
+            fi
+            if ! kill -0 $FUNC_PID 2>/dev/null; then
+              echo "FAIL: Functions host exited unexpectedly."
+              cat /tmp/func-host.log
+              exit 1
+            fi
+            if [ $i -eq 45 ]; then
+              echo "FAIL: Host did not start within 90s"
+              cat /tmp/func-host.log
+              kill $FUNC_PID 2>/dev/null || true
+              exit 1
+            fi
+            sleep 2
+          done
+
+          # Trigger orchestration
+          echo "Triggering HelloCities orchestration..."
+          HTTP_CODE=$(curl -s -o /tmp/start-response.json -w "%{http_code}" -X POST "http://localhost:$PORT/api/HelloCitiesOrchestration_HttpStart")
+          RESPONSE=$(cat /tmp/start-response.json)
+          echo "HTTP status: $HTTP_CODE"
+          echo "Start response: $RESPONSE"
+          if [ "$HTTP_CODE" != "200" ] && [ "$HTTP_CODE" != "202" ]; then
+            echo "FAIL: Orchestration start returned HTTP $HTTP_CODE"
+            cat /tmp/func-host.log
+            kill $FUNC_PID 2>/dev/null || true
+            exit 1
+          fi
+          STATUS_URL=$(echo "$RESPONSE" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('statusQueryGetUri') or d.get('StatusQueryGetUri'))")
+          INSTANCE_ID=$(echo "$RESPONSE" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('id') or d.get('Id'))")
+          echo "Instance ID: $INSTANCE_ID"
+          echo "Status URL: $STATUS_URL"
+
+          # Poll for completion
+          ELAPSED=0
+          while [ $ELAPSED -lt $TIMEOUT ]; do
+            sleep 2
+            ELAPSED=$((ELAPSED + 2))
+            STATUS_RESPONSE=$(curl -s "$STATUS_URL")
+            RUNTIME_STATUS=$(echo "$STATUS_RESPONSE" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('runtimeStatus') or d.get('RuntimeStatus') or '')")
+
+            if [ "$RUNTIME_STATUS" = "Completed" ]; then
+              OUTPUT=$(echo "$STATUS_RESPONSE" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('output') or d.get('Output') or '')")
+              echo "Orchestration completed in ${ELAPSED}s. Output: $OUTPUT"
+              if echo "$OUTPUT" | grep -q "Hello, Tokyo!" && echo "$OUTPUT" | grep -q "Hello, London!" && echo "$OUTPUT" | grep -q "Hello, Seattle!"; then
+                echo "PASS: HelloCities orchestration returned expected output."
+
+                # Verify loaded extension assembly versions
+                echo "Verifying loaded extension assembly versions..."
+                VERSION_JSON=$(curl -s "http://localhost:$PORT/api/SdkVersionCheck")
+                echo "Loaded extension assembly versions: $VERSION_JSON"
+                VERSION_MISMATCH=0
+                for asm_name in $(echo "$VERSION_JSON" | python3 -c "import sys,json; [print(k) for k in json.load(sys.stdin).keys()]"); do
+                  asm_version=$(echo "$VERSION_JSON" | python3 -c "import sys,json; print(json.load(sys.stdin)['$asm_name'])")
+                  if [ "$asm_version" != "$EXT_VERSION" ]; then
+                    echo "FAIL: Version mismatch for $asm_name: expected $EXT_VERSION, got $asm_version"
+                    VERSION_MISMATCH=1
+                  else
+                    echo "  OK: $asm_name = $asm_version"
+                  fi
+                done
+                if [ $VERSION_MISMATCH -ne 0 ]; then
+                  echo "FAIL: Extension assembly version mismatch detected."
+                  kill $FUNC_PID 2>/dev/null || true
+                  exit 1
+                fi
+                echo "PASS: All loaded extension assemblies match expected version $EXT_VERSION."
+
+                kill $FUNC_PID 2>/dev/null || true
+                exit 0
+              else
+                echo "FAIL: Output did not contain expected greetings."
+                kill $FUNC_PID 2>/dev/null || true
+                exit 1
+              fi
+            elif [ "$RUNTIME_STATUS" = "Failed" ] || [ "$RUNTIME_STATUS" = "Terminated" ]; then
+              echo "FAIL: Orchestration $RUNTIME_STATUS"
+              echo "$STATUS_RESPONSE"
+              kill $FUNC_PID 2>/dev/null || true
+              exit 1
+            fi
+          done
+
+          echo "FAIL: Orchestration did not complete within ${TIMEOUT}s (last status: $RUNTIME_STATUS)"
+          kill $FUNC_PID 2>/dev/null || true
+          exit 1
+
+      # ---- Collect Logs on Failure ----
+      - name: Collect logs on failure
+        if: failure()
+        run: |
+          mkdir -p smoke-test-logs
+          cp /tmp/func-host.log smoke-test-logs/ 2>/dev/null || true
+          cp /tmp/azurite.log smoke-test-logs/ 2>/dev/null || true
+          echo "=== Functions host log (last 50 lines) ==="
+          tail -50 /tmp/func-host.log 2>/dev/null || true
+
+      - name: Upload logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dep-validation-smoke-test-logs
+          path: smoke-test-logs/
+          if-no-files-found: ignore
