@@ -50,6 +50,7 @@ jobs:
           PAT=$((PAT + 1))
           VER="${MAJ}.${MIN}.${PAT}"; [ -n "$SUFFIX" ] && VER="${VER}-${SUFFIX}"
           sed -i "s|<VersionPrefix>${PREFIX}</VersionPrefix>|<VersionPrefix>${MAJ}.${MIN}.${PAT}</VersionPrefix>|" "$CSPROJ"
+          grep -q "<VersionPrefix>${MAJ}.${MIN}.${PAT}</VersionPrefix>" "$CSPROJ" || { echo "FAIL: sed did not update VersionPrefix"; exit 1; }
           echo "ext_version=${VER}" >> "$GITHUB_OUTPUT"
 
       - name: Pack Worker extension
@@ -120,7 +121,7 @@ jobs:
             if [ "$S" = "Completed" ]; then
               O=$(curl -s "$URL" | python3 -c "import sys,json; print(json.load(sys.stdin).get('output',''))")
               echo "$O" | grep -q "Hello, Tokyo!" && echo "$O" | grep -q "Hello, Seattle!" || { echo "FAIL: $O"; exit 1; }
-              V=$(curl -s "http://localhost:$PORT/api/SdkVersionCheck" | python3 -c "import sys,json; d=json.load(sys.stdin); print(list(d.values())[0] if d else '')")
+              V=$(curl -s "http://localhost:$PORT/api/SdkVersionCheck" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('Microsoft.Azure.Functions.Worker.Extensions.DurableTask',''))")
               [ "$V" = "$EXT_VERSION" ] && echo "OK: Assembly version $V" || { echo "FAIL: Expected $EXT_VERSION got $V"; exit 1; }
               echo "PASS: Isolated smoke test"; kill $PID 2>/dev/null; exit 0
             fi
@@ -158,6 +159,7 @@ jobs:
           PAT=$(grep -oP '<PatchVersion>\K[^<]+' "$CSPROJ")
           PAT=$((PAT + 1))
           sed -i "s|<PatchVersion>$((PAT - 1))</PatchVersion>|<PatchVersion>${PAT}</PatchVersion>|" "$CSPROJ"
+          grep -q "<PatchVersion>${PAT}</PatchVersion>" "$CSPROJ" || { echo "FAIL: sed did not update PatchVersion"; exit 1; }
           VER="${MAJ}.${MIN}.${PAT}"
           echo "ext_version=${VER}" >> "$GITHUB_OUTPUT"
 
@@ -232,7 +234,7 @@ jobs:
             if [ "$S" = "Completed" ]; then
               O=$(curl -s "$URL" | python3 -c "import sys,json; print(json.load(sys.stdin).get('output',''))")
               echo "$O" | grep -q "Hello, Tokyo!" && echo "$O" | grep -q "Hello, Seattle!" || { echo "FAIL: $O"; exit 1; }
-              V=$(curl -s "http://localhost:$PORT/api/SdkVersionCheck" | python3 -c "import sys,json; d=json.load(sys.stdin); print(list(d.values())[0] if d else '')")
+              V=$(curl -s "http://localhost:$PORT/api/SdkVersionCheck" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('Microsoft.Azure.WebJobs.Extensions.DurableTask',''))")
               [ "$V" = "$EXT_VERSION" ] && echo "OK: Assembly version $V" || { echo "FAIL: Expected $EXT_VERSION got $V"; exit 1; }
               echo "PASS: In-process smoke test"; kill $PID 2>/dev/null; exit 0
             fi
