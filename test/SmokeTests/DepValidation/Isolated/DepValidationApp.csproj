@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <AzureFunctionsVersion>v4</AzureFunctionsVersion>
+    <OutputType>exe</OutputType>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>false</IsTestProject>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <FunctionsEnableExecutorSourceGen>false</FunctionsEnableExecutorSourceGen>
+    <FunctionsEnableWorkerIndexing>false</FunctionsEnableWorkerIndexing>
+    <!-- Default version for standalone restore (e.g. Dependency Submission workflow).
+         The CI pipeline bumps the patch version which only exists in local-packages. -->
+    <SmokeTestExtVersion Condition="'$(SmokeTestExtVersion)' == ''">1.16.3</SmokeTestExtVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Azure.Functions.Worker" />
+    <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Http" />
+    <PackageReference Include="Microsoft.Azure.Functions.Worker.Sdk" OutputItemType="Analyzer" />
+
+    <!--
+      Worker extension under test (from local-packages feed).
+      Version is injected via -p:SmokeTestExtVersion=... at build time.
+    -->
+    <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.DurableTask" VersionOverride="$(SmokeTestExtVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="host.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="local.settings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>Never</CopyToPublishDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>
