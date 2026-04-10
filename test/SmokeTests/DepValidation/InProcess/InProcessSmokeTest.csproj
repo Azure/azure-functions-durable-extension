@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <AzureFunctionsVersion>v4</AzureFunctionsVersion>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>false</IsTestProject>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+    <!-- Default version for standalone restore (e.g. Dependency Submission workflow).
+         The CI pipeline bumps the patch version which only exists in local-packages. -->
+    <SmokeTestWebJobsVersion Condition="'$(SmokeTestWebJobsVersion)' == ''">3.12.3</SmokeTestWebJobsVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="4.6.0" />
+    <!--
+      WebJobs extension under test (from local-packages feed).
+      Version is injected via -p:SmokeTestWebJobsVersion=... at build time.
+    -->
+    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask" Version="$(SmokeTestWebJobsVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="host.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="local.settings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>Never</CopyToPublishDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>
