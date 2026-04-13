@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.AzureManaged;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.AzureStorage;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Netherite;
 using Microsoft.Azure.WebJobs.Host.Config;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -52,6 +53,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests
                 Assert.NotEmpty(scalabilityProviderFactories);
                 Assert.Contains(scalabilityProviderFactories, f => f is AzureStorageScalabilityProviderFactory);
                 Assert.Contains(scalabilityProviderFactories, f => f is AzureManagedScalabilityProviderFactory);
+                Assert.Contains(scalabilityProviderFactories, f => f is NetheriteScalabilityProviderFactory);
             }
         }
 
