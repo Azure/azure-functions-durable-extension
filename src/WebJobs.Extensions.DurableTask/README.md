@@ -34,7 +34,7 @@ Azure Storage is the default backend for Durable Functions. The `DurabilityProvi
 | **Azure Storage** (default) | [`Azure/durabletask`](https://github.com/Azure/durabletask) |
 | **Netherite** | [`microsoft/durabletask-netherite`](https://github.com/microsoft/durabletask-netherite) |
 | **MSSQL** | [`microsoft/durabletask-mssql`](https://github.com/microsoft/durabletask-mssql) |
-| **Durable Task Scheduler** | Not open source |
+| **Durable Task Scheduler** | [`Azure-Samples/Durable-Task-Scheduler`](https://github.com/Azure-Samples/Durable-Task-Scheduler) *(samples only)* |
 
 The `Scale/` folder provides **runtime scaling support**, integrated via `DurableTaskListener`.
 

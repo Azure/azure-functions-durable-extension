@@ -2,7 +2,8 @@
 
 This is a **Visual Studio Extension (VSIX)** project that packages the [Durable Functions Roslyn Analyzers](../WebJobs.Extensions.DurableTask.Analyzers/) for distribution via the Visual Studio Marketplace.
 
-> **Note:** This package is no longer being actively maintained. It is only relevant to the [.NET in-process model](https://learn.microsoft.com/en-us/azure/azure-functions/functions-dotnet-class-library?tabs=v4%2Ccmd), which is being deprecated in favor of the [.NET isolated worker model](https://learn.microsoft.com/en-us/azure/azure-functions/dotnet-isolated-process-guide). Support for the in-process model will end on November 10, 2026.
+> [!NOTE]
+> This package is no longer being actively maintained. It is only relevant to the [.NET in-process model](https://learn.microsoft.com/en-us/azure/azure-functions/functions-dotnet-class-library?tabs=v4%2Ccmd), which is being deprecated in favor of the [.NET isolated worker model](https://learn.microsoft.com/en-us/azure/azure-functions/dotnet-isolated-process-guide). Support for the in-process model will end on November 10, 2026.
 
 | | |
 |---|---|
