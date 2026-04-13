@@ -45,7 +45,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Netherit
         /// Dispatches to <c>ResolveStorageConnection</c> or <c>ResolveEventHubsConnection</c>
         /// based on the resource type.
         /// </summary>
-        public override ConnectionInfo ResolveConnectionInfo(string taskHub, string connectionName, ResourceType resourceType)
+        public override ConnectionInfo? ResolveConnectionInfo(string taskHub, string connectionName, ResourceType resourceType)
         {
             switch (resourceType)
             {
@@ -86,7 +86,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Netherit
         /// If the section has sub-keys (accountName, blobServiceUri, tableServiceUri),
         /// the storage token credential is paired with the endpoint.
         /// </summary>
-        private ConnectionInfo ResolveStorageConnection(string connectionName, ResourceType resourceType)
+        private ConnectionInfo? ResolveStorageConnection(string connectionName, ResourceType resourceType)
         {
             IConfigurationSection connectionSection = this.GetWebJobsConnectionSection(connectionName);
 
@@ -112,9 +112,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Netherit
                 if (resourceType == ResourceType.TableStorage)
                 {
                     string? tableServiceUri = connectionSection["tableServiceUri"];
-                    if (!string.IsNullOrEmpty(tableServiceUri))
+                    if (Uri.TryCreate(tableServiceUri, UriKind.Absolute, out var uri))
                     {
-                        host = new Uri(tableServiceUri).Host;
+                        host = uri.Host;
+                    }
+                    else
+                    {
+                        throw new InvalidOperationException(
+                            $"Invalid tableServiceUri configuration: '{tableServiceUri}'");
                     }
                 }
 
@@ -123,7 +128,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Netherit
                     string? blobServiceUri = connectionSection["blobServiceUri"];
                     if (!string.IsNullOrEmpty(blobServiceUri))
                     {
-                        host = new Uri(blobServiceUri).Host;
+                        if (Uri.TryCreate(blobServiceUri, UriKind.Absolute, out var uri))
+                        {
+                            host = uri.Host;
+                        }
+                        else
+                        {
+                            throw new InvalidOperationException(
+                                $"Invalid blobServiceUri configuration: '{blobServiceUri}'");
+                        }
                     }
                 }
 
@@ -141,7 +154,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Netherit
                 "Unable to resolve storage connection '{Connection}'. This may indicate a misconfiguration. " +
                 "Ensure the connection is defined as a connection string, or as a section with 'accountName', 'blobServiceUri', or 'tableServiceUri' sub-keys.",
                 connectionName);
-            return null!;
+            return null;
         }
 
         /// <summary>
@@ -151,7 +164,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Netherit
         /// If the section has a fullyQualifiedNamespace sub-key, the Event Hubs token
         /// credential (or storage credential as fallback) is paired with the namespace.
         /// </summary>
-        private ConnectionInfo ResolveEventHubsConnection(string connectionName)
+        private ConnectionInfo? ResolveEventHubsConnection(string connectionName)
         {
             IConfigurationSection connectionSection = this.GetWebJobsConnectionSection(connectionName);
 
@@ -179,7 +192,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Netherit
                 "Unable to resolve Event Hubs connection '{Connection}'. This may indicate a misconfiguration. " +
                 "Ensure the connection is defined as a connection string, or as a section with a 'fullyQualifiedNamespace' sub-key.",
                 connectionName);
-            return null!;
+            return null;
         }
 
         /// <summary>
