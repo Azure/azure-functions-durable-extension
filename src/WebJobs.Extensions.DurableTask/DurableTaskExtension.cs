@@ -1427,6 +1427,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                         Stopwatch sw = Stopwatch.StartNew();
                         await this.defaultDurabilityProvider.CreateIfNotExistsAsync();
+
+                        // Pass registered function names to the factory so backends that support
+                        // work-item filtering (e.g., DTS/AzureManaged) can build WorkItemFilters
+                        // before the task hub worker opens its GetWorkItems stream.
+                        this.durabilityProviderFactory.SetRegisteredFunctions(
+                            orchestratorNames: this.knownOrchestrators.Keys.Select(fn => fn.Name).ToList(),
+                            activityNames: this.knownActivities.Keys.Select(fn => fn.Name).ToList(),
+                            entityNames: this.knownEntities.Keys.Select(fn => fn.Name).ToList());
+
                         await this.EnsureTaskHubWorker().StartAsync();
 
                         this.GetTaskHubWorkerOrThrow().TaskOrchestrationDispatcher.EntitiesEnabled = true;
