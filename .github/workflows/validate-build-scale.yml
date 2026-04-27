@@ -80,7 +80,7 @@ jobs:
         done
 
         # Run tests (exclude non-Azure Storage tests which have their own jobs)
-        dotnet test ./test/ScaleTests/Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests.csproj -c $config --no-build --verbosity normal --filter "FullyQualifiedName!~AzureManaged&FullyQualifiedName!~Netherite"
+        dotnet test ./test/ScaleTests/Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests.csproj -c $config --no-build --verbosity normal --filter "FullyQualifiedName!~AzureManaged&FullyQualifiedName!~Netherite&FullyQualifiedName!~Sql"
 
   netherite:
     name: Functions Scale Tests - Netherite
@@ -155,8 +155,6 @@ jobs:
           AzureWebJobsStorage: UseDevelopmentStorage=true
           EventHubsConnection: "Endpoint=sb://localhost;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true;"
         run: dotnet test ./test/ScaleTests/Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests.csproj -c $config --no-build --verbosity normal --filter "FullyQualifiedName~Netherite"
-        # Run tests (exclude AzureManaged and SqlServer tests)
-        dotnet test ./test/ScaleTests/Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests.csproj -c $config --no-build --verbosity normal --filter "FullyQualifiedName!~AzureManaged&FullyQualifiedName!~SqlServer"
 
   mssql:
     name: Functions Scale Tests - MSSQL
@@ -234,8 +232,6 @@ jobs:
         env:
           AzureWebJobsStorage: UseDevelopmentStorage=true
         run: dotnet test --configuration Release --no-build --verbosity normal --filter "FullyQualifiedName~SqlServer"
-        # Run tests
-        dotnet test ./test/ScaleTests/Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests.csproj -c $config --no-build --verbosity normal --filter "FullyQualifiedName!~AzureManaged"
 
   dts:
     name: Functions Scale Tests - DTS
