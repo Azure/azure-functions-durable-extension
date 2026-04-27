@@ -3,7 +3,9 @@
 #nullable enable
 
 using System.Collections.Generic;
+using System.Reflection;
 using Microsoft.Azure.WebJobs.Host.Scale;
+using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale
 {
@@ -51,6 +53,60 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale
             if (storageProvider.TryGetValue(ConnectionNameOverride, out object? v2) && v2 is string s2 && !string.IsNullOrWhiteSpace(s2))
             {
                 return s2;
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Extracts a <see cref="global::Azure.Core.TokenCredential"/> from TriggerMetadata.
+        /// </summary>
+        /// <param name="triggerMetadata">The trigger metadata provided by the Scale Controller.</param>
+        /// <param name="logger">Optional logger for diagnostics.</param>
+        /// <returns>The extracted token credential, or <see langword="null"/> if unavailable.</returns>
+        public static global::Azure.Core.TokenCredential? ExtractTokenCredential(TriggerMetadata? triggerMetadata, ILogger? logger)
+        {
+            if (triggerMetadata?.Properties == null)
+            {
+                return null;
+            }
+
+            // Check if metadata contains an AzureComponentFactory wrapper
+            // ScaleController passes it as: metadata.Properties[nameof(AzureComponentFactory)] = new AzureComponentFactoryWrapper(...)
+            if (triggerMetadata.Properties.TryGetValue("AzureComponentFactory", out object? componentFactoryObj) && componentFactoryObj != null)
+            {
+                // The AzureComponentFactoryWrapper has CreateTokenCredential method
+                // Call it using reflection to get the TokenCredential
+                var factoryType = componentFactoryObj.GetType();
+                var method = factoryType.GetMethod("CreateTokenCredential");
+
+                if (method == null)
+                {
+                    logger?.LogWarning(
+                        "CreateTokenCredential method not found on the AzureComponentFactory instance provided by the scale controller. " +
+                        "Identity-based authentication cannot be used in this case.");
+                    return null;
+                }
+
+                try
+                {
+                    // Call CreateTokenCredential(null) to get the TokenCredential from the wrapper
+                    var credential = method.Invoke(componentFactoryObj, new object?[] { null });
+                    if (credential is global::Azure.Core.TokenCredential tokenCredential)
+                    {
+                        return tokenCredential;
+                    }
+                }
+                catch (TargetInvocationException ex)
+                {
+                    logger?.LogWarning(ex, "Failed to extract TokenCredential from AzureComponentFactory. Using null credential instead.");
+                    return null;
+                }
+                catch (TargetException ex)
+                {
+                    logger?.LogWarning(ex, "Failed to extract TokenCredential from AzureComponentFactory. Using null credential instead.");
+                    return null;
+                }
             }
 
             return null;
