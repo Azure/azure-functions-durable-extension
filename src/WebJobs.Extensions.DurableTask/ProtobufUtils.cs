@@ -553,18 +553,50 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             // This ternary condition is necessary because the protobuf spec __insists__ that CreatedTimeFrom may never be null,
             // but nonetheless if you pass null in function code, the value will be null here
-            return new PurgeInstanceFilter(
+            var filter = new PurgeInstanceFilter(
                 request.PurgeInstanceFilter.CreatedTimeFrom == null ? DateTime.MinValue : request.PurgeInstanceFilter.CreatedTimeFrom.ToDateTime(),
                 request.PurgeInstanceFilter.CreatedTimeTo?.ToDateTime(),
                 statusFilter);
+
+            if (request.PurgeInstanceFilter.Timeout != null)
+            {
+                filter.Timeout = ToNonNegativeTimeSpan(request.PurgeInstanceFilter.Timeout);
+            }
+
+            return filter;
+        }
+
+        private static TimeSpan ToNonNegativeTimeSpan(Duration timeout)
+        {
+            const long MaxDurationSeconds = 315576000000L;
+            const int MaxDurationNanos = 999999999;
+
+            if (timeout.Seconds < 0 || timeout.Nanos < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(timeout), "Timeout must be non-negative.");
+            }
+
+            if (timeout.Seconds > MaxDurationSeconds || timeout.Nanos > MaxDurationNanos)
+            {
+                throw new ArgumentOutOfRangeException(nameof(timeout), "Timeout is outside the valid protobuf Duration range.");
+            }
+
+            return timeout.ToTimeSpan();
         }
 
         internal static P.PurgeInstancesResponse CreatePurgeInstancesResponse(PurgeResult result)
         {
-            return new P.PurgeInstancesResponse
+            var response = new P.PurgeInstancesResponse
             {
                 DeletedInstanceCount = result.DeletedInstanceCount,
             };
+
+            if (result.IsComplete.HasValue)
+            {
+                response.IsComplete = result.IsComplete.Value;
+            }
+
+            return response;
         }
 
         /// <summary>
