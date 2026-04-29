@@ -5,6 +5,8 @@ using System;
 using DurableTask.Core.Entities.OperationFormat;
 using Google.Protobuf.WellKnownTypes;
 using Xunit;
+using CoreOrchestrationStatus = global::DurableTask.Core.OrchestrationStatus;
+using CorePurgeResult = global::DurableTask.Core.PurgeResult;
 using P = Microsoft.DurableTask.Protobuf;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
@@ -353,13 +355,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.NotNull(startOrchestrationResult.ScheduledStartTime);
             Assert.Equal(scheduledTime, startOrchestrationResult.ScheduledStartTime.Value, TimeSpan.FromSeconds(1));
         }
-    
+
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void CreatePurgeInstancesResponse_IsCompleteTrue_MapsCorrectly()
         {
             // Arrange
-            var result = new DurableTask.Core.PurgeResult(10, isComplete: true);
+            var result = new CorePurgeResult(10, isComplete: true);
 
             // Act
             var response = ProtobufUtils.CreatePurgeInstancesResponse(result);
@@ -374,7 +376,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public void CreatePurgeInstancesResponse_IsCompleteFalse_MapsCorrectly()
         {
             // Arrange
-            var result = new DurableTask.Core.PurgeResult(5, isComplete: false);
+            var result = new CorePurgeResult(5, isComplete: false);
 
             // Act
             var response = ProtobufUtils.CreatePurgeInstancesResponse(result);
@@ -389,7 +391,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public void CreatePurgeInstancesResponse_IsCompleteNull_LeavesUnset()
         {
             // Arrange
-            var result = new DurableTask.Core.PurgeResult(3);
+            var result = new CorePurgeResult(3);
 
             // Act
             var response = ProtobufUtils.CreatePurgeInstancesResponse(result);
@@ -419,6 +421,47 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             // Assert
             Assert.Equal(createdFrom, filter.CreatedTimeFrom, TimeSpan.FromSeconds(1));
             Assert.Null(filter.CreatedTimeTo);
+            Assert.Null(filter.Timeout);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void ToPurgeInstanceFilter_WithTimeout_MapsTimeout()
+        {
+            // Arrange
+            var timeout = TimeSpan.FromSeconds(25);
+            var request = new P.PurgeInstancesRequest
+            {
+                PurgeInstanceFilter = new P.PurgeInstanceFilter
+                {
+                    CreatedTimeFrom = Timestamp.FromDateTime(DateTime.UtcNow.AddDays(-1)),
+                    Timeout = Duration.FromTimeSpan(timeout),
+                },
+            };
+
+            // Act
+            var filter = ProtobufUtils.ToPurgeInstanceFilter(request);
+
+            // Assert
+            Assert.Equal(timeout, filter.Timeout);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void ToPurgeInstanceFilter_NegativeTimeout_ThrowsArgumentOutOfRangeException()
+        {
+            // Arrange
+            var request = new P.PurgeInstancesRequest
+            {
+                PurgeInstanceFilter = new P.PurgeInstanceFilter
+                {
+                    CreatedTimeFrom = Timestamp.FromDateTime(DateTime.UtcNow.AddDays(-1)),
+                    Timeout = new Duration { Seconds = -1 },
+                },
+            };
+
+            // Act + Assert
+            Assert.Throws<ArgumentOutOfRangeException>(() => ProtobufUtils.ToPurgeInstanceFilter(request));
         }
 
         [Fact]
@@ -433,16 +476,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     CreatedTimeFrom = Timestamp.FromDateTime(DateTime.UtcNow.AddDays(-1)),
                 },
             };
-            request.PurgeInstanceFilter.RuntimeStatus.Add(P.OrchestrationStatus.OrchestratorCompleted);
-            request.PurgeInstanceFilter.RuntimeStatus.Add(P.OrchestrationStatus.OrchestratorFailed);
+            request.PurgeInstanceFilter.RuntimeStatus.Add((P.OrchestrationStatus)(int)CoreOrchestrationStatus.Completed);
+            request.PurgeInstanceFilter.RuntimeStatus.Add((P.OrchestrationStatus)(int)CoreOrchestrationStatus.Failed);
 
             // Act
             var filter = ProtobufUtils.ToPurgeInstanceFilter(request);
 
             // Assert
             Assert.NotNull(filter.RuntimeStatus);
-            Assert.Contains(DurableTask.Core.OrchestrationStatus.Completed, filter.RuntimeStatus);
-            Assert.Contains(DurableTask.Core.OrchestrationStatus.Failed, filter.RuntimeStatus);
+            Assert.Contains(CoreOrchestrationStatus.Completed, filter.RuntimeStatus);
+            Assert.Contains(CoreOrchestrationStatus.Failed, filter.RuntimeStatus);
         }
 
         [Fact]
@@ -464,5 +507,5 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             // Assert
             Assert.Null(filter.RuntimeStatus);
         }
-}
+    }
 }

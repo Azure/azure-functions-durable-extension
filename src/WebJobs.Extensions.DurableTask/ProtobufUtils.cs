@@ -560,10 +560,28 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             if (request.PurgeInstanceFilter.Timeout != null)
             {
-                filter.Timeout = request.PurgeInstanceFilter.Timeout.ToTimeSpan();
+                filter.Timeout = ToNonNegativeTimeSpan(request.PurgeInstanceFilter.Timeout);
             }
 
             return filter;
+        }
+
+        private static TimeSpan ToNonNegativeTimeSpan(Duration timeout)
+        {
+            const long MaxDurationSeconds = 315576000000L;
+            const int MaxDurationNanos = 999999999;
+
+            if (timeout.Seconds < 0 || timeout.Nanos < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(timeout), "Timeout must be non-negative.");
+            }
+
+            if (timeout.Seconds > MaxDurationSeconds || timeout.Nanos > MaxDurationNanos)
+            {
+                throw new ArgumentOutOfRangeException(nameof(timeout), "Timeout is outside the valid protobuf Duration range.");
+            }
+
+            return timeout.ToTimeSpan();
         }
 
         internal static P.PurgeInstancesResponse CreatePurgeInstancesResponse(PurgeResult result)
