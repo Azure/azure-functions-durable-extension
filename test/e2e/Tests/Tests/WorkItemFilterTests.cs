@@ -13,16 +13,16 @@ namespace Microsoft.Azure.Durable.Tests.DotnetIsolatedE2E;
 /// the DTS backend only dispatches work items for functions registered in this app.
 /// Orchestrations for unknown function names should stay Pending instead of failing.
 /// </summary>
-[Collection(Constants.FunctionAppCollectionName)]
+[Collection(WorkItemFilterCollection.Name)]
 [Trait("AzureStorage", "Skip")] // Work item filtering is a DTS-only feature
 [Trait("MSSQL", "Skip")] // Work item filtering is a DTS-only feature
 [Trait("DTS", "Skip")] // TODO: Remove once AzureManaged backend package with work item filter support is available
 public class WorkItemFilterTests
 {
-    private readonly FunctionAppFixture fixture;
+    private readonly WorkItemFilterFixture fixture;
     private readonly ITestOutputHelper output;
 
-    public WorkItemFilterTests(FunctionAppFixture fixture, ITestOutputHelper testOutputHelper)
+    public WorkItemFilterTests(WorkItemFilterFixture fixture, ITestOutputHelper testOutputHelper)
     {
         this.fixture = fixture;
         this.fixture.TestLogs.UseTestLogger(testOutputHelper);
@@ -63,21 +63,32 @@ public class WorkItemFilterTests
     {
         string unknownName = $"NonExistentOrchestration_{Guid.NewGuid():N}";
 
-        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger(
+        // Start a known orchestration alongside the unknown one so we can use
+        // its completion as a synchronization signal — proving the worker is
+        // actively dispatching work items — before asserting the unknown one
+        // is still Pending.
+        using HttpResponseMessage knownResponse = await HttpHelpers.InvokeHttpTrigger(
+            "StartOrchestration",
+            "?orchestrationName=HelloCities");
+
+        using HttpResponseMessage unknownResponse = await HttpHelpers.InvokeHttpTrigger(
             "StartOrchestration",
             $"?orchestrationName={unknownName}");
 
-        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
+        Assert.Equal(HttpStatusCode.Accepted, knownResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.Accepted, unknownResponse.StatusCode);
 
-        string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
+        string knownStatusUri = await DurableHelpers.ParseStatusQueryGetUriAsync(knownResponse);
+        string unknownStatusUri = await DurableHelpers.ParseStatusQueryGetUriAsync(unknownResponse);
 
-        // Wait a few seconds and verify it stays Pending (not Failed)
-        await Task.Delay(TimeSpan.FromSeconds(10));
+        // Wait for the known orchestration to complete — this proves the worker
+        // is running and dispatching work items.
+        await DurableHelpers.WaitForOrchestrationStateAsync(knownStatusUri, "Completed", 30);
 
-        var details = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
-
+        // Now assert the unknown orchestration is still Pending.
         // With filtering enabled: Pending (DTS holds it — no matching worker)
         // Without filtering: would be Failed ("function doesn't exist")
+        var details = await DurableHelpers.GetRunningOrchestrationDetailsAsync(unknownStatusUri);
         Assert.Equal("Pending", details.RuntimeStatus);
 
         this.output.WriteLine(

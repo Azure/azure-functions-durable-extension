@@ -1171,6 +1171,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return info;
         }
 
+        internal (
+            IReadOnlyCollection<string> orchestratorNames,
+            IReadOnlyCollection<string> activityNames,
+            IReadOnlyCollection<string> entityNames) GetActiveRegisteredFunctionNames()
+        {
+            return (
+                orchestratorNames: this.knownOrchestrators
+                    .Where(kvp => !kvp.Value.IsDeregistered)
+                    .Select(kvp => kvp.Key.Name)
+                    .ToList(),
+                activityNames: this.knownActivities
+                    .Where(kvp => !kvp.Value.IsDeregistered)
+                    .Select(kvp => kvp.Key.Name)
+                    .ToList(),
+                entityNames: this.knownEntities
+                    .Where(kvp => !kvp.Value.IsDeregistered)
+                    .Select(kvp => kvp.Key.Name)
+                    .ToList());
+        }
+
         // This is temporary until script loading
         private static void ConfigureLoaderHooks()
         {
@@ -1431,10 +1451,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         // Pass registered function names to the factory so backends that support
                         // work-item filtering (e.g., DTS/AzureManaged) can build WorkItemFilters
                         // before the task hub worker opens its GetWorkItems stream.
+                        var activeFunctions = this.GetActiveRegisteredFunctionNames();
                         this.durabilityProviderFactory.SetRegisteredFunctions(
-                            orchestratorNames: this.knownOrchestrators.Keys.Select(fn => fn.Name).ToList(),
-                            activityNames: this.knownActivities.Keys.Select(fn => fn.Name).ToList(),
-                            entityNames: this.knownEntities.Keys.Select(fn => fn.Name).ToList());
+                            orchestratorNames: activeFunctions.orchestratorNames,
+                            activityNames: activeFunctions.activityNames,
+                            entityNames: activeFunctions.entityNames);
 
                         await this.EnsureTaskHubWorker().StartAsync();
 
