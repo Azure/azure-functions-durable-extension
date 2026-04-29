@@ -2,7 +2,6 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale;
 using Microsoft.Azure.WebJobs.Host.Scale;
 using Newtonsoft.Json.Linq;
 
@@ -30,9 +29,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests
                 return sqlConnectionString;
             }
 
-            // If no environment variable is set, throw an exception to ensure tests verify that
-            // the package correctly reads connection strings from configuration/environment variables.
-            // This prevents tests from silently using a hardcoded default that doesn't match the actual environment.
             throw new InvalidOperationException(
                 "SQL connection string not found in environment variables.");
         }
@@ -46,11 +42,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests
                 return connectionString;
             }
 
-            // If no environment variable is set, throw an exception to ensure tests verify that
-            // the package correctly reads connection strings from configuration/environment variables.
-            // This prevents tests from silently using a hardcoded default that doesn't match the actual environment.
             throw new InvalidOperationException(
                 "Azure Managed connection string not found in environment variables.");
+        }
+
+        public static string GetNetheriteEventHubsConnectionString()
+        {
+            string connectionString = Environment.GetEnvironmentVariable("EventHubsConnection");
+
+            if (!string.IsNullOrEmpty(connectionString))
+            {
+                return connectionString;
+            }
+
+            throw new InvalidOperationException(
+                "Event Hubs connection string not found in environment variables. " +
+                "Set the 'EventHubsConnection' environment variable (e.g. to the Event Hubs emulator connection string).");
         }
 
         /// <summary>

@@ -86,7 +86,7 @@ jobs:
       uses: actions/cache@v3
       with:
         path: .azurite
-        key: ${{ runner.os }}-azurite-v1
+        key: ${{ runner.os }}-azurite-v2
 
     - name: Install Azurite
       if: steps.cache-azurite.outputs.cache-hit != 'true'
@@ -100,7 +100,7 @@ jobs:
     - name: Start Azurite
       shell: pwsh
       run: |
-        Start-Process (Resolve-Path '.azurite\node_modules\.bin\azurite.cmd') -ArgumentList '--silent','--blobPort','10000','--queuePort','10001','--tablePort','10002'
+        Start-Process (Resolve-Path '.azurite/node_modules/.bin/azurite') -ArgumentList '--silent','--skipApiVersionCheck','--blobPort','10000','--queuePort','10001','--tablePort','10002'
         $timeout = 30
         for ($i = 1; $i -le $timeout; $i++) {
           try {

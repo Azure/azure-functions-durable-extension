@@ -22,15 +22,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Set up JDK 8
-        uses: actions/setup-java@v2
+        uses: actions/setup-java@v4
         with:
           java-version: '8'
           distribution: 'temurin'
-      - name: Build azure functions sample
-        uses: gradle/gradle-build-action@v2.4.2
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: 6.5
-          arguments: azureFunctionsPackage -p test/SmokeTests/OOProcSmokeTests/durableJava/
+          gradle-version: 6.9.4
+      - name: Build azure functions sample
+        run: gradle azureFunctionsPackage -p test/SmokeTests/OOProcSmokeTests/durableJava/
         continue-on-error: true
       - name: Download azure functions java library # TODO: Remove this step once gradle plugin is updated
         run: |

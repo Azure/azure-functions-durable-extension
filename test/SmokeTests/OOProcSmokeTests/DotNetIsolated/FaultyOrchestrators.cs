@@ -27,29 +27,13 @@ namespace FaultOrchestrators
 
                 // force the process to run out of memory
 #if NET10_0_OR_GREATER
-                // On .NET 10+ / Linux, memory overcommit allows virtual allocations to succeed
-                // without committing physical RAM. Writing to each page forces the OS to back
-                // the allocation with real memory, triggering an actual OOM crash.
-                try
-                {
-                    List<byte[]> data = new List<byte[]>();
-
-                    for (int i = 0; i < 10000000; i++)
-                    {
-                        var arr = new byte[1024 * 1024 * 1024];
-
-                        for (int j = 0; j < arr.Length; j += 4096)
-                        {
-                            arr[j] = 1;
-                        }
-
-                        data.Add(arr);
-                    }
-                }
-                catch (OutOfMemoryException)
-                {
-                    Environment.FailFast("Out of memory!");
-                }
+                // On .NET 10+ / Linux, memory overcommit makes true OOM unreliable:
+                // virtual allocations succeed without committing physical RAM, and
+                // writing every page to force commitment is slow and triggers the
+                // Linux OOM killer (SIGKILL) instead of a .NET OutOfMemoryException.
+                // Since this test validates orchestration recovery from a process crash,
+                // use FailFast to simulate the crash directly.
+                Environment.FailFast("Simulated OOM crash for smoke test");
 #else
                 List<byte[]> data = new List<byte[]>();
 
