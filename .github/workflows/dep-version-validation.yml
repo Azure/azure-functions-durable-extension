@@ -64,6 +64,14 @@ jobs:
           cd src/Worker.Extensions.DurableTask
           dotnet build -c Release; cp bin/Release/*.nupkg "../../$PKG/"
 
+      - name: Pack WebJobs extension (Worker extension dependency)
+        run: |
+          set -e
+          PKG=test/SmokeTests/DepValidation/Isolated/local-packages; mkdir -p "$PKG"
+          cd src/WebJobs.Extensions.DurableTask
+          dotnet build -c Release
+          find bin/Release -name "*.nupkg" -exec cp {} "../../$PKG/" \;
+
       - name: Generate NuGet.config
         run: |
           cat > test/SmokeTests/DepValidation/Isolated/NuGet.config << 'NUGET'
@@ -76,6 +84,7 @@ jobs:
             <packageSourceMapping>
               <packageSource key="local-packages">
                 <package pattern="Microsoft.Azure.Functions.Worker.Extensions.DurableTask" />
+                <package pattern="Microsoft.Azure.WebJobs.Extensions.DurableTask" />
               </packageSource>
               <packageSource key="nuget.org"><package pattern="*" /></packageSource>
             </packageSourceMapping>
