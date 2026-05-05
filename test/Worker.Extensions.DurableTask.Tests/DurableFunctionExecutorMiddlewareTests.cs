@@ -53,6 +53,102 @@ public sealed class DurableFunctionExecutorMiddlewareTests
         Assert.Same(expected, captured.Result);
     }
 
+    [Fact]
+    public async Task RunFunctionActivityAsync_WithMiddleware_PopulatesFunctionContextAndReturnsFunctionResult()
+    {
+        // Arrange
+        const string activityName = "FunctionSyntaxActivity";
+        object expected = new { Message = "function-result" };
+        CapturedActivityMiddleware captured = new();
+        ServiceCollection services = new();
+        services.AddSingleton(captured);
+        services.AddSingleton<ILoggerFactory>(NullLoggerFactory.Instance);
+        IDurableTaskWorkerBuilder workerBuilder = services.AddDurableTaskWorker();
+        workerBuilder.UseActivityMiddleware<CapturingActivityMiddleware>();
+        using ServiceProvider provider = services.BuildServiceProvider();
+        FunctionContext functionContext = new TestFunctionContext(activityName, provider);
+        DurableTaskShimFactory shimFactory = new(workerBuilder.Name, provider, options: null, NullLoggerFactory.Instance);
+        DurableFunctionExecutor executor = new(
+            Mock.Of<IFunctionExecutor>(),
+            new ExtendedSessionsCache(),
+            new TestDurableTaskFactory(activityName, activity: null),
+            shimFactory,
+            Options.Create(new DurableTaskWorkerOptions()));
+        FunctionActivityInput input = new(typeof(string), "input", "\"input\"");
+
+        // Act
+        object? result = await executor.RunFunctionActivityAsync(
+            functionContext,
+            input,
+            () => Task.FromResult<object?>(expected));
+
+        // Assert
+        Assert.Same(expected, result);
+        Assert.Same(functionContext, captured.FunctionContext);
+        Assert.Equal("input", captured.Input);
+        Assert.Same(expected, captured.Result);
+    }
+
+    [Fact]
+    public async Task RunFunctionActivityAsync_WhenMiddlewareSetsResult_SkipsFunctionBody()
+    {
+        // Arrange
+        const string activityName = "ShortCircuitFunctionSyntaxActivity";
+        ServiceCollection services = new();
+        services.AddSingleton<ILoggerFactory>(NullLoggerFactory.Instance);
+        IDurableTaskWorkerBuilder workerBuilder = services.AddDurableTaskWorker();
+        workerBuilder.UseActivityMiddleware((context, next) =>
+        {
+            context.SetResult("short-circuited");
+            return Task.CompletedTask;
+        });
+
+        using ServiceProvider provider = services.BuildServiceProvider();
+        FunctionContext functionContext = new TestFunctionContext(activityName, provider);
+        DurableTaskShimFactory shimFactory = new(workerBuilder.Name, provider, options: null, NullLoggerFactory.Instance);
+        DurableFunctionExecutor executor = new(
+            Mock.Of<IFunctionExecutor>(),
+            new ExtendedSessionsCache(),
+            new TestDurableTaskFactory(activityName, activity: null),
+            shimFactory,
+            Options.Create(new DurableTaskWorkerOptions()));
+        FunctionActivityInput input = new(typeof(string), "input", "\"input\"");
+        bool bodyCalled = false;
+
+        // Act
+        object? result = await executor.RunFunctionActivityAsync(
+            functionContext,
+            input,
+            () =>
+            {
+                bodyCalled = true;
+                return Task.FromResult<object?>("body-result");
+            });
+
+        // Assert
+        Assert.Equal("short-circuited", result);
+        Assert.False(bodyCalled);
+    }
+
+    [Fact]
+    public void CreateFunctionActivityInput_WithNullActivityInput_ReturnsSerializedNullRawInput()
+    {
+        // Arrange
+        DataConverter converter = new DurableTaskWorkerOptions().DataConverter;
+
+        // Act
+        FunctionActivityInput input = DurableFunctionExecutor.CreateFunctionActivityInput(
+            typeof(string),
+            hasInput: true,
+            input: null,
+            converter);
+
+        // Assert
+        Assert.Equal(typeof(string), input.InputType);
+        Assert.Null(input.Input);
+        Assert.Equal("null", input.RawInput);
+    }
+
     sealed class CapturingActivityMiddleware(CapturedActivityMiddleware captured) : ITaskActivityMiddleware
     {
         public async Task InvokeAsync(TaskActivityMiddlewareContext context, TaskActivityMiddlewareDelegate next)
@@ -75,14 +171,14 @@ public sealed class DurableFunctionExecutorMiddlewareTests
         public object? Result { get; set; }
     }
 
-    sealed class TestDurableTaskFactory(TaskName activityName, ITaskActivity activity) : IDurableTaskFactory
+    sealed class TestDurableTaskFactory(TaskName activityName, ITaskActivity? activity) : IDurableTaskFactory
     {
         public bool TryCreateActivity(
             TaskName name,
             IServiceProvider serviceProvider,
             [NotNullWhen(true)] out ITaskActivity? result)
         {
-            if (name == activityName)
+            if (activity is not null && name == activityName)
             {
                 result = activity;
                 return true;
