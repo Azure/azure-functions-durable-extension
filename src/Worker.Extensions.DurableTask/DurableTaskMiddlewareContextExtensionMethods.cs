@@ -18,6 +18,10 @@ public static class DurableTaskMiddlewareContextExtensionMethods
     /// <param name="context">The orchestration middleware context.</param>
     /// <returns>The Azure Functions context if available; otherwise, <c>null</c>.</returns>
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="context"/> is <c>null</c>.</exception>
+    /// <remarks>
+    /// This value is populated only for middleware contexts created by the Azure Functions extension when it invokes
+    /// the Durable Task SDK middleware pipeline.
+    /// </remarks>
     public static FunctionContext? GetFunctionContext(this TaskOrchestrationMiddlewareContext context)
     {
         if (context is null)
@@ -35,6 +39,10 @@ public static class DurableTaskMiddlewareContextExtensionMethods
     /// <param name="context">The activity middleware context.</param>
     /// <returns>The Azure Functions context if available; otherwise, <c>null</c>.</returns>
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="context"/> is <c>null</c>.</exception>
+    /// <remarks>
+    /// This value is populated only for middleware contexts created by the Azure Functions extension when it invokes
+    /// the Durable Task SDK middleware pipeline.
+    /// </remarks>
     public static FunctionContext? GetFunctionContext(this TaskActivityMiddlewareContext context)
     {
         if (context is null)

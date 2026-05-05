@@ -44,13 +44,6 @@ internal partial class DurableFunctionExecutor
 
     private async Task RunDirectActivityAsync(FunctionContext context, BindingMetadata triggerBinding)
     {
-        if (!factory.TryCreateActivity(
-            context.FunctionDefinition.Name, context.InstanceServices, out ITaskActivity? activity))
-        {
-            throw new InvalidOperationException(
-                $"No activity with name '{context.FunctionDefinition.Name}' is registered.");
-        }
-
         InputBindingData<object> triggerInputData = await context.BindInputAsync<object>(triggerBinding);
         if (triggerInputData?.Value is not string { } data)
         {
@@ -58,21 +51,40 @@ internal partial class DurableFunctionExecutor
                 "Activity input data was either missing from the input or not a JSON string.");
         }
 
+        context.GetInvocationResult().Value = await this.RunDirectActivityAsync(context, data);
+    }
+
+    internal async Task<object?> RunDirectActivityAsync(FunctionContext context, string data)
+    {
+        if (context is null)
+        {
+            throw new ArgumentNullException(nameof(context));
+        }
+
+        if (data is null)
+        {
+            throw new ArgumentNullException(nameof(data));
+        }
+
+        if (!factory.TryCreateActivity(
+            context.FunctionDefinition.Name, context.InstanceServices, out ITaskActivity? activity))
+        {
+            throw new InvalidOperationException(
+                $"No activity with name '{context.FunctionDefinition.Name}' is registered.");
+        }
+
         IMiddlewareFeatures features = CreateMiddlewareFeatures(context);
-        TaskActivity shim = shimFactory.CreateActivity(
-            context.FunctionDefinition.Name,
-            activity,
-            context.InstanceServices,
-            features);
         TaskContext taskContext = new(new OrchestrationInstance
         {
             InstanceId = context.GetInstanceId(),
         });
-        string? serializedOutput = await shim.RunAsync(taskContext, data);
-        object? activityResult = serializedOutput is null
-            ? null
-            : this.Converter.Deserialize(serializedOutput, activity.OutputType);
-        context.GetInvocationResult().Value = activityResult;
+        return await shimFactory.RunActivityAsync(
+            context.FunctionDefinition.Name,
+            activity,
+            taskContext,
+            data,
+            context.InstanceServices,
+            features);
     }
 
 }

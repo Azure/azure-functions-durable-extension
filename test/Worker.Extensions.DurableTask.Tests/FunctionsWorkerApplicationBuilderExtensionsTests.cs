@@ -33,6 +33,23 @@ public sealed class FunctionsWorkerApplicationBuilderExtensionsTests
     }
 
     [Fact]
+    public void ConfigureDurableExtension_WhenWorkerConfiguredFirst_RegisteredShimFactoryUsesOrchestrationMiddleware()
+    {
+        // Arrange
+        ServiceCollection services = CreateServices();
+        TestFunctionsWorkerApplicationBuilder builder = new(services);
+
+        // Act
+        builder.ConfigureDurableWorker().UseOrchestrationMiddleware<CapturingOrchestrationMiddleware>();
+        builder.ConfigureDurableExtension();
+        using ServiceProvider provider = services.BuildServiceProvider();
+        DurableTaskShimFactory factory = provider.GetRequiredService<DurableTaskShimFactory>();
+
+        // Assert
+        Assert.True(factory.HasOrchestrationMiddleware);
+    }
+
+    [Fact]
     public async Task ConfigureDurableExtension_RegisteredShimFactoryUsesActivityMiddleware()
     {
         // Arrange
@@ -42,6 +59,33 @@ public sealed class FunctionsWorkerApplicationBuilderExtensionsTests
         TestFunctionsWorkerApplicationBuilder builder = new(services);
         builder.ConfigureDurableExtension();
         builder.ConfigureDurableWorker().UseActivityMiddleware<CapturingActivityMiddleware>();
+        using ServiceProvider provider = services.BuildServiceProvider();
+        DurableTaskShimFactory factory = provider.GetRequiredService<DurableTaskShimFactory>();
+        using IServiceScope scope = provider.CreateScope();
+        TaskActivity activity = factory.CreateActivity(
+            "MiddlewareRegistrationActivity",
+            FuncTaskActivity.Create<string, string>((context, input) => Task.FromResult("ok")),
+            scope.ServiceProvider,
+            new MiddlewareFeatureCollection());
+        TaskContext taskContext = new(new OrchestrationInstance { InstanceId = "test-instance-id" });
+
+        // Act
+        await activity.RunAsync(taskContext, "\"input\"");
+
+        // Assert
+        Assert.True(captured.Called);
+    }
+
+    [Fact]
+    public async Task ConfigureDurableExtension_WhenWorkerConfiguredFirst_RegisteredShimFactoryUsesActivityMiddleware()
+    {
+        // Arrange
+        CapturedActivityMiddleware captured = new();
+        ServiceCollection services = CreateServices();
+        services.AddSingleton(captured);
+        TestFunctionsWorkerApplicationBuilder builder = new(services);
+        builder.ConfigureDurableWorker().UseActivityMiddleware<CapturingActivityMiddleware>();
+        builder.ConfigureDurableExtension();
         using ServiceProvider provider = services.BuildServiceProvider();
         DurableTaskShimFactory factory = provider.GetRequiredService<DurableTaskShimFactory>();
         using IServiceScope scope = provider.CreateScope();

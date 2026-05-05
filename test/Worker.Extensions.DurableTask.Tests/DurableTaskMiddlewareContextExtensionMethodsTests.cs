@@ -47,6 +47,20 @@ public sealed class DurableTaskMiddlewareContextExtensionMethodsTests
     }
 
     [Fact]
+    public void OrchestrationGetFunctionContext_WithoutFeature_ShouldReturnNull()
+    {
+        // Arrange
+        TaskOrchestrationMiddlewareContext context = new TestOrchestrationMiddlewareContext(
+            new MiddlewareFeatureCollection());
+
+        // Act
+        FunctionContext? result = context.GetFunctionContext();
+
+        // Assert
+        Assert.Null(result);
+    }
+
+    [Fact]
     public void ActivityGetFunctionContext_WithNullContext_ShouldThrowArgumentNullException()
     {
         Assert.Throws<ArgumentNullException>(() =>
@@ -67,6 +81,19 @@ public sealed class DurableTaskMiddlewareContextExtensionMethodsTests
 
         // Assert
         Assert.Same(expected, result);
+    }
+
+    [Fact]
+    public void ActivityGetFunctionContext_WithoutFeature_ShouldReturnNull()
+    {
+        // Arrange
+        TaskActivityMiddlewareContext context = new MiddlewareActivityContext(new MiddlewareFeatureCollection());
+
+        // Act
+        FunctionContext? result = context.GetFunctionContext();
+
+        // Assert
+        Assert.Null(result);
     }
 
     sealed class TestOrchestrationMiddlewareContext(IMiddlewareFeatures features)
@@ -102,6 +129,8 @@ public sealed class DurableTaskMiddlewareContextExtensionMethodsTests
     sealed class MiddlewareActivityContext(IMiddlewareFeatures features)
         : TaskActivityMiddlewareContext
     {
+        object? result;
+
         public override TaskName Name => "MiddlewareContextFunctionActivity";
 
         public override string InstanceId => "test-instance-id";
@@ -120,10 +149,11 @@ public sealed class DurableTaskMiddlewareContextExtensionMethodsTests
 
         public override CancellationToken CancellationToken => CancellationToken.None;
 
-        public override object? Result => null;
+        public override object? Result => this.result;
 
         public override void SetResult(object? result)
         {
+            this.result = result;
         }
     }
 }
