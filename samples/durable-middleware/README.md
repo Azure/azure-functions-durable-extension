@@ -22,10 +22,19 @@ func start
 Start the orchestration:
 
 ```powershell
-curl -X POST http://localhost:7071/api/orchestrators/greeting
+curl.exe -X POST http://localhost:7071/api/orchestrators/greeting
 ```
 
 The Functions host logs show both orchestration and activity middleware running around the function-syntax Durable Functions methods.
+
+Example log output:
+
+```text
+Starting orchestration GreetingOrchestration (<instance ID>) from function GreetingOrchestration with input Tokyo.
+Starting activity SayHello for instance <instance ID> from function SayHello with input Tokyo.
+Completed activity SayHello for instance <instance ID> with result Hello, Tokyo!.
+Completed orchestration GreetingOrchestration (<instance ID>) with result Hello, Tokyo!.
+```
 
 ## Determinism note
 
