@@ -3,8 +3,10 @@
 
 using System;
 using System.Threading.Tasks;
+using DurableTask.Core;
 using Microsoft.Azure.Functions.Worker.Extensions.DurableTask.Exceptions;
 using Microsoft.DurableTask;
+using Microsoft.DurableTask.Worker.Middleware;
 
 namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask.Execution;
 
@@ -56,18 +58,21 @@ internal partial class DurableFunctionExecutor
                 "Activity input data was either missing from the input or not a JSON string.");
         }
 
-        object? input = this.Converter.Deserialize(data, activity.InputType);
-        object? activityResult = await activity.RunAsync(new FunctionsTaskActivityContext(context), input);
+        IMiddlewareFeatures features = CreateMiddlewareFeatures(context);
+        TaskActivity shim = shimFactory.CreateActivity(
+            context.FunctionDefinition.Name,
+            activity,
+            context.InstanceServices,
+            features);
+        TaskContext taskContext = new(new OrchestrationInstance
+        {
+            InstanceId = context.GetInstanceId(),
+        });
+        string? serializedOutput = await shim.RunAsync(taskContext, data);
+        object? activityResult = serializedOutput is null
+            ? null
+            : this.Converter.Deserialize(serializedOutput, activity.OutputType);
         context.GetInvocationResult().Value = activityResult;
     }
 
-    private sealed class FunctionsTaskActivityContext(FunctionContext context)
-        : TaskActivityContext
-    {
-        public FunctionContext Context { get; } = context;
-
-        public override TaskName Name { get; } = context.FunctionDefinition.Name;
-
-        public override string InstanceId { get; } = context.GetInstanceId();
-    }
 }

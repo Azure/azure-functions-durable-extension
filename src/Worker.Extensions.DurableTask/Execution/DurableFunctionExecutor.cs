@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 using Microsoft.Azure.Functions.Worker.Invocation;
 using Microsoft.DurableTask;
 using Microsoft.DurableTask.Worker;
+using Microsoft.DurableTask.Worker.Middleware;
+using Microsoft.DurableTask.Worker.Shims;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask.Execution;
@@ -14,11 +16,24 @@ internal partial class DurableFunctionExecutor(
     IFunctionExecutor inner,
     ExtendedSessionsCache extendedSessionsCache,
     IDurableTaskFactory factory,
+    DurableTaskShimFactory shimFactory,
     IOptions<DurableTaskWorkerOptions> options,
     IExceptionPropertiesProvider? exceptionPropertiesProvider = null)
     : IFunctionExecutor
 {
     private DataConverter Converter => options.Value.DataConverter;
+
+    internal static IMiddlewareFeatures CreateMiddlewareFeatures(FunctionContext context)
+    {
+        if (context is null)
+        {
+            throw new ArgumentNullException(nameof(context));
+        }
+
+        MiddlewareFeatureCollection features = new();
+        features.Set(context);
+        return features;
+    }
 
     public virtual ValueTask ExecuteAsync(FunctionContext context)
     {

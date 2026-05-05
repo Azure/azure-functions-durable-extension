@@ -45,11 +45,12 @@ public static class FunctionsWorkerApplicationBuilderExtensions
         builder.Services.TryAddEnumerable(
             ServiceDescriptor.Singleton<IPostConfigureOptions<DurableTaskWorkerOptions>, PostConfigureWorkerOptions>());
 
+        IDurableTaskWorkerBuilder workerBuilder = builder.Services.AddDurableTaskWorker().UseFunctions();
         builder.Services.TryAddSingleton(sp =>
         {
             DurableTaskWorkerOptions options = sp.GetRequiredService<IOptions<DurableTaskWorkerOptions>>().Value;
             ILoggerFactory factory = sp.GetRequiredService<ILoggerFactory>();
-            return new DurableTaskShimFactory(options, factory); // For GrpcOrchestrationRunner
+            return new DurableTaskShimFactory(workerBuilder.Name, sp, options, factory); // For GrpcOrchestrationRunner
         });
 
         builder.Services.TryAddEnumerable(
@@ -64,7 +65,6 @@ public static class FunctionsWorkerApplicationBuilderExtensions
 
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<
             IFunctionMetadataTransformer, DurableMetadataTransformer>());
-        IDurableTaskWorkerBuilder workerBuilder = builder.Services.AddDurableTaskWorker().UseFunctions();
 
         builder.Services.TryAddEnumerable(
             ServiceDescriptor.Singleton<IValidateOptions<DurableTaskWorkerOptions>>(
@@ -77,7 +77,10 @@ public static class FunctionsWorkerApplicationBuilderExtensions
     /// Configures the Durable Task worker for the Functions Worker.
     /// </summary>
     /// <param name="builder">The Functions Worker application builder.</param>
-    /// <returns>The Durable Task worker builder.</returns>
+    /// <returns>
+    /// The Durable Task worker builder. Use the returned builder to register Durable Task orchestrators, activities,
+    /// entities, and Durable Task middleware.
+    /// </returns>
     public static IDurableTaskWorkerBuilder ConfigureDurableWorker(this IFunctionsWorkerApplicationBuilder builder)
     {
         if (builder is null)

@@ -5,6 +5,7 @@ using System;
 using System.Threading.Tasks;
 using Microsoft.DurableTask;
 using Microsoft.DurableTask.Worker.Grpc;
+using Microsoft.DurableTask.Worker.Middleware;
 
 namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask.Execution;
 
@@ -31,8 +32,9 @@ internal partial class DurableFunctionExecutor
         }
 
         await using IDisposableOrchestrator orchestrator = this.CreateOrchestrator(context, triggerInputData);
+        IMiddlewareFeatures features = CreateMiddlewareFeatures(context);
         string orchestratorOutput = GrpcOrchestrationRunner.LoadAndRun(
-            encodedOrchestratorState, orchestrator, extendedSessionsCache, context.InstanceServices);
+            encodedOrchestratorState, orchestrator, extendedSessionsCache, context.InstanceServices, features);
 
         // Send the encoded orchestrator output as the return value seen by the functions host extension
         context.GetInvocationResult().Value = orchestratorOutput;
