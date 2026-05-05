@@ -55,6 +55,26 @@ func extensions install -p Microsoft.Azure.WebJobs.Extensions.DurableTask -v <la
 
 Durable Functions is also available in supported [extension bundles](https://docs.microsoft.com/azure/azure-functions/functions-bindings-register#extension-bundles). Note that extension bundles are only supported for non-.NET languages.
 
+## .NET isolated Durable Task middleware
+
+.NET isolated Durable Functions apps can register Durable Task middleware to wrap orchestration and activity invocation. Register middleware in `Program.cs` with `ConfigureDurableWorker()` and the standard Durable Task worker APIs:
+
+```csharp
+using Microsoft.Azure.Functions.Worker;
+using Microsoft.Azure.Functions.Worker.Builder;
+using Microsoft.DurableTask.Worker;
+
+FunctionsApplicationBuilder builder = FunctionsApplication.CreateBuilder(args);
+
+builder.ConfigureDurableWorker()
+    .UseOrchestrationMiddleware<LoggingOrchestrationMiddleware>()
+    .UseActivityMiddleware<LoggingActivityMiddleware>();
+```
+
+Middleware can call `context.GetFunctionContext()` to access the current Azure Functions `FunctionContext` when the Durable Functions extension invokes the middleware pipeline. Prefer Durable Task middleware over reflection into Functions worker internals when middleware needs durable inputs, instance IDs, or results. Keep `IFunctionsWorkerMiddleware` for Functions-wide concerns such as headers, authentication pre-processing, and non-durable bindings.
+
+See the [.NET isolated middleware sample](samples/durable-middleware/README.md) for a complete example.
+
 ## Contributing
 
 Many features of Durable Functions have been voluntarily contributed by the community, and we always welcome such contributions. If you are interested in contributing, please take a look at our [CONTRIBUTING](./CONTRIBUTING.md) guide.
