@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -75,6 +76,38 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 () => middleware.CallActivityAsync(dispatchContext, () => Task.CompletedTask));
         }
 
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task CallActivityAsync_WorkerNotInitializedException_ThrowsSessionAbortedException()
+        {
+            // Arrange: an InvalidOperationException with the "Did not find any initialized language workers" message
+            // indicates the worker is not yet ready and the activity should be retried.
+            var exception = new Exception(
+                "Function invocation failed.",
+                new InvalidOperationException("Did not find any initialized language workers"));
+
+            (OutOfProcMiddleware middleware, DispatchMiddlewareContext dispatchContext) = this.SetupActivityTest(exception);
+
+            await Assert.ThrowsAsync<SessionAbortedException>(
+                () => middleware.CallActivityAsync(dispatchContext, () => Task.CompletedTask));
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task CallActivityAsync_AssemblyNotLoadedException_ThrowsSessionAbortedException()
+        {
+            // Arrange: a FileNotFoundException with the "Could not load file or assembly" message
+            // indicates the worker assembly is not yet loaded and the activity should be retried.
+            var exception = new Exception(
+                "Function invocation failed.",
+                new FileNotFoundException("Could not load file or assembly 'SomeAssembly, Version=1.0.0.0'"));
+
+            (OutOfProcMiddleware middleware, DispatchMiddlewareContext dispatchContext) = this.SetupActivityTest(exception);
+
+            await Assert.ThrowsAsync<SessionAbortedException>(
+                () => middleware.CallActivityAsync(dispatchContext, () => Task.CompletedTask));
+        }
+
         public static IEnumerable<object[]> PlatformLevelExceptions()
         {
             // FunctionTimeoutException (top-level)
@@ -97,6 +130,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             // GrpcChannelTemporarilyUnavailableException as top-level exception (thrown in-process during binding)
             yield return new object[] { new GrpcChannelTemporarilyUnavailableException("The local gRPC endpoint is not available.") };
+
+            // InvalidOperationException with "Did not find any initialized language workers" as InnerException (worker not yet initialized)
+            yield return new object[] { new Exception("Function invocation failed.", new InvalidOperationException("Did not find any initialized language workers")) };
+
+            // FileNotFoundException with "Could not load file or assembly" as InnerException (assembly not yet loaded during initialization)
+            yield return new object[] { new Exception("Function invocation failed.", new FileNotFoundException("Could not load file or assembly 'SomeAssembly, Version=1.0.0.0'")) };
         }
 
         private (OutOfProcMiddleware middleware, DispatchMiddlewareContext context) SetupOrchestratorTest(Exception executorException)
