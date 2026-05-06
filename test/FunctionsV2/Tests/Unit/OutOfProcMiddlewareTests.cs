@@ -24,7 +24,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     public class OutOfProcMiddlewareTests
     {
         private const string NoWorkerInitializedMessage = "Did not find any initialized language workers";
-        private const string AssemblyNotLoadedMessage = "Could not load file or assembly 'SomeAssembly, Version=1.0.0.0'";
+        private const string AssemblyNotLoadedMessage = "Could not load file or assembly";
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
