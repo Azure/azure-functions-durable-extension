@@ -23,6 +23,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
     public class OutOfProcMiddlewareTests
     {
+        private const string NoWorkerInitializedMessage = "Did not find any initialized language workers";
+        private const string AssemblyNotLoadedMessage = "Could not load file or assembly 'SomeAssembly, Version=1.0.0.0'";
+
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task CallOrchestratorAsync_DifferentInvalidOperationException_DoesNotThrowSessionAbortedException()
@@ -84,7 +87,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             // indicates the worker is not yet ready and the activity should be retried.
             var exception = new Exception(
                 "Function invocation failed.",
-                new InvalidOperationException("Did not find any initialized language workers"));
+                new InvalidOperationException(NoWorkerInitializedMessage));
 
             (OutOfProcMiddleware middleware, DispatchMiddlewareContext dispatchContext) = this.SetupActivityTest(exception);
 
@@ -100,7 +103,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             // indicates the worker assembly is not yet loaded and the activity should be retried.
             var exception = new Exception(
                 "Function invocation failed.",
-                new FileNotFoundException("Could not load file or assembly 'SomeAssembly, Version=1.0.0.0'"));
+                new FileNotFoundException(AssemblyNotLoadedMessage));
 
             (OutOfProcMiddleware middleware, DispatchMiddlewareContext dispatchContext) = this.SetupActivityTest(exception);
 
@@ -132,10 +135,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             yield return new object[] { new GrpcChannelTemporarilyUnavailableException("The local gRPC endpoint is not available.") };
 
             // InvalidOperationException with "Did not find any initialized language workers" as InnerException (worker not yet initialized)
-            yield return new object[] { new Exception("Function invocation failed.", new InvalidOperationException("Did not find any initialized language workers")) };
+            yield return new object[] { new Exception("Function invocation failed.", new InvalidOperationException(NoWorkerInitializedMessage)) };
 
             // FileNotFoundException with "Could not load file or assembly" as InnerException (assembly not yet loaded during initialization)
-            yield return new object[] { new Exception("Function invocation failed.", new FileNotFoundException("Could not load file or assembly 'SomeAssembly, Version=1.0.0.0'")) };
+            yield return new object[] { new Exception("Function invocation failed.", new FileNotFoundException(AssemblyNotLoadedMessage)) };
         }
 
         private (OutOfProcMiddleware middleware, DispatchMiddlewareContext context) SetupOrchestratorTest(Exception executorException)
