@@ -409,9 +409,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 if (!functionResult.Succeeded)
                 {
-                    // This exception is thrown when another Function on the worker exceeded the Function timeout.
-                    // In this case we want to make sure to retry this entity's execution rather than marking it as failed.
-                    if (functionResult.Exception is Host.FunctionTimeoutAbortException)
+                    // These exception are thrown when either:
+                    // 1. Another Function on the worker exceeded the Function timeout.
+                    // 2. The worker the Activity was sent to has not yet been fully initialized and is not ready to process the Activity execution.
+                    // In these cases we want to make sure to retry this Activity's execution rather than marking it as failed.
+                    if (functionResult.Exception is Host.FunctionTimeoutAbortException || IsWorkerNotFullyInitializedException(functionResult.Exception))
                     {
                         throw functionResult.Exception;
                     }
