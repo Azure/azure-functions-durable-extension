@@ -69,6 +69,38 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task CallEntityAsync_WorkerNotInitializedException_ThrowsSessionAbortedException()
+        {
+            // Arrange: an InvalidOperationException with the "Did not find any initialized language workers" message
+            // indicates the worker is not yet ready and the entity should be retried.
+            var exception = new Exception(
+                "Function invocation failed.",
+                new InvalidOperationException(NoWorkerInitializedMessage));
+
+            (OutOfProcMiddleware middleware, DispatchMiddlewareContext dispatchContext) = this.SetupEntityTest(exception);
+
+            await Assert.ThrowsAsync<SessionAbortedException>(
+                () => middleware.CallEntityAsync(dispatchContext, () => Task.CompletedTask));
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task CallEntityAsync_AssemblyNotLoadedException_ThrowsSessionAbortedException()
+        {
+            // Arrange: a FileNotFoundException with the "Could not load file or assembly" message
+            // indicates the worker assembly is not yet loaded and the entity should be retried.
+            var exception = new Exception(
+                "Function invocation failed.",
+                new FileNotFoundException(AssemblyNotLoadedMessage));
+
+            (OutOfProcMiddleware middleware, DispatchMiddlewareContext dispatchContext) = this.SetupEntityTest(exception);
+
+            await Assert.ThrowsAsync<SessionAbortedException>(
+                () => middleware.CallEntityAsync(dispatchContext, () => Task.CompletedTask));
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task CallActivityAsync_FunctionTimeoutAbortException_ThrowsSessionAbortedException()
         {
             var exception = new FunctionTimeoutAbortException("Activity A timed out! Worker channel closing");
