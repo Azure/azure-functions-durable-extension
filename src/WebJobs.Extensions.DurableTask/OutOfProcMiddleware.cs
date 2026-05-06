@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using DurableTask.Core;
@@ -21,6 +22,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     internal class OutOfProcMiddleware
     {
         private const string NoProcessAssociatedMessage = "No process is associated";
+        private const string NoWorkerInitializedMessage = "Did not find any initialized language workers";
+        private const string AssemblyNotLoadedMessage = "Could not load file or assembly";
 
         private readonly DurableTaskExtension extension;
 
@@ -562,9 +565,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     cancellationToken: this.HostLifetimeService.OnStopping);
                 if (!result.Succeeded)
                 {
-                    // This exception is thrown when another Function on the worker exceeded the Function timeout.
-                    // In this case we want to make sure to retry this Activity's execution rather than marking it as failed.
-                    if (result.Exception is Host.FunctionTimeoutAbortException)
+                    // These exception are thrown when either:
+                    // 1. Another Function on the worker exceeded the Function timeout.
+                    // 2. The worker the Activity was sent to has not yet been fully initialized and is not ready to process the Activity execution.
+                    // In these cases we want to make sure to retry this Activity's execution rather than marking it as failed.
+                    if (result.Exception is Host.FunctionTimeoutAbortException || IsWorkerNotFullyInitializedException(result.Exception))
                     {
                         throw result.Exception;
                     }
@@ -666,7 +671,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 || exception?.InnerException is GrpcChannelTemporarilyUnavailableException
                 || (exception?.InnerException?.GetType().ToString().Contains("WorkerProcessExitException", StringComparison.Ordinal) ?? false)
                 || (exception?.InnerException is InvalidOperationException ioe
-                    && ioe.Message.Contains(NoProcessAssociatedMessage, StringComparison.Ordinal));
+                    && ioe.Message.Contains(NoProcessAssociatedMessage, StringComparison.Ordinal))
+                || IsWorkerNotFullyInitializedException(exception);
+        }
+
+        private static bool IsWorkerNotFullyInitializedException(Exception? exception)
+        {
+            return (exception?.InnerException is InvalidOperationException ioe && ioe.Message.Contains(NoWorkerInitializedMessage, StringComparison.Ordinal))
+                || (exception?.InnerException is FileNotFoundException fnfe && fnfe.Message.Contains(AssemblyNotLoadedMessage, StringComparison.Ordinal));
         }
 
         private static FailureDetails GetFailureDetails(Exception e, out bool fromSerializedException)
