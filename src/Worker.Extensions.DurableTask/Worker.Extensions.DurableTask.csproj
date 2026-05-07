@@ -29,11 +29,7 @@
     <AssemblyOriginatorKeyFile>..\..\sign.snk</AssemblyOriginatorKeyFile>
 
     <!-- Version information -->
-<<<<<<< HEAD
     <VersionPrefix>1.16.5</VersionPrefix>
-=======
-    <VersionPrefix>1.16.4</VersionPrefix>
->>>>>>> 4d103ef637d301701c3b4133ec28413117ba56eb
     <VersionSuffix></VersionSuffix>
     <AssemblyVersion>$(VersionPrefix).0</AssemblyVersion>
     <!-- FileVersionRevision is expected to be set by the CI.  -->
