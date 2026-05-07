@@ -683,7 +683,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         return details;
                     }
 
-                    // For non-.NET language, properties at FailureDetails is not supported yet.
+                    // For non-.NET languages that don't serialize exception as JSON TaskFailureDetails,
+                    // properties are not available in the fallback path.
                     if (TrySplitExceptionTypeFromMessage(exception, out string? exceptionType, out string? exceptionMessage))
                     {
                         return new FailureDetails(exceptionType, exceptionMessage, stackTrace, innerFailure: null, isNonRetriable: false, properties: null);
