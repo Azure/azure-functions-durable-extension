@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -22,6 +23,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
     public class OutOfProcMiddlewareTests
     {
+        private const string NoWorkerInitializedMessage = "Did not find any initialized language workers";
+        private const string AssemblyNotLoadedMessage = "Could not load file or assembly";
+
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task CallOrchestratorAsync_DifferentInvalidOperationException_DoesNotThrowSessionAbortedException()
@@ -65,9 +69,73 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task CallEntityAsync_WorkerNotInitializedException_ThrowsSessionAbortedException()
+        {
+            // Arrange: an InvalidOperationException with the "Did not find any initialized language workers" message
+            // indicates the worker is not yet ready and the entity should be retried.
+            var exception = new Exception(
+                "Function invocation failed.",
+                new InvalidOperationException(NoWorkerInitializedMessage));
+
+            (OutOfProcMiddleware middleware, DispatchMiddlewareContext dispatchContext) = this.SetupEntityTest(exception);
+
+            await Assert.ThrowsAsync<SessionAbortedException>(
+                () => middleware.CallEntityAsync(dispatchContext, () => Task.CompletedTask));
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task CallEntityAsync_AssemblyNotLoadedException_ThrowsSessionAbortedException()
+        {
+            // Arrange: a FileNotFoundException with the "Could not load file or assembly" message
+            // indicates the worker assembly is not yet loaded and the entity should be retried.
+            var exception = new Exception(
+                "Function invocation failed.",
+                new FileNotFoundException(AssemblyNotLoadedMessage));
+
+            (OutOfProcMiddleware middleware, DispatchMiddlewareContext dispatchContext) = this.SetupEntityTest(exception);
+
+            await Assert.ThrowsAsync<SessionAbortedException>(
+                () => middleware.CallEntityAsync(dispatchContext, () => Task.CompletedTask));
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task CallActivityAsync_FunctionTimeoutAbortException_ThrowsSessionAbortedException()
         {
             var exception = new FunctionTimeoutAbortException("Activity A timed out! Worker channel closing");
+
+            (OutOfProcMiddleware middleware, DispatchMiddlewareContext dispatchContext) = this.SetupActivityTest(exception);
+
+            await Assert.ThrowsAsync<SessionAbortedException>(
+                () => middleware.CallActivityAsync(dispatchContext, () => Task.CompletedTask));
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task CallActivityAsync_WorkerNotInitializedException_ThrowsSessionAbortedException()
+        {
+            // Arrange: an InvalidOperationException with the "Did not find any initialized language workers" message
+            // indicates the worker is not yet ready and the activity should be retried.
+            var exception = new Exception(
+                "Function invocation failed.",
+                new InvalidOperationException(NoWorkerInitializedMessage));
+
+            (OutOfProcMiddleware middleware, DispatchMiddlewareContext dispatchContext) = this.SetupActivityTest(exception);
+
+            await Assert.ThrowsAsync<SessionAbortedException>(
+                () => middleware.CallActivityAsync(dispatchContext, () => Task.CompletedTask));
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task CallActivityAsync_AssemblyNotLoadedException_ThrowsSessionAbortedException()
+        {
+            // Arrange: a FileNotFoundException with the "Could not load file or assembly" message
+            // indicates the worker assembly is not yet loaded and the activity should be retried.
+            var exception = new Exception(
+                "Function invocation failed.",
+                new FileNotFoundException(AssemblyNotLoadedMessage));
 
             (OutOfProcMiddleware middleware, DispatchMiddlewareContext dispatchContext) = this.SetupActivityTest(exception);
 
@@ -97,6 +165,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             // GrpcChannelTemporarilyUnavailableException as top-level exception (thrown in-process during binding)
             yield return new object[] { new GrpcChannelTemporarilyUnavailableException("The local gRPC endpoint is not available.") };
+
+            // InvalidOperationException with "Did not find any initialized language workers" as InnerException (worker not yet initialized)
+            yield return new object[] { new Exception("Function invocation failed.", new InvalidOperationException(NoWorkerInitializedMessage)) };
+
+            // FileNotFoundException with "Could not load file or assembly" as InnerException (assembly not yet loaded during initialization)
+            yield return new object[] { new Exception("Function invocation failed.", new FileNotFoundException(AssemblyNotLoadedMessage)) };
         }
 
         private (OutOfProcMiddleware middleware, DispatchMiddlewareContext context) SetupOrchestratorTest(Exception executorException)
