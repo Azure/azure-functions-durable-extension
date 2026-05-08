@@ -2028,6 +2028,147 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return newHttpResponseMessage;
         }
 
+        /// <summary>
+        /// Verifies that <see cref="DurableOrchestrationContext.CreateLocationPollRequest"/> strips
+        /// the Authorization and Cookie headers (and the original <see cref="ITokenSource"/>) when a
+        /// 202 Location header redirects the poll to a different origin. This guards against a
+        /// credential-leak vector where an attacker-controlled first-hop server redirects the async
+        /// polling loop to a host they control.
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void CreateLocationPollRequest_CrossOrigin_StripsCredentials()
+        {
+            var headers = new Dictionary<string, StringValues>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "Authorization", "Bearer original-token" },
+                { "Cookie", "session=abc123; auth=xyz" },
+                { "x-functions-key", "secret-key" },
+                { "Accept", "application/json" },
+            };
+
+            var original = new DurableHttpRequest(
+                method: HttpMethod.Get,
+                uri: new Uri("https://management.azure.com/some/resource"),
+                headers: headers,
+                tokenSource: new ManagedIdentityTokenSource("https://management.azure.com/"));
+
+            DurableHttpRequest poll = DurableOrchestrationContext.CreateLocationPollRequest(
+                original,
+                "https://attacker.example.com/steal");
+
+            Assert.Equal(new Uri("https://attacker.example.com/steal"), poll.Uri);
+            Assert.Null(poll.TokenSource);
+            Assert.NotNull(poll.Headers);
+            Assert.False(poll.Headers.ContainsKey("Authorization"));
+            Assert.False(poll.Headers.ContainsKey("Cookie"));
+            Assert.False(poll.Headers.ContainsKey("x-functions-key"));
+            Assert.True(poll.Headers.ContainsKey("Accept"));
+        }
+
+        /// <summary>
+        /// Verifies that headers (including Authorization/Cookie) are forwarded on a same-origin
+        /// 202 Location redirect, which is the legitimate async polling pattern.
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void CreateLocationPollRequest_SameOrigin_ForwardsHeaders()
+        {
+            var headers = new Dictionary<string, StringValues>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "Authorization", "Bearer original-token" },
+                { "Cookie", "session=abc123" },
+                { "Accept", "application/json" },
+            };
+
+            var original = new DurableHttpRequest(
+                method: HttpMethod.Get,
+                uri: new Uri("https://management.azure.com/start"),
+                headers: headers);
+
+            DurableHttpRequest poll = DurableOrchestrationContext.CreateLocationPollRequest(
+                original,
+                "https://management.azure.com/poll");
+
+            Assert.NotNull(poll.Headers);
+            Assert.Equal("Bearer original-token", poll.Headers["Authorization"]);
+            Assert.Equal("session=abc123", poll.Headers["Cookie"]);
+            Assert.Equal("application/json", poll.Headers["Accept"]);
+        }
+
+        /// <summary>
+        /// Verifies that headers on the poll request are a defensive copy: stripping credentials
+        /// on the new request must not mutate the original request's headers (the poll loop reuses
+        /// the original request as the basis for each iteration).
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void CreateLocationPollRequest_DoesNotMutateOriginalHeaders()
+        {
+            var headers = new Dictionary<string, StringValues>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "Authorization", "Bearer original-token" },
+                { "Cookie", "session=abc123" },
+            };
+
+            var original = new DurableHttpRequest(
+                method: HttpMethod.Get,
+                uri: new Uri("https://management.azure.com/start"),
+                headers: headers);
+
+            DurableOrchestrationContext.CreateLocationPollRequest(
+                original,
+                "https://attacker.example.com/steal");
+
+            Assert.NotNull(original.Headers);
+            Assert.True(original.Headers.ContainsKey("Authorization"));
+            Assert.True(original.Headers.ContainsKey("Cookie"));
+        }
+
+        /// <summary>
+        /// Verifies the same-origin policy used to decide whether to forward credentials across
+        /// a 202 Location redirect. Origin is scheme + host + port, with case-insensitive host
+        /// comparison. Asserted through the public <see cref="DurableOrchestrationContext.CreateLocationPollRequest"/>
+        /// seam by observing whether the Authorization header is forwarded.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData("https://example.com/start", "https://example.com/poll", true)]
+        [InlineData("https://Example.COM/start", "https://example.com/poll", true)]
+        [InlineData("https://example.com/start", "https://example.com:8443/poll", false)]
+        [InlineData("https://example.com:443/start", "https://example.com:8443/poll", false)]
+        [InlineData("https://example.com/start", "http://example.com/poll", false)]
+        [InlineData("https://example.com/start", "https://attacker.example.com/poll", false)]
+        public void CreateLocationPollRequest_OriginComparison(string originalUri, string locationUri, bool expectHeadersForwarded)
+        {
+            var headers = new Dictionary<string, StringValues>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "Authorization", "Bearer original-token" },
+                { "Cookie", "session=abc123" },
+            };
+
+            var original = new DurableHttpRequest(
+                method: HttpMethod.Get,
+                uri: new Uri(originalUri),
+                headers: headers);
+
+            DurableHttpRequest poll = DurableOrchestrationContext.CreateLocationPollRequest(
+                original,
+                locationUri);
+
+            Assert.NotNull(poll.Headers);
+            if (expectHeadersForwarded)
+            {
+                Assert.True(poll.Headers.ContainsKey("Authorization"));
+                Assert.True(poll.Headers.ContainsKey("Cookie"));
+            }
+            else
+            {
+                Assert.False(poll.Headers.ContainsKey("Authorization"));
+                Assert.False(poll.Headers.ContainsKey("Cookie"));
+            }
+        }
+
         [DataContract]
         private class MockTokenSource : ITokenSource
         {

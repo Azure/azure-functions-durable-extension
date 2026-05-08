@@ -199,15 +199,63 @@ public static class TaskOrchestrationContextExtensionMethods
         return null;
     }
 
-    private static DurableHttpRequest CreateLocationPollRequest(DurableHttpRequest durableHttpRequest, string locationUri)
+    internal static DurableHttpRequest CreateLocationPollRequest(DurableHttpRequest durableHttpRequest, string locationUri)
     {
+        Uri parsedLocationUri = new Uri(locationUri);
+
+        // When following a 202 Location redirect to a different origin, do not forward
+        // credentials (Authorization/Cookie headers). This matches the same-origin policy
+        // applied by the Fetch Standard (HTTP-redirect fetch, step 13) and is more
+        // permissive than .NET's HttpClient, which clears Authorization on every redirect
+        // (see SocketsHttpHandler's RedirectHandler in dotnet/runtime). Same-origin
+        // forwarding is intentional here because the async HTTP polling pattern
+        // legitimately needs the caller's headers to follow the Location header back
+        // to the same service. The check prevents an attacker-controlled first-hop
+        // server from harvesting credentials by redirecting the poll to a host they
+        // control.
+        bool sameOrigin = IsSameOrigin(durableHttpRequest.Uri, parsedLocationUri);
+
+        // Make a defensive copy of the headers dictionary so the mutations below do not
+        // leak back to the original request (the poll loop reuses `request` across
+        // iterations as the basis for each new poll).
+        IDictionary<string, StringValues>? headersCopy = durableHttpRequest.Headers is null
+            ? null
+            : new Dictionary<string, StringValues>(durableHttpRequest.Headers, StringComparer.OrdinalIgnoreCase);
+
+        if (!sameOrigin && headersCopy is not null)
+        {
+            // Strip Authorization and Cookie headers when redirecting cross-origin so
+            // credentials a caller set directly on the request are not leaked. This
+            // matches the behavior of HttpClient's RedirectHandler.
+            headersCopy.Remove("Authorization");
+            headersCopy.Remove("Cookie");
+        }
+
         DurableHttpRequest newDurableHttpRequest = new DurableHttpRequest(
             method: HttpMethod.Get,
-            uri: new Uri(locationUri),
-            headers: durableHttpRequest.Headers,
+            uri: parsedLocationUri,
+            headers: headersCopy,
             asynchronousPatternEnabled: durableHttpRequest.AsynchronousPatternEnabled);
 
         return newDurableHttpRequest;
+    }
+
+    private static bool IsSameOrigin(Uri original, Uri redirect)
+    {
+        if (original is null || redirect is null)
+        {
+            return false;
+        }
+
+        if (!original.IsAbsoluteUri || !redirect.IsAbsoluteUri)
+        {
+            // Treat any non-absolute URI as cross-origin to err on the side of stripping credentials.
+            return false;
+        }
+
+        return string.Equals(original.Scheme, redirect.Scheme, StringComparison.OrdinalIgnoreCase)
+            && string.Equals(original.Host, redirect.Host, StringComparison.OrdinalIgnoreCase)
+            && original.Port == redirect.Port;
     }
 
 }
