@@ -238,8 +238,7 @@ public static class TaskOrchestrationContextExtensionMethods
             if (!sameOrigin)
             {
                 // Strip Authorization and Cookie headers when redirecting cross-origin so
-                // credentials a caller set directly on the request are not leaked. This
-                // matches the behavior of HttpClient's RedirectHandler.
+                // credentials a caller set directly on the request are not leaked.
                 headersCopy.Remove("Authorization");
                 headersCopy.Remove("Cookie");
             }

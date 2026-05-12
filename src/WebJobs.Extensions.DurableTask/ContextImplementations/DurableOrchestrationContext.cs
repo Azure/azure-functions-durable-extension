@@ -361,8 +361,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (!sameOrigin)
             {
                 // Strip Authorization and Cookie headers when redirecting cross-origin so credentials
-                // a caller set directly on the request (rather than via TokenSource) are not
-                // leaked. This matches the behavior of HttpClient's RedirectHandler.
+                // a caller set directly on the request (rather than via TokenSource) are not leaked.
                 newDurableHttpRequest.Headers.Remove("Authorization");
                 newDurableHttpRequest.Headers.Remove("Cookie");
             }
