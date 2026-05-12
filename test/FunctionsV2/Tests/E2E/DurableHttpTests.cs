@@ -2128,7 +2128,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         /// <summary>
         /// Verifies the same-origin policy used to decide whether to forward credentials across
         /// a 202 Location redirect. Origin is scheme + host + port, with case-insensitive host
-        /// comparison. Asserted through the public <see cref="DurableOrchestrationContext.CreateLocationPollRequest"/>
+        /// comparison. Asserted through the <see cref="DurableOrchestrationContext.CreateLocationPollRequest"/>
         /// seam by observing whether the Authorization header is forwarded.
         /// </summary>
         [Theory]
