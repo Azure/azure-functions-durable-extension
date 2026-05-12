@@ -61,6 +61,7 @@ public class TaskOrchestrationContextExtensionMethodsTests
         {
             { "Authorization", "Bearer original-token" },
             { "Cookie", "session=abc123; auth=xyz" },
+            { "x-functions-key", "secret-key" },
             { "Accept", "application/json" },
         };
 
@@ -78,6 +79,7 @@ public class TaskOrchestrationContextExtensionMethodsTests
         Assert.NotNull(poll.Headers);
         Assert.False(poll.Headers.ContainsKey("Authorization"));
         Assert.False(poll.Headers.ContainsKey("Cookie"));
+        Assert.False(poll.Headers.ContainsKey("x-functions-key"));
         Assert.True(poll.Headers.ContainsKey("Accept"));
     }
 
@@ -92,6 +94,7 @@ public class TaskOrchestrationContextExtensionMethodsTests
         {
             { "Authorization", "Bearer original-token" },
             { "Cookie", "session=abc123" },
+            { "x-functions-key", "secret-key" },
             { "Accept", "application/json" },
         };
 
@@ -108,6 +111,7 @@ public class TaskOrchestrationContextExtensionMethodsTests
         Assert.NotNull(poll.Headers);
         Assert.Equal("Bearer original-token", poll.Headers["Authorization"]);
         Assert.Equal("session=abc123", poll.Headers["Cookie"]);
+        Assert.False(poll.Headers.ContainsKey("x-functions-key"));
         Assert.Equal("application/json", poll.Headers["Accept"]);
     }
 

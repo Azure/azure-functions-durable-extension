@@ -228,13 +228,21 @@ public static class TaskOrchestrationContextExtensionMethods
             ? null
             : new Dictionary<string, StringValues>(durableHttpRequest.Headers, StringComparer.OrdinalIgnoreCase);
 
-        if (!sameOrigin && headersCopy is not null)
+        if (headersCopy is not null)
         {
-            // Strip Authorization and Cookie headers when redirecting cross-origin so
-            // credentials a caller set directly on the request are not leaked. This
-            // matches the behavior of HttpClient's RedirectHandler.
-            headersCopy.Remove("Authorization");
-            headersCopy.Remove("Cookie");
+            // Do not copy over the x-functions-key header, as in many cases, the
+            // functions key used for the initial request will be a Function-level key
+            // and the status endpoint requires a master key.
+            headersCopy.Remove("x-functions-key");
+
+            if (!sameOrigin)
+            {
+                // Strip Authorization and Cookie headers when redirecting cross-origin so
+                // credentials a caller set directly on the request are not leaked. This
+                // matches the behavior of HttpClient's RedirectHandler.
+                headersCopy.Remove("Authorization");
+                headersCopy.Remove("Cookie");
+            }
         }
 
         DurableHttpRequest newDurableHttpRequest = new DurableHttpRequest(
