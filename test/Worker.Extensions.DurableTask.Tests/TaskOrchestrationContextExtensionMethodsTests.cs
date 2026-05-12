@@ -143,8 +143,8 @@ public class TaskOrchestrationContextExtensionMethodsTests
     /// <summary>
     /// Verifies the same-origin policy used to decide whether to forward credentials across
     /// a 202 Location redirect. Origin is scheme + host + port, with case-insensitive host
-    /// comparison. Asserted through the public <see cref="TaskOrchestrationContextExtensionMethods.CreateLocationPollRequest"/>
-    /// seam by observing whether the Authorization header is forwarded.
+    /// comparison. Asserted through the <see cref="TaskOrchestrationContextExtensionMethods.CreateLocationPollRequest"/>
+    /// helper by observing whether the Authorization header is forwarded.
     /// </summary>
     [Theory]
     [InlineData("https://example.com/start", "https://example.com/poll", true)]
