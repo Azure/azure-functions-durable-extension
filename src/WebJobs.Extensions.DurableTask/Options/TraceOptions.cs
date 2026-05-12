@@ -71,6 +71,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </summary>
         public DurableDistributedTracingVersion Version { get; set; } = DurableDistributedTracingVersion.V1;
 
+        /// <summary>
+        /// Gets or sets a value indicating whether to include the orchestration instance ID in the
+        /// Application Insights operation name (operation_Name).
+        /// </summary>
+        /// <remarks>
+        /// When set to <c>true</c>, the orchestration instance ID will be appended to the operation name
+        /// in the format "{FunctionName} ({InstanceId})". This allows for better grouping and filtering
+        /// of failures in Application Insights by individual orchestration instance.
+        /// The default value is <c>false</c> to maintain backward compatibility.
+        /// </remarks>
+        /// <value>
+        /// <c>true</c> to include the instance ID in the operation name; <c>false</c> otherwise.
+        /// </value>
+        public bool IncludeInstanceIdInOperationName { get; set; } = false;
+
         internal void AddToDebugString(StringBuilder builder)
         {
             builder.Append(nameof(this.TraceReplayEvents)).Append(": ").Append(this.TraceReplayEvents).Append(", ");
