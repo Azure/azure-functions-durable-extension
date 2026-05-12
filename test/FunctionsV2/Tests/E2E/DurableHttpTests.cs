@@ -1495,7 +1495,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task DurableHttpAsync_Asynchronous_TokenWithOptions(string storageProvider)
         {
-            HttpMessageHandler httpMessageHandler = MockAsynchronousHttpMessageHandlerForTestingTokenSource();
+            HttpMessageHandler httpMessageHandler = MockAsynchronousHttpMessageHandlerForTestingTokenSource(crossOrigin: false);
 
             using (ITestHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
@@ -1597,25 +1597,46 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         private static bool HasBearerToken(HttpRequestMessage req)
         {
-            string headerValue = req.Headers.GetValues("Authorization").FirstOrDefault();
+            if (!req.Headers.TryGetValues("Authorization", out var values))
+            {
+                return false;
+            }
+
+            string headerValue = values.FirstOrDefault();
             return string.Equals(headerValue, "Bearer dummy test token");
         }
 
         /// <summary>
         /// End-to-end test which checks if the CallHttpAsync Orchestrator returns an OK (200) status code
         /// when a Bearer Token is added to the DurableHttpRequest object and follows the
-        /// asynchronous pattern.
+        /// asynchronous pattern with a same-origin Location redirect. The bearer token should
+        /// be forwarded to the poll requests.
         /// </summary>
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task DurableHttpAsync_Asynchronous_AddsBearerToken(string storageProvider)
+            => await this.RunAsyncBearerTokenTest(storageProvider, nameof(this.DurableHttpAsync_Asynchronous_AddsBearerToken), crossOrigin: false);
+
+        /// <summary>
+        /// End-to-end test which checks that when a 202 Location redirect goes to a different
+        /// origin, the bearer token (TokenSource) is NOT forwarded to the poll requests. The mock
+        /// handler returns OK only when the poll request does NOT carry a bearer token, proving
+        /// that cross-origin credential stripping works correctly.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        public async Task DurableHttpAsync_Asynchronous_CrossOrigin_StripsBearerToken(string storageProvider)
+            => await this.RunAsyncBearerTokenTest(storageProvider, nameof(this.DurableHttpAsync_Asynchronous_CrossOrigin_StripsBearerToken), crossOrigin: true);
+
+        private async Task RunAsyncBearerTokenTest(string storageProvider, string testName, bool crossOrigin)
         {
-            HttpMessageHandler httpMessageHandler = MockAsynchronousHttpMessageHandlerForTestingTokenSource();
+            HttpMessageHandler httpMessageHandler = MockAsynchronousHttpMessageHandlerForTestingTokenSource(crossOrigin);
 
             using (ITestHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.DurableHttpAsync_Asynchronous_AddsBearerToken),
+                testName,
                 enableExtendedSessions: false,
                 storageProviderType: storageProvider,
                 durableHttpMessageHandler: new DurableHttpMessageHandlerFactory(httpMessageHandler)))
@@ -1645,10 +1666,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
-        private static HttpMessageHandler MockAsynchronousHttpMessageHandlerForTestingTokenSource()
+        /// <summary>
+        /// Creates a mock handler for testing bearer-token forwarding during async 202 polling.
+        /// When <paramref name="crossOrigin"/> is false, the Location redirect is same-origin and
+        /// the bearer token is expected on poll requests (OK if present, Forbidden if absent).
+        /// When true, the Location redirect is cross-origin and the bearer token should be stripped
+        /// (OK if absent, Forbidden if present).
+        /// </summary>
+        private static HttpMessageHandler MockAsynchronousHttpMessageHandlerForTestingTokenSource(bool crossOrigin)
         {
+            string locationUrl = crossOrigin
+                ? "https://www.cross-origin-url.com/status"
+                : "https://www.dummy-url.com/status";
+
             Dictionary<string, string> asyncTestHeaders = new Dictionary<string, string>();
-            asyncTestHeaders.Add("Location", "https://www.dummy-location-url.com");
+            asyncTestHeaders.Add("Location", locationUrl);
 
             HttpResponseMessage okHttpResponseMessage = CreateTestHttpResponseMessage(HttpStatusCode.OK);
             HttpResponseMessage forbiddenHttpResponseMessage = CreateTestHttpResponseMessage(HttpStatusCode.Forbidden);
@@ -1656,30 +1688,37 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                                                                                                statusCode: HttpStatusCode.Accepted,
                                                                                                headers: asyncTestHeaders);
 
+            // Requests with token: for same-origin, all requests (initial + polls) carry the
+            // token, so we return 202 four times then OK. For cross-origin, only the initial
+            // request carries the token; if a poll also carries it, the token leaked and the
+            // dequeue will throw (failing the test).
+            var withTokenQueue = crossOrigin
+                ? new Queue<HttpResponseMessage>(new[] { acceptedHttpResponseMessage })
+                : new Queue<HttpResponseMessage>(new[]
+                  {
+                      acceptedHttpResponseMessage,
+                      acceptedHttpResponseMessage,
+                      acceptedHttpResponseMessage,
+                      acceptedHttpResponseMessage,
+                      okHttpResponseMessage,
+                  });
+
+            // Requests without token: for cross-origin polls this is expected (OK);
+            // for same-origin this means the token was incorrectly stripped (Forbidden).
+            HttpResponseMessage withoutTokenResponse = crossOrigin
+                ? okHttpResponseMessage
+                : forbiddenHttpResponseMessage;
+
             var handlerMock = new Mock<HttpMessageHandler>(MockBehavior.Strict);
             handlerMock
                .Protected()
                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.Is<HttpRequestMessage>(req => HasBearerToken(req)), ItExpr.IsAny<CancellationToken>())
-               .ReturnsAsync(new Queue<HttpResponseMessage>(new[]
-                {
-                    acceptedHttpResponseMessage,
-                    acceptedHttpResponseMessage,
-                    acceptedHttpResponseMessage,
-                    acceptedHttpResponseMessage,
-                    okHttpResponseMessage,
-                }).Dequeue);
+               .ReturnsAsync(withTokenQueue.Dequeue);
 
             handlerMock
                .Protected()
                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.Is<HttpRequestMessage>(req => !HasBearerToken(req)), ItExpr.IsAny<CancellationToken>())
-               .ReturnsAsync(new Queue<HttpResponseMessage>(new[]
-                {
-                    acceptedHttpResponseMessage,
-                    acceptedHttpResponseMessage,
-                    acceptedHttpResponseMessage,
-                    acceptedHttpResponseMessage,
-                    forbiddenHttpResponseMessage,
-                }).Dequeue);
+               .ReturnsAsync(withoutTokenResponse);
 
             return handlerMock.Object;
         }
