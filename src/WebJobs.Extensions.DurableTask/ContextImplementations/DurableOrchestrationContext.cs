@@ -324,7 +324,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal static DurableHttpRequest CreateLocationPollRequest(DurableHttpRequest durableHttpRequest, string locationUri)
         {
-            Uri parsedLocationUri = new Uri(locationUri);
+            // Resolve relative Location URIs against the original request URI. A relative
+            // redirect is inherently same-origin. Using the two-argument Uri constructor
+            // also avoids a UriFormatException that new Uri(string) would throw for
+            // non-absolute URIs.
+            Uri parsedLocationUri = durableHttpRequest.Uri != null && durableHttpRequest.Uri.IsAbsoluteUri
+                ? new Uri(durableHttpRequest.Uri, locationUri)
+                : new Uri(locationUri);
 
             // When following a 202 Location redirect to a different origin, do not forward
             // credentials (Authorization/Cookie headers or token source). This matches the same-origin

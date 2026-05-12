@@ -2139,6 +2139,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [InlineData("https://example.com:443/start", "https://example.com:8443/poll", false)]
         [InlineData("https://example.com/start", "http://example.com/poll", false)]
         [InlineData("https://example.com/start", "https://attacker.example.com/poll", false)]
+        [InlineData("https://example.com/start", "/poll", true)]
+        [InlineData("https://example.com/start", "poll", true)]
         public void CreateLocationPollRequest_OriginComparison(string originalUri, string locationUri, bool expectHeadersForwarded)
         {
             var headers = new Dictionary<string, StringValues>(StringComparer.OrdinalIgnoreCase)
