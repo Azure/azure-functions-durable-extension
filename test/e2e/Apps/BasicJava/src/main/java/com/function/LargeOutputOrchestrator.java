@@ -24,6 +24,10 @@ public class LargeOutputOrchestrator {
             final ExecutionContext context) {
         int sizeInKB = ctx.getInput(Integer.class);
 
+        if (sizeInKB <= 0) {
+            throw new IllegalArgumentException("sizeInKB must be a positive integer.");
+        }
+
         context.getLogger().info("Saying hello.");
         List<String> outputs = new ArrayList<>();
 

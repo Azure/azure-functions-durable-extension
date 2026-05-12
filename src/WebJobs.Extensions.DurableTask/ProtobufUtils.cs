@@ -6,7 +6,6 @@ using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -66,16 +65,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     var completedEvent = (ExecutionCompletedEvent)e;
                     payload.ExecutionCompleted = new P.ExecutionCompletedEvent
                     {
-                        OrchestrationStatus = P.OrchestrationStatus.Completed,
+                        OrchestrationStatus = (P.OrchestrationStatus)completedEvent.OrchestrationStatus,
                         Result = completedEvent.Result,
-                    };
-                    break;
-                case EventType.ExecutionFailed:
-                    var failedEvent = (ExecutionCompletedEvent)e;
-                    payload.ExecutionCompleted = new P.ExecutionCompletedEvent
-                    {
-                        OrchestrationStatus = P.OrchestrationStatus.Failed,
-                        Result = failedEvent.Result,
+                        FailureDetails = GetFailureDetails(completedEvent.FailureDetails),
                     };
                     break;
                 case EventType.ExecutionStarted:
@@ -109,6 +101,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             TraceState = startedEvent.ParentTraceContext.TraceState,
                         },
                     };
+
+                    if (startedEvent.Tags != null)
+                    {
+                        foreach (KeyValuePair<string, string> tag in startedEvent.Tags)
+                        {
+                            payload.ExecutionStarted.Tags[tag.Key] = tag.Value;
+                        }
+                    }
+
                     break;
                 case EventType.ExecutionTerminated:
                     var terminatedEvent = (ExecutionTerminatedEvent)e;
@@ -125,6 +126,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         Version = taskScheduledEvent.Version,
                         Input = taskScheduledEvent.Input,
                     };
+
+                    if (taskScheduledEvent.Tags != null)
+                    {
+                        foreach (KeyValuePair<string, string> tag in taskScheduledEvent.Tags)
+                        {
+                            payload.TaskScheduled.Tags[tag.Key] = tag.Value;
+                        }
+                    }
+
                     break;
                 case EventType.TaskCompleted:
                     var taskCompletedEvent = (TaskCompletedEvent)e;
@@ -252,6 +262,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         Input = a.ScheduleTask.Input,
                         Name = a.ScheduleTask.Name,
                         Version = a.ScheduleTask.Version,
+                        Tags = a.ScheduleTask.Tags.ToDictionary(),
                     };
                 case P.OrchestratorAction.OrchestratorActionTypeOneofCase.CreateSubOrchestration:
                     return new CreateSubOrchestrationAction
@@ -260,7 +271,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         Input = a.CreateSubOrchestration.Input,
                         Name = a.CreateSubOrchestration.Name,
                         InstanceId = a.CreateSubOrchestration.InstanceId,
-                        Tags = null, // TODO
+                        Tags = a.CreateSubOrchestration.Tags.ToDictionary(),
                         Version = a.CreateSubOrchestration.Version,
                     };
                 case P.OrchestratorAction.OrchestratorActionTypeOneofCase.CreateTimer:
@@ -314,6 +325,82 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     }
 
                     return action;
+                case P.OrchestratorAction.OrchestratorActionTypeOneofCase.SendEntityMessage:
+                    RequestMessage? entityMessage = null;
+                    string? eventName = null;
+                    string? targetInstance = null;
+                    DateTime? scheduledTime = null;
+                    switch (a.SendEntityMessage.EntityMessageTypeCase)
+                    {
+                        case P.SendEntityMessageAction.EntityMessageTypeOneofCase.EntityLockRequested:
+                            entityMessage = new RequestMessage()
+                            {
+                                Operation = null,
+                                Id = Guid.Parse(a.SendEntityMessage.EntityLockRequested.CriticalSectionId),
+                                LockSet = a.SendEntityMessage.EntityLockRequested.LockSet.Select(s => EntityId.FromString(s)).ToArray(),
+                                Position = a.SendEntityMessage.EntityLockRequested.Position,
+                                ParentInstanceId = a.SendEntityMessage.EntityLockRequested.ParentInstanceId,
+                            };
+                            targetInstance = a.SendEntityMessage.EntityLockRequested.LockSet.ElementAt(a.SendEntityMessage.EntityLockRequested.Position);
+                            eventName = EntityMessageEventNames.RequestMessageEventName;
+                            break;
+                        case P.SendEntityMessageAction.EntityMessageTypeOneofCase.EntityUnlockSent:
+                            entityMessage = new RequestMessage()
+                            {
+                                Id = Guid.Parse(a.SendEntityMessage.EntityUnlockSent.CriticalSectionId),
+                                ParentInstanceId = a.SendEntityMessage.EntityUnlockSent.ParentInstanceId,
+                            };
+                            targetInstance = a.SendEntityMessage.EntityUnlockSent.TargetInstanceId;
+                            eventName = EntityMessageEventNames.ReleaseMessageEventName;
+                            break;
+                        case P.SendEntityMessageAction.EntityMessageTypeOneofCase.EntityOperationCalled:
+                            entityMessage = new RequestMessage()
+                            {
+                                Operation = a.SendEntityMessage.EntityOperationCalled.Operation,
+                                IsSignal = false,
+                                Input = a.SendEntityMessage.EntityOperationCalled.Input,
+                                Id = Guid.Parse(a.SendEntityMessage.EntityOperationCalled.RequestId),
+                                ScheduledTime = a.SendEntityMessage.EntityOperationCalled.ScheduledTime?.ToDateTime(),
+                                ParentInstanceId = a.SendEntityMessage.EntityOperationCalled.ParentInstanceId,
+                                ParentExecutionId = a.SendEntityMessage.EntityOperationCalled.ParentExecutionId,
+                            };
+                            targetInstance = a.SendEntityMessage.EntityOperationCalled.TargetInstanceId;
+                            scheduledTime = a.SendEntityMessage.EntityOperationCalled.ScheduledTime?.ToDateTime();
+                            eventName = scheduledTime.HasValue
+                                ? EntityMessageEventNames.ScheduledRequestMessageEventName(scheduledTime.Value)
+                                : EntityMessageEventNames.RequestMessageEventName;
+
+                            break;
+                        case P.SendEntityMessageAction.EntityMessageTypeOneofCase.EntityOperationSignaled:
+                            entityMessage = new RequestMessage()
+                            {
+                                Operation = a.SendEntityMessage.EntityOperationSignaled.Operation,
+                                IsSignal = true,
+                                Input = a.SendEntityMessage.EntityOperationSignaled.Input,
+                                Id = Guid.Parse(a.SendEntityMessage.EntityOperationSignaled.RequestId),
+                                ScheduledTime = a.SendEntityMessage.EntityOperationSignaled.ScheduledTime?.ToDateTime(),
+                            };
+                            targetInstance = a.SendEntityMessage.EntityOperationSignaled.TargetInstanceId;
+                            scheduledTime = a.SendEntityMessage.EntityOperationSignaled.ScheduledTime?.ToDateTime();
+                            eventName = scheduledTime.HasValue
+                                ? EntityMessageEventNames.ScheduledRequestMessageEventName(scheduledTime.Value)
+                                : EntityMessageEventNames.RequestMessageEventName;
+
+                            break;
+                        default:
+                            throw new NotSupportedException($"Deserialization of SendEntityMessage action type '{a.SendEntityMessage.EntityMessageTypeCase}' is not supported.");
+                    }
+
+                    return new SendEventOrchestratorAction
+                    {
+                        Id = a.Id,
+                        Instance = new OrchestrationInstance
+                        {
+                            InstanceId = targetInstance,
+                        },
+                        EventName = eventName,
+                        EventData = JsonConvert.SerializeObject(entityMessage, new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.None }),
+                    };
                 default:
                     throw new NotSupportedException($"Received unsupported action type '{a.OrchestratorActionTypeCase}'.");
             }
@@ -466,27 +553,60 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             // This ternary condition is necessary because the protobuf spec __insists__ that CreatedTimeFrom may never be null,
             // but nonetheless if you pass null in function code, the value will be null here
-            return new PurgeInstanceFilter(
+            var filter = new PurgeInstanceFilter(
                 request.PurgeInstanceFilter.CreatedTimeFrom == null ? DateTime.MinValue : request.PurgeInstanceFilter.CreatedTimeFrom.ToDateTime(),
                 request.PurgeInstanceFilter.CreatedTimeTo?.ToDateTime(),
                 statusFilter);
+
+            if (request.PurgeInstanceFilter.Timeout != null)
+            {
+                filter.Timeout = ToNonNegativeTimeSpan(request.PurgeInstanceFilter.Timeout);
+            }
+
+            return filter;
+        }
+
+        private static TimeSpan ToNonNegativeTimeSpan(Duration timeout)
+        {
+            const long MaxDurationSeconds = 315576000000L;
+            const int MaxDurationNanos = 999999999;
+
+            if (timeout.Seconds < 0 || timeout.Nanos < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(timeout), "Timeout must be non-negative.");
+            }
+
+            if (timeout.Seconds > MaxDurationSeconds || timeout.Nanos > MaxDurationNanos)
+            {
+                throw new ArgumentOutOfRangeException(nameof(timeout), "Timeout is outside the valid protobuf Duration range.");
+            }
+
+            return timeout.ToTimeSpan();
         }
 
         internal static P.PurgeInstancesResponse CreatePurgeInstancesResponse(PurgeResult result)
         {
-            return new P.PurgeInstancesResponse
+            var response = new P.PurgeInstancesResponse
             {
                 DeletedInstanceCount = result.DeletedInstanceCount,
             };
+
+            if (result.IsComplete.HasValue)
+            {
+                response.IsComplete = result.IsComplete.Value;
+            }
+
+            return response;
         }
 
         /// <summary>
         /// Converts a <see cref="EntityBatchRequest" /> to <see cref="P.EntityBatchRequest" />.
         /// </summary>
         /// <param name="entityBatchRequest">The operation request to convert.</param>
+        /// <param name="configurations">The remote instance configuration options for this batch request.</param>
         /// <returns>The converted operation request.</returns>
         [return: NotNullIfNotNull("entityBatchRequest")]
-        internal static P.EntityBatchRequest? ToEntityBatchRequest(this EntityBatchRequest? entityBatchRequest)
+        internal static P.EntityBatchRequest? ToEntityBatchRequest(this EntityBatchRequest? entityBatchRequest, RemoteInstanceConfiguration? configurations)
         {
             if (entityBatchRequest == null)
             {
@@ -496,8 +616,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             var batchRequest = new P.EntityBatchRequest()
             {
                 InstanceId = entityBatchRequest.InstanceId,
-                EntityState = entityBatchRequest.EntityState,
+                EntityState = configurations?.IncludeState == false ? null : entityBatchRequest.EntityState,
             };
+
+            batchRequest.Properties.Add(ProtobufUtils.ConvertPocoToProtoMap(configurations));
 
             foreach (var operation in entityBatchRequest.Operations ?? Enumerable.Empty<OperationRequest>())
             {
@@ -538,9 +660,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// Converts a <see cref="P.EntityBatchResult" /> to a <see cref="OperationBatchResult" />.
         /// </summary>
         /// <param name="entityBatchResult">The operation result to convert.</param>
+        /// <param name="defaultVersion">The default version to use for orchestrations started by the entity when no explicit version is specified.</param>
         /// <returns>The converted operation result.</returns>
         [return: NotNullIfNotNull("entityBatchResult")]
-        internal static EntityBatchResult? ToEntityBatchResult(this P.EntityBatchResult? entityBatchResult)
+        internal static EntityBatchResult? ToEntityBatchResult(this P.EntityBatchResult? entityBatchResult, string? defaultVersion = null)
         {
             if (entityBatchResult == null)
             {
@@ -549,7 +672,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             return new EntityBatchResult()
             {
-                Actions = entityBatchResult.Actions.Select(operationAction => operationAction!.ToOperationAction()).ToList(),
+                Actions = entityBatchResult.Actions.Select(operationAction => operationAction!.ToOperationAction(defaultVersion)).ToList(),
                 EntityState = entityBatchResult.EntityState,
                 Results = entityBatchResult.Results.Select(operationResult => operationResult!.ToOperationResult()).ToList(),
                 FailureDetails = GetFailureDetails(entityBatchResult.FailureDetails),
@@ -560,9 +683,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// Converts a <see cref="P.OperationAction" /> to a <see cref="OperationAction" />.
         /// </summary>
         /// <param name="operationAction">The operation action to convert.</param>
+        /// <param name="defaultVersion">The default version to use for orchestrations started by the entity when no explicit version is specified.</param>
         /// <returns>The converted operation action.</returns>
         [return: NotNullIfNotNull("operationAction")]
-        internal static OperationAction? ToOperationAction(this P.OperationAction? operationAction)
+        internal static OperationAction? ToOperationAction(this P.OperationAction? operationAction, string? defaultVersion = null)
         {
             if (operationAction == null)
             {
@@ -588,13 +712,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     };
 
                 case P.OperationAction.OperationActionTypeOneofCase.StartNewOrchestration:
+                    // Apply the default version if no explicit version is provided.
+                    // This ensures orchestrations scheduled from entities use the host's default version,
+                    // consistent with orchestrations started via the client or from other orchestrations.
+                    string? version = operationAction.StartNewOrchestration.Version;
+                    if (string.IsNullOrWhiteSpace(version))
+                    {
+                        version = defaultVersion;
+                    }
 
                     return new StartNewOrchestrationOperationAction()
                     {
                         Name = operationAction.StartNewOrchestration.Name,
                         Input = operationAction.StartNewOrchestration.Input,
                         InstanceId = operationAction.StartNewOrchestration.InstanceId,
-                        Version = operationAction.StartNewOrchestration.Version,
+                        Version = version,
                         RequestTime = operationAction.StartNewOrchestration.RequestTime?.ToDateTimeOffset(),
                         ScheduledStartTime = operationAction.StartNewOrchestration.ScheduledTime?.ToDateTime(),
                         ParentTraceContext = operationAction.StartNewOrchestration.ParentTraceContext != null ?
@@ -661,7 +793,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             System.Type type = configurations.GetType();
-            PropertyInfo[] properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
+            PropertyInfo[] properties = type.GetProperties(BindingFlags.Instance | BindingFlags.NonPublic);
 
             foreach (PropertyInfo property in properties)
             {

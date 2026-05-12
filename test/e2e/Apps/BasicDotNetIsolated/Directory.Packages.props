@@ -1,0 +1,23 @@
+<Project>
+  <!--
+    The Azure Functions Worker SDK auto-generates a WorkerExtensions.csproj under obj/ with
+    hardcoded PackageReference Version attributes. CPM (Central Package Management) forbids
+    Version on PackageReference, so we must disable CPM for that generated project.
+
+    NuGet walks upward from the project file looking for the nearest Directory.Packages.props.
+    This file is found before test/Directory.Packages.props, giving us the chance to:
+      - Disable CPM for WorkerExtensions (so its hardcoded versions + our System.Drawing.Common
+        4.7.3 override from Directory.Build.props are accepted).
+      - Import the parent Directory.Packages.props for app.csproj and all other normal projects.
+  -->
+
+  <!-- For the generated WorkerExtensions project: disable CPM entirely -->
+  <PropertyGroup Condition="'$(MSBuildProjectFile)' == 'WorkerExtensions.csproj'">
+    <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+    <CentralPackageTransitivePinningEnabled>false</CentralPackageTransitivePinningEnabled>
+  </PropertyGroup>
+
+  <!-- For every other project (app.csproj, tests, etc.): delegate to the shared test props -->
+  <Import Condition="'$(MSBuildProjectFile)' != 'WorkerExtensions.csproj'"
+          Project="$([MSBuild]::GetPathOfFileAbove(Directory.Packages.props, $(MSBuildThisFileDirectory)..))" />
+</Project>

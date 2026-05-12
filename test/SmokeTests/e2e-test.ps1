@@ -1,9 +1,12 @@
-﻿
+
 param(
 	[Parameter(Mandatory=$true)]
 	[string]$DockerfilePath,
 	[Parameter(Mandatory=$true)]
 	[string]$HttpStartPath,
+	[string]$TargetFramework=$null,
+	[string]$DotnetSdkTag=$null,
+	[string]$DotnetIsolatedTag=$null,
 	[string]$ImageName="dfapp",
 	[string]$ContainerName="app",
 	[switch]$NoSetup=$false,
@@ -70,12 +73,25 @@ function Start-And-Wait-Orchestration {
 }
 
 $ErrorActionPreference = "Stop"
-$AzuriteVersion = "3.34.0"
+$AzuriteVersion = "3.35.0"
 
 if ($NoSetup -eq $false) {
 	# Build the docker image first, since that's the most critical step
 	Write-Host "Building sample app Docker container from '$DockerfilePath'..." -ForegroundColor Yellow
-	docker build --pull -f $DockerfilePath -t $ImageName --progress plain $PSScriptRoot/../../
+	$buildArgs = @()
+	if ($TargetFramework) {
+		$buildArgs += "--build-arg"
+		$buildArgs += "TARGET_FRAMEWORK=$TargetFramework"
+	}
+	if ($DotnetSdkTag) {
+		$buildArgs += "--build-arg"
+		$buildArgs += "DOTNET_SDK_TAG=$DotnetSdkTag"
+	}
+	if ($DotnetIsolatedTag) {
+		$buildArgs += "--build-arg"
+		$buildArgs += "DOTNET_ISOLATED_TAG=$DotnetIsolatedTag"
+	}
+	docker build --pull -f $DockerfilePath -t $ImageName --progress plain @buildArgs $PSScriptRoot/../../
 	Exit-OnError
 
 	# Next, download and start the Azurite emulator Docker image
@@ -84,7 +100,7 @@ if ($NoSetup -eq $false) {
 	Exit-OnError
 
 	Write-Host "Starting Azurite storage emulator using default ports..." -ForegroundColor Yellow
-	docker run --name 'azurite' -p 10000:10000 -p 10001:10001 -p 10002:10002 -d "mcr.microsoft.com/azure-storage/azurite:${AzuriteVersion}"
+	docker run --name 'azurite' -p 10000:10000 -p 10001:10001 -p 10002:10002 -d "mcr.microsoft.com/azure-storage/azurite:${AzuriteVersion}" azurite --skipApiVersionCheck -l /data --blobHost 0.0.0.0 --queueHost 0.0.0.0 --tableHost 0.0.0.0
 	Exit-OnError
 
  	if ($SetupSQLServer -eq $true) {

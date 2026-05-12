@@ -12,7 +12,7 @@ using Newtonsoft.Json;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
 {
-    internal class DurableTaskTriggersScaleProvider : IScaleMonitorProvider, ITargetScalerProvider
+    internal class DurableTaskTriggersScaleProvider : IScaleMonitorProvider, ITargetScalerProvider, IDisposable
     {
         private const string AzureManagedProviderName = "azureManaged";
 
@@ -22,6 +22,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
         private readonly INameResolver nameResolver;
         private readonly ILoggerFactory loggerFactory;
         private readonly IEnumerable<IDurabilityProviderFactory> durabilityProviderFactories;
+        private readonly DurabilityProvider durabilityProvider;
 
         public DurableTaskTriggersScaleProvider(
             IOptions<DurableTaskOptions> durableTaskOptions,
@@ -42,14 +43,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
 
             IDurabilityProviderFactory durabilityProviderFactory = this.GetDurabilityProviderFactory();
 
-            DurabilityProvider defaultDurabilityProvider;
             if (string.Equals(durabilityProviderFactory.Name, AzureManagedProviderName, StringComparison.OrdinalIgnoreCase))
             {
-                defaultDurabilityProvider = durabilityProviderFactory.GetDurabilityProvider(attribute: null, triggerMetadata);
+                this.durabilityProvider = durabilityProviderFactory.GetDurabilityProvider(attribute: null, triggerMetadata);
             }
             else
             {
-                defaultDurabilityProvider = durabilityProviderFactory.GetDurabilityProvider();
+                this.durabilityProvider = durabilityProviderFactory.GetDurabilityProvider();
             }
 
             // Note: `this.options` is populated from the trigger metadata above
@@ -62,14 +62,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
                 connectionName);
 
             this.targetScaler = ScaleUtils.GetTargetScaler(
-                defaultDurabilityProvider,
+                this.durabilityProvider,
                 functionId,
                 functionName,
                 connectionName,
                 this.options.HubName);
 
             this.monitor = ScaleUtils.GetScaleMonitor(
-                defaultDurabilityProvider,
+                this.durabilityProvider,
                 functionId,
                 functionName,
                 connectionName,
@@ -119,6 +119,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Scale
             }
 
             DurableTaskOptions.ResolveAppSettingOptions(this.options, this.nameResolver);
+        }
+
+        public void Dispose()
+        {
+            (this.durabilityProvider as IDisposable)?.Dispose();
         }
 
         private IDurabilityProviderFactory GetDurabilityProviderFactory()

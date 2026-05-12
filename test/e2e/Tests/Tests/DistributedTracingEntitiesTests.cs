@@ -57,8 +57,7 @@ public class DistributedTracingEntitiesTests
         var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
 
         // Sanitize the JSON string to remove unwanted characters so we can easily parse it into a list
-        var output = orchestrationDetails.Output.Replace("\r", "").Replace("\n", "").Replace("\"", "").Replace("[", "").Replace("]", "").Replace(" ", "");
-        var ids = new List<string>(output.Split(","));
+        var ids = JsonSerializer.Deserialize<List<string>>(orchestrationDetails.Output);
 
         // The execution is as follows:
         // Orchestration A signals entity A which signals entity B. Then orchestration A calls entities A and B. Finally orchestration A signals entity C.
@@ -67,14 +66,16 @@ public class DistributedTracingEntitiesTests
         // Orchestration A and B return this list of Activities as part of their output. In order to access the output of orchestration B, we need to return its
         // instance ID as part of the output of orchestration A. It will be the last item in the list returned by A, so we will remove it from the list and use it
         // to get the output of orchestration B (which will have the final two Activities, that for orchestration B and its call to entity A).
+        Assert.NotNull(ids);
         Assert.Equal(7, ids.Count);
         var orchestrationId = ids[ids.Count - 1];
         ids.RemoveAt(ids.Count - 1);
 
         HttpResponseMessage result = await HttpHelpers.InvokeHttpTrigger("GetActivityInfoOrchestration_Output", $"?id={orchestrationId}");
         Assert.Equal(HttpStatusCode.OK, result.StatusCode);
-        var remainingIds = (await result.Content.ReadAsStringAsync()).Replace("\r", "").Replace("\n", "").Replace("\"", "").Replace("[", "").Replace("]", "").Replace(" ", "");
-        ids.AddRange(remainingIds.Split(","));
+        List<string>? remainingIds = JsonSerializer.Deserialize<List<string>>((await result.Content.ReadAsStringAsync()));
+        Assert.NotNull(remainingIds);
+        ids.AddRange(remainingIds);
         Assert.Equal(8, ids.Count);
         Assert.True(ids.All(traceId => traceId.Equals(activity.TraceId.ToString())));
     }
@@ -113,5 +114,13 @@ public class DistributedTracingEntitiesTests
         Assert.NotNull(ids);
         Assert.Equal(5, ids.Count);
         Assert.True(ids.All(traceId => traceId.Equals(activity.TraceId.ToString())));
+
+        // Verify that the ClientOperationReceived log was emitted for the SignalEntity call.
+        // Note: Entity names are lowercased by the SDK's EntityInstanceId constructor.
+        ClientOperationLogHelpers.AssertClientOperationLogExists(
+            () => _fixture.TestLogs.CoreToolsLogs,
+            "SignalEntity",
+            "@activityrecorderentity@mainEntity",
+            _fixture.functionLanguageLocalizer.GetLanguageType());
     }
 }

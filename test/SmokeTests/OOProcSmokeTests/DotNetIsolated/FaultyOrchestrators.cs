@@ -26,12 +26,22 @@ namespace FaultOrchestrators
                 File.Create(evidenceFile).Close();
 
                 // force the process to run out of memory
+#if NET10_0_OR_GREATER
+                // On .NET 10+ / Linux, memory overcommit makes true OOM unreliable:
+                // virtual allocations succeed without committing physical RAM, and
+                // writing every page to force commitment is slow and triggers the
+                // Linux OOM killer (SIGKILL) instead of a .NET OutOfMemoryException.
+                // Since this test validates orchestration recovery from a process crash,
+                // use FailFast to simulate the crash directly.
+                Environment.FailFast("Simulated OOM crash for smoke test");
+#else
                 List<byte[]> data = new List<byte[]>();
 
                 for (int i = 0; i < 10000000; i++)
                 {
                     data.Add(new byte[1024 * 1024 * 1024]);
                 }
+#endif
 
                 // we expect the code to never reach this statement, it should OOM.
                 // we throw just in case the code does not time out. This should fail the test

@@ -9,7 +9,8 @@
         },
         "defaultVersion": "2.0",
         "versionMatchStrategy": "CurrentOrOlder",
-        "versionFailureStrategy": "Fail"
+        "versionFailureStrategy": "Fail",
+        "overridableExistingInstanceStates": "AnyState"
     }
   }
 }

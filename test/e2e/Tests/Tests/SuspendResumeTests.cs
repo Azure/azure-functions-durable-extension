@@ -30,18 +30,35 @@ public class SuspendResumeTests
         string instanceId = await DurableHelpers.ParseInstanceIdAsync(response);
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
 
-        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Running", 5);
+        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Running", 15);
         try
         {
             using HttpResponseMessage suspendResponse = await HttpHelpers.InvokeHttpTrigger("SuspendInstance", $"?instanceId={instanceId}");
             await AssertRequestSucceedsAsync(suspendResponse);
 
-            await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Suspended", 5);
+            await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Suspended", 15);
 
             using HttpResponseMessage resumeResponse = await HttpHelpers.InvokeHttpTrigger("ResumeInstance", $"?instanceId={instanceId}");
             await AssertRequestSucceedsAsync(resumeResponse);
 
-            await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Running", 5);
+            await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Running", 30);
+
+            // Verify that the ClientOperationReceived logs were emitted with a FunctionInvocationId
+            ClientOperationLogHelpers.AssertClientOperationLogExists(
+                () => this.fixture.TestLogs.CoreToolsLogs,
+                "StartOrchestration",
+                instanceId,
+                this.fixture.functionLanguageLocalizer.GetLanguageType());
+            ClientOperationLogHelpers.AssertClientOperationLogExists(
+                () => this.fixture.TestLogs.CoreToolsLogs,
+                "Suspend",
+                instanceId,
+                this.fixture.functionLanguageLocalizer.GetLanguageType());
+            ClientOperationLogHelpers.AssertClientOperationLogExists(
+                () => this.fixture.TestLogs.CoreToolsLogs,
+                "Resume",
+                instanceId,
+                this.fixture.functionLanguageLocalizer.GetLanguageType());
         }
         finally
         {
@@ -58,22 +75,20 @@ public class SuspendResumeTests
         string instanceId = await DurableHelpers.ParseInstanceIdAsync(response);
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
 
-        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Running", 5);
+        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Running", 15);
         try
         {
             using HttpResponseMessage suspendResponse = await HttpHelpers.InvokeHttpTrigger("SuspendInstance", $"?instanceId={instanceId}");
             await AssertRequestSucceedsAsync(suspendResponse);
 
-            await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Suspended", 5);
+            await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Suspended", 15);
 
             using HttpResponseMessage resumeResponse = await HttpHelpers.InvokeHttpTrigger("SuspendInstance", $"?instanceId={instanceId}");
             await AssertRequestFailsAsync(resumeResponse, fixture.functionLanguageLocalizer.GetLocalizedStringValue("SuspendSuspendedInstance.FailureMessage"));
 
-            // Give some time for Core Tools to write logs out
-            Thread.Sleep(500);
-
-            Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains("Cannot suspend orchestration instance in the Suspended state.") &&
-                                                                x.Contains(instanceId));
+            await this.fixture.TestLogs.AssertLogExistsAsync(
+                x => x.Contains("Cannot suspend orchestration instance in the Suspended state.") && x.Contains(instanceId),
+                $"Expected 'Cannot suspend orchestration instance in the Suspended state.' log for instance '{instanceId}' was not found.");
         }
         finally
         {
@@ -91,17 +106,16 @@ public class SuspendResumeTests
         string instanceId = await DurableHelpers.ParseInstanceIdAsync(response);
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
 
-        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Running", 5);
+        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Running", 15);
+
         try
         {
             using HttpResponseMessage resumeResponse = await HttpHelpers.InvokeHttpTrigger("ResumeInstance", $"?instanceId={instanceId}");
             await this.AssertRequestFailsAsync(resumeResponse, fixture.functionLanguageLocalizer.GetLocalizedStringValue("ResumeRunningInstance.FailureMessage"));
 
-            // Give some time for Core Tools to write logs out
-            Thread.Sleep(500);
-
-            Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains("Cannot resume orchestration instance in the Running state.") &&
-                                                                x.Contains(instanceId));
+            await this.fixture.TestLogs.AssertLogExistsAsync(
+                x => x.Contains("Cannot resume orchestration instance in the Running state.") && x.Contains(instanceId),
+                $"Expected 'Cannot resume orchestration instance in the Running state.' log for instance '{instanceId}' was not found.");
         }
         finally
         {
@@ -121,7 +135,9 @@ public class SuspendResumeTests
         string instanceId = await DurableHelpers.ParseInstanceIdAsync(response);
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
 
-        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", 5);
+
+        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", 15);
+
         try
         {
             using HttpResponseMessage suspendResponse = await HttpHelpers.InvokeHttpTrigger("SuspendInstance", $"?instanceId={instanceId}");
@@ -145,17 +161,17 @@ public class SuspendResumeTests
                 await this.AssertRequestFailsAsync(resumeResponse, fixture.functionLanguageLocalizer.GetLocalizedStringValue("ResumeCompletedInstance.FailureMessage"));
             }
 
-            // Give some time for Core Tools to write logs out
-            Thread.Sleep(500);
-
             // PowerShell, Python, Node all use the HTTP suspend/resume APIs, which return 410 (Gone) and do not log
             // when the instance is completed
             if (languageType != LanguageType.PowerShell && languageType != LanguageType.Python && languageType != LanguageType.Node)
             {
-                Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains("Cannot suspend orchestration instance in the Completed state.") &&
-                                                                        x.Contains(instanceId));
-                Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains("Cannot resume orchestration instance in the Completed state.") &&
-                                                                        x.Contains(instanceId));
+                await this.fixture.TestLogs.AssertLogExistsAsync(
+                    x => x.Contains("Cannot suspend orchestration instance in the Completed state.") && x.Contains(instanceId),
+                    $"Expected 'Cannot suspend orchestration instance in the Completed state.' log for instance '{instanceId}' was not found.");
+
+                await this.fixture.TestLogs.AssertLogExistsAsync(
+                    x => x.Contains("Cannot resume orchestration instance in the Completed state.") && x.Contains(instanceId),
+                    $"Expected 'Cannot resume orchestration instance in the Completed state.' log for instance '{instanceId}' was not found.");
             }
         }
         finally
