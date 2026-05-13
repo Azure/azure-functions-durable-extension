@@ -88,6 +88,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
             };
 
             telemetry.Context.Operation.Id = activity.RootId;
+
+            // Set Operation.Name for proper grouping in Application Insights.
+            // The display name may include instance ID if IncludeInstanceIdInOperationName is enabled.
+            telemetry.Context.Operation.Name = activity.DisplayName;
+
             ActivitySpanId parentId = activity.ParentSpanId;
             if (parentId != default)
             {
