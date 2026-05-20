@@ -56,8 +56,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale
                 throw new InvalidOperationException($"Expected `taskHubName` property in SyncTriggers payload but found none.");
             }
 
-            DurableTaskMetadata.ResolveAppSettingOptions(metadata, nameResolver);
-
             var logger = loggerFactory.CreateLogger<DurableTaskTriggersScaleProvider>();
 
             // Determine which scalability provider factory to use based on metadata.StorageProvider["type"]
