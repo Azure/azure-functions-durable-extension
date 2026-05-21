@@ -93,7 +93,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale
                 try
                 {
                     provider = new DurableTaskTriggersScaleProvider(
-                        serviceProvider.GetRequiredService<Microsoft.Azure.WebJobs.INameResolver>(),
                         serviceProvider.GetRequiredService<ILoggerFactory>(),
                         scalabilityProviderFactories,
                         triggerMetadata);
