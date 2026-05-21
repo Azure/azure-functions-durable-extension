@@ -38,6 +38,8 @@
     <PackageTags>Microsoft Azure WebJobs Durable Extension Orchestration Workflow Functions Scale</PackageTags>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageIcon>functions.png</PackageIcon>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageProjectUrl>https://github.com/Azure/azure-functions-durable-extension</PackageProjectUrl>
     <RepositoryUrl>https://github.com/Azure/azure-functions-durable-extension/</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
@@ -72,6 +74,11 @@
     <WarningsAsErrors />
     <StyleCopTreatErrorsAsWarnings>true</StyleCopTreatErrorsAsWarnings>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\functions.png" Pack="true" PackagePath="\" />
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
 
 </Project>
 
