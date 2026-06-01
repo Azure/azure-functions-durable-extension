@@ -710,16 +710,39 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </summary>
         /// <param name="dispatchContext">A property bag containing useful DTFx context.</param>
         /// <param name="next">The handler for running the next middleware in the pipeline.</param>
-        private Task ActivityMiddleware(DispatchMiddlewareContext dispatchContext, Func<Task> next)
+        private async Task ActivityMiddleware(DispatchMiddlewareContext dispatchContext, Func<Task> next)
         {
-            if (dispatchContext.GetProperty<TaskActivity>() is TaskActivityShim shim)
+            TaskActivityShim? shim = dispatchContext.GetProperty<TaskActivity>() as TaskActivityShim;
+            TaskScheduledEvent? scheduledEvent = dispatchContext.GetProperty<TaskScheduledEvent>();
+
+            if (shim != null)
             {
-                TaskScheduledEvent @event = dispatchContext.GetProperty<TaskScheduledEvent>();
-                shim.SetTaskEventId(@event?.EventId ?? -1);
+                shim.SetTaskEventId(scheduledEvent?.EventId ?? -1);
             }
 
-            // Move to the next stage of the DTFx pipeline to trigger the activity shim.
-            return next();
+            try
+            {
+                // Move to the next stage of the DTFx pipeline to trigger the activity shim.
+                await next();
+            }
+            catch (TaskFailureException) when (shim?.StructuredFailureDetails != null)
+            {
+                // The shim extracted a structured TaskFailureDetails payload from the out-of-proc
+                // worker's exception (e.g. produced by the durable-functions JS SDK's
+                // ExceptionPropertiesProvider). Override the dispatch result so DTFx persists the
+                // FailureDetails on the TaskFailedEvent, mirroring what OutOfProcMiddleware does
+                // for the new-protocol .NET-isolated/Java/Custom workers.
+                FailureDetails details = shim.StructuredFailureDetails;
+                dispatchContext.SetProperty(new ActivityExecutionResult
+                {
+                    ResponseEvent = new TaskFailedEvent(
+                        eventId: -1,
+                        taskScheduledId: scheduledEvent?.EventId ?? -1,
+                        reason: $"Activity function '{shim.ActivityName}' failed with an unhandled exception.",
+                        details: null,
+                        details),
+                });
+            }
         }
 
         /// <summary>
