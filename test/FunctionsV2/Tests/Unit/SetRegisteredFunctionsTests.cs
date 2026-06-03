@@ -76,6 +76,45 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.DoesNotContain("Entity1", activeFunctions.entityNames);
         }
 
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void DisabledFunctions_AreExcludedFromFilterList()
+        {
+            // Reproduces https://github.com/Azure/azure-functions-durable-extension/issues/3448.
+            // Binding providers register orchestrators/entities with a null RegisteredFunctionInfo
+            // during indexing (see OrchestrationTriggerAttributeBindingProvider /
+            // EntityTriggerAttributeBindingProvider). For functions disabled via attribute or
+            // the AzureWebJobs.<Name>.Disabled app setting, the listener factory never runs,
+            // so the null is never replaced. GetActiveRegisteredFunctionNames must (1) not
+            // throw NullReferenceException on those entries, and (2) treat them as inactive,
+            // matching the null-tolerant pattern used in StopTaskHubWorkerIfIdleAsync.
+            var extension = CreateExtension();
+
+            extension.RegisterOrchestrator(new FunctionName("DisabledOrch"), orchestratorInfo: null);
+            extension.RegisterOrchestrator(new FunctionName("ActiveOrch"), new RegisteredFunctionInfo(executor: null!, isOutOfProc: true));
+
+            // No "DisabledActivity" case: unlike RegisterOrchestrator / RegisterEntity (which
+            // accept and store a possibly-null RegisteredFunctionInfo), RegisterActivity always
+            // wraps its executor in a non-null RegisteredFunctionInfo, so knownActivities never
+            // holds a null value through any legitimate code path. The production null-check on
+            // activities exists for symmetry / defense-in-depth only and can't be exercised here
+            // without reflection.
+            extension.RegisterActivity(new FunctionName("ActiveActivity"), executor: null!);
+
+            extension.RegisterEntity(new FunctionName("DisabledEntity"), entityInfo: null);
+            extension.RegisterEntity(new FunctionName("ActiveEntity"), new RegisteredFunctionInfo(executor: null!, isOutOfProc: true));
+
+            var activeFunctions = extension.GetActiveRegisteredFunctionNames();
+
+            Assert.Contains("ActiveOrch", activeFunctions.orchestratorNames);
+            Assert.DoesNotContain("DisabledOrch", activeFunctions.orchestratorNames);
+
+            Assert.Contains("ActiveActivity", activeFunctions.activityNames);
+
+            Assert.Contains("ActiveEntity", activeFunctions.entityNames);
+            Assert.DoesNotContain("DisabledEntity", activeFunctions.entityNames);
+        }
+
         private static DurableTaskExtension CreateExtension()
         {
             var options = new DurableTaskOptions
