@@ -1495,7 +1495,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task DurableHttpAsync_Asynchronous_TokenWithOptions(string storageProvider)
         {
-            HttpMessageHandler httpMessageHandler = MockAsynchronousHttpMessageHandlerForTestingTokenSource();
+            HttpMessageHandler httpMessageHandler = MockAsynchronousHttpMessageHandlerForTestingTokenSource(crossOrigin: false);
 
             using (ITestHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
@@ -1597,25 +1597,46 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         private static bool HasBearerToken(HttpRequestMessage req)
         {
-            string headerValue = req.Headers.GetValues("Authorization").FirstOrDefault();
+            if (!req.Headers.TryGetValues("Authorization", out var values))
+            {
+                return false;
+            }
+
+            string headerValue = values.FirstOrDefault();
             return string.Equals(headerValue, "Bearer dummy test token");
         }
 
         /// <summary>
         /// End-to-end test which checks if the CallHttpAsync Orchestrator returns an OK (200) status code
         /// when a Bearer Token is added to the DurableHttpRequest object and follows the
-        /// asynchronous pattern.
+        /// asynchronous pattern with a same-origin Location redirect. The bearer token should
+        /// be forwarded to the poll requests.
         /// </summary>
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task DurableHttpAsync_Asynchronous_AddsBearerToken(string storageProvider)
+            => await this.RunAsyncBearerTokenTest(storageProvider, nameof(this.DurableHttpAsync_Asynchronous_AddsBearerToken), crossOrigin: false);
+
+        /// <summary>
+        /// End-to-end test which checks that when a 202 Location redirect goes to a different
+        /// origin, the bearer token (TokenSource) is NOT forwarded to the poll requests. The mock
+        /// handler returns OK only when the poll request does NOT carry a bearer token, proving
+        /// that cross-origin credential stripping works correctly.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        public async Task DurableHttpAsync_Asynchronous_CrossOrigin_StripsBearerToken(string storageProvider)
+            => await this.RunAsyncBearerTokenTest(storageProvider, nameof(this.DurableHttpAsync_Asynchronous_CrossOrigin_StripsBearerToken), crossOrigin: true);
+
+        private async Task RunAsyncBearerTokenTest(string storageProvider, string testName, bool crossOrigin)
         {
-            HttpMessageHandler httpMessageHandler = MockAsynchronousHttpMessageHandlerForTestingTokenSource();
+            HttpMessageHandler httpMessageHandler = MockAsynchronousHttpMessageHandlerForTestingTokenSource(crossOrigin);
 
             using (ITestHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.DurableHttpAsync_Asynchronous_AddsBearerToken),
+                testName,
                 enableExtendedSessions: false,
                 storageProviderType: storageProvider,
                 durableHttpMessageHandler: new DurableHttpMessageHandlerFactory(httpMessageHandler)))
@@ -1645,10 +1666,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
-        private static HttpMessageHandler MockAsynchronousHttpMessageHandlerForTestingTokenSource()
+        /// <summary>
+        /// Creates a mock handler for testing bearer-token forwarding during async 202 polling.
+        /// When <paramref name="crossOrigin"/> is false, the Location redirect is same-origin and
+        /// the bearer token is expected on poll requests (OK if present, Forbidden if absent).
+        /// When true, the Location redirect is cross-origin and the bearer token should be stripped
+        /// (OK if absent, Forbidden if present).
+        /// </summary>
+        private static HttpMessageHandler MockAsynchronousHttpMessageHandlerForTestingTokenSource(bool crossOrigin)
         {
+            string locationUrl = crossOrigin
+                ? "https://www.cross-origin-url.com/status"
+                : "https://www.dummy-url.com/status";
+
             Dictionary<string, string> asyncTestHeaders = new Dictionary<string, string>();
-            asyncTestHeaders.Add("Location", "https://www.dummy-location-url.com");
+            asyncTestHeaders.Add("Location", locationUrl);
 
             HttpResponseMessage okHttpResponseMessage = CreateTestHttpResponseMessage(HttpStatusCode.OK);
             HttpResponseMessage forbiddenHttpResponseMessage = CreateTestHttpResponseMessage(HttpStatusCode.Forbidden);
@@ -1656,30 +1688,37 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                                                                                                statusCode: HttpStatusCode.Accepted,
                                                                                                headers: asyncTestHeaders);
 
+            // Requests with token: for same-origin, all requests (initial + polls) carry the
+            // token, so we return 202 four times then OK. For cross-origin, only the initial
+            // request carries the token; if a poll also carries it, the token leaked and the
+            // dequeue will throw (failing the test).
+            var withTokenQueue = crossOrigin
+                ? new Queue<HttpResponseMessage>(new[] { acceptedHttpResponseMessage })
+                : new Queue<HttpResponseMessage>(new[]
+                  {
+                      acceptedHttpResponseMessage,
+                      acceptedHttpResponseMessage,
+                      acceptedHttpResponseMessage,
+                      acceptedHttpResponseMessage,
+                      okHttpResponseMessage,
+                  });
+
+            // Requests without token: for cross-origin polls this is expected (OK);
+            // for same-origin this means the token was incorrectly stripped (Forbidden).
+            HttpResponseMessage withoutTokenResponse = crossOrigin
+                ? okHttpResponseMessage
+                : forbiddenHttpResponseMessage;
+
             var handlerMock = new Mock<HttpMessageHandler>(MockBehavior.Strict);
             handlerMock
                .Protected()
                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.Is<HttpRequestMessage>(req => HasBearerToken(req)), ItExpr.IsAny<CancellationToken>())
-               .ReturnsAsync(new Queue<HttpResponseMessage>(new[]
-                {
-                    acceptedHttpResponseMessage,
-                    acceptedHttpResponseMessage,
-                    acceptedHttpResponseMessage,
-                    acceptedHttpResponseMessage,
-                    okHttpResponseMessage,
-                }).Dequeue);
+               .ReturnsAsync(withTokenQueue.Dequeue);
 
             handlerMock
                .Protected()
                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.Is<HttpRequestMessage>(req => !HasBearerToken(req)), ItExpr.IsAny<CancellationToken>())
-               .ReturnsAsync(new Queue<HttpResponseMessage>(new[]
-                {
-                    acceptedHttpResponseMessage,
-                    acceptedHttpResponseMessage,
-                    acceptedHttpResponseMessage,
-                    acceptedHttpResponseMessage,
-                    forbiddenHttpResponseMessage,
-                }).Dequeue);
+               .ReturnsAsync(withoutTokenResponse);
 
             return handlerMock.Object;
         }
@@ -2026,6 +2065,149 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var httpContent = new StringContent(json, Encoding.UTF8, "application/json");
             newHttpResponseMessage.Content = httpContent;
             return newHttpResponseMessage;
+        }
+
+        /// <summary>
+        /// Verifies that <see cref="DurableOrchestrationContext.CreateLocationPollRequest"/> strips
+        /// the Authorization and Cookie headers (and the original <see cref="ITokenSource"/>) when a
+        /// 202 Location header redirects the poll to a different origin. This guards against a
+        /// credential-leak vector where an attacker-controlled first-hop server redirects the async
+        /// polling loop to a host they control.
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void CreateLocationPollRequest_CrossOrigin_StripsCredentials()
+        {
+            var headers = new Dictionary<string, StringValues>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "Authorization", "Bearer original-token" },
+                { "Cookie", "session=abc123; auth=xyz" },
+                { "x-functions-key", "secret-key" },
+                { "Accept", "application/json" },
+            };
+
+            var original = new DurableHttpRequest(
+                method: HttpMethod.Get,
+                uri: new Uri("https://management.azure.com/some/resource"),
+                headers: headers,
+                tokenSource: new ManagedIdentityTokenSource("https://management.azure.com/"));
+
+            DurableHttpRequest poll = DurableOrchestrationContext.CreateLocationPollRequest(
+                original,
+                "https://attacker.example.com/steal");
+
+            Assert.Equal(new Uri("https://attacker.example.com/steal"), poll.Uri);
+            Assert.Null(poll.TokenSource);
+            Assert.NotNull(poll.Headers);
+            Assert.False(poll.Headers.ContainsKey("Authorization"));
+            Assert.False(poll.Headers.ContainsKey("Cookie"));
+            Assert.False(poll.Headers.ContainsKey("x-functions-key"));
+            Assert.True(poll.Headers.ContainsKey("Accept"));
+        }
+
+        /// <summary>
+        /// Verifies that headers (including Authorization/Cookie) are forwarded on a same-origin
+        /// 202 Location redirect, which is the legitimate async polling pattern.
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void CreateLocationPollRequest_SameOrigin_ForwardsHeaders()
+        {
+            var headers = new Dictionary<string, StringValues>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "Authorization", "Bearer original-token" },
+                { "Cookie", "session=abc123" },
+                { "Accept", "application/json" },
+            };
+
+            var original = new DurableHttpRequest(
+                method: HttpMethod.Get,
+                uri: new Uri("https://management.azure.com/start"),
+                headers: headers);
+
+            DurableHttpRequest poll = DurableOrchestrationContext.CreateLocationPollRequest(
+                original,
+                "https://management.azure.com/poll");
+
+            Assert.NotNull(poll.Headers);
+            Assert.Equal("Bearer original-token", poll.Headers["Authorization"]);
+            Assert.Equal("session=abc123", poll.Headers["Cookie"]);
+            Assert.Equal("application/json", poll.Headers["Accept"]);
+        }
+
+        /// <summary>
+        /// Verifies that headers on the poll request are a defensive copy: stripping credentials
+        /// on the new request must not mutate the original request's headers (the poll loop reuses
+        /// the original request as the basis for each iteration).
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void CreateLocationPollRequest_DoesNotMutateOriginalHeaders()
+        {
+            var headers = new Dictionary<string, StringValues>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "Authorization", "Bearer original-token" },
+                { "Cookie", "session=abc123" },
+            };
+
+            var original = new DurableHttpRequest(
+                method: HttpMethod.Get,
+                uri: new Uri("https://management.azure.com/start"),
+                headers: headers);
+
+            DurableOrchestrationContext.CreateLocationPollRequest(
+                original,
+                "https://attacker.example.com/steal");
+
+            Assert.NotNull(original.Headers);
+            Assert.True(original.Headers.ContainsKey("Authorization"));
+            Assert.True(original.Headers.ContainsKey("Cookie"));
+        }
+
+        /// <summary>
+        /// Verifies the same-origin policy used to decide whether to forward credentials across
+        /// a 202 Location redirect. Origin is scheme + host + port, with case-insensitive host
+        /// comparison. Asserted through <see cref="DurableOrchestrationContext.CreateLocationPollRequest"/>
+        /// by observing whether the Authorization header is forwarded.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData("https://example.com/start", "https://example.com/poll", true)]
+        [InlineData("https://Example.COM/start", "https://example.com/poll", true)]
+        [InlineData("https://example.com/start", "https://example.com:8443/poll", false)]
+        [InlineData("https://example.com:443/start", "https://example.com:8443/poll", false)]
+        [InlineData("https://example.com/start", "http://example.com/poll", false)]
+        [InlineData("https://example.com/start", "https://attacker.example.com/poll", false)]
+        [InlineData("https://example.com/start", "/poll", true)]
+        [InlineData("https://example.com/start", "poll", true)]
+        public void CreateLocationPollRequest_OriginComparison(string originalUri, string locationUri, bool expectHeadersForwarded)
+        {
+            var headers = new Dictionary<string, StringValues>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "Authorization", "Bearer original-token" },
+                { "Cookie", "session=abc123" },
+            };
+
+            var original = new DurableHttpRequest(
+                method: HttpMethod.Get,
+                uri: new Uri(originalUri),
+                headers: headers);
+
+            DurableHttpRequest poll = DurableOrchestrationContext.CreateLocationPollRequest(
+                original,
+                locationUri);
+
+            Assert.NotNull(poll.Headers);
+            if (expectHeadersForwarded)
+            {
+                Assert.True(poll.Headers.ContainsKey("Authorization"));
+                Assert.True(poll.Headers.ContainsKey("Cookie"));
+            }
+            else
+            {
+                Assert.False(poll.Headers.ContainsKey("Authorization"));
+                Assert.False(poll.Headers.ContainsKey("Cookie"));
+            }
         }
 
         [DataContract]

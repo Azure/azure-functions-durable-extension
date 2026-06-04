@@ -466,6 +466,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 // Rethrow RPC-related exceptions as-is.
                 throw;
             }
+            catch (ArgumentException ex)
+            {
+                throw new RpcException(new Status(StatusCode.InvalidArgument, ex.Message));
+            }
             catch (InvalidOperationException ex)
             {
                 throw new RpcException(new Status(StatusCode.FailedPrecondition, ex.Message));

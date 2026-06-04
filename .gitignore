@@ -306,3 +306,5 @@ functions-extensions/
 
 # Java build artifacts
 **/.gradle/**
+__azurite_db_*
+AzuriteConfig/

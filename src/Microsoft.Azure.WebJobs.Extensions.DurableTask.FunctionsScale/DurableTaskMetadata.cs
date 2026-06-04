@@ -37,6 +37,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale
         public int? MaxConcurrentActivityFunctions { get; set; }
 
         /// <summary>
+        /// Gets or sets the maximum number of entity functions that can run concurrently on this worker instance.
+        /// Used by the scale controller to balance orchestration and entity execution load.
+        /// </summary>
+        [JsonPropertyName("maxConcurrentEntityFunctions")]
+        public int? MaxConcurrentEntityFunctions { get; set; }
+
+        /// <summary>
         /// Gets or sets the storage provider configuration dictionary, typically containing connection and provider-specific options.
         /// </summary>
         [JsonPropertyName("storageProvider")]

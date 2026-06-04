@@ -1171,6 +1171,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return info;
         }
 
+        internal (
+            IReadOnlyCollection<string> orchestratorNames,
+            IReadOnlyCollection<string> activityNames,
+            IReadOnlyCollection<string> entityNames) GetActiveRegisteredFunctionNames()
+        {
+            // Note: dictionary values can be null for functions disabled via attribute or
+            // app setting. The binding provider registers the name with a null
+            // RegisteredFunctionInfo during indexing; for disabled functions the listener
+            // factory never replaces it. Treat null entries as inactive, matching the
+            // existing pattern in StopTaskHubWorkerIfIdleAsync.
+            return (
+                orchestratorNames: this.knownOrchestrators
+                    .Where(kvp => kvp.Value != null && !kvp.Value.IsDeregistered)
+                    .Select(kvp => kvp.Key.Name)
+                    .ToList(),
+                activityNames: this.knownActivities
+                    .Where(kvp => kvp.Value != null && !kvp.Value.IsDeregistered)
+                    .Select(kvp => kvp.Key.Name)
+                    .ToList(),
+                entityNames: this.knownEntities
+                    .Where(kvp => kvp.Value != null && !kvp.Value.IsDeregistered)
+                    .Select(kvp => kvp.Key.Name)
+                    .ToList());
+        }
+
         // This is temporary until script loading
         private static void ConfigureLoaderHooks()
         {
@@ -1427,6 +1452,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                         Stopwatch sw = Stopwatch.StartNew();
                         await this.defaultDurabilityProvider.CreateIfNotExistsAsync();
+
+                        // Pass registered function names to the factory so backends that support
+                        // work-item filtering (e.g., DTS/AzureManaged) can build WorkItemFilters
+                        // before the task hub worker opens its GetWorkItems stream.
+                        var activeFunctions = this.GetActiveRegisteredFunctionNames();
+                        this.durabilityProviderFactory.SetRegisteredFunctions(
+                            orchestratorNames: activeFunctions.orchestratorNames,
+                            activityNames: activeFunctions.activityNames,
+                            entityNames: activeFunctions.entityNames);
+
                         await this.EnsureTaskHubWorker().StartAsync();
 
                         this.GetTaskHubWorkerOrThrow().TaskOrchestrationDispatcher.EntitiesEnabled = true;
