@@ -41,6 +41,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.rawInput = config.OutOfProcProtocol == OutOfProcOrchestrationProtocol.MiddlewarePassthrough;
         }
 
+        /// <summary>
+        /// Optional per-attempt retry metadata parsed from the scheduling event's tags by
+        /// <see cref="OutOfProcMiddleware.CallActivityAsync(DurableTask.Core.Middleware.DispatchMiddlewareContext, Func{System.Threading.Tasks.Task})"/>.
+        /// Null when the activity was scheduled without a retry policy or when the backend does not
+        /// roundtrip <c>TaskScheduledEvent.Tags</c>. Consumed by
+        /// <see cref="ActivityTriggerAttributeBindingProvider"/> when populating binding metadata
+        /// visible to out-of-process workers.
+        /// </summary>
+        internal ActivityRetryMetadata? RetryMetadata { get; set; }
+
         /// <inheritdoc />
         string IDurableActivityContext.InstanceId => this.instanceId;
 

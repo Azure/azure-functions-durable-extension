@@ -28,6 +28,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </summary>
         private int taskEventId = -1;
 
+        /// <summary>
+        /// Per-attempt retry metadata parsed from the scheduling event's tags by ActivityMiddleware,
+        /// to be attached to the activity context for the binding layer to forward via triggerMetadata.
+        /// See investigations/df-retry-information/design.MD → Activity trigger path.
+        /// </summary>
+        private ActivityRetryMetadata? retryMetadata;
+
         public TaskActivityShim(
             DurableTaskExtension config,
             ITriggeredFunctionExecutor executor,
@@ -50,6 +57,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             string instanceId = context.OrchestrationInstance.InstanceId;
             var inputContext = new DurableActivityContext(this.config, instanceId, rawInput, this.activityName);
+            inputContext.RetryMetadata = this.retryMetadata;
 
             // TODO: Wire up the parent ID to improve dashboard logging.
             Guid? parentId = null;
@@ -142,6 +150,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // We don't have the DTFx task event ID at TaskActivityShim-creation time
             // so we have to set it here, before DTFx calls the RunAsync method.
             this.taskEventId = taskEventId;
+        }
+
+        internal void SetRetryMetadata(ActivityRetryMetadata? retryMetadata)
+        {
+            // Per-attempt retry metadata is only available from TaskScheduledEvent.Tags inside
+            // the dispatcher middleware. Stash it here so RunAsync can attach it to the
+            // DurableActivityContext for the binding layer.
+            // See investigations/df-retry-information/design.MD → Activity trigger path.
+            this.retryMetadata = retryMetadata;
         }
 
         private static Exception? StripFunctionInvocationException(Exception? e)
