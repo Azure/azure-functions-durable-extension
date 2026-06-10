@@ -3,6 +3,7 @@
 
 using System;
 
+#nullable enable
 namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask.Exceptions;
 
 /// <summary>

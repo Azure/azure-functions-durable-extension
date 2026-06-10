@@ -21,6 +21,7 @@ using Moq;
 using Xunit;
 using P = Microsoft.DurableTask.Protobuf;
 
+#nullable enable
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
     public class OutOfProcMiddlewareTests
@@ -538,7 +539,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         private static WorkItemMetadata CreateWorkItemMetadata(bool isExtendedSession, bool includeState)
         {
             // WorkItemMetadata has an internal constructor, so we use reflection to create it.
-            ConstructorInfo ctor = typeof(WorkItemMetadata).GetConstructor(
+            ConstructorInfo? ctor = typeof(WorkItemMetadata).GetConstructor(
                 BindingFlags.Instance | BindingFlags.NonPublic,
                 binder: null,
                 [typeof(bool), typeof(bool)],
