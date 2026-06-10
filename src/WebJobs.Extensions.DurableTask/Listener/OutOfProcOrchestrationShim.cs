@@ -193,6 +193,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             throw new ArgumentException("LockEntities action requires a non-empty LockSet.");
                         }
 
+                        if (action.LockSet.Any(e => e == null || string.IsNullOrEmpty(e.Name) || e.Key == null))
+                        {
+                            throw new ArgumentException("LockEntities action requires each LockSet entry to have a non-empty name and a non-null key.");
+                        }
+
                         var ctxForLock = this.context as DurableOrchestrationContext;
                         if (ctxForLock == null)
                         {

@@ -505,5 +505,102 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Assert.Equal(3, capturedRetryOptions.MaxNumberOfAttempts);
             }
         }
+
+        // --- LockEntities action validation (V4 schema) ---
+        //
+        // These tests exercise the input-validation guards in InvokeAPIFromAction's
+        // LockEntities branch. The guards run before the context cast, so we can
+        // assert ArgumentException using a plain IDurableOrchestrationContext mock.
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(@"""lockSet"": []", "non-empty LockSet")]
+        [InlineData("", "non-empty LockSet")]
+        [InlineData(@"""lockSet"": [null]", "non-empty name and a non-null key")]
+        [InlineData(@"""lockSet"": [{""name"": """", ""key"": ""a""}]", "non-empty name and a non-null key")]
+        [InlineData(@"""lockSet"": [{""name"": ""Counter"", ""key"": null}]", "non-empty name and a non-null key")]
+        [InlineData(@"""lockSet"": [{""name"": ""Counter"", ""key"": ""ok""}, {""name"": """", ""key"": ""a""}]", "non-empty name and a non-null key")]
+        public async Task LockEntitiesAction_RejectsInvalidLockSet(string lockSetField, string expectedMessageFragment)
+        {
+            var contextMock = new Mock<IDurableOrchestrationContext>();
+            var shim = new OutOfProcOrchestrationShim(contextMock.Object);
+
+            var executionJson = $@"
+{{
+    ""isDone"": false,
+    ""schemaVersion"": ""V4"",
+    ""actions"": [
+        [{{
+            ""actionType"": ""LockEntities""{(string.IsNullOrEmpty(lockSetField) ? string.Empty : "," + lockSetField)}
+        }}]
+    ]
+}}";
+
+            var jsonObject = JObject.Parse(executionJson);
+            var result = new OrchestrationInvocationResult(jsonObject);
+
+            var ex = await Assert.ThrowsAsync<ArgumentException>(() => shim.ScheduleDurableTaskEvents(result));
+            Assert.Contains(expectedMessageFragment, ex.Message);
+        }
+
+        // Verifies that a well-formed LockEntities payload passes validation and entity-ID
+        // parsing, then fails at the concrete-context cast when the context is a plain
+        // IDurableOrchestrationContext mock. This is the deepest path reachable in a unit
+        // test; happy-path replay (LockAsync actually awaited) is covered by E2E tests
+        // built on top of the real DurableOrchestrationContext.
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task LockEntitiesAction_ThrowsWhenContextIsNotDurableOrchestrationContext()
+        {
+            var contextMock = new Mock<IDurableOrchestrationContext>();
+            var shim = new OutOfProcOrchestrationShim(contextMock.Object);
+
+            var executionJson = @"
+{
+    ""isDone"": false,
+    ""schemaVersion"": ""V4"",
+    ""actions"": [
+        [{
+            ""actionType"": ""LockEntities"",
+            ""lockSet"": [
+                { ""name"": ""Counter"", ""key"": ""a"" },
+                { ""name"": ""Counter"", ""key"": ""b"" }
+            ]
+        }]
+    ]
+}";
+
+            var jsonObject = JObject.Parse(executionJson);
+            var result = new OrchestrationInvocationResult(jsonObject);
+
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => shim.ScheduleDurableTaskEvents(result));
+            Assert.Contains("DurableOrchestrationContext", ex.Message);
+        }
+
+        // Same shape as the LockEntities cast-guard test, for the ReleaseEntities branch.
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task ReleaseEntitiesAction_ThrowsWhenContextIsNotDurableOrchestrationContext()
+        {
+            var contextMock = new Mock<IDurableOrchestrationContext>();
+            var shim = new OutOfProcOrchestrationShim(contextMock.Object);
+
+            var executionJson = @"
+{
+    ""isDone"": false,
+    ""schemaVersion"": ""V4"",
+    ""actions"": [
+        [{
+            ""actionType"": ""ReleaseEntities""
+        }]
+    ]
+}";
+
+            var jsonObject = JObject.Parse(executionJson);
+            var result = new OrchestrationInvocationResult(jsonObject);
+
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => shim.ScheduleDurableTaskEvents(result));
+            Assert.Contains("DurableOrchestrationContext", ex.Message);
+        }
     }
 }
