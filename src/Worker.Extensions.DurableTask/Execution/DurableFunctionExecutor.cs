@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.Azure.Functions.Worker.Invocation;
 using Microsoft.DurableTask;
 using Microsoft.DurableTask.Worker;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask.Execution;
@@ -15,10 +16,14 @@ internal partial class DurableFunctionExecutor(
     ExtendedSessionsCache extendedSessionsCache,
     IDurableTaskFactory factory,
     IOptions<DurableTaskWorkerOptions> options,
+    IHostApplicationLifetime? hostApplicationLifetime = null,
     IExceptionPropertiesProvider? exceptionPropertiesProvider = null)
     : IFunctionExecutor
 {
     private DataConverter Converter => options.Value.DataConverter;
+
+    private bool IsWorkerDraining =>
+        hostApplicationLifetime?.ApplicationStopping.IsCancellationRequested ?? false;
 
     public virtual ValueTask ExecuteAsync(FunctionContext context)
     {

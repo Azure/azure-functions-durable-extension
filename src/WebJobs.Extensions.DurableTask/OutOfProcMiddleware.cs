@@ -24,6 +24,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private const string NoProcessAssociatedMessage = "No process is associated";
         private const string NoWorkerInitializedMessage = "Did not find any initialized language workers";
         private const string AssemblyNotLoadedMessage = "Could not load file or assembly";
+        private const string WorkerDrainingMessageMarker = "[DurableTask:WorkerDraining]";
 
         private readonly DurableTaskExtension extension;
 
@@ -124,6 +125,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 workItemMetadata.IncludeState);
 
             bool workerRequiresHistory = false;
+            bool isWorkerDraining = false;
 
             var input = new TriggeredFunctionData
             {
@@ -153,6 +155,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     P.OrchestratorResponse response = P.OrchestratorResponse.Parser.ParseFrom(triggerReturnValueBytes);
 
                     workerRequiresHistory = response.RequiresHistory;
+                    isWorkerDraining = response.IsWorkerDraining;
 
                     // TrySetResult may throw if a platform-level error is encountered (like an out of memory exception).
                     context.SetResult(
@@ -178,6 +181,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     // Shutdown can surface as a completed invocation in a failed state.
                     // Re-throw so we can abort this invocation.
                     this.HostLifetimeService.OnStopping.ThrowIfCancellationRequested();
+
+                    // The Function may have failed because the worker is draining, so we want to retry its execution in this case
+                    if (isWorkerDraining)
+                    {
+                        throw new Exception("Worker is shutting down. The orchestration execution will be aborted and retried.");
+                    }
                 }
 
                 // we abort the invocation on "platform level errors" such as:
@@ -193,7 +202,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 string reason = this.HostLifetimeService.OnStopping.IsCancellationRequested ?
                     "The Functions/WebJobs runtime is shutting down!" :
-                    $"Unhandled exception in the Functions/WebJobs runtime: {hostRuntimeException}";
+                        isWorkerDraining ?
+                             "The worker is shutting down. The orchestration execution will be aborted and retried." :
+                                $"Unhandled exception in the Functions/WebJobs runtime: {hostRuntimeException}";
 
                 this.TraceHelper.FunctionAborted(
                     this.Options.HubName,
@@ -365,6 +376,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 workItemMetadata.IncludeState);
 
             bool workerRequiresEntityState = false;
+            bool isWorkerDraining = false;
 
             var input = new TriggeredFunctionData
             {
@@ -393,6 +405,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     byte[] triggerReturnValueBytes = Convert.FromBase64String(triggerReturnValue);
                     P.EntityBatchResult response = P.EntityBatchResult.Parser.ParseFrom(triggerReturnValueBytes);
                     workerRequiresEntityState = response.RequiresState;
+                    isWorkerDraining = response.IsWorkerDraining;
                     context.Result = response.ToEntityBatchResult(this.Options.DefaultVersion);
 
                     context.ThrowIfFailed();
@@ -418,6 +431,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         throw functionResult.Exception;
                     }
 
+                    // The Function may have failed because the worker is draining, so we want to retry its execution in this case
+                    if (isWorkerDraining)
+                    {
+                        throw new Exception("Worker is shutting down. The entity execution will be aborted and retried.");
+                    }
+
                     // Shutdown can surface as a completed invocation in a failed state.
                     // Re-throw so we can abort this invocation.
                     this.HostLifetimeService.OnStopping.ThrowIfCancellationRequested();
@@ -427,7 +446,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 string reason = this.HostLifetimeService.OnStopping.IsCancellationRequested ?
                     "The Functions/WebJobs runtime is shutting down!" :
-                    $"Unhandled exception in the Functions/WebJobs runtime: {hostRuntimeException}";
+                        isWorkerDraining ?
+                             "The worker is shutting down. The entity execution will be aborted and retried." :
+                                $"Unhandled exception in the Functions/WebJobs runtime: {hostRuntimeException}";
 
                 this.TraceHelper.FunctionAborted(
                     this.Options.HubName,
@@ -598,6 +619,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new SessionAbortedException(reason);
             }
 
+            // The Function may have failed because the worker is draining, so we want to retry its execution in this case
+            if (!result.Succeeded && IsWorkerDrainingException(result.Exception))
+            {
+                this.TraceHelper.FunctionAborted(
+                    this.Options.HubName,
+                    functionName.Name,
+                    instance.InstanceId,
+                    "The worker is shutting down. The activity execution will be aborted and retried.",
+                    functionType: FunctionType.Activity);
+
+                throw new SessionAbortedException("The worker is shutting down. The activity execution will be aborted and retried.");
+            }
+
             ActivityExecutionResult activityResult;
             if (result.Succeeded)
             {
@@ -681,6 +715,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             return (exception?.InnerException is InvalidOperationException ioe && ioe.Message.Contains(NoWorkerInitializedMessage, StringComparison.Ordinal))
                 || (exception?.InnerException is FileNotFoundException fnfe && fnfe.Message.Contains(AssemblyNotLoadedMessage, StringComparison.Ordinal));
+        }
+
+        private static bool IsWorkerDrainingException(Exception? exception)
+        {
+            for (Exception? current = exception; current != null; current = current.InnerException)
+            {
+                if (current.Message != null && current.Message.Contains(WorkerDrainingMessageMarker, StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static FailureDetails GetFailureDetails(Exception e, out bool fromSerializedException)

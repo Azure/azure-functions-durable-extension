@@ -3,8 +3,10 @@
 
 using System;
 using System.Threading.Tasks;
+using Google.Protobuf;
 using Microsoft.DurableTask;
 using Microsoft.DurableTask.Worker.Grpc;
+using P = Microsoft.DurableTask.Protobuf;
 
 namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask.Execution;
 
@@ -34,8 +36,21 @@ internal partial class DurableFunctionExecutor
         string orchestratorOutput = GrpcOrchestrationRunner.LoadAndRun(
             encodedOrchestratorState, orchestrator, extendedSessionsCache, context.InstanceServices);
 
+        if (this.IsWorkerDraining)
+        {
+            orchestratorOutput = FlagOrchestratorDraining(orchestratorOutput);
+        }
+
         // Send the encoded orchestrator output as the return value seen by the functions host extension
         context.GetInvocationResult().Value = orchestratorOutput;
+    }
+
+    private static string FlagOrchestratorDraining(string encodedOrchestratorOutput)
+    {
+        byte[] responseBytes = Convert.FromBase64String(encodedOrchestratorOutput);
+        P.OrchestratorResponse response = P.OrchestratorResponse.Parser.ParseFrom(responseBytes);
+        response.IsWorkerDraining = true;
+        return Convert.ToBase64String(response.ToByteArray());
     }
 
     private IDisposableOrchestrator CreateOrchestrator(
