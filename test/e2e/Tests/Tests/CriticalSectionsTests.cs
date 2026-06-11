@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Durable.Tests.DotnetIsolatedE2E;
 ///
 /// Today every test is skipped for every language. Reason matrix:
 ///   - Node: the extension half is in this repo, but the JS worker change
-///     (durable-functions PR `vabachu/critical-sections-js-2`) has not been
+///     (durable-functions PR) has not been
 ///     released. Remove <c>[Trait("Node", "Skip")]</c> once `durable-functions`
 ///     ships the <c>context.df.lock</c> API.
 ///   - Dotnet: the test orchestrations (CriticalSectionLockedTransfer,
