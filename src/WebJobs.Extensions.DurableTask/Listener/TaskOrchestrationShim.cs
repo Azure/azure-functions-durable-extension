@@ -122,9 +122,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // Emit per-instance retry aggregate (durabletask.retry_attempt_count /
             // retry_max_attempts_reached) on the orchestration span. Runs only on this terminal
             // turn — gated by reaching the Completed branch above. ContinuedAsNew also flows
-            // through this branch (context.ContinuedAsNew is true) which the design treats as
-            // a single-instance boundary. See investigations/df-retry-information/design.MD →
-            // Extension changes → Orchestration trigger path.
+            // through this branch (context.ContinuedAsNew is true), which is treated as
+            // a single-instance boundary for aggregation purposes.
             RetryHistoryAggregator.EmitToActivity(this.context.History, Activity.Current);
 
             if (!this.context.IsReplaying)

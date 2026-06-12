@@ -1058,7 +1058,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // can propagate them onto the aggregated TaskCompleted / TaskFailed event. Without this,
             // the host-side response post-processor drops TaskScheduled events entirely (they get
             // folded into Completed/Failed by index), which would also drop any `dt.retry.*` retry
-            // metadata tags written by DTFx core in ScheduleWithRetry.
+            // metadata tags written upstream when activities are scheduled with retries.
             JToken tagsToken = historyItem["Tags"];
             JObject tagsCopy = tagsToken is JObject tagsObj ? (JObject)tagsObj.DeepClone() : null;
 
@@ -1077,10 +1077,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
 
                 // Propagate the original TaskScheduledEvent.Tags onto the aggregated event so
-                // downstream client-side consumers (the JS getInstanceRetryHistory helper, dashboards,
-                // analyzers) can still see `dt.retry.*` tags after the host folds TaskScheduled events
-                // away. Only attach when non-empty to keep the response shape unchanged for the
-                // common no-tags case.
+                // downstream client-side consumers walking the returned history (dashboards,
+                // analyzers, custom inspection tooling) can still see `dt.retry.*` tags after
+                // the host folds TaskScheduled events away. Only attach when non-empty to keep
+                // the response shape unchanged for the common no-tags case.
                 if (taskScheduledData.Tags != null && taskScheduledData.Tags.HasValues)
                 {
                     historyItem["Tags"] = taskScheduledData.Tags;
@@ -1272,7 +1272,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             /// Optional Tags JObject copied from the original TaskScheduledEvent.
             /// Propagated by AddScheduledEventDataAndAggregate onto the aggregated
             /// TaskCompleted / TaskFailed event so downstream client-side consumers
-            /// (JS getInstanceRetryHistory helper, dashboards) can still see
+            /// (dashboards, analyzers, custom inspection tooling) can still see
             /// `dt.retry.*` tags after TaskScheduled events are folded away in the
             /// host's response post-processing.
             /// </summary>

@@ -721,7 +721,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 // it on the shim so RunAsync can attach it to the DurableActivityContext for the binding
                 // layer to forward via triggerMetadata. This is the OLD-middleware-path equivalent of
                 // the same logic in OutOfProcMiddleware.CallActivityAsync.
-                // See investigations/df-retry-information/design.MD → Activity trigger path.
                 shim.SetRetryMetadata(ActivityRetryMetadata.TryParseFromTags(@event?.Tags));
             }
 

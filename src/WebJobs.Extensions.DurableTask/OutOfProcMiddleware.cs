@@ -28,8 +28,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private const string AssemblyNotLoadedMessage = "Could not load file or assembly";
 
         // Lock-free one-time flag for the "retry metadata expected but missing" diagnostic warning.
-        // Set via Interlocked.Exchange so we emit the warning at most once per process. See
-        // investigations/df-retry-information/design.MD (Extension changes → Activity trigger path).
+        // Set via Interlocked.Exchange so we emit the warning at most once per process.
         private static int retryMetadataMissingWarningEmitted;
 
         private readonly DurableTaskExtension extension;
@@ -579,7 +578,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             // Parse per-attempt retry metadata from the scheduling event's tags (if any) and attach
             // it to the activity context so the binding layer can forward it to the worker via
-            // triggerMetadata. See investigations/df-retry-information/design.MD → Activity trigger path.
+            // triggerMetadata.
             ActivityRetryMetadata? retryMetadata = ActivityRetryMetadata.TryParseFromTags(scheduledEvent.Tags);
             inputContext.RetryMetadata = retryMetadata;
 
@@ -602,12 +601,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             // Emit a ONE-TIME diagnostic warning when we can prove tags were expected but missing —
             // specifically, when a TaskFailed for the same TaskScheduledId already exists in history,
-            // indicating this is a retry-in-progress where DTFx core should have written tags but
-            // the backend stripped them at persistence. We can't make that determination from inside
-            // the activity middleware (no history access), so for v1 we emit only on parser failure
-            // (tags present but malformed) — the more common "tags absent because no retry policy"
-            // case stays silent. This narrows the warning to genuine "backend dropped Tags" or
-            // mixed-version scenarios.
+            // indicating this is a retry-in-progress where tags should have been written upstream on
+            // schedule but the backend stripped them at persistence. We can't make that determination
+            // from inside the activity middleware (no history access), so for v1 we emit only on
+            // parser failure (tags present but malformed) — the more common "tags absent because no
+            // retry policy" case stays silent. This narrows the warning to genuine "backend dropped
+            // Tags" or mixed-version scenarios.
             if (scheduledEvent.Tags != null
                 && scheduledEvent.Tags.ContainsKey(RetryMetadataConstants.HistoryTagAttempt)
                 && retryMetadata == null

@@ -21,7 +21,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     ///
     /// Performance: short-circuits on the first scan when no retry-tagged events are present.
     /// For long-running orchestrations with very large histories, the walk is O(history length).
-    /// See investigations/df-retry-information/design.MD → Extension changes → Orchestration trigger path.
     /// </summary>
     internal static class RetryHistoryAggregator
     {

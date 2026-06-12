@@ -5,14 +5,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     /// <summary>
     /// Reserved constants for the native activity retry visibility feature.
-    /// Frozen at v1 — these names must not be renamed post-release without a coordinated change
-    /// across DTFx core, the Functions extension, the durable-functions JS SDK, and the DTS Dashboard.
-    /// See the design at <c>investigations/df-retry-information/design.MD</c>.
+    /// These names are part of the cross-stack wire contract and must not be
+    /// renamed post-release without a coordinated change across all consumers of these tags
+    /// (history producers, host bindings, telemetry exporters, and status-history consumers).
     /// </summary>
     internal static class RetryMetadataConstants
     {
         // ---------------------------------------------------------------------
-        // History tag keys (produced by DTFx core in OrchestrationContext.ScheduleWithRetry)
+        // History tag keys (written upstream when activities are scheduled with retries)
         // ---------------------------------------------------------------------
         public const string HistoryTagAttempt = "dt.retry.attempt";
         public const string HistoryTagMaxAttempts = "dt.retry.maxAttempts";

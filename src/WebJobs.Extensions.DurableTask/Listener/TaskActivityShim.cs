@@ -31,7 +31,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <summary>
         /// Per-attempt retry metadata parsed from the scheduling event's tags by ActivityMiddleware,
         /// to be attached to the activity context for the binding layer to forward via triggerMetadata.
-        /// See investigations/df-retry-information/design.MD → Activity trigger path.
         /// </summary>
         private ActivityRetryMetadata? retryMetadata;
 
@@ -157,7 +156,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // Per-attempt retry metadata is only available from TaskScheduledEvent.Tags inside
             // the dispatcher middleware. Stash it here so RunAsync can attach it to the
             // DurableActivityContext for the binding layer.
-            // See investigations/df-retry-information/design.MD → Activity trigger path.
             this.retryMetadata = retryMetadata;
         }
 

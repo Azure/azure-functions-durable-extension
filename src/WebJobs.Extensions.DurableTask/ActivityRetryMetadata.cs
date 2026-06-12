@@ -11,7 +11,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// <summary>
     /// Per-attempt retry metadata parsed from <c>TaskScheduledEvent.Tags</c> by the extension and
     /// forwarded to the activity worker via trigger metadata + activity span attributes.
-    /// See the design at <c>investigations/df-retry-information/design.MD</c> for the contract.
     /// </summary>
     internal readonly struct ActivityRetryMetadata
     {

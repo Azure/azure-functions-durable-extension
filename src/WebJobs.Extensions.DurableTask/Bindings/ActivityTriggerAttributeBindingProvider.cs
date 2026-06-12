@@ -105,8 +105,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     { InstanceIdBindingPropertyName, typeof(string) },
 
                     // Per-attempt retry metadata — populated only when the activity was scheduled
-                    // with a RetryOptions policy AND the backend roundtrips TaskScheduledEvent.Tags
-                    // (currently DTS only). See investigations/df-retry-information/design.MD.
+                    // with a RetryOptions policy AND the backend propagates TaskScheduledEvent.Tags
+                    // through the activity dispatch path.
                     { RetryMetadataConstants.TriggerKeyAttempt, typeof(int) },
                     { RetryMetadataConstants.TriggerKeyMaxAttempts, typeof(int) },
                     { RetryMetadataConstants.TriggerKeyIsMaxAttempt, typeof(bool) },
