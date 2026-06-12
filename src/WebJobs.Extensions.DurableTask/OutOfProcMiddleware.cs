@@ -3,9 +3,11 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using DurableTask.Core.Entities;
@@ -24,6 +26,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private const string NoProcessAssociatedMessage = "No process is associated";
         private const string NoWorkerInitializedMessage = "Did not find any initialized language workers";
         private const string AssemblyNotLoadedMessage = "Could not load file or assembly";
+
+        // Lock-free one-time flag for the "retry metadata expected but missing" diagnostic warning.
+        // Set via Interlocked.Exchange so we emit the warning at most once per process. See
+        // investigations/df-retry-information/design.MD (Extension changes → Activity trigger path).
+        private static int retryMetadataMissingWarningEmitted;
 
         private readonly DurableTaskExtension extension;
 
@@ -231,6 +238,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         OrchestrationRuntimeStatus.Completed,
                         instance.InstanceId);
 
+                    // Emit per-instance retry aggregate (durabletask.retry_attempt_count /
+                    // retry_max_attempts_reached) on the orchestration span. Runs only on this
+                    // terminal turn — gated by the OrchestratorCompleted check above.
+                    RetryHistoryAggregator.EmitToActivity(runtimeState.Events, Activity.Current);
+
                     await this.LifeCycleNotificationHelper.OrchestratorCompletedAsync(
                         this.Options.HubName,
                         functionName.Name,
@@ -262,6 +274,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                      FunctionType.Orchestrator,
                      isReplay: false);
 
+                // Emit per-instance retry aggregate on the orchestration span for the failed path too.
+                RetryHistoryAggregator.EmitToActivity(runtimeState.Events, Activity.Current);
+
                 await this.LifeCycleNotificationHelper.OrchestratorFailedAsync(
                     this.Options.HubName,
                     functionName.Name,
@@ -281,6 +296,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     functionResult.Exception,
                     FunctionType.Orchestrator,
                     isReplay: false);
+
+                // Emit per-instance retry aggregate on the orchestration span for the
+                // "failed for some other reason" path as well — same terminal status.
+                RetryHistoryAggregator.EmitToActivity(runtimeState.Events, Activity.Current);
 
                 await this.LifeCycleNotificationHelper.OrchestratorFailedAsync(
                     this.Options.HubName,
@@ -557,6 +576,50 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 taskEventId: scheduledEvent.EventId);
 
             var inputContext = new DurableActivityContext(this.extension, instance.InstanceId, rawInput, functionName.Name);
+
+            // Parse per-attempt retry metadata from the scheduling event's tags (if any) and attach
+            // it to the activity context so the binding layer can forward it to the worker via
+            // triggerMetadata. See investigations/df-retry-information/design.MD → Activity trigger path.
+            ActivityRetryMetadata? retryMetadata = ActivityRetryMetadata.TryParseFromTags(scheduledEvent.Tags);
+            inputContext.RetryMetadata = retryMetadata;
+
+            // Emit per-attempt OpenTelemetry attributes on the current diagnostic Activity (the
+            // activity-trigger span). Follows the established pattern in
+            // DurableTaskExtension.TagActivityWithOrchestrationStatus — Activity.Current is the right
+            // surface inside the activity-trigger middleware, and the null guard handles unit-test
+            // contexts. Setting these BEFORE the user function runs ensures the span carries them
+            // when it's exported on activity completion.
+            if (retryMetadata.HasValue)
+            {
+                Activity? currentSpan = Activity.Current;
+                if (currentSpan != null)
+                {
+                    currentSpan.SetTag(RetryMetadataConstants.SpanAttrAttempt, retryMetadata.Value.Attempt);
+                    currentSpan.SetTag(RetryMetadataConstants.SpanAttrMaxAttempts, retryMetadata.Value.MaxAttempts);
+                    currentSpan.SetTag(RetryMetadataConstants.SpanAttrIsMaxAttempt, retryMetadata.Value.IsMaxAttempt);
+                }
+            }
+
+            // Emit a ONE-TIME diagnostic warning when we can prove tags were expected but missing —
+            // specifically, when a TaskFailed for the same TaskScheduledId already exists in history,
+            // indicating this is a retry-in-progress where DTFx core should have written tags but
+            // the backend stripped them at persistence. We can't make that determination from inside
+            // the activity middleware (no history access), so for v1 we emit only on parser failure
+            // (tags present but malformed) — the more common "tags absent because no retry policy"
+            // case stays silent. This narrows the warning to genuine "backend dropped Tags" or
+            // mixed-version scenarios.
+            if (scheduledEvent.Tags != null
+                && scheduledEvent.Tags.ContainsKey(RetryMetadataConstants.HistoryTagAttempt)
+                && retryMetadata == null
+                && Interlocked.Exchange(ref retryMetadataMissingWarningEmitted, 1) == 0)
+            {
+                this.TraceHelper.ExtensionWarningEvent(
+                    this.Options.HubName,
+                    functionName.Name,
+                    instance.InstanceId,
+                    "Durable retry metadata tag was present but unparseable; the activity will see metadataAvailable=false and no per-attempt telemetry will be emitted. Likely cause: a mixed-version deployment or a corrupted history.");
+            }
+
             var triggerInput = new TriggeredFunctionData { TriggerValue = inputContext };
 
             FunctionResult result;

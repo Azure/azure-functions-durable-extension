@@ -103,6 +103,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     // This binding supports return values of any type
                     { "$return", typeof(object).MakeByRefType() },
                     { InstanceIdBindingPropertyName, typeof(string) },
+
+                    // Per-attempt retry metadata — populated only when the activity was scheduled
+                    // with a RetryOptions policy AND the backend roundtrips TaskScheduledEvent.Tags
+                    // (currently DTS only). See investigations/df-retry-information/design.MD.
+                    { RetryMetadataConstants.TriggerKeyAttempt, typeof(int) },
+                    { RetryMetadataConstants.TriggerKeyMaxAttempts, typeof(int) },
+                    { RetryMetadataConstants.TriggerKeyIsMaxAttempt, typeof(bool) },
                 };
 
                 // allow binding to the parameter name
@@ -161,6 +168,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 bindingData[InstanceIdBindingPropertyName] = ((IDurableActivityContext)activityContext).InstanceId;
                 bindingData[this.parameterInfo.Name!] = convertedValue;
                 bindingData[DataBindingPropertyName] = activityContext.GetInputAsJson();
+
+                // Populate per-attempt retry metadata when available. Out-of-process workers can read
+                // these keys from context.triggerMetadata (JS) / BindingData (.NET Isolated) / etc.
+                // The keys are omitted entirely when retry metadata is unavailable — consumers MUST
+                // treat "any key missing" as the unavailable-metadata fallback path, never partial state.
+                ActivityRetryMetadata? retryMetadata = activityContext.RetryMetadata;
+                if (retryMetadata.HasValue)
+                {
+                    bindingData[RetryMetadataConstants.TriggerKeyAttempt] = retryMetadata.Value.Attempt;
+                    bindingData[RetryMetadataConstants.TriggerKeyMaxAttempts] = retryMetadata.Value.MaxAttempts;
+                    bindingData[RetryMetadataConstants.TriggerKeyIsMaxAttempt] = retryMetadata.Value.IsMaxAttempt;
+                }
 
                 var triggerData = new TriggerData(inputValueProvider, bindingData);
                 triggerData.ReturnValueProvider = new ActivityTriggerReturnValueBinder(

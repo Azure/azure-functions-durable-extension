@@ -716,6 +716,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 TaskScheduledEvent @event = dispatchContext.GetProperty<TaskScheduledEvent>();
                 shim.SetTaskEventId(@event?.EventId ?? -1);
+
+                // Parse per-attempt retry metadata from the scheduling event's tags (if any) and stash
+                // it on the shim so RunAsync can attach it to the DurableActivityContext for the binding
+                // layer to forward via triggerMetadata. This is the OLD-middleware-path equivalent of
+                // the same logic in OutOfProcMiddleware.CallActivityAsync.
+                // See investigations/df-retry-information/design.MD → Activity trigger path.
+                shim.SetRetryMetadata(ActivityRetryMetadata.TryParseFromTags(@event?.Tags));
             }
 
             // Move to the next stage of the DTFx pipeline to trigger the activity shim.
