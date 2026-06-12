@@ -1054,7 +1054,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private static void TrackNameAndScheduledTime(JObject historyItem, EventType eventType, int index, Dictionary<string, EventIndexDateMapping> eventMapper)
         {
-            eventMapper.Add($"{eventType}_{historyItem["EventId"]}", new EventIndexDateMapping { Index = index, Name = (string)historyItem["Name"], Date = (DateTime)historyItem["Timestamp"], Input = (string)historyItem["Input"] });
+            // Preserve the original TaskScheduledEvent.Tags so AddScheduledEventDataAndAggregate
+            // can propagate them onto the aggregated TaskCompleted / TaskFailed event. Without this,
+            // the host-side response post-processor drops TaskScheduled events entirely (they get
+            // folded into Completed/Failed by index), which would also drop any `dt.retry.*` retry
+            // metadata tags written by DTFx core in ScheduleWithRetry.
+            JToken tagsToken = historyItem["Tags"];
+            JObject tagsCopy = tagsToken is JObject tagsObj ? (JObject)tagsObj.DeepClone() : null;
+
+            eventMapper.Add($"{eventType}_{historyItem["EventId"]}", new EventIndexDateMapping { Index = index, Name = (string)historyItem["Name"], Date = (DateTime)historyItem["Timestamp"], Input = (string)historyItem["Input"], Tags = tagsCopy });
         }
 
         private static void AddScheduledEventDataAndAggregate(ref Dictionary<string, EventIndexDateMapping> eventMapper, string prefix, JToken historyItem, List<int> indexList, bool showInput)
@@ -1066,6 +1074,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 if (showInput)
                 {
                     historyItem["Input"] = taskScheduledData.Input;
+                }
+
+                // Propagate the original TaskScheduledEvent.Tags onto the aggregated event so
+                // downstream client-side consumers (the JS getInstanceRetryHistory helper, dashboards,
+                // analyzers) can still see `dt.retry.*` tags after the host folds TaskScheduled events
+                // away. Only attach when non-empty to keep the response shape unchanged for the
+                // common no-tags case.
+                if (taskScheduledData.Tags != null && taskScheduledData.Tags.HasValues)
+                {
+                    historyItem["Tags"] = taskScheduledData.Tags;
                 }
 
                 indexList.Add(taskScheduledData.Index);
@@ -1249,6 +1267,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             public string Name { get; set; }
 
             public string Input { get; set; }
+
+            /// <summary>
+            /// Optional Tags JObject copied from the original TaskScheduledEvent.
+            /// Propagated by AddScheduledEventDataAndAggregate onto the aggregated
+            /// TaskCompleted / TaskFailed event so downstream client-side consumers
+            /// (JS getInstanceRetryHistory helper, dashboards) can still see
+            /// `dt.retry.*` tags after TaskScheduled events are folded away in the
+            /// host's response post-processing.
+            /// </summary>
+            public JObject Tags { get; set; }
         }
     }
 }
