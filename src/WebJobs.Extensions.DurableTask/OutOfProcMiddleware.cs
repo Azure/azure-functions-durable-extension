@@ -33,6 +33,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private readonly DurableTaskExtension extension;
 
+        // The below private properties are just passthroughs to properties or methods defined in the extension class.
+        // They exist simply to make it easier to copy/paste logic from the old middleware defined there to this file.
+        private DurableTaskOptions Options => this.extension.Options;
+
+        private EndToEndTraceHelper TraceHelper => this.extension.TraceHelper;
+
+        private ILifeCycleNotificationHelper LifeCycleNotificationHelper => this.extension.LifeCycleNotificationHelper;
+
+        private IApplicationLifetimeWrapper HostLifetimeService => this.extension.HostLifetimeService;
+
         public OutOfProcMiddleware(DurableTaskExtension extension)
         {
             this.extension = extension;
@@ -46,17 +56,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             return Interlocked.Exchange(ref retryMetadataMissingWarningEmitted, 1) == 0;
         }
-
-        // The below private properties are just passthroughs to properties or methods defined in the extension class.
-        // They exist simply to make it easier to copy/paste logic from the old middleware defined there to this file.
-
-        private DurableTaskOptions Options => this.extension.Options;
-
-        private EndToEndTraceHelper TraceHelper => this.extension.TraceHelper;
-
-        private ILifeCycleNotificationHelper LifeCycleNotificationHelper => this.extension.LifeCycleNotificationHelper;
-
-        private IApplicationLifetimeWrapper HostLifetimeService => this.extension.HostLifetimeService;
 
         /// <summary>
         /// Durable Task Framework orchestration middleware that invokes an out-of-process orchestrator function.
