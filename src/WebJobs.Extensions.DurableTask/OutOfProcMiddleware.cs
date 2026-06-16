@@ -609,8 +609,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             // Emit a ONE-TIME diagnostic warning when retry tags are present but cannot be parsed.
             // This indicates either a mixed-version deployment (partial tag set) or corrupted history.
+            // Either-key presence is the trigger so we also catch partial writes where only one of
+            // the two expected keys made it through.
             if (scheduledEvent.Tags != null
-                && scheduledEvent.Tags.ContainsKey(RetryMetadataConstants.HistoryTagAttempt)
+                && (scheduledEvent.Tags.ContainsKey(RetryMetadataConstants.HistoryTagAttempt)
+                    || scheduledEvent.Tags.ContainsKey(RetryMetadataConstants.HistoryTagMaxAttempts))
                 && retryMetadata == null
                 && TryClaimRetryMetadataMissingWarning())
             {
