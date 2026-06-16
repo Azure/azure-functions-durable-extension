@@ -1052,7 +1052,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return this.httpApiHandler.CreateCheckStatusResponse(request, instanceId, attribute, returnInternalServerErrorOnFailure);
         }
 
-        private static void TrackNameAndScheduledTime(JObject historyItem, EventType eventType, int index, Dictionary<string, EventIndexDateMapping> eventMapper)
+        // Visibility note: these helpers are internal (rather than private) so that focused unit tests in
+        // WebJobs.Extensions.DurableTask.Tests.V2 can exercise the TaskScheduledEvent.Tags propagation
+        // contract directly without needing a real backend or end-to-end orchestration scaffolding.
+        // Behavior is unchanged from the historical private contract.
+        internal static void TrackNameAndScheduledTime(JObject historyItem, EventType eventType, int index, Dictionary<string, EventIndexDateMapping> eventMapper)
         {
             // Preserve the original TaskScheduledEvent.Tags so AddScheduledEventDataAndAggregate
             // can propagate them onto the aggregated TaskCompleted / TaskFailed event. Without this,
@@ -1071,7 +1075,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             eventMapper.Add($"{eventType}_{historyItem["EventId"]}", new EventIndexDateMapping { Index = index, Name = (string)historyItem["Name"], Date = (DateTime)historyItem["Timestamp"], Input = (string)historyItem["Input"], Tags = tagsCopy });
         }
 
-        private static void AddScheduledEventDataAndAggregate(ref Dictionary<string, EventIndexDateMapping> eventMapper, string prefix, JToken historyItem, List<int> indexList, bool showInput)
+        internal static void AddScheduledEventDataAndAggregate(ref Dictionary<string, EventIndexDateMapping> eventMapper, string prefix, JToken historyItem, List<int> indexList, bool showInput)
         {
             if (eventMapper.TryGetValue($"{prefix}_{historyItem["TaskScheduledId"]}", out EventIndexDateMapping taskScheduledData))
             {
@@ -1264,7 +1268,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return instance.InstanceId;
         }
 
-        private class EventIndexDateMapping
+        internal class EventIndexDateMapping
         {
             public int Index { get; set; }
 
