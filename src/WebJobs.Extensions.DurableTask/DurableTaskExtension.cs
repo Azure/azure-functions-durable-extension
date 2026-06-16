@@ -721,7 +721,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 // it on the shim so RunAsync can attach it to the DurableActivityContext for the binding
                 // layer to forward via triggerMetadata. This is the OLD-middleware-path equivalent of
                 // the same logic in OutOfProcMiddleware.CallActivityAsync.
-                shim.SetRetryMetadata(ActivityRetryMetadata.TryParseFromTags(@event?.Tags));
+                ActivityRetryMetadata? retryMetadata = ActivityRetryMetadata.TryParseFromTags(@event?.Tags);
+                shim.SetRetryMetadata(retryMetadata);
+
+                // Emit a ONE-TIME diagnostic warning when retry tags are present but cannot be parsed.
+                // Mirrors the equivalent block in OutOfProcMiddleware.CallActivityAsync — the gate is
+                // shared via ActivityRetryMetadata.TryClaimUnparseableTagsWarning so the warning fires
+                // at most once per process across both in-proc and out-of-proc activity paths.
+                if (retryMetadata == null
+                    && ActivityRetryMetadata.HasAnyRetryTag(@event?.Tags)
+                    && ActivityRetryMetadata.TryClaimUnparseableTagsWarning())
+                {
+                    this.TraceHelper.ExtensionWarningEvent(
+                        this.Options.HubName,
+                        @event?.Name ?? string.Empty,
+                        dispatchContext.GetProperty<OrchestrationInstance>()?.InstanceId ?? string.Empty,
+                        "Durable retry metadata tags were present but unparseable; retry metadata will not be available via trigger metadata and per-attempt telemetry will not be emitted. Likely cause: a mixed-version deployment or corrupted history.");
+                }
             }
 
             // Move to the next stage of the DTFx pipeline to trigger the activity shim.

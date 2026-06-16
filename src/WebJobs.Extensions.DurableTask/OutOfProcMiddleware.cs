@@ -27,10 +27,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private const string NoWorkerInitializedMessage = "Did not find any initialized language workers";
         private const string AssemblyNotLoadedMessage = "Could not load file or assembly";
 
-        // Lock-free one-time flag for the "retry metadata expected but missing" diagnostic warning.
-        // Set via Interlocked.Exchange so we emit the warning at most once per process.
-        private static int retryMetadataMissingWarningEmitted;
-
         private readonly DurableTaskExtension extension;
 
         public OutOfProcMiddleware(DurableTaskExtension extension)
@@ -47,15 +43,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private ILifeCycleNotificationHelper LifeCycleNotificationHelper => this.extension.LifeCycleNotificationHelper;
 
         private IApplicationLifetimeWrapper HostLifetimeService => this.extension.HostLifetimeService;
-
-        // Returns true the first time it is called process-wide, false thereafter.
-        // Encapsulated as a static helper so the static field is read/written from a
-        // static context (avoids the CodeQL "Static field written by instance method"
-        // smell while preserving the intentional process-wide once-only semantics).
-        private static bool TryClaimRetryMetadataMissingWarning()
-        {
-            return Interlocked.Exchange(ref retryMetadataMissingWarningEmitted, 1) == 0;
-        }
 
         /// <summary>
         /// Durable Task Framework orchestration middleware that invokes an out-of-process orchestrator function.
@@ -610,12 +597,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // Emit a ONE-TIME diagnostic warning when retry tags are present but cannot be parsed.
             // This indicates either a mixed-version deployment (partial tag set) or corrupted history.
             // Either-key presence is the trigger so we also catch partial writes where only one of
-            // the two expected keys made it through.
-            if (scheduledEvent.Tags != null
-                && (scheduledEvent.Tags.ContainsKey(RetryMetadataConstants.HistoryTagAttempt)
-                    || scheduledEvent.Tags.ContainsKey(RetryMetadataConstants.HistoryTagMaxAttempts))
-                && retryMetadata == null
-                && TryClaimRetryMetadataMissingWarning())
+            // the two expected keys made it through. The gate is shared with the in-proc middleware
+            // path so the warning fires at most once per process across both paths.
+            if (retryMetadata == null
+                && ActivityRetryMetadata.HasAnyRetryTag(scheduledEvent.Tags)
+                && ActivityRetryMetadata.TryClaimUnparseableTagsWarning())
             {
                 this.TraceHelper.ExtensionWarningEvent(
                     this.Options.HubName,

@@ -5,6 +5,7 @@
 
 using System.Collections.Generic;
 using System.Globalization;
+using System.Threading;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
@@ -14,6 +15,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// </summary>
     internal readonly struct ActivityRetryMetadata
     {
+        // Lock-free one-time flag for the "retry tags present but unparseable" diagnostic warning.
+        // Set via Interlocked.Exchange so the warning is emitted at most once per process across
+        // BOTH the in-proc activity middleware and the out-of-proc activity middleware paths.
+        private static int unparseableTagsWarningEmitted;
+
         public ActivityRetryMetadata(int attempt, int maxAttempts)
         {
             this.Attempt = attempt;
@@ -60,6 +66,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             return new ActivityRetryMetadata(attempt, maxAttempts);
+        }
+
+        /// <summary>
+        /// Returns <c>true</c> the first time it is called process-wide and <c>false</c> thereafter.
+        /// Used by both activity-middleware paths (in-proc and out-of-proc) to gate the "retry tags
+        /// present but unparseable" diagnostic warning so it fires at most once per worker process.
+        /// </summary>
+        public static bool TryClaimUnparseableTagsWarning()
+        {
+            return Interlocked.Exchange(ref unparseableTagsWarningEmitted, 1) == 0;
+        }
+
+        /// <summary>
+        /// Returns <c>true</c> when the supplied tags dictionary contains at least one of the
+        /// well-known retry-metadata keys (<see cref="RetryMetadataConstants.HistoryTagAttempt"/> or
+        /// <see cref="RetryMetadataConstants.HistoryTagMaxAttempts"/>). Used to detect partial /
+        /// malformed retry tags so the diagnostic warning fires symmetrically when only one of the
+        /// two expected keys is present.
+        /// </summary>
+        public static bool HasAnyRetryTag(IDictionary<string, string>? tags)
+        {
+            return tags != null
+                && (tags.ContainsKey(RetryMetadataConstants.HistoryTagAttempt)
+                    || tags.ContainsKey(RetryMetadataConstants.HistoryTagMaxAttempts));
         }
     }
 }
