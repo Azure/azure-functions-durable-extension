@@ -171,6 +171,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             WorkerRuntimeType runtimeType = this.PlatformInformationService.GetWorkerRuntimeType();
             if (runtimeType == WorkerRuntimeType.DotNetIsolated ||
                 runtimeType == WorkerRuntimeType.Java ||
+                runtimeType == WorkerRuntimeType.Native ||
+                runtimeType == WorkerRuntimeType.Golang ||
                 runtimeType == WorkerRuntimeType.Custom)
             {
                 this.ConfigureForGrpcProtocol();
@@ -261,6 +263,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         // dotnet-isolated and java use a gRPC server instead of the HTTP server
                         WorkerRuntimeType.DotNetIsolated => false,
                         WorkerRuntimeType.Java => false,
+
+                        // the native worker (e.g. golang) uses the gRPC protocol, so it never starts the HTTP RPC server
+                        WorkerRuntimeType.Native => false,
+                        WorkerRuntimeType.Golang => false,
 
                         // everything else - assume the HTTP server
                         WorkerRuntimeType.Python => true, // This method will only be called for Python if we already know that we are using the HTTP protocol

@@ -62,6 +62,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         Custom,
 
         /// <summary>
+        /// Native worker runtime, out-of-process via the gRPC protocol. This is the
+        /// FUNCTIONS_WORKER_RUNTIME value ("native") used by compiled-language workers
+        /// such as the Azure Functions Go worker.
+        /// </summary>
+        Native,
+
+        /// <summary>
+        /// Go (golang), out-of-process via the gRPC protocol. This matches the Go
+        /// worker provider's declared language; some host builds surface it as the
+        /// FUNCTIONS_WORKER_RUNTIME value instead of "native".
+        /// </summary>
+        Golang,
+
+        /// <summary>
         /// Unknown worker runtime.
         /// </summary>
         Unknown,
