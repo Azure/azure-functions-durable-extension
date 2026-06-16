@@ -33,6 +33,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private readonly DurableTaskExtension extension;
 
+        public OutOfProcMiddleware(DurableTaskExtension extension)
+        {
+            this.extension = extension;
+        }
+
         // The below private properties are just passthroughs to properties or methods defined in the extension class.
         // They exist simply to make it easier to copy/paste logic from the old middleware defined there to this file.
         private DurableTaskOptions Options => this.extension.Options;
@@ -42,11 +47,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private ILifeCycleNotificationHelper LifeCycleNotificationHelper => this.extension.LifeCycleNotificationHelper;
 
         private IApplicationLifetimeWrapper HostLifetimeService => this.extension.HostLifetimeService;
-
-        public OutOfProcMiddleware(DurableTaskExtension extension)
-        {
-            this.extension = extension;
-        }
 
         // Returns true the first time it is called process-wide, false thereafter.
         // Encapsulated as a static helper so the static field is read/written from a
