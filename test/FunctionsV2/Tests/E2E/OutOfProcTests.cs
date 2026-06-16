@@ -543,8 +543,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Contains(expectedMessageFragment, ex.Message);
         }
 
-        // Verifies that a well-formed LockEntities payload passes validation and entity-ID
-        // parsing, then fails at the concrete-context cast when the context is a plain
+        // Verifies that a well-formed LockEntities payload passes LockSet validation,
+        // then fails at the concrete-context cast when the context is a plain
         // IDurableOrchestrationContext mock. This is the deepest path reachable in a unit
         // test; happy-path replay (LockAsync actually awaited) is covered by E2E tests
         // built on top of the real DurableOrchestrationContext.
