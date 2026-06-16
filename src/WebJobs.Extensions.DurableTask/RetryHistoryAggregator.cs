@@ -37,7 +37,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             // Performance short-circuit: walk only to find the first retry-tagged event.
-            // If none, emit the trivial zero/false pair and return without further work.
+            // If none, return without emitting anything.
             int retryAttemptCount = 0;
             bool retryMaxAttemptsReached = false;
             bool anyTaggedFound = false;
@@ -74,12 +74,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             if (!anyTaggedFound)
             {
-                // No retry-tagged events. Emit the trivial values so consumers can distinguish
-                // "no retries happened" from "metric never emitted." Note: this also fires for
-                // non-DTS backends that strip Tags at persistence — there's no way to distinguish
-                // those from "genuinely no retries" without backend-specific knowledge.
-                activity.SetTag(RetryMetadataConstants.SpanAttrRetryAttemptCount, 0);
-                activity.SetTag(RetryMetadataConstants.SpanAttrRetryMaxAttemptsReached, false);
+                // No retry-tagged events in the history: per the PR contract, emit nothing.
+                // Emitting trivial zeros here would be actively misleading on backends that
+                // don't roundtrip TaskScheduledEvent.Tags,
+                // since every orchestration on those backends would report retry_attempt_count=0
+                // even when retries occurred. Telemetry consumers that need to distinguish
+                // "no retries" from "metric never emitted" can do so by checking attribute
+                // presence (e.g. `WHERE attribute_exists("durabletask.retry_attempt_count")`).
                 return;
             }
 

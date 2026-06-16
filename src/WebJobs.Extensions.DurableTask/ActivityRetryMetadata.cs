@@ -34,7 +34,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <remarks>
         /// Parsing uses <see cref="NumberStyles.None"/> + <see cref="CultureInfo.InvariantCulture"/>
         /// to lock the contract: no whitespace, no signs, no hex, no scientific notation, ASCII decimal only.
-        /// Cross-stack consistency is enforced via the shared <c>retry-tag-test-vectors.json</c> fixture.
         /// </remarks>
         public static ActivityRetryMetadata? TryParseFromTags(IDictionary<string, string>? tags)
         {

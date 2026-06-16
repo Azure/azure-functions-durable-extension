@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using DurableTask.Core.Common;
@@ -57,6 +58,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string instanceId = context.OrchestrationInstance.InstanceId;
             var inputContext = new DurableActivityContext(this.config, instanceId, rawInput, this.activityName);
             inputContext.RetryMetadata = this.retryMetadata;
+
+            if (this.retryMetadata.HasValue)
+            {
+                Activity? currentSpan = Activity.Current;
+                if (currentSpan != null)
+                {
+                    currentSpan.SetTag(RetryMetadataConstants.SpanAttrAttempt, this.retryMetadata.Value.Attempt);
+                    currentSpan.SetTag(RetryMetadataConstants.SpanAttrMaxAttempts, this.retryMetadata.Value.MaxAttempts);
+                    currentSpan.SetTag(RetryMetadataConstants.SpanAttrIsMaxAttempt, this.retryMetadata.Value.IsMaxAttempt);
+                }
+            }
 
             // TODO: Wire up the parent ID to improve dashboard logging.
             Guid? parentId = null;

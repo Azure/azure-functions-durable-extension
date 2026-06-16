@@ -38,6 +38,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.extension = extension;
         }
 
+        // Returns true the first time it is called process-wide, false thereafter.
+        // Encapsulated as a static helper so the static field is read/written from a
+        // static context (avoids the CodeQL "Static field written by instance method"
+        // smell while preserving the intentional process-wide once-only semantics).
+        private static bool TryClaimRetryMetadataMissingWarning()
+        {
+            return Interlocked.Exchange(ref retryMetadataMissingWarningEmitted, 1) == 0;
+        }
+
         // The below private properties are just passthroughs to properties or methods defined in the extension class.
         // They exist simply to make it easier to copy/paste logic from the old middleware defined there to this file.
 
@@ -237,9 +246,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         OrchestrationRuntimeStatus.Completed,
                         instance.InstanceId);
 
-                    // Emit per-instance retry aggregate (durabletask.retry_attempt_count /
-                    // retry_max_attempts_reached) on the orchestration span. Runs only on this
-                    // terminal turn — gated by the OrchestratorCompleted check above.
+                    // Emit per-instance retry aggregates on the orchestration span.
+                    // Terminal turn: Completed / ContinuedAsNew / Terminated.
                     RetryHistoryAggregator.EmitToActivity(runtimeState.Events, Activity.Current);
 
                     await this.LifeCycleNotificationHelper.OrchestratorCompletedAsync(
@@ -273,7 +281,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                      FunctionType.Orchestrator,
                      isReplay: false);
 
-                // Emit per-instance retry aggregate on the orchestration span for the failed path too.
+                // Emit per-instance retry aggregates on the orchestration span.
+                // Terminal Failed: orchestrator code threw an unhandled exception.
                 RetryHistoryAggregator.EmitToActivity(runtimeState.Events, Activity.Current);
 
                 await this.LifeCycleNotificationHelper.OrchestratorFailedAsync(
@@ -296,8 +305,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     FunctionType.Orchestrator,
                     isReplay: false);
 
-                // Emit per-instance retry aggregate on the orchestration span for the
-                // "failed for some other reason" path as well — same terminal status.
+                // Emit per-instance retry aggregates on the orchestration span.
+                // Terminal Failed: framework-internal failure, coerced to ForFailure below.
                 RetryHistoryAggregator.EmitToActivity(runtimeState.Events, Activity.Current);
 
                 await this.LifeCycleNotificationHelper.OrchestratorFailedAsync(
@@ -599,24 +608,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
             }
 
-            // Emit a ONE-TIME diagnostic warning when we can prove tags were expected but missing —
-            // specifically, when a TaskFailed for the same TaskScheduledId already exists in history,
-            // indicating this is a retry-in-progress where tags should have been written upstream on
-            // schedule but the backend stripped them at persistence. We can't make that determination
-            // from inside the activity middleware (no history access), so for v1 we emit only on
-            // parser failure (tags present but malformed) — the more common "tags absent because no
-            // retry policy" case stays silent. This narrows the warning to genuine "backend dropped
-            // Tags" or mixed-version scenarios.
+            // Emit a ONE-TIME diagnostic warning when retry tags are present but cannot be parsed.
+            // This indicates either a mixed-version deployment (partial tag set) or corrupted history.
             if (scheduledEvent.Tags != null
                 && scheduledEvent.Tags.ContainsKey(RetryMetadataConstants.HistoryTagAttempt)
                 && retryMetadata == null
-                && Interlocked.Exchange(ref retryMetadataMissingWarningEmitted, 1) == 0)
+                && TryClaimRetryMetadataMissingWarning())
             {
                 this.TraceHelper.ExtensionWarningEvent(
                     this.Options.HubName,
                     functionName.Name,
                     instance.InstanceId,
-                    "Durable retry metadata tag was present but unparseable; the activity will see metadataAvailable=false and no per-attempt telemetry will be emitted. Likely cause: a mixed-version deployment or a corrupted history.");
+                    "Durable retry metadata tags were present but unparseable; retry metadata will not be available via trigger metadata and per-attempt telemetry will not be emitted. Likely cause: a mixed-version deployment or corrupted history.");
             }
 
             var triggerInput = new TriggeredFunctionData { TriggerValue = inputContext };

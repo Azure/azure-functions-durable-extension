@@ -42,12 +42,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <summary>
-        /// Optional per-attempt retry metadata parsed from the scheduling event's tags by
-        /// <see cref="OutOfProcMiddleware.CallActivityAsync(DurableTask.Core.Middleware.DispatchMiddlewareContext, Func{System.Threading.Tasks.Task})"/>.
+        /// Optional per-attempt retry metadata parsed from the scheduling event's tags.
+        /// Populated from two paths: the out-of-proc activity middleware
+        /// (<see cref="OutOfProcMiddleware.CallActivityAsync(DurableTask.Core.Middleware.DispatchMiddlewareContext, Func{System.Threading.Tasks.Task})"/>)
+        /// and the in-proc shim (<see cref="Listener.TaskActivityShim"/>, which receives the parsed
+        /// metadata from <see cref="DurableTaskExtension"/>'s activity middleware).
         /// Null when the activity was scheduled without a retry policy or when the backend does not
         /// roundtrip <c>TaskScheduledEvent.Tags</c>. Consumed by
         /// <see cref="ActivityTriggerAttributeBindingProvider"/> when populating binding metadata
-        /// visible to out-of-process workers.
+        /// visible to in-proc and out-of-process workers alike.
         /// </summary>
         internal ActivityRetryMetadata? RetryMetadata { get; set; }
 

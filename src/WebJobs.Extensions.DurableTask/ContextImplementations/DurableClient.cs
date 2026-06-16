@@ -1059,8 +1059,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // the host-side response post-processor drops TaskScheduled events entirely (they get
             // folded into Completed/Failed by index), which would also drop any `dt.retry.*` retry
             // metadata tags written upstream when activities are scheduled with retries.
-            JToken tagsToken = historyItem["Tags"];
-            JObject tagsCopy = tagsToken is JObject tagsObj ? (JObject)tagsObj.DeepClone() : null;
+            // Tags are optional on every TaskScheduledEvent and are null when the activity was scheduled
+            // without a retry policy or when the backend does not roundtrip Tags. We scope #nullable
+            // enable to just these new locals so the typing reflects reality without churning the rest
+            // of the file (which is not in a nullable context).
+#nullable enable
+            JToken? tagsToken = historyItem["Tags"];
+            JObject? tagsCopy = tagsToken is JObject tagsObj ? (JObject)tagsObj.DeepClone() : null;
+#nullable restore
 
             eventMapper.Add($"{eventType}_{historyItem["EventId"]}", new EventIndexDateMapping { Index = index, Name = (string)historyItem["Name"], Date = (DateTime)historyItem["Timestamp"], Input = (string)historyItem["Input"], Tags = tagsCopy });
         }
@@ -1274,9 +1280,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             /// TaskCompleted / TaskFailed event so downstream client-side consumers
             /// (dashboards, analyzers, custom inspection tooling) can still see
             /// `dt.retry.*` tags after TaskScheduled events are folded away in the
-            /// host's response post-processing.
+            /// host's response post-processing. Null when the originating
+            /// TaskScheduledEvent had no Tags (the common no-retry-policy case).
             /// </summary>
-            public JObject Tags { get; set; }
+#nullable enable
+            public JObject? Tags { get; set; }
+#nullable restore
         }
     }
 }
