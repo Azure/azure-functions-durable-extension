@@ -232,7 +232,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         instance.InstanceId);
 
                     // Emit per-instance retry aggregates on the orchestration span.
-                    // Terminal turn: Completed / ContinuedAsNew / Terminated.
+                    // Terminal turn: Completed / ContinuedAsNew.
                     RetryHistoryAggregator.EmitToActivity(runtimeState.Events, Activity.Current);
 
                     await this.LifeCycleNotificationHelper.OrchestratorCompletedAsync(
