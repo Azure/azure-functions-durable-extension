@@ -728,13 +728,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 // Mirrors the equivalent block in OutOfProcMiddleware.CallActivityAsync — the gate is
                 // shared via ActivityRetryMetadata.TryClaimUnparseableTagsWarning so the warning fires
                 // at most once per process across both in-proc and out-of-proc activity paths.
+                // HasAnyRetryTag implies @event != null (it returns false when tags is null, and
+                // @event?.Tags is null whenever @event is null), so direct access is safe here.
                 if (retryMetadata == null
                     && ActivityRetryMetadata.HasAnyRetryTag(@event?.Tags)
                     && ActivityRetryMetadata.TryClaimUnparseableTagsWarning())
                 {
                     this.TraceHelper.ExtensionWarningEvent(
                         this.Options.HubName,
-                        @event?.Name ?? string.Empty,
+                        @event.Name,
                         dispatchContext.GetProperty<OrchestrationInstance>()?.InstanceId ?? string.Empty,
                         "Durable retry metadata tags were present but unparseable; retry metadata will not be available via trigger metadata and per-attempt telemetry will not be emitted. Likely cause: a mixed-version deployment or corrupted history.");
                 }
