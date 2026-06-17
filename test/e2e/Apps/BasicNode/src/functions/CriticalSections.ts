@@ -112,3 +112,29 @@ const nestedLockViolation: OrchestrationHandler = function* (context: Orchestrat
     }
 };
 df.app.orchestration("CriticalSectionNestedLockViolation", nestedLockViolation);
+
+// ----------------------------------------------------------------------------
+// CriticalSectionTimedLockHold
+//
+// Acquires a lock on a single hardcoded entity, holds it for ~5 seconds via
+// createTimer, then releases. Used by the mutual-exclusion test that starts
+// two instances simultaneously: the winner takes ~5 s end-to-end, while the
+// loser is blocked at `lock(...)` for ~5 s and then runs its own 5 s hold —
+// roughly ~10 s end-to-end. The C# test asserts the loser's elapsed time is
+// >= 2 × holdSec - slack.
+// ----------------------------------------------------------------------------
+const HOLD_LOCK_SECONDS = 5;
+const timedLockHold: OrchestrationHandler = function* (context: OrchestrationContext) {
+    const e = new df.EntityId(accountEntityName, "TimedHoldShared");
+
+    // @ts-expect-error context.df.lock ships in the next durable-functions release.
+    const lock = yield context.df.lock(e);
+    try {
+        const wakeAt = new Date(context.df.currentUtcDateTime.getTime() + HOLD_LOCK_SECONDS * 1000);
+        yield context.df.createTimer(wakeAt);
+        return "held";
+    } finally {
+        lock.release();
+    }
+};
+df.app.orchestration("CriticalSectionTimedLockHold", timedLockHold);
