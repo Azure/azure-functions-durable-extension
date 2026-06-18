@@ -48,31 +48,5 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale
         /// </summary>
         [JsonPropertyName("storageProvider")]
         public IDictionary<string, object>? StorageProvider { get; set; }
-
-        /// <summary>
-        /// Resolves app settings in <see cref="DurableTaskMetadata"/> using the provided <see cref="INameResolver"/>.
-        /// This allows configuration values such as connection strings to be expanded from environment variables or host settings.
-        /// </summary>
-        /// <param name="metadata">The scale options instance containing configuration values to resolve.</param>
-        /// <param name="nameResolver">The name resolver used to resolve app setting placeholders.</param>
-        public static void ResolveAppSettingOptions(DurableTaskMetadata metadata, Microsoft.Azure.WebJobs.INameResolver nameResolver)
-        {
-            if (metadata.StorageProvider == null)
-            {
-                return;
-            }
-
-            // Resolve both "connectionName" and "connectionStringName" keys for compatibility.
-            ResolveStorageProviderSetting(metadata.StorageProvider, DefaultConnectionName, nameResolver);
-            ResolveStorageProviderSetting(metadata.StorageProvider, ConnectionNameOverride, nameResolver);
-        }
-
-        private static void ResolveStorageProviderSetting(IDictionary<string, object> storageProvider, string key, INameResolver nameResolver)
-        {
-            if (storageProvider.TryGetValue(key, out object? value) && value is string name && !string.IsNullOrWhiteSpace(name))
-            {
-                storageProvider[key] = nameResolver.Resolve(name) ?? string.Empty;
-            }
-        }
     }
 }

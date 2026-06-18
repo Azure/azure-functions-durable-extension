@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
     <AssemblyName>Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale</AssemblyName>
     <RootNamespace>Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale</RootNamespace>
     <MajorVersion>1</MajorVersion>
@@ -60,6 +59,8 @@
     <PackageReference Include="Microsoft.Extensions.Azure" />
     <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="All" />
     <PackageReference Include="StyleCop.Analyzers" PrivateAssets="All" />
+    <!-- Pin transitive System.Drawing.Common to a patched version (GHSA-rxg9-xrhp-64gj). Version is set centrally in Directory.Packages.props. -->
+    <PackageReference Include="System.Drawing.Common" />
   </ItemGroup>
 
 

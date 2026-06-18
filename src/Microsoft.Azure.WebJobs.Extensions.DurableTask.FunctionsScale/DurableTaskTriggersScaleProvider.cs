@@ -21,9 +21,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale
         /// <summary>
         /// Initializes a new instance of the <see cref="DurableTaskTriggersScaleProvider"/> class.
         /// </summary>
-        /// <param name="nameResolver">
-        /// Resolves application setting values referenced in trigger metadata.
-        /// </param>
         /// <param name="loggerFactory">
         /// Factory used to create loggers for diagnostics.
         /// </param>
@@ -38,7 +35,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale
         /// Thrown when required trigger metadata is missing or cannot be deserialized.
         /// </exception>
         public DurableTaskTriggersScaleProvider(
-            Microsoft.Azure.WebJobs.INameResolver nameResolver,
             ILoggerFactory loggerFactory,
             IEnumerable<IScalabilityProviderFactory> scalabilityProviderFactories,
             TriggerMetadata triggerMetadata)
@@ -55,8 +51,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale
             {
                 throw new InvalidOperationException($"Expected `taskHubName` property in SyncTriggers payload but found none.");
             }
-
-            DurableTaskMetadata.ResolveAppSettingOptions(metadata, nameResolver);
 
             var logger = loggerFactory.CreateLogger<DurableTaskTriggersScaleProvider>();
 

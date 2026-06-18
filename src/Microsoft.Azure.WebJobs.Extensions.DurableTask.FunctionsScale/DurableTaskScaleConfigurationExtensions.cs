@@ -87,13 +87,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale
                 {
                     throw new InvalidOperationException(
                         "No scalability provider factories could be resolved. " +
-                        "Ensure that AddDurableTask() was called or that all required dependencies (IConfiguration, INameResolver, ILoggerFactory) are registered.");
+                        "Ensure that AddDurableTask() was called or that all required dependencies (IConfiguration, ILoggerFactory) are registered.");
                 }
 
                 try
                 {
                     provider = new DurableTaskTriggersScaleProvider(
-                        serviceProvider.GetRequiredService<Microsoft.Azure.WebJobs.INameResolver>(),
                         serviceProvider.GetRequiredService<ILoggerFactory>(),
                         scalabilityProviderFactories,
                         triggerMetadata);
