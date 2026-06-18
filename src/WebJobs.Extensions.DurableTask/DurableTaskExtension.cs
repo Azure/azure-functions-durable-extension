@@ -166,8 +166,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.telemetryActivator = telemetryActivator;
             this.telemetryActivator?.Initialize(logger);
 
-            // Starting with .NET isolated and Java, we have a more efficient out-of-process
-            // function invocation protocol. Other languages will use the existing protocol.
+            // The gRPC-based out-of-process invocation protocol (MiddlewarePassthrough) is the more
+            // efficient protocol used by the compiled / newer-SDK runtimes: .NET isolated, Java, the
+            // native worker (e.g. Go), and custom handlers. The remaining script languages (Python,
+            // Node.js, PowerShell) start on the legacy HTTP protocol below and may upgrade to gRPC
+            // during function indexing if their metadata requests it (see ConfigureForGrpcProtocol).
             WorkerRuntimeType runtimeType = this.PlatformInformationService.GetWorkerRuntimeType();
             if (runtimeType == WorkerRuntimeType.DotNetIsolated ||
                 runtimeType == WorkerRuntimeType.Java ||
