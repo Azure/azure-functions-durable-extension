@@ -119,11 +119,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.context.IsReplaying);
             status = OrchestrationRuntimeStatus.Completed;
 
-            // Emit per-instance retry aggregate (durabletask.retry_attempt_count /
-            // retry_max_attempts_reached) on the orchestration span. Runs only on this terminal
-            // turn — gated by reaching the Completed branch above. ContinuedAsNew also flows
-            // through this branch (context.ContinuedAsNew is true), which is treated as
-            // a single-instance boundary for aggregation purposes.
+            // Emit per-instance retry aggregates on the orchestration span. This runs only when the
+            // orchestration is finished, not on the intermediate turns while it's still running.
             RetryHistoryAggregator.EmitToActivity(this.context.History, Activity.Current);
 
             if (!this.context.IsReplaying)
