@@ -19,8 +19,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// ContinuedAsNew). Calling on every replay turn would produce repeated, partial-history
     /// span attributes that mislead observability pipelines.
     ///
-    /// Performance: short-circuits on the first scan when no retry-tagged events are present.
-    /// For long-running orchestrations with very large histories, the walk is O(history length).
     /// </summary>
     internal static class RetryHistoryAggregator
     {
@@ -36,8 +34,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return;
             }
 
-            // Performance short-circuit: walk only to find the first retry-tagged event.
-            // If none, return without emitting anything.
             int retryAttemptCount = 0;
             bool retryMaxAttemptsReached = false;
             bool anyTaggedFound = false;

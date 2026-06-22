@@ -1052,10 +1052,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return this.httpApiHandler.CreateCheckStatusResponse(request, instanceId, attribute, returnInternalServerErrorOnFailure);
         }
 
-        // Visibility note: these helpers are internal (rather than private) so that focused unit tests in
-        // WebJobs.Extensions.DurableTask.Tests.V2 can exercise the TaskScheduledEvent.Tags propagation
-        // contract directly without needing a real backend or end-to-end orchestration scaffolding.
-        // Behavior is unchanged from the historical private contract.
         internal static void TrackNameAndScheduledTime(JObject historyItem, EventType eventType, int index, Dictionary<string, EventIndexDateMapping> eventMapper)
         {
             // Preserve the original TaskScheduledEvent.Tags so AddScheduledEventDataAndAggregate
