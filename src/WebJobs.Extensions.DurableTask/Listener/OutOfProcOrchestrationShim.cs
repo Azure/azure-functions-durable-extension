@@ -40,6 +40,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             Original = 0,
             V2 = 1,
             V3 = 2,
+            V4 = 3,
         }
 
         private enum AsyncActionType
@@ -57,6 +58,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             ScheduledSignalEntity = 10,
             WhenAny = 11,
             WhenAll = 12,
+            LockEntities = 13,
+            ReleaseEntities = 14,
         }
 
         // Handles replaying the Durable Task APIs that the out-of-proc function scheduled
@@ -197,6 +200,49 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 case AsyncActionType.WhenAny:
                     task = Task.WhenAny(action.CompoundActions.Select(x => this.InvokeAPIFromAction(x, schema)));
                     break;
+                case AsyncActionType.LockEntities:
+                    {
+                        if (action.LockSet == null || action.LockSet.Length == 0)
+                        {
+                            throw new ArgumentException("LockEntities action requires a non-empty LockSet.");
+                        }
+
+                        if (action.LockSet.Any(e => e == null || string.IsNullOrEmpty(e.Name) || e.Key == null))
+                        {
+                            throw new ArgumentException("LockEntities action requires each LockSet entry to have a non-empty name and a non-null key.");
+                        }
+
+                        var ctxForLock = this.context as DurableOrchestrationContext;
+                        if (ctxForLock == null)
+                        {
+                            throw new InvalidOperationException("LockEntities action requires a DurableOrchestrationContext.");
+                        }
+
+                        var entityIds = action.LockSet
+                            .Select(e => new EntityId(e.Name, e.Key))
+                            .ToArray();
+
+                        // We intentionally do NOT hold onto the returned IDisposable here:
+                        // the worker emits an explicit ReleaseEntities action when the
+                        // user releases the lock (or when the orchestration completes).
+                        // ReleaseLocks() reads ContextLocks from the context.
+                        task = ((IDurableOrchestrationContext)ctxForLock).LockAsync(entityIds);
+                        break;
+                    }
+
+                case AsyncActionType.ReleaseEntities:
+                    {
+                        var ctxForRelease = this.context as DurableOrchestrationContext;
+                        if (ctxForRelease == null)
+                        {
+                            throw new InvalidOperationException("ReleaseEntities action requires a DurableOrchestrationContext.");
+                        }
+
+                        ctxForRelease.ReleaseLocks();
+                        task = fireAndForgetTask;
+                        break;
+                    }
+
                 default:
                     throw new Exception($"Received an unexpected action type from the out-of-proc function: '${action.ActionType}'.");
             }
@@ -243,6 +289,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             switch (schema)
             {
+                case SchemaVersion.V4:
                 case SchemaVersion.V3:
                 case SchemaVersion.V2:
                     // In this schema, action arrays should be 1 dimensional (1 action per yield), but due to legacy behavior they're nested within a 2-dimensional array.
@@ -410,6 +457,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             [JsonProperty("operation")]
             internal string EntityOperation { get; set; }
+
+            [JsonProperty("lockSet")]
+            internal LockSetEntry[] LockSet { get; set; }
+        }
+
+        private class LockSetEntry
+        {
+            [JsonProperty("name")]
+            internal string Name { get; set; }
+
+            [JsonProperty("key")]
+            internal string Key { get; set; }
         }
     }
 }
