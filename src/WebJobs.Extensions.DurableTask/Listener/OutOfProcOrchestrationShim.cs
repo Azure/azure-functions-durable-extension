@@ -7,6 +7,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using DurableTask.Core;
 using DurableTask.Core.Exceptions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
@@ -84,6 +85,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             if (!string.IsNullOrEmpty(execution.Error))
             {
+                // If the worker provided structured failure details (e.g. an uncaught
+                // sub-orchestration/activity failure propagated out of the orchestrator),
+                // stash them on the context so OrchestrationMiddleware can attach them to the
+                // orchestration completion action. This preserves the full InnerFailure chain
+                // (including custom Properties) for a calling parent orchestration. The legacy
+                // string-based OrchestrationFailureException is still thrown so existing behavior
+                // (and replay determinism) is unchanged.
+                if (execution.FailureDetails != null
+                    && this.context is DurableOrchestrationContext durableContext)
+                {
+                    durableContext.OrchestrationFailureDetails = ConvertToFailureDetails(execution.FailureDetails);
+                }
+
                 string exceptionDetails = $"Message: {execution.Error}, StackTrace: {result.Exception.StackTrace}";
                 throw new OrchestrationFailureException(
                         $"Orchestrator function '{this.context.Name}' failed: {execution.Error}",
@@ -278,6 +292,33 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
+        /// <summary>
+        /// Recursively converts a worker-supplied <see cref="FailureDetailsDto"/> into a
+        /// <see cref="DurableTask.Core.FailureDetails"/>, preserving the <c>InnerFailure</c> chain
+        /// and any custom <c>Properties</c>.
+        /// </summary>
+        private static FailureDetails ConvertToFailureDetails(FailureDetailsDto dto)
+        {
+            if (dto == null)
+            {
+                return null;
+            }
+
+            IDictionary<string, object> properties = null;
+            if (dto.Properties != null && dto.Properties.Count > 0)
+            {
+                properties = new Dictionary<string, object>(dto.Properties);
+            }
+
+            return new FailureDetails(
+                dto.ErrorType ?? string.Empty,
+                dto.ErrorMessage ?? string.Empty,
+                dto.StackTrace,
+                ConvertToFailureDetails(dto.InnerFailure),
+                dto.IsNonRetriable,
+                properties);
+        }
+
         private class OutOfProcOrchestratorState
         {
             [JsonProperty("isDone")]
@@ -295,10 +336,39 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             [JsonProperty("customStatus")]
             internal object CustomStatus { get; set; }
 
+            [JsonProperty("failureDetails")]
+            internal FailureDetailsDto FailureDetails { get; set; }
+
             [DefaultValue(SchemaVersion.Original)]
             [JsonConverter(typeof(StringEnumConverter))]
             [JsonProperty("schemaVersion", DefaultValueHandling = DefaultValueHandling.Populate)]
             internal SchemaVersion SchemaVersion { get; set; }
+        }
+
+        /// <summary>
+        /// Wire-format DTO matching the JSON shape the durable-functions worker SDKs serialize for
+        /// <see cref="DurableTask.Core.FailureDetails"/> (PascalCase). Mirrors the
+        /// <c>FailureDetailsDto</c> the host extension already sends down on history events.
+        /// </summary>
+        private class FailureDetailsDto
+        {
+            [JsonProperty("ErrorType")]
+            internal string ErrorType { get; set; }
+
+            [JsonProperty("ErrorMessage")]
+            internal string ErrorMessage { get; set; }
+
+            [JsonProperty("StackTrace")]
+            internal string StackTrace { get; set; }
+
+            [JsonProperty("IsNonRetriable")]
+            internal bool IsNonRetriable { get; set; }
+
+            [JsonProperty("Properties")]
+            internal IDictionary<string, object> Properties { get; set; }
+
+            [JsonProperty("InnerFailure")]
+            internal FailureDetailsDto InnerFailure { get; set; }
         }
 
         private class AsyncAction

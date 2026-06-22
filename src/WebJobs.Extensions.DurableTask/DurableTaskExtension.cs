@@ -13,6 +13,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.AzureStorage;
 using DurableTask.Core;
+using DurableTask.Core.Command;
 using DurableTask.Core.Exceptions;
 using DurableTask.Core.History;
 using DurableTask.Core.Middleware;
@@ -841,6 +842,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     // This will abort the execution and cause the message to go back onto the queue for re-processing
                     throw new SessionAbortedException(
                         $"An internal error occurred while attempting to execute '{context.FunctionName}'.", result.Exception);
+                }
+            }
+
+            // If an out-of-proc worker supplied structured failure details for an uncaught
+            // sub-orchestration/activity failure that propagated out of the orchestrator, attach
+            // them to the orchestration completion action so DTFx persists them on the resulting
+            // ExecutionCompleted / SubOrchestrationInstanceFailed event. This lets a calling parent
+            // orchestration reconstruct the full InnerFailure chain (including custom Properties).
+            // The completion action's FailureDetails is publicly settable and is read by the DTFx
+            // dispatcher after this middleware returns, so mutating it here is safe and works
+            // regardless of the configured ErrorPropagationMode. No-op for all other workers/paths.
+            if (context.OrchestrationFailureDetails != null)
+            {
+                OrchestratorExecutionResult executionResult = dispatchContext.GetProperty<OrchestratorExecutionResult>();
+                if (executionResult?.Actions != null)
+                {
+                    foreach (OrchestratorAction action in executionResult.Actions)
+                    {
+                        if (action is OrchestrationCompleteOrchestratorAction completeAction
+                            && completeAction.OrchestrationStatus == OrchestrationStatus.Failed
+                            && completeAction.FailureDetails == null)
+                        {
+                            completeAction.FailureDetails = context.OrchestrationFailureDetails;
+                        }
+                    }
                 }
             }
 
