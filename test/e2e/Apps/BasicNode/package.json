@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@azure/functions": "^4.11.2",
-    "durable-functions": "file:./durable-functions-3.3.1.tgz"
+    "durable-functions": "^3.1.0"
   },
   "devDependencies": {
     "@types/node": "^20.x",
