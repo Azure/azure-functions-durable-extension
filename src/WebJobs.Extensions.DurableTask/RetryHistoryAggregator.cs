@@ -74,13 +74,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             if (!anyTaggedFound)
             {
-                // No retry-tagged events in the history: per the PR contract, emit nothing.
-                // Emitting trivial zeros here would be actively misleading on backends that
-                // don't roundtrip TaskScheduledEvent.Tags,
-                // since every orchestration on those backends would report retry_attempt_count=0
-                // even when retries occurred. Telemetry consumers that need to distinguish
-                // "no retries" from "metric never emitted" can do so by checking attribute
-                // presence (e.g. `WHERE attribute_exists("durabletask.retry_attempt_count")`).
+                // Emit nothing when no retry tags are present. On backends that
+                // don't roundtrip TaskScheduledEvent.Tags, emitting retry_attempt_count=0 would be
+                // misleading since retries may have occurred; consumers distinguish "no retries"
+                // from "never emitted" via attribute presence.
                 return;
             }
 
