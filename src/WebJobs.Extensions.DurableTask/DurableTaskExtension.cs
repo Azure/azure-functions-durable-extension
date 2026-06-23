@@ -713,8 +713,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="next">The handler for running the next middleware in the pipeline.</param>
         private async Task ActivityMiddleware(DispatchMiddlewareContext dispatchContext, Func<Task> next)
         {
-            TaskActivityShim? shim = dispatchContext.GetProperty<TaskActivity>() as TaskActivityShim;
-            TaskScheduledEvent? scheduledEvent = dispatchContext.GetProperty<TaskScheduledEvent>();
+            TaskActivityShim shim = dispatchContext.GetProperty<TaskActivity>() as TaskActivityShim;
+            TaskScheduledEvent scheduledEvent = dispatchContext.GetProperty<TaskScheduledEvent>();
 
             if (shim != null)
             {
