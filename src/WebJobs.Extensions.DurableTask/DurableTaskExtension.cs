@@ -733,7 +733,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 // ExceptionPropertiesProvider). Override the dispatch result so DTFx persists the
                 // FailureDetails on the TaskFailedEvent, mirroring what OutOfProcMiddleware does
                 // for the new-protocol .NET-isolated/Java/Custom workers.
-                FailureDetails details = shim.StructuredFailureDetails;
+                FailureDetails failureDetails = shim.StructuredFailureDetails;
                 dispatchContext.SetProperty(new ActivityExecutionResult
                 {
                     ResponseEvent = new TaskFailedEvent(
@@ -741,7 +741,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         taskScheduledId: scheduledEvent?.EventId ?? -1,
                         reason: $"Activity function '{shim.ActivityName}' failed with an unhandled exception.",
                         details: null,
-                        details),
+                        failureDetails),
                 });
             }
         }

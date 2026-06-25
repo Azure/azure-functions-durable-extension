@@ -692,11 +692,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         internal static FailureDetails? TryGetStructuredFailureDetails(Exception e)
         {
             string? candidate = null;
-            if (e.InnerException != null && e.InnerException.Message.StartsWith("Result:"))
+            if (e.InnerException != null && e.InnerException.Message.StartsWith("Result:", StringComparison.Ordinal))
             {
                 candidate = e.InnerException.Message;
             }
-            else if (e.Message != null && e.Message.StartsWith("Result:"))
+            else if (e.Message != null && e.Message.StartsWith("Result:", StringComparison.Ordinal))
             {
                 candidate = e.Message;
             }
