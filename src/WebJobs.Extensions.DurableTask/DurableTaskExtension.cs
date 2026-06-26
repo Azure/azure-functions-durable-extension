@@ -858,14 +858,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 OrchestratorExecutionResult executionResult = dispatchContext.GetProperty<OrchestratorExecutionResult>();
                 if (executionResult?.Actions != null)
                 {
-                    foreach (OrchestratorAction action in executionResult.Actions)
+                    foreach (OrchestrationCompleteOrchestratorAction completeAction in executionResult.Actions
+                        .OfType<OrchestrationCompleteOrchestratorAction>()
+                        .Where(a => a.OrchestrationStatus == OrchestrationStatus.Failed && a.FailureDetails == null))
                     {
-                        if (action is OrchestrationCompleteOrchestratorAction completeAction
-                            && completeAction.OrchestrationStatus == OrchestrationStatus.Failed
-                            && completeAction.FailureDetails == null)
-                        {
-                            completeAction.FailureDetails = context.OrchestrationFailureDetails;
-                        }
+                        completeAction.FailureDetails = context.OrchestrationFailureDetails;
                     }
                 }
             }
