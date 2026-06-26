@@ -28,11 +28,16 @@ internal partial class DurableFunctionExecutor
             if (context.FunctionDefinition.EntryPoint == ActivityEntryPoint)
             {
                 await this.RunDirectActivityAsync(context, triggerBinding);
-                return;
+            }
+            else
+            {
+                await inner.ExecuteAsync(context);
             }
 
-            await inner.ExecuteAsync(context);
-            return;
+            if (this.IsWorkerDraining)
+            {
+                throw new WorkerDrainingException();
+            }
         }
         catch (Exception ex)
         {

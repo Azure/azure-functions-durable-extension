@@ -3,9 +3,11 @@
 
 using System;
 using System.Threading.Tasks;
+using Google.Protobuf;
 using Microsoft.DurableTask.Entities;
 using Microsoft.DurableTask.Worker;
 using Microsoft.DurableTask.Worker.Grpc;
+using P = Microsoft.DurableTask.Protobuf;
 
 namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask.Execution;
 
@@ -40,7 +42,15 @@ internal partial class DurableFunctionExecutor
         TaskEntityDispatcher dispatcher = new(encodedEntityBatch, context.InstanceServices, extendedSessionsCache);
         triggerInputData.Value = dispatcher;
         await inner.ExecuteAsync(context);
-        context.GetInvocationResult().Value = dispatcher.Result;
+
+        string entityResult = dispatcher.Result;
+
+        if (this.IsWorkerDraining)
+        {
+            entityResult = FlagEntityDraining(entityResult);
+        }
+
+        context.GetInvocationResult().Value = entityResult;
     }
 
     private async Task RunDirectEntityAsync(
@@ -61,6 +71,20 @@ internal partial class DurableFunctionExecutor
 
         string result = await GrpcEntityRunner.LoadAndRunAsync(
             encodedEntityBatch, entity, context.InstanceServices);
+
+        if (this.IsWorkerDraining)
+        {
+            result = FlagEntityDraining(result);
+        }
+
         context.GetInvocationResult().Value = result;
+    }
+
+    private static string FlagEntityDraining(string encodedEntityBatchResult)
+    {
+        byte[] resultBytes = Convert.FromBase64String(encodedEntityBatchResult);
+        P.EntityBatchResult result = P.EntityBatchResult.Parser.ParseFrom(resultBytes);
+        result.IsWorkerDraining = true;
+        return Convert.ToBase64String(result.ToByteArray());
     }
 }
