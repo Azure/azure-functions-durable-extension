@@ -47,10 +47,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <summary>
-        /// Structured failure details extracted from an out-of-proc worker's serialized exception payload
-        /// (e.g. produced by the durable-functions JS SDK's ExceptionPropertiesProvider). The shim stashes
-        /// this so <see cref="DurableTaskExtension.ActivityMiddleware"/> can override the resulting
-        /// TaskFailedEvent with structured FailureDetails after RunAsync throws.
+        /// Structured failure details extracted from an out-of-proc worker's serialized exception payload.
+        /// The shim stashes this so <see cref="DurableTaskExtension.ActivityMiddleware"/> can override the
+        /// resulting TaskFailedEvent with structured FailureDetails after RunAsync throws.
         /// </summary>
         internal FailureDetails? StructuredFailureDetails { get; private set; }
 

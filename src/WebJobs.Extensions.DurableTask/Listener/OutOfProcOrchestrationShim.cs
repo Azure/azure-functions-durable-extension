@@ -340,11 +340,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <summary>
-        /// Recursively converts a worker-supplied <see cref="FailureDetailsDto"/> into a
+        /// Recursively converts a worker-supplied <see cref="FailureDetailsPayload"/> into a
         /// <see cref="DurableTask.Core.FailureDetails"/>, preserving the <c>InnerFailure</c> chain
         /// and any custom <c>Properties</c>.
         /// </summary>
-        private static FailureDetails ConvertToFailureDetails(FailureDetailsDto dto)
+        private static FailureDetails ConvertToFailureDetails(FailureDetailsPayload dto)
         {
             if (dto == null)
             {
@@ -384,7 +384,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             internal object CustomStatus { get; set; }
 
             [JsonProperty("failureDetails")]
-            internal FailureDetailsDto FailureDetails { get; set; }
+            internal FailureDetailsPayload FailureDetails { get; set; }
 
             [DefaultValue(SchemaVersion.Original)]
             [JsonConverter(typeof(StringEnumConverter))]
@@ -397,7 +397,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <see cref="DurableTask.Core.FailureDetails"/> (PascalCase). Mirrors the
         /// <c>FailureDetailsDto</c> the host extension already sends down on history events.
         /// </summary>
-        private class FailureDetailsDto
+        private class FailureDetailsPayload
         {
             [JsonProperty("ErrorType")]
             internal string ErrorType { get; set; }
@@ -415,7 +415,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             internal IDictionary<string, object> Properties { get; set; }
 
             [JsonProperty("InnerFailure")]
-            internal FailureDetailsDto InnerFailure { get; set; }
+            internal FailureDetailsPayload InnerFailure { get; set; }
         }
 
         private class AsyncAction

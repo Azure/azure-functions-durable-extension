@@ -729,10 +729,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             catch (TaskFailureException) when (shim?.StructuredFailureDetails != null)
             {
                 // The shim extracted a structured TaskFailureDetails payload from the out-of-proc
-                // worker's exception (e.g. produced by the durable-functions JS SDK's
-                // ExceptionPropertiesProvider). Override the dispatch result so DTFx persists the
+                // worker's exception. Override the dispatch result so DTFx persists the
                 // FailureDetails on the TaskFailedEvent, mirroring what OutOfProcMiddleware does
-                // for the new-protocol .NET-isolated/Java/Custom workers.
+                // for the new-protocol.
                 FailureDetails failureDetails = shim.StructuredFailureDetails;
                 dispatchContext.SetProperty(new ActivityExecutionResult
                 {
