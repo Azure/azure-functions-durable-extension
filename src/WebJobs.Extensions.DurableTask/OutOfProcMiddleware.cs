@@ -3,6 +3,7 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
@@ -34,7 +35,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         // The below private properties are just passthroughs to properties or methods defined in the extension class.
         // They exist simply to make it easier to copy/paste logic from the old middleware defined there to this file.
-
         private DurableTaskOptions Options => this.extension.Options;
 
         private EndToEndTraceHelper TraceHelper => this.extension.TraceHelper;
@@ -231,6 +231,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         OrchestrationRuntimeStatus.Completed,
                         instance.InstanceId);
 
+                    // Emit per-instance retry aggregates on the orchestration span.
+                    // Terminal turn: Completed / ContinuedAsNew.
+                    RetryHistoryAggregator.EmitToActivity(runtimeState.Events, Activity.Current);
+
                     await this.LifeCycleNotificationHelper.OrchestratorCompletedAsync(
                         this.Options.HubName,
                         functionName.Name,
@@ -262,6 +266,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                      FunctionType.Orchestrator,
                      isReplay: false);
 
+                // Emit per-instance retry aggregates on the orchestration span.
+                // Terminal Failed: orchestrator code threw an unhandled exception.
+                RetryHistoryAggregator.EmitToActivity(runtimeState.Events, Activity.Current);
+
                 await this.LifeCycleNotificationHelper.OrchestratorFailedAsync(
                     this.Options.HubName,
                     functionName.Name,
@@ -281,6 +289,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     functionResult.Exception,
                     FunctionType.Orchestrator,
                     isReplay: false);
+
+                // Emit per-instance retry aggregates on the orchestration span.
+                // Terminal Failed: framework-internal failure, coerced to ForFailure below.
+                RetryHistoryAggregator.EmitToActivity(runtimeState.Events, Activity.Current);
 
                 await this.LifeCycleNotificationHelper.OrchestratorFailedAsync(
                     this.Options.HubName,
@@ -557,6 +569,46 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 taskEventId: scheduledEvent.EventId);
 
             var inputContext = new DurableActivityContext(this.extension, instance.InstanceId, rawInput, functionName.Name);
+
+            // Parse per-attempt retry metadata from the scheduling event's tags (if any) and attach
+            // it to the activity context so the binding layer can forward it to the worker via
+            // triggerMetadata.
+            ActivityRetryMetadata? retryMetadata = ActivityRetryMetadata.TryParseFromTags(scheduledEvent.Tags);
+            inputContext.RetryMetadata = retryMetadata;
+
+            // Emit per-attempt OpenTelemetry attributes on the current diagnostic Activity (the
+            // activity-trigger span). Follows the established pattern in
+            // DurableTaskExtension.TagActivityWithOrchestrationStatus — Activity.Current is the right
+            // surface inside the activity-trigger middleware, and the null guard handles unit-test
+            // contexts. Setting these BEFORE the user function runs ensures the span carries them
+            // when it's exported on activity completion.
+            if (retryMetadata.HasValue)
+            {
+                Activity? currentSpan = Activity.Current;
+                if (currentSpan != null)
+                {
+                    currentSpan.SetTag(RetryMetadataConstants.SpanAttrAttempt, retryMetadata.Value.Attempt);
+                    currentSpan.SetTag(RetryMetadataConstants.SpanAttrMaxAttempts, retryMetadata.Value.MaxAttempts);
+                    currentSpan.SetTag(RetryMetadataConstants.SpanAttrIsMaxAttempt, retryMetadata.Value.IsMaxAttempt);
+                }
+            }
+
+            // Emit a ONE-TIME diagnostic warning when retry tags are present but cannot be parsed.
+            // This indicates either a mixed-version deployment (partial tag set) or corrupted history.
+            // Either-key presence is the trigger so we also catch partial writes where only one of
+            // the two expected keys made it through. The gate is shared with the in-proc middleware
+            // path so the warning fires at most once per process across both paths.
+            if (retryMetadata == null
+                && ActivityRetryMetadata.HasAnyRetryTag(scheduledEvent.Tags)
+                && ActivityRetryMetadata.TryClaimUnparseableTagsWarning())
+            {
+                this.TraceHelper.ExtensionWarningEvent(
+                    this.Options.HubName,
+                    functionName.Name,
+                    instance.InstanceId,
+                    "Durable retry metadata tags were present but unparseable; retry metadata will not be available via trigger metadata and per-attempt telemetry will not be emitted. Likely cause: a mixed-version deployment or corrupted history.");
+            }
+
             var triggerInput = new TriggeredFunctionData { TriggerValue = inputContext };
 
             FunctionResult result;

@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Diagnostics;
 using System.Runtime.ExceptionServices;
 using System.Threading.Tasks;
 using DurableTask.Core;
@@ -118,6 +119,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.context.IsReplaying);
             status = OrchestrationRuntimeStatus.Completed;
 
+            // Emit per-instance retry aggregates on the orchestration span. This runs only when the
+            // orchestration is finished, not on the intermediate turns while it's still running.
+            RetryHistoryAggregator.EmitToActivity(this.context.History, Activity.Current);
+
             if (!this.context.IsReplaying)
             {
                 this.context.AddDeferredTask(() => this.Config.LifeCycleNotificationHelper.OrchestratorCompletedAsync(
@@ -198,6 +203,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         ExceptionDispatchInfo.Capture(orchestrationException);
 
                     DurableTaskExtension.TagActivityWithOrchestrationStatus(OrchestrationRuntimeStatus.Failed, this.context.InstanceId);
+
+                    // Emit per-instance retry aggregate on the orchestration span for the failed
+                    // path too — terminal turn, same metric contract as the Completed branch above.
+                    RetryHistoryAggregator.EmitToActivity(this.context.History, Activity.Current);
 
                     throw orchestrationException;
                 }

@@ -1052,12 +1052,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return this.httpApiHandler.CreateCheckStatusResponse(request, instanceId, attribute, returnInternalServerErrorOnFailure);
         }
 
-        private static void TrackNameAndScheduledTime(JObject historyItem, EventType eventType, int index, Dictionary<string, EventIndexDateMapping> eventMapper)
+        internal static void TrackNameAndScheduledTime(JObject historyItem, EventType eventType, int index, Dictionary<string, EventIndexDateMapping> eventMapper)
         {
-            eventMapper.Add($"{eventType}_{historyItem["EventId"]}", new EventIndexDateMapping { Index = index, Name = (string)historyItem["Name"], Date = (DateTime)historyItem["Timestamp"], Input = (string)historyItem["Input"] });
+            // Preserve the original TaskScheduledEvent.Tags so AddScheduledEventDataAndAggregate
+            // can propagate them onto the aggregated TaskCompleted / TaskFailed event. Without this,
+            // the host-side response post-processor drops TaskScheduled events entirely (they get
+            // folded into Completed/Failed by index), which would also drop any `dt.retry.*` retry
+            // metadata tags written upstream when activities are scheduled with retries.
+            // Tags are optional on every TaskScheduledEvent and are null when the activity was scheduled
+            // without a retry policy or when the backend does not roundtrip Tags. We scope #nullable
+            // enable to just these new locals so the typing reflects reality without churning the rest
+            // of the file (which is not in a nullable context).
+#nullable enable
+            JToken? tagsToken = historyItem["Tags"];
+            JObject? tagsCopy = tagsToken is JObject tagsObj ? (JObject)tagsObj.DeepClone() : null;
+#nullable restore
+
+            eventMapper.Add($"{eventType}_{historyItem["EventId"]}", new EventIndexDateMapping { Index = index, Name = (string)historyItem["Name"], Date = (DateTime)historyItem["Timestamp"], Input = (string)historyItem["Input"], Tags = tagsCopy });
         }
 
-        private static void AddScheduledEventDataAndAggregate(ref Dictionary<string, EventIndexDateMapping> eventMapper, string prefix, JToken historyItem, List<int> indexList, bool showInput)
+        internal static void AddScheduledEventDataAndAggregate(ref Dictionary<string, EventIndexDateMapping> eventMapper, string prefix, JToken historyItem, List<int> indexList, bool showInput)
         {
             if (eventMapper.TryGetValue($"{prefix}_{historyItem["TaskScheduledId"]}", out EventIndexDateMapping taskScheduledData))
             {
@@ -1066,6 +1080,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 if (showInput)
                 {
                     historyItem["Input"] = taskScheduledData.Input;
+                }
+
+                // Propagate the original TaskScheduledEvent.Tags onto the aggregated event so
+                // downstream consumers walking the returned history can still see `dt.retry.*`
+                // tags after the host folds TaskScheduled events away. Only attach when non-empty
+                // to keep the response shape unchanged for the common no-tags case.
+                if (taskScheduledData.Tags != null && taskScheduledData.Tags.HasValues)
+                {
+                    historyItem["Tags"] = taskScheduledData.Tags;
                 }
 
                 indexList.Add(taskScheduledData.Index);
@@ -1240,7 +1263,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return instance.InstanceId;
         }
 
-        private class EventIndexDateMapping
+        internal class EventIndexDateMapping
         {
             public int Index { get; set; }
 
@@ -1249,6 +1272,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             public string Name { get; set; }
 
             public string Input { get; set; }
+
+            /// <summary>
+            /// Optional Tags JObject copied from the original TaskScheduledEvent.
+            /// Propagated by AddScheduledEventDataAndAggregate onto the aggregated
+            /// TaskCompleted / TaskFailed event so downstream consumers can still see
+            /// `dt.retry.*` tags after TaskScheduled events are folded away in the
+            /// host's response post-processing. Null when the originating
+            /// TaskScheduledEvent had no Tags (the common no-retry-policy case).
+            /// </summary>
+#nullable enable
+            public JObject? Tags { get; set; }
+#nullable restore
         }
     }
 }
