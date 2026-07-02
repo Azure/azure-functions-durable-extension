@@ -15,8 +15,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     /// <c>DurableClient.GetStatusAsync(showHistory: true)</c> folds <c>TaskScheduled</c> events
     /// into the aggregated <c>TaskCompleted</c> / <c>TaskFailed</c> history items returned to
     /// callers. Without this propagation, <c>dt.retry.*</c> retry-metadata tags written by the
-    /// extension would be invisible to client-side consumers (dashboards, custom inspection
-    /// tooling) walking the returned history.
+    /// extension would be invisible to consumers walking the returned history.
     /// </summary>
     public class DurableClientHistoryTagsTests
     {

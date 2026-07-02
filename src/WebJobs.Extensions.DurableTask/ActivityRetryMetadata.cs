@@ -35,7 +35,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <summary>
         /// Parse retry metadata from <c>TaskScheduledEvent.Tags</c>. Returns <c>null</c> when
         /// either key is missing, not a strict decimal integer, or fails the bounds check
-        /// (<c>attempt &gt;= 1 &amp;&amp; maxAttempts &gt;= attempt</c>).
+        /// (<c>attempt &gt;= 1 &amp;&amp; maxAttempts &gt;= 1 &amp;&amp; maxAttempts &gt;= attempt</c>).
         /// </summary>
         /// <remarks>
         /// Parsing uses <see cref="NumberStyles.None"/> + <see cref="CultureInfo.InvariantCulture"/>
@@ -60,7 +60,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return null;
             }
 
-            if (attempt < 1 || maxAttempts < attempt)
+            if (attempt < 1 || maxAttempts < 1 || maxAttempts < attempt)
             {
                 return null;
             }

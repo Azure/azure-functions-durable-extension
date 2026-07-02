@@ -1083,10 +1083,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
 
                 // Propagate the original TaskScheduledEvent.Tags onto the aggregated event so
-                // downstream client-side consumers walking the returned history (dashboards,
-                // analyzers, custom inspection tooling) can still see `dt.retry.*` tags after
-                // the host folds TaskScheduled events away. Only attach when non-empty to keep
-                // the response shape unchanged for the common no-tags case.
+                // downstream consumers walking the returned history can still see `dt.retry.*`
+                // tags after the host folds TaskScheduled events away. Only attach when non-empty
+                // to keep the response shape unchanged for the common no-tags case.
                 if (taskScheduledData.Tags != null && taskScheduledData.Tags.HasValues)
                 {
                     historyItem["Tags"] = taskScheduledData.Tags;
@@ -1277,8 +1276,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             /// <summary>
             /// Optional Tags JObject copied from the original TaskScheduledEvent.
             /// Propagated by AddScheduledEventDataAndAggregate onto the aggregated
-            /// TaskCompleted / TaskFailed event so downstream client-side consumers
-            /// (dashboards, analyzers, custom inspection tooling) can still see
+            /// TaskCompleted / TaskFailed event so downstream consumers can still see
             /// `dt.retry.*` tags after TaskScheduled events are folded away in the
             /// host's response post-processing. Null when the originating
             /// TaskScheduledEvent had no Tags (the common no-retry-policy case).

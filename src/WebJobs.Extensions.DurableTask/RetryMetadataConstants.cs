@@ -6,8 +6,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// <summary>
     /// Reserved constants for the native activity retry visibility feature.
     /// These names are part of the cross-stack wire contract and must not be
-    /// renamed post-release without a coordinated change across all consumers of these tags
-    /// (history producers, host bindings, telemetry exporters, and status-history consumers).
+    /// renamed post-release without a coordinated change across all consumers of these tags.
     /// </summary>
     internal static class RetryMetadataConstants
     {

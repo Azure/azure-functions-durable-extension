@@ -10,10 +10,16 @@ using DurableTask.Core.History;
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     /// <summary>
-    /// Walks an orchestration's history at completion time and emits per-instance
-    /// retry aggregate attributes (<c>durabletask.retry_attempt_count</c>,
-    /// <c>durabletask.retry_max_attempts_reached</c>) on the current diagnostic
-    /// <see cref="Activity"/>.
+    /// Walks an orchestration's history at completion time and emits two per-instance
+    /// retry aggregate attributes on the current diagnostic <see cref="Activity"/>:
+    /// <list type="bullet">
+    ///   <item><c>durabletask.retry_attempt_count</c> — total retry attempts (scheduled events
+    ///   with Attempt &gt; 1) summed across all activities in the instance. This is the
+    ///   instance-level rollup; the per-activity <c>durabletask.attempt</c> span attribute
+    ///   reports a single invocation's attempt number.</item>
+    ///   <item><c>durabletask.retry_max_attempts_reached</c> — true if any failed activity
+    ///   reached its retry-policy ceiling (Attempt == MaxAttempts).</item>
+    /// </list>
     ///
     /// MUST be called only on terminal-state turns (Completed / Failed / Terminated /
     /// ContinuedAsNew). Calling on every replay turn would produce repeated, partial-history
