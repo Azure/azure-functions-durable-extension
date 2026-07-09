@@ -696,7 +696,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 candidate = e.InnerException.Message;
             }
-            else if (e.Message != null && e.Message.StartsWith("Result:", StringComparison.Ordinal))
+            else if (e.Message.StartsWith("Result:", StringComparison.Ordinal))
             {
                 candidate = e.Message;
             }
