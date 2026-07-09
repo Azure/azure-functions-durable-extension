@@ -13,6 +13,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.AzureStorage;
 using DurableTask.Core;
+using DurableTask.Core.Command;
 using DurableTask.Core.Exceptions;
 using DurableTask.Core.History;
 using DurableTask.Core.Middleware;
@@ -710,16 +711,38 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </summary>
         /// <param name="dispatchContext">A property bag containing useful DTFx context.</param>
         /// <param name="next">The handler for running the next middleware in the pipeline.</param>
-        private Task ActivityMiddleware(DispatchMiddlewareContext dispatchContext, Func<Task> next)
+        private async Task ActivityMiddleware(DispatchMiddlewareContext dispatchContext, Func<Task> next)
         {
-            if (dispatchContext.GetProperty<TaskActivity>() is TaskActivityShim shim)
+            TaskActivityShim shim = dispatchContext.GetProperty<TaskActivity>() as TaskActivityShim;
+            TaskScheduledEvent scheduledEvent = dispatchContext.GetProperty<TaskScheduledEvent>();
+
+            if (shim != null)
             {
-                TaskScheduledEvent @event = dispatchContext.GetProperty<TaskScheduledEvent>();
-                shim.SetTaskEventId(@event?.EventId ?? -1);
+                shim.SetTaskEventId(scheduledEvent?.EventId ?? -1);
             }
 
-            // Move to the next stage of the DTFx pipeline to trigger the activity shim.
-            return next();
+            try
+            {
+                // Move to the next stage of the DTFx pipeline to trigger the activity shim.
+                await next();
+            }
+            catch (TaskFailureException) when (shim?.StructuredFailureDetails != null)
+            {
+                // The shim extracted a structured TaskFailureDetails payload from the out-of-proc
+                // worker's exception. Override the dispatch result so DTFx persists the
+                // FailureDetails on the TaskFailedEvent, mirroring what OutOfProcMiddleware does
+                // for the new-protocol.
+                FailureDetails failureDetails = shim.StructuredFailureDetails;
+                dispatchContext.SetProperty(new ActivityExecutionResult
+                {
+                    ResponseEvent = new TaskFailedEvent(
+                        eventId: -1,
+                        taskScheduledId: scheduledEvent?.EventId ?? -1,
+                        reason: $"Activity function '{shim.ActivityName}' failed with an unhandled exception.",
+                        details: null,
+                        failureDetails),
+                });
+            }
         }
 
         /// <summary>
@@ -818,6 +841,28 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     // This will abort the execution and cause the message to go back onto the queue for re-processing
                     throw new SessionAbortedException(
                         $"An internal error occurred while attempting to execute '{context.FunctionName}'.", result.Exception);
+                }
+            }
+
+            // If an out-of-proc worker supplied structured failure details for an uncaught
+            // sub-orchestration/activity failure that propagated out of the orchestrator, attach
+            // them to the orchestration completion action so DTFx persists them on the resulting
+            // ExecutionCompleted / SubOrchestrationInstanceFailed event. This lets a calling parent
+            // orchestration reconstruct the full InnerFailure chain (including custom Properties).
+            // The completion action's FailureDetails is publicly settable and is read by the DTFx
+            // dispatcher after this middleware returns, so mutating it here is safe and works
+            // regardless of the configured ErrorPropagationMode. No-op for all other workers/paths.
+            if (context.OrchestrationFailureDetails != null)
+            {
+                OrchestratorExecutionResult executionResult = dispatchContext.GetProperty<OrchestratorExecutionResult>();
+                if (executionResult?.Actions != null)
+                {
+                    foreach (OrchestrationCompleteOrchestratorAction completeAction in executionResult.Actions
+                        .OfType<OrchestrationCompleteOrchestratorAction>()
+                        .Where(a => a.OrchestrationStatus == OrchestrationStatus.Failed && a.FailureDetails == null))
+                    {
+                        completeAction.FailureDetails = context.OrchestrationFailureDetails;
+                    }
                 }
             }
 
