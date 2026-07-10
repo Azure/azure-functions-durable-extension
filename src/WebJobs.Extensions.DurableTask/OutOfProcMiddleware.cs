@@ -683,6 +683,34 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 || (exception?.InnerException is FileNotFoundException fnfe && fnfe.Message.Contains(AssemblyNotLoadedMessage, StringComparison.Ordinal));
         }
 
+        /// <summary>
+        /// Attempts to parse a structured <see cref="FailureDetails"/> (including any custom
+        /// <c>Properties</c>) from an out-of-proc worker exception whose message contains a
+        /// serialized <c>TaskFailureDetails</c> JSON payload. Returns <c>null</c> when no
+        /// structured payload is present so callers can fall back to legacy behavior.
+        /// </summary>
+        internal static FailureDetails? TryGetStructuredFailureDetails(Exception e)
+        {
+            string? candidate = null;
+            if (e.InnerException != null && e.InnerException.Message.StartsWith("Result:", StringComparison.Ordinal))
+            {
+                candidate = e.InnerException.Message;
+            }
+            else if (e.Message.StartsWith("Result:", StringComparison.Ordinal))
+            {
+                candidate = e.Message;
+            }
+
+            if (candidate != null
+                && TryGetRpcExceptionFields(candidate, out string? exception, out string? _)
+                && TryExtractSerializedFailureDetailsFromException(exception, out FailureDetails? details))
+            {
+                return details;
+            }
+
+            return null;
+        }
+
         private static FailureDetails GetFailureDetails(Exception e, out bool fromSerializedException)
         {
             fromSerializedException = false;

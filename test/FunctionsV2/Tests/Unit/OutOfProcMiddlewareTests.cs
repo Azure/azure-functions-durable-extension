@@ -143,6 +143,81 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 () => middleware.CallActivityAsync(dispatchContext, () => Task.CompletedTask));
         }
 
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void TryGetStructuredFailureDetails_StructuredPayload_ReturnsFailureDetailsWithProperties()
+        {
+            // Arrange: an out-of-proc worker exception whose message embeds a serialized
+            // TaskFailureDetails JSON payload (including custom Properties), in the
+            // "Result: ...\nException: {json}\nStack: ..." format produced by the host.
+            const string serializedFailureDetails =
+                """{"errorType":"BusinessValidationException","errorMessage":"Business logic validation failed","stackTrace":"at BusinessActivity.Run()","isNonRetriable":false,"properties":{"StringProperty":"validation-error-123","IntProperty":100,"NullProperty":null}}""";
+            var exception = new Exception(
+                $"Result: failure\nException: {serializedFailureDetails}\nStack: at Worker.Invoke()");
+
+            // Act
+            FailureDetails details = OutOfProcMiddleware.TryGetStructuredFailureDetails(exception);
+
+            // Assert: the structured error type, message, and custom properties are parsed.
+            Assert.NotNull(details);
+            Assert.Equal("BusinessValidationException", details.ErrorType);
+            Assert.Equal("Business logic validation failed", details.ErrorMessage);
+            Assert.NotNull(details.Properties);
+            Assert.Equal("validation-error-123", details.Properties["StringProperty"]);
+
+            // JSON numbers are parsed as protobuf number values, which surface as doubles.
+            Assert.Equal(100d, Assert.IsType<double>(details.Properties["IntProperty"]));
+
+            // A JSON null property is preserved as a null value (not dropped).
+            Assert.True(details.Properties.ContainsKey("NullProperty"));
+            Assert.Null(details.Properties["NullProperty"]);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void TryGetStructuredFailureDetails_PayloadInInnerException_ReturnsFailureDetails()
+        {
+            // Arrange: the serialized payload is carried by the inner exception, which is the
+            // common shape when the host wraps the worker failure in an outer exception.
+            const string serializedFailureDetails =
+                """{"errorType":"BusinessValidationException","errorMessage":"Business logic validation failed"}""";
+            var exception = new Exception(
+                "Function invocation failed.",
+                new Exception($"Result: failure\nException: {serializedFailureDetails}\nStack: at Worker.Invoke()"));
+
+            // Act
+            FailureDetails details = OutOfProcMiddleware.TryGetStructuredFailureDetails(exception);
+
+            // Assert
+            Assert.NotNull(details);
+            Assert.Equal("BusinessValidationException", details.ErrorType);
+            Assert.Equal("Business logic validation failed", details.ErrorMessage);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void TryGetStructuredFailureDetails_NonResultMessage_ReturnsNull()
+        {
+            // Arrange: an exception that does not carry an RPC "Result:" payload.
+            var exception = new InvalidOperationException("Some arbitrary failure that is not an RPC result.");
+
+            // Act + Assert: callers should fall back to legacy behavior.
+            Assert.Null(OutOfProcMiddleware.TryGetStructuredFailureDetails(exception));
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void TryGetStructuredFailureDetails_NonJsonExceptionPayload_ReturnsNull()
+        {
+            // Arrange: an RPC "Result:" message whose exception payload is a plain string
+            // rather than a serialized TaskFailureDetails JSON object.
+            var exception = new Exception(
+                "Result: failure\nException: System.ApplicationException: Kah-BOOOOM!!\nStack: at Worker.Invoke()");
+
+            // Act + Assert: no structured payload, so null is returned.
+            Assert.Null(OutOfProcMiddleware.TryGetStructuredFailureDetails(exception));
+        }
+
         public static IEnumerable<object[]> PlatformLevelExceptions()
         {
             // FunctionTimeoutException (top-level)

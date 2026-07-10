@@ -114,6 +114,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal ExceptionDispatchInfo OrchestrationException { get; set; }
 
+        /// <summary>
+        /// Structured failure details supplied by an out-of-proc worker when an uncaught
+        /// sub-orchestration or activity failure propagates out of the
+        /// orchestrator. Carries the full <c>InnerFailure</c> chain (including any custom
+        /// <c>Properties</c>) so <see cref="DurableTaskExtension.OrchestrationMiddleware"/> can attach
+        /// it to the orchestration completion action, allowing a calling parent orchestration to
+        /// reconstruct the failure. <c>null</c> for all other workers/paths, leaving behavior unchanged.
+        /// </summary>
+        internal FailureDetails OrchestrationFailureDetails { get; set; }
+
         internal bool IsOutputSet => this.serializedOutput != null;
 
         private string OrchestrationName => this.FunctionName;
