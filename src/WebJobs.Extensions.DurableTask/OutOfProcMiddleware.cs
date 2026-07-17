@@ -817,14 +817,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             try
             {
-                if (exception[0] != '{')
+                // Most out-of-proc workers (for example .NET isolated and Node) report the serialized
+                // TaskFailureDetails JSON payload verbatim, so the message starts with '{'. The Java
+                // worker, however, prefixes the message with "{ExceptionType}: " (via Apache Commons
+                // ExceptionUtils.getRootCauseMessage), so we also look for the first '{' and attempt to
+                // parse from there. If the located text isn't a valid TaskFailureDetails payload, parsing
+                // throws and we fall back to legacy handling below.
+                int jsonStart = exception.Length > 0 && exception[0] == '{' ? 0 : exception.IndexOf('{');
+                if (jsonStart < 0)
                 {
                     details = null;
                     return false;
                 }
 
-                int newlineIndex = exception.IndexOf('\n');
-                string serializedMessage = newlineIndex < 0 ? exception : exception.Substring(0, newlineIndex).Trim();
+                int newlineIndex = exception.IndexOf('\n', jsonStart);
+                string serializedMessage = newlineIndex < 0
+                    ? exception.Substring(jsonStart)
+                    : exception.Substring(jsonStart, newlineIndex - jsonStart);
+                serializedMessage = serializedMessage.Trim();
 
                 P.TaskFailureDetails? taskFailureDetails = JsonParser.Default.Parse<P.TaskFailureDetails>(serializedMessage);
                 if (taskFailureDetails != null)
