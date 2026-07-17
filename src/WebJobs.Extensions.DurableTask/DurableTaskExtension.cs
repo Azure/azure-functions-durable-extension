@@ -167,11 +167,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.telemetryActivator = telemetryActivator;
             this.telemetryActivator?.Initialize(logger);
 
-            // Starting with .NET isolated and Java, we have a more efficient out-of-process
-            // function invocation protocol. Other languages will use the existing protocol.
+            // The gRPC-based out-of-process invocation protocol (MiddlewarePassthrough) is the more
+            // efficient protocol used by the compiled / newer-SDK runtimes: .NET isolated, Java, the
+            // native worker (e.g. Go), and custom handlers. The remaining script languages (Python,
+            // Node.js, PowerShell) start on the legacy HTTP protocol below and may upgrade to gRPC
+            // during function indexing if their metadata requests it (see ConfigureForGrpcProtocol).
             WorkerRuntimeType runtimeType = this.PlatformInformationService.GetWorkerRuntimeType();
             if (runtimeType == WorkerRuntimeType.DotNetIsolated ||
                 runtimeType == WorkerRuntimeType.Java ||
+                runtimeType == WorkerRuntimeType.Native ||
+                runtimeType == WorkerRuntimeType.Golang ||
                 runtimeType == WorkerRuntimeType.Custom)
             {
                 this.ConfigureForGrpcProtocol();
@@ -262,6 +267,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         // dotnet-isolated and java use a gRPC server instead of the HTTP server
                         WorkerRuntimeType.DotNetIsolated => false,
                         WorkerRuntimeType.Java => false,
+
+                        // the native worker (e.g. golang) uses the gRPC protocol, so it never starts the HTTP RPC server
+                        WorkerRuntimeType.Native => false,
+                        WorkerRuntimeType.Golang => false,
 
                         // everything else - assume the HTTP server
                         WorkerRuntimeType.Python => true, // This method will only be called for Python if we already know that we are using the HTTP protocol

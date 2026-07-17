@@ -78,6 +78,50 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
             Assert.Equal(25, settings.MaxStorageOperationConcurrency);
         }
 
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(WorkerRuntimeType.Native)]
+        [InlineData(WorkerRuntimeType.Golang)]
+        public void GrpcRuntimes_UseSeparateQueueForEntityWorkItems(WorkerRuntimeType runtimeType)
+        {
+            var clientProviderFactory = new TestStorageServiceClientProviderFactory();
+            var mockOptions = new OptionsWrapper<DurableTaskOptions>(new DurableTaskOptions());
+            var nameResolver = new Mock<INameResolver>().Object;
+            var factory = new AzureStorageDurabilityProviderFactory(
+                mockOptions,
+                clientProviderFactory,
+                nameResolver,
+                NullLoggerFactory.Instance,
+                TestHelpers.GetMockPlatformInformationService(language: runtimeType));
+
+            var settings = factory.GetAzureStorageOrchestrationServiceSettings();
+
+            // The native worker runtimes use the gRPC protocol, which requires a separate
+            // queue for entity work items (matching .NET isolated / Java behavior).
+            Assert.True(settings.UseSeparateQueueForEntityWorkItems);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void InProcRuntime_DoesNotUseSeparateQueueForEntityWorkItems()
+        {
+            var clientProviderFactory = new TestStorageServiceClientProviderFactory();
+            var mockOptions = new OptionsWrapper<DurableTaskOptions>(new DurableTaskOptions());
+            var nameResolver = new Mock<INameResolver>().Object;
+            var factory = new AzureStorageDurabilityProviderFactory(
+                mockOptions,
+                clientProviderFactory,
+                nameResolver,
+                NullLoggerFactory.Instance,
+                TestHelpers.GetMockPlatformInformationService(language: WorkerRuntimeType.DotNet));
+
+            var settings = factory.GetAzureStorageOrchestrationServiceSettings();
+
+            // The in-process .NET runtime keeps the shared queue (this default is flipped
+            // to true only for the gRPC-based runtimes).
+            Assert.False(settings.UseSeparateQueueForEntityWorkItems);
+        }
+
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void ConsumptionDefaultsAreNotAlwaysApplied()

@@ -77,6 +77,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             WorkerRuntimeType runtimeType = platformInfo.GetWorkerRuntimeType();
             if (runtimeType == WorkerRuntimeType.DotNetIsolated ||
                 runtimeType == WorkerRuntimeType.Java ||
+                runtimeType == WorkerRuntimeType.Native ||
+                runtimeType == WorkerRuntimeType.Golang ||
                 runtimeType == WorkerRuntimeType.Custom)
             {
                 this.useSeparateQueueForEntityWorkItems = true;
