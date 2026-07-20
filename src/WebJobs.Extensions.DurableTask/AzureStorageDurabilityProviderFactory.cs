@@ -15,6 +15,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private const string LoggerName = "Host.Triggers.DurableTask.AzureStorage";
         internal const string ProviderName = "AzureStorage";
 
+        // When set, this environment variable overrides the host.json WorkerDispatchMode option.
+        // This lets every pod in a deployment share the same host.json while selecting its dispatch
+        // mode via a single per-deployment environment variable.
+        internal const string WorkerDispatchModeEnvironmentVariable = "DURABLE_WORKER_DISPATCH_MODE";
+
         private readonly DurableTaskOptions options;
         private readonly IStorageServiceClientProviderFactory clientProviderFactory;
         private readonly AzureStorageOptions azureStorageOptions;
@@ -226,6 +231,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 PartitionTableOperationTimeout = this.azureStorageOptions.PartitionTableOperationTimeout,
                 QueueClientMessageEncoding = this.azureStorageOptions.QueueClientMessageEncoding,
                 UseInstanceTableEtag = this.azureStorageOptions.UseInstanceTableEtag,
+                WorkerDispatchMode = this.ResolveWorkerDispatchMode(),
             };
 
             if (this.inConsumption)
@@ -253,6 +259,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public void SetUseSeparateQueueForEntityWorkItems(bool newValue)
         {
             this.useSeparateQueueForEntityWorkItems = newValue;
+        }
+
+        // Resolves the effective worker dispatch mode with the following precedence:
+        // DURABLE_WORKER_DISPATCH_MODE environment variable > host.json WorkerDispatchMode option > Both.
+        private WorkerDispatchMode ResolveWorkerDispatchMode()
+        {
+            string envValue = this.nameResolver.Resolve(WorkerDispatchModeEnvironmentVariable);
+            if (string.IsNullOrWhiteSpace(envValue))
+            {
+                return this.azureStorageOptions.WorkerDispatchMode;
+            }
+
+            if (Enum.TryParse(envValue.Trim(), ignoreCase: true, out WorkerDispatchMode mode)
+                && Enum.IsDefined(typeof(WorkerDispatchMode), mode))
+            {
+                return mode;
+            }
+
+            throw new InvalidOperationException(
+                $"The value '{envValue}' for the {WorkerDispatchModeEnvironmentVariable} environment variable is invalid. " +
+                $"Valid values are: {string.Join(", ", Enum.GetNames(typeof(WorkerDispatchMode)))}.");
         }
     }
  }
