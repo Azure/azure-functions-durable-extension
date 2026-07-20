@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using DurableTask.AzureStorage;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests;
@@ -238,6 +239,127 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
             var provider = factory.GetDurabilityProvider();
 
             Assert.Equal("Storage", provider.ConnectionName);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void DefaultWorkerDispatchMode_IsBoth()
+        {
+            var clientProviderFactory = new TestStorageServiceClientProviderFactory();
+            var mockOptions = new OptionsWrapper<DurableTaskOptions>(new DurableTaskOptions());
+            var nameResolver = new Mock<INameResolver>().Object;
+            var factory = new AzureStorageDurabilityProviderFactory(
+                mockOptions,
+                clientProviderFactory,
+                nameResolver,
+                NullLoggerFactory.Instance,
+                TestHelpers.GetMockPlatformInformationService());
+
+            var settings = factory.GetAzureStorageOrchestrationServiceSettings();
+
+            Assert.Equal(WorkerDispatchMode.Both, settings.WorkerDispatchMode);
+        }
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData("Both", WorkerDispatchMode.Both)]
+        [InlineData("Orchestrator", WorkerDispatchMode.Orchestrator)]
+        [InlineData("Activity", WorkerDispatchMode.Activity)]
+        public void HostJsonWorkerDispatchMode_IsMapped(string hostJsonValue, WorkerDispatchMode expected)
+        {
+            var clientProviderFactory = new TestStorageServiceClientProviderFactory();
+            var options = new DurableTaskOptions();
+            options.StorageProvider.Add("WorkerDispatchMode", hostJsonValue);
+
+            var mockOptions = new OptionsWrapper<DurableTaskOptions>(options);
+            var nameResolver = new Mock<INameResolver>().Object;
+            var factory = new AzureStorageDurabilityProviderFactory(
+                mockOptions,
+                clientProviderFactory,
+                nameResolver,
+                NullLoggerFactory.Instance,
+                TestHelpers.GetMockPlatformInformationService());
+
+            var settings = factory.GetAzureStorageOrchestrationServiceSettings();
+
+            Assert.Equal(expected, settings.WorkerDispatchMode);
+        }
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData("Activity", WorkerDispatchMode.Activity)]
+        [InlineData("activity", WorkerDispatchMode.Activity)]
+        [InlineData("ORCHESTRATOR", WorkerDispatchMode.Orchestrator)]
+        public void EnvironmentVariable_OverridesHostJson_CaseInsensitively(string envValue, WorkerDispatchMode expected)
+        {
+            var clientProviderFactory = new TestStorageServiceClientProviderFactory();
+            var options = new DurableTaskOptions();
+
+            // host.json requests Orchestrator, but the environment variable must win.
+            options.StorageProvider.Add("WorkerDispatchMode", "Orchestrator");
+
+            var mockOptions = new OptionsWrapper<DurableTaskOptions>(options);
+            var nameResolver = new SimpleNameResolver(new Dictionary<string, string>()
+            {
+                { "DURABLE_WORKER_DISPATCH_MODE", envValue },
+            });
+
+            var factory = new AzureStorageDurabilityProviderFactory(
+                mockOptions,
+                clientProviderFactory,
+                nameResolver,
+                NullLoggerFactory.Instance,
+                TestHelpers.GetMockPlatformInformationService());
+
+            var settings = factory.GetAzureStorageOrchestrationServiceSettings();
+
+            Assert.Equal(expected, settings.WorkerDispatchMode);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void EnvironmentVariable_AppliesWhenHostJsonUnset()
+        {
+            var clientProviderFactory = new TestStorageServiceClientProviderFactory();
+            var mockOptions = new OptionsWrapper<DurableTaskOptions>(new DurableTaskOptions());
+            var nameResolver = new SimpleNameResolver(new Dictionary<string, string>()
+            {
+                { "DURABLE_WORKER_DISPATCH_MODE", "Orchestrator" },
+            });
+
+            var factory = new AzureStorageDurabilityProviderFactory(
+                mockOptions,
+                clientProviderFactory,
+                nameResolver,
+                NullLoggerFactory.Instance,
+                TestHelpers.GetMockPlatformInformationService());
+
+            var settings = factory.GetAzureStorageOrchestrationServiceSettings();
+
+            Assert.Equal(WorkerDispatchMode.Orchestrator, settings.WorkerDispatchMode);
+        }
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData("Orchestratorr")]
+        [InlineData("99")]
+        public void InvalidEnvironmentVariable_Throws(string envValue)
+        {
+            var clientProviderFactory = new TestStorageServiceClientProviderFactory();
+            var mockOptions = new OptionsWrapper<DurableTaskOptions>(new DurableTaskOptions());
+            var nameResolver = new SimpleNameResolver(new Dictionary<string, string>()
+            {
+                { "DURABLE_WORKER_DISPATCH_MODE", envValue },
+            });
+
+            var factory = new AzureStorageDurabilityProviderFactory(
+                mockOptions,
+                clientProviderFactory,
+                nameResolver,
+                NullLoggerFactory.Instance,
+                TestHelpers.GetMockPlatformInformationService());
+
+            Assert.Throws<InvalidOperationException>(() => factory.GetAzureStorageOrchestrationServiceSettings());
         }
     }
 }

@@ -258,6 +258,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public bool UseInstanceTableEtag { get; set; } = false;
 
         /// <summary>
+        /// Gets or sets which kinds of work this worker instance dispatches, allowing orchestrations
+        /// (including entities) and activities to be scaled independently across separate deployments
+        /// that share the same task hub.
+        /// </summary>
+        /// <remarks>
+        /// The default is <see cref="WorkerDispatchMode.Both"/>, which preserves the historical behavior.
+        /// This value can be overridden per deployment via the <c>DURABLE_WORKER_DISPATCH_MODE</c> environment
+        /// variable, which takes precedence over this host.json setting.
+        /// </remarks>
+        public WorkerDispatchMode WorkerDispatchMode { get; set; } = WorkerDispatchMode.Both;
+
+        /// <summary>
         /// Throws an exception if the provided hub name violates any naming conventions for the storage provider.
         /// </summary>
         public void ValidateHubName(string hubName)
