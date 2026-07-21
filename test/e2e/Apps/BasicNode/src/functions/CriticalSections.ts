@@ -67,7 +67,6 @@ const lockedTransfer: OrchestrationHandler = function* (context: OrchestrationCo
     context.df.signalEntity(src, "set", 100);
     context.df.signalEntity(dst, "set", 0);
 
-    // @ts-expect-error context.df.lock ships in the next durable-functions release.
     const lock = yield context.df.lock(src, dst);
     try {
         const fromBalance: number = yield context.df.callEntity(src, "get");
@@ -100,11 +99,9 @@ const nestedLockViolation: OrchestrationHandler = function* (context: Orchestrat
     const eA = new df.EntityId(accountEntityName, "A");
     const eB = new df.EntityId(accountEntityName, "B");
 
-    // @ts-expect-error context.df.lock ships in the next durable-functions release.
     const lock = yield context.df.lock(eA);
     try {
         // This call must throw LockingRulesViolationError synchronously.
-        // @ts-expect-error context.df.lock ships in the next durable-functions release.
         yield context.df.lock(eB);
         return "reached-after-inner-lock"; // should not be returned
     } finally {
@@ -127,7 +124,6 @@ const HOLD_LOCK_SECONDS = 5;
 const timedLockHold: OrchestrationHandler = function* (context: OrchestrationContext) {
     const e = new df.EntityId(accountEntityName, "TimedHoldShared");
 
-    // @ts-expect-error context.df.lock ships in the next durable-functions release.
     const lock = yield context.df.lock(e);
     try {
         const wakeAt = new Date(context.df.currentUtcDateTime.getTime() + HOLD_LOCK_SECONDS * 1000);
