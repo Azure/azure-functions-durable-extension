@@ -161,7 +161,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// overwritten depends on the existing instance's runtime status and on the
         /// <see cref="DurableTaskOptions.OverridableExistingInstanceStates"/> option. By default
         /// (<see cref="OverridableStates.NonRunningStates"/>), the existing instance is only overwritten when it is in a
-        /// terminated, failed, or completed state; if it is still pending, running, suspended, or continued-as-new, the
+        /// terminated, failed, canceled, or completed state; if it is still pending, running, suspended, or continued-as-new, the
         /// call fails rather than silently replacing it. Set the option to <see cref="OverridableStates.AnyState"/> to
         /// always overwrite the existing instance.
         /// </remarks>
