@@ -120,7 +120,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="orchestratorFunctionName">The name of the orchestrator function to start.</param>
         /// <param name="instanceId">The ID to use for the new orchestration instance.</param>
         /// <returns>A task that completes when the orchestration is started. The task contains the instance id of the started
-        /// orchestratation instance.</returns>
+        /// orchestration instance.</returns>
         /// <exception cref="ArgumentException">
         /// The specified function does not exist, is disabled, or is not an orchestrator function.
         /// </exception>
@@ -135,7 +135,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="input">JSON-serializeable input value for the orchestrator function.</param>
         /// <typeparam name="T">The type of the input value for the orchestrator function.</typeparam>
         /// <returns>A task that completes when the orchestration is started. The task contains the instance id of the started
-        /// orchestratation instance.</returns>
+        /// orchestration instance.</returns>
         /// <exception cref="ArgumentException">
         /// The specified function does not exist, is disabled, or is not an orchestrator function.
         /// </exception>
@@ -156,7 +156,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="input">JSON-serializable input value for the orchestrator function.</param>
         /// <typeparam name="T">The type of the input value for the orchestrator function.</typeparam>
         /// <returns>A task that completes when the orchestration is started. The task contains the instance id of the started
-        /// orchestratation instance.</returns>
+        /// orchestration instance.</returns>
         /// <exception cref="ArgumentException">
         /// The specified function does not exist, is disabled, or is not an orchestrator function.
         /// </exception>
@@ -334,7 +334,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="restartWithNewInstanceId">Optional parameter that configures if restarting an orchestration will use a new instanceId or if it will
         /// reuse the old instanceId. Defaults to <c>true</c>.</param>
         /// <returns>A task that completes when the orchestration is started. The task contains the instance id of the started
-        /// orchestratation instance.</returns>
+        /// orchestration instance.</returns>
         Task<string> RestartAsync(string instanceId, bool restartWithNewInstanceId = true);
 
         /// <summary>
