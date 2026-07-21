@@ -6,6 +6,9 @@
     "start": "func start",
     "test": "echo \"No tests yet...\""
   },
+  "engines": {
+    "node": ">=20.0"
+  },
   "dependencies": {
     "durable-functions": "^3.4.0",
     "p-limit": "^3.1.0"

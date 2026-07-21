@@ -6,6 +6,9 @@
     "start": "func start",
     "test": "echo \"No tests yet...\""
   },
+  "engines": {
+    "node": ">=20.0"
+  },
   "dependencies": {
     "@azure/functions": "^4.16.2",
     "durable-functions": "^3.4.0"
