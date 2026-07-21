@@ -15,9 +15,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
 
         public ISymbol DeclarationSymbol { get; set; }
 
-        public IList<InvocationExpressionSyntax> Invocations { get; set; }
+        public IList<InvocationExpressionSyntax> Invocations { get; set; } = new List<InvocationExpressionSyntax>();
 
-        public HashSet<MethodInformation> Parents { get; set; }
+        public HashSet<MethodInformation> Parents { get; set; } = new HashSet<MethodInformation>();
 
         public override bool Equals(object obj)
         {
