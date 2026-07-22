@@ -48,7 +48,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener
                     hubName: this.config.Options.HubName,
                     functionName: this.activityName,
                     instanceId: context.OrchestrationInstance?.InstanceId ?? string.Empty,
-                    message: $"Activity function '{this.activityName}' was scheduled but is disabled (registered without an active listener). Failing the activity deterministically instead of retrying indefinitely.");
+                    message: $"Activity function '{this.activityName}' was scheduled but is disabled. Failing the activity.");
             }
 
             string message = this.isDisabled

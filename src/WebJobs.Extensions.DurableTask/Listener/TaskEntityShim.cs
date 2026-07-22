@@ -316,13 +316,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             async Task ExecuteOperationsInBatch()
             {
-                // Only take the single-call out-of-proc batch path for a genuinely runnable out-of-proc
-                // entity (non-null executor). When the executor is null — the entity is registered/indexed
-                // but has no active listener (e.g. disabled but still deployed) — the caller has set a
-                // throwing invocation callback; that callback throws synchronously, so routing it through
-                // ExecuteOutOfProcBatch would bubble the exception out of the batch and reintroduce the
-                // transient failure / poison loop. Instead we always take the per-operation (in-proc) path
-                // for an unavailable entity, so each operation fails deterministically.
+                // Only use the single-call out-of-proc batch path for a runnable out-of-proc entity.
+                // For an unavailable entity (disabled but still deployed, or deleted/renamed)
+                // GetFunctionInfo() is null, so functionInfo?.Executor is null and we fall through to
+                // the per-operation in-proc path. That matters because for the unavailable case
+                // EntityMiddleware sets an invocation callback that throws synchronously: the in-proc
+                // path invokes it inside a per-operation try/catch and records a deterministic
+                // application error, whereas ExecuteOutOfProcBatch would let the synchronous throw
+                // bubble out of the batch and be recorded as an internal error (aborting and retrying
+                // the work item — the poison loop this guards against). The Executor null-check also
+                // defends against a registered-but-null-executor RegisteredFunctionInfo.
                 RegisteredFunctionInfo functionInfo = this.GetFunctionInfo();
                 if (functionInfo?.Executor != null && functionInfo.IsOutOfProc)
                 {

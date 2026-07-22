@@ -1214,7 +1214,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.Options.HubName,
                     entityContext.Name,
                     entityContext.InstanceId,
-                    $"The entity function '{entityContext.Name}' is disabled or does not exist. Failing {entityShim.OperationBatch.Count} operation(s) deterministically instead of retrying indefinitely.");
+                    $"The entity function '{entityContext.Name}' is disabled or does not exist. Failing {entityShim.OperationBatch.Count} operation(s).");
 
                 var failureMessage = this.GetInvalidEntityFunctionMessage(entityContext.Name);
                 entityShim.SetFunctionInvocationCallback(() => throw new FunctionFailedException(failureMessage));

@@ -93,6 +93,46 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void DisabledEntity_IsTreatedAsUnavailableByClassicDispatch()
+        {
+            // The classic (in-proc / HTTP-protocol) entity dispatch path in EntityMiddleware treats an
+            // entity as unavailable when GetEntityInfo(name)?.Executor is null, which is exactly the
+            // state of a disabled-but-still-deployed entity: the binding provider registers it during
+            // indexing (null executor) and the disabled function's listener never replaces it. That
+            // signal drives the deterministic per-operation failure path in TaskEntityShim.ExecuteBatch
+            // instead of a null-executor dereference / poison loop. The full dispatch is covered
+            // end-to-end by the Node/Python entity E2E tests.
+            // See https://github.com/Azure/azure-functions-durable-extension/issues/3471.
+            var extension = CreateExtension();
+
+            // Disabled via a null RegisteredFunctionInfo — how the binding provider registers a
+            // disabled entity during indexing.
+            extension.RegisterEntity(new FunctionName("DisabledEntityNullInfo"), entityInfo: null);
+
+            // Defense-in-depth: a non-null info whose executor is null must also be treated as unavailable.
+            extension.RegisterEntity(new FunctionName("DisabledEntityNullExecutor"), new RegisteredFunctionInfo(executor: null!, isOutOfProc: true));
+
+            // A normally registered entity is available.
+            var mockExecutor = new Mock<ITriggeredFunctionExecutor>();
+            extension.RegisterEntity(new FunctionName("ActiveEntity"), new RegisteredFunctionInfo(mockExecutor.Object, isOutOfProc: true));
+
+            // The unavailable entities have no active executor (EntityMiddleware's functionUnavailable check).
+            Assert.Null(extension.GetEntityInfo(new FunctionName("DisabledEntityNullInfo"))?.Executor);
+
+            RegisteredFunctionInfo nullExecutorInfo = extension.GetEntityInfo(new FunctionName("DisabledEntityNullExecutor"));
+            Assert.NotNull(nullExecutorInfo);
+            Assert.Null(nullExecutorInfo.Executor);
+            Assert.False(nullExecutorInfo.HasActiveListener);
+
+            // The active entity is runnable.
+            RegisteredFunctionInfo activeInfo = extension.GetEntityInfo(new FunctionName("ActiveEntity"));
+            Assert.NotNull(activeInfo);
+            Assert.NotNull(activeInfo.Executor);
+            Assert.True(activeInfo.HasActiveListener);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void GetInvalidEntityFunctionMessage_ListsRegisteredEntities_WhenNoOrchestratorsExist()
         {
             // Guards the diagnosability of the disabled-entity failure path: the message must reflect

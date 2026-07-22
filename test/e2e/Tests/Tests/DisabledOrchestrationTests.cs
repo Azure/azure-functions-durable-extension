@@ -77,12 +77,15 @@ public class DisabledOrchestrationTests
     // poison-looping the entity work item forever.
     //
     // Runs on the languages whose durable SDK supports entities (dotnet-isolated, Node, Python).
-    // PowerShell and Java are skipped because durable entities are not implemented in those SDKs, and
-    // MSSQL/DTS are skipped because durable entities are not supported on those backends — the same
-    // skips as ErrorHandlingTests.OrchestratorWithUncaughtEntityException_ShouldFail.
+    // PowerShell and Java are skipped because durable entities are not implemented in those SDKs.
+    // MSSQL is skipped because durable entities are not supported on that backend. DTS *does* support
+    // entities, but — like the activity test above and
+    // ErrorHandlingTests.OrchestratorWithUncaughtEntityException_ShouldFail — this test asserts on the
+    // failure being surfaced in the orchestration status output, which DTS does not do reliably until
+    // the referenced bug is fixed.
     [Fact]
     [Trait("MSSQL", "Skip")] // Durable entities are not supported on the MSSQL backend
-    [Trait("DTS", "Skip")] // DTS will fail this test unless this bug is fixed: https://msazure.visualstudio.com/Antares/_workitems/edit/31779638
+    [Trait("DTS", "Skip")] // DTS supports entities, but doesn't surface the failure in status output until this bug is fixed: https://msazure.visualstudio.com/Antares/_workitems/edit/31779638
     [Trait("PowerShell", "Skip")] // Durable entities are not implemented in the PowerShell SDK
     [Trait("Java", "Skip")] // Durable entities are not implemented in the Java SDK
     public async Task Orchestration_CallingDisabledEntity_FailsGracefully()

@@ -338,8 +338,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 });
             }
 
-            if (functionInfo == null)
+            if (functionInfo?.Executor == null)
             {
+                // The entity is not registered (deleted/renamed) or is registered/indexed but disabled
+                // but still deployed, so it has no active listener (null executor). Fail the batch
+                // deterministically instead of dereferencing the null executor below, which would
+                // surface as a transient failure and retry the work item forever.
+                // See https://github.com/Azure/azure-functions-durable-extension/issues/3471.
                 SetErrorResult(new FailureDetails(
                     errorType: "EntityFunctionNotFound",
                     errorMessage: this.extension.GetInvalidEntityFunctionMessage(functionName.Name),
