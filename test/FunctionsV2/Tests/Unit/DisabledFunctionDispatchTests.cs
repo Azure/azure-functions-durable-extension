@@ -91,6 +91,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.IsType<TaskActivityShim>(shim);
         }
 
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void GetInvalidEntityFunctionMessage_ListsRegisteredEntities_WhenNoOrchestratorsExist()
+        {
+            // Guards the diagnosability of the disabled-entity failure path: the message must reflect
+            // the registered ENTITIES, not orchestrators. Previously the helper checked
+            // knownOrchestrators.Count to decide whether to list entities, so with entities registered
+            // but no orchestrators it wrongly reported "No entity functions are currently registered!".
+            var extension = CreateExtension();
+            extension.RegisterEntity(new FunctionName("MyEntity"), new RegisteredFunctionInfo(executor: null!, isOutOfProc: true));
+
+            string message = extension.GetInvalidEntityFunctionMessage("SomeMissingEntity");
+
+            Assert.Contains("MyEntity", message);
+            Assert.DoesNotContain("No entity functions are currently registered", message);
+        }
+
         private static DurableTaskExtension CreateExtension()
         {
             var options = new DurableTaskOptions

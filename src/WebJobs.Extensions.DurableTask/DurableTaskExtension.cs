@@ -1533,7 +1533,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         internal string GetInvalidEntityFunctionMessage(string name)
         {
             string message = $"The function '{name}' doesn't exist, is disabled, or is not an entity function. Additional info: ";
-            if (this.knownOrchestrators.Keys.Count > 0)
+            if (this.knownEntities.Keys.Count > 0)
             {
                 message += $"The following are the known entity functions: '{string.Join("', '", this.knownEntities.Keys)}'.";
             }
