@@ -31,8 +31,7 @@ public class DisabledActivity {
      */
     @FunctionName("DisabledActivity")
     public String disabledActivity(
-            @DurableActivityTrigger(name = "input") String input,
-            final ExecutionContext context) {
+            @DurableActivityTrigger(name = "input") String input) {
         return input;
     }
 }

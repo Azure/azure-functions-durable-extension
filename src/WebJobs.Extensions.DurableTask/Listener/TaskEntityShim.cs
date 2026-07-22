@@ -316,11 +316,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             async Task ExecuteOperationsInBatch()
             {
-                // GetFunctionInfo() can be null when the entity function is registered/indexed but has
-                // no active listener (e.g. disabled but still deployed). In that case the caller has
-                // set a throwing invocation callback, so we take the per-operation (in-proc) path and
-                // let each operation fail deterministically rather than dereferencing a null executor.
-                if (this.GetFunctionInfo()?.IsOutOfProc == true)
+                // Only take the single-call out-of-proc batch path for a genuinely runnable out-of-proc
+                // entity (non-null executor). When the executor is null — the entity is registered/indexed
+                // but has no active listener (e.g. disabled but still deployed) — the caller has set a
+                // throwing invocation callback; that callback throws synchronously, so routing it through
+                // ExecuteOutOfProcBatch would bubble the exception out of the batch and reintroduce the
+                // transient failure / poison loop. Instead we always take the per-operation (in-proc) path
+                // for an unavailable entity, so each operation fails deterministically.
+                RegisteredFunctionInfo functionInfo = this.GetFunctionInfo();
+                if (functionInfo?.Executor != null && functionInfo.IsOutOfProc)
                 {
                     // process all operations in the batch using a single function call
                     await this.ExecuteOutOfProcBatch();
