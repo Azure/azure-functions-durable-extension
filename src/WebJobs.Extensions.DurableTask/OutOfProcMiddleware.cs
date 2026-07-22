@@ -531,9 +531,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return;
             }
 
-            if (!this.extension.TryGetActivityInfo(functionName, out RegisteredFunctionInfo? function))
+            if (!this.extension.TryGetActivityInfo(functionName, out RegisteredFunctionInfo? function)
+                || function?.Executor == null)
             {
                 // Fail the activity call with an error explaining that the function name is invalid.
+                // This covers two cases that must both fail deterministically rather than poison-loop:
+                //   1. the activity is not registered (deleted/renamed), and
+                //   2. the activity is registered/indexed but disabled but still deployed, so it has
+                //      no active listener and its Executor is null. Dereferencing that null executor
+                //      below would surface as a transient runtime failure and retry the work item
+                //      forever. See https://github.com/Azure/azure-functions-durable-extension/issues/3471.
                 string errorMessage = this.extension.GetInvalidActivityFunctionMessage(functionName.Name);
                 dispatchContext.SetProperty(new ActivityExecutionResult
                 {

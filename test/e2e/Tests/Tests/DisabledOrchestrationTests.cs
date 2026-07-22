@@ -37,4 +37,49 @@ public class DisabledOrchestrationTests
         Assert.Equal("Completed", details.RuntimeStatus);
         Assert.Contains("Hello Tokyo!", details.Output);
     }
+
+    // Reproduces https://github.com/Azure/azure-functions-durable-extension/issues/3471: an
+    // orchestration that schedules a disabled-but-still-deployed activity must fail deterministically
+    // instead of poison-looping forever. Before the fix the activity dispatch threw during shim
+    // construction / execution, which DTFx treated as a transient error and retried indefinitely, so
+    // the orchestration stayed Running forever (this test would time out waiting for "Failed").
+    [Fact]
+    public async Task Orchestration_CallingDisabledActivity_FailsGracefully()
+    {
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger(
+            "StartOrchestration",
+            "?orchestrationName=CallDisabledActivity");
+
+        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
+
+        string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
+
+        // Must reach a terminal Failed state promptly; a poison loop would leave it Running.
+        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Failed", 30);
+
+        var details = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
+        Assert.Equal("Failed", details.RuntimeStatus);
+        Assert.Contains("DisabledActivity", details.Output);
+    }
+
+    // Companion to the activity test above, for the entity dispatch path: calling an operation on a
+    // disabled-but-still-deployed entity must fail the orchestration deterministically rather than
+    // poison-looping the entity work item forever.
+    [Fact]
+    public async Task Orchestration_CallingDisabledEntity_FailsGracefully()
+    {
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger(
+            "StartOrchestration",
+            "?orchestrationName=CallDisabledEntity");
+
+        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
+
+        string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
+
+        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Failed", 30);
+
+        var details = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
+        Assert.Equal("Failed", details.RuntimeStatus);
+        Assert.Contains("DisabledEntity", details.Output);
+    }
 }
