@@ -12,12 +12,11 @@ internal sealed partial class FunctionsOrchestrationContext
     {
         public abstract T Get<T>();
 
-        public static InputConverter Create(
-            object? baseInput, DataConverter converter, JsonSerializerOptions jsonOptions)
+        public static InputConverter Create(object? baseInput, DataConverter converter)
         {
             return baseInput switch
             {
-                JsonElement json => new JsonElementInputConverter(json, jsonOptions),
+                JsonElement json => new JsonElementInputConverter(json, converter),
                 null => NullInputConverter.Instance,
                 _ => new DefaultInputConverter(baseInput, converter),
             };
@@ -44,17 +43,21 @@ internal sealed partial class FunctionsOrchestrationContext
     private class JsonElementInputConverter : InputConverter
     {
         private readonly JsonElement json;
-        private readonly JsonSerializerOptions jsonOptions;
+        private readonly DataConverter converter;
 
-        public JsonElementInputConverter(JsonElement json, JsonSerializerOptions jsonOptions)
+        public JsonElementInputConverter(JsonElement json, DataConverter converter)
         {
             this.json = json;
-            this.jsonOptions = jsonOptions;
+            this.converter = converter;
         }
 
         public override T Get<T>()
         {
-            return this.json.Deserialize<T>(this.jsonOptions)!;
+            // Deserialize using the configured worker DataConverter (the same converter the inner
+            // context used to deserialize the raw input to 'object'), so that a user-configured
+            // serializer is honored instead of the global JsonSerializerOptions. See issues #2851
+            // and #2995.
+            return this.converter.Deserialize<T>(this.json.GetRawText())!;
         }
     }
 

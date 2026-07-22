@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DurableTask;
@@ -19,7 +18,6 @@ internal sealed partial class FunctionsOrchestrationContext : TaskOrchestrationC
 {
     private readonly TaskOrchestrationContext innerContext;
     private readonly FunctionContext functionContext;
-    private readonly JsonSerializerOptions jsonOptions;
 
     private readonly DurableTaskWorkerOptions options;
 
@@ -34,8 +32,6 @@ internal sealed partial class FunctionsOrchestrationContext : TaskOrchestrationC
         this.functionContext = functionContext;
         this.options = this.functionContext.InstanceServices
             .GetRequiredService<IOptions<DurableTaskWorkerOptions>>().Value;
-        this.jsonOptions = functionContext.InstanceServices
-            .GetRequiredService<IOptions<JsonSerializerOptions>>().Value;
         this.LoggerFactory = functionContext.InstanceServices.GetRequiredService<ILoggerFactory>();
     }
 
@@ -74,7 +70,7 @@ internal sealed partial class FunctionsOrchestrationContext : TaskOrchestrationC
         // once based on the declared input type of the orchestrator. Since we do not know the
         // desired input type upfront, we were initialized to object. So we must serialize and
         // deserialize again to convert to our desired type.
-        this.inputConverter ??= InputConverter.Create(input, this.options.DataConverter, this.jsonOptions);
+        this.inputConverter ??= InputConverter.Create(input, this.options.DataConverter);
         return this.inputConverter.Get<T>();
     }
 
