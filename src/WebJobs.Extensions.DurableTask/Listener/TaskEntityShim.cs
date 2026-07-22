@@ -316,16 +316,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             async Task ExecuteOperationsInBatch()
             {
-                // Only use the single-call out-of-proc batch path for a runnable out-of-proc entity.
-                // For an unavailable entity (disabled but still deployed, or deleted/renamed)
-                // GetFunctionInfo() is null, so functionInfo?.Executor is null and we fall through to
-                // the per-operation in-proc path. That matters because for the unavailable case
-                // EntityMiddleware sets an invocation callback that throws synchronously: the in-proc
-                // path invokes it inside a per-operation try/catch and records a deterministic
-                // application error, whereas ExecuteOutOfProcBatch would let the synchronous throw
-                // bubble out of the batch and be recorded as an internal error (aborting and retrying
-                // the work item — the poison loop this guards against). The Executor null-check also
-                // defends against a registered-but-null-executor RegisteredFunctionInfo.
+                // A disabled/deleted entity is registered with a null executor. In that case, fall
+                // through to the per-operation loop below, which runs EntityMiddleware's throwing
+                // callback inside a per-operation try/catch and records a deterministic failure.
+                // ExecuteOutOfProcBatch would instead let that throw abort + retry the batch (the
+                // poison loop this guards against). See https://github.com/Azure/azure-functions-durable-extension/issues/3471.
                 RegisteredFunctionInfo functionInfo = this.GetFunctionInfo();
                 if (functionInfo?.Executor != null && functionInfo.IsOutOfProc)
                 {
