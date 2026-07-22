@@ -45,17 +45,15 @@ public class DisabledOrchestrationTests
     // construction / execution, which DTFx treated as a transient error and retried indefinitely, so
     // the orchestration stayed Running forever (this test would time out waiting for "Failed").
     //
-    // The disabled functions (DisabledActivity/DisabledEntity) and the caller orchestrations only
-    // exist in the dotnet-isolated app, so the non-dotnet languages are skipped. MSSQL and DTS are
-    // skipped because their orchestration-failure output differs from Azure Storage (mirroring the
-    // skips on ErrorHandlingTests.OrchestratorWithUncaughtActivityException_ShouldFail).
+    // Runs on every language (each app defines a disabled DisabledActivity + a CallDisabledActivity
+    // orchestrator). "DisabledActivity" is a substring of the caller orchestrator name, so it appears
+    // in the failure output regardless of how each language formats it. MSSQL and DTS are skipped for
+    // the same reason as ErrorHandlingTests.OrchestratorWithUncaughtActivityException_ShouldFail:
+    // those backends don't reliably surface activity-failure output on the orchestration status
+    // (durabletask-mssql#287 and the DTS work item linked there).
     [Fact]
-    [Trait("DTS", "Skip")]
-    [Trait("MSSQL", "Skip")]
-    [Trait("PowerShell", "Skip")]
-    [Trait("Python", "Skip")]
-    [Trait("Node", "Skip")]
-    [Trait("Java", "Skip")]
+    [Trait("MSSQL", "Skip")] // Activity-failure output is not surfaced on MSSQL: https://github.com/microsoft/durabletask-mssql/issues/287
+    [Trait("DTS", "Skip")] // DTS will fail this test unless this bug is fixed: https://msazure.visualstudio.com/Antares/_workitems/edit/31779638
     public async Task Orchestration_CallingDisabledActivity_FailsGracefully()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger(
@@ -78,16 +76,15 @@ public class DisabledOrchestrationTests
     // disabled-but-still-deployed entity must fail the orchestration deterministically rather than
     // poison-looping the entity work item forever.
     //
-    // Scoped to dotnet-isolated + Azure Storage: the disabled entity only exists in the dotnet-isolated
-    // app, and durable entities are not supported on the MSSQL/DTS backends (mirroring the skips on
-    // ErrorHandlingTests.OrchestratorWithUncaughtEntityException_ShouldFail).
+    // Runs on the languages whose durable SDK supports entities (dotnet-isolated, Node, Python).
+    // PowerShell and Java are skipped because durable entities are not implemented in those SDKs, and
+    // MSSQL/DTS are skipped because durable entities are not supported on those backends — the same
+    // skips as ErrorHandlingTests.OrchestratorWithUncaughtEntityException_ShouldFail.
     [Fact]
-    [Trait("DTS", "Skip")]
-    [Trait("MSSQL", "Skip")]
-    [Trait("PowerShell", "Skip")]
-    [Trait("Python", "Skip")]
-    [Trait("Node", "Skip")]
-    [Trait("Java", "Skip")]
+    [Trait("MSSQL", "Skip")] // Durable entities are not supported on the MSSQL backend
+    [Trait("DTS", "Skip")] // DTS will fail this test unless this bug is fixed: https://msazure.visualstudio.com/Antares/_workitems/edit/31779638
+    [Trait("PowerShell", "Skip")] // Durable entities are not implemented in the PowerShell SDK
+    [Trait("Java", "Skip")] // Durable entities are not implemented in the Java SDK
     public async Task Orchestration_CallingDisabledEntity_FailsGracefully()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger(
