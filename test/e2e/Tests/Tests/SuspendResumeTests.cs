@@ -84,7 +84,7 @@ public class SuspendResumeTests
             await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Suspended", 15);
 
             using HttpResponseMessage resumeResponse = await HttpHelpers.InvokeHttpTrigger("SuspendInstance", $"?instanceId={instanceId}");
-            await AssertRequestFailsAsync(resumeResponse, fixture.functionLanguageLocalizer.GetLocalizedStringValue("SuspendSuspendedInstance.FailureMessage"));
+            await AssertRequestFailsAsync(resumeResponse, fixture.functionLanguageLocalizer.GetLocalizedStringValue("SuspendSuspendedInstance.FailureMessage", instanceId));
 
             await this.fixture.TestLogs.AssertLogExistsAsync(
                 x => x.Contains("Cannot suspend orchestration instance in the Suspended state.") && x.Contains(instanceId),
@@ -111,7 +111,7 @@ public class SuspendResumeTests
         try
         {
             using HttpResponseMessage resumeResponse = await HttpHelpers.InvokeHttpTrigger("ResumeInstance", $"?instanceId={instanceId}");
-            await this.AssertRequestFailsAsync(resumeResponse, fixture.functionLanguageLocalizer.GetLocalizedStringValue("ResumeRunningInstance.FailureMessage"));
+            await this.AssertRequestFailsAsync(resumeResponse, fixture.functionLanguageLocalizer.GetLocalizedStringValue("ResumeRunningInstance.FailureMessage", instanceId));
 
             await this.fixture.TestLogs.AssertLogExistsAsync(
                 x => x.Contains("Cannot resume orchestration instance in the Running state.") && x.Contains(instanceId),
@@ -156,9 +156,9 @@ public class SuspendResumeTests
             }
             else
             {
-                await this.AssertRequestFailsAsync(suspendResponse, fixture.functionLanguageLocalizer.GetLocalizedStringValue("SuspendCompletedInstance.FailureMessage"));
+                await this.AssertRequestFailsAsync(suspendResponse, fixture.functionLanguageLocalizer.GetLocalizedStringValue("SuspendCompletedInstance.FailureMessage", instanceId));
 
-                await this.AssertRequestFailsAsync(resumeResponse, fixture.functionLanguageLocalizer.GetLocalizedStringValue("ResumeCompletedInstance.FailureMessage"));
+                await this.AssertRequestFailsAsync(resumeResponse, fixture.functionLanguageLocalizer.GetLocalizedStringValue("ResumeCompletedInstance.FailureMessage", instanceId));
             }
 
             // PowerShell, Python, Node all use the HTTP suspend/resume APIs, which return 410 (Gone) and do not log
@@ -186,7 +186,7 @@ public class SuspendResumeTests
 
         string? responseMessage = await resumeResponse.Content.ReadAsStringAsync();
         Assert.NotNull(responseMessage);
-        Assert.StartsWith(expectedErrorMessage, responseMessage);
+        Assert.Contains(expectedErrorMessage, responseMessage);
     }
 
     private static async Task AssertRequestSucceedsAsync(HttpResponseMessage response)
