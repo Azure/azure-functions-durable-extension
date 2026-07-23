@@ -256,6 +256,7 @@ namespace Microsoft.Azure.Functions.Worker.Tests
             Assert.Equal($"{BaseUrl}/instances/{instanceId}/raiseEvent/{{eventName}}", payload.SendEventPostUri);
             Assert.Equal($"{BaseUrl}/instances/{instanceId}", payload.StatusQueryGetUri);
             Assert.Equal($"{BaseUrl}/instances/{instanceId}/terminate?reason={{text}}", payload.TerminatePostUri);
+            Assert.Equal($"{BaseUrl}/instances/{instanceId}/rewind?reason={{text}}", payload.RewindPostUri);
             Assert.Equal($"{BaseUrl}/instances/{instanceId}/suspend?reason={{text}}", payload.SuspendPostUri);
             Assert.Equal($"{BaseUrl}/instances/{instanceId}/resume?reason={{text}}", payload.ResumePostUri);
         }
