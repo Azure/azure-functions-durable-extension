@@ -299,31 +299,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // Log correlation information for client operations
             this.LogClientOperationReceived(context, "Terminate", request.InstanceId);
 
-            try
-            {
-                await this.GetClient(context).TerminateAsync(request.InstanceId, request.Output);
-                return new P.TerminateResponse();
-            }
-            catch (ArgumentNullException ex)
-            {
-                // Thrown when required arguments like InstanceId are null
-                throw new RpcException(new Status(StatusCode.InvalidArgument, ex.Message));
-            }
-            catch (InvalidOperationException ex)
-            {
-                // Thrown when the orchestration is in a state that cannot be terminated
-                throw new RpcException(new Status(StatusCode.FailedPrecondition, $"InvalidOperationException: {ex.Message}"));
-            }
-            catch (ArgumentException ex)
-            {
-                // Thrown when the InstanceId does not match any existing orchestration
-                throw new RpcException(new Status(StatusCode.NotFound, $"ArgumentException: {ex.Message}"));
-            }
-            catch (Exception ex)
-            {
-                // Any other unexpected exceptions.
-                throw new RpcException(new Status(StatusCode.Unknown, ex.Message));
-            }
+            await InvokeControlPlaneOperationAsync(() => this.GetClient(context).TerminateAsync(request.InstanceId, request.Output));
+            return new P.TerminateResponse();
         }
 
         public async override Task<P.SuspendResponse> SuspendInstance(P.SuspendRequest request, ServerCallContext context)
@@ -331,7 +308,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // Log correlation information for client operations
             this.LogClientOperationReceived(context, "Suspend", request.InstanceId);
 
-            await this.GetClient(context).SuspendAsync(request.InstanceId, request.Reason);
+            await InvokeControlPlaneOperationAsync(() => this.GetClient(context).SuspendAsync(request.InstanceId, request.Reason));
             return new P.SuspendResponse();
         }
 
@@ -340,7 +317,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // Log correlation information for client operations
             this.LogClientOperationReceived(context, "Resume", request.InstanceId);
 
-            await this.GetClient(context).ResumeAsync(request.InstanceId, request.Reason);
+            await InvokeControlPlaneOperationAsync(() => this.GetClient(context).ResumeAsync(request.InstanceId, request.Reason));
             return new P.ResumeResponse();
         }
 
@@ -729,6 +706,45 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 operationType,
                 instanceId,
                 functionInvocationId);
+        }
+
+        /// <summary>
+        /// Invokes a control-plane client operation (terminate/suspend/resume) and maps the common
+        /// <see cref="DurableClient"/> exceptions onto meaningful gRPC status codes. Shared by the
+        /// control-plane handlers so the mapping cannot drift between them.
+        /// </summary>
+        /// <remarks>
+        /// An already-formed <see cref="RpcException"/> is left to propagate unchanged (never re-wrapped),
+        /// and <see cref="OperationCanceledException"/> is left to propagate so gRPC surfaces
+        /// <see cref="StatusCode.Cancelled"/> instead of an opaque <see cref="StatusCode.Unknown"/>.
+        /// </remarks>
+        private static async Task InvokeControlPlaneOperationAsync(Func<Task> operation)
+        {
+            try
+            {
+                await operation();
+            }
+            catch (ArgumentNullException ex)
+            {
+                // Thrown when required arguments like InstanceId are null
+                throw new RpcException(new Status(StatusCode.InvalidArgument, ex.Message));
+            }
+            catch (InvalidOperationException ex)
+            {
+                // Thrown when the orchestration is in a state that does not allow the operation (e.g. a terminal state)
+                throw new RpcException(new Status(StatusCode.FailedPrecondition, $"InvalidOperationException: {ex.Message}"));
+            }
+            catch (ArgumentException ex)
+            {
+                // Thrown when the InstanceId does not match any existing orchestration
+                throw new RpcException(new Status(StatusCode.NotFound, $"ArgumentException: {ex.Message}"));
+            }
+            catch (Exception ex) when (ex is not RpcException && ex is not OperationCanceledException)
+            {
+                // Any other unexpected exceptions. RpcException and cancellation are excluded above so a
+                // client cancellation/deadline surfaces as StatusCode.Cancelled rather than Unknown.
+                throw new RpcException(new Status(StatusCode.Unknown, ex.Message));
+            }
         }
 
         private void CheckEntitySupport(ServerCallContext context, out DurabilityProvider durabilityProvider, out IEntityOrchestrationService entityOrchestrationService)
