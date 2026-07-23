@@ -115,6 +115,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.DoesNotContain("DisabledEntity", activeFunctions.entityNames);
         }
 
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void GetInvalidEntityFunctionMessage_ListsKnownEntities_WhenNoOrchestratorsRegistered()
+        {
+            // Reproduces https://github.com/Azure/azure-functions-durable-extension/issues/2108.
+            // The "invalid entity" message gated its "known entity functions" list on the count of
+            // known *orchestrators* instead of known *entities*. So when entities were registered
+            // but no orchestrators were, the message wrongly claimed that no entity functions were
+            // registered (and never listed the known entities).
+            var extension = CreateExtension();
+
+            extension.RegisterEntity(new FunctionName("Counter"), new RegisteredFunctionInfo(executor: null!, isOutOfProc: true));
+
+            string message = extension.GetInvalidEntityFunctionMessage("DoesNotExist");
+
+            Assert.Contains("The following are the known entity functions: 'Counter'.", message);
+            Assert.DoesNotContain("No entity functions are currently registered!", message);
+        }
+
         private static DurableTaskExtension CreateExtension()
         {
             var options = new DurableTaskOptions
