@@ -125,6 +125,61 @@ public class SuspendResumeTests
 
 
     [Fact]
+    [Trait("Node", "Skip")] // Suspend of a non-existent instance uses the HTTP API for these workers, which is unaffected by this gRPC-server fix (see microsoft/durabletask-js#315 / this PR)
+    [Trait("Python", "Skip")]
+    [Trait("PowerShell", "Skip")]
+    public async Task SuspendNonExistentOrchestration_ShouldFail()
+    {
+        LanguageType languageType = this.fixture.functionLanguageLocalizer.GetLanguageType();
+        string instanceId = Guid.NewGuid().ToString();
+
+        using HttpResponseMessage suspendResponse = await HttpHelpers.InvokeHttpTrigger("SuspendInstance", $"?instanceId={instanceId}");
+        Assert.Equal(HttpStatusCode.BadRequest, suspendResponse.StatusCode);
+
+        string? responseMessage = await suspendResponse.Content.ReadAsStringAsync();
+        Assert.NotNull(responseMessage);
+
+        if (languageType == LanguageType.DotnetIsolated)
+        {
+            Assert.Contains("Status(StatusCode=\"NotFound\"", responseMessage);
+        }
+        else if (languageType == LanguageType.Java)
+        {
+            Assert.Contains("NOT_FOUND: ArgumentException: No instance", responseMessage);
+        }
+
+        Assert.Contains(fixture.functionLanguageLocalizer.GetLocalizedStringValue("SuspendInvalidInstance.FailureMessage", instanceId), responseMessage);
+    }
+
+    [Fact]
+    [Trait("Node", "Skip")] // Resume of a non-existent instance uses the HTTP API for these workers, which is unaffected by this gRPC-server fix (see microsoft/durabletask-js#315 / this PR)
+    [Trait("Python", "Skip")]
+    [Trait("PowerShell", "Skip")]
+    public async Task ResumeNonExistentOrchestration_ShouldFail()
+    {
+        LanguageType languageType = this.fixture.functionLanguageLocalizer.GetLanguageType();
+        string instanceId = Guid.NewGuid().ToString();
+
+        using HttpResponseMessage resumeResponse = await HttpHelpers.InvokeHttpTrigger("ResumeInstance", $"?instanceId={instanceId}");
+        Assert.Equal(HttpStatusCode.BadRequest, resumeResponse.StatusCode);
+
+        string? responseMessage = await resumeResponse.Content.ReadAsStringAsync();
+        Assert.NotNull(responseMessage);
+
+        if (languageType == LanguageType.DotnetIsolated)
+        {
+            Assert.Contains("Status(StatusCode=\"NotFound\"", responseMessage);
+        }
+        else if (languageType == LanguageType.Java)
+        {
+            Assert.Contains("NOT_FOUND: ArgumentException: No instance", responseMessage);
+        }
+
+        Assert.Contains(fixture.functionLanguageLocalizer.GetLocalizedStringValue("ResumeInvalidInstance.FailureMessage", instanceId), responseMessage);
+    }
+
+
+    [Fact]
     public async Task SuspendResumeCompletedOrchestration_ShouldFail()
     {
         LanguageType languageType = this.fixture.functionLanguageLocalizer.GetLanguageType();
