@@ -165,7 +165,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Activity
         [TestMethod]
         public void ActivityTrigger_ParameterNamedData_NotInsideFunction_NoDiagnostic()
         {
-            // Reviewer case (PR #3474): DF0115 must only fire on actual Azure Functions. A helper, sample, or
+            // Regression guard: DF0115 must only fire on actual Azure Functions. A helper, sample, or
             // unit-test method that is annotated with [ActivityTrigger] but is NOT a Function (no [FunctionName])
             // must NOT be flagged. This is identical to ActivityTrigger_ParameterNamedData_Diagnostic except the
             // [FunctionName] attribute is absent, so the IsInsideFunction guard suppresses the diagnostic.

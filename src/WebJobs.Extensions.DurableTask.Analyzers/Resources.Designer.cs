@@ -169,7 +169,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The Durable Functions activity binding reserves the name &apos;data&apos; for the raw JSON representation of the activity input. Naming an ActivityTrigger parameter &apos;data&apos; overwrites that binding and causes a function indexation error at startup. Use a different parameter name.
+        ///   Looks up a localized string similar to The Durable Functions activity binding reserves the name &apos;data&apos; for the raw JSON representation of the activity input. Naming an ActivityTrigger parameter &apos;data&apos; overwrites that binding and causes a function indexing error at startup. Use a different parameter name.
         /// </summary>
         public static string ActivityTriggerParameterAnalyzerDescription {
             get {
@@ -178,7 +178,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The parameter name &apos;{0}&apos; is reserved by the activity trigger binding; rename the ActivityTrigger parameter to avoid a function indexation error.
+        ///   Looks up a localized string similar to The parameter name &apos;{0}&apos; is reserved by the activity trigger binding; rename the ActivityTrigger parameter to avoid a function indexing error.
         /// </summary>
         public static string ActivityTriggerParameterAnalyzerMessageFormat {
             get {

@@ -154,10 +154,10 @@
     <value>Activity function call return type doesn't match function definition return type</value>
   </data>
   <data name="ActivityTriggerParameterAnalyzerDescription" xml:space="preserve">
-    <value>The Durable Functions activity binding reserves the name 'data' for the raw JSON representation of the activity input. Naming an ActivityTrigger parameter 'data' overwrites that binding and causes a function indexation error at startup. Use a different parameter name.</value>
+    <value>The Durable Functions activity binding reserves the name 'data' for the raw JSON representation of the activity input. Naming an ActivityTrigger parameter 'data' overwrites that binding and causes a function indexing error at startup. Use a different parameter name.</value>
   </data>
   <data name="ActivityTriggerParameterAnalyzerMessageFormat" xml:space="preserve">
-    <value>The parameter name '{0}' is reserved by the activity trigger binding; rename the ActivityTrigger parameter to avoid a function indexation error</value>
+    <value>The parameter name '{0}' is reserved by the activity trigger binding; rename the ActivityTrigger parameter to avoid a function indexing error</value>
   </data>
   <data name="ActivityTriggerParameterAnalyzerTitle" xml:space="preserve">
     <value>ActivityTrigger parameter must not use the reserved name 'data'</value>
