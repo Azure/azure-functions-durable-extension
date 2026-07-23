@@ -32,12 +32,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         public override void Initialize(AnalysisContext context)
         {
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.Analyze | GeneratedCodeAnalysisFlags.ReportDiagnostics);
+            context.EnableConcurrentExecution();
             context.RegisterSyntaxNodeAction(FindReservedActivityParameterName, SyntaxKind.Attribute);
         }
 
         public void FindReservedActivityParameterName(SyntaxNodeAnalysisContext context)
         {
-            if (context.Node is AttributeSyntax attribute
+            if (SyntaxNodeUtils.IsInsideFunction(context.SemanticModel, context.Node)
+                && context.Node is AttributeSyntax attribute
                 && SyntaxNodeUtils.IsActivityTriggerAttribute(attribute)
                 && attribute.Parent?.Parent is ParameterSyntax parameter
                 && string.Equals(parameter.Identifier.ValueText, ReservedParameterName, StringComparison.OrdinalIgnoreCase))
