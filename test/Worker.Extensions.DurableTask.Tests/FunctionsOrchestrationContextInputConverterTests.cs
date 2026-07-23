@@ -78,7 +78,10 @@ public class FunctionsOrchestrationContextInputConverterTests
 
         var context = new FunctionsOrchestrationContext(inner.Object, functionContext);
 
-        // GetInput asserts it runs on the orchestrator thread; emulate that for the duration of the call.
+        // GetInput asserts it runs on the orchestrator thread; emulate that for the duration of the
+        // call. Save and restore the original flag value so the mutation of this static field does
+        // not leak into other tests when the runner executes tests in parallel.
+        bool originalIsOrchestratorThread = CoreOrchestrationContext.IsOrchestratorThread;
         CoreOrchestrationContext.IsOrchestratorThread = true;
         try
         {
@@ -86,7 +89,7 @@ public class FunctionsOrchestrationContextInputConverterTests
         }
         finally
         {
-            CoreOrchestrationContext.IsOrchestratorThread = false;
+            CoreOrchestrationContext.IsOrchestratorThread = originalIsOrchestratorThread;
         }
     }
 

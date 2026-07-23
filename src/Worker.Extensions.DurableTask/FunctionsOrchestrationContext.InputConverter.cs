@@ -42,13 +42,17 @@ internal sealed partial class FunctionsOrchestrationContext
 
     private class JsonElementInputConverter : InputConverter
     {
-        private readonly JsonElement json;
         private readonly DataConverter converter;
+        private readonly string serializedInput;
 
         public JsonElementInputConverter(JsonElement json, DataConverter converter)
         {
-            this.json = json;
             this.converter = converter;
+
+            // Capture the raw JSON once. GetInput<T>() may be called multiple times (the owning
+            // FunctionsOrchestrationContext caches this converter instance), so computing the raw
+            // text here avoids re-allocating the full JSON string on every call.
+            this.serializedInput = json.GetRawText();
         }
 
         public override T Get<T>()
@@ -57,7 +61,7 @@ internal sealed partial class FunctionsOrchestrationContext
             // context used to deserialize the raw input to 'object'), so that a user-configured
             // serializer is honored instead of the global JsonSerializerOptions. See issues #2851
             // and #2995.
-            return this.converter.Deserialize<T>(this.json.GetRawText())!;
+            return this.converter.Deserialize<T>(this.serializedInput)!;
         }
     }
 
