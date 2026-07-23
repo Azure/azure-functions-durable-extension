@@ -331,8 +331,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // Log correlation information for client operations
             this.LogClientOperationReceived(context, "Suspend", request.InstanceId);
 
-            await this.GetClient(context).SuspendAsync(request.InstanceId, request.Reason);
-            return new P.SuspendResponse();
+            try
+            {
+                await this.GetClient(context).SuspendAsync(request.InstanceId, request.Reason);
+                return new P.SuspendResponse();
+            }
+            catch (ArgumentNullException ex)
+            {
+                // Thrown when required arguments like InstanceId are null
+                throw new RpcException(new Status(StatusCode.InvalidArgument, ex.Message));
+            }
+            catch (InvalidOperationException ex)
+            {
+                // Thrown when the orchestration is in a state that cannot be suspended (e.g. a terminal state)
+                throw new RpcException(new Status(StatusCode.FailedPrecondition, $"InvalidOperationException: {ex.Message}"));
+            }
+            catch (ArgumentException ex)
+            {
+                // Thrown when the InstanceId does not match any existing orchestration
+                throw new RpcException(new Status(StatusCode.NotFound, $"ArgumentException: {ex.Message}"));
+            }
+            catch (Exception ex)
+            {
+                // Any other unexpected exceptions.
+                throw new RpcException(new Status(StatusCode.Unknown, ex.Message));
+            }
         }
 
         public async override Task<P.ResumeResponse> ResumeInstance(P.ResumeRequest request, ServerCallContext context)
@@ -340,8 +363,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // Log correlation information for client operations
             this.LogClientOperationReceived(context, "Resume", request.InstanceId);
 
-            await this.GetClient(context).ResumeAsync(request.InstanceId, request.Reason);
-            return new P.ResumeResponse();
+            try
+            {
+                await this.GetClient(context).ResumeAsync(request.InstanceId, request.Reason);
+                return new P.ResumeResponse();
+            }
+            catch (ArgumentNullException ex)
+            {
+                // Thrown when required arguments like InstanceId are null
+                throw new RpcException(new Status(StatusCode.InvalidArgument, ex.Message));
+            }
+            catch (InvalidOperationException ex)
+            {
+                // Thrown when the orchestration is in a state that cannot be resumed (e.g. a terminal state)
+                throw new RpcException(new Status(StatusCode.FailedPrecondition, $"InvalidOperationException: {ex.Message}"));
+            }
+            catch (ArgumentException ex)
+            {
+                // Thrown when the InstanceId does not match any existing orchestration
+                throw new RpcException(new Status(StatusCode.NotFound, $"ArgumentException: {ex.Message}"));
+            }
+            catch (Exception ex)
+            {
+                // Any other unexpected exceptions.
+                throw new RpcException(new Status(StatusCode.Unknown, ex.Message));
+            }
         }
 
         public async override Task<P.RewindInstanceResponse> RewindInstance(P.RewindInstanceRequest request, ServerCallContext context)
