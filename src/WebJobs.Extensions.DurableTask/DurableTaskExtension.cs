@@ -708,7 +708,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             RegisteredFunctionInfo info;
             if (!this.knownActivities.TryGetValue(activityFunction, out info))
             {
+                // The activity function is not registered at all (e.g. it was deleted or renamed).
                 return new TaskNonexistentActivityShim(this, name);
+            }
+
+            if (info.Executor == null)
+            {
+                // The activity function was indexed (so it is present in knownActivities) but no
+                // listener was ever started for it. This happens when the function is disabled but
+                // still deployed: the binding provider registers the name with a null executor
+                // during indexing, and the disabled function's listener never replaces it. Returning
+                // a shim that fails deterministically — instead of constructing a TaskActivityShim
+                // with a null executor, which throws ArgumentNullException during object construction
+                // and causes the work item to be abandoned and retried forever (a poison loop) — lets
+                // the orchestration receive a catchable failure.
+                // See https://github.com/Azure/azure-functions-durable-extension/issues/3471.
+                return new TaskNonexistentActivityShim(this, name, isDisabled: true);
             }
 
             return new TaskActivityShim(this, info.Executor, this.HostLifetimeService, name);
@@ -1077,11 +1092,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             WrappedFunctionResult result;
 
-            if (entityShim.OperationBatch.Count > 0 && !this.HostLifetimeService.OnStopping.IsCancellationRequested)
+            RegisteredFunctionInfo entityFunctionInfo = entityShim.GetFunctionInfo();
+            bool functionUnavailable = entityFunctionInfo?.Executor == null;
+
+            if (entityShim.OperationBatch.Count > 0
+                && !this.HostLifetimeService.OnStopping.IsCancellationRequested
+                && !functionUnavailable)
             {
                 // 3a. (function execution) Start the functions invocation pipeline (billing, logging, bindings, and timeout tracking).
                 result = await FunctionExecutionHelper.ExecuteFunctionInOrchestrationMiddleware(
-                    entityShim.GetFunctionInfo().Executor,
+                    entityFunctionInfo.Executor,
                     new TriggeredFunctionData
                     {
                         TriggerValue = entityShim.Context,
@@ -1174,6 +1194,42 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     throw new SessionAbortedException(
                         $"An internal error occurred while attempting to execute '{entityContext.FunctionName}'.",
                         result.Exception);
+                }
+            }
+            else if (functionUnavailable
+                && entityShim.OperationBatch.Count > 0
+                && !this.HostLifetimeService.OnStopping.IsCancellationRequested)
+            {
+                // The entity function is registered/indexed but has no active listener — e.g. it is
+                // disabled but still deployed, or was deleted/renamed. Rather than dereferencing a
+                // null executor (which would surface as a transient work-item failure and poison-loop
+                // the batch forever), fail every operation in the batch deterministically. Each
+                // operation gets an exception response and is recorded as an application (not internal)
+                // error, so the batch is not aborted/retried. This mirrors the graceful handling in
+                // OutOfProcMiddleware.CallEntityAsync and the activity GetObject path.
+                // See https://github.com/Azure/azure-functions-durable-extension/issues/3471.
+                entityShim.AddTraceFlag(EntityTraceFlags.FunctionUnavailable);
+
+                this.TraceHelper.ExtensionWarningEvent(
+                    this.Options.HubName,
+                    entityContext.Name,
+                    entityContext.InstanceId,
+                    $"The entity function '{entityContext.Name}' is disabled or does not exist. Failing {entityShim.OperationBatch.Count} operation(s).");
+
+                var failureMessage = this.GetInvalidEntityFunctionMessage(entityContext.Name);
+                entityShim.SetFunctionInvocationCallback(() => throw new FunctionFailedException(failureMessage));
+
+                if (entityContext.InternalError == null)
+                {
+                    try
+                    {
+                        await entityShim.ExecuteBatch(this.HostLifetimeService.OnStopping);
+                        await next();
+                    }
+                    catch (Exception e)
+                    {
+                        entityContext.CaptureInternalError(e, entityShim);
+                    }
                 }
             }
             else
