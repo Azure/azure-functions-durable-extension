@@ -6,6 +6,9 @@ using System.Collections.Generic;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Moq;
@@ -180,8 +183,15 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         public void LegacyPartitionManagementWithoutTablePartitionManagement_DisablesDefaultTablePartitionManagement()
         {
             var clientProviderFactory = new TestStorageServiceClientProviderFactory();
-            var options = new DurableTaskOptions();
-            options.StorageProvider.Add("useLegacyPartitionManagement", true);
+            DurableTaskOptions options = BindDurableTaskOptions(
+                new Dictionary<string, string>
+                {
+                    { "useLegacyPartitionManagement", "true" },
+                });
+
+            Assert.Single(options.StorageProvider);
+            Assert.True(options.StorageProvider.ContainsKey("useLegacyPartitionManagement"));
+            Assert.False(options.StorageProvider.ContainsKey("useTablePartitionManagement"));
 
             var factory = new AzureStorageDurabilityProviderFactory(
                 new OptionsWrapper<DurableTaskOptions>(options),
@@ -201,9 +211,16 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         public void ExplicitPartitionManagementConflictIsNotNormalized()
         {
             var clientProviderFactory = new TestStorageServiceClientProviderFactory();
-            var options = new DurableTaskOptions();
-            options.StorageProvider.Add("useLegacyPartitionManagement", true);
-            options.StorageProvider.Add("useTablePartitionManagement", true);
+            DurableTaskOptions options = BindDurableTaskOptions(
+                new Dictionary<string, string>
+                {
+                    { "useLegacyPartitionManagement", "true" },
+                    { "useTablePartitionManagement", "true" },
+                });
+
+            Assert.Equal(2, options.StorageProvider.Count);
+            Assert.True(options.StorageProvider.ContainsKey("useLegacyPartitionManagement"));
+            Assert.True(options.StorageProvider.ContainsKey("useTablePartitionManagement"));
 
             var factory = new AzureStorageDurabilityProviderFactory(
                 new OptionsWrapper<DurableTaskOptions>(options),
@@ -217,6 +234,28 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
             Assert.True(settings.UseLegacyPartitionManagement);
             Assert.True(settings.UseTablePartitionManagement);
             Assert.Throws<ArgumentException>(() => factory.GetDurabilityProvider());
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void PartitionManagementNotConfigured_KeepsDefaultTablePartitionManagement()
+        {
+            var clientProviderFactory = new TestStorageServiceClientProviderFactory();
+            DurableTaskOptions options = BindDurableTaskOptions(new Dictionary<string, string>());
+
+            Assert.Empty(options.StorageProvider);
+
+            var factory = new AzureStorageDurabilityProviderFactory(
+                new OptionsWrapper<DurableTaskOptions>(options),
+                clientProviderFactory,
+                new Mock<INameResolver>().Object,
+                NullLoggerFactory.Instance,
+                TestHelpers.GetMockPlatformInformationService());
+
+            var settings = factory.GetAzureStorageOrchestrationServiceSettings();
+
+            Assert.False(settings.UseLegacyPartitionManagement);
+            Assert.True(settings.UseTablePartitionManagement);
         }
 
         [Fact]
@@ -282,6 +321,25 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
             var provider = factory.GetDurabilityProvider();
 
             Assert.Equal("Storage", provider.ConnectionName);
+        }
+
+        private static DurableTaskOptions BindDurableTaskOptions(
+            IDictionary<string, string> storageProviderSettings)
+        {
+            var configuration = new Dictionary<string, string>();
+            foreach (KeyValuePair<string, string> setting in storageProviderSettings)
+            {
+                configuration.Add(
+                    $"AzureWebJobs:extensions:DurableTask:storageProvider:{setting.Key}",
+                    setting.Value);
+            }
+
+            using IHost host = new HostBuilder()
+                .ConfigureAppConfiguration(builder => builder.AddInMemoryCollection(configuration))
+                .ConfigureWebJobs(builder => builder.AddDurableTask())
+                .Build();
+
+            return host.Services.GetRequiredService<IOptions<DurableTaskOptions>>().Value;
         }
     }
 }
