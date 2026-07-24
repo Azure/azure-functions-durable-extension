@@ -323,8 +323,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         /// <summary>
         /// Throws an exception if any of the settings of the storage provider are invalid.
-        /// May also normalize mutually-exclusive settings (logging a warning) so that a valid
-        /// configuration is always produced.
+        /// For a specific pair of mutually-exclusive partition-management settings, this normalizes
+        /// the values (logging a warning) rather than throwing; other invalid settings still throw.
         /// </summary>
         public void Validate(ILogger logger)
         {
@@ -371,7 +371,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 // See https://github.com/Azure/azure-functions-durable-extension/issues/3094.
                 logger.LogWarning(
                     $"Both {nameof(this.UseTablePartitionManagement)} and {nameof(this.UseLegacyPartitionManagement)} are enabled, which is not supported. " +
-                    $"Disabling {nameof(this.UseTablePartitionManagement)} because {nameof(this.UseLegacyPartitionManagement)} was explicitly enabled. " +
+                    $"Disabling {nameof(this.UseTablePartitionManagement)} because {nameof(this.UseLegacyPartitionManagement)} is enabled. " +
                     $"For improved reliability, consider removing {nameof(this.UseLegacyPartitionManagement)} from your `host.json` settings to use the default table partition manager.");
                 this.UseTablePartitionManagement = false;
             }
