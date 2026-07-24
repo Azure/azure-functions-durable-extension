@@ -145,6 +145,66 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task CallActivityAsync_DisabledActivity_FailsDeterministicallyWithoutAbort()
+        {
+            // Reproduces https://github.com/Azure/azure-functions-durable-extension/issues/3471 for the
+            // passthrough/out-of-proc activity middleware. A disabled-but-still-deployed activity is
+            // indexed (present in knownActivities) but has a null executor because its listener never
+            // started. The middleware must fail the activity with a deterministic TaskFailedEvent instead
+            // of dereferencing the null executor (which surfaced as a SessionAbortedException and made the
+            // work item retry forever).
+            DurableTaskExtension extension = CreateDurableTaskExtension();
+            extension.RegisterActivity(new FunctionName("TestActivity"), executor: null!);
+
+            var middleware = new OutOfProcMiddleware(extension);
+            var dispatchContext = new DispatchMiddlewareContext();
+            dispatchContext.SetProperty(new TaskScheduledEvent(-1) { Name = "TestActivity" });
+            dispatchContext.SetProperty(new OrchestrationInstance { InstanceId = "test-instance-id" });
+
+            // Act: must NOT throw (no SessionAbortedException / NullReferenceException poison loop).
+            await middleware.CallActivityAsync(dispatchContext, () => Task.CompletedTask);
+
+            // Assert: a deterministic (non-transient) failure was set on the dispatch context.
+            ActivityExecutionResult result = dispatchContext.GetProperty<ActivityExecutionResult>();
+            Assert.NotNull(result);
+            TaskFailedEvent failedEvent = Assert.IsType<TaskFailedEvent>(result.ResponseEvent);
+            Assert.Contains("TestActivity", failedEvent.Reason);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task CallEntityAsync_DisabledEntity_FailsDeterministicallyWithoutAbort()
+        {
+            // Reproduces https://github.com/Azure/azure-functions-durable-extension/issues/3471 for the
+            // passthrough/out-of-proc entity middleware. A disabled-but-still-deployed entity is indexed
+            // (present in knownEntities) but has a null executor because its listener never started. The
+            // middleware must fail the batch with a non-retriable FailureDetails result instead of
+            // dereferencing the null executor (which surfaced as a transient failure and retried forever).
+            DurableTaskExtension extension = CreateDurableTaskExtension();
+            extension.RegisterEntity(new FunctionName("TestEntity"), new RegisteredFunctionInfo(executor: null!, isOutOfProc: true));
+
+            var middleware = new OutOfProcMiddleware(extension);
+            var dispatchContext = new DispatchMiddlewareContext();
+            dispatchContext.SetProperty(new EntityBatchRequest
+            {
+                InstanceId = "@TestEntity@test-key",
+                EntityState = null,
+                Operations = new List<OperationRequest>(),
+            });
+            dispatchContext.SetProperty(CreateWorkItemMetadata(isExtendedSession: false, includeState: false));
+
+            // Act: must NOT throw (no SessionAbortedException / NullReferenceException poison loop).
+            await middleware.CallEntityAsync(dispatchContext, () => Task.CompletedTask);
+
+            // Assert: a deterministic, non-retriable failure was set on the dispatch context.
+            EntityBatchResult result = dispatchContext.GetProperty<EntityBatchResult>();
+            Assert.NotNull(result);
+            Assert.NotNull(result.FailureDetails);
+            Assert.Contains("TestEntity", result.FailureDetails.ErrorMessage);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void TryGetStructuredFailureDetails_StructuredPayload_ReturnsFailureDetailsWithProperties()
         {
             // Arrange: an out-of-proc worker exception whose message embeds a serialized

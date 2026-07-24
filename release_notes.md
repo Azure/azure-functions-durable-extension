@@ -24,6 +24,8 @@
 
 ### Bug Fixes
 
+- Fixed a poison loop where dispatching a disabled-but-still-deployed activity or entity function caused in-flight orchestrations to retry indefinitely (e.g. throwing `ArgumentNullException('executor')` on the activity dispatch path) instead of failing gracefully. Such registered-but-inactive functions are now treated as unavailable and fail deterministically. (#3471)
+
 ### Breaking Changes
 
 ### Dependency Updates
