@@ -209,11 +209,12 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
 
             Assert.True(settings.UseLegacyPartitionManagement);
             Assert.False(settings.UseTablePartitionManagement);
-            Assert.Single(
+            var warning = Assert.Single(
                 loggerProvider.GetAllLogMessages(),
                 message =>
                     message.Level == LogLevel.Warning &&
                     message.FormattedMessage.Contains("Disabling `useTablePartitionManagement` to preserve legacy partition management."));
+            Assert.Equal("Host.Triggers.DurableTask.AzureStorage", warning.Category);
         }
 
         [Fact]

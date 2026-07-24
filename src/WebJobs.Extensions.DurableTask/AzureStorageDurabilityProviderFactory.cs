@@ -107,7 +107,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // Override the configuration defaults with user-provided values in host.json, if any.
             JsonConvert.PopulateObject(JsonConvert.SerializeObject(this.options.StorageProvider), this.azureStorageOptions);
 
-            var logger = loggerFactory.CreateLogger(nameof(this.azureStorageOptions));
+            var logger = loggerFactory.CreateLogger(LoggerName);
             if (useLegacyPartitionManagementWasConfigured &&
                 !useTablePartitionManagementWasConfigured &&
                 this.azureStorageOptions.UseLegacyPartitionManagement &&
