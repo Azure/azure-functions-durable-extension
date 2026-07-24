@@ -33,5 +33,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             // this will do.
             mockClient.Verify(c => c.RaiseEventAsync(instanceId, eventName, (object)eventData), Times.Once());
         }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task IDurableOrchestrationClient_StartNewAsync_ValueTypeInput()
+        {
+            // Regression test for https://github.com/Azure/azure-functions-durable-extension/issues/1814.
+            // The StartNewAsync<T>(string, T) overload used to have a 'where T : class' constraint that the
+            // StartNewAsync<T>(string, string, T) overload did not, so value-type inputs (e.g. tuples) failed
+            // to compile against the two-argument overload. This test passing a value tuple exercises (and, by
+            // compiling, guards) that overload accepting a value type.
+            var mockClient = new Mock<IDurableOrchestrationClient>();
+
+            var client = mockClient.Object;
+
+            string functionName = "FUNCTION_NAME";
+            (string, int) input = ("test", 1);
+            await client.StartNewAsync(functionName, input);
+
+            mockClient.Verify(c => c.StartNewAsync(functionName, input), Times.Once());
+        }
     }
 }
