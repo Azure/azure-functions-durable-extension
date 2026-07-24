@@ -6,9 +6,11 @@ using System.Collections.Generic;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests;
+using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Moq;
@@ -193,17 +195,25 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
             Assert.True(options.StorageProvider.ContainsKey("useLegacyPartitionManagement"));
             Assert.False(options.StorageProvider.ContainsKey("useTablePartitionManagement"));
 
+            var loggerProvider = new TestLoggerProvider(null);
+            using var loggerFactory = new LoggerFactory();
+            loggerFactory.AddProvider(loggerProvider);
             var factory = new AzureStorageDurabilityProviderFactory(
                 new OptionsWrapper<DurableTaskOptions>(options),
                 clientProviderFactory,
                 new Mock<INameResolver>().Object,
-                NullLoggerFactory.Instance,
+                loggerFactory,
                 TestHelpers.GetMockPlatformInformationService());
 
             var settings = factory.GetAzureStorageOrchestrationServiceSettings();
 
             Assert.True(settings.UseLegacyPartitionManagement);
             Assert.False(settings.UseTablePartitionManagement);
+            Assert.Single(
+                loggerProvider.GetAllLogMessages(),
+                message =>
+                    message.Level == LogLevel.Warning &&
+                    message.FormattedMessage.Contains("Disabling UseTablePartitionManagement to preserve legacy partition management."));
         }
 
         [Fact]
