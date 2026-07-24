@@ -323,8 +323,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         /// <summary>
         /// Throws an exception if any of the settings of the storage provider are invalid.
-        /// For a specific pair of mutually-exclusive partition-management settings, this normalizes
-        /// the values (logging a warning) rather than throwing; other invalid settings still throw.
         /// </summary>
         public void Validate(ILogger logger)
         {
@@ -357,23 +355,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (this.ControlQueueBatchSize > this.ControlQueueBufferThreshold)
             {
                 logger.LogWarning($"{nameof(this.ControlQueueBatchSize)} cannot be larger than {nameof(this.ControlQueueBufferThreshold)}. Please adjust these values in your `host.json` settings for predictable performance");
-            }
-
-            if (this.UseLegacyPartitionManagement && this.UseTablePartitionManagement)
-            {
-                // The table partition manager (V3) is enabled by default as of the v3.x Durable extension.
-                // If an app has also explicitly opted into the legacy partition manager, passing both settings
-                // to the storage provider throws ("Cannot use both TablePartitionManagement and
-                // LegacyPartitionManagement"), which caused apps that set useLegacyPartitionManagement to true
-                // to fail to start once the table partition manager became the default. Honor the explicit
-                // legacy opt-in by disabling the (defaulted) table partition manager so the app still starts,
-                // preserving its pre-upgrade partition management behavior.
-                // See https://github.com/Azure/azure-functions-durable-extension/issues/3094.
-                logger.LogWarning(
-                    $"Both {nameof(this.UseTablePartitionManagement)} and {nameof(this.UseLegacyPartitionManagement)} are enabled, which is not supported. " +
-                    $"Disabling {nameof(this.UseTablePartitionManagement)} because {nameof(this.UseLegacyPartitionManagement)} is enabled. " +
-                    $"For improved reliability, consider removing {nameof(this.UseLegacyPartitionManagement)} from your `host.json` settings to use the default table partition manager.");
-                this.UseTablePartitionManagement = false;
             }
         }
     }

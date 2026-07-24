@@ -177,6 +177,50 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void LegacyPartitionManagementWithoutTablePartitionManagement_DisablesDefaultTablePartitionManagement()
+        {
+            var clientProviderFactory = new TestStorageServiceClientProviderFactory();
+            var options = new DurableTaskOptions();
+            options.StorageProvider.Add("useLegacyPartitionManagement", true);
+
+            var factory = new AzureStorageDurabilityProviderFactory(
+                new OptionsWrapper<DurableTaskOptions>(options),
+                clientProviderFactory,
+                new Mock<INameResolver>().Object,
+                NullLoggerFactory.Instance,
+                TestHelpers.GetMockPlatformInformationService());
+
+            var settings = factory.GetAzureStorageOrchestrationServiceSettings();
+
+            Assert.True(settings.UseLegacyPartitionManagement);
+            Assert.False(settings.UseTablePartitionManagement);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void ExplicitPartitionManagementConflictIsNotNormalized()
+        {
+            var clientProviderFactory = new TestStorageServiceClientProviderFactory();
+            var options = new DurableTaskOptions();
+            options.StorageProvider.Add("useLegacyPartitionManagement", true);
+            options.StorageProvider.Add("useTablePartitionManagement", true);
+
+            var factory = new AzureStorageDurabilityProviderFactory(
+                new OptionsWrapper<DurableTaskOptions>(options),
+                clientProviderFactory,
+                new Mock<INameResolver>().Object,
+                NullLoggerFactory.Instance,
+                TestHelpers.GetMockPlatformInformationService());
+
+            var settings = factory.GetAzureStorageOrchestrationServiceSettings();
+
+            Assert.True(settings.UseLegacyPartitionManagement);
+            Assert.True(settings.UseTablePartitionManagement);
+            Assert.Throws<ArgumentException>(() => factory.GetDurabilityProvider());
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void EnvironmentIsVMSS_WorkerIdFromEnvironmentVariables()
         {
             var clientProviderFactory = new TestStorageServiceClientProviderFactory();

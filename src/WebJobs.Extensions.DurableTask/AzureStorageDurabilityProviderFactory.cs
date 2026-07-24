@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Linq;
 using DurableTask.AzureStorage;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage;
 using Microsoft.Extensions.Logging;
@@ -90,10 +91,34 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.options.MaxConcurrentEntityFunctions = this.options.MaxConcurrentEntityFunctions ?? maxConcurrentEntitiesDefault;
             this.options.MaxEntityOperationBatchSize = this.options.MaxEntityOperationBatchSize ?? maxEntityOperationBatchSizeDefault;
 
+            bool useLegacyPartitionManagementWasConfigured = this.options.StorageProvider.Keys.Any(key =>
+                string.Equals(
+                    key,
+                    nameof(AzureStorageOptions.UseLegacyPartitionManagement),
+                    StringComparison.OrdinalIgnoreCase));
+            bool useTablePartitionManagementWasConfigured = this.options.StorageProvider.Keys.Any(key =>
+                string.Equals(
+                    key,
+                    nameof(AzureStorageOptions.UseTablePartitionManagement),
+                    StringComparison.OrdinalIgnoreCase));
+
             // Override the configuration defaults with user-provided values in host.json, if any.
             JsonConvert.PopulateObject(JsonConvert.SerializeObject(this.options.StorageProvider), this.azureStorageOptions);
 
             var logger = loggerFactory.CreateLogger(nameof(this.azureStorageOptions));
+            if (useLegacyPartitionManagementWasConfigured &&
+                !useTablePartitionManagementWasConfigured &&
+                this.azureStorageOptions.UseLegacyPartitionManagement &&
+                this.azureStorageOptions.UseTablePartitionManagement)
+            {
+                logger.LogWarning(
+                    $"{nameof(AzureStorageOptions.UseLegacyPartitionManagement)} is enabled and " +
+                    $"{nameof(AzureStorageOptions.UseTablePartitionManagement)} is not configured. " +
+                    $"Disabling {nameof(AzureStorageOptions.UseTablePartitionManagement)} to preserve legacy partition management. " +
+                    $"For improved reliability, consider removing {nameof(AzureStorageOptions.UseLegacyPartitionManagement)} from your `host.json` settings to use the default table partition manager.");
+                this.azureStorageOptions.UseTablePartitionManagement = false;
+            }
+
             this.azureStorageOptions.Validate(logger);
 
             this.DefaultConnectionName = this.azureStorageOptions.ConnectionName ?? ConnectionStringNames.Storage;
