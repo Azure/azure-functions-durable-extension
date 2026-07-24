@@ -14,6 +14,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     internal class AzureStorageDurabilityProviderFactory : IDurabilityProviderFactory
     {
         private const string LoggerName = "Host.Triggers.DurableTask.AzureStorage";
+        private const string UseLegacyPartitionManagementSettingName = "useLegacyPartitionManagement";
+        private const string UseTablePartitionManagementSettingName = "useTablePartitionManagement";
         internal const string ProviderName = "AzureStorage";
 
         private readonly DurableTaskOptions options;
@@ -94,12 +96,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             bool useLegacyPartitionManagementWasConfigured = this.options.StorageProvider.Keys.Any(key =>
                 string.Equals(
                     key,
-                    nameof(AzureStorageOptions.UseLegacyPartitionManagement),
+                    UseLegacyPartitionManagementSettingName,
                     StringComparison.OrdinalIgnoreCase));
             bool useTablePartitionManagementWasConfigured = this.options.StorageProvider.Keys.Any(key =>
                 string.Equals(
                     key,
-                    nameof(AzureStorageOptions.UseTablePartitionManagement),
+                    UseTablePartitionManagementSettingName,
                     StringComparison.OrdinalIgnoreCase));
 
             // Override the configuration defaults with user-provided values in host.json, if any.
@@ -112,10 +114,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.azureStorageOptions.UseTablePartitionManagement)
             {
                 logger.LogWarning(
-                    $"{nameof(AzureStorageOptions.UseLegacyPartitionManagement)} is enabled and " +
-                    $"{nameof(AzureStorageOptions.UseTablePartitionManagement)} is not configured. " +
-                    $"Disabling {nameof(AzureStorageOptions.UseTablePartitionManagement)} to preserve legacy partition management. " +
-                    $"For improved reliability, consider removing {nameof(AzureStorageOptions.UseLegacyPartitionManagement)} from your `host.json` settings to use the default table partition manager.");
+                    $"`{UseLegacyPartitionManagementSettingName}` is enabled and " +
+                    $"`{UseTablePartitionManagementSettingName}` is not configured. " +
+                    $"Disabling `{UseTablePartitionManagementSettingName}` to preserve legacy partition management. " +
+                    $"For improved reliability, consider removing `{UseLegacyPartitionManagementSettingName}` from your `host.json` settings to use the default table partition manager.");
                 this.azureStorageOptions.UseTablePartitionManagement = false;
             }
 

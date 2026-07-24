@@ -182,7 +182,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public void LegacyPartitionManagementWithoutTablePartitionManagement_DisablesDefaultTablePartitionManagement()
+        public void LegacyPartitionManagementConfiguredAndTablePartitionManagementNotConfigured_DisablesDefaultTablePartitionManagement()
         {
             var clientProviderFactory = new TestStorageServiceClientProviderFactory();
             DurableTaskOptions options = BindDurableTaskOptions(
@@ -213,7 +213,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
                 loggerProvider.GetAllLogMessages(),
                 message =>
                     message.Level == LogLevel.Warning &&
-                    message.FormattedMessage.Contains("Disabling UseTablePartitionManagement to preserve legacy partition management."));
+                    message.FormattedMessage.Contains("Disabling `useTablePartitionManagement` to preserve legacy partition management."));
         }
 
         [Fact]
