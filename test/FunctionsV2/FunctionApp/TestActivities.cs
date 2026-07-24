@@ -118,6 +118,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return value;
         }
 
+        public static string BindToObject([ActivityTrigger] object value)
+        {
+            // Regression coverage for https://github.com/Azure/azure-functions-durable-extension/issues/1343:
+            // an 'object'-typed activity parameter must receive the deserialized input value, not the
+            // DurableActivityContext. Returning value.ToString() surfaces which one was bound.
+            return value?.ToString();
+        }
+
         public static async Task BindToBlobViaParameterName(
             [ActivityTrigger] string name,
             [Blob("test/{name}", FileAccess.Read)] Stream input,

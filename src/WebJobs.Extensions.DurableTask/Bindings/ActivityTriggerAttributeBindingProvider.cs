@@ -134,11 +134,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 Type destinationType = this.parameterInfo.ParameterType;
 
                 object? convertedValue;
-                if (destinationType == typeof(object))
-                {
-                    convertedValue = value;
-                }
-                else if (destinationType == typeof(IDurableActivityContext))
+                if (destinationType == typeof(IDurableActivityContext))
                 {
                     convertedValue = activityContext;
                 }
@@ -148,6 +144,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
                 else
                 {
+                    // Deserialize the activity's input to the requested type. This includes System.Object and
+                    // dynamic parameters, which previously received the DurableActivityContext instead of the
+                    // input value (issue #1343).
                     convertedValue = activityContext.GetInput(destinationType);
                 }
 

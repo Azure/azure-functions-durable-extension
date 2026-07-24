@@ -210,6 +210,34 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        public async Task ActivityTriggerAsObject(string storageProviderType)
+        {
+            using (ITestHost host = TestHelpers.GetJobHost(this.loggerProvider, nameof(this.ActivityTriggerAsObject), false, storageProviderType: storageProviderType))
+            {
+                await host.StartAsync();
+
+                // Using StartOrchestrationArgs to start an activity function because it's easier than creating a new type.
+                var startArgs = new StartOrchestrationArgs();
+                startArgs.FunctionName = nameof(TestActivities.BindToObject);
+                startArgs.Input = 5;
+
+                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.CallActivity), startArgs, this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
+                Assert.NotNull(status);
+
+                // Regression test for https://github.com/Azure/azure-functions-durable-extension/issues/1343:
+                // an 'object'-typed [ActivityTrigger] parameter must bind to the deserialized input value (5),
+                // not the DurableActivityContext. The activity returns value.ToString().
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
+                Assert.Equal("5", status.Output);
+
+                await host.StopAsync();
+            }
+        }
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task BindToBlobViaParameterName(string storageProviderType)
         {
             using (ITestHost host = TestHelpers.GetJobHost(this.loggerProvider, nameof(this.BindToBlobViaParameterName), false, storageProviderType: storageProviderType))
