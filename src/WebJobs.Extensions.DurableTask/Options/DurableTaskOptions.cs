@@ -276,27 +276,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// Gets or sets a flag indicating whether poison queue storage is enabled.
         /// </summary>
         /// <remarks>
-        /// <para>If enabled, orchestration, entity, and activity messages that have been dispatched for processing
-        /// more than <see cref="MaxDispatchCount"/> times will be "failed" and moved to the poison queue storage.
-        /// The specific format of the storage depends on which backend storage provider is being used.</para>
+        /// <para>
+        /// If enabled, orchestration, entity, and activity messages that have been dispatched for processing
+        /// more than <see cref="MaxDequeueCount"/> times will be moved to the poison message storage and deleted.
+        /// This may leave orchestrations permanently as <see cref="OrchestrationRuntimeStatus.Running"/> (or any other
+        /// non-terminal state) if the message(s) necessary for them to make progress are deemed "poisoned" and deleted.
+        /// The specific format of the storage depends on which backend storage provider is being used.
+        /// </para>
         /// </remarks>
-        /// <value>
-        /// <c>true</c> to enable poison queue storage; otherwise <c>false</c>.
-        /// </value>
-        public bool IsPoisonQueueStorageEnabled { get; set; }
+        public bool IsPoisonMessageStorageEnabled { get; set; } = true;
 
         /// <summary>
         /// Gets or sets the amount of times a message is dispatched for processing before it is considered "poisoned"
-        /// and moved to the poison queue storage. The default value is 10.
+        /// and moved to the poison message storage. The default value is 5,000, chosen with the intent that only very
+        /// pathological cases will be handled automatically.
         /// </summary>
         /// <remarks>
-        /// This setting is applicable when <see cref="PoisonQueueStorageEnabled"/> is set to <c>true</c>.
+        /// This setting is applicable when <see cref="IsPoisonMessageStorageEnabled"/> is set to <c>true</c>.
         /// </remarks>
-        /// <value>
-        /// The maximum amount of times a message is dispatched before it is considered "poisoned" and
-        /// moved to the poison queue storage.
-        /// </value>
-        public int MaxDispatchCount { get; set; } = 10;
+        public long MaxDequeueCount { get; set; } = 5000;
 
         /// <summary>
         /// Gets or sets the local gRPC listener mode, controlling what version of gRPC listener is created.
@@ -413,6 +411,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (this.MaxEntityOperationBatchSize <= 0)
             {
                 throw new InvalidOperationException($"{nameof(this.MaxEntityOperationBatchSize)} must be a positive integer value.");
+            }
+
+            if (this.MaxDequeueCount <= 0)
+            {
+                throw new InvalidOperationException($"{nameof(this.MaxDequeueCount)} must be a positive integer value.");
             }
         }
 

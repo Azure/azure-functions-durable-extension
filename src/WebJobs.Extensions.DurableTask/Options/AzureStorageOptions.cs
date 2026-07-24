@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using DurableTask.AzureStorage;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage;
 using Microsoft.Extensions.Logging;
@@ -256,6 +257,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// table must now be read before processing every orchestration work item to obtain the latest etag.
         /// </remarks>
         public bool UseInstanceTableEtag { get; set; } = false;
+
+        /// <summary>
+        /// Gets or sets the Azure Blob Storage container name suffix to use for poison message storage.
+        /// A container will be created with this suffix in the format "{taskhubname}-{suffix}".
+        /// The container name must adhere to the Azure Blob Storage container naming rules:
+        /// https://learn.microsoft.com/en-us/rest/api/storageservices/Naming-and-Referencing-Containers--Blobs--and-Metadata#directory-names
+        /// In particular, this means the total length of the name must not exceed 63 characters, the name can only contain lowercase letters,
+        /// numbers, and hyphens, must start and end with a letter or number, and cannot contain consecutive hyphens.
+        /// If not specified, the default value "poison-messages" will be used.
+        /// </summary>
+        public string PoisonMessageStorageContainerNameSuffix { get; set; } = "poison-messages";
 
         /// <summary>
         /// Throws an exception if the provided hub name violates any naming conventions for the storage provider.

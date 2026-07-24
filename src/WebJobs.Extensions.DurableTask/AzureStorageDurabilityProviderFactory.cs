@@ -117,6 +117,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.options.SetDefaultHubName(sanitizedHubName);
                 }
 
+                if (this.options.IsPoisonMessageStorageEnabled)
+                {
+                    string poisonMessageContainerName = $"{this.options.HubName.ToLowerInvariant()}-{this.azureStorageOptions.PoisonMessageStorageContainerNameSuffix}";
+                    try
+                    {
+                        NameValidator.ValidateContainerName(poisonMessageContainerName);
+                    }
+                    catch (ArgumentException ex)
+                    {
+                        throw new ArgumentException(
+                            $"The poison message blob container name '{poisonMessageContainerName}' using suffix " +
+                            $"{this.azureStorageOptions.PoisonMessageStorageContainerNameSuffix} from the " +
+                            $"{nameof(this.azureStorageOptions.PoisonMessageStorageContainerNameSuffix)} setting is invalid. " +
+                            $"The name must not exceeds 63 characters, can only contain lowercase letters, numbers, and hyphens, " +
+                            $"must start and end with a letter or number, and cannot contain consecutive hyphens", ex);
+                    }
+                }
+
                 this.defaultSettings = this.GetAzureStorageOrchestrationServiceSettings();
                 this.hasValidatedOptions = true;
             }
@@ -224,6 +242,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 PartitionTableOperationTimeout = this.azureStorageOptions.PartitionTableOperationTimeout,
                 QueueClientMessageEncoding = this.azureStorageOptions.QueueClientMessageEncoding,
                 UseInstanceTableEtag = this.azureStorageOptions.UseInstanceTableEtag,
+                IsPoisonMessageStorageEnabled = this.options.IsPoisonMessageStorageEnabled,
+                MaxDequeueCount = this.options.MaxDequeueCount,
+                PoisonMessageStorageContainerNameSuffix = this.azureStorageOptions.PoisonMessageStorageContainerNameSuffix,
             };
 
             if (this.inConsumption)
