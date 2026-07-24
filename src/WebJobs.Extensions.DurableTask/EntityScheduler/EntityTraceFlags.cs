@@ -28,6 +28,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         // the execution bypassed the functions middleware because no user code is called
         public const char DirectExecution = 'D';
 
+        // the entity function was registered/indexed but has no active listener (e.g. disabled but
+        // still deployed): the batch is failed deterministically instead of dereferencing a null executor
+        public const char FunctionUnavailable = 'U';
+
         // an internal error was captured
         public const char InternalError = '!';
 
