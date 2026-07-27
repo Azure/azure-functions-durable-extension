@@ -73,6 +73,78 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
         }
 
         [TestMethod]
+        public void ConfigureAwait_ResultStoredThenAwaited_Diagnostic()
+        {
+            var test = @"
+    using System.Threading.Tasks;
+    using Microsoft.Azure.WebJobs;
+    using Microsoft.Azure.WebJobs.Extensions.DurableTask;
+
+    namespace VSSample
+    {
+        public static class HelloSequence
+        {
+            [FunctionName(""ConfigureAwaitAnalyzerTestCases"")]
+            public static async Task Run(
+            [OrchestrationTrigger] IDurableOrchestrationContext context)
+            {
+                var configuredAwaitable = context.CallActivityAsync<string>(""Function1_Hello"", ""Tokyo"").ConfigureAwait(false);
+                await configuredAwaitable;
+            }
+        }
+    }";
+            var expectedDiagnostics = new DiagnosticResult
+            {
+                Id = DiagnosticId,
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "ConfigureAwait"),
+                Severity = Severity,
+                Locations =
+                    new[] {
+                            new DiagnosticResultLocation("Test0.cs", 14, 43)
+                        }
+            };
+
+            VerifyCSharpDiagnostic(test, expectedDiagnostics);
+        }
+
+        [TestMethod]
+        public void ConfigureAwait_ResultAssignedThenAwaited_Diagnostic()
+        {
+            var test = @"
+    using System.Runtime.CompilerServices;
+    using System.Threading.Tasks;
+    using Microsoft.Azure.WebJobs;
+    using Microsoft.Azure.WebJobs.Extensions.DurableTask;
+
+    namespace VSSample
+    {
+        public static class HelloSequence
+        {
+            [FunctionName(""ConfigureAwaitAnalyzerTestCases"")]
+            public static async Task Run(
+            [OrchestrationTrigger] IDurableOrchestrationContext context)
+            {
+                ConfiguredTaskAwaitable<string> configuredAwaitable;
+                configuredAwaitable = context.CallActivityAsync<string>(""Function1_Hello"", ""Tokyo"").ConfigureAwait(false);
+                await configuredAwaitable;
+            }
+        }
+    }";
+            var expectedDiagnostics = new DiagnosticResult
+            {
+                Id = DiagnosticId,
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "ConfigureAwait"),
+                Severity = Severity,
+                Locations =
+                    new[] {
+                            new DiagnosticResultLocation("Test0.cs", 16, 39)
+                        }
+            };
+
+            VerifyCSharpDiagnostic(test, expectedDiagnostics);
+        }
+
+        [TestMethod]
         public void ConfigureAwait_True_OnActivityCall_NoDiagnostic()
         {
             var test = @"
@@ -163,6 +235,39 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
                 new ConfigurableOperation().ConfigureAwait(false);
+                await context.CallActivityAsync<string>(""Function1_Hello"", ""Tokyo"");
+            }
+        }
+    }";
+
+            VerifyCSharpDiagnostic(test);
+        }
+
+        [TestMethod]
+        public void ConfigureAwait_ResultStoredButNotAwaited_NoDiagnostic()
+        {
+            var test = @"
+    using System.Threading.Tasks;
+    using Microsoft.Azure.WebJobs;
+    using Microsoft.Azure.WebJobs.Extensions.DurableTask;
+
+    namespace VSSample
+    {
+        public class ConfigurableOperation
+        {
+            public Task ConfigureAwait(bool continueOnCapturedContext)
+            {
+                return Task.CompletedTask;
+            }
+        }
+
+        public static class HelloSequence
+        {
+            [FunctionName(""ConfigureAwaitAnalyzerTestCases"")]
+            public static async Task Run(
+            [OrchestrationTrigger] IDurableOrchestrationContext context)
+            {
+                var configuredAwaitable = new ConfigurableOperation().ConfigureAwait(false);
                 await context.CallActivityAsync<string>(""Function1_Hello"", ""Tokyo"");
             }
         }

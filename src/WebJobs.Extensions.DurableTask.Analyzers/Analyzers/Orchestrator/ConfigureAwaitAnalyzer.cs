@@ -21,7 +21,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         public static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, Severity, isEnabledByDefault: true, description: Description,
             customTags: WellKnownDiagnosticTags.CompilationEnd);
 
-        public static bool RegisterDiagnostic(CompilationAnalysisContext context, SyntaxNode method)
+        public static bool RegisterDiagnostic(CompilationAnalysisContext context, SemanticModel semanticModel, SyntaxNode method)
         {
             var diagnosedIssue = false;
 
@@ -39,7 +39,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                         && identifierName.Parent is MemberAccessExpressionSyntax memberAccessExpression
                         && memberAccessExpression.Name == identifierName
                         && memberAccessExpression.Parent is InvocationExpressionSyntax invocationExpression
-                        && IsAwaited(invocationExpression)
+                        && IsAwaited(invocationExpression, method, semanticModel)
                         && !ContinuesOnCapturedContext(invocationExpression))
                     {
                         var diagnostic = Diagnostic.Create(Rule, memberAccessExpression.GetLocation(), "ConfigureAwait");
@@ -57,16 +57,80 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             return diagnosedIssue;
         }
 
-        private static bool IsAwaited(InvocationExpressionSyntax invocationExpression)
+        private static bool IsAwaited(
+            InvocationExpressionSyntax invocationExpression,
+            SyntaxNode method,
+            SemanticModel semanticModel)
         {
-            SyntaxNode expression = invocationExpression;
-            while (expression.Parent is ParenthesizedExpressionSyntax parenthesizedExpression)
+            ExpressionSyntax expression = GetOutermostParenthesizedExpression(invocationExpression);
+            if (expression.Parent is AwaitExpressionSyntax awaitExpression &&
+                awaitExpression.Expression == expression)
+            {
+                return true;
+            }
+
+            if (!TryGetCapturedSymbol(expression, semanticModel, out ISymbol capturedSymbol))
+            {
+                return false;
+            }
+
+            foreach (SyntaxNode descendant in method.DescendantNodes())
+            {
+                if (descendant is AwaitExpressionSyntax laterAwait &&
+                    laterAwait.SpanStart > invocationExpression.SpanStart)
+                {
+                    ExpressionSyntax awaitedExpression = laterAwait.Expression;
+                    while (awaitedExpression is ParenthesizedExpressionSyntax parenthesizedExpression)
+                    {
+                        awaitedExpression = parenthesizedExpression.Expression;
+                    }
+
+                    if (SyntaxNodeUtils.TryGetISymbol(semanticModel, awaitedExpression, out ISymbol awaitedSymbol) &&
+                        SymbolEqualityComparer.Default.Equals(capturedSymbol, awaitedSymbol))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private static ExpressionSyntax GetOutermostParenthesizedExpression(ExpressionSyntax expression)
+        {
+            while (expression.Parent is ParenthesizedExpressionSyntax parenthesizedExpression &&
+                parenthesizedExpression.Expression == expression)
             {
                 expression = parenthesizedExpression;
             }
 
-            return expression.Parent is AwaitExpressionSyntax awaitExpression &&
-                awaitExpression.Expression == expression;
+            return expression;
+        }
+
+        private static bool TryGetCapturedSymbol(
+            ExpressionSyntax expression,
+            SemanticModel semanticModel,
+            out ISymbol capturedSymbol)
+        {
+            if (expression.Parent is EqualsValueClauseSyntax equalsValueClause &&
+                equalsValueClause.Value == expression &&
+                equalsValueClause.Parent is VariableDeclaratorSyntax variableDeclarator)
+            {
+                capturedSymbol = semanticModel.GetDeclaredSymbol(variableDeclarator);
+                return capturedSymbol != null;
+            }
+
+            if (expression.Parent is AssignmentExpressionSyntax assignmentExpression &&
+                assignmentExpression.Right == expression)
+            {
+                return SyntaxNodeUtils.TryGetISymbol(
+                    semanticModel,
+                    assignmentExpression.Left,
+                    out capturedSymbol);
+            }
+
+            capturedSymbol = null;
+            return false;
         }
 
         // ConfigureAwait(true) preserves the orchestration SynchronizationContext (identical to a normal await),
