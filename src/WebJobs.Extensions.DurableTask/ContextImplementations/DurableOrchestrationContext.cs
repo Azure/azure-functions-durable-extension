@@ -1095,8 +1095,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // CurrentUtcDateTime would schedule a durable timer in the past, which fires immediately
             // and runs the timeout action (e.g. an immediate TimeoutException or default value).
             // Instead, wait for the event without any timeout timer, mirroring the no-timeout
-            // WaitForExternalEvent overload. A cancellation token has no deterministic durable meaning
-            // without an accompanying timer, so it is intentionally not applied on this path.
+            // WaitForExternalEvent overload. The cancelToken parameter exists solely to cancel that
+            // internal timeout timer, so with no timer to cancel it is intentionally ignored here.
             // See https://github.com/Azure/azure-functions-durable-extension/issues/2111.
             if (timeout == Timeout.InfiniteTimeSpan)
             {

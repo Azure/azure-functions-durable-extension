@@ -44,7 +44,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 context.RaiseEvent("Approval", "\"approved\"");
 
-                string result = await waitTask;
+                // Bound the wait so a future regression fails fast instead of hanging the test run.
+                string result = await waitTask.WaitAsync(TimeSpan.FromSeconds(30));
                 Assert.Equal("approved", result);
             }
             finally
