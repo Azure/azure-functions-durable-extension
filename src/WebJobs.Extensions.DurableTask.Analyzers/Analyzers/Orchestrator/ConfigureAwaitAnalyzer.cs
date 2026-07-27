@@ -37,6 +37,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     // not fully bind during analysis.
                     if (identifierText == "ConfigureAwait"
                         && identifierName.Parent is MemberAccessExpressionSyntax memberAccessExpression
+                        && memberAccessExpression.Name == identifierName
                         && memberAccessExpression.Parent is InvocationExpressionSyntax invocationExpression
                         && !ContinuesOnCapturedContext(invocationExpression))
                     {
