@@ -61,6 +61,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
             string? instanceId = activity.GetTagItem(Schema.Task.InstanceId) as string;
             if (!string.IsNullOrEmpty(instanceId))
             {
+                if (string.IsNullOrEmpty(telemetry.Context.Operation.Name))
+                {
+                    telemetry.Context.Operation.Name = activity.DisplayName;
+                }
+
                 // Append instance ID to operation name if not already present
                 if (!telemetry.Context.Operation.Name.Contains(instanceId))
                 {

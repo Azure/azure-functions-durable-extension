@@ -169,6 +169,36 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
+        /// Verifies that telemetry without its own Name falls back to the current Activity display name.
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void Initialize_WithNonOperationTelemetryAndEmptyOperationName_SetsFromActivityAndAppends()
+        {
+            // Arrange
+            var initializer = new DurableTaskInstanceIdTelemetryInitializer(true);
+            var telemetry = new ExceptionTelemetry();
+
+            using var activity = new Activity("orchestration:Function1");
+            activity.SetTag(Schema.Task.Type, TraceActivityConstants.Orchestration);
+            activity.SetTag(Schema.Task.InstanceId, "test-instance-id");
+            activity.Start();
+
+            try
+            {
+                // Act
+                initializer.Initialize(telemetry);
+
+                // Assert
+                Assert.Equal("orchestration:Function1 (test-instance-id)", telemetry.Context.Operation.Name);
+            }
+            finally
+            {
+                activity.Stop();
+            }
+        }
+
+        /// <summary>
         /// Verifies that activity function spans (not to be confused with System.Diagnostics.Activity)
         /// also have the instance ID appended when the feature is enabled.
         /// </summary>
