@@ -59,6 +59,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             options.MaxQueuePollingInterval = TimeSpan.FromSeconds(6);
             Assert.Equal(TimeSpan.FromSeconds(6), options.MaxQueuePollingInterval);
         }
+
 #endif
     }
 }
