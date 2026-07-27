@@ -144,9 +144,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
                 else
                 {
-                    // Deserialize the activity's input to the requested type. This includes System.Object and
-                    // dynamic parameters, which previously received the DurableActivityContext instead of the
-                    // input value (issue #1343).
+                    // Deserialize the activity's input to the requested type. This includes System.Object and dynamic
+                    // parameters, which previously received the raw trigger value (DurableActivityContext or serialized input)
+                    // instead of the deserialized input value (issue #1343).
                     convertedValue = activityContext.GetInput(destinationType);
                 }
 
