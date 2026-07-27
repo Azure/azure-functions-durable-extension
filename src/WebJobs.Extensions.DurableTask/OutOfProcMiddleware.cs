@@ -338,8 +338,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 });
             }
 
-            if (functionInfo == null)
+            if (functionInfo?.Executor == null)
             {
+                // The entity is not registered (deleted/renamed) or is registered/indexed but disabled
+                // but still deployed, so it has no active listener (null executor). Fail the batch
+                // deterministically instead of dereferencing the null executor below, which would
+                // surface as a transient failure and retry the work item forever.
+                // See https://github.com/Azure/azure-functions-durable-extension/issues/3471.
                 SetErrorResult(new FailureDetails(
                     errorType: "EntityFunctionNotFound",
                     errorMessage: this.extension.GetInvalidEntityFunctionMessage(functionName.Name),
@@ -531,9 +536,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return;
             }
 
-            if (!this.extension.TryGetActivityInfo(functionName, out RegisteredFunctionInfo? function))
+            if (!this.extension.TryGetActivityInfo(functionName, out RegisteredFunctionInfo? function)
+                || function?.Executor == null)
             {
                 // Fail the activity call with an error explaining that the function name is invalid.
+                // This covers two cases that must both fail deterministically rather than poison-loop:
+                //   1. the activity is not registered (deleted/renamed), and
+                //   2. the activity is registered/indexed but is disabled and still deployed, so it has
+                //      no active listener and its Executor is null. Dereferencing that null executor
+                //      below would surface as a transient runtime failure and retry the work item
+                //      forever. See https://github.com/Azure/azure-functions-durable-extension/issues/3471.
                 string errorMessage = this.extension.GetInvalidActivityFunctionMessage(functionName.Name);
                 dispatchContext.SetProperty(new ActivityExecutionResult
                 {
