@@ -57,18 +57,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         }
 
         // ConfigureAwait(true) preserves the orchestration SynchronizationContext (identical to a normal await),
-        // so it is safe. Only ConfigureAwait(false) - or a non-literal argument we cannot prove is true - is flagged.
+        // so it is safe. Only the standard one-argument form is exempted; additional arguments indicate a
+        // different overload whose behavior cannot be proven safe without symbol binding.
         private static bool ContinuesOnCapturedContext(InvocationExpressionSyntax invocationExpression)
         {
-            foreach (ArgumentSyntax argument in invocationExpression.ArgumentList.Arguments)
-            {
-                if (argument.Expression.IsKind(SyntaxKind.TrueLiteralExpression))
-                {
-                    return true;
-                }
-            }
-
-            return false;
+            SeparatedSyntaxList<ArgumentSyntax> arguments = invocationExpression.ArgumentList.Arguments;
+            return arguments.Count == 1 &&
+                arguments[0].Expression.IsKind(SyntaxKind.TrueLiteralExpression);
         }
     }
 }
