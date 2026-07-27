@@ -145,18 +145,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             FormatException expectedException =
                 Assert.Throws<FormatException>(() => Convert.FromBase64String("not-base64"));
             var pool = new TrackingByteArrayPool();
-            FormatException actualException;
+            Action decode = orchestratorResponse
+                ? () => ProtobufUtils.Base64Decode("not-base64", P.OrchestratorResponse.Parser, pool)
+                : () => ProtobufUtils.Base64Decode("not-base64", P.EntityBatchResult.Parser, pool);
 
-            if (orchestratorResponse)
-            {
-                actualException = Assert.Throws<FormatException>(
-                    () => ProtobufUtils.Base64Decode("not-base64", P.OrchestratorResponse.Parser, pool));
-            }
-            else
-            {
-                actualException = Assert.Throws<FormatException>(
-                    () => ProtobufUtils.Base64Decode("not-base64", P.EntityBatchResult.Parser, pool));
-            }
+            FormatException actualException = Assert.Throws<FormatException>(decode);
 
             Assert.Equal(expectedException.Message, actualException.Message);
             AssertBufferReturned(pool, "not-base64");
