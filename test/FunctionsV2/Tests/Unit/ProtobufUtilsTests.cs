@@ -202,6 +202,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             AssertBufferReturned(pool, encoded);
         }
 
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void Base64Decode_NullArguments_ThrowArgumentNullExceptionBeforeRenting()
+        {
+            var pool = new TrackingByteArrayPool();
+
+            ArgumentNullException encodedMessageException = Assert.Throws<ArgumentNullException>(
+                () => ProtobufUtils.Base64Decode(null, P.OrchestratorResponse.Parser, pool));
+            ArgumentNullException parserException = Assert.Throws<ArgumentNullException>(
+                () => ProtobufUtils.Base64Decode<P.OrchestratorResponse>(string.Empty, null, pool));
+            ArgumentNullException bufferPoolException = Assert.Throws<ArgumentNullException>(
+                () => ProtobufUtils.Base64Decode(string.Empty, P.OrchestratorResponse.Parser, null));
+
+            Assert.Equal("encodedMessage", encodedMessageException.ParamName);
+            Assert.Equal("parser", parserException.ParamName);
+            Assert.Equal("bufferPool", bufferPoolException.ParamName);
+            Assert.Equal(0, pool.RentCount);
+        }
+
         /// <summary>
         /// Tests that ToEntityBatchResult properly passes the default version to all actions.
         /// </summary>
@@ -688,6 +707,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 // Overwrite returned storage so parsed messages cannot rely on pooled memory.
                 Array.Fill(array, (byte)0);
+                this.rentedBuffer = null;
             }
         }
     }

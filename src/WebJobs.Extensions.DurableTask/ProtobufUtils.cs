@@ -453,6 +453,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             ArrayPool<byte> bufferPool)
             where T : IMessage<T>
         {
+            encodedMessage = encodedMessage ?? throw new ArgumentNullException(nameof(encodedMessage));
+            parser = parser ?? throw new ArgumentNullException(nameof(parser));
+            bufferPool = bufferPool ?? throw new ArgumentNullException(nameof(bufferPool));
+
             ReadOnlySpan<char> encodedSpan = encodedMessage.AsSpan();
             int base64CharacterCount = encodedSpan.Length;
 
