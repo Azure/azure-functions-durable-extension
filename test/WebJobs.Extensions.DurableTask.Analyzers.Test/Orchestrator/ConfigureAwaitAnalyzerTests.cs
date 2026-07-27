@@ -174,6 +174,38 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             VerifyCSharpDiagnostic(test);
         }
 
+        [TestMethod]
+        public void ConfigureAwait_AsMemberAccessExpression_NoDiagnostic()
+        {
+            var test = @"
+    using System.Threading.Tasks;
+    using Microsoft.Azure.WebJobs;
+    using Microsoft.Azure.WebJobs.Extensions.DurableTask;
+
+    namespace VSSample
+    {
+        public static class ConfigureAwait
+        {
+            public static void Foo(bool value)
+            {
+            }
+        }
+
+        public static class HelloSequence
+        {
+            [FunctionName(""ConfigureAwaitAnalyzerTestCases"")]
+            public static async Task Run(
+            [OrchestrationTrigger] IDurableOrchestrationContext context)
+            {
+                ConfigureAwait.Foo(false);
+                await context.CallActivityAsync<string>(""Function1_Hello"", ""Tokyo"");
+            }
+        }
+    }";
+
+            VerifyCSharpDiagnostic(test);
+        }
+
         protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()
         {
             return new DeterministicMethodAnalyzer();
