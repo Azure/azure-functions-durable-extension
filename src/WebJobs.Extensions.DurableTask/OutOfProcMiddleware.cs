@@ -149,8 +149,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             "sending the function result back to the host.");
                     }
 
-                    byte[] triggerReturnValueBytes = Convert.FromBase64String(triggerReturnValue);
-                    P.OrchestratorResponse response = P.OrchestratorResponse.Parser.ParseFrom(triggerReturnValueBytes);
+                    P.OrchestratorResponse response =
+                        ProtobufUtils.Base64Decode(triggerReturnValue, P.OrchestratorResponse.Parser);
 
                     workerRequiresHistory = response.RequiresHistory;
 
@@ -395,8 +395,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             "sending the function result back to the host.");
                     }
 
-                    byte[] triggerReturnValueBytes = Convert.FromBase64String(triggerReturnValue);
-                    P.EntityBatchResult response = P.EntityBatchResult.Parser.ParseFrom(triggerReturnValueBytes);
+                    P.EntityBatchResult response =
+                        ProtobufUtils.Base64Decode(triggerReturnValue, P.EntityBatchResult.Parser);
                     workerRequiresEntityState = response.RequiresState;
                     context.Result = response.ToEntityBatchResult(this.Options.DefaultVersion);
 

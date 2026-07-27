@@ -441,6 +441,53 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
+        public static T Base64Decode<T>(string encodedMessage, MessageParser<T> parser)
+            where T : IMessage<T>
+        {
+            return Base64Decode(encodedMessage, parser, ArrayPool<byte>.Shared);
+        }
+
+        internal static T Base64Decode<T>(
+            string encodedMessage,
+            MessageParser<T> parser,
+            ArrayPool<byte> bufferPool)
+            where T : IMessage<T>
+        {
+            ReadOnlySpan<char> encodedSpan = encodedMessage.AsSpan();
+            int base64CharacterCount = encodedSpan.Length;
+
+            // Convert ignores these whitespace characters, so exclude them from the pooled buffer size.
+            int firstWhitespaceIndex = encodedSpan.IndexOfAny(" \t\r\n");
+            if (firstWhitespaceIndex >= 0)
+            {
+                for (int i = firstWhitespaceIndex; i < encodedSpan.Length; i++)
+                {
+                    if (encodedSpan[i] is ' ' or '\t' or '\r' or '\n')
+                    {
+                        base64CharacterCount--;
+                    }
+                }
+            }
+
+            int maxDecodedLength = checked((base64CharacterCount / 4) * 3);
+            byte[] rentedBuffer = bufferPool.Rent(maxDecodedLength);
+            try
+            {
+                if (Convert.TryFromBase64String(encodedMessage, rentedBuffer, out int bytesWritten))
+                {
+                    return parser.ParseFrom(rentedBuffer, 0, bytesWritten);
+                }
+            }
+            finally
+            {
+                // Match Base64Encode's policy: pooled protobuf payload buffers are not cleared.
+                bufferPool.Return(rentedBuffer, clearArray: false);
+            }
+
+            // Preserve Convert.FromBase64String's exact exception behavior for malformed input.
+            return parser.ParseFrom(Convert.FromBase64String(encodedMessage));
+        }
+
         internal static FailureDetails? GetFailureDetails(P.TaskFailureDetails? failureDetails)
         {
             if (failureDetails == null)

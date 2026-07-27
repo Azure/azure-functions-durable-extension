@@ -2,7 +2,10 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Buffers;
+using System.Linq;
 using DurableTask.Core.Entities.OperationFormat;
+using Google.Protobuf;
 using Google.Protobuf.WellKnownTypes;
 using Xunit;
 using CoreOrchestrationStatus = global::DurableTask.Core.OrchestrationStatus;
@@ -62,6 +65,148 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal("TestOrchestrator", startOrchestrationResult.Name);
             Assert.Equal("test-instance-id", startOrchestrationResult.InstanceId);
             Assert.Equal(expectedVersion, startOrchestrationResult.Version);
+        }
+
+        [Theory]
+        [InlineData(32)]
+        [InlineData(1024 * 1024)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void Base64Decode_OrchestratorResponse_RoundTripsAndReturnsBuffer(int customStatusLength)
+        {
+            var expected = new P.OrchestratorResponse
+            {
+                InstanceId = "test-instance",
+                CustomStatus = new string('x', customStatusLength),
+                RequiresHistory = true,
+            };
+            expected.Actions.Add(new P.OrchestratorAction
+            {
+                Id = 42,
+                CompleteOrchestration = new P.CompleteOrchestrationAction
+                {
+                    Result = "\"done\"",
+                    FailureDetails = new P.TaskFailureDetails
+                    {
+                        ErrorType = "TestError",
+                        ErrorMessage = "Test failure details",
+                    },
+                },
+            });
+            string encoded = Convert.ToBase64String(expected.ToByteArray());
+            var pool = new TrackingByteArrayPool();
+
+            P.OrchestratorResponse actual =
+                ProtobufUtils.Base64Decode(encoded, P.OrchestratorResponse.Parser, pool);
+
+            Assert.Equal(expected, actual);
+            AssertBufferReturned(pool, encoded);
+        }
+
+        [Theory]
+        [InlineData(32)]
+        [InlineData(1024 * 1024)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void Base64Decode_EntityBatchResult_RoundTripsAndReturnsBuffer(int entityStateLength)
+        {
+            var expected = new P.EntityBatchResult
+            {
+                EntityState = new string('x', entityStateLength),
+                CompletionToken = "test-token",
+                FailureDetails = new P.TaskFailureDetails
+                {
+                    ErrorType = "TestError",
+                    ErrorMessage = "Test failure details",
+                },
+                RequiresState = true,
+            };
+            expected.Results.Add(new P.OperationResult
+            {
+                Success = new P.OperationResultSuccess
+                {
+                    Result = "\"done\"",
+                },
+            });
+            string encoded = Convert.ToBase64String(expected.ToByteArray());
+            var pool = new TrackingByteArrayPool();
+
+            P.EntityBatchResult actual =
+                ProtobufUtils.Base64Decode(encoded, P.EntityBatchResult.Parser, pool);
+
+            Assert.Equal(expected, actual);
+            AssertBufferReturned(pool, encoded);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void Base64Decode_MalformedBase64_ThrowsAndReturnsBuffer(bool orchestratorResponse)
+        {
+            FormatException expectedException =
+                Assert.Throws<FormatException>(() => Convert.FromBase64String("not-base64"));
+            var pool = new TrackingByteArrayPool();
+            FormatException actualException;
+
+            if (orchestratorResponse)
+            {
+                actualException = Assert.Throws<FormatException>(
+                    () => ProtobufUtils.Base64Decode("not-base64", P.OrchestratorResponse.Parser, pool));
+            }
+            else
+            {
+                actualException = Assert.Throws<FormatException>(
+                    () => ProtobufUtils.Base64Decode("not-base64", P.EntityBatchResult.Parser, pool));
+            }
+
+            Assert.Equal(expectedException.Message, actualException.Message);
+            AssertBufferReturned(pool, "not-base64");
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void Base64Decode_MalformedProtobuf_ThrowsAndReturnsBuffer(bool orchestratorResponse)
+        {
+            string encoded = Convert.ToBase64String([0x80]);
+            var pool = new TrackingByteArrayPool();
+            InvalidProtocolBufferException expectedException;
+            InvalidProtocolBufferException actualException;
+
+            if (orchestratorResponse)
+            {
+                expectedException = Assert.Throws<InvalidProtocolBufferException>(
+                    () => P.OrchestratorResponse.Parser.ParseFrom(Convert.FromBase64String(encoded)));
+                actualException = Assert.Throws<InvalidProtocolBufferException>(
+                    () => ProtobufUtils.Base64Decode(encoded, P.OrchestratorResponse.Parser, pool));
+            }
+            else
+            {
+                expectedException = Assert.Throws<InvalidProtocolBufferException>(
+                    () => P.EntityBatchResult.Parser.ParseFrom(Convert.FromBase64String(encoded)));
+                actualException = Assert.Throws<InvalidProtocolBufferException>(
+                    () => ProtobufUtils.Base64Decode(encoded, P.EntityBatchResult.Parser, pool));
+            }
+
+            Assert.Equal(expectedException.Message, actualException.Message);
+            AssertBufferReturned(pool, encoded);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void Base64Decode_WhitespaceOnly_DoesNotOverRent(bool orchestratorResponse)
+        {
+            string encoded = $"\t\r\n{new string(' ', 1024 * 1024)}";
+            var pool = new TrackingByteArrayPool();
+
+            IMessage actual = orchestratorResponse
+                ? ProtobufUtils.Base64Decode(encoded, P.OrchestratorResponse.Parser, pool)
+                : ProtobufUtils.Base64Decode(encoded, P.EntityBatchResult.Parser, pool);
+
+            Assert.Equal(0, actual.CalculateSize());
+            AssertBufferReturned(pool, encoded);
         }
 
         /// <summary>
@@ -506,6 +651,51 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             // Assert
             Assert.Null(filter.RuntimeStatus);
+        }
+
+        private static void AssertBufferReturned(TrackingByteArrayPool pool, string encoded)
+        {
+            int base64CharacterCount = encoded.Count(
+                character => character != ' ' && character != '\t' && character != '\r' && character != '\n');
+            Assert.Equal(1, pool.RentCount);
+            Assert.Equal(checked((base64CharacterCount / 4) * 3), pool.MinimumLength);
+            Assert.Equal(1, pool.ReturnCount);
+            Assert.False(pool.ClearArray);
+        }
+
+        private sealed class TrackingByteArrayPool : ArrayPool<byte>
+        {
+            private byte[] rentedBuffer;
+
+            public int RentCount { get; private set; }
+
+            public int MinimumLength { get; private set; }
+
+            public int ReturnCount { get; private set; }
+
+            public bool ClearArray { get; private set; }
+
+            public override byte[] Rent(int minimumLength)
+            {
+                Assert.Null(this.rentedBuffer);
+                this.RentCount++;
+                this.MinimumLength = minimumLength;
+
+                // Dirty trailing bytes ensure the parser only reads the valid decoded segment.
+                this.rentedBuffer = new byte[checked(minimumLength + 64)];
+                Array.Fill(this.rentedBuffer, byte.MaxValue);
+                return this.rentedBuffer;
+            }
+
+            public override void Return(byte[] array, bool clearArray = false)
+            {
+                Assert.Same(this.rentedBuffer, array);
+                this.ReturnCount++;
+                this.ClearArray = clearArray;
+
+                // Overwrite returned storage so parsed messages cannot rely on pooled memory.
+                Array.Fill(array, (byte)0);
+            }
         }
     }
 }
