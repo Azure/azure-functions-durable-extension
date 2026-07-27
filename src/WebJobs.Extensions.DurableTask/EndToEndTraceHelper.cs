@@ -220,10 +220,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             bool isReplay,
             int taskEventId = -1)
         {
-            this.SanitizeString(input, out string loggerInput, out string sanitizedInput);
-
             if (this.ShouldLogEvent(isReplay))
             {
+                this.SanitizeString(input, out string loggerInput, out string sanitizedInput);
+
                 EtwEventSource.Instance.FunctionStarting(
                     hubName,
                     LocalAppName,
@@ -308,10 +308,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             bool isReplay,
             int taskEventId = -1)
         {
-            this.SanitizeString(output, out string loggerOutput, out string sanitizedOutput);
-
             if (this.ShouldLogEvent(isReplay))
             {
+                this.SanitizeString(output, out string loggerOutput, out string sanitizedOutput);
+
                 EtwEventSource.Instance.FunctionCompleted(
                     hubName,
                     LocalAppName,
@@ -449,8 +449,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             bool isReplay,
             int taskEventId = -1)
         {
+            if (!this.ShouldLogEvent(isReplay))
+            {
+                return;
+            }
+
             this.SanitizeException(exception, out string loggerReason, out string sanitizedReason);
-            this.FunctionFailed(hubName, functionName, instanceId, loggerReason, sanitizedReason, functionType, isReplay, taskEventId);
+            this.WriteFunctionFailed(hubName, functionName, instanceId, loggerReason, sanitizedReason, functionType, isReplay, taskEventId);
         }
 
         public void FunctionFailed(
@@ -463,25 +468,40 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             bool isReplay,
             int taskEventId = -1)
         {
-            if (this.ShouldLogEvent(isReplay))
+            if (!this.ShouldLogEvent(isReplay))
             {
-                EtwEventSource.Instance.FunctionFailed(
-                    hubName,
-                    LocalAppName,
-                    LocalSlotName,
-                    functionName,
-                    taskEventId,
-                    instanceId,
-                    sanitizedReason,
-                    functionType.ToString(),
-                    ExtensionVersion,
-                    isReplay);
-
-                this.logger.LogError(
-                    "{instanceId}: Function '{functionName} ({functionType})' failed with an error. Reason: {reason}. IsReplay: {isReplay}. State: {state}. RuntimeStatus: {runtimeStatus}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}. TaskEventId: {taskEventId}",
-                    instanceId, functionName, functionType, reason, isReplay, FunctionState.Failed, OrchestrationRuntimeStatus.Failed, hubName,
-                    LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++, taskEventId);
+                return;
             }
+
+            this.WriteFunctionFailed(hubName, functionName, instanceId, reason, sanitizedReason, functionType, isReplay, taskEventId);
+        }
+
+        private void WriteFunctionFailed(
+            string hubName,
+            string functionName,
+            string instanceId,
+            string reason,
+            string sanitizedReason,
+            FunctionType functionType,
+            bool isReplay,
+            int taskEventId)
+        {
+            EtwEventSource.Instance.FunctionFailed(
+                hubName,
+                LocalAppName,
+                LocalSlotName,
+                functionName,
+                taskEventId,
+                instanceId,
+                sanitizedReason,
+                functionType.ToString(),
+                ExtensionVersion,
+                isReplay);
+
+            this.logger.LogError(
+                "{instanceId}: Function '{functionName} ({functionType})' failed with an error. Reason: {reason}. IsReplay: {isReplay}. State: {state}. RuntimeStatus: {runtimeStatus}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}. TaskEventId: {taskEventId}",
+                instanceId, functionName, functionType, reason, isReplay, FunctionState.Failed, OrchestrationRuntimeStatus.Failed, hubName,
+                LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++, taskEventId);
         }
 
         public void FunctionAborted(
@@ -519,11 +539,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
            double duration,
            bool isReplay)
         {
-            this.SanitizeString(input, out string loggerInput, out string sanitizedInput);
-            this.SanitizeString(output, out string loggerOutput, out string sanitizedOutput);
-
             if (this.ShouldLogEvent(isReplay))
             {
+                this.SanitizeString(input, out string loggerInput, out string sanitizedInput);
+                this.SanitizeString(output, out string loggerOutput, out string sanitizedOutput);
+
                 EtwEventSource.Instance.OperationCompleted(
                     hubName,
                     LocalAppName,
@@ -557,6 +577,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
            double duration,
            bool isReplay)
         {
+            if (!this.ShouldLogEvent(isReplay))
+            {
+                return;
+            }
+
             this.SanitizeString(input, out string loggerInput, out string sanitizedInput);
             this.SanitizeException(exception, out string loggerException, out string sanitizedException);
             this.OperationFailed(hubName, functionName, instanceId, operationId, operationName, sanitizedInput, loggerInput, sanitizedException, loggerException, duration, isReplay);
@@ -573,6 +598,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
            double duration,
            bool isReplay)
         {
+            if (!this.ShouldLogEvent(isReplay))
+            {
+                return;
+            }
+
             this.SanitizeString(input, out string loggerInput, out string sanitizedInput);
             this.SanitizeString(exception, out string loggerException, out string sanitizedException);
             this.OperationFailed(hubName, functionName, instanceId, operationId, operationName, sanitizedInput, loggerInput, sanitizedException, loggerException, duration, isReplay);
@@ -591,28 +621,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
            double duration,
            bool isReplay)
         {
-            if (this.ShouldLogEvent(isReplay))
-            {
-                EtwEventSource.Instance.OperationFailed(
-                    hubName,
-                    LocalAppName,
-                    LocalSlotName,
-                    functionName,
-                    instanceId,
-                    operationId,
-                    operationName,
-                    sanitizedInput,
-                    sanitizedException,
-                    duration,
-                    FunctionType.Entity.ToString(),
-                    ExtensionVersion,
-                    isReplay);
+            EtwEventSource.Instance.OperationFailed(
+                hubName,
+                LocalAppName,
+                LocalSlotName,
+                functionName,
+                instanceId,
+                operationId,
+                operationName,
+                sanitizedInput,
+                sanitizedException,
+                duration,
+                FunctionType.Entity.ToString(),
+                ExtensionVersion,
+                isReplay);
 
-                this.logger.LogError(
-                    "{instanceId}: Function '{functionName} ({functionType})' failed '{operationName}' operation {operationId} after {duration}ms with exception {exception}. Input: {input}. IsReplay: {isReplay}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
-                    instanceId, functionName, FunctionType.Entity, operationName, operationId, duration, loggerException, loggerInput, isReplay, hubName,
-                    LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++);
-            }
+            this.logger.LogError(
+                "{instanceId}: Function '{functionName} ({functionType})' failed '{operationName}' operation {operationId} after {duration}ms with exception {exception}. Input: {input}. IsReplay: {isReplay}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
+                instanceId, functionName, FunctionType.Entity, operationName, operationId, duration, loggerException, loggerInput, isReplay, hubName,
+                LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++);
         }
 
         public void ExternalEventRaised(
@@ -623,10 +650,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string input,
             bool isReplay)
         {
-            this.SanitizeString(input, out string _, out string sanitizedInput);
-
             if (this.ShouldLogEvent(isReplay))
             {
+                this.SanitizeString(input, out string _, out string sanitizedInput);
+
                 FunctionType functionType = FunctionType.Orchestrator;
 
                 EtwEventSource.Instance.ExternalEventRaised(
@@ -742,10 +769,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string result,
             bool isReplay)
         {
-            this.SanitizeString(result, out string _, out string sanitizedResult);
-
             if (this.ShouldLogEvent(isReplay))
             {
+                this.SanitizeString(result, out string _, out string sanitizedResult);
+
                 EtwEventSource.Instance.EntityResponseReceived(
                     hubName,
                     LocalAppName,
