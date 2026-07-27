@@ -108,8 +108,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
     {
         public class ConfigurableOperation
         {
-            public void ConfigureAwait(bool first, bool second)
+            public Task ConfigureAwait(bool first, bool second)
             {
+                return Task.CompletedTask;
             }
         }
 
@@ -119,7 +120,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             public static async Task Run(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
-                new ConfigurableOperation().ConfigureAwait(false, true);
+                await new ConfigurableOperation().ConfigureAwait(false, true);
                 await context.CallActivityAsync<string>(""Function1_Hello"", ""Tokyo"");
             }
         }
@@ -131,11 +132,43 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
                 Severity = Severity,
                 Locations =
                     new[] {
-                            new DiagnosticResultLocation("Test0.cs", 21, 17)
+                            new DiagnosticResultLocation("Test0.cs", 22, 23)
                         }
             };
 
             VerifyCSharpDiagnostic(test, expectedDiagnostics);
+        }
+
+        [TestMethod]
+        public void ConfigureAwait_NotAwaited_NoDiagnostic()
+        {
+            var test = @"
+    using System.Threading.Tasks;
+    using Microsoft.Azure.WebJobs;
+    using Microsoft.Azure.WebJobs.Extensions.DurableTask;
+
+    namespace VSSample
+    {
+        public class ConfigurableOperation
+        {
+            public void ConfigureAwait(bool continueOnCapturedContext)
+            {
+            }
+        }
+
+        public static class HelloSequence
+        {
+            [FunctionName(""ConfigureAwaitAnalyzerTestCases"")]
+            public static async Task Run(
+            [OrchestrationTrigger] IDurableOrchestrationContext context)
+            {
+                new ConfigurableOperation().ConfigureAwait(false);
+                await context.CallActivityAsync<string>(""Function1_Hello"", ""Tokyo"");
+            }
+        }
+    }";
+
+            VerifyCSharpDiagnostic(test);
         }
 
         [TestMethod]

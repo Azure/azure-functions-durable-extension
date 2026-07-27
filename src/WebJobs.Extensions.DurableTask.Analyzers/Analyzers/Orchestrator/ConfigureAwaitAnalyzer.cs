@@ -39,6 +39,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                         && identifierName.Parent is MemberAccessExpressionSyntax memberAccessExpression
                         && memberAccessExpression.Name == identifierName
                         && memberAccessExpression.Parent is InvocationExpressionSyntax invocationExpression
+                        && IsAwaited(invocationExpression)
                         && !ContinuesOnCapturedContext(invocationExpression))
                     {
                         var diagnostic = Diagnostic.Create(Rule, memberAccessExpression.GetLocation(), "ConfigureAwait");
@@ -54,6 +55,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             }
 
             return diagnosedIssue;
+        }
+
+        private static bool IsAwaited(InvocationExpressionSyntax invocationExpression)
+        {
+            SyntaxNode expression = invocationExpression;
+            while (expression.Parent is ParenthesizedExpressionSyntax parenthesizedExpression)
+            {
+                expression = parenthesizedExpression;
+            }
+
+            return expression.Parent is AwaitExpressionSyntax awaitExpression &&
+                awaitExpression.Expression == expression;
         }
 
         // ConfigureAwait(true) preserves the orchestration SynchronizationContext (identical to a normal await),
