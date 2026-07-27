@@ -2,7 +2,6 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 
@@ -40,7 +39,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                         && memberAccessExpression.Name == identifierName
                         && memberAccessExpression.Parent is InvocationExpressionSyntax invocationExpression
                         && IsAwaited(invocationExpression, method, semanticModel)
-                        && !ContinuesOnCapturedContext(invocationExpression))
+                        && !ContinuesOnCapturedContext(invocationExpression, semanticModel))
                     {
                         var diagnostic = Diagnostic.Create(Rule, memberAccessExpression.GetLocation(), "ConfigureAwait");
 
@@ -63,8 +62,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             SemanticModel semanticModel)
         {
             ExpressionSyntax expression = GetOutermostParenthesizedExpression(invocationExpression);
-            if (expression.Parent is AwaitExpressionSyntax awaitExpression &&
-                awaitExpression.Expression == expression)
+            if (IsDirectlyAwaited(expression))
+            {
+                return true;
+            }
+
+            if (expression.Parent is AssignmentExpressionSyntax directAssignment &&
+                directAssignment.Right == expression &&
+                IsDirectlyAwaited(directAssignment))
             {
                 return true;
             }
@@ -94,6 +99,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             }
 
             return false;
+        }
+
+        private static bool IsDirectlyAwaited(ExpressionSyntax expression)
+        {
+            expression = GetOutermostParenthesizedExpression(expression);
+            return expression.Parent is AwaitExpressionSyntax awaitExpression &&
+                awaitExpression.Expression == expression;
         }
 
         private static ExpressionSyntax GetOutermostParenthesizedExpression(ExpressionSyntax expression)
@@ -133,14 +145,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             return false;
         }
 
-        // ConfigureAwait(true) preserves the orchestration SynchronizationContext (identical to a normal await),
-        // so it is safe. Only the standard one-argument form is exempted; additional arguments indicate a
-        // different overload whose behavior cannot be proven safe without symbol binding.
-        private static bool ContinuesOnCapturedContext(InvocationExpressionSyntax invocationExpression)
+        // A compile-time constant true preserves the orchestration SynchronizationContext (identical to a normal
+        // await), so it is safe. Only the standard one-argument form is exempted; additional arguments indicate a
+        // different overload whose behavior cannot be proven safe.
+        private static bool ContinuesOnCapturedContext(
+            InvocationExpressionSyntax invocationExpression,
+            SemanticModel semanticModel)
         {
             SeparatedSyntaxList<ArgumentSyntax> arguments = invocationExpression.ArgumentList.Arguments;
-            return arguments.Count == 1 &&
-                arguments[0].Expression.IsKind(SyntaxKind.TrueLiteralExpression);
+            if (arguments.Count != 1)
+            {
+                return false;
+            }
+
+            Optional<object> constantValue = semanticModel.GetConstantValue(arguments[0].Expression);
+            return constantValue.HasValue &&
+                constantValue.Value is bool continueOnCapturedContext &&
+                continueOnCapturedContext;
         }
     }
 }

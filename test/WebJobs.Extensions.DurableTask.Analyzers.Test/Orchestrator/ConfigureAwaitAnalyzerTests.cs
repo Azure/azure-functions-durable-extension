@@ -145,6 +145,42 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
         }
 
         [TestMethod]
+        public void ConfigureAwait_ResultAssignedInsideAwait_Diagnostic()
+        {
+            var test = @"
+    using System.Runtime.CompilerServices;
+    using System.Threading.Tasks;
+    using Microsoft.Azure.WebJobs;
+    using Microsoft.Azure.WebJobs.Extensions.DurableTask;
+
+    namespace VSSample
+    {
+        public static class HelloSequence
+        {
+            [FunctionName(""ConfigureAwaitAnalyzerTestCases"")]
+            public static async Task Run(
+            [OrchestrationTrigger] IDurableOrchestrationContext context)
+            {
+                ConfiguredTaskAwaitable<string> configuredAwaitable;
+                await (configuredAwaitable = context.CallActivityAsync<string>(""Function1_Hello"", ""Tokyo"").ConfigureAwait(false));
+            }
+        }
+    }";
+            var expectedDiagnostics = new DiagnosticResult
+            {
+                Id = DiagnosticId,
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "ConfigureAwait"),
+                Severity = Severity,
+                Locations =
+                    new[] {
+                            new DiagnosticResultLocation("Test0.cs", 16, 46)
+                        }
+            };
+
+            VerifyCSharpDiagnostic(test, expectedDiagnostics);
+        }
+
+        [TestMethod]
         public void ConfigureAwait_True_OnActivityCall_NoDiagnostic()
         {
             var test = @"
@@ -161,6 +197,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             [OrchestrationTrigger] IDurableOrchestrationContext context)
             {
                 await context.CallActivityAsync<string>(""Function1_Hello"", ""Tokyo"").ConfigureAwait(true);
+            }
+        }
+    }";
+
+            VerifyCSharpDiagnostic(test);
+        }
+
+        [TestMethod]
+        public void ConfigureAwait_ConstantTrue_OnActivityCall_NoDiagnostic()
+        {
+            var test = @"
+    using System.Threading.Tasks;
+    using Microsoft.Azure.WebJobs;
+    using Microsoft.Azure.WebJobs.Extensions.DurableTask;
+
+    namespace VSSample
+    {
+        public static class HelloSequence
+        {
+            [FunctionName(""ConfigureAwaitAnalyzerTestCases"")]
+            public static async Task Run(
+            [OrchestrationTrigger] IDurableOrchestrationContext context)
+            {
+                const bool continueOnCapturedContext = true;
+                await context.CallActivityAsync<string>(""Function1_Hello"", ""Tokyo"").ConfigureAwait(continueOnCapturedContext);
             }
         }
     }";
