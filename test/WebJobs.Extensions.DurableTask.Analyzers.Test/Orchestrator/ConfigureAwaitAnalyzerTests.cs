@@ -97,6 +97,41 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
         }
 
         [TestMethod]
+        public void ConfigureAwait_NonLiteralArgument_Diagnostic()
+        {
+            var test = @"
+    using System.Threading.Tasks;
+    using Microsoft.Azure.WebJobs;
+    using Microsoft.Azure.WebJobs.Extensions.DurableTask;
+
+    namespace VSSample
+    {
+        public static class HelloSequence
+        {
+            [FunctionName(""ConfigureAwaitAnalyzerTestCases"")]
+            public static async Task Run(
+            [OrchestrationTrigger] IDurableOrchestrationContext context)
+            {
+                var continueOnCapturedContext = false;
+                await context.CallActivityAsync<string>(""Function1_Hello"", ""Tokyo"").ConfigureAwait(continueOnCapturedContext);
+            }
+        }
+    }";
+            var expectedDiagnostics = new DiagnosticResult
+            {
+                Id = DiagnosticId,
+                Message = string.Format(Resources.DeterministicAnalyzerMessageFormat, "ConfigureAwait"),
+                Severity = Severity,
+                Locations =
+                    new[] {
+                            new DiagnosticResultLocation("Test0.cs", 15, 23)
+                        }
+            };
+
+            VerifyCSharpDiagnostic(test, expectedDiagnostics);
+        }
+
+        [TestMethod]
         public void ConfigureAwait_InMethodCalledByOrchestrator()
         {
             var test = @"
