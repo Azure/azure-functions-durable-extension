@@ -9,9 +9,8 @@ using Xunit;
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
     /// <summary>
-    /// Tests for <see cref="DurableTaskInstanceIdTelemetryInitializer"/> which appends
-    /// the orchestration instance ID to the Application Insights Operation.Name for
-    /// better filtering and searching in the Failures and Performance tabs.
+    /// Tests for <see cref="DurableTaskInstanceIdTelemetryInitializer"/> which populates
+    /// Application Insights Operation.Name and optionally appends the orchestration instance ID.
     /// </summary>
     public class DurableTaskInstanceIdTelemetryInitializerTests
     {
@@ -80,6 +79,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         /// <summary>
+        /// Verifies that disabling instance ID suffixes does not leave the operation name empty.
+        /// </summary>
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void Initialize_WithIncludeInstanceIdFalseAndNoCurrentActivity_SetsFromTelemetryName()
+        {
+            // Arrange
+            var initializer = new DurableTaskInstanceIdTelemetryInitializer(false);
+            var telemetry = new DependencyTelemetry
+            {
+                Name = "orchestration:Function1",
+            };
+
+            // Act
+            initializer.Initialize(telemetry);
+
+            // Assert
+            Assert.Equal("orchestration:Function1", telemetry.Context.Operation.Name);
+        }
+
+        /// <summary>
         /// Verifies that create_orchestration spans are excluded from instance ID appending.
         /// The instance ID should only appear on the orchestration execution span, not the
         /// span that represents the client scheduling the orchestration.
@@ -115,17 +135,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         /// <summary>
         /// Verifies that when Operation.Name is empty (which can happen in the Failures tab),
-        /// the initializer first sets it from the Activity.DisplayName before appending the instance ID.
+        /// the initializer first sets it from the telemetry name before appending the instance ID.
         /// This fixes the issue where failures show an empty operation name.
         /// </summary>
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public void Initialize_WithEmptyOperationName_SetsFromActivityAndAppends()
+        public void Initialize_WithEmptyOperationName_SetsFromTelemetryNameAndAppends()
         {
             // Arrange
             var initializer = new DurableTaskInstanceIdTelemetryInitializer(true);
-            var telemetry = new DependencyTelemetry();
-            telemetry.Context.Operation.Name = null; // Empty
+            var telemetry = new DependencyTelemetry
+            {
+                Name = "orchestration:Function1",
+            };
 
             using var activity = new Activity("orchestration:Function1");
             activity.SetTag(Schema.Task.Type, TraceActivityConstants.Orchestration);
