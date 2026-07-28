@@ -10,6 +10,7 @@ using DurableTask.Core;
 using Microsoft.ApplicationInsights.Channel;
 using Microsoft.ApplicationInsights.DataContracts;
 using Microsoft.ApplicationInsights.Extensibility.Implementation;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Moq;
@@ -92,6 +93,35 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             // Using actual.First() because there's only one Request Telemetry where the name is "DtActivity Hello"
             RequestTelemetry dtActivityReqTelemetry = traceTelemetry.First(x => x.GetType() == typeof(RequestTelemetry) && x.Name.Contains(TraceConstants.Activity)) as RequestTelemetry;
             Assert.Equal("Hello", dtActivityReqTelemetry.Context.Operation.Name);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task DistributedTracingV2_DefaultOperationNames_ArePopulated()
+        {
+            string[] orchestrationFunctionNames =
+            {
+                nameof(TestOrchestrations.SayHelloWithActivity),
+            };
+
+            var result = await this.ExecuteOrchestrationWithExceptionAsync(
+                orchestrationFunctionNames,
+                "DistributedTracingV2OperationNames",
+                "world",
+                extendedSessions: false,
+                protocol: "W3CTraceContext",
+                version: DurableDistributedTracingVersion.V2);
+
+            List<OperationTelemetry> durableTaskTelemetry = result.Item1
+                .Where(telemetry =>
+                    telemetry.Name.StartsWith($"{TraceActivityConstants.Orchestration}:", StringComparison.Ordinal) ||
+                    telemetry.Name.StartsWith($"{TraceActivityConstants.Activity}:", StringComparison.Ordinal))
+                .ToList();
+
+            Assert.NotEmpty(durableTaskTelemetry);
+            Assert.All(
+                durableTaskTelemetry,
+                telemetry => Assert.Equal(telemetry.Name, telemetry.Context.Operation.Name));
         }
 
         [Theory]
@@ -177,13 +207,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 string testName,
                 object input,
                 bool extendedSessions,
-                string protocol)
+                string protocol,
+                DurableDistributedTracingVersion version = DurableDistributedTracingVersion.V1)
         {
             ConcurrentQueue<ITelemetry> sendItems = new ConcurrentQueue<ITelemetry>();
             TraceOptions traceOptions = new TraceOptions()
             {
                 DistributedTracingEnabled = true,
                 DistributedTracingProtocol = protocol,
+                Version = version,
             };
             DurableTaskOptions options = new DurableTaskOptions();
             options.Tracing = traceOptions;
@@ -377,7 +409,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         private IEnumerable<OperationTelemetry> FilterOperationTelemetry(IEnumerable<OperationTelemetry> operationTelemetries)
         {
             return operationTelemetries.Where(
-                p => p.Name.Contains(TraceConstants.Activity) || p.Name.Contains(TraceConstants.Orchestrator) || p.Name.Contains(TraceConstants.Client) || p.Name.Contains("Operation"));
+                p => p.Name.Contains(TraceConstants.Activity) ||
+                    p.Name.Contains(TraceConstants.Orchestrator) ||
+                    p.Name.Contains(TraceConstants.Client) ||
+                    p.Name.Contains("Operation") ||
+                    p.Name.StartsWith($"{TraceActivityConstants.Orchestration}:", StringComparison.Ordinal) ||
+                    p.Name.StartsWith($"{TraceActivityConstants.Activity}:", StringComparison.Ordinal));
         }
 
         private List<ITelemetry> ConvertTo(ConcurrentQueue<ITelemetry> queue)
