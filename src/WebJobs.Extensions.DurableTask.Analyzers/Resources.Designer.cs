@@ -250,6 +250,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to ConfigureAwait(false) should not be used inside an orchestrator function.
+        /// </summary>
+        public static string ConfigureAwaitAnalyzerTitle {
+            get {
+                return ResourceManager.GetString("ConfigureAwaitAnalyzerTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to DateTime calls must be deterministic inside an orchestrator function.
         /// </summary>
         public static string DateTimeAnalyzerTitle {

@@ -32,7 +32,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     CancellationTokenAnalyzer.Rule,
                     BindingAnalyzer.Rule,
                     MethodInvocationAnalyzer.Rule,
-                    DependencyInjectionAnalyzer.Rule);
+                    DependencyInjectionAnalyzer.Rule,
+                    ConfigureAwaitAnalyzer.Rule);
             }
         }
 
@@ -67,6 +68,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
                     | TimerAnalyzer.RegisterDiagnostic(context, semanticModel, methodDeclaration)
                     | CancellationTokenAnalyzer.RegisterDiagnostic(context, methodDeclaration)
                     | BindingAnalyzer.RegisterDiagnostic(context, semanticModel, methodDeclaration)
+                    | ConfigureAwaitAnalyzer.RegisterDiagnostic(context, semanticModel, methodDeclaration)
                     | DependencyInjectionAnalyzer.RegisterDiagnostic(context, methodDeclaration))
                 {
                     methodInvocationAnalyzer.RegisterDiagnostics(context, methodInformation);
