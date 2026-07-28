@@ -56,28 +56,14 @@ jobs:
             projects: '**/**/*.csproj'
             feedsToUse: config
             nugetConfigPath: 'nuget.config'
-            
-      - task: UsePythonVersion@0
-        inputs:
-          versionSpec: '3.11.x'
-          addToPath: true
-          architecture: 'x64'
-
-      - task: PowerShell@2
-        displayName: 'Build E2E test apps'
-        inputs:
-          filePath: 'test/e2e/tests/build-e2e-test.ps1'
-          arguments: '-SkipStorageEmulator -SkipCoreTools'
-          pwsh: true
 
       # Build durable-extension
-      - task: VSBuild@1
+      - task: DotNetCoreCLI@2
         displayName: 'Build Durable Extension'
         inputs:
-            solution: '**/WebJobs.Extensions.DurableTask.sln'
-            vsVersion: "16.0"
-            configuration: Release
-            msbuildArgs: /p:FileVersionRevision=$(Build.BuildId) /p:ContinuousIntegrationBuild=true # these flags make package build deterministic
+            command: build
+            projects: '**/WebJobs.Extensions.DurableTask.sln'
+            arguments: '--configuration Release --no-restore -m:1 /p:FileVersionRevision=$(Build.BuildId) /p:ContinuousIntegrationBuild=true' # these flags make package build deterministic
     
       - template: ci/sign-files.yml@eng
         parameters:

@@ -31,6 +31,11 @@ internal static class ClientOperationLogHelpers
         LanguageType languageType,
         int maxWaitSeconds = 5)
     {
+        // TODO: Evaluate whether WaitForCondition can be replaced with the new TestLoggerProvider.AssertLogExistsAsync 
+        // method, which provides similar polling functionality with xUnit assertions and better failure messages. This
+        // would require updating the method signature to async and changing the parameter to accept the TestLoggerProvider 
+        // directly instead of a log collection function.
+
         // Only the .NET isolated worker SDK currently emits the FunctionInvocationId header.
         // Skip entirely for other languages to avoid unnecessary test delays.
         // Tracking issue: https://github.com/Azure/azure-functions-durable-extension/issues/3327

@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using DurableTask.Core;
@@ -21,6 +22,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     internal class OutOfProcMiddleware
     {
         private const string NoProcessAssociatedMessage = "No process is associated";
+        private const string NoWorkerInitializedMessage = "Did not find any initialized language workers";
+        private const string AssemblyNotLoadedMessage = "Could not load file or assembly";
 
         private readonly DurableTaskExtension extension;
 
@@ -335,8 +338,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 });
             }
 
-            if (functionInfo == null)
+            if (functionInfo?.Executor == null)
             {
+                // The entity is not registered (deleted/renamed) or is registered/indexed but disabled
+                // but still deployed, so it has no active listener (null executor). Fail the batch
+                // deterministically instead of dereferencing the null executor below, which would
+                // surface as a transient failure and retry the work item forever.
+                // See https://github.com/Azure/azure-functions-durable-extension/issues/3471.
                 SetErrorResult(new FailureDetails(
                     errorType: "EntityFunctionNotFound",
                     errorMessage: this.extension.GetInvalidEntityFunctionMessage(functionName.Name),
@@ -406,6 +414,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 if (!functionResult.Succeeded)
                 {
+                    // These exceptions are thrown when either:
+                    // 1. Another Function on the worker exceeded the Function timeout.
+                    // 2. The worker the entity was sent to has not yet been fully initialized and is not ready to process the entity execution.
+                    // In these cases we want to make sure to retry this entity's execution rather than marking it as failed.
+                    if (functionResult.Exception is Host.FunctionTimeoutAbortException || IsWorkerNotFullyInitializedException(functionResult.Exception))
+                    {
+                        throw functionResult.Exception;
+                    }
+
                     // Shutdown can surface as a completed invocation in a failed state.
                     // Re-throw so we can abort this invocation.
                     this.HostLifetimeService.OnStopping.ThrowIfCancellationRequested();
@@ -519,9 +536,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return;
             }
 
-            if (!this.extension.TryGetActivityInfo(functionName, out RegisteredFunctionInfo? function))
+            if (!this.extension.TryGetActivityInfo(functionName, out RegisteredFunctionInfo? function)
+                || function?.Executor == null)
             {
                 // Fail the activity call with an error explaining that the function name is invalid.
+                // This covers two cases that must both fail deterministically rather than poison-loop:
+                //   1. the activity is not registered (deleted/renamed), and
+                //   2. the activity is registered/indexed but is disabled and still deployed, so it has
+                //      no active listener and its Executor is null. Dereferencing that null executor
+                //      below would surface as a transient runtime failure and retry the work item
+                //      forever. See https://github.com/Azure/azure-functions-durable-extension/issues/3471.
                 string errorMessage = this.extension.GetInvalidActivityFunctionMessage(functionName.Name);
                 dispatchContext.SetProperty(new ActivityExecutionResult
                 {
@@ -555,6 +579,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     cancellationToken: this.HostLifetimeService.OnStopping);
                 if (!result.Succeeded)
                 {
+                    // These exceptions are thrown when either:
+                    // 1. Another Function on the worker exceeded the Function timeout.
+                    // 2. The worker the Activity was sent to has not yet been fully initialized and is not ready to process the Activity execution.
+                    // In these cases we want to make sure to retry this Activity's execution rather than marking it as failed.
+                    if (result.Exception is Host.FunctionTimeoutAbortException || IsWorkerNotFullyInitializedException(result.Exception))
+                    {
+                        throw result.Exception;
+                    }
+
                     // Shutdown can surface as a completed invocation in a failed state.
                     // Re-throw so we can abort this invocation.
                     this.HostLifetimeService.OnStopping.ThrowIfCancellationRequested();
@@ -646,10 +679,48 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // TODO: the `WorkerProcessExitException` type is not exposed in our dependencies, it's part of WebJobs.Host.Script.
             // Should we add that dependency or should it be exposed in WebJobs.Host?
             return exception is Host.FunctionTimeoutException
+                || exception is Host.FunctionTimeoutAbortException
+                || exception is GrpcChannelTemporarilyUnavailableException
                 || exception?.InnerException is SessionAbortedException // see RemoteOrchestrationContext.TrySetResultInternal for details on OOM-handling
+                || exception?.InnerException is GrpcChannelTemporarilyUnavailableException
                 || (exception?.InnerException?.GetType().ToString().Contains("WorkerProcessExitException", StringComparison.Ordinal) ?? false)
                 || (exception?.InnerException is InvalidOperationException ioe
-                    && ioe.Message.Contains(NoProcessAssociatedMessage, StringComparison.Ordinal));
+                    && ioe.Message.Contains(NoProcessAssociatedMessage, StringComparison.Ordinal))
+                || IsWorkerNotFullyInitializedException(exception);
+        }
+
+        private static bool IsWorkerNotFullyInitializedException(Exception? exception)
+        {
+            return (exception?.InnerException is InvalidOperationException ioe && ioe.Message.Contains(NoWorkerInitializedMessage, StringComparison.Ordinal))
+                || (exception?.InnerException is FileNotFoundException fnfe && fnfe.Message.Contains(AssemblyNotLoadedMessage, StringComparison.Ordinal));
+        }
+
+        /// <summary>
+        /// Attempts to parse a structured <see cref="FailureDetails"/> (including any custom
+        /// <c>Properties</c>) from an out-of-proc worker exception whose message contains a
+        /// serialized <c>TaskFailureDetails</c> JSON payload. Returns <c>null</c> when no
+        /// structured payload is present so callers can fall back to legacy behavior.
+        /// </summary>
+        internal static FailureDetails? TryGetStructuredFailureDetails(Exception e)
+        {
+            string? candidate = null;
+            if (e.InnerException != null && e.InnerException.Message.StartsWith("Result:", StringComparison.Ordinal))
+            {
+                candidate = e.InnerException.Message;
+            }
+            else if (e.Message.StartsWith("Result:", StringComparison.Ordinal))
+            {
+                candidate = e.Message;
+            }
+
+            if (candidate != null
+                && TryGetRpcExceptionFields(candidate, out string? exception, out string? _)
+                && TryExtractSerializedFailureDetailsFromException(exception, out FailureDetails? details))
+            {
+                return details;
+            }
+
+            return null;
         }
 
         private static FailureDetails GetFailureDetails(Exception e, out bool fromSerializedException)

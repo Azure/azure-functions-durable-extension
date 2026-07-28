@@ -68,6 +68,7 @@ internal class DurableHelpers
     internal static async Task WaitForOrchestrationStateAsync(string statusQueryGetUri, string desiredState, int maxTimeoutSeconds)
     {
         DateTime timeoutTime = DateTime.Now + TimeSpan.FromSeconds(maxTimeoutSeconds);
+        int delay = 200;
         while (DateTime.Now < timeoutTime)
         {
             var currentStatus = await GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
@@ -79,7 +80,8 @@ internal class DurableHelpers
             {
                 throw new TaskCanceledException($"Orchestration reached {currentStatus.RuntimeStatus} state when test was expecting {desiredState}");
             }
-            await Task.Delay(100);
+            await Task.Delay(delay);
+            delay = Math.Min(delay * 2, 2000);
         }
         throw new TimeoutException($"Orchestration did not reach {desiredState} status within {maxTimeoutSeconds} seconds.");
     }

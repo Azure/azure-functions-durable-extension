@@ -117,10 +117,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <summary>
         /// Starts a new execution of the specified orchestrator function.
         /// </summary>
+        /// <remarks>
+        /// If an orchestration instance with the specified <paramref name="instanceId"/> already exists, whether it is
+        /// overwritten depends on the existing instance's runtime status and on the
+        /// <see cref="DurableTaskOptions.OverridableExistingInstanceStates"/> option. By default
+        /// (<see cref="OverridableStates.NonRunningStates"/>), the existing instance is only overwritten when it is in a
+        /// terminated, failed, canceled, or completed state; if it is still pending, running, suspended, or continued-as-new, an
+        /// exception is thrown rather than silently replacing it. Set the option to <see cref="OverridableStates.AnyState"/> to
+        /// always overwrite the existing instance.
+        /// </remarks>
         /// <param name="orchestratorFunctionName">The name of the orchestrator function to start.</param>
         /// <param name="instanceId">The ID to use for the new orchestration instance.</param>
         /// <returns>A task that completes when the orchestration is started. The task contains the instance id of the started
-        /// orchestratation instance.</returns>
+        /// orchestration instance.</returns>
         /// <exception cref="ArgumentException">
         /// The specified function does not exist, is disabled, or is not an orchestrator function.
         /// </exception>
@@ -135,7 +144,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="input">JSON-serializeable input value for the orchestrator function.</param>
         /// <typeparam name="T">The type of the input value for the orchestrator function.</typeparam>
         /// <returns>A task that completes when the orchestration is started. The task contains the instance id of the started
-        /// orchestratation instance.</returns>
+        /// orchestration instance.</returns>
         /// <exception cref="ArgumentException">
         /// The specified function does not exist, is disabled, or is not an orchestrator function.
         /// </exception>
@@ -148,15 +157,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// Starts a new instance of the specified orchestrator function.
         /// </summary>
         /// <remarks>
-        /// If an orchestration instance with the specified ID already exists, the existing instance
-        /// will be silently replaced by this new instance.
+        /// If an orchestration instance with the specified <paramref name="instanceId"/> already exists, whether it is
+        /// overwritten depends on the existing instance's runtime status and on the
+        /// <see cref="DurableTaskOptions.OverridableExistingInstanceStates"/> option. By default
+        /// (<see cref="OverridableStates.NonRunningStates"/>), the existing instance is only overwritten when it is in a
+        /// terminated, failed, canceled, or completed state; if it is still pending, running, suspended, or continued-as-new, an
+        /// exception is thrown rather than silently replacing it. Set the option to <see cref="OverridableStates.AnyState"/> to
+        /// always overwrite the existing instance.
         /// </remarks>
         /// <param name="orchestratorFunctionName">The name of the orchestrator function to start.</param>
         /// <param name="instanceId">The ID to use for the new orchestration instance.</param>
         /// <param name="input">JSON-serializable input value for the orchestrator function.</param>
         /// <typeparam name="T">The type of the input value for the orchestrator function.</typeparam>
         /// <returns>A task that completes when the orchestration is started. The task contains the instance id of the started
-        /// orchestratation instance.</returns>
+        /// orchestration instance.</returns>
         /// <exception cref="ArgumentException">
         /// The specified function does not exist, is disabled, or is not an orchestrator function.
         /// </exception>
@@ -334,7 +348,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="restartWithNewInstanceId">Optional parameter that configures if restarting an orchestration will use a new instanceId or if it will
         /// reuse the old instanceId. Defaults to <c>true</c>.</param>
         /// <returns>A task that completes when the orchestration is started. The task contains the instance id of the started
-        /// orchestratation instance.</returns>
+        /// orchestration instance.</returns>
         Task<string> RestartAsync(string instanceId, bool restartWithNewInstanceId = true);
 
         /// <summary>

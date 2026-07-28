@@ -22,7 +22,7 @@ public class TerminateOrchestratorTests
 
 
     [Fact]
-    [Trait("Java-MSSQL", "Skip")] // Bug: https://github.com/microsoft/durabletask-java/issues/237
+    [Trait("Java", "Skip")] // Bug: https://github.com/microsoft/durabletask-java/issues/237
     public async Task TerminateRunningOrchestration_ShouldSucceed()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=LongRunningOrchestrator");
@@ -75,7 +75,7 @@ public class TerminateOrchestratorTests
 
 
     [Fact]
-    [Trait("Java-MSSQL", "Skip")] // Bug: https://github.com/microsoft/durabletask-java/issues/237
+    [Trait("Java", "Skip")] // Bug: https://github.com/microsoft/durabletask-java/issues/237
     public async Task TerminateTerminatedOrchestration_ShouldFail()
     {
         LanguageType languageType = this.fixture.functionLanguageLocalizer.GetLanguageType();
@@ -114,22 +114,21 @@ public class TerminateOrchestratorTests
 
         Assert.Contains(fixture.functionLanguageLocalizer.GetLocalizedStringValue("TerminateTerminatedInstance.FailureMessage", instanceId), terminateAgainResponseMessage);
 
-        // Give some time for Core Tools to write logs out
-        Thread.Sleep(500);
-
         // PowerShell, Python, Node all use the HTTP terminate API, which returns 410 (Gone) and does not log
         // when the instance is completed
         if (languageType == LanguageType.DotnetIsolated)
         {
             Assert.Contains("StatusCode=\"FailedPrecondition\"", terminateAgainResponseMessage);
-            Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains("Cannot terminate orchestration instance in the Terminated state.") &&
-                                                              x.Contains(instanceId));
+            await this.fixture.TestLogs.AssertLogExistsAsync(
+                x => x.Contains("Cannot terminate orchestration instance in the Terminated state.") && x.Contains(instanceId),
+                $"Expected 'Cannot terminate orchestration instance in the Terminated state.' log for instance '{instanceId}' was not found.");
         }
         else if (languageType == LanguageType.Java)
         {
             Assert.Contains("FAILED_PRECONDITION: InvalidOperationException", terminateAgainResponseMessage);
-            Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains("Cannot terminate orchestration instance in the Terminated state.") &&
-                                                              x.Contains(instanceId));
+            await this.fixture.TestLogs.AssertLogExistsAsync(
+                x => x.Contains("Cannot terminate orchestration instance in the Terminated state.") && x.Contains(instanceId),
+                $"Expected 'Cannot terminate orchestration instance in the Terminated state.' log for instance '{instanceId}' was not found.");
         }
     }
 
@@ -167,22 +166,21 @@ public class TerminateOrchestratorTests
 
         Assert.Contains(fixture.functionLanguageLocalizer.GetLocalizedStringValue("TerminateCompletedInstance.FailureMessage", instanceId), terminateResponseMessage);
 
-        // Give some time for Core Tools to write logs out
-        Thread.Sleep(500);
-
         // PowerShell, Python, Node all use the HTTP terminate API, which returns 410 (Gone) and does not log
         // when the instance is completed
         if (languageType == LanguageType.DotnetIsolated)
         {
             Assert.Contains("StatusCode=\"FailedPrecondition\"", terminateResponseMessage);
-            Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains("Cannot terminate orchestration instance in the Completed state.") &&
-                                                                  x.Contains(instanceId));
+            await this.fixture.TestLogs.AssertLogExistsAsync(
+                x => x.Contains("Cannot terminate orchestration instance in the Completed state.") && x.Contains(instanceId),
+                $"Expected 'Cannot terminate orchestration instance in the Completed state.' log for instance '{instanceId}' was not found.");
         }
         else if (languageType == LanguageType.Java)
         {
             Assert.Contains("FAILED_PRECONDITION: InvalidOperationException", terminateResponseMessage);
-            Assert.Contains(this.fixture.TestLogs.CoreToolsLogs, x => x.Contains("Cannot terminate orchestration instance in the Completed state.") &&
-                                                                  x.Contains(instanceId));
+            await this.fixture.TestLogs.AssertLogExistsAsync(
+                x => x.Contains("Cannot terminate orchestration instance in the Completed state.") && x.Contains(instanceId),
+                $"Expected 'Cannot terminate orchestration instance in the Completed state.' log for instance '{instanceId}' was not found.");
         }
     }
 

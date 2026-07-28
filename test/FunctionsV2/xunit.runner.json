@@ -1,0 +1,5 @@
+{
+  "methodDisplay": "method",
+  "longRunningTestSeconds": 120,
+  "parallelizeTestCollections": true
+}

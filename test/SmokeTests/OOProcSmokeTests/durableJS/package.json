@@ -6,13 +6,13 @@
     "start": "func start",
     "test": "echo \"No tests yet...\""
   },
+  "engines": {
+    "node": ">=20.0"
+  },
   "dependencies": {
-    "@azure/functions": "^4.11.2",
-    "durable-functions": "^3.3.0"
+    "@azure/functions": "^4.16.2",
+    "durable-functions": "^3.4.0"
   },
   "main": "src/{index.js,functions/*.js}",
-  "devDependencies": {},
-  "overrides": {
-    "lodash": "4.17.23"
-  }
+  "devDependencies": {}
 }

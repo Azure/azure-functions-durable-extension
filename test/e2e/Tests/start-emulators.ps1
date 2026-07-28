@@ -62,13 +62,13 @@ if (!$SkipStorageEmulator)
         {
             npm install -g azurite
             New-Item -Path "./azurite" -ItemType Directory -ErrorAction SilentlyContinue
-            Start-Process azurite.cmd -WorkingDirectory "./azurite" -ArgumentList "--silent"
+            Start-Process azurite.cmd -WorkingDirectory "./azurite" -ArgumentList "--silent","--skipApiVersionCheck"
         }
         else
         {
             sudo npm install -g azurite
             New-Item -Path "./azurite" -ItemType Directory -ErrorAction SilentlyContinue
-            sudo azurite --silent --location azurite --debug azurite\debug.log &
+            sudo azurite --silent --skipApiVersionCheck --location azurite --debug azurite\debug.log &
         }
 
         $startedStorage = $true
