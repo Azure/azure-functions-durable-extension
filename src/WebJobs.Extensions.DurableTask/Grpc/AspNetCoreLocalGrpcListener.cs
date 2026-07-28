@@ -144,6 +144,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Grpc
                         services.AddSingleton(this.extension);
                         services.AddGrpc(options =>
                         {
+                            options.Interceptors.Add<TaskHubGrpcExceptionInterceptor>();
                             options.MaxReceiveMessageSize = int.MaxValue;
                             options.MaxSendMessageSize = int.MaxValue;
                         });
